@@ -19,6 +19,7 @@ Everything comes from the `soundness` package. The other imports choose encoding
 
 ```scala
 import soundness.*
+import systems.javaBaseSystem
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 import providers.javaBaseProvider
@@ -182,12 +183,12 @@ key is checked against the `Ssh.HostKeys` policy in scope, and the identities co
 typecheck
 ##
 import gitBackends.soundnessGit, gitTransports.soundnessSsh
-import pathInterfaces.pathOnLinux, temporaryDirectories.javaBaseTemporaryDirectory
+import pathInterfaces.pathOnLocal, temporaryDirectories.javaBaseTemporaryDirectory
 
 given Ssh.Credentials = Ssh.Credentials.agent(t"/tmp/ssh-agent.sock")
 given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
 
-val directory = temporaryDirectory[Path on Linux] / "soundness"
+val directory = temporaryDirectory[Path on Local] / "soundness"
 Git.clone(t"git@github.com:propensive/soundness.git", directory)
 ```
 

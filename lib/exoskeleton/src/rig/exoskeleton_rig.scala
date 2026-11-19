@@ -39,6 +39,7 @@ import soundness.*
 import errorDiagnostics.stackTracesDiagnostics
 import filesystemBackends.javaBaseFilesystem
 import probates.cancelProbate
+import systems.javaBaseSystem
 
 extension (shell: Shell)
   // A pane on a pseudo-terminal, rendered by yossarian, running `shell` as `rig.launch` starts it.

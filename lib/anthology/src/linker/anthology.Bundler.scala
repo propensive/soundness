@@ -67,9 +67,9 @@ object Bundler:
 
   // Writes a JAR of everything on `classpath` to `jarfile`, with `main` as its `Main-Class` if
   // there is one: what the `Jar` edge does, for a tool which packages a classpath of its own.
-  def assemble
-    ( classpath: LocalClasspath, jarfile: Path on Linux, main: Optional[Fqcn] )
-  :   Path on Linux raises Zip.Error raises Path.Error raises Io.Error raises Truncation.Error =
+  def assemble[plane <: Platform: Filesystem]
+    ( classpath: LocalClasspath, jarfile: Path on plane, main: Optional[Fqcn] )
+  :   Path on plane raises Zip.Error raises Path.Error raises Io.Error raises Truncation.Error =
 
     val manifest =
       main.let(MainClass(_)).let: main =>
@@ -84,7 +84,7 @@ object Bundler:
       Zip.Entry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest) ::
         classpath.entries.bind:
         case Classpath.Entry.Directory(directory) =>
-          val root = directory.as[Path on Linux]
+          val root = directory.as[Path on Local]
 
           root.descendants.filter { entry => !omissions.has(entry.name) }.bind: file =>
             if file.entry() == Directory then Nil else
@@ -94,7 +94,7 @@ object Bundler:
           . to[List]
 
         case Classpath.Entry.Jar(jar) =>
-          val jarfile = workingDirectory[Path on Linux].resolve(jar)
+          val jarfile = workingDirectory[Path on Local].resolve(jar)
 
           // Re-emit each entry verbatim: it already carries its compressed bytes, so no
           // decompression or recompression is needed.

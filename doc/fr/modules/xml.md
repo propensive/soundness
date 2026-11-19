@@ -56,6 +56,7 @@
 ```scala
 import soundness.*
 import temporaryDirectories.javaBaseTemporaryDirectory
+import systems.javaBaseSystem
 import strategies.throwUnsafely
 import xmlSchemas.freeformXmlSchema
 import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
@@ -122,7 +123,7 @@ val loaded = supervise:
 ```scala fuel
 typecheck
 ##
-val feed: Path on Linux = temporaryDirectory[Path on Linux] / "feed.xml"
+val feed: Path on Local = temporaryDirectory[Path on Local] / "feed.xml"
 val document = feed.load[Xml]
 ```
 

@@ -50,6 +50,8 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 
+import ambience.systems.javaBaseSystem
+
 object Git:
 
   // A fully-qualified reference path, `refs/heads/main`, `refs/notes/commits`, …
@@ -660,9 +662,9 @@ object Git:
     // (`~/.gitconfig`). `Effective` reads through every scope git would consult for the
     // repository, and cannot be written.
     enum Source:
-      case Effective(gitDir: Path on Linux)
-      case File(path: Path on Linux)
-      case Repository(gitDir: Path on Linux, scope: Scope)
+      case Effective(gitDir: Path on Local)
+      case File(path: Path on Local)
+      case Repository(gitDir: Path on Local, scope: Scope)
 
     object Handle:
       extension (config: (Git.Config.Handle & Granting[Grant.Read])^)
@@ -703,7 +705,7 @@ object Git:
       val source: Source
       private[octogenarian] val backend: Git.Backend^
 
-    class Openable[path <: Path on Linux](using backend: Git.Backend^, tactic: Tactic[Git.Error])
+    class Openable[path <: Path on Local](using backend: Git.Backend^, tactic: Tactic[Git.Error])
     extends aperture.Openable:
       type Self = path
       type Form = Git.Config
@@ -722,7 +724,7 @@ object Git:
 
         block(using handle)
 
-    given openable: [path <: Path on Linux]
+    given openable: [path <: Path on Local]
     =>  ( backend: Git.Backend^, tactic: Tactic[Git.Error] )
     =>  ( Openable[path]^{backend, tactic, caps.any} ) =
       Openable[path]()
@@ -813,7 +815,7 @@ object Git:
     // Where a repository was found: its own git directory, the shared one (identical unless the
     // path is a linked worktree) and the working tree, if it has one.
     case class Location
-      ( gitDir: Path on Linux, commonDir: Path on Linux, worktree: Optional[Path on Linux] )
+      ( gitDir: Path on Local, commonDir: Path on Local, worktree: Optional[Path on Local] )
 
     // What a ref is expected to hold when it is updated: anything, nothing, or a particular
     // object. (An `Optional[Optional[Hash]]` would collapse, `Optional` being a union.)
@@ -848,7 +850,7 @@ object Git:
       case Copy(source: Git.Hash, target: Git.Hash, force: Boolean)
 
     case class WorktreeEntry
-      ( path:     Path on Linux,
+      ( path:     Path on Local,
         head:     Optional[Git.Hash],
         branch:   Optional[Git.Branch],
         bare:     Boolean,
@@ -862,15 +864,15 @@ object Git:
   // and signing are written once; the algorithmic verbs are implemented by each backend in its
   // own way.
   trait Backend:
-    def locate(path: Path on Linux)(using Tactic[Git.Error]): Optional[Backend.Location]
+    def locate(path: Path on Local)(using Tactic[Git.Error]): Optional[Backend.Location]
 
-    def init(target: Path on Linux, initialBranch: Optional[Git.Branch], bare: Boolean)
+    def init(target: Path on Local, initialBranch: Optional[Git.Branch], bare: Boolean)
       ( using Tactic[Git.Error] )
     :   Unit
 
     def clone
       ( source:    Text,
-        target:    Path on Linux,
+        target:    Path on Local,
         branch:    Optional[Git.Branch],
         depth:     Optional[Int],
         bare:      Boolean,
@@ -880,17 +882,17 @@ object Git:
     :   Unit
 
     // Refs
-    def head(gitDir: Path on Linux)(using Tactic[Git.Error]): Git.Head
-    def readRef(gitDir: Path on Linux, ref: Text)(using Tactic[Git.Error]): Optional[Backend.Target]
+    def head(gitDir: Path on Local)(using Tactic[Git.Error]): Git.Head
+    def readRef(gitDir: Path on Local, ref: Text)(using Tactic[Git.Error]): Optional[Backend.Target]
 
-    def listRefs(gitDir: Path on Linux, prefix: Optional[Text])
+    def listRefs(gitDir: Path on Local, prefix: Optional[Text])
       ( using Tactic[Git.Error] )
     :   List[(Text, Git.Hash)]
 
-    def peel(gitDir: Path on Linux, hash: Git.Hash)(using Tactic[Git.Error]): Git.Hash
+    def peel(gitDir: Path on Local, hash: Git.Hash)(using Tactic[Git.Error]): Git.Hash
 
     def updateRef
-      ( gitDir:   Path on Linux,
+      ( gitDir:   Path on Local,
         ref:      Text,
         to:       Optional[Git.Hash],
         expected: Backend.Expectation,
@@ -898,14 +900,14 @@ object Git:
       ( using Tactic[Git.Error] )
     :   Unit
 
-    def updateSymbolicRef(gitDir: Path on Linux, name: Text, target: Text)
+    def updateSymbolicRef(gitDir: Path on Local, name: Text, target: Text)
       ( using Tactic[Git.Error] )
     :   Unit
 
-    def resolve(gitDir: Path on Linux, revision: Text)(using Tactic[Git.Error]): Optional[Git.Hash]
+    def resolve(gitDir: Path on Local, revision: Text)(using Tactic[Git.Error]): Optional[Git.Hash]
 
     def revList
-      ( gitDir: Path on Linux,
+      ( gitDir: Path on Local,
         from:   Text,
         until:  Optional[Text],
         limit:  Optional[Int],
@@ -913,172 +915,172 @@ object Git:
       ( using Tactic[Git.Error] )
     :   List[Git.Hash]
 
-    def reflog(gitDir: Path on Linux, ref: Optional[Text])
+    def reflog(gitDir: Path on Local, ref: Optional[Text])
       ( using Tactic[Git.Error] )
     :   List[ReflogEntry]
 
-    def mergeBase(gitDir: Path on Linux, left: Git.Hash, right: Git.Hash)
+    def mergeBase(gitDir: Path on Local, left: Git.Hash, right: Git.Hash)
       ( using Tactic[Git.Error] )
     :   Optional[Git.Hash]
 
-    def isAncestor(gitDir: Path on Linux, ancestor: Git.Hash, descendant: Git.Hash)
+    def isAncestor(gitDir: Path on Local, ancestor: Git.Hash, descendant: Git.Hash)
       ( using Tactic[Git.Error] )
     :   Boolean
 
     // Objects
-    def readObject(gitDir: Path on Linux, hash: Git.Hash)
+    def readObject(gitDir: Path on Local, hash: Git.Hash)
       ( using Tactic[Git.Error] )
     :   Optional[(Git.Object.Kind, Data)]
 
-    def readObjects(gitDir: Path on Linux, hashes: List[Git.Hash])
+    def readObjects(gitDir: Path on Local, hashes: List[Git.Hash])
       ( using Tactic[Git.Error] )
     :   List[(Git.Hash, Git.Object.Kind, Data)]
 
-    def writeObject(gitDir: Path on Linux, kind: Git.Object.Kind, data: Data)
+    def writeObject(gitDir: Path on Local, kind: Git.Object.Kind, data: Data)
       ( using Tactic[Git.Error] )
     :   Git.Hash
 
-    def diffTree(gitDir: Path on Linux, left: Git.Hash, right: Git.Hash)
+    def diffTree(gitDir: Path on Local, left: Git.Hash, right: Git.Hash)
       ( using Tactic[Git.Error] )
     :   List[Delta]
 
     // Index and working files
-    def status(gitDir: Path on Linux, worktree: Path on Linux, ignored: Boolean, untracked: Boolean)
+    def status(gitDir: Path on Local, worktree: Path on Local, ignored: Boolean, untracked: Boolean)
       ( using Tactic[Git.Error] )
     :   List[Backend.StatusLine]
 
-    def add(gitDir: Path on Linux, worktree: Path on Linux, paths: List[Text], all: Boolean)
+    def add(gitDir: Path on Local, worktree: Path on Local, paths: List[Text], all: Boolean)
       ( using Tactic[Git.Error] )
     :   Unit
 
     def remove
-      ( gitDir:   Path on Linux,
-        worktree: Path on Linux,
+      ( gitDir:   Path on Local,
+        worktree: Path on Local,
         paths:    List[Text],
         cached:   Boolean,
         force:    Boolean )
       ( using Tactic[Git.Error] )
     :   Unit
 
-    def move(gitDir: Path on Linux, worktree: Path on Linux, from: Text, to: Text)
+    def move(gitDir: Path on Local, worktree: Path on Local, from: Text, to: Text)
       ( using Tactic[Git.Error] )
     :   Unit
 
     def restore
-      ( gitDir: Path on Linux, worktree: Path on Linux, paths: List[Text], source: Optional[Text],
+      ( gitDir: Path on Local, worktree: Path on Local, paths: List[Text], source: Optional[Text],
         staged: Boolean, workingFiles: Boolean )
       ( using Tactic[Git.Error] )
     :   Unit
 
     def clean
-      ( gitDir:      Path on Linux,
-        worktree:    Path on Linux,
+      ( gitDir:      Path on Local,
+        worktree:    Path on Local,
         paths:       List[Text],
         directories: Boolean,
         ignored:     Boolean )
       ( using Tactic[Git.Error] )
     :   List[Text]
 
-    def writeTree(gitDir: Path on Linux, worktree: Path on Linux)(using Tactic[Git.Error]): Git.Hash
+    def writeTree(gitDir: Path on Local, worktree: Path on Local)(using Tactic[Git.Error]): Git.Hash
 
     // Brings the index (and, for `Hard`, the working files) into line with `tree`, as `reset`
     // does once HEAD has moved.
-    def readTree(gitDir: Path on Linux, worktree: Path on Linux, mode: ResetMode)
+    def readTree(gitDir: Path on Local, worktree: Path on Local, mode: ResetMode)
       ( using Tactic[Git.Error] )
     :   Unit
 
     def diffWorktree
-      ( gitDir:   Path on Linux,
-        worktree: Path on Linux,
+      ( gitDir:   Path on Local,
+        worktree: Path on Local,
         staged:   Boolean,
         against:  Optional[Text] )
       ( using Tactic[Git.Error] )
     :   List[Delta]
 
-    def tracked(gitDir: Path on Linux, worktree: Path on Linux)(using Tactic[Git.Error]): List[Text]
+    def tracked(gitDir: Path on Local, worktree: Path on Local)(using Tactic[Git.Error]): List[Text]
 
-    def conflicts(gitDir: Path on Linux, worktree: Path on Linux)
+    def conflicts(gitDir: Path on Local, worktree: Path on Local)
       ( using Tactic[Git.Error] )
     :   List[Text]
 
     // Porcelain: each backend in its own way
-    def checkout(gitDir: Path on Linux, worktree: Path on Linux, revision: Text)
+    def checkout(gitDir: Path on Local, worktree: Path on Local, revision: Text)
       ( using Tactic[Git.Error] )
     :   Unit
 
-    def switch(gitDir: Path on Linux, worktree: Path on Linux, branch: Git.Branch, create: Boolean)
+    def switch(gitDir: Path on Local, worktree: Path on Local, branch: Git.Branch, create: Boolean)
       ( using Tactic[Git.Error] )
     :   Unit
 
     def merge
-      ( gitDir: Path on Linux, worktree: Path on Linux, revision: Text, ff: FastForward,
+      ( gitDir: Path on Local, worktree: Path on Local, revision: Text, ff: FastForward,
         message: Optional[Text], sign: Boolean )
       ( using Tactic[Git.Error] )
     :   Git.Merge.Outcome
 
     def cherryPick
-      ( gitDir:   Path on Linux,
-        worktree: Path on Linux,
+      ( gitDir:   Path on Local,
+        worktree: Path on Local,
         commits:  List[Git.Hash],
         noCommit: Boolean )
       ( using Tactic[Git.Error] )
     :   Git.Sequence.Outcome
 
     def revert
-      ( gitDir:   Path on Linux,
-        worktree: Path on Linux,
+      ( gitDir:   Path on Local,
+        worktree: Path on Local,
         commits:  List[Git.Hash],
         noCommit: Boolean )
       ( using Tactic[Git.Error] )
     :   Git.Sequence.Outcome
 
     def rebase
-      ( gitDir: Path on Linux, worktree: Path on Linux, onto: Text, upstream: Optional[Text],
+      ( gitDir: Path on Local, worktree: Path on Local, onto: Text, upstream: Optional[Text],
         options: List[Git.Rebase.Option] )
       ( using Tactic[Git.Error] )
     :   Git.Sequence.Outcome
 
-    def sequence(gitDir: Path on Linux, worktree: Path on Linux, verb: Git.Sequence.Verb)
+    def sequence(gitDir: Path on Local, worktree: Path on Local, verb: Git.Sequence.Verb)
       ( using Tactic[Git.Error] )
     :   Git.Sequence.Outcome
 
-    def operation(gitDir: Path on Linux, worktree: Optional[Path on Linux])
+    def operation(gitDir: Path on Local, worktree: Optional[Path on Local])
       ( using Tactic[Git.Error] )
     :   Optional[Git.Operation]
 
     def stash
-      ( gitDir:           Path on Linux,
-        worktree:         Path on Linux,
+      ( gitDir:           Path on Local,
+        worktree:         Path on Local,
         message:          Optional[Text],
         includeUntracked: Boolean,
         keepIndex:        Boolean )
       ( using Tactic[Git.Error] )
     :   Optional[Git.Hash]
 
-    def stashes(gitDir: Path on Linux)(using Tactic[Git.Error]): List[Git.Stash.Entry]
+    def stashes(gitDir: Path on Local)(using Tactic[Git.Error]): List[Git.Stash.Entry]
 
     def applyStash
-      ( gitDir:   Path on Linux,
-        worktree: Path on Linux,
+      ( gitDir:   Path on Local,
+        worktree: Path on Local,
         entry:    Int,
         index:    Boolean,
         drop:     Boolean )
       ( using Tactic[Git.Error] )
     :   Git.Sequence.Outcome
 
-    def dropStash(gitDir: Path on Linux, entry: Int)(using Tactic[Git.Error]): Unit
+    def dropStash(gitDir: Path on Local, entry: Int)(using Tactic[Git.Error]): Unit
 
     // Notes. `editNotes` makes a new notes commit, whose parent is `base`, on no ref: the handle
     // then moves the notes ref to it by compare-and-swap.
-    def readNote(gitDir: Path on Linux, ref: Text, target: Git.Hash)
+    def readNote(gitDir: Path on Local, ref: Text, target: Git.Hash)
       ( using Tactic[Git.Error] )
     :   Optional[Text]
 
-    def listNotes(gitDir: Path on Linux, ref: Text)
+    def listNotes(gitDir: Path on Local, ref: Text)
       ( using Tactic[Git.Error] )
     :   List[(Git.Hash, Git.Hash)]
 
-    def editNotes(gitDir: Path on Linux, base: Optional[Git.Hash], edit: Backend.NoteEdit)
+    def editNotes(gitDir: Path on Local, base: Optional[Git.Hash], edit: Backend.NoteEdit)
       ( using Tactic[Git.Error] )
     :   Git.Hash
 
@@ -1094,12 +1096,12 @@ object Git:
     :   Unit
 
     // Remotes and transport
-    def remoteRefs(gitDir: Path on Linux, remote: Text)
+    def remoteRefs(gitDir: Path on Local, remote: Text)
       ( using Internet, Tactic[Git.Error] )
     :   List[(Text, Git.Hash)]
 
     def fetch
-      ( gitDir:   Path on Linux,
+      ( gitDir:   Path on Local,
         remote:   Text,
         refspecs: List[Git.Refspec],
         depth:    Optional[Int],
@@ -1110,7 +1112,7 @@ object Git:
     :   List[(Text, Git.Hash)]
 
     def push
-      ( gitDir:      Path on Linux,
+      ( gitDir:      Path on Local,
         remote:      Text,
         refspecs:    List[Git.Refspec],
         force:       Git.Push.Force,
@@ -1121,29 +1123,29 @@ object Git:
     :   List[(Text, Git.Push.Outcome)]
 
     // Linked worktrees
-    def worktrees(gitDir: Path on Linux)(using Tactic[Git.Error]): List[Backend.WorktreeEntry]
+    def worktrees(gitDir: Path on Local)(using Tactic[Git.Error]): List[Backend.WorktreeEntry]
 
     def addWorktree
-      ( gitDir: Path on Linux, target: Path on Linux, revision: Text, detach: Boolean,
+      ( gitDir: Path on Local, target: Path on Local, revision: Text, detach: Boolean,
         newBranch: Optional[Git.Branch] )
       ( using Tactic[Git.Error] )
     :   Unit
 
-    def removeWorktree(gitDir: Path on Linux, path: Path on Linux, force: Boolean)
+    def removeWorktree(gitDir: Path on Local, path: Path on Local, force: Boolean)
       ( using Tactic[Git.Error] )
     :   Unit
 
-    def lockWorktree(gitDir: Path on Linux, path: Path on Linux, reason: Optional[Text])
+    def lockWorktree(gitDir: Path on Local, path: Path on Local, reason: Optional[Text])
       ( using Tactic[Git.Error] )
     :   Unit
 
-    def unlockWorktree(gitDir: Path on Linux, path: Path on Linux)(using Tactic[Git.Error]): Unit
+    def unlockWorktree(gitDir: Path on Local, path: Path on Local)(using Tactic[Git.Error]): Unit
 
-    def moveWorktree(gitDir: Path on Linux, path: Path on Linux, to: Path on Linux)
+    def moveWorktree(gitDir: Path on Local, path: Path on Local, to: Path on Local)
       ( using Tactic[Git.Error] )
     :   Unit
 
-    def pruneWorktrees(gitDir: Path on Linux)(using Tactic[Git.Error]): List[Path on Linux]
+    def pruneWorktrees(gitDir: Path on Local)(using Tactic[Git.Error]): List[Path on Local]
 
   // ────────────────────────────────────────── Open flags ──────────────────────────────────────
 
@@ -1615,7 +1617,7 @@ object Git:
             detach:    Boolean = false,
             newBranch: Optional[Git.Branch] = Unset )
           ( using Tactic[Git.Error] )
-        :   Path on Linux =
+        :   Path on Local =
 
           val targetPath = Operations.path(target.generic)
           repo.backend.addWorktree(repo.gitDir, targetPath, revision.text, detach, newBranch)
@@ -1640,19 +1642,19 @@ object Git:
           ( entry: Stale[Git.Worktree.Entry],
             to:    path )
           ( using Tactic[Git.Error] )
-        :   Path on Linux =
+        :   Path on Local =
 
           val targetPath = Operations.path(to.generic)
           repo.backend.moveWorktree(repo.gitDir, entry.value.path, targetPath)
           targetPath
 
-        def pruneWorktrees()(using Tactic[Git.Error]): List[Path on Linux] =
+        def pruneWorktrees()(using Tactic[Git.Error]): List[Path on Local] =
           repo.backend.pruneWorktrees(repo.gitDir)
 
     trait Handle extends caps.ExclusiveCapability:
-      val gitDir: Path on Linux
-      val commonDir: Path on Linux
-      val worktree: Optional[Path on Linux]
+      val gitDir: Path on Local
+      val commonDir: Path on Local
+      val worktree: Optional[Path on Local]
       val atoms: Set[Mode]
       private[octogenarian] val backend: Git.Backend^
 
@@ -1666,7 +1668,7 @@ object Git:
     // handle exists and will not wait for it. Cross-process safety comes from compare-and-swap:
     // every ref-moving operation takes the `Stale` value it is conditional on, and fails rather
     // than overwrite a ref that moved.
-    class Openable[path <: Path on Linux](using backend: Git.Backend^, tactic: Tactic[Git.Error])
+    class Openable[path <: Path on Local](using backend: Git.Backend^, tactic: Tactic[Git.Error])
     extends aperture.Openable:
       type Self = path
       type Form = Git.Repo
@@ -1683,15 +1685,15 @@ object Git:
         Operations.registered(location.commonDir, mode, flags):
           val handle =
             new Handle with Granting[grants]:
-              val gitDir: Path on Linux = location.gitDir
-              val commonDir: Path on Linux = location.commonDir
-              val worktree: Optional[Path on Linux] = location.worktree
+              val gitDir: Path on Local = location.gitDir
+              val commonDir: Path on Local = location.commonDir
+              val worktree: Optional[Path on Local] = location.worktree
               val atoms: Set[Mode] = mode.atoms
               val backend: Git.Backend^ = Openable.this.backend
 
           block(using handle)
 
-    given openable: [path <: Path on Linux]
+    given openable: [path <: Path on Local]
     =>  ( backend: Git.Backend^, tactic: Tactic[Git.Error] )
     =>  ( Openable[path]^{backend, tactic, caps.any} ) =
       Openable[path]()
@@ -1704,7 +1706,7 @@ object Git:
     import Git.Error.Reason as Reason
 
     case class Entry
-      ( path:     Path on Linux,
+      ( path:     Path on Local,
         head:     Optional[Git.Hash],
         branch:   Optional[Git.Branch],
         bare:     Boolean,
@@ -2027,10 +2029,10 @@ object Git:
     // to this handle alone, cannot escape it, cannot express `..`, and may be read and written
     // with galilei's subtree operations under the same grants.
     trait Handle extends Git.Repo.Handle, Directory.Handle:
-      type Under = Linux
-      private[octogenarian] def root: Path on Linux = stem
+      type Under = Local
+      private[octogenarian] def root: Path on Local = stem
 
-    class Openable[path <: Path on Linux](using backend: Git.Backend^, tactic: Tactic[Git.Error])
+    class Openable[path <: Path on Local](using backend: Git.Backend^, tactic: Tactic[Git.Error])
     extends aperture.Openable:
       type Self = path
       type Form = Git.Worktree
@@ -2049,16 +2051,16 @@ object Git:
           Operations.registered(treeRoot, mode, flags):
             val handle =
               new Handle with Granting[grants]:
-                val gitDir: Path on Linux = location.gitDir
-                val commonDir: Path on Linux = location.commonDir
-                val worktree: Optional[Path on Linux] = treeRoot
-                val stem: Path on Linux = treeRoot
+                val gitDir: Path on Local = location.gitDir
+                val commonDir: Path on Local = location.commonDir
+                val worktree: Optional[Path on Local] = treeRoot
+                val stem: Path on Local = treeRoot
                 val atoms: Set[Mode] = mode.atoms
                 val backend: Git.Backend^ = Openable.this.backend
 
             block(using handle)
 
-    given openable: [path <: Path on Linux]
+    given openable: [path <: Path on Local]
     =>  ( backend: Git.Backend^, tactic: Tactic[Git.Error] )
     =>  ( Openable[path]^{backend, tactic, caps.any} ) =
       Openable[path]()

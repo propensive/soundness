@@ -52,6 +52,8 @@ import parasite.*
 import prepositional.*
 import serpentine.*
 
+import systems.javaBaseSystem
+
 object Toolchain:
   // Assembles a toolchain from any number of edge groups, as the providers supply them:
   // `Toolchain(jarEdges(), dexEdges(), apkEdges())`.
@@ -218,7 +220,7 @@ object Toolchain:
       ( settings:    Settings,
         input:       Deliverable,
         entryPoints: List[EntryPoint],
-        out:         Path on Linux )
+        out:         Path on Local )
       ( using Monitor, System, WorkingDirectory )
       ( using Tactic[Link.Error], (LinkEvent is Loggable)^ )
     :   Deliverable
@@ -283,12 +285,12 @@ case class Toolchain private (edges: List[Edge]):
     ( input:       Deliverable,
       source:      Artifact,
       target:      Artifact,
-      out:         Path on Linux,
+      out:         Path on Local,
       settings:    List[Toolchain.Setting] = Nil,
       entryPoints: List[EntryPoint] = Nil )
     ( using Monitor, System, WorkingDirectory )
     ( using Tactic[Link.Error], (LinkEvent is Loggable)^ )
-  :   Path on Linux =
+  :   Path on Local =
 
     val route = path(source, target)
 
@@ -298,7 +300,7 @@ case class Toolchain private (edges: List[Edge]):
 
     Log.info(LinkEvent.Start)
 
-    def step(edge: Edge, current: Deliverable, destination: Path on Linux): Deliverable =
+    def step(edge: Edge, current: Deliverable, destination: Path on Local): Deliverable =
       val tool: edge.tool.type = edge.tool
 
       val configured: tool.Settings =

@@ -47,6 +47,7 @@ import vacuous.*
 
 import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.overwritePreexisting
+import ambience.systems.javaBaseSystem
 
 // The backend that reads and writes a repository's files itself, with no `git` binary: objects,
 // refs, configuration and notes are complete; the index, working-tree and transport operations
@@ -64,50 +65,50 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
   private def unsupported(operation: Text)(using Tactic[Git.Error]): Nothing =
     abort(Git.Error(Reason.Unsupported(operation)))
 
-  private def objects(gitDir: Path on Linux)(using Tactic[Git.Error]): Path on Linux =
+  private def objects(gitDir: Path on Local)(using Tactic[Git.Error]): Path on Local =
     commonDir(gitDir) / "objects"
 
   // A linked worktree's git directory names the shared one in `commondir`.
   // A path a repository's own files name — a `commondir`, a `gitdir`, the user's home — is
   // external text; one that does not make a path is reported as the repository's fault.
-  private def absolute(text: Text)(using Tactic[Git.Error]): Path on Linux =
+  private def absolute(text: Text)(using Tactic[Git.Error]): Path on Local =
     mitigate:
       case error: Path.Error => Git.Error(Git.Error.Reason.Unexpected)(using error.diagnostics)
 
-    . protect(text.as[Path on Linux])
+    . protect(text.as[Path on Local])
 
-  private def commonDir(gitDir: Path on Linux)(using Tactic[Git.Error]): Path on Linux = io:
+  private def commonDir(gitDir: Path on Local)(using Tactic[Git.Error]): Path on Local = io:
     val file = gitDir / "commondir"
 
     if !file.existent() then gitDir else
       val target = Objects.text(file.read[Data]).trim
 
-      if target.starts(t"/") then absolute(target)
-      else Refstore.descend(gitDir, target.cut(t"/").filter(_ != dot))
+      safely(target.as[Path on Local]).or:
+        Refstore.descend(gitDir, target.cut(t"/").filter(_ != dot))
 
-  private def config(gitDir: Path on Linux)(using Tactic[Git.Error]): List[(Git.Config.Key, Text)] =
+  private def config(gitDir: Path on Local)(using Tactic[Git.Error]): List[(Git.Config.Key, Text)] =
     io(Gitconfig.effective(gitDir, commonDir(gitDir)))
 
-  private def setting(gitDir: Path on Linux, key: Text)(using Tactic[Git.Error]): Optional[Text] =
+  private def setting(gitDir: Path on Local, key: Text)(using Tactic[Git.Error]): Optional[Text] =
     Operations.setting(config(gitDir), Git.Config.Key.parse(key))
 
-  private def identity(gitDir: Path on Linux)(using Tactic[Git.Error]): Git.Identity =
+  private def identity(gitDir: Path on Local)(using Tactic[Git.Error]): Git.Identity =
     Git.Identity
       ( setting(gitDir, t"user.name").or(t"unknown"), setting(gitDir, t"user.email")
       . or(t"unknown") )
 
-  private def bare(gitDir: Path on Linux)(using Tactic[Git.Error]): Boolean =
+  private def bare(gitDir: Path on Local)(using Tactic[Git.Error]): Boolean =
     setting(gitDir, t"core.bare").lay(false)(_.lower == t"true")
 
-  private def logging(gitDir: Path on Linux)(using Tactic[Git.Error]): Boolean =
+  private def logging(gitDir: Path on Local)(using Tactic[Git.Error]): Boolean =
     setting(gitDir, t"core.logallrefupdates").lay(!bare(gitDir))(_.lower != t"false")
 
-  private def isGitDir(path: Path on Linux)(using Tactic[Io.Error]): Boolean =
+  private def isGitDir(path: Path on Local)(using Tactic[Io.Error]): Boolean =
     (path / "HEAD").existent() && (path / "objects").existent() && (path / "refs").existent()
 
   // ─────────────────────────────────────────── Repository ─────────────────────────────────────
 
-  def locate(path: Path on Linux)(using Tactic[Git.Error]): Optional[Git.Backend.Location] = io:
+  def locate(path: Path on Local)(using Tactic[Git.Error]): Optional[Git.Backend.Location] = io:
     val dotGit = path / ".git"
 
     if !path.existent() then Unset
@@ -124,13 +125,13 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
             val target = content.skip(8).trim
 
             val gitDir =
-              if target.starts(t"/") then absolute(target)
-              else Refstore.descend(path, target.cut(t"/").filter(_ != dot))
+              safely(target.as[Path on Local]).or:
+                Refstore.descend(path, target.cut(t"/").filter(_ != dot))
 
             Git.Backend.Location(gitDir, commonDir(gitDir), path)
 
     else if isGitDir(path) then
-      val worktree: Optional[Path on Linux] =
+      val worktree: Optional[Path on Local] =
         if bare(path) then Unset else if path.name == t".git" then path.parent else Unset
 
       Git.Backend.Location(path, commonDir(path), worktree)
@@ -138,7 +139,7 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
     else
       Unset
 
-  def init(target: Path on Linux, initialBranch: Optional[Git.Branch], bare: Boolean)
+  def init(target: Path on Local, initialBranch: Optional[Git.Branch], bare: Boolean)
     ( using Tactic[Git.Error] )
   :   Unit =
 
@@ -182,7 +183,7 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
         (gitDir / "description").write(Objects.bytes(text))
 
   def clone
-    ( source: Text, target: Path on Linux, branch: Optional[Git.Branch], depth: Optional[Int],
+    ( source: Text, target: Path on Local, branch: Optional[Git.Branch], depth: Optional[Int],
       bare: Boolean, recursive: Boolean, activity: Git.Activity^ )
     ( using Internet, Tactic[Git.Error] )
   :   Unit =
@@ -242,12 +243,12 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
 
     activity.finish()
 
-  private def transferContext(gitDir: Path on Linux)(using Tactic[Git.Error]): Transfer.Context =
+  private def transferContext(gitDir: Path on Local)(using Tactic[Git.Error]): Transfer.Context =
     Transfer.Context(gitDir, commonDir(gitDir), objects(gitDir), identity(gitDir), logging(gitDir))
 
   // ────────────────────────────────────────────── Refs ────────────────────────────────────────
 
-  def head(gitDir: Path on Linux)(using Tactic[Git.Error]): Git.Head = io:
+  def head(gitDir: Path on Local)(using Tactic[Git.Error]): Git.Head = io:
     val common = commonDir(gitDir)
 
     Refstore.read(gitDir, common, t"HEAD") match
@@ -258,23 +259,23 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
       case Git.Backend.Target.Direct(hash) => Git.Head.Detached(hash)
       case _                               => abort(Git.Error(Reason.NoSuchRef(t"HEAD")))
 
-  def readRef(gitDir: Path on Linux, ref: Text)
+  def readRef(gitDir: Path on Local, ref: Text)
     ( using Tactic[Git.Error] )
   :   Optional[Git.Backend.Target] =
 
     io(Refstore.read(gitDir, commonDir(gitDir), ref))
 
-  def listRefs(gitDir: Path on Linux, prefix: Optional[Text])
+  def listRefs(gitDir: Path on Local, prefix: Optional[Text])
     ( using Tactic[Git.Error] )
   :   List[(Text, Git.Hash)] =
 
     io(Refstore.list(commonDir(gitDir), prefix))
 
-  def peel(gitDir: Path on Linux, hash: Git.Hash)(using Tactic[Git.Error]): Git.Hash =
+  def peel(gitDir: Path on Local, hash: Git.Hash)(using Tactic[Git.Error]): Git.Hash =
     io(Revwalk.peel(objects(gitDir), hash))
 
   def updateRef
-    ( gitDir: Path on Linux, ref: Text, to: Optional[Git.Hash], expected: Git.Backend.Expectation,
+    ( gitDir: Path on Local, ref: Text, to: Optional[Git.Hash], expected: Git.Backend.Expectation,
       message: Optional[Text] )
     ( using Tactic[Git.Error] )
   :   Unit = io:
@@ -282,17 +283,17 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
     Refstore.update
       ( gitDir, commonDir(gitDir), ref, to, expected, message, identity(gitDir), logging(gitDir) )
 
-  def updateSymbolicRef(gitDir: Path on Linux, name: Text, target: Text)
+  def updateSymbolicRef(gitDir: Path on Local, name: Text, target: Text)
     ( using Tactic[Git.Error] )
   :   Unit =
 
     io(Refstore.writeSymbolic(gitDir, commonDir(gitDir), name, target))
 
-  def resolve(gitDir: Path on Linux, revision: Text)(using Tactic[Git.Error]): Optional[Git.Hash] =
+  def resolve(gitDir: Path on Local, revision: Text)(using Tactic[Git.Error]): Optional[Git.Hash] =
     io(Revwalk.resolve(gitDir, commonDir(gitDir), objects(gitDir), revision))
 
   def revList
-    ( gitDir: Path on Linux,
+    ( gitDir: Path on Local,
       from: Text,
       until: Optional[Text],
       limit: Optional[Int],
@@ -309,19 +310,19 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
 
       Revwalk.walk(objects(gitDir), start, stop, limit, paths)
 
-  def reflog(gitDir: Path on Linux, ref: Optional[Text])
+  def reflog(gitDir: Path on Local, ref: Optional[Text])
     ( using Tactic[Git.Error] )
   :   List[ReflogEntry] =
 
     io(Refstore.reflog(gitDir, commonDir(gitDir), ref.or(t"HEAD")))
 
-  def mergeBase(gitDir: Path on Linux, left: Git.Hash, right: Git.Hash)
+  def mergeBase(gitDir: Path on Local, left: Git.Hash, right: Git.Hash)
     ( using Tactic[Git.Error] )
   :   Optional[Git.Hash] =
 
     io(Revwalk.mergeBase(objects(gitDir), left, right))
 
-  def isAncestor(gitDir: Path on Linux, ancestor: Git.Hash, descendant: Git.Hash)
+  def isAncestor(gitDir: Path on Local, ancestor: Git.Hash, descendant: Git.Hash)
     ( using Tactic[Git.Error] )
   :   Boolean =
 
@@ -329,13 +330,13 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
 
   // ──────────────────────────────────────────── Objects ───────────────────────────────────────
 
-  def readObject(gitDir: Path on Linux, hash: Git.Hash)
+  def readObject(gitDir: Path on Local, hash: Git.Hash)
     ( using Tactic[Git.Error] )
   :   Optional[(Git.Object.Kind, Data)] =
 
     io(Store.read(objects(gitDir), hash))
 
-  def readObjects(gitDir: Path on Linux, hashes: List[Git.Hash])(using Tactic[Git.Error])
+  def readObjects(gitDir: Path on Local, hashes: List[Git.Hash])(using Tactic[Git.Error])
   :   List[(Git.Hash, Git.Object.Kind, Data)] =
 
     io:
@@ -347,13 +348,13 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
 
       hashes.bind(read(_))
 
-  def writeObject(gitDir: Path on Linux, kind: Git.Object.Kind, data: Data)
+  def writeObject(gitDir: Path on Local, kind: Git.Object.Kind, data: Data)
     ( using Tactic[Git.Error] )
   :   Git.Hash =
 
     io(Store.write(objects(gitDir), kind, data))
 
-  def diffTree(gitDir: Path on Linux, left: Git.Hash, right: Git.Hash)
+  def diffTree(gitDir: Path on Local, left: Git.Hash, right: Git.Hash)
     ( using Tactic[Git.Error] )
   :   List[Git.Delta] =
 
@@ -361,21 +362,21 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
 
   // ─────────────────────────────────────── Index and working files ────────────────────────────
 
-  def status(gitDir: Path on Linux, worktree: Path on Linux, ignored: Boolean, untracked: Boolean)
+  def status(gitDir: Path on Local, worktree: Path on Local, ignored: Boolean, untracked: Boolean)
     ( using Tactic[Git.Error] )
   :   List[Git.Backend.StatusLine] =
 
     io(Workspace.status(gitDir, commonDir(gitDir), objects(gitDir), worktree, ignored, untracked))
 
-  def add(gitDir: Path on Linux, worktree: Path on Linux, paths: List[Text], all: Boolean)
+  def add(gitDir: Path on Local, worktree: Path on Local, paths: List[Text], all: Boolean)
     ( using Tactic[Git.Error] )
   :   Unit =
 
     io(Workspace.add(gitDir, objects(gitDir), worktree, paths, all))
 
   def remove
-    ( gitDir: Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir: Path on Local,
+      worktree: Path on Local,
       paths: List[Text],
       cached: Boolean,
       force: Boolean )
@@ -384,14 +385,14 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
 
     io(Workspace.remove(gitDir, worktree, paths, cached, force))
 
-  def move(gitDir: Path on Linux, worktree: Path on Linux, from: Text, to: Text)
+  def move(gitDir: Path on Local, worktree: Path on Local, from: Text, to: Text)
     ( using Tactic[Git.Error] )
   :   Unit =
 
     io(Workspace.move(gitDir, worktree, from, to))
 
   def restore
-    ( gitDir: Path on Linux, worktree: Path on Linux, paths: List[Text], source: Optional[Text],
+    ( gitDir: Path on Local, worktree: Path on Local, paths: List[Text], source: Optional[Text],
       staged: Boolean, workingFiles: Boolean )
     ( using Tactic[Git.Error] )
   :   Unit =
@@ -408,8 +409,8 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
           workingFiles )
 
   def clean
-    ( gitDir: Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir: Path on Local,
+      worktree: Path on Local,
       paths: List[Text],
       directories: Boolean,
       ignored: Boolean )
@@ -418,17 +419,17 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
 
     io(Workspace.clean(gitDir, worktree, paths, directories, ignored))
 
-  def writeTree(gitDir: Path on Linux, worktree: Path on Linux)(using Tactic[Git.Error]): Git.Hash =
+  def writeTree(gitDir: Path on Local, worktree: Path on Local)(using Tactic[Git.Error]): Git.Hash =
     io(Workspace.writeTree(gitDir, objects(gitDir)))
 
-  def readTree(gitDir: Path on Linux, worktree: Path on Linux, mode: ResetMode)
+  def readTree(gitDir: Path on Local, worktree: Path on Local, mode: ResetMode)
     ( using Tactic[Git.Error] )
   :   Unit =
 
     io(Workspace.readTree(gitDir, commonDir(gitDir), objects(gitDir), worktree, mode))
 
   def diffWorktree
-    ( gitDir: Path on Linux, worktree: Path on Linux, staged: Boolean, against: Optional[Text] )
+    ( gitDir: Path on Local, worktree: Path on Local, staged: Boolean, against: Optional[Text] )
     ( using Tactic[Git.Error] )
   :   List[Git.Delta] =
 
@@ -436,16 +437,16 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
       Workspace.diffWorktree
         ( gitDir, commonDir(gitDir), objects(gitDir), worktree, staged, against )
 
-  def tracked(gitDir: Path on Linux, worktree: Path on Linux)(using Tactic[Git.Error]): List[Text] =
+  def tracked(gitDir: Path on Local, worktree: Path on Local)(using Tactic[Git.Error]): List[Text] =
     io(Workspace.tracked(gitDir))
 
-  def conflicts(gitDir: Path on Linux, worktree: Path on Linux)
+  def conflicts(gitDir: Path on Local, worktree: Path on Local)
     ( using Tactic[Git.Error] )
   :   List[Text] =
 
     io(Workspace.conflicts(gitDir))
 
-  def checkout(gitDir: Path on Linux, worktree: Path on Linux, revision: Text)
+  def checkout(gitDir: Path on Local, worktree: Path on Local, revision: Text)
     ( using Tactic[Git.Error] )
   :   Unit =
 
@@ -459,7 +460,7 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
           identity(gitDir),
           logging(gitDir) )
 
-  def switch(gitDir: Path on Linux, worktree: Path on Linux, branch: Git.Branch, create: Boolean)
+  def switch(gitDir: Path on Local, worktree: Path on Local, branch: Git.Branch, create: Boolean)
     ( using Tactic[Git.Error] )
   :   Unit =
 
@@ -474,7 +475,7 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
           identity(gitDir),
           logging(gitDir) )
 
-  private def context(gitDir: Path on Linux, worktree: Path on Linux)
+  private def context(gitDir: Path on Local, worktree: Path on Local)
     ( using Tactic[Git.Error] )
   :   Sequencer.Context =
 
@@ -482,8 +483,8 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
       ( gitDir, commonDir(gitDir), objects(gitDir), worktree, identity(gitDir), logging(gitDir) )
 
   def merge
-    ( gitDir: Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir: Path on Local,
+      worktree: Path on Local,
       revision: Text,
       ff: FastForward,
       message: Optional[Text],
@@ -494,21 +495,21 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
     io(Sequencer.merge(context(gitDir, worktree), revision, ff, message, sign))
 
   def cherryPick
-    ( gitDir: Path on Linux, worktree: Path on Linux, commits: List[Git.Hash], noCommit: Boolean )
+    ( gitDir: Path on Local, worktree: Path on Local, commits: List[Git.Hash], noCommit: Boolean )
     ( using Tactic[Git.Error] )
   :   Git.Sequence.Outcome =
 
     io(Sequencer.cherryPick(context(gitDir, worktree), commits, false, noCommit))
 
   def revert
-    ( gitDir: Path on Linux, worktree: Path on Linux, commits: List[Git.Hash], noCommit: Boolean )
+    ( gitDir: Path on Local, worktree: Path on Local, commits: List[Git.Hash], noCommit: Boolean )
     ( using Tactic[Git.Error] )
   :   Git.Sequence.Outcome =
 
     io(Sequencer.cherryPick(context(gitDir, worktree), commits, true, noCommit))
 
   def rebase
-    ( gitDir: Path on Linux, worktree: Path on Linux, onto: Text, upstream: Optional[Text],
+    ( gitDir: Path on Local, worktree: Path on Local, onto: Text, upstream: Optional[Text],
       options: List[Git.Rebase.Option] )
     ( using Tactic[Git.Error] )
   :   Git.Sequence.Outcome =
@@ -516,14 +517,14 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
     io(Sequencer.rebase(context(gitDir, worktree), onto, upstream, options))
 
   def sequence
-    ( gitDir: Path on Linux, worktree: Path on Linux, verb: Git.Sequence.Verb )
+    ( gitDir: Path on Local, worktree: Path on Local, verb: Git.Sequence.Verb )
     ( using Tactic[Git.Error] )
   :   Git.Sequence.Outcome =
 
     io(Sequencer.sequence(context(gitDir, worktree), verb))
 
   def operation
-    ( gitDir: Path on Linux, worktree: Optional[Path on Linux] )
+    ( gitDir: Path on Local, worktree: Optional[Path on Local] )
     ( using Tactic[Git.Error] )
   :   Optional[Git.Operation] =
 
@@ -531,8 +532,8 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
       Sequencer.operation(gitDir, worktree.lay(Nil) { _ => Workspace.conflicts(gitDir) })
 
   def stash
-    ( gitDir: Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir: Path on Local,
+      worktree: Path on Local,
       message: Optional[Text],
       includeUntracked: Boolean,
       keepIndex: Boolean )
@@ -541,7 +542,7 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
 
     io(Sequencer.stash(context(gitDir, worktree), message, includeUntracked, keepIndex))
 
-  def stashes(gitDir: Path on Linux)(using Tactic[Git.Error]): List[Git.Stash.Entry] = io:
+  def stashes(gitDir: Path on Local)(using Tactic[Git.Error]): List[Git.Stash.Entry] = io:
     def recur(remaining: List[ReflogEntry], index: Int, acc: List[Git.Stash.Entry])
     :   List[Git.Stash.Entry] =
 
@@ -554,30 +555,30 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
     recur(Refstore.reflog(gitDir, commonDir(gitDir), t"refs/stash"), 0, Nil)
 
   def applyStash
-    ( gitDir: Path on Linux, worktree: Path on Linux, entry: Int, index: Boolean, drop: Boolean )
+    ( gitDir: Path on Local, worktree: Path on Local, entry: Int, index: Boolean, drop: Boolean )
     ( using Tactic[Git.Error] )
   :   Git.Sequence.Outcome =
 
     io(Sequencer.applyStash(context(gitDir, worktree), entry, index, drop))
 
-  def dropStash(gitDir: Path on Linux, entry: Int)(using Tactic[Git.Error]): Unit =
+  def dropStash(gitDir: Path on Local, entry: Int)(using Tactic[Git.Error]): Unit =
     io(Sequencer.dropStash(context(gitDir, gitDir), entry))
 
   // ───────────────────────────────────────────── Notes ────────────────────────────────────────
 
-  def readNote(gitDir: Path on Linux, ref: Text, target: Git.Hash)
+  def readNote(gitDir: Path on Local, ref: Text, target: Git.Hash)
     ( using Tactic[Git.Error] )
   :   Optional[Text] =
 
     io(Annotations.read(gitDir, commonDir(gitDir), objects(gitDir), ref, target))
 
-  def listNotes(gitDir: Path on Linux, ref: Text)
+  def listNotes(gitDir: Path on Local, ref: Text)
     ( using Tactic[Git.Error] )
   :   List[(Git.Hash, Git.Hash)] =
 
     io(Annotations.list(gitDir, commonDir(gitDir), objects(gitDir), ref))
 
-  def editNotes(gitDir: Path on Linux, base: Optional[Git.Hash], edit: Git.Backend.NoteEdit)
+  def editNotes(gitDir: Path on Local, base: Optional[Git.Hash], edit: Git.Backend.NoteEdit)
     ( using Tactic[Git.Error] )
   :   Git.Hash =
 
@@ -588,7 +589,7 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
   private def configFile
     ( source: Git.Config.Source )
     ( using Tactic[Git.Error] )
-  :   Path on Linux =
+  :   Path on Local =
 
     source match
       case Git.Config.Source.File(path)                                    => path
@@ -600,7 +601,7 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
         commonDir(gitDir) / "config"
 
       case Git.Config.Source.Repository(_, Git.Config.Scope.Global) =>
-        absolute(t"${System.getProperty("user.home").nn}/.gitconfig")
+        absolute(System.getProperty("user.home").nn.tt) / ".gitconfig"
 
       case Git.Config.Source.Repository(_, Git.Config.Scope.System) =>
         % / "etc" / "gitconfig"
@@ -644,7 +645,7 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
 
   // ────────────────────────────────────── Remotes and transport ───────────────────────────────
 
-  def remoteRefs(gitDir: Path on Linux, remote: Text)
+  def remoteRefs(gitDir: Path on Local, remote: Text)
     ( using Internet, Tactic[Git.Error] )
   :   List[(Text, Git.Hash)] =
 
@@ -654,7 +655,7 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
     io(Transfer.remoteRefs(context, remote, peer))
 
   def fetch
-    ( gitDir: Path on Linux,
+    ( gitDir: Path on Local,
       remote: Text,
       refspecs: List[Git.Refspec],
       depth: Optional[Int],
@@ -670,7 +671,7 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
     io(Transfer.fetch(context, remote, peer, url, refspecs, depth, prune, tags, activity))
 
   def push
-    ( gitDir: Path on Linux,
+    ( gitDir: Path on Local,
       remote: Text,
       refspecs: List[Git.Refspec],
       force: Git.Push.Force,
@@ -688,14 +689,14 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
   // ────────────────────────────────────────── Linked worktrees ────────────────────────────────
 
   def worktrees
-    ( gitDir: Path on Linux )
+    ( gitDir: Path on Local )
     ( using Tactic[Git.Error] )
   :   List[Git.Backend.WorktreeEntry] =
 
     io:
       val common = commonDir(gitDir)
 
-      def entry(dir: Path on Linux, worktree: Optional[Path on Linux]): Git.Backend.WorktreeEntry =
+      def entry(dir: Path on Local, worktree: Optional[Path on Local]): Git.Backend.WorktreeEntry =
         val head = Refstore.read(dir, common, t"HEAD")
 
         val branch = head match
@@ -721,14 +722,14 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
       val main = entry(common, if bare(common) then Unset else common.parent)
       val linked = common / "worktrees"
 
-      def linkedEntry(dir: Path on Linux): Git.Backend.WorktreeEntry =
+      def linkedEntry(dir: Path on Local): Git.Backend.WorktreeEntry =
         val gitdirFile = dir / "gitdir"
 
-        val target: Optional[Path on Linux] =
+        val target: Optional[Path on Local] =
           if gitdirFile.existent() then
             // A `gitdir` that is not an absolute path names no working tree.
             val text = Objects.text(gitdirFile.read[Data]).trim
-            safely(text.as[Path on Linux]).let(_.parent)
+            safely(text.as[Path on Local]).let(_.parent)
           else
             Unset
 
@@ -739,7 +740,7 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
       main :: others
 
   def addWorktree
-    ( gitDir: Path on Linux, target: Path on Linux, revision: Text, detach: Boolean,
+    ( gitDir: Path on Local, target: Path on Local, revision: Text, detach: Boolean,
       newBranch: Optional[Git.Branch] )
     ( using Tactic[Git.Error] )
   :   Unit = io:
@@ -754,26 +755,26 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
         identity(gitDir),
         logging(gitDir) )
 
-  def removeWorktree(gitDir: Path on Linux, path: Path on Linux, force: Boolean)
+  def removeWorktree(gitDir: Path on Local, path: Path on Local, force: Boolean)
     ( using Tactic[Git.Error] )
   :   Unit =
 
     io(Worktrees.remove(commonDir(gitDir), objects(gitDir), path, force))
 
-  def lockWorktree(gitDir: Path on Linux, path: Path on Linux, reason: Optional[Text])
+  def lockWorktree(gitDir: Path on Local, path: Path on Local, reason: Optional[Text])
     ( using Tactic[Git.Error] )
   :   Unit =
 
     io(Worktrees.lock(commonDir(gitDir), path, reason))
 
-  def unlockWorktree(gitDir: Path on Linux, path: Path on Linux)(using Tactic[Git.Error]): Unit =
+  def unlockWorktree(gitDir: Path on Local, path: Path on Local)(using Tactic[Git.Error]): Unit =
     io(Worktrees.unlock(commonDir(gitDir), path))
 
-  def moveWorktree(gitDir: Path on Linux, path: Path on Linux, to: Path on Linux)
+  def moveWorktree(gitDir: Path on Local, path: Path on Local, to: Path on Local)
     ( using Tactic[Git.Error] )
   :   Unit =
 
     io(Worktrees.move(commonDir(gitDir), path, to))
 
-  def pruneWorktrees(gitDir: Path on Linux)(using Tactic[Git.Error]): List[Path on Linux] =
+  def pruneWorktrees(gitDir: Path on Local)(using Tactic[Git.Error]): List[Path on Local] =
     io(Worktrees.prune(commonDir(gitDir)))

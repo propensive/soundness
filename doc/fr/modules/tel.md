@@ -731,11 +731,11 @@ import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
 import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.overwritePreexisting
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
 import systems.javaBaseSystem
 import temporaryDirectories.javaBaseTemporaryDirectory
 
-val folder = temporaryDirectory[Path on Linux] / "soundness-tel-tutorial"
+val folder = temporaryDirectory[Path on Local] / "soundness-tel-tutorial"
 val file = folder / "cast.ratel"
 ```
 

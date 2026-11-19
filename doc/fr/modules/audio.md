@@ -159,10 +159,11 @@ Out.println(audio(0, 2).show)
 
 ```scala
 import filesystemBackends.javaBaseFilesystem
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
+import systems.javaBaseSystem
 import temporaryDirectories.javaBaseTemporaryDirectory
 
-val audioDirectory = temporaryDirectory[Path on Linux] / "audio" / Uuid().show
+val audioDirectory = temporaryDirectory[Path on Local] / "audio" / Uuid().show
 val wavPath = audioDirectory / "tone.wav"
 ```
 

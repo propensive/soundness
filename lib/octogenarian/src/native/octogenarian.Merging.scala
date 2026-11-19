@@ -48,6 +48,7 @@ import filesystemOptions.deleteRecursively
 import filesystemOptions.overwritePreexisting
 import sortingAlgorithms.timsort
 import dissonance.Diff.{Edit, Par}
+import ambience.systems.javaBaseSystem
 
 // Three-way merging: of trees, path by path, and of text, line by line (diff3). A merge either
 // settles every path or leaves some in conflict, with the stages git records for them and the
@@ -196,7 +197,7 @@ private[octogenarian] object Merging:
 
       (Objects.bytes(merged.join(t"")), conflicted)
 
-  private def blob(objects: Path on Linux, entry: (Int, Git.Hash))
+  private def blob(objects: Path on Local, entry: (Int, Git.Hash))
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Data =
 
@@ -210,7 +211,7 @@ private[octogenarian] object Merging:
   // entry; one changed identically on both takes either; a text file changed differently on both
   // is merged line by line; anything else is a conflict.
   def trees
-    ( objects: Path on Linux, base: Workspace.Snapshot, ours: Workspace.Snapshot,
+    ( objects: Path on Local, base: Workspace.Snapshot, ours: Workspace.Snapshot,
       theirs: Workspace.Snapshot, oursLabel: Text, theirsLabel: Text )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Result =
@@ -271,7 +272,7 @@ private[octogenarian] object Merging:
   // staged; conflicted paths get their marked-up content and stages 1 to 3. Returns the
   // conflicted paths.
   def apply
-    ( gitDir: Path on Linux, objects: Path on Linux, worktree: Path on Linux, result: Result )
+    ( gitDir: Path on Local, objects: Path on Local, worktree: Path on Local, result: Result )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   List[Text] =
 

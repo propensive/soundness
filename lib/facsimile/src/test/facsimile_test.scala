@@ -70,15 +70,15 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
   val noParms: Map[Text, Cos] = Map()
 
   def run(): Unit =
-    import galilei.Linux.pathOnLinux, systems.javaBaseSystem
+    import galilei.Local.pathOnLocal, systems.javaBaseSystem
     import temporaryDirectories.systemTemporaryDirectory, filesystemBackends.javaBaseFilesystem
 
-    temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
+    temporaryDirectory[Path on Local].open[Scratch](Read & Write): handle ?=>
       suites(handle.stem)
 
   // A test which reads or writes a file beneath `scratch` is a `check`, run where it stands,
   // not an `assert`, which a parallel runner may defer beyond the loan of the directory.
-  private def suites(scratch: Path on Linux): Unit =
+  private def suites(scratch: Path on Local): Unit =
     def parse(text: Text): Cos = CosParser(CosLexer(Scan(text.in[Data]))).value()
 
     def textOf(cos: Cos): Text =
@@ -141,7 +141,9 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
       path.toString.tt
 
     // The path of a file which does not yet exist, in the scratch directory.
-    def freshPath: Text = (scratch / t"${Uuid()}.pdf").encode
+    def freshPath: Text =
+      import systems.javaBaseSystem
+      (scratch / t"${Uuid()}.pdf").encode
 
     def fileBytes(path: Text): Data =
       Array.unsafeFrozen(jnf.Files.readAllBytes(jnf.Paths.get(path.s)).nn)

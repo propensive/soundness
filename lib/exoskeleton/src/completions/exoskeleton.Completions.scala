@@ -378,7 +378,9 @@ object Completions:
 
     answer.let(_.head).let(_.head).lay(unwritable): (location: Text) =>
       safely:
-        val profile = location.as[Path on Linux]
+        // `Local`, unlike the other shells' directories: PowerShell's profile is a host path,
+        // and on Windows a drive-rooted one.
+        val profile = location.as[Path on Local]
         val marker = t"# $command tab-completions"
 
         if profile.existent() && profile.read[Text].contains(marker)

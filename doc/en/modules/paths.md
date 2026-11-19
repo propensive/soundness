@@ -111,9 +111,12 @@ a reserved name:
 val linux: Path on Linux = (% / "home" / "work").on[Linux]
 ```
 
-`Linux`, `Posix`, `MacOs` and `Windows` are the platforms, and `Local` is whichever of them the
-running machine uses. [Names](names.md) describes how each platform's rules for an element
-are stated and checked.
+`Linux`, `Posix`, `MacOs` and `Windows` are the platforms of particular systems. `Local` is the
+platform of whichever machine the program runs on: a platform of its own, whose root is `%` or
+a `Drive`, whose separator is the running system's, and whose rules for a name are the
+strictest of them all, so that a `Path on Local` is valid wherever the program runs. Code
+which should work on any system types its paths `on Local`. [Names](names.md) describes how
+each platform's rules for an element are stated and checked.
 
 ### Between two paths
 

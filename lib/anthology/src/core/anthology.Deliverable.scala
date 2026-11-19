@@ -46,8 +46,8 @@ import serpentine.*
 // variant it cannot consume raises `Link.Error.Reason.UnexpectedInput`.
 enum Deliverable:
   case Sources(sources: Map[Text, Text], classpath: LocalClasspath)
-  case Emission(out: Path on Linux, classpath: LocalClasspath)
-  case Product(file: Path on Linux)
+  case Emission(out: Path on Local, classpath: LocalClasspath)
+  case Product(file: Path on Local)
 
   // Coercions for tools, which know statically which variant their edge consumes; `target`
   // names the format under production, for diagnosis when a toolchain is miswired.
@@ -57,10 +57,10 @@ enum Deliverable:
     case _ =>
       abort(Link.Error(Link.Error.Reason.UnexpectedInput(target.id)))
 
-  def emission(target: Artifact): (Path on Linux, LocalClasspath) raises Link.Error = this match
+  def emission(target: Artifact): (Path on Local, LocalClasspath) raises Link.Error = this match
     case Emission(out, classpath) => (out, classpath)
     case _                        => abort(Link.Error(Link.Error.Reason.UnexpectedInput(target.id)))
 
-  def product(target: Artifact): Path on Linux raises Link.Error = this match
+  def product(target: Artifact): Path on Local raises Link.Error = this match
     case Product(file) => file
     case _             => abort(Link.Error(Link.Error.Reason.UnexpectedInput(target.id)))

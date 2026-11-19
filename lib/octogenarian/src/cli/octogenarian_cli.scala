@@ -43,15 +43,17 @@ import nomenclature.*
 import prepositional.*
 import serpentine.*
 
+import systems.javaBaseSystem
+
 package gitCommands:
   // The `git` executable found on the search path.
   given searchpathGitCommand: ( WorkingDirectory, Environment, Commandline.Event is Loggable,
                                 Tactic[Name.Error], Tactic[Path.Error], Tactic[Io.Error],
                                 Tactic[Exec.Error] )
-  =>  ( ((Path on Linux) is Instantiable across Paths from Text)^ )
+  =>  ( ((Path on Local) is Instantiable across Paths from Text)^ )
   =>  Commandline.Command =
 
-    val path: Path on Linux = sh"which git".exec[Path on Linux]()
+    val path: Path on Local = sh"which git".exec[Path on Local]()
     Commandline.Command(path.encode)
 
 package gitBackends:

@@ -65,6 +65,8 @@ object Tar:
 
   inline given compliant:  Linux is Compliant on Tar = !!
   inline given compliant2: MacOs is Compliant on Tar = !!
+  // `Local`'s rules for a name include those of every platform, so its names are valid here too.
+  inline given compliant3: Local is Compliant on Tar = !!
   inline given nominative: Tar is Nominative under Rules = !!
 
   given filesystem: Tar is Filesystem:

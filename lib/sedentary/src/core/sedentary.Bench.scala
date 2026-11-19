@@ -501,7 +501,7 @@ case class Bench
 extends Rig:
   type Result[output] = output
   type Form = Text
-  type Target = Path on Linux
+  type Target = Path on Local
   type Transport = Json
 
   // Captures the benchmark's name, tags and settings; the returned plan is applied to a
@@ -537,11 +537,11 @@ extends Rig:
         comparison )
 
 
-  def stage(out: Path on Linux)(using Tactic[Rig.Error]): Path on Linux = stageOn(device, out)
+  def stage(out: Path on Local)(using Tactic[Rig.Error]): Path on Local = stageOn(device, out)
 
   protected val scalac: Scalac[3.7, Toolchain.Universe.Classfile] = Scalac(List(scalacOptions.experimental))
 
-  protected def invoke[output](stage: Stage[output, Text, Path on Linux])(using Tactic[Rig.Error])
+  protected def invoke[output](stage: Stage[output, Text, Path on Local])(using Tactic[Rig.Error])
   :   output =
 
     stage.remote: input =>
@@ -552,9 +552,9 @@ extends Rig:
 
 // Builds a jar of the code under measurement, with superlunary's executor as its entry point,
 // and deploys it to `device`: the staging which `Bench`, `Stress` and `Profile` share.
-private[sedentary] def stageOn(device: BenchmarkDevice, out: Path on Linux)
+private[sedentary] def stageOn(device: BenchmarkDevice, out: Path on Local)
   ( using Environment, Tactic[Rig.Error] )
-:   Path on Linux =
+:   Path on Local =
 
   mitigate:
     case error: Link.Error  => Rig.Error(Rig.Error.Reason.Staging)(using error.diagnostics)

@@ -155,11 +155,11 @@ not. `Xdg` gives each of them, and the search paths for data and configuration:
 ```scala fuel
 typecheck
 ##
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
 
-val config = Xdg.configHome[Path on Linux]
-val cache = Xdg.cacheHome[Path on Linux]
-val search = Xdg.dataDirs[Path on Linux]
+val config = Xdg.configHome[Path on Local]
+val cache = Xdg.cacheHome[Path on Local]
+val search = Xdg.dataDirs[Path on Local]
 ```
 
 `configHome` is `~/.config`, unless `XDG_CONFIG_HOME` says otherwise. Using these, instead of
@@ -174,9 +174,9 @@ resolves it against the `Environment` and `System` in scope:
 ```scala fuel
 typecheck
 ##
-val userConfig = Home.Config[Path on Linux]()
-val share = Home.Local.Share[Path on Linux]()
-val logs = Base.Var.Log[Path on Linux]()
+val userConfig = Home.Config[Path on Local]()
+val share = Home.Local.Share[Path on Local]()
+val logs = Base.Var.Log[Path on Local]()
 ```
 
 These are `~/.config`, `~/.local/share` and `/var/log`. Each layout also knows whether it is

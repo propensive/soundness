@@ -100,7 +100,7 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
           case error: Io.Error => crash(error)
 
         . protect:
-            temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
+            temporaryDirectory[Path on Local].open[Scratch](Read & Write): handle ?=>
               val scratch: jnf.Path = jnf.Path.of(handle.stem.encode.s).nn
               compile(classpath, sources, out.generic, scratch, process)
 

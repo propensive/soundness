@@ -49,6 +49,7 @@ import filesystemOptions.deleteRecursively
 import filesystemOptions.moveAtomically
 import filesystemOptions.overwritePreexisting
 import filesystemOptions.preserveSymlinks
+import ambience.systems.javaBaseSystem
 
 // The operations which move HEAD by replaying or combining commits — merge, cherry-pick, revert,
 // rebase and the stash — and the state files in `.git` through which they stop on a conflict
@@ -59,16 +60,16 @@ private[octogenarian] object Sequencer:
 
   // Where an operation runs: the repository's directories, and who is making the commits.
   case class Context
-    ( gitDir:    Path on Linux,
-      commonDir: Path on Linux,
-      objects:   Path on Linux,
-      worktree:  Path on Linux,
+    ( gitDir:    Path on Local,
+      commonDir: Path on Local,
+      objects:   Path on Local,
+      worktree:  Path on Local,
       identity:  Git.Identity,
       logging:   Boolean )
 
   // ─────────────────────────────────────────── State files ────────────────────────────────────
 
-  private def stateFile(context: Context, name: Text)(using Tactic[Git.Error]): Path on Linux =
+  private def stateFile(context: Context, name: Text)(using Tactic[Git.Error]): Path on Local =
     Refstore.descend(context.gitDir, name.cut(t"/"))
 
   private def readState(context: Context, name: Text)
@@ -114,7 +115,7 @@ private[octogenarian] object Sequencer:
   private def count[element](list: List[element]): Int = list.fold(0): (n, _) => n + 1
 
   // What `.git` records about an operation that has stopped part-way, if any.
-  def operation(gitDir: Path on Linux, conflicting: List[Text])
+  def operation(gitDir: Path on Local, conflicting: List[Text])
     ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Optional[Git.Operation] =
 
@@ -898,7 +899,7 @@ private[octogenarian] object Sequencer:
       untrackedPaths.each(unlink(_))
       stashCommit
 
-  private def fileMode(file: Path on Linux, default: Int)(using Tactic[Io.Error]): Int =
+  private def fileMode(file: Path on Local, default: Int)(using Tactic[Io.Error]): Int =
     if default == Index.symlink || default == Index.gitlink then default
     else if file.executable() then Index.executable
     else Index.regular

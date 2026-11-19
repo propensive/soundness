@@ -978,9 +978,9 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
 
       // `check`, not `assert`: an `assert` may be deferred to run after the loan has wiped the
       // scratch directory, and `check` always runs inline, within it.
-      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
-        val directory: Path on Linux = handle.stem
-        val file: Path on Linux = directory / "catalogue.ratel"
+      temporaryDirectory[Path on Local].open[Scratch](Read & Write): handle ?=>
+        val directory: Path on Local = handle.stem
+        val file: Path on Local = directory / "catalogue.ratel"
 
         val revised: Tel =
           t"tel 1.0\n\nentry\n  name alpha\n\nentry\n  name beta\n  info  Second letter\n".read[Tel]
@@ -1003,7 +1003,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
         . check(_ == t"First letter")
 
         test(m"a file which is not an image is refused as it is opened"):
-          val other: Path on Linux = directory / "prologue"
+          val other: Path on Local = directory / "prologue"
 
           unsafely:
             other.write(t"Two households, both alike in dignity")
@@ -1037,9 +1037,9 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
 
       // `check`, not `assert`: an `assert` may be deferred to run after the loan has wiped the
       // scratch directory, and `check` always runs inline, within it.
-      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
-        val directory: Path on Linux = handle.stem
-        val file: Path on Linux = directory / "playbill.ratel"
+      temporaryDirectory[Path on Local].open[Scratch](Read & Write): handle ?=>
+        val directory: Path on Local = handle.stem
+        val file: Path on Local = directory / "playbill.ratel"
 
         val playbill = Playbill(List(Part(t"Hamlet", t"Hamlet"), Part(t"Viola", t"Twelfth Night")))
         val recast = Playbill(List(Part(t"Hamlet", t"Hamlet"), Part(t"Feste", t"Twelfth Night")))
@@ -1445,10 +1445,10 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
 
       // `check`, not `assert`: an `assert` may be deferred to run after the loan has wiped the
       // scratch directory, and `check` always runs inline, within it.
-      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
-        val directory: Path on Linux = handle.stem
-        val work: Path on Linux = directory / "playbill.work"
-        val file: Path on Linux = directory / "playbill.ratel"
+      temporaryDirectory[Path on Local].open[Scratch](Read & Write): handle ?=>
+        val directory: Path on Local = handle.stem
+        val work: Path on Local = directory / "playbill.work"
+        val file: Path on Local = directory / "playbill.ratel"
         val playbill = Playbill(List(Part(t"Hamlet", t"Hamlet"), Part(t"Viola", t"Twelfth Night")))
 
         test(m"a working file is begun from an image, and changed where it lies"):

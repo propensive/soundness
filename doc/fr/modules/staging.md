@@ -271,7 +271,7 @@ object Jvm extends Rig:
   type Target = LocalClasspath
   type Transport = Json
 
-  def stage(out: Path on Linux): LocalClasspath = classpath(out)
+  def stage(out: Path on Local): LocalClasspath = classpath(out)
 
   val scalac: Scalac[3.6, Universe.Classfile] = Scalac[3.6](List(scalacOptions.experimental))
 

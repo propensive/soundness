@@ -60,6 +60,7 @@
 feature experimental.captureChecking
 ##
 import soundness.*
+import systems.javaBaseSystem
 import environments.javaBaseEnvironment
 
 import errorDiagnostics.stackTracesDiagnostics
@@ -220,10 +221,10 @@ import filesystemOptions.createNonexistentParents
 
 def files(using Acp.Registry): Unit =
   Acp.readFile:
-    Acp.path.as[Path on Linux].open[File]()(file.read[Text])
+    Acp.path.as[Path on Local].open[File]()(file.read[Text])
 
   Acp.writeFile:
-    Acp.path.as[Path on Linux].create[File](): handle ?=>
+    Acp.path.as[Path on Local].create[File](): handle ?=>
       handle.write(Acp.content)
 ```
 

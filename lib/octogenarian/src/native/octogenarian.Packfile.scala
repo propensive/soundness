@@ -44,6 +44,8 @@ import serpentine.*
 import vacuous.*
 import zephyrine.*
 
+import ambience.systems.javaBaseSystem
+
 // A packfile and its index, read positionally: the index is loaded once into arrays, and each
 // object is inflated from its own slice of the pack, whose end is the next entry's offset, so no
 // stream position has to be tracked across entries.
@@ -228,7 +230,7 @@ private[octogenarian] object Packfile:
     target.toByteArray.nn.asInstanceOf[Data]
 
 // One pack on disk, with its index loaded.
-private[octogenarian] class Packfile(val pack: Path on Linux, val index: Packfile.Index):
+private[octogenarian] class Packfile(val pack: Path on Local, val index: Packfile.Index):
   import Git.Error.Reason as Reason
 
   def contains(hash: Git.Hash): Boolean = index.offsetOf(hash).present

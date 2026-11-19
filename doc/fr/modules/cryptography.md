@@ -620,10 +620,11 @@ Out.println(leaf.verify(privateKey.public).inspect)
 + `keystore` est le magasin ouvert :
 
 ```scala
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
+import systems.javaBaseSystem
 import temporaryDirectories.javaBaseTemporaryDirectory
 
-val storePath = temporaryDirectory[Path on Linux] / "cryptography" / "store.p12"
+val storePath = temporaryDirectory[Path on Local] / "cryptography" / "store.p12"
 
 def readAliases(): List[Text] =
   storePath.open[Keystore](Password(t"sesame")):

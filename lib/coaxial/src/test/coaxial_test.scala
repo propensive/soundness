@@ -244,11 +244,12 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
 
       suite(m"Unix domain socket server and client"):
         test(m"A server receives the bytes a client transmits"):
-          import galilei.Linux.pathOnLinux, filesystemBackends.javaBaseFilesystem
+          import galilei.Local.pathOnLocal, filesystemBackends.javaBaseFilesystem
+          import systems.javaBaseSystem
 
           // The socket is made in a scratch directory beneath `/tmp`, deleted when the test ends:
           // not beneath `java.io.tmpdir`, which on macOS is too long a path for a socket.
-          (% / "tmp").on[Linux].open[Scratch](Read & Write): scratch ?=>
+          (% / "tmp").on[Local].open[Scratch](Read & Write): scratch ?=>
             val path = t"${scratch.stem.encode}/request-response.sock"
             val socket = Uds(path)
             val received: Promise[Text] = Promise()
@@ -268,11 +269,12 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
 
       suite(m"Duplex connections"):
         test(m"A Duplex sends and receives over a domain socket"):
-          import galilei.Linux.pathOnLinux, filesystemBackends.javaBaseFilesystem
+          import galilei.Local.pathOnLocal, filesystemBackends.javaBaseFilesystem
+          import systems.javaBaseSystem
 
           // The socket is made in a scratch directory beneath `/tmp`, deleted when the test ends:
           // not beneath `java.io.tmpdir`, which on macOS is too long a path for a socket.
-          (% / "tmp").on[Linux].open[Scratch](Read & Write): scratch ?=>
+          (% / "tmp").on[Local].open[Scratch](Read & Write): scratch ?=>
             val path = t"${scratch.stem.encode}/duplex.sock"
             val socket = Uds(path)
 
@@ -305,12 +307,12 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
         val password: Text = t"secret"
 
         def identity(name: Text): Data =
-          import galilei.Linux.pathOnLinux, systems.javaBaseSystem, strategies.throwUnsafely
+          import galilei.Local.pathOnLocal, systems.javaBaseSystem, strategies.throwUnsafely
           import temporaryDirectories.systemTemporaryDirectory
           import filesystemBackends.javaBaseFilesystem
 
           // Read into memory before the scratch directory holding the keystore is deleted.
-          temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
+          temporaryDirectory[Path on Local].open[Scratch](Read & Write): scratch ?=>
             val file = java.nio.file.Path.of((scratch.stem / "identity.p12").encode.s).nn
             val keytool = java.lang.System.getProperty("java.home").nn+"/bin/keytool"
 

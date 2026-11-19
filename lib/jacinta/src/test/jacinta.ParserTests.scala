@@ -37,7 +37,7 @@ import scala.math
 import soundness.*
 
 
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
 import strategies.throwUnsafely
 import logging.silentLogging
 import codepages.utf8Codepage
@@ -59,21 +59,21 @@ import denominative.dysasymptotics.linearSize
 
 object ParserTests extends Suite("json-parser", m"Jacinta JSON parser tests"):
   def run(): Unit =
-    val work: Path on Linux = workingDirectory
-    val localSuite: Path on Linux = work/"tests"/"JSONTestSuite"
+    val work: Path on Local = workingDirectory
+    val localSuite: Path on Local = work/"tests"/"JSONTestSuite"
 
     // The corpus lives in `tests/` where present (established dev checkouts);
     // otherwise in the per-machine `~/.cache/soundness` cache, which — like
     // the proscala toolchain cache — survives the throwaway attest worktrees,
     // so only the very first run on a machine needs network access.
-    val jsonSuite: Path on Linux =
+    val jsonSuite: Path on Local =
       if (localSuite/"test_parsing").existent() then localSuite
-      else Xdg.cacheHome[Path on Linux]/"soundness"/"JSONTestSuite"
+      else Xdg.cacheHome[Path on Local]/"soundness"/"JSONTestSuite"
 
     if !(jsonSuite/"test_parsing").existent() then
       Git.clone(url"https://github.com/nst/JSONTestSuite", jsonSuite)
 
-    val tests: Path on Linux = jsonSuite/"test_parsing"
+    val tests: Path on Local = jsonSuite/"test_parsing"
 
     val deeplyNested: Set[Text] =
       Set(t"n_structure_100000_opening_arrays.json", t"n_structure_open_array_object.json")

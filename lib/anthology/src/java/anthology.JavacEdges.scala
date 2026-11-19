@@ -64,7 +64,7 @@ object javacEdges:
       ( settings:    Unit,
         input:       Deliverable,
         entryPoints: List[EntryPoint],
-        out:         Path on Linux )
+        out:         Path on Local )
       ( using Monitor, System, WorkingDirectory )
       ( using tactic: Tactic[Link.Error], linkEvents: LinkEvent is Loggable )
     :   Deliverable =

@@ -230,7 +230,7 @@ A staging rig must fold its own running classpath into the JARs it produces. It 
 from the classloader which loaded it, with its compiled output:
 
 ```scala
-def stage(out: Path on Linux, uuid: Uuid, executor: Fqcn)(using Monitor): Path on Linux =
+def stage(out: Path on Local, uuid: Uuid, executor: Fqcn)(using Monitor): Path on Local =
   Toolchain(jarEdges()).produce
     ( Deliverable.Emission(out, Bundler.applicationClasspath),
       Toolchain.Universe.Classfile,
@@ -378,8 +378,8 @@ fork of `wit-bindgen`, are present, and is obtained only through the probing con
 against:
 
 ```scala
-def component(witDirectory: Path on Linux, emission: Deliverable, destination: Path on Linux)
-:   Path on Linux =
+def component(witDirectory: Path on Local, emission: Deliverable, destination: Path on Local)
+:   Path on Local =
   given WasiToolchain = WasiToolchain()
   given Wasi.World = Wasi.World(witDirectory, t"my-world")
 
@@ -413,7 +413,7 @@ raises `Toolchain.Error` if either is missing. It takes the triples to target, a
 the build host's own:
 
 ```scala
-def binary(emission: Deliverable, destination: Path on Linux): Path on Linux = supervise:
+def binary(emission: Deliverable, destination: Path on Local): Path on Local = supervise:
   Toolchain(nativeEdges(Triple.Arm64MacOs, Triple.X64Linux)).produce
     ( emission,
       Toolchain.Universe.Nir,
@@ -438,7 +438,7 @@ its options, such as `-Werror`, `-jvm-target` and explicit API mode, are under `
 and checked against the version in the same way:
 
 ```scala
-def kotlin(kotlinSource: Text, out: Path on Linux): Compiler.Result = supervise:
+def kotlin(kotlinSource: Text, out: Path on Local): Compiler.Result = supervise:
   val kotlinc = Kotlinc[2.4](List(kotlincOptions.warnings.asErrors, kotlincOptions.jvmTarget(17)))
   val process = kotlinc(classpath)(Map(t"demo/Greeting.kt" -> kotlinSource), out)
   process.complete()

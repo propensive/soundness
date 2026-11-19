@@ -80,7 +80,7 @@ object Installer:
   def candidateTargets()(using resident: Resident, diagnostics: Diagnostics)
     ( using Environment, System )
     ( using Tactic[Install.Error], (DaemonLogEvent is Loggable)^ )
-  :   List[Path on Linux] =
+  :   List[Path on Local] =
 
     mitigate:
       case Path.Error(_, _)     => Install.Error(Install.Error.Reason.Environment)
@@ -89,11 +89,11 @@ object Installer:
       case Name.Error(_, _, _)  => Install.Error(Install.Error.Reason.Io)
 
     . protect:
-        val paths: List[Path on Linux] = Environment.path
+        val paths: List[Path on Local] = Environment.path
 
-        val preferences: List[Path on Linux] =
+        val preferences: List[Path on Local] =
           List
-            ( Xdg.bin[Path on Linux],
+            ( Xdg.bin[Path on Local],
               % / "usr" / "local" / "bin",
               % / "usr" / "bin",
               % / "usr" / "local" / "sbin",
@@ -106,7 +106,7 @@ object Installer:
           index.lay(Int.MaxValue)(_.n0)
 
 
-  def install(force: Boolean = false, target: Optional[Path on Linux] = Unset)
+  def install(force: Boolean = false, target: Optional[Path on Local] = Unset)
     ( using resident: Resident, environment: Environment )
     ( using erased effectful: Effectful )
     ( using Diagnostics )
@@ -130,7 +130,7 @@ object Installer:
         val command: Text = resident.script
         val scriptPath = mute[guillotine.Exec.Event](sh"sh -c 'command -v $command'".exec[Text]())
 
-        if safely(scriptPath.as[Path on Linux]) == resident.executable && !force
+        if safely(scriptPath.as[Path on Local]) == resident.executable && !force
         then Result.AlreadyOnPath(command, resident.executable.encode)
         else
           val payloadSize: Memory = Memory(System.properties.ethereal.payloadSize[Int]())
@@ -138,18 +138,18 @@ object Installer:
           val fileSize = resident.executable.filesize()
           val prefixSize = fileSize - payloadSize - jarSize
 
-          val installDirectory: Path on Linux = target.or(candidateTargets().head).or:
+          val installDirectory: Path on Local = target.or(candidateTargets().head).or:
             abort(Install.Error(Install.Error.Reason.Environment))
 
-          val file: Path on Linux = installDirectory/command
+          val file: Path on Local = installDirectory/command
 
           // Write to a hidden sibling and rename it over the target. The rename gives
           // the target a fresh inode, which matters on macOS: its code-signing cache
           // is per-vnode, and overwriting a previously-executed binary's content in
           // place poisons the inode so that every subsequent exec is SIGKILLed. It
           // also means a half-written launcher is never visible at the target path.
-          val tempFile: Path on Linux = installDirectory/t".$command.tmp-${Process().pid.value}"
-          val installFile: Optional[Path on Linux] = tempFile.create[File](CreateFlag.Replace)
+          val tempFile: Path on Local = installDirectory/t".$command.tmp-${Process().pid.value}"
+          val installFile: Optional[Path on Local] = tempFile.create[File](CreateFlag.Replace)
 
           installFile.let: _ =>
             Log.info(DaemonLogEvent.WriteExecutable(file.inspect))

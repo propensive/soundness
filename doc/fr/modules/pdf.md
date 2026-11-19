@@ -90,10 +90,11 @@ val a4 = Pdf.Rect
   ( Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
     Quantity[Points[1]](595.0), Quantity[Points[1]](842.0) )
 
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
+import systems.javaBaseSystem
 import temporaryDirectories.javaBaseTemporaryDirectory
 
-val path = temporaryDirectory[Path on Linux] / "tutorial.pdf"
+val path = temporaryDirectory[Path on Local] / "tutorial.pdf"
 ```
 
 ```scala fuel

@@ -49,14 +49,14 @@ private[octogenarian] object Annotations:
   import Git.Error.Reason as Reason
 
   private def notesTree
-    ( gitDir: Path on Linux, commonDir: Path on Linux, objects: Path on Linux, ref: Text )
+    ( gitDir: Path on Local, commonDir: Path on Local, objects: Path on Local, ref: Text )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Optional[Git.Hash] =
 
     Refstore.resolve(gitDir, commonDir, ref).let(Revwalk.commit(objects, _).tree)
 
   // Every note, as target → note blob, whichever fanout the tree uses.
-  def list(gitDir: Path on Linux, commonDir: Path on Linux, objects: Path on Linux, ref: Text)
+  def list(gitDir: Path on Local, commonDir: Path on Local, objects: Path on Local, ref: Text)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   List[(Git.Hash, Git.Hash)] =
 
@@ -72,9 +72,9 @@ private[octogenarian] object Annotations:
     flat(entry(0)).lay(Nil): target => List((entry(1), target))
 
   def read
-    ( gitDir: Path on Linux,
-      commonDir: Path on Linux,
-      objects: Path on Linux,
+    ( gitDir: Path on Local,
+      commonDir: Path on Local,
+      objects: Path on Local,
       ref: Text,
       target: Git.Hash )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
@@ -88,7 +88,7 @@ private[octogenarian] object Annotations:
     list(gitDir, commonDir, objects, ref).reap { case (note, `target`) => note }.let(noteText(_))
 
   def edit
-    ( gitDir: Path on Linux, commonDir: Path on Linux, objects: Path on Linux,
+    ( gitDir: Path on Local, commonDir: Path on Local, objects: Path on Local,
       base: Optional[Git.Hash], edit: Git.Backend.NoteEdit, identity: Git.Identity )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Git.Hash =

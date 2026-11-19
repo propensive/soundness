@@ -64,7 +64,8 @@ import gitBackends.commandlineGit
 import gitCommands.searchpathGitCommand
 import internetAccess.online
 import logging.silentLogging
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
+import systems.javaBaseSystem
 import strategies.throwUnsafely
 import temporaryDirectories.javaBaseTemporaryDirectory
 import workingDirectories.javaBaseWorkingDirectory
@@ -72,7 +73,7 @@ import environments.javaBaseEnvironment
 import filesystemBackends.javaBaseFilesystem
 import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 
-val directory = temporaryDirectory[Path on Linux] / "git" / Uuid().show
+val directory = temporaryDirectory[Path on Local] / "git" / Uuid().show
 directory.create[Directory](CreateFlag.Parents)
 ```
 

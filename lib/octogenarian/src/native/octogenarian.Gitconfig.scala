@@ -51,6 +51,7 @@ import filesystemOptions.deleteRecursively
 import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.moveAtomically
 import filesystemOptions.overwritePreexisting
+import ambience.systems.javaBaseSystem
 
 // Git's configuration dialect: `[section]` and `[section "subsection"]` headers, `key = value`
 // entries (a bare key meaning `true`), `#` and `;` comments, double-quoted values with escapes, and
@@ -216,22 +217,22 @@ private[octogenarian] object Gitconfig:
 
   def render(lines: List[Line]): Text = lines.map(_.raw).join(t"", t"\n", t"\n")
 
-  def readFile(file: Path on Linux)(using Tactic[Io.Error]): List[Line] =
+  def readFile(file: Path on Local)(using Tactic[Io.Error]): List[Line] =
     if file.existent() then parse(Objects.text(file.read[Data])) else Nil
 
   // Writes the file through a lock, as git does, so that two writers never interleave.
-  def writeFile(file: Path on Linux, lines: List[Line])
+  def writeFile(file: Path on Local, lines: List[Line])
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Unit =
 
-    val parent: Path on Linux = file.parent.or(abort(Git.Error(Git.Error.Reason.Unexpected)))
+    val parent: Path on Local = file.parent.or(abort(Git.Error(Git.Error.Reason.Unexpected)))
     Refstore.ensureDirectory(parent)
     // The lock is the file's sibling; a name too long once suffixed is reported, not thrown.
-    val lockFile: Path on Linux =
+    val lockFile: Path on Local =
       mitigate:
         case error: Name.Error => Git.Error(Git.Error.Reason.Unexpected)(using error.diagnostics)
 
-      . protect(parent / Name[Linux](t"${file.name}.lock"))
+      . protect(parent / Name[Local](t"${file.name}.lock"))
 
     try lockFile.open[File](Write, OpenFlag.Create, OpenFlag.Exclusive): handle ?=> ()
     catch case error: Io.Error => abort(Git.Error(Git.Error.Reason.Locked(file.encode)))
@@ -242,22 +243,22 @@ private[octogenarian] object Gitconfig:
     finally if lockFile.existent() then lockFile.delete()
 
   // The files git consults, from least to most specific: system, global, local, worktree.
-  def files(gitDir: Path on Linux, commonDir: Path on Linux)
+  def files(gitDir: Path on Local, commonDir: Path on Local)
     ( using Tactic[Io.Error] )
-  :   List[Path on Linux] =
+  :   List[Path on Local] =
 
     val home: Optional[Text] = Optional(System.getProperty("user.home")).let(_.tt)
     val xdgHome: Optional[Text] = Optional(System.getenv("XDG_CONFIG_HOME")).let(_.tt)
 
-    val xdgFile: Optional[Path on Linux] = xdgHome match
-      case directory: Text => path(t"$directory/git/config")
+    val xdgFile: Optional[Path on Local] = xdgHome match
+      case directory: Text => path(directory).let(_ / "git" / "config")
 
       case _ => home match
-        case directory: Text => path(t"$directory/.config/git/config")
+        case directory: Text => path(directory).let(_ / ".config" / "git" / "config")
         case _               => Unset
 
-    val globalFile: Optional[Path on Linux] = home match
-      case directory: Text => path(t"$directory/.gitconfig")
+    val globalFile: Optional[Path on Local] = home match
+      case directory: Text => path(directory).let(_ / ".gitconfig")
       case _               => Unset
 
     val local = commonDir / "config"
@@ -268,17 +269,17 @@ private[octogenarian] object Gitconfig:
     val worktreeEnabled =
       entries(readFile(local)).exists: (key, value) => key == worktreeKey && value.lower == enabled
 
-    val system: List[Path on Linux] = List(% / "etc" / "gitconfig")
+    val system: List[Path on Local] = List(% / "etc" / "gitconfig")
 
     system + xdgFile.let(List(_)).or(Nil) + globalFile.let(List(_)).or(Nil) +
       List(local) + (if worktreeEnabled then List(worktree) else Nil)
 
   // A configuration directory from the environment may be relative, which the XDG specification
   // says to ignore: such a file is simply absent.
-  private def path(text: Text): Optional[Path on Linux] = safely(text.as[Path on Linux])
+  private def path(text: Text): Optional[Path on Local] = safely(text.as[Path on Local])
 
   // Every entry in force, in the order git lists them, with `include.path` files spliced in.
-  def effective(gitDir: Path on Linux, commonDir: Path on Linux)
+  def effective(gitDir: Path on Local, commonDir: Path on Local)
     ( using Tactic[Io.Error] )
   :   List[(Git.Config.Key, Text)] =
 
@@ -286,7 +287,7 @@ private[octogenarian] object Gitconfig:
 
   private val includeKey: Git.Config.Key = Git.Config.Key(t"include", Unset, t"path")
 
-  def withIncludes(file: Path on Linux, depth: Int)
+  def withIncludes(file: Path on Local, depth: Int)
     ( using Tactic[Io.Error] )
   :   List[(Git.Config.Key, Text)] =
 
@@ -296,13 +297,20 @@ private[octogenarian] object Gitconfig:
 
         remaining match
           case (`includeKey`, included) :: rest =>
-            val target =
-              if included.starts(t"/") then included
-              else if included.starts(t"~/")
-              then t"${System.getProperty("user.home").nn}${included.skip(1)}"
-              else t"${file.parent.lay(t"")(_.encode)}/$included"
+            // An included path is absolute, or under the home directory, or else relative to
+            // the file which includes it; git writes the relative ones with `/` on every host.
+            def under(base: Optional[Path on Local], relative: Text): Optional[Path on Local] =
+              base.let: base =>
+                relative.cut(t"/").filter(_ != t"").fold(base): (path: Path on Local, name: Text) =>
+                  path.unsafeChild(name)(using Unsafe)
 
-            recur(rest, acc + path(target).lay(Nil)(withIncludes(_, depth + 1)))
+            val target: Optional[Path on Local] =
+              path(included).or:
+                if included.starts(t"~/")
+                then under(path(System.getProperty("user.home").nn.tt), included.skip(2))
+                else under(file.parent, included)
+
+            recur(rest, acc + target.lay(Nil)(withIncludes(_, depth + 1)))
 
           case entry :: rest => recur(rest, acc + List(entry))
           case _             => acc

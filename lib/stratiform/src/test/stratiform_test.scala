@@ -2511,8 +2511,8 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       import ambience.temporaryDirectories.systemTemporaryDirectory
 
       test(m"A file path opened Read & Write writes the mutation back"):
-        temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
-          val dest: Path on Linux = scratch.stem / "percy.tel"
+        temporaryDirectory[Path on Local].open[Scratch](Read & Write): scratch ?=>
+          val dest: Path on Local = scratch.stem / "percy.tel"
           dest.write(t"name Percy\n")
 
           dest.open[Tel](Read & Write): handle ?=>

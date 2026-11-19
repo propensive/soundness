@@ -65,11 +65,11 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
     // The real path: git reports real paths, and the system temporary directory is a symlink on
     // macOS.
-    val scratch: Path on Linux =
-      java.nio.file.Path.of(temporaryDirectory[Path on Linux].encode.s).nn.toRealPath().nn.toString.tt
-      . as[Path on Linux]
+    val scratch: Path on Local =
+      java.nio.file.Path.of(temporaryDirectory[Path on Local].encode.s).nn.toRealPath().nn.toString.tt
+      . as[Path on Local]
 
-    def freshDir(): Path on Linux =
+    def freshDir(): Path on Local =
       val name: Text = Uuid().show
       val dir = scratch / name
       dir.create[Directory]()
@@ -92,7 +92,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
     given chosen: (choice: Choice) => (Git.Backend^{caps.any}) = choice.backend()
 
-    def freshRepo()(using Choice): Path on Linux =
+    def freshRepo()(using Choice): Path on Local =
       val dir = freshDir()
       Git.init(dir, initialBranch = Git.Branch(t"main"))
       sh"git -C $dir config user.email octogenarian@test.local".exec[Exit]()
@@ -1546,7 +1546,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
       suite(m"clone, fetch and push"):
 
-        def bareMirror(): Path on Linux =
+        def bareMirror(): Path on Local =
           val bareDir = freshDir()
           Git.init(bareDir, initialBranch = Git.Branch(t"main"), bare = true)
           bareDir

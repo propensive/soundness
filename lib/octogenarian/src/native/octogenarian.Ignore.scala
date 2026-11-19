@@ -44,6 +44,7 @@ import turbulence.*
 import vacuous.*
 
 import filesystemOptions.dereferenceSymlinks
+import ambience.systems.javaBaseSystem
 
 // `.gitignore` semantics: a pattern with a slash (other than a trailing one) is anchored to the
 // directory of the file it came from, a pattern without one matches a path's final component
@@ -152,18 +153,18 @@ private[octogenarian] object Ignore:
 
   // Every rule in force for a worktree: `info/exclude`, then each `.gitignore` found, deeper
   // files later so that they take precedence.
-  def load(gitDir: Path on Linux, worktree: Path on Linux)
+  def load(gitDir: Path on Local, worktree: Path on Local)
     ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Rules =
 
     val exclude = gitDir / "info" / "exclude"
     val global = if exclude.existent() then parse(Objects.text(exclude.read[Data]), t"") else Nil
 
-    def recur(directory: Path on Linux, base: Text)(using Tactic[Git.Error]): List[Rule] =
-      val file: Path on Linux = Refstore.descend(directory, List(t".gitignore"))
+    def recur(directory: Path on Local, base: Text)(using Tactic[Git.Error]): List[Rule] =
+      val file: Path on Local = Refstore.descend(directory, List(t".gitignore"))
       val own = if file.existent() then parse(Objects.text(file.read[Data]), base) else Nil
 
-      def visit(children: List[Path on Linux], acc: List[Rule]): List[Rule] = children match
+      def visit(children: List[Path on Local], acc: List[Rule]): List[Rule] = children match
         case child :: rest =>
           if child.name == t".git" then visit(rest, acc)
           else if child.entry() == Directory then

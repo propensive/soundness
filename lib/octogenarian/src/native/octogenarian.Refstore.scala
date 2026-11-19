@@ -52,6 +52,7 @@ import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.moveAtomically
 import filesystemOptions.overwritePreexisting
 import sortingAlgorithms.timsort
+import ambience.systems.javaBaseSystem
 
 // The refs of a repository: loose files under `refs/`, the `packed-refs` file, and the pseudo-refs
 // (`HEAD`, `ORIG_HEAD`, …) at the top of the git directory. A ref is written by taking its
@@ -72,23 +73,27 @@ private[octogenarian] object Refstore:
 
   // A path descended segment by segment, without a lambda: `/` is transparent inline.
   // Creates a directory and whichever of its ancestors are missing.
-  def ensureDirectory(directory: Path on Linux)(using Tactic[Io.Error]): Unit =
+  def ensureDirectory(directory: Path on Local)(using Tactic[Io.Error]): Unit =
     if !directory.existent() then
       directory.parent.let(ensureDirectory(_))
       directory.create[Directory]()
 
   // The segments come from a ref name, an index path or a worktree name — external text — so
   // one that does not make a path is the repository's fault, reported as such.
-  def descend(base: Path on Linux, segments: List[Text])(using Tactic[Git.Error]): Path on Linux =
-    if segments == Nil then base
-    else
-      mitigate:
-        case error: Path.Error => Git.Error(Git.Error.Reason.Unexpected)(using error.diagnostics)
+  // Descended a segment at a time, never by joining text with a separator: git's own names are
+  // `/`-separated on every host, and the host's separator need not be `/`. The segments are
+  // taken as they are, as git takes them, and not held to the host's naming rules.
+  def descend(base: Path on Local, segments: List[Text])(using Tactic[Git.Error]): Path on Local =
+    segments.fold(base): (path: Path on Local, segment: Text) =>
+      path.unsafeChild(segment)(using Unsafe)
 
-      . protect(t"${base.encode}/${segments.join(t"/")}".as[Path on Linux])
+  // A host path which one of git's own files names: an absolute one as it stands, or else one
+  // relative to `base`, which git writes with `/` whatever the host.
+  def resolve(base: Path on Local, text: Text)(using Tactic[Git.Error]): Path on Local =
+    safely(text.as[Path on Local]).or(descend(base, text.cut(t"/").filter(_ != t"")))
 
-  def location(gitDir: Path on Linux, commonDir: Path on Linux, name: Text)(using Tactic[Git.Error])
-  :   Path on Linux =
+  def location(gitDir: Path on Local, commonDir: Path on Local, name: Text)(using Tactic[Git.Error])
+  :   Path on Local =
 
     val base = if name.starts(refsPrefix) then commonDir else gitDir
     descend(base, name.cut(t"/"))
@@ -106,7 +111,7 @@ private[octogenarian] object Refstore:
 
   // The `packed-refs` file: `<hash> <name>` lines, with `^<hash>` lines giving the peeled commit
   // of the tag before them, and a `#` header.
-  def packed(commonDir: Path on Linux)(using Tactic[Io.Error]): List[(Text, Git.Hash)] =
+  def packed(commonDir: Path on Local)(using Tactic[Io.Error]): List[(Text, Git.Hash)] =
     val file = commonDir / "packed-refs"
 
     if !file.existent() then Nil else
@@ -114,7 +119,7 @@ private[octogenarian] object Refstore:
         case line if line.length > 41 && line.s.charAt(40) == ' ' && line.s.charAt(0) != '#' =>
           (line.skip(41), Git.Hash.unsafe(line.keep(40)))
 
-  def read(gitDir: Path on Linux, commonDir: Path on Linux, name: Text)
+  def read(gitDir: Path on Local, commonDir: Path on Local, name: Text)
     ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Optional[Git.Backend.Target] =
 
@@ -124,7 +129,7 @@ private[octogenarian] object Refstore:
     else packed(commonDir).reap { case (`name`, hash) => Git.Backend.Target.Direct(hash) }
 
   // Follows symbolic refs to the object they ultimately name.
-  def resolve(gitDir: Path on Linux, commonDir: Path on Linux, name: Text)
+  def resolve(gitDir: Path on Local, commonDir: Path on Local, name: Text)
     ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Optional[Git.Hash] =
 
@@ -137,7 +142,7 @@ private[octogenarian] object Refstore:
     recur(name, 0)
 
   // The name a symbolic ref chain ends at: the ref an update to `name` really writes.
-  def dereference(gitDir: Path on Linux, commonDir: Path on Linux, name: Text)
+  def dereference(gitDir: Path on Local, commonDir: Path on Local, name: Text)
     ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Text =
 
@@ -149,13 +154,13 @@ private[octogenarian] object Refstore:
     recur(name, 0)
 
   // Every ref under `prefix`, loose refs shadowing packed ones, sorted by name.
-  def list(commonDir: Path on Linux, prefix: Optional[Text])
+  def list(commonDir: Path on Local, prefix: Optional[Text])
     ( using Tactic[Io.Error] )
   :   List[(Text, Git.Hash)] =
 
-    def loose(directory: Path on Linux, name: Text): List[(Text, Git.Hash)] =
+    def loose(directory: Path on Local, name: Text): List[(Text, Git.Hash)] =
       if !directory.existent() then Nil else
-        def recur(children: List[Path on Linux], acc: List[(Text, Git.Hash)])
+        def recur(children: List[Path on Local], acc: List[(Text, Git.Hash)])
         :   List[(Text, Git.Hash)] =
 
           children match
@@ -184,18 +189,18 @@ private[octogenarian] object Refstore:
     filtered.order(_(0).s)
 
   // Takes `<file>.lock` with an exclusive create. A lock already held is reported as `Locked`.
-  def lock(file: Path on Linux)(block: Path on Linux => Unit)
+  def lock(file: Path on Local)(block: Path on Local => Unit)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Unit =
 
-    val parent: Path on Linux = file.parent.or(abort(Git.Error(Reason.Unexpected)))
+    val parent: Path on Local = file.parent.or(abort(Git.Error(Reason.Unexpected)))
     ensureDirectory(parent)
     // The lock is the file's sibling; a name too long once suffixed is reported, not thrown.
-    val lockFile: Path on Linux =
+    val lockFile: Path on Local =
       mitigate:
         case error: Name.Error => Git.Error(Reason.Unexpected)(using error.diagnostics)
 
-      . protect(parent / Name[Linux](t"${file.name}.lock"))
+      . protect(parent / Name[Local](t"${file.name}.lock"))
 
     try lockFile.open[File](Write, OpenFlag.Create, OpenFlag.Exclusive): handle ?=> ()
     catch case error: Io.Error => abort(Git.Error(Reason.Locked(file.encode)))
@@ -204,8 +209,8 @@ private[octogenarian] object Refstore:
 
   // Compare-and-swap: writes `to` into `name` (or deletes it) if it currently holds `expected`.
   def update
-    ( gitDir:   Path on Linux,
-      commonDir: Path on Linux,
+    ( gitDir:   Path on Local,
+      commonDir: Path on Local,
       name:     Text,
       to:       Optional[Git.Hash],
       expected: Git.Backend.Expectation,
@@ -245,7 +250,7 @@ private[octogenarian] object Refstore:
         if target != name then log(gitDir, commonDir, name, current, to, identity, message)
 
   // Rewrites `packed-refs` without `name`, under its own lock.
-  private def unpack(commonDir: Path on Linux, name: Text)
+  private def unpack(commonDir: Path on Local, name: Text)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Unit =
 
@@ -261,8 +266,8 @@ private[octogenarian] object Refstore:
 
   // Detaches HEAD at a commit: written directly, where `update` would follow HEAD to its branch.
   def detach
-    ( gitDir:    Path on Linux,
-      commonDir: Path on Linux,
+    ( gitDir:    Path on Local,
+      commonDir: Path on Local,
       commit:    Git.Hash,
       previous:  Optional[Git.Hash],
       identity:  Git.Identity,
@@ -279,7 +284,7 @@ private[octogenarian] object Refstore:
 
     if logging then log(gitDir, commonDir, t"HEAD", previous, commit, identity, message)
 
-  def writeSymbolic(gitDir: Path on Linux, commonDir: Path on Linux, name: Text, target: Text)
+  def writeSymbolic(gitDir: Path on Local, commonDir: Path on Local, name: Text, target: Text)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Unit =
 
@@ -291,8 +296,8 @@ private[octogenarian] object Refstore:
 
   // Appends a reflog line: `<old> <new> <ident> <timestamp>\t<message>`.
   private def log
-    ( gitDir:   Path on Linux,
-      commonDir: Path on Linux,
+    ( gitDir:   Path on Local,
+      commonDir: Path on Local,
       name:     Text,
       from:     Optional[Git.Hash],
       to:       Optional[Git.Hash],
@@ -303,7 +308,7 @@ private[octogenarian] object Refstore:
 
     val base = if name.starts(refsPrefix) then commonDir else gitDir
     val file = descend(base, List.prepend(name.cut(t"/"), t"logs"))
-    val parent: Path on Linux = file.parent.or(base)
+    val parent: Path on Local = file.parent.or(base)
     ensureDirectory(parent)
     val signature = Git.Signature(identity, Git.Timestamp.now())
     val old = from.lay(Git.Hash.zero.text)(_.text)
@@ -313,7 +318,7 @@ private[octogenarian] object Refstore:
     file.write(Store.concatenate(existing, line))
 
   // The reflog of `name`, newest first.
-  def reflog(gitDir: Path on Linux, commonDir: Path on Linux, name: Text)
+  def reflog(gitDir: Path on Local, commonDir: Path on Local, name: Text)
     ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   List[ReflogEntry] =
 

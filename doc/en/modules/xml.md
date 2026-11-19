@@ -32,6 +32,7 @@ and the last import lets the samples print their results:
 ```scala
 import soundness.*
 import temporaryDirectories.javaBaseTemporaryDirectory
+import systems.javaBaseSystem
 import strategies.throwUnsafely
 import xmlSchemas.freeformXmlSchema
 import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
@@ -83,7 +84,7 @@ parsed directly, with no `Charset` in scope, since the parser reads UTF-8 itself
 ```scala fuel
 typecheck
 ##
-val feed: Path on Linux = temporaryDirectory[Path on Linux] / "feed.xml"
+val feed: Path on Local = temporaryDirectory[Path on Local] / "feed.xml"
 val document = feed.load[Xml]
 ```
 

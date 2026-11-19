@@ -496,10 +496,11 @@ extension (path: Path on Windows)
       backend.stat(path, true).created.or:
         abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
 
-extension [plane <: Posix: Filesystem](path: Path on plane)
+extension [plane <: Platform: Filesystem](path: Path on plane)
   def executable(using FilesystemBackend on plane): FilesystemAttribute.Executable[plane] =
     FilesystemAttribute.Executable(path)
 
+extension [plane <: Posix: Filesystem](path: Path on plane)
   def hardLinks()(using dereferenceSymlinks: DereferenceSymlinks)
     ( using backend: FilesystemBackend on plane )
   :   Int raises Io.Error =

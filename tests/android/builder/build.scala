@@ -82,7 +82,7 @@ object build:
 
     val classes = Paths.get(outDir, "classes").nn
     Files.createDirectories(classes)
-    val classesPath: Path on Linux = unsafely(classes.toString.tt.as[Path on Linux])
+    val classesPath: Path on Local = unsafely(classes.toString.tt.as[Path on Local])
 
     supervise:
       val process =
@@ -105,7 +105,7 @@ def buildDice(androidJar: String, outDir: String, sourceDir: String, classpathFi
 :   Unit =
 
   val compiled = build.compilation(androidJar, outDir, sourceDir, classpathFile)
-  val out: Path on Linux = unsafely(outDir.tt.as[Path on Linux])
+  val out: Path on Local = unsafely(outDir.tt.as[Path on Local])
 
   val artifact = supervise:
     Toolchain(dexEdges()).produce
@@ -124,7 +124,7 @@ def buildApk(androidJar: String, outDir: String, sourceDir: String, classpathFil
 :   Unit =
 
   val compiled = build.compilation(androidJar, outDir, sourceDir, classpathFile)
-  val out: Path on Linux = unsafely(outDir.tt.as[Path on Linux])
+  val out: Path on Local = unsafely(outDir.tt.as[Path on Local])
 
   val artifact = supervise:
     Toolchain(dexEdges(), apkEdges()).produce
@@ -151,7 +151,7 @@ def buildSketch(androidJar: String, outDir: String, sourceDir: String, classpath
 :   Unit =
 
   val compiled = build.compilation(androidJar, outDir, sourceDir, classpathFile)
-  val out: Path on Linux = unsafely(outDir.tt.as[Path on Linux])
+  val out: Path on Local = unsafely(outDir.tt.as[Path on Local])
 
   val artifact = supervise:
     Toolchain(dexEdges(), apkEdges()).produce

@@ -107,13 +107,13 @@ def cli[bus <: Matchable](using executive: Executive)
   val name: Text =
     recover:
       case Property.Error(_) =>
-        val jarFile: Path on Linux = System.properties.java.`class`.path[Text]().pipe: jarFile =>
-          safely(jarFile.as[Path on Linux]).or:
-            val work: Path on Linux = workingDirectory
-            work + jarFile.as[Relative on Linux]
+        val jarFile: Path on Local = System.properties.java.`class`.path[Text]().pipe: jarFile =>
+          safely(jarFile.as[Path on Local]).or:
+            val work: Path on Local = workingDirectory
+            work + jarFile.as[Relative on Local]
 
-        val work: Path on Linux = workingDirectory
-        val relativeJar: Relative on Linux = work.toward(jarFile)
+        val work: Path on Local = workingDirectory
+        val relativeJar: Relative on Local = work.toward(jarFile)
         Out.println(e"$Bold(This application must be invoked through its XEK launcher.)")
         Out.println(e"Build one with:")
         Out.println(e"    xek build $Italic($relativeJar) $Italic(<name>)")

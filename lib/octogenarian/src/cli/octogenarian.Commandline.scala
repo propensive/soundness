@@ -55,6 +55,8 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
+import systems.javaBaseSystem
+
 object Commandline:
   // The `git` executable to run, as found on the search path or given explicitly.
   case class Command(path: Text)
@@ -245,10 +247,10 @@ extends Git.Backend:
   private val prelude: List[Text] =
     List(t"env", t"LC_ALL=C", t"GIT_TERMINAL_PROMPT=0", t"GIT_EDITOR=true", command.path)
 
-  private def gitPath(gitDir: Path on Linux): Text = t"--git-dir=${gitDir.encode}"
-  private def treePath(worktree: Path on Linux): Text = t"--work-tree=${worktree.encode}"
+  private def gitPath(gitDir: Path on Local): Text = t"--git-dir=${gitDir.encode}"
+  private def treePath(worktree: Path on Local): Text = t"--work-tree=${worktree.encode}"
 
-  private def dirArgs(gitDir: Path on Linux, worktree: Optional[Path on Linux] = Unset)
+  private def dirArgs(gitDir: Path on Local, worktree: Optional[Path on Local] = Unset)
   :   List[Text] =
 
     worktree.lay(List(gitPath(gitDir))): worktree => List(gitPath(gitDir), treePath(worktree))
@@ -327,15 +329,15 @@ extends Git.Backend:
   private def expect(outcome: Outcome, reason: Reason)(using Tactic[Git.Error]): Outcome =
     if outcome.ok then outcome else abort(Git.Error(reason, outcome.stderr.trim))
 
-  private def pathOf(text: Text)(using Tactic[Git.Error]): Path on Linux =
-    safely(text.trim.as[Path on Linux]).or(abort(Git.Error(Reason.NoRepository(text))))
+  private def pathOf(text: Text)(using Tactic[Git.Error]): Path on Local =
+    safely(text.trim.as[Path on Local]).or(abort(Git.Error(Reason.NoRepository(text))))
 
   private def hashes(outcome: Outcome): List[Git.Hash] =
     outcome.lines.sweep { case line if line.length == 40 => Git.Hash.unsafe(line) }
 
   private def exists(path: jnf.Path): Boolean = jnf.Files.exists(path)
 
-  private def nio(path: Path on Linux, rest: Text*): jnf.Path =
+  private def nio(path: Path on Local, rest: Text*): jnf.Path =
     rest.fold(jnf.Path.of(path.encode.s).nn): (path, name) => path.resolve(name.s).nn
 
   private def readFile(path: jnf.Path): Optional[Text] =
@@ -343,7 +345,7 @@ extends Git.Backend:
 
   // ─────────────────────────────────────────── Repository ─────────────────────────────────────
 
-  def locate(path: Path on Linux)(using Tactic[Git.Error]): Optional[Git.Backend.Location] =
+  def locate(path: Path on Local)(using Tactic[Git.Error]): Optional[Git.Backend.Location] =
     val arguments =
       List
         ( t"-C",
@@ -363,7 +365,7 @@ extends Git.Backend:
         val gitDirPath = pathOf(gitDir)
         val commonDirPath = pathOf(commonDir)
 
-        val worktree: Optional[Path on Linux] =
+        val worktree: Optional[Path on Local] =
           if bare == t"true" then Unset
           else if inside == t"true" then
             val top = run(List(t"-C", path.encode, t"rev-parse", t"--show-toplevel"))
@@ -379,9 +381,9 @@ extends Git.Backend:
 
       case _ => Unset
 
-  private def parentOf(path: Path on Linux): Optional[Path on Linux] = path.parent
+  private def parentOf(path: Path on Local): Optional[Path on Local] = path.parent
 
-  def init(target: Path on Linux, initialBranch: Optional[Git.Branch], bare: Boolean)
+  def init(target: Path on Local, initialBranch: Optional[Git.Branch], bare: Boolean)
     ( using Tactic[Git.Error] )
   :   Unit =
 
@@ -390,7 +392,7 @@ extends Git.Backend:
     expect(run(List(t"init", t"-q") + bareArg + branchArg + List(target.encode)))
 
   def clone
-    ( source: Text, target: Path on Linux, branch: Optional[Git.Branch], depth: Optional[Int],
+    ( source: Text, target: Path on Local, branch: Optional[Git.Branch], depth: Optional[Int],
       bare: Boolean, recursive: Boolean, activity: Git.Activity^ )
     ( using Internet, Tactic[Git.Error] )
   :   Unit =
@@ -407,7 +409,7 @@ extends Git.Backend:
 
   // ────────────────────────────────────────────── Refs ────────────────────────────────────────
 
-  def head(gitDir: Path on Linux)(using Tactic[Git.Error]): Git.Head =
+  def head(gitDir: Path on Local)(using Tactic[Git.Error]): Git.Head =
     val symbolic = run(dirArgs(gitDir) + List(t"symbolic-ref", t"-q", t"HEAD"))
 
     if symbolic.ok then
@@ -420,7 +422,7 @@ extends Git.Backend:
       val tip = expect(outcome, Reason.NoSuchRef(t"HEAD"))
       Git.Head.Detached(Git.Hash.unsafe(tip.stdout.trim))
 
-  def readRef(gitDir: Path on Linux, ref: Text)
+  def readRef(gitDir: Path on Local, ref: Text)
     ( using Tactic[Git.Error] )
   :   Optional[Git.Backend.Target] =
 
@@ -433,7 +435,7 @@ extends Git.Backend:
       then Git.Backend.Target.Direct(Git.Hash.unsafe(direct.stdout.trim))
       else Unset
 
-  def listRefs(gitDir: Path on Linux, prefix: Optional[Text])
+  def listRefs(gitDir: Path on Local, prefix: Optional[Text])
     ( using Tactic[Git.Error] )
   :   List[(Text, Git.Hash)] =
 
@@ -446,12 +448,12 @@ extends Git.Backend:
     case List(name, hash) if hash.length == 40 => (name, Git.Hash.unsafe(hash))
     case _                                     => Unset
 
-  def peel(gitDir: Path on Linux, hash: Git.Hash)(using Tactic[Git.Error]): Git.Hash =
+  def peel(gitDir: Path on Local, hash: Git.Hash)(using Tactic[Git.Error]): Git.Hash =
     val outcome = run(dirArgs(gitDir) + List(t"rev-parse", t"-q", t"--verify", t"${hash.text}^{}"))
     if outcome.ok then Git.Hash.unsafe(outcome.stdout.trim) else hash
 
   def updateRef
-    ( gitDir: Path on Linux, ref: Text, to: Optional[Git.Hash], expected: Git.Backend.Expectation,
+    ( gitDir: Path on Local, ref: Text, to: Optional[Git.Hash], expected: Git.Backend.Expectation,
       message: Optional[Text] )
     ( using Tactic[Git.Error] )
   :   Unit =
@@ -484,13 +486,13 @@ extends Git.Backend:
 
       abort(Git.Error(reason, outcome.stderr.trim))
 
-  def updateSymbolicRef(gitDir: Path on Linux, name: Text, target: Text)
+  def updateSymbolicRef(gitDir: Path on Local, name: Text, target: Text)
     ( using Tactic[Git.Error] )
   :   Unit =
 
     expect(run(dirArgs(gitDir) + List(t"symbolic-ref", name, target)))
 
-  def resolve(gitDir: Path on Linux, revision: Text)(using Tactic[Git.Error]): Optional[Git.Hash] =
+  def resolve(gitDir: Path on Local, revision: Text)(using Tactic[Git.Error]): Optional[Git.Hash] =
     val arguments = List(t"rev-parse", t"-q", t"--verify", t"--end-of-options", revision)
     val outcome = run(dirArgs(gitDir) + arguments)
 
@@ -498,7 +500,7 @@ extends Git.Backend:
     else Unset
 
   def revList
-    ( gitDir: Path on Linux,
+    ( gitDir: Path on Local,
       from:   Text,
       until:  Optional[Text],
       limit:  Optional[Int],
@@ -517,7 +519,7 @@ extends Git.Backend:
     else abort(Git.Error(Reason.NoSuchRef(from), outcome.stderr.trim))
 
   // A repository with no commits has no reflog, which git reports as an error.
-  def reflog(gitDir: Path on Linux, ref: Optional[Text])
+  def reflog(gitDir: Path on Local, ref: Optional[Text])
     ( using Tactic[Git.Error] )
   :   List[ReflogEntry] =
 
@@ -533,14 +535,14 @@ extends Git.Backend:
     case _ =>
       Unset
 
-  def mergeBase(gitDir: Path on Linux, left: Git.Hash, right: Git.Hash)
+  def mergeBase(gitDir: Path on Local, left: Git.Hash, right: Git.Hash)
     ( using Tactic[Git.Error] )
   :   Optional[Git.Hash] =
 
     val outcome = run(dirArgs(gitDir) + List(t"merge-base", left.text, right.text))
     if outcome.ok then Git.Hash.unsafe(outcome.stdout.trim) else Unset
 
-  def isAncestor(gitDir: Path on Linux, ancestor: Git.Hash, descendant: Git.Hash)
+  def isAncestor(gitDir: Path on Local, ancestor: Git.Hash, descendant: Git.Hash)
     ( using Tactic[Git.Error] )
   :   Boolean =
 
@@ -548,7 +550,7 @@ extends Git.Backend:
 
   // ──────────────────────────────────────────── Objects ───────────────────────────────────────
 
-  def readObject(gitDir: Path on Linux, hash: Git.Hash)
+  def readObject(gitDir: Path on Local, hash: Git.Hash)
     ( using Tactic[Git.Error] )
   :   Optional[(Git.Object.Kind, Data)] =
 
@@ -556,7 +558,7 @@ extends Git.Backend:
 
   // `cat-file --batch` answers each hash with `<hash> <type> <size>\n<content>\n`, or
   // `<hash> missing\n`.
-  def readObjects(gitDir: Path on Linux, hashes: List[Git.Hash])(using Tactic[Git.Error])
+  def readObjects(gitDir: Path on Local, hashes: List[Git.Hash])(using Tactic[Git.Error])
   :   List[(Git.Hash, Git.Object.Kind, Data)] =
 
     if hashes == Nil then Nil else
@@ -595,7 +597,7 @@ extends Git.Backend:
 
       recur(0, Nil)
 
-  def writeObject(gitDir: Path on Linux, kind: Git.Object.Kind, data: Data)
+  def writeObject(gitDir: Path on Local, kind: Git.Object.Kind, data: Data)
     ( using Tactic[Git.Error] )
   :   Git.Hash =
 
@@ -604,7 +606,7 @@ extends Git.Backend:
 
     Git.Hash.unsafe(outcome.stdout.trim)
 
-  def diffTree(gitDir: Path on Linux, left: Git.Hash, right: Git.Hash)
+  def diffTree(gitDir: Path on Local, left: Git.Hash, right: Git.Hash)
     ( using Tactic[Git.Error] )
   :   List[Git.Delta] =
 
@@ -613,7 +615,7 @@ extends Git.Backend:
 
   // ─────────────────────────────────────── Index and working files ────────────────────────────
 
-  def status(gitDir: Path on Linux, worktree: Path on Linux, ignored: Boolean, untracked: Boolean)
+  def status(gitDir: Path on Local, worktree: Path on Local, ignored: Boolean, untracked: Boolean)
     ( using Tactic[Git.Error] )
   :   List[Git.Backend.StatusLine] =
 
@@ -659,7 +661,7 @@ extends Git.Backend:
       else Git.Backend.StatusLine
         ( index, worktree, unquote(rest.skip(arrow + 4)), unquote(rest.keep(arrow)) )
 
-  def add(gitDir: Path on Linux, worktree: Path on Linux, paths: List[Text], all: Boolean)
+  def add(gitDir: Path on Local, worktree: Path on Local, paths: List[Text], all: Boolean)
     ( using Tactic[Git.Error] )
   :   Unit =
 
@@ -667,8 +669,8 @@ extends Git.Backend:
     expect(run(dirArgs(gitDir, worktree) + arguments))
 
   def remove
-    ( gitDir:   Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir:   Path on Local,
+      worktree: Path on Local,
       paths:    List[Text],
       cached:   Boolean,
       force:    Boolean )
@@ -683,14 +685,14 @@ extends Git.Backend:
 
     expect(run(dirArgs(gitDir, worktree) + arguments))
 
-  def move(gitDir: Path on Linux, worktree: Path on Linux, from: Text, to: Text)
+  def move(gitDir: Path on Local, worktree: Path on Local, from: Text, to: Text)
     ( using Tactic[Git.Error] )
   :   Unit =
 
     expect(run(dirArgs(gitDir, worktree) + List(t"mv", from, to)))
 
   def restore
-    ( gitDir: Path on Linux, worktree: Path on Linux, paths: List[Text], source: Optional[Text],
+    ( gitDir: Path on Local, worktree: Path on Local, paths: List[Text], source: Optional[Text],
       staged: Boolean, workingFiles: Boolean )
     ( using Tactic[Git.Error] )
   :   Unit =
@@ -705,8 +707,8 @@ extends Git.Backend:
     expect(run(dirArgs(gitDir, worktree) + arguments))
 
   def clean
-    ( gitDir:      Path on Linux,
-      worktree:    Path on Linux,
+    ( gitDir:      Path on Local,
+      worktree:    Path on Local,
       paths:       List[Text],
       directories: Boolean,
       ignored:     Boolean )
@@ -728,10 +730,10 @@ extends Git.Backend:
 
   private def unslashed(path: Text): Text = if path.ends(t"/") then path.skip(1, Rtl) else path
 
-  def writeTree(gitDir: Path on Linux, worktree: Path on Linux)(using Tactic[Git.Error]): Git.Hash =
+  def writeTree(gitDir: Path on Local, worktree: Path on Local)(using Tactic[Git.Error]): Git.Hash =
     Git.Hash.unsafe(expect(run(dirArgs(gitDir, worktree) + List(t"write-tree"))).stdout.trim)
 
-  def readTree(gitDir: Path on Linux, worktree: Path on Linux, mode: ResetMode)
+  def readTree(gitDir: Path on Local, worktree: Path on Local, mode: ResetMode)
     ( using Tactic[Git.Error] )
   :   Unit =
 
@@ -742,8 +744,8 @@ extends Git.Backend:
         expect(run(dirArgs(gitDir, worktree) + List(t"reset", t"-q", other.flag, t"HEAD")))
 
   def diffWorktree
-    ( gitDir:   Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir:   Path on Local,
+      worktree: Path on Local,
       staged:   Boolean,
       against:  Optional[Text] )
     ( using Tactic[Git.Error] )
@@ -754,10 +756,10 @@ extends Git.Backend:
 
     Git.Patch.parse(expect(run(dirArgs(gitDir, worktree) + arguments)).lines)
 
-  def tracked(gitDir: Path on Linux, worktree: Path on Linux)(using Tactic[Git.Error]): List[Text] =
+  def tracked(gitDir: Path on Local, worktree: Path on Local)(using Tactic[Git.Error]): List[Text] =
     expect(run(dirArgs(gitDir, worktree) + List(t"ls-files"))).lines
 
-  def conflicts(gitDir: Path on Linux, worktree: Path on Linux)
+  def conflicts(gitDir: Path on Local, worktree: Path on Local)
     ( using Tactic[Git.Error] )
   :   List[Text] =
 
@@ -765,13 +767,13 @@ extends Git.Backend:
 
   // ─────────────────────────────────────────── Porcelain ──────────────────────────────────────
 
-  def checkout(gitDir: Path on Linux, worktree: Path on Linux, revision: Text)
+  def checkout(gitDir: Path on Local, worktree: Path on Local, revision: Text)
     ( using Tactic[Git.Error] )
   :   Unit =
 
     expect(run(dirArgs(gitDir, worktree) + List(t"checkout", t"-q", revision, t"--")))
 
-  def switch(gitDir: Path on Linux, worktree: Path on Linux, branch: Git.Branch, create: Boolean)
+  def switch(gitDir: Path on Local, worktree: Path on Local, branch: Git.Branch, create: Boolean)
     ( using Tactic[Git.Error] )
   :   Unit =
 
@@ -780,14 +782,14 @@ extends Git.Backend:
 
     expect(run(dirArgs(gitDir, worktree) + arguments))
 
-  private def currentHead(gitDir: Path on Linux)(using Tactic[Git.Error]): Git.Hash =
+  private def currentHead(gitDir: Path on Local)(using Tactic[Git.Error]): Git.Hash =
     head(gitDir).commit.or(abort(Git.Error(Reason.NoSuchRef(t"HEAD"))))
 
   // A porcelain verb which may stop on conflicts: a failure with conflicts in the index is the
   // `Stopped` outcome; any other failure is an error.
   private def sequenced
-    ( gitDir:   Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir:   Path on Local,
+      worktree: Path on Local,
       outcome:  Outcome )
     ( using Tactic[Git.Error] )
   :   Git.Sequence.Outcome =
@@ -800,7 +802,7 @@ extends Git.Backend:
         abort(Git.Error(Commandline.reason(outcome.stderr), outcome.stderr.trim))
 
   def merge
-    ( gitDir: Path on Linux, worktree: Path on Linux, revision: Text, ff: FastForward,
+    ( gitDir: Path on Local, worktree: Path on Local, revision: Text, ff: FastForward,
       message: Optional[Text], sign: Boolean )
     ( using Tactic[Git.Error] )
   :   Git.Merge.Outcome =
@@ -833,8 +835,8 @@ extends Git.Backend:
         abort(Git.Error(Commandline.reason(outcome.stderr), outcome.stderr.trim))
 
   def cherryPick
-    ( gitDir:   Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir:   Path on Local,
+      worktree: Path on Local,
       commits:  List[Git.Hash],
       noCommit: Boolean )
     ( using Tactic[Git.Error] )
@@ -846,8 +848,8 @@ extends Git.Backend:
     sequenced(gitDir, worktree, run(dirArgs(gitDir, worktree) + arguments))
 
   def revert
-    ( gitDir:   Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir:   Path on Local,
+      worktree: Path on Local,
       commits:  List[Git.Hash],
       noCommit: Boolean )
     ( using Tactic[Git.Error] )
@@ -858,7 +860,7 @@ extends Git.Backend:
     sequenced(gitDir, worktree, run(dirArgs(gitDir, worktree) + arguments))
 
   def rebase
-    ( gitDir: Path on Linux, worktree: Path on Linux, onto: Text, upstream: Optional[Text],
+    ( gitDir: Path on Local, worktree: Path on Local, onto: Text, upstream: Optional[Text],
       options: List[Git.Rebase.Option] )
     ( using Tactic[Git.Error] )
   :   Git.Sequence.Outcome =
@@ -880,8 +882,8 @@ extends Git.Backend:
     case Git.Rebase.Option.NoRenames  => Nil
 
   def sequence
-    ( gitDir:   Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir:   Path on Local,
+      worktree: Path on Local,
       verb:     Git.Sequence.Verb )
     ( using Tactic[Git.Error] )
   :   Git.Sequence.Outcome =
@@ -911,7 +913,7 @@ extends Git.Backend:
 
     sequenced(gitDir, worktree, run(dirArgs(gitDir, worktree) + command))
 
-  def operation(gitDir: Path on Linux, worktree: Optional[Path on Linux])
+  def operation(gitDir: Path on Local, worktree: Optional[Path on Local])
     ( using Tactic[Git.Error] )
   :   Optional[Git.Operation] =
 
@@ -951,8 +953,8 @@ extends Git.Backend:
       ( text.cut(t"\n").filter(_.length == 40).map(Git.Hash.unsafe(_)), conflicting )
 
   def stash
-    ( gitDir:           Path on Linux,
-      worktree:         Path on Linux,
+    ( gitDir:           Path on Local,
+      worktree:         Path on Local,
       message:          Optional[Text],
       includeUntracked: Boolean,
       keepIndex:        Boolean )
@@ -970,7 +972,7 @@ extends Git.Backend:
     val after = resolve(gitDir, t"refs/stash")
     if after == before then Unset else after
 
-  def stashes(gitDir: Path on Linux)(using Tactic[Git.Error]): List[Git.Stash.Entry] =
+  def stashes(gitDir: Path on Local)(using Tactic[Git.Error]): List[Git.Stash.Entry] =
     val outcome = run(dirArgs(gitDir) + List(t"reflog", t"show", t"--format=%H %gs", t"refs/stash"))
 
     if !outcome.ok then Nil else
@@ -992,8 +994,8 @@ extends Git.Backend:
       recur(outcome.lines, 0, Nil)
 
   def applyStash
-    ( gitDir:   Path on Linux,
-      worktree: Path on Linux,
+    ( gitDir:   Path on Local,
+      worktree: Path on Local,
       entry:    Int,
       index:    Boolean,
       drop:     Boolean )
@@ -1007,14 +1009,14 @@ extends Git.Backend:
 
     sequenced(gitDir, worktree, run(dirArgs(gitDir, worktree) + arguments))
 
-  def dropStash(gitDir: Path on Linux, entry: Int)(using Tactic[Git.Error]): Unit =
+  def dropStash(gitDir: Path on Local, entry: Int)(using Tactic[Git.Error]): Unit =
     expect
       ( run(dirArgs(gitDir) + List(t"stash", t"drop", t"-q", t"stash@{$entry}")),
         Reason.NoSuchStash )
 
   // ───────────────────────────────────────────── Notes ────────────────────────────────────────
 
-  def readNote(gitDir: Path on Linux, ref: Text, target: Git.Hash)
+  def readNote(gitDir: Path on Local, ref: Text, target: Git.Hash)
     ( using Tactic[Git.Error] )
   :   Optional[Text] =
 
@@ -1024,7 +1026,7 @@ extends Git.Backend:
     else if outcome.stdout.ends(t"\n") then outcome.stdout.skip(1, Rtl)
     else outcome.stdout
 
-  def listNotes(gitDir: Path on Linux, ref: Text)
+  def listNotes(gitDir: Path on Local, ref: Text)
     ( using Tactic[Git.Error] )
   :   List[(Git.Hash, Git.Hash)] =
 
@@ -1042,7 +1044,7 @@ extends Git.Backend:
   // The edit is made on a temporary ref seeded with `base`, by git's own notes porcelain; the
   // new notes commit is read back and the temporary ref deleted, leaving the real ref to the
   // handle's compare-and-swap.
-  def editNotes(gitDir: Path on Linux, base: Optional[Git.Hash], edit: Git.Backend.NoteEdit)
+  def editNotes(gitDir: Path on Local, base: Optional[Git.Hash], edit: Git.Backend.NoteEdit)
     ( using Tactic[Git.Error] )
   :   Git.Hash =
 
@@ -1117,7 +1119,7 @@ extends Git.Backend:
 
   // ────────────────────────────────────── Remotes and transport ───────────────────────────────
 
-  def remoteRefs(gitDir: Path on Linux, remote: Text)
+  def remoteRefs(gitDir: Path on Local, remote: Text)
     ( using Internet, Tactic[Git.Error] )
   :   List[(Text, Git.Hash)] =
 
@@ -1129,7 +1131,7 @@ extends Git.Backend:
     case _                                     => Unset
 
   def fetch
-    ( gitDir: Path on Linux, remote: Text, refspecs: List[Git.Refspec], depth: Optional[Int],
+    ( gitDir: Path on Local, remote: Text, refspecs: List[Git.Refspec], depth: Optional[Int],
       prune: Boolean, tags: Boolean, activity: Git.Activity^ )
     ( using Internet, Tactic[Git.Error] )
   :   List[(Text, Git.Hash)] =
@@ -1150,7 +1152,7 @@ extends Git.Backend:
     after.filter: (name, hash) => before.at(name) != Optional(hash)
 
   def push
-    ( gitDir: Path on Linux, remote: Text, refspecs: List[Git.Refspec], force: Git.Push.Force,
+    ( gitDir: Path on Local, remote: Text, refspecs: List[Git.Refspec], force: Git.Push.Force,
       tags: Boolean, setUpstream: Boolean, activity: Git.Activity^ )
     ( using Internet, Tactic[Git.Error] )
   :   List[(Text, Git.Push.Outcome)] =
@@ -1216,7 +1218,7 @@ extends Git.Backend:
 
   // ────────────────────────────────────────── Linked worktrees ────────────────────────────────
 
-  def worktrees(gitDir: Path on Linux)(using Tactic[Git.Error]): List[Git.Backend.WorktreeEntry] =
+  def worktrees(gitDir: Path on Local)(using Tactic[Git.Error]): List[Git.Backend.WorktreeEntry] =
     val outcome = expect(run(dirArgs(gitDir) + List(t"worktree", t"list", t"--porcelain")))
 
     def blocks(lines: List[Text]): List[List[Text]] = lines match
@@ -1263,8 +1265,8 @@ extends Git.Backend:
       case _ => Unset
 
   def addWorktree
-    ( gitDir:    Path on Linux,
-      target:    Path on Linux,
+    ( gitDir:    Path on Local,
+      target:    Path on Local,
       revision:  Text,
       detach:    Boolean,
       newBranch: Optional[Git.Branch] )
@@ -1279,7 +1281,7 @@ extends Git.Backend:
 
     expect(run(dirArgs(gitDir) + arguments))
 
-  def removeWorktree(gitDir: Path on Linux, path: Path on Linux, force: Boolean)
+  def removeWorktree(gitDir: Path on Local, path: Path on Local, force: Boolean)
     ( using Tactic[Git.Error] )
   :   Unit =
 
@@ -1288,7 +1290,7 @@ extends Git.Backend:
 
     expect(run(dirArgs(gitDir) + arguments))
 
-  def lockWorktree(gitDir: Path on Linux, path: Path on Linux, reason: Optional[Text])
+  def lockWorktree(gitDir: Path on Local, path: Path on Local, reason: Optional[Text])
     ( using Tactic[Git.Error] )
   :   Unit =
 
@@ -1296,19 +1298,19 @@ extends Git.Backend:
     val arguments = List(t"worktree", t"lock") + reasonArgs + List(path.encode)
     expect(run(dirArgs(gitDir) + arguments))
 
-  def unlockWorktree(gitDir: Path on Linux, path: Path on Linux)(using Tactic[Git.Error]): Unit =
+  def unlockWorktree(gitDir: Path on Local, path: Path on Local)(using Tactic[Git.Error]): Unit =
     expect(run(dirArgs(gitDir) + List(t"worktree", t"unlock", path.encode)))
 
-  def moveWorktree(gitDir: Path on Linux, path: Path on Linux, to: Path on Linux)
+  def moveWorktree(gitDir: Path on Local, path: Path on Local, to: Path on Local)
     ( using Tactic[Git.Error] )
   :   Unit =
 
     expect(run(dirArgs(gitDir) + List(t"worktree", t"move", path.encode, to.encode)))
 
-  def pruneWorktrees(gitDir: Path on Linux)(using Tactic[Git.Error]): List[Path on Linux] =
+  def pruneWorktrees(gitDir: Path on Local)(using Tactic[Git.Error]): List[Path on Local] =
     val prunable = collect(worktrees(gitDir))(prunablePath(_))
     expect(run(dirArgs(gitDir) + List(t"worktree", t"prune")))
     prunable
 
-  private def prunablePath(entry: Git.Backend.WorktreeEntry): Optional[Path on Linux] =
+  private def prunablePath(entry: Git.Backend.WorktreeEntry): Optional[Path on Local] =
     entry.prunable.let: _ => entry.path

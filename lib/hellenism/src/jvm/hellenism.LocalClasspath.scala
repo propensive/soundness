@@ -118,7 +118,7 @@ object LocalClasspath:
 
     val entries: List[Classpath.Entry.Directory | Classpath.Entry.Jar] =
       once(urls(classloader) + system, Set()).map: (path: Text) =>
-        Classpath.Entry.classify(path.as[Path on Linux])
+        Classpath.Entry.classify(path.as[Path on Local])
 
     val widened: List[Classpath.Entry] = entries
     new LocalClasspath(entries, widened.to[Set])
@@ -155,7 +155,9 @@ object LocalClasspath:
   =>  ( (LocalClasspath is Addable by path to LocalClasspath)^{pathTactic, ioTactic} ) =
 
     (classpath, path) =>
-      path.generic.as[Path on Linux].pipe: path =>
+      import systems.javaBaseSystem
+
+      path.generic.as[Path on Local].pipe: path =>
         val entry: Classpath.Entry.Directory | Classpath.Entry.Jar = Classpath.Entry.classify(path)
 
         if classpath.entrySet.has(entry) then classpath

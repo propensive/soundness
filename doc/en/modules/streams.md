@@ -65,7 +65,8 @@ import soundness.*
 import codepages.utf8Codepage
 import charsets.utf8Charset
 import strategies.throwUnsafely
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
+import systems.javaBaseSystem
 import filesystemOptions.overwritePreexisting
 import filesystemOptions.createParents
 import stdios.javaLangSystemStdio
@@ -102,7 +103,7 @@ bytes, or a stream of either, and the destination's `Writable` instance receives
 ```scala fuel
 typecheck
 ##
-val destination = t"/tmp/streams-tutorial.txt".as[Path on Linux]
+val destination = t"/tmp/streams-tutorial.txt".as[Path on Local]
 
 source.writeTo(destination)
 ```

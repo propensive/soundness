@@ -72,10 +72,11 @@ stream into the file's intake:
 typecheck
 ##
 import filesystemBackends.javaBaseFilesystem
-import pathInterfaces.pathOnLinux
+import pathInterfaces.pathOnLocal
+import systems.javaBaseSystem
 import temporaryDirectories.javaBaseTemporaryDirectory
 
-val archive = temporaryDirectory[Path on Linux] / "compression" / Uuid().show / "fox.txt.gz"
+val archive = temporaryDirectory[Path on Local] / "compression" / Uuid().show / "fox.txt.gz"
 
 archive.create[File](CreateFlag.Parents): handle ?=>
   payload.stream.compress[Gzip].pump(handle.intake())

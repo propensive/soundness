@@ -35,6 +35,7 @@ package octogenarian
 import anticipation.*
 import aperture.*
 import contingency.*
+import distillate.*
 import galilei.*
 import gossamer.*
 import prepositional.*
@@ -46,6 +47,7 @@ import vacuous.*
 
 import filesystemOptions.deleteRecursively
 import filesystemOptions.overwritePreexisting
+import ambience.systems.javaBaseSystem
 
 // Fetching, pushing and cloning against a `Peer`: which refs a refspec selects, which objects
 // must travel, and how the local refs (or the peer's) are moved afterwards.
@@ -53,9 +55,9 @@ private[octogenarian] object Transfer:
   import Git.Error.Reason as Reason
 
   case class Context
-    ( gitDir:    Path on Linux,
-      commonDir: Path on Linux,
-      objects:   Path on Linux,
+    ( gitDir:    Path on Local,
+      commonDir: Path on Local,
+      objects:   Path on Local,
       identity:  Git.Identity,
       logging:   Boolean )
 
@@ -128,7 +130,7 @@ private[octogenarian] object Transfer:
 
   // The objects to send so that a peer which has everything reachable from `haves` can reach
   // `wants`: commits newest first, each followed by what its tree adds.
-  def enumerate(objects: Path on Linux, wants: List[Git.Hash], haves: List[Git.Hash])
+  def enumerate(objects: Path on Local, wants: List[Git.Hash], haves: List[Git.Hash])
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   List[Git.Hash] =
 
@@ -282,7 +284,8 @@ private[octogenarian] object Transfer:
     pushUrl.or(remoteSetting(context, remote, t"url")).or(remote)
 
   private def isLocalUrl(url: Text): Boolean =
-    url.starts(t"/") || url.starts(t"file://") || url.starts(t"./") || url.starts(t"../")
+    url.starts(t"file://") || url.starts(t"./") || url.starts(t"../") ||
+      safely(url.as[Path on Local]).present
 
   private def localPath(url: Text): Text =
     if url.starts(t"file://") then url.skip(7) else url
@@ -290,7 +293,7 @@ private[octogenarian] object Transfer:
   def connect
     ( url: Text,
       transports: List[Transport],
-      locate: Path on Linux => Optional[Git.Backend.Location],
+      locate: Path on Local => Optional[Git.Backend.Location],
       identity: Git.Identity )
     ( using Tactic[Git.Error] )
   :   Peer^ =

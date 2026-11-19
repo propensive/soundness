@@ -37,7 +37,7 @@ import java.nio.file as jnf
 import soundness.*
 
 import filesystemOptions.dereferenceSymlinks
-import galilei.Linux.pathOnLinux
+import galilei.Local.pathOnLocal
 import logging.silentLogging
 import strategies.throwUnsafely
 import systems.javaBaseSystem
@@ -55,7 +55,7 @@ object Worlds:
   private val classpath: scala.List[String] = Shrinker.classpath(parent)
   private val entry: String = "abscission.Globe"
   private def running: LocalClasspath =
-    LocalClasspath(classpath.map { entry => Classpath.Entry.classify(entry.tt.as[Path on Linux]) }*)
+    LocalClasspath(classpath.map { entry => Classpath.Entry.classify(entry.tt.as[Path on Local]) }*)
 
 
   final class World(val report: Shrinker.Report, root: jnf.Path):
@@ -81,11 +81,11 @@ object Worlds:
       globe.asInstanceOf[Runnable].run()
       java.lang.System.getProperty("abscission.globe").nn
 
-class Worlds(scratch: Path on Linux):
+class Worlds(scratch: Path on Local):
   import Worlds.*
 
-  private def directory(name: Text): Path on Linux =
-    val path: Path on Linux = scratch / name
+  private def directory(name: Text): Path on Local =
+    val path: Path on Local = scratch / name
     path.create[Directory]()
     path
 
@@ -110,13 +110,13 @@ class Worlds(scratch: Path on Linux):
   // The same world, made as a JAR by the edges of a toolchain.
   lazy val jar: World =
     supervise:
-      val out: Path on Linux = directory(t"jar")
+      val out: Path on Local = directory(t"jar")
       val emission = Deliverable.Emission(directory(t"empty"), running)
       val settings = List(shrinkOptions.services(false), shrinkOptions.fine(true))
       val entryPoints = List(EntryPoint(fqcn"abscission.Globe"))
       val toolchain = Toolchain(shrinkEdges(Scalac[3.9](Nil)))
 
-      val file: Path on Linux =
+      val file: Path on Local =
         toolchain.produce(emission, Universe.Classfile, Shrunk.Jar, out, settings, entryPoints)
 
       val report: Shrinker.Report =
@@ -128,7 +128,7 @@ class Worlds(scratch: Path on Linux):
 
 object Tests extends Suite("shrinking", m"Abscission Tests"):
   def run(): Unit =
-    temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=>
+    temporaryDirectory[Path on Local].open[Scratch](Read & Write): handle ?=>
       suites(Worlds(handle.stem))
 
   // Every test reads a world from the scratch directory, so each is a `check`, run where it

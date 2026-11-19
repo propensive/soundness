@@ -88,8 +88,9 @@ extension (entry: Classpath.Entry.type)
     ( using pathTactic: Tactic[Path.Error], ioTactic: Tactic[Io.Error], symlinks: DereferenceSymlinks )
   :   Classpath.Entry.Directory | Classpath.Entry.Jar =
 
-    import filesystemBackends.javaBaseFilesystem
-    val resolved: Path on Linux = path.generic.as[Path on Linux]
+    // The entry is on this JVM's own filesystem, so its separator is this JVM's own.
+    import filesystemBackends.javaBaseFilesystem, ambience.systems.javaBaseSystem
+    val resolved: Path on Local = path.generic.as[Path on Local]
 
     if !resolved.existent() then Classpath.Entry.Directory(resolved.encode)
     else if resolved.entry() == Directory then Classpath.Entry.Directory(resolved.encode)

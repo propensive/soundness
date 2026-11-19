@@ -519,14 +519,14 @@ object Tests extends Suite("httpd", m"Scintillate tests"):
       test(m"The server serves a request over TLS"):
         supervise:
           // A throwaway self-signed certificate, generated with the JDK's keytool.
-          import galilei.Linux.pathOnLinux, systems.javaBaseSystem
+          import galilei.Local.pathOnLocal, systems.javaBaseSystem
           import temporaryDirectories.systemTemporaryDirectory
           import filesystemBackends.javaBaseFilesystem
 
           val password = "changeit".toCharArray.nn
 
           // Read into memory before the scratch directory holding the keystore is deleted.
-          val keystore = temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
+          val keystore = temporaryDirectory[Path on Local].open[Scratch](Read & Write): scratch ?=>
             val path = (scratch.stem / "test.p12").encode.s
 
             val keytool = java.lang.ProcessBuilder("keytool", "-genkeypair", "-alias", "test",
@@ -578,13 +578,13 @@ object Tests extends Suite("httpd", m"Scintillate tests"):
     suite(m"Native HTTP/2 server"):
       // A throwaway self-signed certificate, shared by the h2 tests below.
       def serverContext(): javax.net.ssl.SSLContext =
-        import galilei.Linux.pathOnLinux, systems.javaBaseSystem
+        import galilei.Local.pathOnLocal, systems.javaBaseSystem
         import temporaryDirectories.systemTemporaryDirectory, filesystemBackends.javaBaseFilesystem
 
         val password = "changeit".toCharArray.nn
 
         // Read into memory before the scratch directory holding the keystore is deleted.
-        val keystore = temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
+        val keystore = temporaryDirectory[Path on Local].open[Scratch](Read & Write): scratch ?=>
           val path = (scratch.stem / "test.p12").encode.s
 
           val keytool = java.lang.ProcessBuilder("keytool", "-genkeypair", "-alias", "test",

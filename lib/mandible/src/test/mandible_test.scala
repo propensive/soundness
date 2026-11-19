@@ -37,7 +37,7 @@ import java.nio.file.{Files, Paths}
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 import soundness.*
-import galilei.Linux.pathOnLinux
+import galilei.Local.pathOnLocal
 
 import alphabets.hexLowerCase
 import classloaders.threadContextClassloader
