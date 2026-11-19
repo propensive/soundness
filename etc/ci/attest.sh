@@ -114,8 +114,9 @@ done
 # never starts or stops a shared mill daemon, so concurrent attests (or an
 # interactive `mill -w`) on the same machine can't interfere with each other,
 # and the compile JVM releases its heap before the tests start — no
-# `mill shutdown` needed. The tests themselves run inside the `fume` daemon
-# (`make ci` is `fume run`, over the umbrella assembly named in `.pyrocosm/fume/config.tel`);
+# `mill shutdown` needed. The tests themselves run through the user's `fume` daemon, each suite
+# in a JVM of its own (`make ci` is `fume run --fork`, over the umbrella assembly named in
+# `.pyrocosm/fume/config.tel`);
 # fume sees that its output is not a terminal and prints a plain report.
 #
 # `-j $JOBS` caps how many modules compile concurrently. Each parallel module is

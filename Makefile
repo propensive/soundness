@@ -5,8 +5,9 @@ publishLocal:
 # every suite in a built assembly from its META-INF/services/probably.Suite index. The classpath
 # for `make test`/`make ci` comes from `.pyrocosm/fume/config.tel`; `$(TESTS)` are fume selection terms
 # (test ids, name globs, axis constraints such as `N<=64`). Every run goes through
-# `etc/ci/fume-run.sh`, which gives it a private daemon and a private temporary directory and
-# removes both afterwards, so a suite's forgotten scratch files never outlive the run.
+# `etc/ci/fume-run.sh`, which runs each suite in a JVM of its own (`--fork`) through the user's
+# own fume daemon; fume gives each suite a temporary directory and deletes it when the suite's
+# JVM exits, so a suite's forgotten scratch files never outlive the run.
 #
 # The compilers run in-process in mill's single JVM (`.mill-jvm-opts`: 8 GB), and the largest
 # codec test modules (xylophone, stratiform, jacinta, ypsiloid, apoplexy: multi-megabyte
