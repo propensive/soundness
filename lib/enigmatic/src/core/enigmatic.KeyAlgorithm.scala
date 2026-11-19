@@ -97,6 +97,19 @@ object KeyAlgorithm:
       case Asn1.Sequence(Asn1.Integer(modulus) :: _)  => modulus
       case _                                          => Unset
 
+  // The `KeyAlgorithm` of an RSA key of a given size, whichever padding its cipher type selects:
+  // `Rsa`, `RsaPss` and `RsaOaep` keys are all `rsaEncryption` documents (RFC 8017 §A.1).
+  def rsa[cipher <: Cipher](bits: Int): cipher is KeyAlgorithm =
+    new KeyAlgorithm:
+      type Self = cipher
+      def name: Text = t"RSA-$bits"
+      def sshName: Optional[Text] = t"ssh-rsa"
+      def algorithm: Optional[Asn1] = Asn1.Sequence(List(Asn1.ObjectId(Rsa), Asn1.Null))
+
+      def conforms(algorithm: Asn1, material: Material): Boolean =
+        identifier(algorithm).lay(false): (arcs, _) =>
+          arcs == Rsa && rsaModulus(material).lay(false)(_.bitLength == bits)
+
   // A human-readable name for what a key document carries, for the `Mismatch` error: the known
   // algorithms by name and size, and anything else by its dotted object identifier.
   def describe(algorithm: Asn1, material: Material): Text =

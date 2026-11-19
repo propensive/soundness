@@ -179,6 +179,59 @@ object JavaBaseCrypto extends Crypto:
 
       def privateToPublic(privateKey: Data): Data = JavaBaseCrypto.rsa.privateToPublic(privateKey)
 
+  // RSASSA-PSS over the named digest (`SHA256`, as `rsaSignature` takes it), with MGF1 over the
+  // same digest, a salt as long as the digest and the standard trailer: the one parameterization
+  // RFC 7518, TLS 1.3 and COSE all use. The JDK has a single `RSASSA-PSS` transformation whose
+  // parameters are set explicitly, where PKCS#1 v1.5 has one transformation per digest.
+  def rsaPss(digest: Text): Crypto.SignatureScheme = new Crypto.SignatureScheme:
+    private val name: String = "SHA-"+digest.s.substring(3).nn
+    private val saltLength: Int = Integer.parseInt(digest.s.substring(3).nn)/8
+    private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("RSA").nn
+
+    private def instance(): js.Signature =
+      val signature = js.Signature.getInstance("RSASSA-PSS").nn
+      val mask = jss.MGF1ParameterSpec(name)
+      signature.setParameter(jss.PSSParameterSpec(name, "MGF1", mask, saltLength, 1))
+      signature
+
+    def sign(data: Data, privateKey: Data): Data =
+      val sig = instance()
+      sig.initSign(jca.privateKey(keyFactory(), privateKey))
+      jca.update(sig, data)
+      jca.signed(sig)
+
+    def verify(data: Data, signature0: Data, publicKey: Data): Boolean =
+      val sig = instance()
+      sig.initVerify(jca.publicKey(keyFactory(), publicKey))
+      jca.update(sig, data)
+      jca.verified(sig, signature0)
+
+    def generateKeyPair(bits: Int): Data = JavaBaseCrypto.rsa.generateKeyPair(bits)
+    def privateToPublic(privateKey: Data): Data = JavaBaseCrypto.rsa.privateToPublic(privateKey)
+
+  // RSAES-OAEP over the named digest (a `Hash`'s name: `SHA1`, `SHA-256`, …), with MGF1 over
+  // the same digest and the empty label. The parameters are given explicitly because the JDK's
+  // named transformations do not mean what they say: `OAEPWithSHA-256AndMGF1Padding` uses
+  // SHA-256 for the label hash but SHA-1 for MGF1.
+  def rsaOaep(digest: Text): Crypto.PublicKeyCipher = new Crypto.PublicKeyCipher:
+    private val name: String = if digest == t"SHA1" then "SHA-1" else digest.s
+    private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("RSA").nn
+
+    private def cipher(mode: Int, key: js.Key): jc.Cipher =
+      val instance = jc.Cipher.getInstance("RSA/ECB/OAEPPadding").nn
+      val mask = jss.MGF1ParameterSpec(name)
+      instance.init(mode, key, OAEPParameterSpec(name, "MGF1", mask, PSource.PSpecified.DEFAULT))
+      instance
+
+    def encrypt(input: Data, publicKey: Data): Data =
+      jca.finish(cipher(jc.Cipher.ENCRYPT_MODE, jca.publicKey(keyFactory(), publicKey)), input)
+
+    def decrypt(input: Data, privateKey: Data): Data =
+      jca.finish(cipher(jc.Cipher.DECRYPT_MODE, jca.privateKey(keyFactory(), privateKey)), input)
+
+    def generateKeyPair(bits: Int): Data = JavaBaseCrypto.rsa.generateKeyPair(bits)
+    def privateToPublic(privateKey: Data): Data = JavaBaseCrypto.rsa.privateToPublic(privateKey)
+
   // ECDSA over a NIST prime curve. The curve is chosen by key size, since `KeyPairGenerator` needs
   // a curve name rather than a bit count for EC; P-521 really is 521 bits, not 512.
   def ecdsa(digest: Text): Crypto.SignatureScheme =

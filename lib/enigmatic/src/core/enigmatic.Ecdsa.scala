@@ -35,7 +35,11 @@ package enigmatic
 import scala.reflect.Selectable.reflectiveSelectable
 
 import anticipation.*
+import contingency.*
+import distillate.*
 import gossamer.*
+import prepositional.*
+import rudiments.*
 import vacuous.*
 import gastronomy.Signing
 
@@ -64,6 +68,43 @@ object Ecdsa:
       def conforms(algorithm: Asn1, material: KeyAlgorithm.Material): Boolean =
         KeyAlgorithm.identifier(algorithm).lay(false): (arcs, parameters) =>
           arcs == KeyAlgorithm.Ec && parameters == Asn1.ObjectId(KeyAlgorithm.curve(valueOf[bits]))
+
+  // An ECDSA signature is a pair of integers, `r` and `s`, and there are two ways to write the
+  // pair down. A provider's `sign` gives — and its `verify` takes — the DER `SEQUENCE` of two
+  // `INTEGER`s that X.509, TLS and WebAuthn carry. JOSE (RFC 7515 §A.3), COSE and IEEE P1363
+  // instead concatenate the two as unsigned big-endian integers, each padded to the curve's
+  // width: 64, 96 or 132 bytes in all. `concatenation` and `signature` convert between them;
+  // each is `Unset` for input that is not a signature of this curve's size.
+  private def fixed(value: BigInt, size: Int): Data =
+    val raw = value.toByteArray
+
+    Array.tabulate[Byte](size): index =>
+      val source = index - size + raw.length
+      if source < 0 then 0.toByte else raw(source)
+
+  def concatenation[bits <: 256 | 384 | 521: ValueOf](signature: Signature[Ecdsa[bits]])
+  :   Optional[Data] =
+
+    val size = (valueOf[bits] + 7)/8
+
+    safely(Der(signature.bytes).as[Asn1]) match
+      case Asn1.Sequence(List(Asn1.Integer(r), Asn1.Integer(s))) =>
+        if r.signum < 0 || s.signum < 0 || r.bitLength > size*8 || s.bitLength > size*8 then Unset
+        else Array.concat(fixed(r, size), fixed(s, size))
+
+      case _ =>
+        Unset
+
+  def signature[bits <: 256 | 384 | 521: ValueOf](concatenation: Data)
+  :   Optional[Signature[Ecdsa[bits]]] =
+
+    val size = (valueOf[bits] + 7)/8
+
+    if concatenation.length != 2*size then Unset else
+      val r = BigInt(new java.math.BigInteger(1, Array.unsafeJvm(concatenation.keep(size))))
+      val s = BigInt(new java.math.BigInteger(1, Array.unsafeJvm(concatenation.skip(size))))
+      val pair: Asn1 = Asn1.Sequence(List(Asn1.Integer(r), Asn1.Integer(s)))
+      Signature[Ecdsa[bits]](pair.in[Der].data)
 
 class Ecdsa[bits <: 256 | 384 | 521: ValueOf](scheme: Crypto.SignatureScheme)
 extends Cipher, Signing:

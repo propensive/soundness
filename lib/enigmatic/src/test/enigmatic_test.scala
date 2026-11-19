@@ -1150,6 +1150,182 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         capture[Crypto.Error](key.unseal(nonce, Data(), Array.unsafeFrozen(tampered))).reason
       . assert(_ == Crypto.Error.Reason.BadTag)
 
+    suite(m"Key derivation, key wrapping and RSA paddings"):
+      def hex(text: Text): Data = text.deserialize[Hex]
+      def counting(size: Int): Data = Array.tabulate[Byte](size)(_.toByte)
+
+      test(m"HKDF over SHA-256 produces RFC 5869's first vector"):
+        val material: Data = Array.fill[Byte](22)(0x0b)
+        val salt = hex(t"000102030405060708090A0B0C")
+        val info = hex(t"F0F1F2F3F4F5F6F7F8F9")
+        KeyDerivation.hkdf[Sha2[256]](material, salt, info, 42).serialize[Hex]
+      . assert(_ == t"3CB25F25FAACD57A90434F64D0362F2A2D2D0A90CF1A5A4C5DB02D56ECC4C5BF34007208D5B887185865")
+
+      test(m"HKDF with no salt or info produces RFC 5869's third vector"):
+        val material: Data = Array.fill[Byte](22)(0x0b)
+        KeyDerivation.hkdf[Sha2[256]](material, Data(), Data(), 42).serialize[Hex]
+      . assert(_ == t"8DA4E775A563C18F715F802A063C5A31B8A11F5C5EE1879EC3454E5F3C738D2D9D201395FAA4B61A96C8")
+
+      test(m"PBKDF2 over HMAC-SHA-256 with one iteration"):
+        KeyDerivation.pbkdf2[Sha2[256]](t"password".in[Data], t"salt".in[Data], 1, 32).serialize[Hex]
+      . assert(_ == t"120FB6CFFCF8B32C43E7225256C4F837A86548C92CCC35480805987CB70BE17B")
+
+      test(m"PBKDF2 over HMAC-SHA-256 with 4096 iterations"):
+        KeyDerivation.pbkdf2[Sha2[256]](t"password".in[Data], t"salt".in[Data], 4096, 32).serialize[Hex]
+      . assert(_ == t"C5E478D59288C841AA530DB6845C4C8D962893A001CE4E11A4963873AA98134A")
+
+      test(m"PBKDF2 spans two blocks for RFC 7914's 64-byte vector"):
+        KeyDerivation.pbkdf2[Sha2[256]](t"passwd".in[Data], t"salt".in[Data], 1, 64).serialize[Hex]
+      . assert(_ == t"55AC046E56E3089FEC1691C22544B605F94185216DDE0465E68B9D57C20DACBC49CA9CCCF179B645991664B39D77EF317C71B845B1E30BD509112041D3A19783")
+
+      test(m"The Concat KDF derives RFC 7518 appendix C's key"):
+        val secret = hex(t"9E56D91D817135D372834283BF84269CFB316EA3DA806A48F6DAA7798CFE90C4")
+        // The lengths-prefixed `A128GCM`, `Alice` and `Bob`, then the key length in bits.
+        val info = hex(t"000000074131323847434D00000005416C69636500000003426F6200000080")
+        KeyDerivation.concat[Sha2[256]](secret, info, 16).serialize[Hex]
+      . assert(_ == t"56AA8DEAF8236D205C2228CD71A7101A")
+
+      test(m"AES Key Wrap produces RFC 3394's 128-bit vector"):
+        val key = SymmetricKey[AesKeyWrap[128]](counting(16))
+        key.wrap(hex(t"00112233445566778899AABBCCDDEEFF")).serialize[Hex]
+      . assert(_ == t"1FA68B0A8112B447AEF34BD8FB5A7B829D3E862371D2CFE5")
+
+      test(m"AES Key Wrap produces RFC 3394's 256-bit vector"):
+        val key = SymmetricKey[AesKeyWrap[256]](counting(32))
+        key.wrap(hex(t"00112233445566778899AABBCCDDEEFF000102030405060708090A0B0C0D0E0F")).serialize[Hex]
+      . assert(_ == t"28C9F404C4B810F4CBCCB35CFB87F8263F5786E2D80ED326CBC7F0E71A99F43BFB988B9B7A02DD21")
+
+      test(m"AES Key Wrap unwraps what it wrapped"):
+        val key = SymmetricKey.generate[AesKeyWrap[192]]()
+        key.unwrap(key.wrap(counting(40))).serialize[Hex]
+      . assert(_ == counting(40).serialize[Hex])
+
+      test(m"AES Key Wrap rejects material wrapped under another key"):
+        val key = SymmetricKey.generate[AesKeyWrap[128]]()
+        val other = SymmetricKey.generate[AesKeyWrap[128]]()
+        capture[Crypto.Error](other.unwrap(key.wrap(counting(16)))).reason
+      . assert(_ == Crypto.Error.Reason.BadWrap)
+
+      test(m"The pure-Scala provider wraps a key identically"):
+        given Crypto = SoundnessCrypto
+        val key = SymmetricKey[AesKeyWrap[128]](counting(16))
+        key.wrap(hex(t"00112233445566778899AABBCCDDEEFF")).serialize[Hex]
+      . assert(_ == t"1FA68B0A8112B447AEF34BD8FB5A7B829D3E862371D2CFE5")
+
+      val kerckhoffs: Text =
+        t"A cipher system must not be required to be secret, and it must be able to fall into the hands of the enemy without inconvenience"
+
+      val principle: Data = t"The second principle of Auguste Kerckhoffs".in[Data]
+      val vector: Data = hex(t"1AF38C2DC2B96FFDD86694092341BC04")
+
+      test(m"AES-128-CBC with HMAC-SHA-256 seals RFC 7518 appendix B.1"):
+        val key = SymmetricKey[AesCbcHmac[256]](counting(32))
+        key.seal(vector, principle, kerckhoffs.in[Data]).serialize[Hex]
+      . assert(_ == t"C80EDFA32DDF39D5EF00C0B468834279A2E46A1B8049F792F76BFE54B903A9C9A94AC9B47AD2655C5F10F9AEF71427E2FC6F9B3F399A221489F16362C703233609D45AC69864E3321CF82935AC4096C86E133314C54019E8CA7980DFA4B9CF1B384C486F3A54C51078158EE5D79DE59FBD34D848B3D69550A67646344427ADE54B8851FFB598F7F80074B9473C82E2DB652C3FA36B0A7C5B3219FAB3A30BC1C4")
+
+      test(m"AES-256-CBC with HMAC-SHA-512 gives appendix B.3's tag"):
+        val key = SymmetricKey[AesCbcHmac[512]](counting(64))
+        key.seal(vector, principle, kerckhoffs.in[Data]).serialize[Hex].keep(64, Rtl)
+      . assert(_ == t"4DD3B4C088A7F45C216839645B2012BF2E6269A8C56A816DBC1B267761955BC5")
+
+      test(m"AES-CBC with HMAC opens what it sealed"):
+        val key = SymmetricKey.generate[AesCbcHmac[384]]()
+        key.unseal(vector, principle, key.seal(vector, principle, kerckhoffs.in[Data])).read[Text]
+      . assert(_ == kerckhoffs)
+
+      test(m"AES-CBC with HMAC rejects altered associated data"):
+        val key = SymmetricKey.generate[AesCbcHmac[256]]()
+        val box = key.seal(vector, principle, kerckhoffs.in[Data])
+        capture[Crypto.Error](key.unseal(vector, t"The first principle".in[Data], box)).reason
+      . assert(_ == Crypto.Error.Reason.BadTag)
+
+      test(m"AES-192-GCM seals and opens"):
+        val key = SymmetricKey.generate[AesGcm[192]]()
+        val nonce: Data = Array.fill[Byte](12)(4)
+        key.unseal(nonce, principle, key.seal(nonce, principle, kerckhoffs.in[Data])).read[Text]
+      . assert(_ == kerckhoffs)
+
+      test(m"An RSA-PSS signature verifies against the matching public key"):
+        val key = PrivateKey.generate[RsaPss[2048]]()
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"An RSA-PSS signature is randomized"):
+        val key = PrivateKey.generate[RsaPss[2048]]()
+        key.sign(pangram).bytes.serialize[Hex] != key.sign(pangram).bytes.serialize[Hex]
+      . assert(identity)
+
+      test(m"An RSA-PSS signature does not verify under another digest"):
+        val key = PrivateKey.generate[RsaPss[2048]]()
+        val signature = key.sign(pangram)
+        import signatureDigests.sha384Signature
+        key.public.verify(pangram, signature)
+      . assert(!_)
+
+      test(m"RSA-OAEP with SHA-256 encrypts and decrypts"):
+        val key = PrivateKey.generate[RsaOaep[2048, Sha2[256]]]()
+        val message: Data = key.public.uncloak(t"Hello world".encrypt(InitializationVector.random))
+        key.uncloak(message.decrypt.as[Text])
+      . assert(_ == t"Hello world")
+
+      test(m"RSA-OAEP with SHA-1 encrypts and decrypts"):
+        val key = PrivateKey.generate[RsaOaep[2048, Sha1]]()
+        val message: Data = key.public.uncloak(t"Hello world".encrypt(InitializationVector.random))
+        key.uncloak(message.decrypt.as[Text])
+      . assert(_ == t"Hello world")
+
+      test(m"An ECDSA signature converts to its fixed-width form and back"):
+        val key = PrivateKey.generate[Ecdsa[256]]()
+        val fixed = Ecdsa.concatenation(key.sign(pangram)).or(panic(m"the signature is well-formed"))
+        (fixed.length, Ecdsa.signature[256](fixed).let(key.public.verify(pangram, _)))
+      . assert(_ == (64, true))
+
+      test(m"A P-521 signature is 132 bytes in its fixed-width form"):
+        val key = PrivateKey.generate[Ecdsa[521]]()
+        import signatureDigests.sha512Signature
+        Ecdsa.concatenation(key.sign(pangram)).let(_.length)
+      . assert(_ == 132)
+
+      test(m"A fixed-width signature of the wrong length is refused"):
+        Ecdsa.signature[256](counting(63))
+      . assert(_ == Unset)
+
+      test(m"An HMAC key is as long as its hash"):
+        List
+          ( SymmetricKey.generate[HmacCipher[Sha2[256]]]().data(Divulgence).length,
+            SymmetricKey.generate[HmacCipher[Sha2[384]]]().data(Divulgence).length,
+            SymmetricKey.generate[HmacCipher[Sha2[512]]]().data(Divulgence).length )
+      . assert(_ == List(32, 48, 64))
+
+      test(m"An RSA key is rebuilt from its numbers"):
+        val key = PrivateKey.generate[Rsa[2048]]()
+        val numbers = Pkcs8.rsa(key.pem(Divulgence).data).or(panic(m"the key carries this part"))
+        val rebuilt = Der(Pkcs8.rsa(numbers)).as[PrivateKey[Rsa[2048]]]
+        key.public.verify(pangram, rebuilt.sign(pangram))
+      . assert(identity)
+
+      test(m"An RSA public key is rebuilt from its modulus and exponent"):
+        val key = PrivateKey.generate[Rsa[2048]]()
+        val (modulus, exponent) = Spki.rsa(key.public.bytes).or(panic(m"the key carries this part"))
+        Spki.rsa(modulus, exponent).serialize[Hex] == key.public.bytes.serialize[Hex]
+      . assert(identity)
+
+      test(m"An EC key is rebuilt from its scalar and point"):
+        val key = PrivateKey.generate[Ecdsa[256]]()
+        val scalar = Pkcs8.scalar(key.pem(Divulgence).data).or(panic(m"the key carries this part"))
+        val point = key.public.raw.or(panic(m"the key carries this part"))
+        val rebuilt = Der(Pkcs8.ec(256, scalar, point)).as[PrivateKey[Ecdsa[256]]]
+        key.public.verify(pangram, rebuilt.sign(pangram))
+      . assert(identity)
+
+      test(m"An Ed25519 key is rebuilt from its seed and public key"):
+        val key = PrivateKey.generate[Ed25519]()
+        val seed = Pkcs8.seed(key.pem(Divulgence).data).or(panic(m"the key carries this part"))
+        val public = key.public.raw.or(panic(m"the key carries this part"))
+        val rebuilt = Der(Pkcs8.seeded(KeyAlgorithm.Ed25519, seed, public)).as[PrivateKey[Ed25519]]
+        key.public.verify(pangram, rebuilt.sign(pangram))
+      . assert(identity)
+
     suite(m"Pure-Scala provider (SoundnessCrypto)"):
       // The pure-Scala provider is checked two ways: against the standards' published vectors, and
       // against the JDK provider, in both directions, so that a ciphertext, tag, key or signature
