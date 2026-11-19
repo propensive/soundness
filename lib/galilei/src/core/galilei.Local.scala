@@ -73,12 +73,26 @@ object Local:
 
       def length(text: Text): 1 | 3 =
         if text.starts(t"/") then 1
-        else if text.s.charAt(1) == ':' && text.s.charAt(2) == '\\' then 3
+        else if driven(text) then 3
         else abort(Path.Error(_.InvalidRoot))
 
       def decode(text: Text): %.type | Drive =
         length(text) match
           case 1 => %
           case 3 => Drive(text.s.charAt(0).lest(Path.Error(_.InvalidRoot)))
+
+  // Whether the text begins with a drive's root, such as `C:\`.
+  private def driven(text: Text): Boolean =
+    text.length >= 3 && text.s.charAt(1) == ':' && text.s.charAt(2) == '\\'
+
+  // A path rooted as some host roots its paths — at `/`, or at a drive — may be reinterpreted
+  // on `Local`: `(% / "etc").on[Local]`, a `p"…"` literal, or a path on `Linux`, `MacOs` or
+  // `Windows`. The instance is for any root type, and checks the root's text, since the type is
+  // often not known: that of `Drive('C') / "x"` is abstract, as is that of a `Path on Linux`
+  // received from elsewhere. As for a `Radical` root in `Path#on`, a root which is neither
+  // cannot have come from a valid path on such a platform, and throws.
+  given submissible: [root] => root is Submissible on Local = text =>
+    if text != t"/" && !(text.length == 3 && driven(text))
+    then unsafely(abort(Path.Error(_.InvalidRoot)))
 
 sealed trait Local extends Platform

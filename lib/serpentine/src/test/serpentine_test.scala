@@ -34,6 +34,7 @@ package serpentine
 
 import soundness.*
 import denominative.dysasymptotics.linearSize // the suite counts small error lists
+import systems.javaBaseSystem // `Local is Filesystem` reads the separator from the system
 
 object Tests extends Suite("paths", m"internal Benchmarks"):
   def run(): Unit =
@@ -187,6 +188,46 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
           val path = (% / "verona").on[Linux].on[MacOs]
         .map(_.message)
       . assert(_ == Nil)
+
+      test(m"Rooted path can be converted to Local"):
+        val path: Path on Local = (% / "verona" / "juliet").on[Local]
+        path.descent.to(List)
+
+      . assert(_ == List(t"juliet", t"verona"))
+
+      test(m"Drive path can be converted to Local"):
+        val path: Path on Local = (Drive('C') / "verona").on[Local]
+        path.root
+
+      . assert(_ == t"C:\\")
+
+      test(m"Linux path can be converted to Local"):
+        val path: Path on Local = (% / "verona").on[Linux].on[Local]
+        path.descent.to(List)
+
+      . assert(_ == List(t"verona"))
+
+      test(m"Rooted path conforms to an expected Local path"):
+        demilitarize:
+          val path: Path on Local = % / "verona" / "juliet"
+        .map(_.message)
+      . assert(_ == Nil)
+
+      test(m"Path literal can be converted to Local"):
+        val path: Path on Local = p"/verona/juliet".on[Local]
+        path.descent.to(List)
+
+      . assert(_ == List(t"juliet", t"verona"))
+
+      test(m"Decode a drive path on Local"):
+        unsafely(t"C:\\verona\\juliet".as[Path on Local]).root
+
+      . assert(_ == t"C:\\")
+
+      test(m"A short rootless text is not a Local path"):
+        safely(t"C:".as[Path on Local])
+
+      . assert(_ == Unset)
 
     suite(m"Relative paths"):
       test(m"Create a relative path"):

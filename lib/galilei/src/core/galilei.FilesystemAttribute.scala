@@ -55,7 +55,10 @@ object FilesystemAttribute:
     def update(value: Boolean): Unit raises Io.Error =
       backend.update(path, Attribute.Writable, value)
 
-  class Executable[plane <: Posix: Filesystem](path: Path on plane)
+  // Any platform, not only `Posix`: a `Path on Local` must be able to mark a file executable.
+  // Where the host has no such bit (Windows), reading it reports whether the file can be run
+  // and setting it changes nothing.
+  class Executable[plane <: Platform: Filesystem](path: Path on plane)
     ( using backend: FilesystemBackend on plane ):
 
     def apply(): Boolean = backend.attribute(path, Attribute.Executable)

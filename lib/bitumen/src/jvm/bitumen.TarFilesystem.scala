@@ -55,7 +55,7 @@ private[bitumen] object TarFilesystem:
   // tarball of many files in one directory would otherwise repeat for every file. The set must be
   // exact, since a skipped `mkdir` would fail the write that follows, and it must not outlive the
   // extraction, since the disk may change between runs.
-  def applyEntry[plane <: Posix: Filesystem]
+  def applyEntry[plane <: Platform: Filesystem]
     ( root: Path on plane, entry: Tar.Entry, created: scm.HashSet[jnf.Path] )
     ( using CreateParents on plane,
             OverwritePreexisting on plane,
@@ -105,14 +105,14 @@ private[bitumen] object TarFilesystem:
       jnf.Files.createDirectories(parent)
       created += parent
 
-  private def absolutize[plane <: Posix: Filesystem]
+  private def absolutize[plane <: Platform: Filesystem]
     ( root: Path on plane, ref: Tar.Ref )
     ( using Tactic[Tar.Error] )
   :   Path on plane =
 
     decodeAbsolute(root.encode.s+"/"+ref.show.s, root)
 
-  private def decodeAbsolute[plane <: Posix: Filesystem]
+  private def decodeAbsolute[plane <: Platform: Filesystem]
     ( text: String, base: Path on plane )
     ( using Tactic[Tar.Error] )
   :   Path on plane =
