@@ -595,15 +595,17 @@ object Tests extends Suite("dag", m"Acyclicity Tests"):
     suite(m"Layering"):
       test(m"a chain has one node per layer"):
         val dag = Dag(t"a" -> Set(), t"b" -> Set(t"a"), t"c" -> Set(t"b"))
-        List.from(dag.layered.layers.map { layer => List.from(layer.map { case Layering.Vertex.Real(n) => n; case other => t"?" }) })
-      . assert(_ == List(List(t"a"), List(t"b"), List(t"c")))
+        dag.layered.layers
+      . assert: layers =>
+          import Layering.Vertex.Real
+          layers == Sequence(Sequence(Real(t"a")), Sequence(Real(t"b")), Sequence(Real(t"c")))
 
       test(m"the diamond's middle layer holds both siblings"):
-        List.from(diamond.layered.layers.map(_.length))
-      . assert(_ == List(1, 2, 1))
+        diamond.layered.layers.map(_.size)
+      . assert(_ == Sequence(1, 2, 1))
 
       test(m"ranks are the longest path from a source"):
-        Map.from(diamond.layered.rank)
+        diamond.layered.rank
       . assert(_ == Map(t"d" -> 0, t"b" -> 1, t"c" -> 1, t"a" -> 2))
 
       // In first-reach order `c` precedes `d`, which crosses `a → d` over `b → c`; swapping
@@ -611,18 +613,18 @@ object Tests extends Suite("dag", m"Acyclicity Tests"):
       test(m"a crossing in the initial order is removed"):
         val dag = Dag(t"a" -> Set(), t"b" -> Set(), t"c" -> Set(t"a", t"b"), t"d" -> Set(t"a"))
         val layering = dag.layered
-        (layering.crossings, layering.position(t"d") < layering.position(t"c"))
-      . assert(_ == (0, true))
+        (layering.crossings, layering.position.at(t"d"), layering.position.at(t"c"))
+      . assert(_ == (0, 0, 1))
 
       test(m"an edge spanning two layers passes through a virtual vertex"):
         val dag = Dag(t"a" -> Set(), t"b" -> Set(t"a"), t"c" -> Set(t"a", t"b"))
-        dag.layered.layers(1).contains(Layering.Vertex.Virtual(t"a", t"c"))
+        dag.layered.layers.at(Sec).let(_.has(Layering.Vertex.Virtual(t"a", t"c")))
       . assert(_ == true)
 
       test(m"links join every adjacent pair of layers"):
         val dag = Dag(t"a" -> Set(), t"b" -> Set(t"a"), t"c" -> Set(t"a", t"b"))
-        List.from(dag.layered.links.map(_.length))
-      . assert(_ == List(2, 2))
+        dag.layered.links.map(_.size)
+      . assert(_ == Sequence(2, 2))
 
       // `b` feeds only `d`, two layers down: `Balanced` sinks it to the layer above `d`.
       test(m"balanced ranking pulls a source toward its dependent"):
@@ -630,16 +632,24 @@ object Tests extends Suite("dag", m"Acyclicity Tests"):
           Dag(t"a" -> Set(), t"b" -> Set(), t"c" -> Set(t"a"), t"d" -> Set(t"b", t"c"))
 
         import rankings.balancedRanking
-        dag.layered.rank(t"b")
+        dag.layered.rank.at(t"b")
       . assert(_ == 1)
 
       test(m"longest-path ranking keeps every source in the first layer"):
         val dag =
           Dag(t"a" -> Set(), t"b" -> Set(), t"c" -> Set(t"a"), t"d" -> Set(t"b", t"c"))
 
-        dag.layered.rank(t"b")
+        dag.layered.rank.at(t"b")
       . assert(_ == 0)
 
       test(m"an empty graph has no layers"):
         Dag[Text]().layered.layers
-      . assert(_ == Nil)
+      . assert(_ == Sequence())
+
+      test(m"a node which is not in the graph has no rank"):
+        diamond.layered.rank.at(t"z")
+      . assert(_ == Unset)
+
+      test(m"a layer's links are pairs of positions in the two layers"):
+        diamond.layered.links.at(Prim)
+      . assert(_ == List((0, 0), (0, 1)))

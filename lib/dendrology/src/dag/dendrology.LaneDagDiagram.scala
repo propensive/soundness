@@ -294,7 +294,10 @@ case class LaneDagDiagram[node](lines: List[(List[DagDiagram.Tile], Optional[nod
 
     val rendered = lines.map: (tiles, node) =>
       style.serialize
-        ( tiles.to(proscenium.List), Map.empty, widths.to(proscenium.List), node.let(label) )
+        ( tiles.to(proscenium.List),
+          proscenium.Map.empty,
+          widths.to(proscenium.List),
+          node.let(label) )
 
     rendered.to(proscenium.List)
 
@@ -307,8 +310,9 @@ case class LaneDagDiagram[node](lines: List[(List[DagDiagram.Tile], Optional[nod
     val rendered = lines.map: (tiles, node) =>
       val nodeIdx = tiles.indexOf(Node)
 
-      val glyphs: Map[Int, line] =
-        if nodeIdx < 0 then Map.empty else node.let{ n => Map(nodeIdx -> glyph(n)) }.or(Map.empty)
+      val glyphs: proscenium.Map[Int, line] =
+        if nodeIdx < 0 then proscenium.Map.empty
+        else node.let { n => proscenium.Map(nodeIdx -> glyph(n)) }.or(proscenium.Map.empty)
 
       style.serialize
         ( tiles.to(proscenium.List), glyphs, widths.to(proscenium.List), node.let(label) )
