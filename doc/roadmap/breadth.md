@@ -66,7 +66,7 @@ carries.
 Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and a
 scripted registration-and-assertion ceremony passes against a reference authenticator.
 
-Done: passepartout (2026-11-20). The relying party's two ceremonies, with every check of
+Done: chatelaine (2026-11-20). The relying party's two ceremonies, with every check of
 WebAuthn Level 2 §7.1 and §7.2, and the `none` and `packed` attestation formats. The
 reference authenticator is the specification's own: the registration and authentication
 outputs of its test vectors, for ES256, ES384, ES512, RS256 and Ed25519 credentials, are

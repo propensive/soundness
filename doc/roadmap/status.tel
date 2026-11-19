@@ -540,7 +540,7 @@ item
   horizon mid
   status done
   needs brd-1
-  baseline  lib/passepartout: WebAuthn.registration/register and authentication/authenticate, `none` and `packed` attestation, with a `server` component; the registration and authentication ceremonies of the W3C specification's test vectors (§16.2–16.11) pass, as do scripted ceremonies against a software authenticator in the test sources; no browser's virtual authenticator has been driven; `↯/s.148.1`; doc/en/modules/webauthn.md (2026-11-20)
+  baseline  lib/chatelaine: WebAuthn.registration/register and authentication/authenticate, `none` and `packed` attestation, with a `server` component; the registration and authentication ceremonies of the W3C specification's test vectors (§16.2–16.11) pass, as do scripted ceremonies against a software authenticator in the test sources; no browser's virtual authenticator has been driven; `↯/s.148.1`; doc/en/modules/webauthn.md (2026-11-20)
   criterion  WebAuthn module ships with tests, SN pages and a topic; scripted ceremony passes against a reference authenticator
 
 item

@@ -24,6 +24,7 @@ cardinality: refinement-types numeric-range bounded-numbers ranges
 cartouche: label-placement captions obstacles arranger collision-avoidance chart-labels
 cataclysm: css stylesheet selectors keyframes media-queries fonts typesafe-css
 charisma: chemistry periodic-table chemical-equation molecule chemical-formula
+chatelaine: webauthn passkey fido2 authentication passwordless security-key attestation
 chiaroscuro: diff comparison contrast similarity test-assertions decomposition
 clavichord: keyboard keypress keys modifiers input
 coaxial: socket tcp udp multicast dns networking domain-socket bindable connection
@@ -88,7 +89,6 @@ octogenarian: git version-control git-repository commit ssh-url
 orthodoxy: oauth authentication authorization oauth2 scope
 panopticon: lens optics composable case-class accessor
 parasite: async threading concurrency tasks promise daemon supervision
-passepartout: webauthn passkey fido2 authentication passwordless security-key attestation
 perihelion: websocket frame ws-protocol
 phoenicia: fonts typography ttf truetype font-metrics opentype
 plutocrat: currency money price finance luhn isin fixed-point

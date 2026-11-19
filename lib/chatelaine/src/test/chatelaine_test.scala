@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package passepartout
+package chatelaine
 
 import soundness.*
 
@@ -44,7 +44,7 @@ import formatting.compactJsonFormatting
 import dysasymptotics.linearSize
 import chronometries.unixChronometry
 
-object Tests extends Suite("webauthn", m"Passepartout tests"):
+object Tests extends Suite("webauthn", m"Chatelaine tests"):
   val globe = WebAuthn.RelyingParty(t"globe.example", t"The Globe", List(t"https://globe.example"))
   val burbage = WebAuthn.User(t"burbage-1567".in[Data], t"burbage", t"Richard Burbage")
 

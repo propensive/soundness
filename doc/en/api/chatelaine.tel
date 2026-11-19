@@ -1,11 +1,11 @@
 tel 1.0
 
-base passepartout
+base chatelaine
 import soundness
 
 info   WebAuthn for relying parties: registration and authentication ceremonies for passkeys and security keys
 detail
-    _Passepartout_ implements the relying party's side of
+    _Chatelaine_ implements the relying party's side of
     [Web Authentication](https://www.w3.org/TR/webauthn-2/): passwordless sign-in with a key
     pair an authenticator makes for one site and never lets out. Everything is a member of
     `WebAuthn`.
@@ -36,17 +36,17 @@ detail
 
     The library has two source sets:
 
-    - `passepartout.core` — `WebAuthn`: the options, the checking of answers, and the
+    - `chatelaine.core` — `WebAuthn`: the options, the checking of answers, and the
       `WebAuthn.Credential` a relying party stores.
-    - `passepartout.server` — `Ceremonies`, which keeps each session's challenge between
+    - `chatelaine.server` — `Ceremonies`, which keeps each session's challenge between
       the two requests of a ceremony.
 
     Both are exported to the `soundness` umbrella. There are no choice packages of its own;
     the ceremonies need a `Crypto` provider (`providers.javaBaseProvider`), and registration
     a `Clock`.
 
-refer passepartout.WebAuthn
-refer passepartout.WebAuthn.Error
+refer chatelaine.WebAuthn
+refer chatelaine.WebAuthn.Error
 
 entry .WebAuthn   the relying party's side of Web Authentication: options, and the checking of answers
   detail

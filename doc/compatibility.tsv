@@ -48,6 +48,7 @@ cardinality	yes	yes	yes	js
 cartouche	yes	yes	yes	js		
 cataclysm	yes	yes	yes	js		
 charisma	yes	yes	yes	js		
+chatelaine	yes	no	no	no		WebAuthn over `enigmatic.cose` and `enigmatic.x509`; ECDSA and RSA, which every credential uses, are JVM-only
 chiaroscuro	yes	yes	yes	js		
 clavichord	yes	yes	yes	js		
 coaxial	yes	core	yes	wasi	backends: native; JVM-only: jvm	no Scala.js socket backend (`jvm` is `java.net`; `native` is Scala Native's javalib sockets, multicast included); WASI sockets are TCP-only
@@ -112,7 +113,6 @@ octogenarian	yes	no	yes	no	backends: core-jvm+core-native	no Scala.js filesystem
 orthodoxy	yes	no	no	no		`java.security.SecureRandom`, absent from both javalibs; `server` is over `telekinesis.jvm`
 panopticon	yes	yes	yes	js		
 parasite	yes	core	yes	core	backends: core-jvm+core-native; JVM-only: jvm	`jvm` is `java.lang.management` heap/GC introspection; Scala.js has no threads for the supervisors to fork
-passepartout	yes	no	no	no		WebAuthn over `enigmatic.cose` and `enigmatic.x509`; ECDSA and RSA, which every credential uses, are JVM-only
 perihelion	yes	no	no	no		depends on JVM-only `exoskeleton.core` and `telekinesis.jvm`
 phoenicia	yes	yes	yes	js		
 plutocrat	yes	yes	yes	js		
