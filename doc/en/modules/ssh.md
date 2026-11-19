@@ -187,7 +187,7 @@ import pathInterfaces.pathOnLinux, temporaryDirectories.javaBaseTemporaryDirecto
 given Ssh.Credentials = Ssh.Credentials.agent(t"/tmp/ssh-agent.sock")
 given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
 
-val directory = temporaryDirectory[Path on Linux] / "soundness"
+val directory = temporaryDirectory[Path on Local] / "soundness"
 Git.clone(t"git@github.com:propensive/soundness.git", directory)
 ```
 

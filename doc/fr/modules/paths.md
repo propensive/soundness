@@ -168,12 +168,19 @@ Out.println((work + up).inspect)
 val linux: Path on Linux = (% / "home" / "work").on[Linux]
 ```
 
-- `Linux`, `Posix`, `MacOs` and `Windows` are the platforms, and `Local` is whichever of them the
-- running machine uses. [Names](names.md) describes how each platform's rules for an element
-- are stated and checked.
-+ `Linux`, `Posix`, `MacOs` et `Windows` sont les plateformes, et `Local` est celle d'entre elles
-+ qu'utilise la machine en cours d'exécution. [Noms](names.md) décrit comment les règles de
-+ chaque plateforme pour un élément sont énoncées et vérifiées.
+- `Linux`, `Posix`, `MacOs` and `Windows` are the platforms of particular systems. `Local` is the
+- platform of whichever machine the program runs on: a platform of its own, whose root is `%` or
+- a `Drive`, whose separator is the running system's, and whose rules for a name are the
+- strictest of them all, so that a `Path on Local` is valid wherever the program runs. Code
+- which should work on any system types its paths `on Local`. [Names](names.md) describes how
+- each platform's rules for an element are stated and checked.
++ `Linux`, `Posix`, `MacOs` et `Windows` sont les plateformes de systèmes particuliers. `Local`
++ est la plateforme de la machine sur laquelle le programme s'exécute, quelle qu'elle soit : une
++ plateforme à part entière, dont la racine est `%` ou un `Drive`, dont le séparateur est celui
++ du système en cours d'exécution, et dont les règles pour un nom sont les plus strictes de
++ toutes, de sorte qu'un `Path on Local` est valide partout où le programme s'exécute. Le code
++ qui doit fonctionner sur tout système type ses chemins `on Local`. [Noms](names.md) décrit
++ comment les règles de chaque plateforme pour un élément sont énoncées et vérifiées.
 
 - ### Between two paths
 + ### Entre deux chemins

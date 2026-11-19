@@ -93,7 +93,7 @@ val a4 = Pdf.Rect
 import pathInterfaces.pathOnLinux
 import temporaryDirectories.javaBaseTemporaryDirectory
 
-val path = temporaryDirectory[Path on Linux] / "tutorial.pdf"
+val path = temporaryDirectory[Path on Local] / "tutorial.pdf"
 ```
 
 ```scala fuel

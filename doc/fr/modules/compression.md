@@ -111,7 +111,7 @@ import filesystemBackends.javaBaseFilesystem
 import pathInterfaces.pathOnLinux
 import temporaryDirectories.javaBaseTemporaryDirectory
 
-val archive = temporaryDirectory[Path on Linux] / "compression" / Uuid().show / "fox.txt.gz"
+val archive = temporaryDirectory[Path on Local] / "compression" / Uuid().show / "fox.txt.gz"
 
 archive.create[File](CreateFlag.Parents): handle ?=>
   payload.stream.compress[Gzip].pump(handle.intake())

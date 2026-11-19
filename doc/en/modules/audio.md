@@ -107,7 +107,7 @@ import filesystemBackends.javaBaseFilesystem
 import pathInterfaces.pathOnLinux
 import temporaryDirectories.javaBaseTemporaryDirectory
 
-val audioDirectory = temporaryDirectory[Path on Linux] / "audio" / Uuid().show
+val audioDirectory = temporaryDirectory[Path on Local] / "audio" / Uuid().show
 val wavPath = audioDirectory / "tone.wav"
 ```
 

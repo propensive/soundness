@@ -46,7 +46,7 @@ import environments.javaBaseEnvironment
 import filesystemBackends.javaBaseFilesystem
 import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 
-val directory = temporaryDirectory[Path on Linux] / "git" / Uuid().show
+val directory = temporaryDirectory[Path on Local] / "git" / Uuid().show
 directory.create[Directory](CreateFlag.Parents)
 ```
 

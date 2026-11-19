@@ -74,7 +74,7 @@ import strategies.throwUnsafely
 import temporaryDirectories.javaBaseTemporaryDirectory
 import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
 
-val work = temporaryDirectory[Path on Linux] / "archives" / Uuid().show
+val work = temporaryDirectory[Path on Local] / "archives" / Uuid().show
 work.create[Directory](CreateFlag.Parents)
 ```
 
@@ -327,7 +327,7 @@ tarPath.open[Tar](Tar.Flag.Gzip):
 ```scala fuel
 run
 ##
-val unpacked: Path on Linux = work / "unpacked"
+val unpacked: Path on Local = work / "unpacked"
 tarball.extractTo(unpacked)
 
 Out.println((unpacked / "README").open[File]()(file.read[Text]))

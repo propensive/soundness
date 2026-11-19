@@ -454,7 +454,7 @@ is zeroed once the store is loaded. Inside the scope, `keystore` is the open sto
 import pathInterfaces.pathOnLinux
 import temporaryDirectories.javaBaseTemporaryDirectory
 
-val storePath = temporaryDirectory[Path on Linux] / "cryptography" / "store.p12"
+val storePath = temporaryDirectory[Path on Local] / "cryptography" / "store.p12"
 
 def readAliases(): List[Text] =
   storePath.open[Keystore](Password(t"sesame")):

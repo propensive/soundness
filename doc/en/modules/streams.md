@@ -102,7 +102,7 @@ bytes, or a stream of either, and the destination's `Writable` instance receives
 ```scala fuel
 typecheck
 ##
-val destination = t"/tmp/streams-tutorial.txt".as[Path on Linux]
+val destination = t"/tmp/streams-tutorial.txt".as[Path on Local]
 
 source.writeTo(destination)
 ```

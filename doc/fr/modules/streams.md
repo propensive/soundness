@@ -164,7 +164,7 @@ Out.println(source.read[Data].length.show)
 ```scala fuel
 typecheck
 ##
-val destination = t"/tmp/streams-tutorial.txt".as[Path on Linux]
+val destination = t"/tmp/streams-tutorial.txt".as[Path on Local]
 
 source.writeTo(destination)
 ```

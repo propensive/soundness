@@ -3,7 +3,7 @@
 ### About
 
 Files on a disk are read and written through the typed [paths](paths.md) which already
-describe them. A `Path on Linux` has the operations which touch the disk: opening it to read
+describe them. A `Path on Local` has the operations which touch the disk: opening it to read
 or write, creating it as a file or a directory, listing its children, copying, moving and
 deleting. Each operation declares the errors it may raise.
 
@@ -71,7 +71,7 @@ row  `stdios`, `termcapDefinitions`  where the samples print their results
 The samples work in a directory of their own, beneath the system's temporary directory:
 
 ```scala
-val directory = temporaryDirectory[Path on Linux] / "soundness-filesystem-tutorial"
+val directory = temporaryDirectory[Path on Local] / "soundness-filesystem-tutorial"
 val file = directory / "notes.txt"
 ```
 
@@ -590,7 +590,7 @@ type of every digest it accepts, so a SHA-256 store cannot be asked for a BLAKE3
 ```scala
 import providers.javaBaseProvider
 
-val store: Cas in Sha2[256] on (Path on Linux) = Cas[Sha2[256]](directory, t".blob")
+val store: Cas in Sha2[256] on (Path on Local) = Cas[Sha2[256]](directory, t".blob")
 ```
 
 ```scala fuel
@@ -652,10 +652,10 @@ directories under the root, are reached by navigating and applying:
 ```scala fuel
 typecheck
 ##
-val home = Home[Path on Linux]()
-val cache = Home.Cache[Path on Linux]()
-val bin = Home.Local.Bin[Path on Linux]()
-val share = Base.Usr.Share[Path on Linux]()
+val home = Home[Path on Local]()
+val cache = Home.Cache[Path on Local]()
+val bin = Home.Local.Bin[Path on Local]()
+val share = Base.Usr.Share[Path on Local]()
 ```
 
 Each object is named for the directory it stands for, capitalized, with any leading `.`
@@ -667,7 +667,7 @@ and not as text, means that a mistyped directory does not compile:
 compile
 errors show
 ##
-Home.Cashe[Path on Linux]()
+Home.Cashe[Path on Local]()
 ```
 
 These are the layouts, and whether `readOnly` marks each as not meant to be written to:
@@ -722,7 +722,7 @@ Most layouts are fixed places. The five which the
 [XDG specification](environment.md#standard-directories) lets the user move are not:
 `Home.Config` is normally `$HOME/.config`, but is `$XDG_CONFIG_HOME` where the user has set
 that to an absolute path. Applying a layout constructs a value of
-whichever directory type is asked for, so the same names serve a `Path on Linux` and any
+whichever directory type is asked for, so the same names serve a `Path on Local` and any
 other representation.
 
 ### Search paths
@@ -736,10 +736,10 @@ corresponding plane is resolved with `discover` to the first of them which holds
 ```scala fuel
 typecheck
 ##
-given stems: (Searchpaths.Stems on Xdg.Data onto Linux) = new Searchpaths.Stems:
+given stems: (Searchpaths.Stems on Xdg.Data onto Local) = new Searchpaths.Stems:
   type Plane = Xdg.Data
-  type Target = Linux
-  val stems: List[Path on Linux] = List(directory, directory / "inner")
+  type Target = Local
+  val stems: List[Path on Local] = List(directory, directory / "inner")
 
 val found = (% / "inner.txt").on[Xdg.Data].discover()
 ```
@@ -771,12 +771,12 @@ event. `batches` gives a `Watch.Batch` each time no event has arrived for the gi
 period, and its `paths` lists every changed path once:
 
 ```scala
-def rebuild(changed: List[Path on Linux]): Unit = ()
+def rebuild(changed: List[Path on Local]): Unit = ()
 
 def observeBatches(): Unit =
   directory.open[Watch](): watcher ?=>
     watcher.batches(0.2*Second).each: batch =>
-      rebuild(batch.paths[Path on Linux])
+      rebuild(batch.paths[Path on Local])
 ```
 
 The default watcher uses the operating system's own notifications of changes to files. Where

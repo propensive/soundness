@@ -261,7 +261,7 @@ import filesystemOptions.dereferenceSymlinks
 import pathInterfaces.pathOnLinux
 import temporaryDirectories.javaBaseTemporaryDirectory
 
-val directory = temporaryDirectory[Path on Linux] / "hashing"
+val directory = temporaryDirectory[Path on Local] / "hashing"
 directory.create[Directory](CreateFlag.Replace)
 
 val identity: Digest in Sha2[256] = directory.checksum[Sha2[256]]

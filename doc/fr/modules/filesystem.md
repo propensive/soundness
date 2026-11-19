@@ -5,11 +5,11 @@
 + ### Présentation
 
 - Files on a disk are read and written through the typed [paths](paths.md) which already
-- describe them. A `Path on Linux` has the operations which touch the disk: opening it to read
+- describe them. A `Path on Local` has the operations which touch the disk: opening it to read
 - or write, creating it as a file or a directory, listing its children, copying, moving and
 - deleting. Each operation declares the errors it may raise.
 + Les fichiers sur un disque se lisent et s'écrivent à travers les [chemins](paths.md) typés
-+ qui les décrivent déjà. Un `Path on Linux` dispose des opérations qui touchent le disque :
++ qui les décrivent déjà. Un `Path on Local` dispose des opérations qui touchent le disque :
 + l'ouvrir pour lire ou écrire, le créer comme fichier ou comme répertoire, lister ses
 + enfants, copier, déplacer et supprimer. Chaque opération déclare les erreurs qu'elle peut
 + lever.
@@ -113,7 +113,7 @@ import textSanitizers.strictSanitizer
 + temporaire du système :
 
 ```scala
-val directory = temporaryDirectory[Path on Linux] / "soundness-filesystem-tutorial"
+val directory = temporaryDirectory[Path on Local] / "soundness-filesystem-tutorial"
 val file = directory / "notes.txt"
 ```
 
@@ -898,7 +898,7 @@ val canonical = (directory / "renamed.txt").canonical()
 ```scala
 import providers.javaBaseProvider
 
-val store: Cas in Sha2[256] on (Path on Linux) = Cas[Sha2[256]](directory, t".blob")
+val store: Cas in Sha2[256] on (Path on Local) = Cas[Sha2[256]](directory, t".blob")
 ```
 
 ```scala fuel
@@ -989,10 +989,10 @@ val attributes = file match
 ```scala fuel
 typecheck
 ##
-val home = Home[Path on Linux]()
-val cache = Home.Cache[Path on Linux]()
-val bin = Home.Local.Bin[Path on Linux]()
-val share = Base.Usr.Share[Path on Linux]()
+val home = Home[Path on Local]()
+val cache = Home.Cache[Path on Local]()
+val bin = Home.Local.Bin[Path on Local]()
+val share = Base.Usr.Share[Path on Local]()
 ```
 
 - Each object is named for the directory it stands for, capitalized, with any leading `.`
@@ -1009,7 +1009,7 @@ val share = Base.Usr.Share[Path on Linux]()
 compile
 errors show
 ##
-Home.Cashe[Path on Linux]()
+Home.Cashe[Path on Local]()
 ```
 
 - These are the layouts, and whether `readOnly` marks each as not meant to be written to:
@@ -1108,14 +1108,14 @@ Home.Cashe[Path on Linux]()
 - from the environment. The locations which the
 - [XDG specification](environment.md#standard-directories) lets the user move, such as
 - `$XDG_CONFIG_HOME`, are given by `Xdg` instead. Applying a layout constructs a value of
-- whichever directory type is asked for, so the same names serve a `Path on Linux` and any
+- whichever directory type is asked for, so the same names serve a `Path on Local` and any
 - other representation.
 + Une disposition est un emplacement fixe. `Home.Config` vaut toujours `$HOME/.config`, et
 + seul `$HOME` est lu dans l'environnement. Les emplacements que la
 + [spécification XDG](environment.md#standard-directories) permet à l'utilisateur de
 + déplacer, comme `$XDG_CONFIG_HOME`, sont plutôt donnés par `Xdg`. Appliquer une
 + disposition construit une valeur du type de répertoire demandé, quel qu'il soit, si bien
-+ que les mêmes noms servent pour un `Path on Linux` et pour toute autre représentation.
++ que les mêmes noms servent pour un `Path on Local` et pour toute autre représentation.
 
 - ### Search paths
 + ### Chemins de recherche
@@ -1137,10 +1137,10 @@ typecheck
 ##
 import galilei.search
 
-given stems: (Searchpaths.Stems on Xdg.Data onto Linux) = new Searchpaths.Stems:
+given stems: (Searchpaths.Stems on Xdg.Data onto Local) = new Searchpaths.Stems:
   type Plane = Xdg.Data
-  type Target = Linux
-  val stems: List[Path on Linux] = List(directory, directory / "inner")
+  type Target = Local
+  val stems: List[Path on Local] = List(directory, directory / "inner")
 
 val found = (% / "inner.txt").on[Xdg.Data].search()
 ```
@@ -1185,12 +1185,12 @@ def observe(): Unit =
 + chemin modifié une seule fois :
 
 ```scala
-def rebuild(changed: List[Path on Linux]): Unit = ()
+def rebuild(changed: List[Path on Local]): Unit = ()
 
 def observeBatches(): Unit =
   directory.open[Watch](): watcher ?=>
     watcher.batches(0.2*Second).each: batch =>
-      rebuild(batch.paths[Path on Linux])
+      rebuild(batch.paths[Path on Local])
 ```
 
 - The default watcher uses the operating system's own notifications of changes to files. Where

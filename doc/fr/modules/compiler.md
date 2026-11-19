@@ -378,7 +378,7 @@ val steps = Toolchain(jarEdges(), dexEdges(), apkEdges()).path(Toolchain.Univers
 + chargée, à sa sortie compilée :
 
 ```scala
-def stage(out: Path on Linux, uuid: Uuid, executor: Fqcn)(using Monitor): Path on Linux =
+def stage(out: Path on Local, uuid: Uuid, executor: Fqcn)(using Monitor): Path on Local =
   Toolchain(jarEdges()).produce
     ( Deliverable.Emission(out, Bundler.applicationClasspath),
       Toolchain.Universe.Classfile,
@@ -626,8 +626,8 @@ val report = Shrink(keep = List(t"com.example.plugins.**"))(classpath, List(fqcn
 + nomme le répertoire des packages WIT et le monde avec lequel lier :
 
 ```scala
-def component(witDirectory: Path on Linux, emission: Deliverable, destination: Path on Linux)
-:   Path on Linux =
+def component(witDirectory: Path on Local, emission: Deliverable, destination: Path on Local)
+:   Path on Local =
   given WasiToolchain = WasiToolchain()
   given Wasi.World = Wasi.World(witDirectory, t"my-world")
 
@@ -678,7 +678,7 @@ def component(witDirectory: Path on Linux, emission: Deliverable, destination: P
 + celui de l'hôte de build lui-même :
 
 ```scala
-def binary(emission: Deliverable, destination: Path on Linux): Path on Linux = supervise:
+def binary(emission: Deliverable, destination: Path on Local): Path on Local = supervise:
   Toolchain(nativeEdges(Triple.Arm64MacOs, Triple.X64Linux)).produce
     ( emission,
       Toolchain.Universe.Nir,
@@ -713,7 +713,7 @@ def binary(emission: Deliverable, destination: Path on Linux): Path on Linux = s
 + `kotlincOptions` et sont vérifiées par rapport à la version de la même manière :
 
 ```scala
-def kotlin(kotlinSource: Text, out: Path on Linux): Compiler.Result = supervise:
+def kotlin(kotlinSource: Text, out: Path on Local): Compiler.Result = supervise:
   val kotlinc = Kotlinc[2.4](List(kotlincOptions.warnings.asErrors, kotlincOptions.jvmTarget(17)))
   val process = kotlinc(classpath)(Map(t"demo/Greeting.kt" -> kotlinSource), out)
   process.complete()

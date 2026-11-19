@@ -246,7 +246,7 @@ import filesystemBackends.javaBaseFilesystem
 import pathInterfaces.pathOnLinux
 import temporaryDirectories.javaBaseTemporaryDirectory
 
-val logFile = temporaryDirectory[Path on Linux] / "logging" / "app.log"
+val logFile = temporaryDirectory[Path on Local] / "logging" / "app.log"
 logFile.create[File](CreateFlag.Parents)
 
 supervise:
