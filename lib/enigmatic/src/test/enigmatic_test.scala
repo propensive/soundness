@@ -563,6 +563,7 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         path
 
       import galilei.Local.pathOnLocal, filesystemBackends.javaBaseFilesystem
+      import systems.javaBaseSystem
       import systems.javaBaseSystem, temporaryDirectories.systemTemporaryDirectory
 
       // The keystore is written to a scratch directory, deleted when the suite has run; so each

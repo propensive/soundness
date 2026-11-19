@@ -245,6 +245,7 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
       suite(m"Unix domain socket server and client"):
         test(m"A server receives the bytes a client transmits"):
           import galilei.Local.pathOnLocal, filesystemBackends.javaBaseFilesystem
+          import systems.javaBaseSystem
 
           // The socket is made in a scratch directory beneath `/tmp`, deleted when the test ends:
           // not beneath `java.io.tmpdir`, which on macOS is too long a path for a socket.
@@ -269,6 +270,7 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
       suite(m"Duplex connections"):
         test(m"A Duplex sends and receives over a domain socket"):
           import galilei.Local.pathOnLocal, filesystemBackends.javaBaseFilesystem
+          import systems.javaBaseSystem
 
           // The socket is made in a scratch directory beneath `/tmp`, deleted when the test ends:
           // not beneath `java.io.tmpdir`, which on macOS is too long a path for a socket.

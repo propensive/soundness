@@ -250,6 +250,7 @@ object Tests extends Suite("ssh", m"Susurration tests"):
         import internetAccess.online
 
         import galilei.Local.pathOnLocal, filesystemBackends.javaBaseFilesystem
+        import systems.javaBaseSystem
 
         // The keys and configuration are written to a scratch directory beneath `/tmp`, which
         // is deleted when the suite has run; so every test is a `check`, run where it stands,
