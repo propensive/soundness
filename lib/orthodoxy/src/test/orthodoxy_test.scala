@@ -41,6 +41,9 @@ import internetAccess.online
 import logging.silentLogging
 import strategies.throwUnsafely
 import textSanitizers.skipSanitizer
+import providers.javaBaseProvider
+import cloaks.heapCloak
+import formatting.compactJsonFormatting
 
 // A backend which records the token request and answers with a canned response
 class TokenServer(canned: () => Http.Response) extends Http.Backend:
@@ -132,6 +135,106 @@ object Tests extends Suite("oauth", m"Orthodoxy Tests"):
         capture[OAuth.Error](issuer.authorizationUrl(Nil, t"xyz")).reason match
           case OAuth.Error.Reason.Misconfigured(_) => true
           case _                                   => false
+      . assert(_ == true)
+
+    suite(m"OpenID Connect"):
+      case class Session(nonce: Optional[Text] = Unset, azp: Optional[Text] = Unset)
+
+      val key = PrivateKey.generate[Ecdsa[256]]()
+      val keys = Jwks(List(Jwk(key.public).copy(keyId = t"globe-1599")))
+      val header = Jose.Header(keyId = t"globe-1599")
+      val soon: Instant over Unix = Instant.of[Unix](java.lang.System.currentTimeMillis + 60000L)
+
+      val claims =
+        Jwt.Claims
+          ( issuer   = t"https://globe.example",
+            subject  = t"burbage",
+            audience = List(t"client-1"),
+            expiry   = soon )
+
+      def response(claims: Jwt.Claims, session: Session = Session()): Authorization =
+        val token = Jwt(claims, session).sign(key, header).in[Text]
+        Authorization.parse(t"""{"access_token": "tok", "id_token": "$token"}""".as[Json])
+
+      // Whether the ID token is refused.
+      def refusal(authorization: Authorization, nonce: Optional[Text] = Unset): Boolean =
+        val issuer = t"https://globe.example"
+        safely(Oidc.identify[Ecdsa[256]](authorization, keys, issuer, t"client-1", nonce)).absent
+
+      test(m"a token response keeps its ID token"):
+        response(claims).identityToken.present
+      . assert(_ == true)
+
+      test(m"an ID token from the provider, for this client, identifies the user"):
+        Oidc.identify[Ecdsa[256]](response(claims), keys, t"https://globe.example", t"client-1")
+        . claims.subject
+      . assert(_ == t"burbage")
+
+      test(m"a response with no ID token identifies nobody"):
+        refusal(Authorization.parse(t"""{"access_token": "tok"}""".as[Json]))
+      . assert(_ == true)
+
+      test(m"an ID token from another issuer is refused"):
+        refusal(response(claims.copy(issuer = t"https://rose.example")))
+      . assert(_ == true)
+
+      test(m"an ID token for another client is refused"):
+        refusal(response(claims.copy(audience = List(t"client-2"))))
+      . assert(_ == true)
+
+      test(m"an ID token that has expired is refused"):
+        refusal(response(claims.copy(expiry = Instant.of[Unix](1300819380000L))))
+      . assert(_ == true)
+
+      test(m"an ID token with no expiry is refused"):
+        refusal(response(claims.copy(expiry = Unset)))
+      . assert(_ == true)
+
+      test(m"an ID token signed by another key is refused"):
+        val other = PrivateKey.generate[Ecdsa[256]]()
+        val token = Jwt(claims).sign(other, header).in[Text]
+        refusal(Authorization.parse(t"""{"access_token": "tok", "id_token": "$token"}""".as[Json]))
+      . assert(_ == true)
+
+      test(m"an ID token must carry the nonce the request sent"):
+        ( refusal(response(claims, Session(nonce = t"1599")), t"1599"),
+          refusal(response(claims, Session(nonce = t"1601")), t"1599"),
+          refusal(response(claims), t"1599") )
+      . assert(_ == (false, true, true))
+
+      test(m"an ID token for several audiences must name this client as its party"):
+        val shared = claims.copy(audience = List(t"client-1", t"client-2"))
+
+        ( refusal(response(shared)),
+          refusal(response(shared, Session(azp = t"client-2"))),
+          refusal(response(shared, Session(azp = t"client-1"))) )
+      . assert(_ == (true, true, false))
+
+      val metadata =
+        t"""{"issuer": "https://globe.example",
+             "authorization_endpoint": "https://globe.example/authorize",
+             "token_endpoint": "https://globe.example/token",
+             "jwks_uri": "https://globe.example/keys"}"""
+
+      def ok(body: Text): Http.Response =
+        Http.Response(Http.Ok, contentType = media"application/json")(body)
+
+      test(m"discovery reads the provider's metadata from its well-known URL"):
+        val server = TokenServer(() => ok(metadata))
+        given Http.Backend = server
+        val provider = Oidc.discover(t"https://globe.example")
+        (server.lastUrl, provider.keys.show, provider.client(t"client-1").exchange.show)
+      . assert(_ == (
+          t"https://globe.example/.well-known/openid-configuration",
+          t"https://globe.example/keys",
+          t"https://globe.example/token" ))
+
+      test(m"metadata for another issuer is refused"):
+        given Http.Backend = TokenServer(() => ok(metadata))
+
+        capture[OAuth.Error](Oidc.discover(t"https://rose.example")).reason match
+          case OAuth.Error.Reason.Identity(_) => true
+          case _                              => false
       . assert(_ == true)
 
     suite(m"credentials"):

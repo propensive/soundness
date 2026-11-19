@@ -48,6 +48,7 @@ object OAuth:
       case Unauthorized                                          extends Reason(5)
       case Other                                                 extends Reason(6)
       case Misconfigured(detail: Text)                           extends Reason(7)
+      case Identity(detail: Text)                                extends Reason(8)
 
     import Reason.*
 
@@ -58,6 +59,7 @@ object OAuth:
       case Unauthorized                  => m"authorization was not granted"
       case Other                         => m"an unexpected error occurred"
       case Misconfigured(detail)         => m"the issuer is not configured for this: $detail"
+      case Identity(detail)              => m"the ID token was not acceptable: $detail"
 
       case Connection(url, reason) =>
         m"could not connect to the OAuth provider at $url because $reason"

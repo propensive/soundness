@@ -36,13 +36,15 @@ detail
     A `Credential` names a security scheme as an API's specification names it, and is how an
     OpenAPI client from apoplexy finds the key or token each operation requires.
 
-    The library has two source sets:
+    The library has three source sets:
 
     - `orthodoxy.core` — `Issuer`, `Authorization`, `Pkce`, `OAuth.Scope`, `Credential` and
       `OAuth.Error`: everything a client needs.
     - `orthodoxy.server` — the authorization-code flow as scintillate middleware, the
       extensions `oauth` and `require` on `Issuer`, with `Authorizations` holding each
       session's state.
+    - `orthodoxy.oidc` — OpenID Connect: `Oidc.discover` for a provider's metadata, and
+      `Oidc.identify`, which verifies the ID token an `Authorization` carries with sigillate.
 
     Everything is exported to the `soundness` umbrella. There are no choice packages of its
     own, but the grants need the usual contextual values from elsewhere: an `Online` token

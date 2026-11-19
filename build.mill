@@ -903,7 +903,7 @@ object soundness extends Fork:
     perihelion.core,
     legerdemain.core, legerdemain.query, telekinesis.forms, jacinta.optics, caduceus.core,
     caduceus.resend,
-    orthodoxy.core, orthodoxy.server, sigillate.core, sigillate.http, sigillate.server,
+    orthodoxy.core, orthodoxy.server, orthodoxy.oidc, sigillate.core, sigillate.http, sigillate.server,
     jacinta.http, xylophone.http, ypsiloid.http,
     stratiform.http, stratiform.optics, stratiform.duplex, obligatory.core, obligatory.json,
     sibylline.core,
@@ -2796,7 +2796,13 @@ object orthodoxy extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, telekinesis.jvm, eucalyptus.core):
+  // OpenID Connect over the OAuth 2 client: provider discovery, and the ID token verified
+  // with sigillate. Its own component, so that a plain OAuth client carries no JOSE.
+  object oidc extends Component(core, sigillate.core):
+    override def scalaJs = false // transitively JVM-only (crypto)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, oidc, telekinesis.jvm, eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

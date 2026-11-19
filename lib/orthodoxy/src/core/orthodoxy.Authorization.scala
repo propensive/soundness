@@ -74,15 +74,22 @@ object Authorization:
     val refresh: Optional[Text] =
       safely(json.refresh_token.as[Text])
 
-    Authorization(key, scopes, expiry, refresh)
+    // OpenID Connect adds an ID token to the response (OpenID Connect Core §3.1.3.3); it is
+    // kept as it was sent, and is `orthodoxy.oidc`'s to verify.
+    val identityToken: Optional[Text] =
+      safely(json.id_token.as[Text])
+
+    Authorization(key, scopes, expiry, refresh, identityToken)
 
 // An access token and what it grants: the scopes, its expiry (an instant in milliseconds, absent
-// for a token without a stated lifetime) and a refresh token where one was issued
+// for a token without a stated lifetime), a refresh token where one was issued and, from an
+// OpenID Connect provider, the ID token that says who the user is — unverified, as it arrived
 case class Authorization
-  ( key:     Text,
-    scopes:  List[Text],
-    expiry:  Optional[Long],
-    refresh: Optional[Text] )
+  ( key:           Text,
+    scopes:        List[Text],
+    expiry:        Optional[Long],
+    refresh:       Optional[Text],
+    identityToken: Optional[Text] = Unset )
 extends Topical, Findable:
   private[orthodoxy] def of[scope <: OAuth.Scope]: Authorization of scope =
     this.asInstanceOf[Authorization of scope]
