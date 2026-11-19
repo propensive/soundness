@@ -32,15 +32,15 @@
                                                                                                   */
 package dendrology
 
-// Deliberate stdlib opt-out: these internals consume acyclicity's `Layering`, whose layers
-// and links are on the stdlib `List` for now.
-import scala.collection.immutable.{List, Map, Nil, Set, Vector}
-
 import acyclicity.*
 import anticipation.*
+import denominative.*
 import gossamer.*
+import murmuration.sortingAlgorithms.timsort
 import prepositional.*
+import rudiments.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 import DagDiagram.Tile.*
@@ -90,53 +90,71 @@ object LayeredDagDiagram:
   :   LayeredDagDiagram[node] =
 
     val layering = dag.layered
-    val layers: Vector[Vector[Vertex[node]]] = layering.layers.map(_.to(Vector)).to(Vector)
-    val links: Vector[Vector[(Int, Int)]] = layering.links.map(_.to(Vector)).to(Vector)
 
-    if layers.isEmpty then LayeredDagDiagram(Nil) else
-      def assign(layer: Int, above: Vector[Int]): Vector[Int] =
-        def desired(position: Int): Int =
-          if layer == 0 then -1 else
-            val upper = links(layer - 1).filter(_(1) == position).map: link => above(link(0))
-            if upper.isEmpty then -1 else upper.sorted.apply(upper.length/2)
+    // Each layer beside the links which join it to the layer above; the first has none.
+    val layers: List[(Sequence[Vertex[node]], List[(Int, Int)])] =
+      layering.layers.to[List].zip(Nil :: layering.links.to[List])
 
-        layers(layer).indices.foldLeft(List.empty[Int]): (assigned, position) =>
-          assigned :+ (desired(position) max assigned.lastOption.fold(0)(_ + 1))
+    // The columns of a layer, from those of the layer `above` and the links between the two.
+    def assign(layer: Sequence[Vertex[node]], above: Sequence[Int], links: List[(Int, Int)])
+    :   Sequence[Int] =
 
-        . to(Vector)
+      def desired(position: Int): Int =
+        val upper: Sequence[Int] =
+          links.filter(_(1) == position).map { link => above.at(link(0).z) }.compact
+          . order(identity(_))
+          . to[Sequence]
 
-      val columns: Vector[Vector[Int]] =
-        layers.indices.foldLeft(List.empty[Vector[Int]]): (above, layer) =>
-          above :+ assign(layer, above.lastOption.getOrElse(Vector.empty))
+        upper.at((upper.limit.n0/2).z).or(-1)
 
-        . to(Vector)
+      val assigned = layer.indexed.fold((List[Int](), 0)): (state, entry) =>
+        val column = desired(entry(1).n0).max(state(1))
+        (column :: state(0), column + 1)
 
-      val width: Int = columns.flatten.max + 1
+      assigned(0).reverse.to[Sequence]
 
-      val rows = layers.indices.to(List).flatMap: layer =>
-        val vertices = layers(layer)
+    val columns: List[Sequence[Int]] =
+      val assigned = layers.fold((List[Sequence[Int]](), Sequence[Int]())): (state, next) =>
+        val columns = assign(next(0), state(1), next(1))
+        (columns :: state(0), columns)
 
-        val nodesAt: Map[Int, node] =
-          vertices.zip(columns(layer)).collect { case (Vertex.Real(n), column) => column -> n }
-          . to(Map)
+      assigned(0).reverse
 
-        val passing: Set[Int] =
-          vertices.zip(columns(layer)).collect { case (Vertex.Virtual(_, _), column) => column }
-          . to(Set)
+    val width: Int = columns.fold(0): (width, layer) =>
+      layer.fold(width): (width, column) => width.max(column + 1)
 
-        val node = (nodeRow(nodesAt.keySet, passing, width), nodesAt)
+    // Every vertex of a layer beside its column.
+    val placed: List[Sequence[(Vertex[node], Int)]] =
+      layers.zip(columns).map: (layer, columns) => layer(0).zip(columns)
 
-        if layer == 0 then List(node) else
-          val bends = links(layer - 1).to(List).map: (upper, lower) =>
-            val continuing = (layers(layer - 1)(upper), vertices(lower)) match
-              case (Vertex.Virtual(_, _), Vertex.Virtual(_, _)) => true
-              case _                                            => false
+    val rows = layers.zip(placed).zip(Sequence[(Vertex[node], Int)]() :: placed).bind: entry =>
+      val ((layer, vertices), above) = entry
 
-            (columns(layer - 1)(upper), columns(layer)(lower), continuing)
+      val nodesAt: Map[Int, node] =
+        vertices.sweep { case (Vertex.Real(node), column) => column -> node }.to[Map]
 
-          List((connectorRow(bends, width), Map.empty[Int, node]), node)
+      val passing: Set[Int] =
+        vertices.sweep { case (Vertex.Virtual(_, _), column) => column }.to[Set]
 
-      LayeredDagDiagram(rows)
+      val node = (nodeRow(nodesAt, passing, width), nodesAt)
+
+      // A link names a position in each of the two layers it joins; one naming a position
+      // that is not there draws nothing.
+      val bends: List[(Int, Int, Boolean)] =
+        layer(1).map: (upper, lower) =>
+          above.at(upper.z).let: (source, entry) =>
+            vertices.at(lower.z).let: (target, exit) =>
+              val continuing = (source, target) match
+                case (Vertex.Virtual(_, _), Vertex.Virtual(_, _)) => true
+                case _                                            => false
+
+              (entry, exit, continuing)
+
+        . compact
+
+      if above.nil then List(node) else List((connectorRow(bends, width), Map[Int, node]()), node)
+
+    LayeredDagDiagram(rows)
 
   private def connectorRow(bends: List[(Int, Int, Boolean)], width: Int): List[DagDiagram.Tile] =
     val cells = new scala.Array[Int](width)
@@ -173,39 +191,37 @@ object LayeredDagDiagram:
         cells(bottomExit) |= Cell.Right
         cells(bottomExit) |= Cell.Down
 
-    bends.foreach(drawBend)
+    bends.each(drawBend(_, _, _))
 
-    cells.iterator.map(Cell.tile).to(List)
+    List.from(cells.iterator.map(Cell.tile))
 
-  private def nodeRow(nodes: Set[Int], passing: Set[Int], width: Int): List[DagDiagram.Tile] =
-    (0 until width).to(List).map: column =>
-      if nodes(column) then Node else if passing(column) then Vertical else Space
+  private def nodeRow[node](nodes: Map[Int, node], passing: Set[Int], width: Int)
+  :   List[DagDiagram.Tile] =
+
+    List.range(0, width).map: column =>
+      if nodes.at(column).present then Node else if passing.has(column) then Vertical else Space
 
   given printable: [node: Showable] => (style: LaneDagDiagram.Style[Text])
   =>  LayeredDagDiagram[node] is Printable =
     (diagram, termcap) => diagram.render[Text]{ node => t"● $node  " }.join(t"\n")
 
 case class LayeredDagDiagram[node](rows: List[(List[DagDiagram.Tile], Map[Int, node])]):
-  val size: Int = rows.length
+  val size: Int = rows.fold(0): (count, _) => count + 1
 
-  def render[line](glyph: node => line)(using style: LaneDagDiagram.Style[line])
-  :   proscenium.List[line] =
+  def render[line](glyph: node => line)(using style: LaneDagDiagram.Style[line]): List[line] =
+    val columns: Int = rows.fold(0): (count, row) =>
+      count.max(row(0).fold(0) { (count, _) => count + 1 })
 
-    val maxCol = rows.iterator.map(_(0).length).maxOption.getOrElse(0)
-    val widths = scala.Array.fill(maxCol)(2)
+    val widths = scala.Array.fill(columns)(2)
 
-    rows.foreach: (_, nodesAt) =>
-      nodesAt.foreach: (col, n) =>
-        val w = style.width(glyph(n))
-        if w > widths(col) then widths(col) = w
+    rows.each: (_, nodesAt) =>
+      nodesAt.each: (column, node) =>
+        val width = style.width(glyph(node))
+        if width > widths(column) then widths(column) = width
 
-    val widthsList = widths.iterator.to(List)
+    val widthsList: List[Int] = List.from(widths.iterator)
 
-    val rendered = rows.map: (tiles, nodesAt) =>
-      val glyphs: Map[Int, line] = nodesAt.map: (col, n) => col -> glyph(n)
-      style.serialize(tiles.to(proscenium.List), glyphs, widthsList.to(proscenium.List), Unset)
-
-    rendered.to(proscenium.List)
+    rows.map: (tiles, nodesAt) => style.serialize(tiles, nodesAt.map(glyph(_)), widthsList, Unset)
 
   def tiles: List[List[DagDiagram.Tile]] = rows.map(_(0))
   def nodesAt: List[Map[Int, node]] = rows.map(_(1))

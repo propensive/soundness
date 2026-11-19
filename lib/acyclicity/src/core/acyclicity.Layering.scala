@@ -34,7 +34,8 @@ package acyclicity
 
 // Deliberate stdlib opt-out: the layering's working structures are stdlib collections — this
 // import shadows the opaque collections for the whole file, greppably, as `acyclicity.Dag.scala`
-// does — and what it reads from the `Dag` is converted at the boundary.
+// does — and both boundaries convert: what is read from the `Dag` on the way in, and the
+// `Layering` on the way out, whose fields are Soundness collections named in full here.
 import scala.collection.immutable.{List, Map, Nil, Set}
 import scala.collection.mutable as scm
 
@@ -76,7 +77,7 @@ object Layering:
   private[acyclicity] def apply[node](dag: Dag[node], ranking: Ranking): Layering[node] =
     val order: List[node] = proscenium.List.iterator(dag.linearized).to(List)
 
-    if order.isEmpty then Layering(Nil, Nil) else
+    if order.isEmpty then Layering(proscenium.Sequence.empty, proscenium.Sequence.empty) else
       val topo: Map[node, Int] = order.zipWithIndex.to(Map)
       val dependents: Dag[node] = dag.invert
       val rank: scm.HashMap[node, Int] = scm.HashMap()
@@ -247,24 +248,35 @@ object Layering:
           layer.flatMap: u =>
             down(i).getOrElse(u, Nil).map: l => finalPosition(i)(u) -> finalPosition(i + 1)(l)
 
-      Layering(bestLayers, links)
+      Layering
+        ( proscenium.Sequence.from(bestLayers.map(proscenium.Sequence.from(_))),
+          proscenium.Sequence.from(links.map(proscenium.List.from(_))) )
 
 // The result of `Dag#layered`: the nodes arranged in layers, dependencies above dependents,
 // each layer ordered to reduce the crossings between the links joining it to its neighbours.
-// `links(i)` joins layer `i` to layer `i + 1` as pairs of positions within each.
+// `links(i)` joins layer `i` to layer `i + 1` as pairs of positions within each. The layers,
+// and the positions within one, are read by index, so both are `Sequence`s; a layer's links
+// are only traversed.
 case class Layering[node]
-  ( layers: List[List[Layering.Vertex[node]]],
-    links:  List[List[(Int, Int)]] ):
+  ( layers: proscenium.Sequence[proscenium.Sequence[Layering.Vertex[node]]],
+    links:  proscenium.Sequence[proscenium.List[(Int, Int)]] ):
 
   import Layering.Vertex
 
-  lazy val rank: Map[node, Int] =
-    layers.zipWithIndex.flatMap: (layer, i) =>
-      layer.collect { case Vertex.Real(n) => n -> i }
+  // Every real node with the index of its layer and its position within it, in drawn order.
+  private def placed: scala.Iterator[(node, Int, Int)] =
+    proscenium.Sequence.iterator(layers).zipWithIndex.flatMap: (layer, rank) =>
+      proscenium.Sequence.iterator(layer).zipWithIndex.collect:
+        case (Vertex.Real(node), position) => (node, rank, position)
 
-    . to(Map)
+  lazy val rank: proscenium.Map[node, Int] =
+    proscenium.Map.from(placed.map { (node, rank, _) => node -> rank })
 
-  lazy val position: Map[node, Int] =
-    layers.flatMap(_.zipWithIndex.collect { case (Vertex.Real(n), p) => n -> p }).to(Map)
+  lazy val position: proscenium.Map[node, Int] =
+    proscenium.Map.from(placed.map { (node, _, position) => node -> position })
 
-  lazy val crossings: Int = links.map(Layering.crossingsAmong).sum
+  lazy val crossings: Int =
+    proscenium.Sequence.iterator(links).map: links =>
+      Layering.crossingsAmong(proscenium.List.iterator(links).to(List))
+
+    . sum

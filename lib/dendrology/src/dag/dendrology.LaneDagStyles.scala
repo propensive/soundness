@@ -32,15 +32,12 @@
                                                                                                   */
 package dendrology
 
-// Deliberate stdlib opt-out, as in the diagram implementations.
-import scala.collection.immutable.Map
-
 import anticipation.*
 import beneficence.*
 import gossamer.*
 import gossamer.Textual.concatenable
 import hieroglyph.*
-import rudiments.{map, zip, indexed, fold}
+import rudiments.{at, fold, indexed, map, zip}
 import symbolism.*
 import vacuous.*
 
@@ -89,7 +86,7 @@ trait LaneDagStyles:
 
       val parts = tiles.zip(widths).indexed.map:
         case ((Node, w), i) =>
-          val g = glyphs.getOrElse(i.n0, line(node))
+          val g = glyphs.at(i.n0).or(line(node))
           val gw = width(g)
           if gw >= w then g else g+line(Text(" ".repeat(w - gw).nn))
 
