@@ -42,6 +42,10 @@ import providers.javaBaseProvider
 import cloaks.heapCloak
 import formatting.compactJsonFormatting
 import dysasymptotics.linearSize
+import logging.silentLogging
+import webserverErrorPages.minimalErrorPage
+import threads.virtualThreads
+import probates.awaitProbate
 
 case class Role(part: Text, play: Text)
 
@@ -560,3 +564,55 @@ object Tests extends Suite("jose", m"Sigillate tests"):
       test(m"A token with a fractional expiry is read to the millisecond"):
         Jwt.read(t"""{"exp":1300819380.5}""".in[Data]).claims.expiry.let(_.long)
       . assert(_ == 1300819380500L)
+
+    suite(m"Bearer authentication"):
+      def rawRequest(port: Int, request: Text): Text =
+        val socket = java.net.Socket("localhost", port)
+        val out = socket.getOutputStream.nn
+        out.write(request.s.getBytes("US-ASCII").nn)
+        out.flush()
+        socket.shutdownOutput()
+        val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII")
+        socket.close()
+        response.tt
+
+      val key = PrivateKey.generate[Ed25519]()
+      val publicKey = key.public
+
+      def token(claims: Jwt.Claims): Text = Jwt(claims).sign(key).in[Text]
+
+      def request(authorization: Optional[Text]): Text =
+        val header = authorization.lay(t"")(value => t"Authorization: $value\r\n")
+
+        supervise:
+          val server = SocketServer(0).handle:
+            bearerAuth(publicKey, t"globe", audience = t"groundlings"):
+              Http.Response(Http.Ok)(t"welcome, ${jwt.claims.subject.or(t"stranger")}")
+
+          try rawRequest(server.port, t"GET / HTTP/1.1\r\nHost: localhost\r\n$header\r\n")
+          finally server.cancel()
+
+      val admitted = Jwt.Claims(subject = t"burbage", audience = List(t"groundlings"))
+
+      test(m"A request with a valid token reaches the handler with its claims"):
+        request(t"Bearer ${token(admitted)}")
+      . assert(_.contains(t"welcome, burbage"))
+
+      test(m"A request with no token is challenged"):
+        request(Unset)
+      . assert: response =>
+          response.contains(t"401") && response.contains(t"""Bearer realm="globe"""")
+          && !response.contains(t"invalid_token")
+
+      test(m"A token for another audience is refused as invalid"):
+        request(t"Bearer ${token(admitted.copy(audience = List(t"gallery")))}")
+      . assert(response => response.contains(t"401") && response.contains(t"invalid_token"))
+
+      test(m"A token signed by another key is refused as invalid"):
+        val other = PrivateKey.generate[Ed25519]()
+        request(t"Bearer ${Jwt(admitted).sign(other).in[Text]}")
+      . assert(response => response.contains(t"401") && response.contains(t"invalid_token"))
+
+      test(m"Text that is not a token is refused as invalid"):
+        request(t"Bearer falstaff")
+      . assert(response => response.contains(t"401") && response.contains(t"invalid_token"))

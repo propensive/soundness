@@ -329,3 +329,8 @@ case class Jwk
 // A JWK Set (RFC 7517 §5): the keys a party publishes, among which a token's `kid` selects.
 case class Jwks(keys: List[Jwk]):
   def apply(keyId: Text): Optional[Jwk] = keys.find(_.keyId == keyId)
+
+  // The set's key, if it has exactly one.
+  def sole: Optional[Jwk] = keys match
+    case List(key) => key
+    case _         => Unset

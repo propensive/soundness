@@ -903,7 +903,7 @@ object soundness extends Fork:
     perihelion.core,
     legerdemain.core, legerdemain.query, telekinesis.forms, jacinta.optics, caduceus.core,
     caduceus.resend,
-    orthodoxy.core, orthodoxy.server, sigillate.core,
+    orthodoxy.core, orthodoxy.server, sigillate.core, sigillate.http, sigillate.server,
     jacinta.http, xylophone.http, ypsiloid.http,
     stratiform.http, stratiform.optics, stratiform.duplex, obligatory.core, obligatory.json,
     sibylline.core,
@@ -3271,7 +3271,17 @@ object sigillate extends Library:
     override def scalaJs = false // transitively JS-incapable, through `enigmatic` (no JS crypto provider)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, gossamer.codec):
+  // A key set fetched from where its owner publishes it
+  object http extends Component(core, telekinesis.core):
+    override def scalaJs = false // transitively JS-incapable, through `core`
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // Bearer-token authentication as scintillate middleware
+  object server extends Component(core, scintillate.server):
+    override def scalaJs = false // transitively JVM-only (networking)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, http, server, gossamer.codec, eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

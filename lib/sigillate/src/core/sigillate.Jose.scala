@@ -94,6 +94,7 @@ object Jose:
       case Reason.Issuer(found)            => m"the token was issued by $found"
       case Reason.Audience                 => m"the token is intended for a different audience"
       case Reason.Claim(name)              => m"the claim $name was absent or of the wrong type"
+      case Reason.Unavailable(detail)      => m"the keys could not be fetched: $detail"
 
     enum Reason(val number: Int) extends Clarification:
       case Malformed(detail: Text)                extends Reason(1)
@@ -109,6 +110,7 @@ object Jose:
       case Issuer(found: Text)                    extends Reason(11)
       case Audience                               extends Reason(12)
       case Claim(name: Text)                      extends Reason(13)
+      case Unavailable(detail: Text)              extends Reason(14)
 
   case class Error(reason: Error.Reason)(using Diagnostics)
   extends fulminate.Error(147, 1, reason.number)
