@@ -70,7 +70,7 @@ object Enclave:
   // is a protocol mismatch: the launcher a tool was packaged with, and the daemon it starts,
   // carry different `ethereal-launcher` schema signatures, so the daemon refuses the very first
   // document and closes the connection, leaving `pid` with nothing to print.
-  case class Error(tool: Path on Linux)(using Diagnostics)
+  case class Error(tool: Path on Local)(using Diagnostics)
   extends fulminate.Error(109, 2, 0)
     ( m"""
       the tool $tool did not report a process ID; its launcher and its daemon may disagree on the
@@ -85,7 +85,7 @@ object Enclave:
   // that runs it. `home` is the scratch home its daemon and its panes' shells run under.
   // `runtime` is the tool's `XDG_RUNTIME_DIR`, where its daemon's socket is.
   case class Tool
-    ( path: Path on Linux, pid: Pid, home: Path on Linux, runtime: Optional[Path on Linux] = Unset )
+    ( path: Path on Local, pid: Pid, home: Path on Local, runtime: Optional[Path on Local] = Unset )
   extends anticipation.Durable:
     def command: Text = path.name
 
@@ -103,7 +103,7 @@ object Enclave:
   // tool's daemon keeps its socket in. A tool installed under these, and the shells its tests
   // start under them, read and write nothing of the real user's configuration, and meet no
   // daemon of the real user's.
-  def scratch(home: Path on Linux, runtime: Optional[Path on Linux] = Unset): Map[Text, Text] =
+  def scratch(home: Path on Local, runtime: Optional[Path on Local] = Unset): Map[Text, Text] =
     val configuration: Map[Text, Text] =
       Map
         ( t"HOME"                     -> home.encode,
@@ -115,7 +115,7 @@ object Enclave:
       configuration + Map(t"XDG_RUNTIME_DIR" -> runtime.encode)
 
   // `base`, with the variables `scratch` directs into `home` and `runtime`.
-  def environment(base: Environment, home: Path on Linux, runtime: Optional[Path on Linux] = Unset)
+  def environment(base: Environment, home: Path on Local, runtime: Optional[Path on Local] = Unset)
   :   Environment = new Environment:
     private val overrides = scratch(home, runtime)
 
@@ -140,23 +140,23 @@ object Enclave:
   // Generates an ML-DSA-44 key pair with `xek keygen`, as `<prefix>.seed` and `<prefix>.pub`,
   // returning the seed, to sign with, and the public key, to build an `Enclave` with. Signing
   // needs Java 24 or later.
-  def keygen(prefix: Path on Linux)(using Environment)
-  :   (Path on Linux, Path on Linux) raises Exec.Error raises Path.Error =
+  def keygen(prefix: Path on Local)(using Environment)
+  :   (Path on Local, Path on Local) raises Exec.Error raises Path.Error =
 
     sh"$xek keygen --out $prefix".exec[Exit]() match
       case Exit.Ok =>
-        (t"${prefix.encode}.seed".as[Path on Linux], t"${prefix.encode}.pub".as[Path on Linux])
+        (t"${prefix.encode}.seed".as[Path on Local], t"${prefix.encode}.pub".as[Path on Local])
 
       case Exit.Fail(status) =>
         panic(m"xek could not generate a key pair at $prefix (exit status $status)")
 
-  case class Launcher(path: Path on Linux):
+  case class Launcher(path: Path on Local):
     // Signs this executable with the key whose seed is `seed`, writing the signed copy to
     // `out`. `foreign` allows a key the executable's record does not carry, which a launcher
     // will then reject.
-    def sign(seed: Path on Linux, out: Path on Linux, foreign: Boolean = false)
+    def sign(seed: Path on Local, out: Path on Local, foreign: Boolean = false)
       ( using Environment )
-    :   Path on Linux raises Exec.Error =
+    :   Path on Local raises Exec.Error =
 
       val options: List[Text] = if foreign then List(t"--foreign-key") else Nil
 
@@ -180,14 +180,14 @@ object Enclave:
       // completion scripts into the configuration of whatever home the daemon sees — and
       // appends to a PowerShell profile — so the panes write the scripts they need into the
       // scratch home themselves.
-      temporaryDirectory[Path on Linux].open[Scratch](Read & Write): scratch ?=>
-        val home: Path on Linux = scratch.stem
+      temporaryDirectory[Path on Local].open[Scratch](Read & Write): scratch ?=>
+        val home: Path on Local = scratch.stem
 
         // The daemon's socket is in a runtime directory of its own, beneath `/tmp`: beneath the
         // home, or the temporary directory a forked suite is given, its path can exceed the 104
         // bytes macOS allows a socket's.
-        (% / "tmp").on[Linux].open[Scratch](Read & Write): runtimeScratch ?=>
-          val runtime: Path on Linux = runtimeScratch.stem
+        (% / "tmp").on[Local].open[Scratch](Read & Write): runtimeScratch ?=>
+          val runtime: Path on Local = runtimeScratch.stem
 
           given Environment = Enclave.environment(summon[Environment], home, runtime)
 
@@ -209,17 +209,17 @@ object Enclave:
 case class Enclave
   ( name:        Text,
     buildId:     Optional[Long]          = Unset,
-    releaseKey:  Optional[Path on Linux] = Unset,
-    recoveryKey: Optional[Path on Linux] = Unset,
+    releaseKey:  Optional[Path on Local] = Unset,
+    recoveryKey: Optional[Path on Local] = Unset,
     appId:       Optional[Text]          = Unset )
   ( using Classloader, Environment )
 extends Rig uses parasite.threads:
   type Result[output] = Enclave.Launcher
   type Form = Text
-  type Target = Path on Linux
+  type Target = Path on Local
   type Transport = Json
 
-  def stage(out: Path on Linux)(using Tactic[Rig.Error]): Path on Linux =
+  def stage(out: Path on Local)(using Tactic[Rig.Error]): Path on Local =
     mitigate:
       case error: Name.Error  => Rig.Error(Rig.Error.Reason.Staging)(using error.diagnostics)
       case error: Link.Error  => Rig.Error(Rig.Error.Reason.Staging)(using error.diagnostics)
@@ -230,7 +230,7 @@ extends Rig uses parasite.threads:
       // Children of the per-stage `out` directory (not `peer` siblings): each staged build's
       // artifacts must stay in its own directory, or two builds of the same tool name — an
       // upgrade test's v1 and v2 — would collide at the same path.
-      val target: Path on Linux = out / name
+      val target: Path on Local = out / name
 
       // `Fqcn.apply` rather than the `fqcn""` interpolator: the macro's synthesized tree
       // fails capture-variable unification when expanded in a capture-checked module.
@@ -263,7 +263,7 @@ extends Rig uses parasite.threads:
   protected val scalac: Scalac[3.8, Toolchain.Universe.Classfile] = Scalac(List(scalacOptions.experimental))
 
 
-  protected def invoke[output](stage: Stage[output, Text, Path on Linux])(using Tactic[Rig.Error])
+  protected def invoke[output](stage: Stage[output, Text, Path on Local])(using Tactic[Rig.Error])
   :   Enclave.Launcher =
 
     stage.remote: input =>

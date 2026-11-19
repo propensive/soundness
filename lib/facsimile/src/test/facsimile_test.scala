@@ -141,7 +141,9 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
       path.toString.tt
 
     // The path of a file which does not yet exist, in the scratch directory.
-    def freshPath: Text = (scratch / t"${Uuid()}.pdf").encode
+    def freshPath: Text =
+      import systems.javaBaseSystem
+      (scratch / t"${Uuid()}.pdf").encode
 
     def fileBytes(path: Text): Data =
       Array.unsafeFrozen(jnf.Files.readAllBytes(jnf.Paths.get(path.s)).nn)
