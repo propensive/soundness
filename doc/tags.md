@@ -88,6 +88,7 @@ octogenarian: git version-control git-repository commit ssh-url
 orthodoxy: oauth authentication authorization oauth2 scope
 panopticon: lens optics composable case-class accessor
 parasite: async threading concurrency tasks promise daemon supervision
+passepartout: webauthn passkey fido2 authentication passwordless security-key attestation
 perihelion: websocket frame ws-protocol
 phoenicia: fonts typography ttf truetype font-metrics opentype
 plutocrat: currency money price finance luhn isin fixed-point

@@ -503,6 +503,14 @@ object Cose:
 
       Cose.Key(algorithm, publicKey)
 
+    // What a provider must offer for a signature to be checked by the algorithm a COSE_Key
+    // names, rather than by a cipher known when the code was written.
+    type Verification =
+      Crypto
+        { def ecdsa(digest: Text): Crypto.SignatureScheme
+          def ed25519: Crypto.SignatureScheme
+          def rsaPss(digest: Text): Crypto.SignatureScheme }
+
     // A public key as a COSE_Key, for the algorithm its cipher stands for.
     def apply[cipher <: Cipher](key: PublicKey[cipher])(using algorithm: cipher is Cose.Algorithm)
     :   Cose.Key =
@@ -513,6 +521,24 @@ object Cose:
     def key[cipher <: Cipher: KeyAlgorithm](using Tactic[PublicKey.Error], Diagnostics)
     :   PublicKey[cipher] =
       PublicKey.adopt[cipher](publicKey)
+
+    // Whether `signature` is this key's signature of `message`, under the algorithm the key
+    // names: ES256, ES384, ES512, EdDSA, RS256 or PS256. The signature is in the provider's
+    // form — DER, for ECDSA — which is the form WebAuthn carries (a COSE_Sign1 carries the
+    // fixed-width one, and is verified with `verifyWith`). Any other algorithm, and a key that
+    // is not of its algorithm's type, does not verify.
+    def verify(message: Data, signature: Data)(using crypto: Key.Verification): Boolean =
+      val scheme: Optional[Crypto.SignatureScheme] =
+        if algorithm == -7L then crypto.ecdsa(t"SHA256")
+        else if algorithm == -35L then crypto.ecdsa(t"SHA384")
+        else if algorithm == -36L then crypto.ecdsa(t"SHA512")
+        else if algorithm == -8L then crypto.ed25519
+        else if algorithm == -257L then crypto.rsaSignature(t"SHA256")
+        else if algorithm == -37L then crypto.rsaPss(t"SHA256")
+        else Unset
+
+      scheme.lay(false): scheme =>
+        try scheme.verify(message, signature, publicKey) catch case error: Exception => false
 
     // The serialized COSE_Key, or `Unset` for a key of a type COSE_Key has no form for here.
     def encoded: Optional[Data] =

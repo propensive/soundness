@@ -407,6 +407,8 @@ lib/parasite/src/core/parasite.Timeout.scala	2	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite_core.scala	7	0	0	0	0	0	0	0	2	0	1	0	0	0	0	0	0
 lib/parasite/src/jvm/parasite.GarbageCollection.scala	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/parasite/src/test/parasite_test.scala	0	0	0	0	0	0	0	0	1	0	0	0	0	0	1	0	0
+lib/passepartout/src/core/passepartout.WebAuthn.scala	0	0	0	0	0	3	0	0	0	0	0	0	0	0	0	0	0
+lib/passepartout/src/test/passepartout.Authenticator.scala	0	0	4	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/perihelion/src/core/perihelion.Websocket.scala	0	0	0	0	0	1	0	0	4	5	0	0	0	0	0	0	0
 lib/perihelion/src/core/perihelion_core.scala	0	0	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0
 lib/perihelion/src/test/perihelion.Test.scala	0	0	0	0	2	0	0	0	0	0	0	0	0	0	0	0	0

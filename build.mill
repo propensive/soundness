@@ -903,7 +903,7 @@ object soundness extends Fork:
     perihelion.core,
     legerdemain.core, legerdemain.query, telekinesis.forms, jacinta.optics, caduceus.core,
     caduceus.resend,
-    orthodoxy.core, orthodoxy.server, orthodoxy.oidc, sigillate.core, sigillate.http, sigillate.server,
+    orthodoxy.core, orthodoxy.server, orthodoxy.oidc, passepartout.core, passepartout.server, sigillate.core, sigillate.http, sigillate.server,
     jacinta.http, xylophone.http, ypsiloid.http,
     stratiform.http, stratiform.optics, stratiform.duplex, obligatory.core, obligatory.json,
     sibylline.core,
@@ -2861,6 +2861,22 @@ object parasite extends Library:
     override def scalacOptions = Task:
       super.scalacOptions().filterNot(Set("-Yexplicit-nulls", "-Yno-flexible-types"))
 
+object passepartout extends Library:
+  // WebAuthn's relying party: the two ceremonies' options and the checking of their answers,
+  // over enigmatic's COSE keys and X.509 certificates and jacinta's JSON
+  object core extends Component(enigmatic.cose, enigmatic.x509, jacinta.core):
+    override def scalaJs = false // transitively JS-incapable, through `enigmatic` (no JS crypto provider)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The challenge each session's ceremony was sent, for a web application
+  object server extends Component(core, telekinesis.core):
+    override def scalaJs = false // transitively JS-incapable, through `core`
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, server, gossamer.codec):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
+
 object perihelion extends Library:
   object core extends Component(telekinesis.core, coaxial.jvm, gastronomy.core, monotonous.core,
       hypotenuse.core, contingency.core, parasite.core):
@@ -3963,6 +3979,7 @@ val allLibraries: Seq[Library] = Seq(
   kaleidoscope, larceny, legerdemain, locomotion, mandible, mercator, metamorphose,
   monotonous,
   mosquito, murmuration, nomenclature, obligatory, octogenarian, orthodoxy, panopticon, parasite,
+  passepartout,
   perihelion, phoenicia, plutocrat, pneumatic, polysyllabic, polyvinyl, praxinoscope,
   prepositional,
   prescience,

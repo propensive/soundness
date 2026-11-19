@@ -63,11 +63,11 @@ import formatting.compactJsonFormatting
 //
 // One rule runs through all of it: **the key's type chooses the algorithm**. A
 // `PublicKey[Ecdsa[256]]` verifies `ES256` and nothing else; a
-// `SymmetricKey[HmacCipher[Sha2[256]]]` verifies `HS256` and nothing else. The `alg` a token's header names is compared with the
-// algorithm the key's type stands for, and a difference is an error; it is never used to decide
-// what to do with the key. That closes the classic JOSE attacks — an RSA public key replayed as
-// an HMAC secret, a token relabelled `none` — by construction rather than by a check a caller
-// could forget.
+// `SymmetricKey[HmacCipher[Sha2[256]]]` verifies `HS256` and nothing else. The `alg` a token's
+// header names is compared with the algorithm the key's type stands for, and a difference is
+// an error; it is never used to decide what to do with the key. That closes the classic JOSE
+// attacks — an RSA public key replayed as an HMAC secret, a token relabelled `none` — by
+// construction rather than by a check a caller could forget.
 object Jose:
   // The token that licenses reading an unsecured (`"alg":"none"`) object:
   // `jws.payload(Jose.Unsecured)`.

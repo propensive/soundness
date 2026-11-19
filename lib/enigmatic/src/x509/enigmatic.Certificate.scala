@@ -281,8 +281,10 @@ object Certificate:
         case Reason.Expired      => m"a certificate in it is outside its validity period"
         case Reason.BadSignature => m"a certificate in it was not signed by the next"
         case Reason.Unlinked     => m"a certificate in it was not issued by the next"
-        case Reason.NotAuthority => m"a certificate in it was issued by one that is not an authority"
         case Reason.Untrusted    => m"it does not lead to a trusted certificate"
+
+        case Reason.NotAuthority =>
+          m"a certificate in it was issued by one that is not an authority"
 
       enum Reason(val number: Int) extends Clarification:
         case Empty        extends Reason(1)
