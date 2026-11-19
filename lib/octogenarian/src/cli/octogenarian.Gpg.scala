@@ -78,7 +78,6 @@ object Gpg:
     ( using tactic: Tactic[Git.Error] )
   :   result =
 
-    import filesystemBackends.javaBaseFilesystem
     import hieroglyph.codepages.utf8Codepage
     import temporaryDirectories.javaBaseTemporaryDirectory
 
@@ -88,6 +87,7 @@ object Gpg:
     given truncation: Tactic[Truncation.Error] = tactic.contramap: error =>
       Git.Error(Reason.SigningFailed(error.message.text))(using Diagnostics.omit)
 
+    given backend: (FilesystemBackend on Linux) = CliPlatform.filesystem[Linux]
     given umask: Umask = Umask(0x3f) // 077: a file of mode 0600, which only its owner may read
 
     temporaryDirectory[Path on Linux].open[Scratch.File](Read & Write): file ?=>

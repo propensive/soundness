@@ -2742,9 +2742,12 @@ object octogenarian extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The backend that runs the `git` command: `gitBackends.commandlineGit`.
+  // Its scratch files' filesystem backend is selected by source set, as for `native` below.
   object cli extends Component(core, guillotine.core, galilei.jvm):
     override def scalaJs = false // transitively JS-incapable (process spawning, filesystem)
     override def scalaNative = true
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "cli-jvm")
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "cli-native")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The backend that reads and writes the repository's files itself: `gitBackends.soundnessGit`.
