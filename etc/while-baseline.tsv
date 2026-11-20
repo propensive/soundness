@@ -174,7 +174,7 @@ lib/proscenium/src/core/proscenium.Array.scala	6	1	0
 lib/proscenium/src/core/proscenium.Hashtable.scala	9	0	0
 lib/proscenium/src/core/proscenium.Map.scala	4	0	0
 lib/proscenium/src/core/proscenium.PerfectHash.scala	26	0	0
-lib/proscenium/src/core/proscenium.PerfectMap.scala	2	0	0
+lib/proscenium/src/core/proscenium.PerfectMap.scala	4	0	0
 lib/punctuation/src/core/punctuation.BlockBuilder.scala	5	0	9
 lib/punctuation/src/core/punctuation.BlockParser.scala	10	0	3
 lib/punctuation/src/core/punctuation.EmphasisProcessor.scala	5	0	0

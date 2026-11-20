@@ -45,26 +45,6 @@ import scala.quoted.*
 // needs the compiler on the classpath, which is why it is a component of its own that nothing
 // else depends upon.
 object Optimizer:
-  // What the keys are, which decides how a key becomes the word that is hashed: a text by
-  // its hash code, which the language specifies and the JVM caches; a number or a character
-  // by its value.
-  private enum Kind:
-    case Textual, Integral, Wide, Symbolic
-
-  private def kind(key: Any): Kind | Null = key match
-    case _: String              => Kind.Textual
-    case _: java.lang.Integer   => Kind.Integral
-    case _: java.lang.Long      => Kind.Wide
-    case _: java.lang.Character => Kind.Symbolic
-    case _                      => null
-
-  private def word(key: Any): Long = key match
-    case text: String                 => text.hashCode.toLong
-    case number: java.lang.Integer    => number.intValue.toLong
-    case number: java.lang.Long       => number.longValue
-    case symbol: java.lang.Character  => symbol.charValue.toLong
-    case _                            => 0L
-
   // One compiler for every map, made from the classloader that loaded this class, since that
   // is the one which can see `PerfectMap`.
   // The compiler insists on being used by one thread only, the first to use it, however the
@@ -85,43 +65,6 @@ object Optimizer:
     val settings = staging.Compiler.Settings.make(None, options)
     staging.Compiler.make(getClass.getClassLoader.nn)(using settings)
 
-  // The word a key of `kind` is hashed by, or the answer -1 for a value of another kind.
-  private def indexing
-    ( kind: Kind, hash: PerfectHash, key: Expr[Any], table: Expr[scala.Array[Int]] )
-    ( using Quotes )
-  :   Expr[Int] =
-
-    def slot(word: Expr[Long]): Expr[Int] = hash.quoted(List(word))(table)
-
-    kind match
-      case Kind.Textual =>
-        ' {
-            $key match
-              case text: String => ${slot('{text.hashCode.toLong})}
-              case _            => -1
-          }
-
-      case Kind.Integral =>
-        ' {
-            $key match
-              case number: java.lang.Integer => ${slot('{number.intValue.toLong})}
-              case _                         => -1
-          }
-
-      case Kind.Wide =>
-        ' {
-            $key match
-              case number: java.lang.Long => ${slot('{number.longValue})}
-              case _                      => -1
-          }
-
-      case Kind.Symbolic =>
-        ' {
-            $key match
-              case symbol: java.lang.Character => ${slot('{symbol.charValue.toLong})}
-              case _                           => -1
-          }
-
   // The same map, read through a perfect hash of its keys; or the map as it was, if it has
   // too few entries to gain, its keys are not all texts, all `Int`s, all `Long`s or all
   // `Char`s, or no perfect hash of them was found.
@@ -129,16 +72,16 @@ object Optimizer:
     val count = Map.size(map)
     val iterator = Set.iterator(Map.keys(map))
     val words = new scala.Array[Long](count)
-    var kinds: Kind | Null = null
+    var kinds: PerfectMap.Kind | Null = null
     var uniform = count > 4
     var position = 0
 
     // Bounded by the map's keys.
     while uniform && iterator.hasNext do
       val key: Any = iterator.next()
-      val found = kind(key)
+      val found = PerfectMap.kind(key)
       if position == 0 then kinds = found
-      if found == null || found != kinds then uniform = false else words(position) = word(key)
+      if found == null || found != kinds then uniform = false else words(position) = PerfectMap.word(key)
       position += 1
 
     val keyed = kinds
@@ -155,12 +98,13 @@ object Optimizer:
         staging.run:
           ' {
               (slots: scala.Array[Any], count: Int, table: scala.Array[Int]) =>
-                new PerfectMap[Any, Any](slots, count):
-                  def index(key: Any): Int = ${indexing(keyed, hash, 'key, 'table)}
+                new PerfectMap[Any, Any](slots, count, table):
+                  def locate(key: Any, table: scala.Array[Int]): Int =
+                    ${PerfectMap.indexing(keyed, hash, 'key)('table)}
             }
 
       val make: Maker = worker.submit(compilation).nn.get().nn
       val table: scala.Array[Int] = hash.table.asInstanceOf[scala.Array[Int]]
 
-      Map.perfect(map, hash.capacity): (slots, count) =>
+      Map.perfect(map, hash.capacity): slots =>
         make(slots, count, table).asInstanceOf[PerfectMap[key, value]]
