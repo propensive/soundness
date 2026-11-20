@@ -123,7 +123,10 @@ object PerfectHash extends caps.Pure:
   // A displaced program reads a table, which the code it is spliced into must hold somewhere;
   // a search with `tabled` false never gives one, for a macro with nowhere to put it.
   def search
-    ( keys: scala.Array[Long]^{caps.any.rd}, width: Int, effort: Int = Effort, tabled: Boolean = true )
+    ( keys:   scala.Array[Long]^{caps.any.rd},
+      width:  Int,
+      effort: Int     = Effort,
+      tabled: Boolean = true )
   :   PerfectHash | Null =
 
     val count = if width == 0 then 0 else keys.length/width
@@ -153,16 +156,11 @@ object PerfectHash extends caps.Pure:
     ( using quotes: Quotes )
   :   Expr[Int] | Null =
 
-    import quotes.reflect.*
-
     val hash = search(keys, width, tabled = false)
 
     if hash == null then null else
-      // Bounded by the number of keys, and within by the width.
-      var cases: sci.List[(Int, CaseDef)] = sci.Nil
-      var index = 0
-
-      while index < results.length do
+      switch(hash, keys, width, results, inputs, miss): index =>
+        // Bounded by the width.
         var confirmed: Expr[Boolean] = '{true}
         var word = width - 1
 
@@ -170,18 +168,44 @@ object PerfectHash extends caps.Pure:
           val input = List.at(inputs, word)
           val expected = Expr(keys(index*width + word))
           val rest = confirmed
-          confirmed = if word == width - 1 then '{$input == $expected} else '{$input == $expected && $rest}
+
+          confirmed =
+            if word == width - 1 then '{$input == $expected} else '{$input == $expected && $rest}
+
           word -= 1
 
-        val result = Expr(results(index))
-        val slot = hash.slot(keys, index*width)
-        val body = '{if $confirmed then $result else $miss}.asTerm
-        cases = (slot, CaseDef(Literal(IntConstant(slot)), None, body)) :: cases
-        index += 1
+        confirmed
 
-      val ordered = cases.sortBy(_(0)).map(_(1)) :+ CaseDef(Wildcard(), None, miss.asTerm)
-      val slot = hash.quoted(inputs)(report.errorAndAbort("the program reads no table"))
-      Match(slot.asTerm, ordered).asExprOf[Int]
+  // The switch every `dispatch` makes: the slot `hash` computes from `inputs` selects one
+  // key, and `confirm` gives the test that the key looked up is that one.
+  private def switch
+    ( hash:    PerfectHash,
+      keys:    scala.Array[Long]^{caps.any.rd},
+      width:   Int,
+      results: scala.Array[Int]^{caps.any.rd},
+      inputs:  List[Expr[Long]],
+      miss:    Expr[Int] )
+    ( confirm: Int => Expr[Boolean] )
+    ( using quotes: Quotes )
+  :   Expr[Int] =
+
+    import quotes.reflect.*
+
+    var cases: sci.List[(Int, CaseDef)] = sci.Nil
+    var index = 0
+
+    // Bounded by the number of keys.
+    while index < results.length do
+      val confirmed = confirm(index)
+      val result = Expr(results(index))
+      val slot = hash.slot(keys, index*width)
+      val body = '{if $confirmed then $result else $miss}.asTerm
+      cases = (slot, CaseDef(Literal(IntConstant(slot)), None, body)) :: cases
+      index += 1
+
+    val ordered = cases.sortBy(_(0)).map(_(1)) :+ CaseDef(Wildcard(), None, miss.asTerm)
+    val slot = hash.quoted(inputs)(report.errorAndAbort("the program reads no table"))
+    Match(slot.asTerm, ordered).asExprOf[Int]
 
   // The fewest keys for which `dispatch` replaces a chain of comparisons: below it the chain
   // is as quick, and its branches predict well.
@@ -191,7 +215,10 @@ object PerfectHash extends caps.Pure:
   // and the two words of the name which gives it. `null` if there are fewer than `Arity`
   // entries, when comparing with each in turn is no slower, or if no program separates them.
   def dispatch
-    ( entries: IterableOnce[(Int, Long, Long)]^, low: Expr[Long], high: Expr[Long], miss: Expr[Int] )
+    ( entries: IterableOnce[(Int, Long, Long)]^,
+      low:     Expr[Long],
+      high:    Expr[Long],
+      miss:    Expr[Int] )
     ( using Quotes )
   :   Expr[Int] | Null =
 
@@ -238,6 +265,47 @@ object PerfectHash extends caps.Pure:
         rest = rest.tail
 
       dispatch(words, 1, results, List.of(sci.List(word)), miss)
+
+  // `dispatch` for texts, which are hashed by their hash codes: the language specifies a
+  // string's, so one computed here is the one the running program will compute, and the JVM
+  // keeps it once it has. `key` is spliced more than once, and must not be `null`. `null`
+  // if there are fewer than `Arity` entries, if two of the texts share a hash code, or if no
+  // program separates them.
+  @scala.annotation.targetName("dispatchText")
+  def dispatch(entries: IterableOnce[(Int, String)]^, key: Expr[String], miss: Expr[Int])
+    ( using Quotes )
+  :   Expr[Int] | Null =
+
+    val named = sci.List.from(entries)
+    val count = named.length
+
+    if count < Arity then null else
+      val words: scala.Array[Long]^ = new scala.Array[Long](count)
+      val results: scala.Array[Int]^ = new scala.Array[Int](count)
+      val texts: scala.Array[String]^ = new scala.Array[String](count)
+      var rest = named
+      var position = 0
+
+      // Bounded by the entries.
+      while !rest.isEmpty do
+        val entry = rest.head
+        results(position) = entry(0)
+        texts(position) = entry(1)
+        words(position) = entry(1).hashCode.toLong
+        position += 1
+        rest = rest.tail
+
+      val hash = search(words, 1, tabled = false)
+
+      if hash == null then null else
+        ' {
+            val code = $key.hashCode.toLong
+
+            $ {
+                switch(hash, words, 1, results, List.of(sci.List('code)), miss): index =>
+                  '{$key == ${Expr(texts(index))}}
+              }
+          }
 
   // Whether a program sends the keys to distinct slots below its capacity.
   private def injective

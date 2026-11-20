@@ -45,6 +45,12 @@ import denominative.dysasymptotics.linearSize
 // only a custom decoder (read through the AST bridge).
 case class PPerson(name: Text, age: Int) derives CanEqual
 case class PPlay(title: Text, hero: PPerson) derives CanEqual
+
+// Wide enough that a generated parser finds its fields by a perfect hash of their names rather
+// than by comparing with each in turn.
+case class PCensus
+  ( acts: Int, scenes: Int, lines: Int, songs: Int, deaths: Int, duels: Int, ghosts: Int, fools: Int )
+derives CanEqual
 case class PBook(title: Text, @attribute isbn: Text) derives CanEqual
 case class PTagged(@name[Xml](t"ISBN") @attribute isbn: Text, title: Text) derives CanEqual
 case class PLabelled(@name[Xml](t"Title") title: Text, pages: Int) derives CanEqual
@@ -426,6 +432,28 @@ object DirectParsingTests extends Suite("xml-direct", m"Xylophone direct parsing
       test(m"A staged parser accepts reordered fields, equally on both paths"):
         parity[PPerson](t"<root><age>21</age><name>Nym</name></root>")
       . assert(identity)
+
+      test(m"A staged parser reads a wide record, skipping children nearly its fields"):
+        given PCensus is Xml.Parsable = Xml.Parsable.staged
+
+        val input =
+          t"<root><fools>8</fools><fool>0</fool><ghosts>7</ghosts><duels>6</duels>" +
+          t"<deaths>5</deaths><songs>4</songs><Lines>0</Lines><lines>3</lines>" +
+          t"<scenes>2</scenes><actss>0</actss><acts>1</acts></root>"
+
+        input.read[PCensus in Xml]
+      . assert(_ == PCensus(1, 2, 3, 4, 5, 6, 7, 8))
+
+      test(m"An inlined parser reads a wide record, skipping children nearly its fields"):
+        given PCensus is Xml.Parsable = Inlinable.parsable[PCensus]
+
+        val input =
+          t"<root><fools>8</fools><fool>0</fool><ghosts>7</ghosts><duels>6</duels>" +
+          t"<deaths>5</deaths><songs>4</songs><Lines>0</Lines><lines>3</lines>" +
+          t"<scenes>2</scenes><actss>0</actss><acts>1</acts></root>"
+
+        input.read[PCensus in Xml]
+      . assert(_ == PCensus(1, 2, 3, 4, 5, 6, 7, 8))
 
       test(m"Nested records parse through sibling staged instances"):
         val input =
