@@ -130,14 +130,13 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
       case _ =>
         val key: applicable.Operand = ordinal.asInstanceOf[applicable.Operand]
 
-        // A receiver that can check and read in one probe (a map) does; any other is checked
-        // and then read, exactly as before.
+        // A receiver whose instance can check and read in one probe (a map's) does; any other
+        // is checked and then read, exactly as before. The question is asked of the instance
+        // already in hand, by its static type: summoning a second one for `self` would give a
+        // receiver holding frozen arrays a `Self` it cannot be passed to.
         summonFrom:
-          case probing: (Applicable.Probing {
-                  type Self = self
-                  type Operand = applicable.Operand
-                  type Result = applicable.Result }) =>
-            probing.probe(value, key)
+          case _: (applicable.type <:< Applicable.Probing) =>
+            applicable.probe(value, key)
 
           case _ =>
             optimizable[applicable.Result]: default =>
@@ -153,14 +152,13 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
       case _ =>
         val key: applicable.Operand = ordinal.asInstanceOf[applicable.Operand]
 
-        // A receiver that can check and read in one probe (a map) does; any other is checked
-        // and then read, exactly as before.
+        // A receiver whose instance can check and read in one probe (a map's) does; any other
+        // is checked and then read, exactly as before. The question is asked of the instance
+        // already in hand, by its static type: summoning a second one for `self` would give a
+        // receiver holding frozen arrays a `Self` it cannot be passed to.
         summonFrom:
-          case probing: (Applicable.Probing {
-                  type Self = self
-                  type Operand = applicable.Operand
-                  type Result = applicable.Result }) =>
-            probing.probe(value, key)
+          case _: (applicable.type <:< Applicable.Probing) =>
+            applicable.probe(value, key)
 
           case _ =>
             optimizable[applicable.Result]: default =>
