@@ -53,15 +53,16 @@ attestation.
 
 ## The documentation is an Orthant store
 
-Everything under `doc/` — the tutorials and API overlays of `doc/soundness/`, their French
+The documentation — the tutorials and API overlays of `doc/work/soundness/`, their French
 translation, and the philosophy, standards, migration, roadmap and errors sections — is held in
 the [Orthant](https://github.com/propensive/orthant) store in `.orthant/`, not as files in git.
-`doc/` is the store's working tree, and git ignores it but for `doc/readme.md`. The store has a
+`doc/work/` is the store's working tree, which git ignores, and which is empty until a point is
+checked out. `doc/readme.md`, beside it, is an ordinary file in git. The store has a
 `language` axis (`en`, with `fr` beneath it) and a `release` axis that follows the release tags
 (from 0.76.0), whose last value, `main`, holds what is not yet released.
 
 - To read or change a document, check a point out (`orthant checkout en main`, or `orthant
-  checkout fr main --indirect` to translate), edit it in `doc/`, and `orthant checkin`. Name the
+  checkout fr main --indirect` to translate), edit it in `doc/work/`, and `orthant checkin`. Name the
   release: without `main`, it is the one last checked out, or the oldest. A PR that changes the
   documentation changes files under `.orthant/data/`.
 - Fuel compiles only what is checked in, never the working tree: the loop is edit, `orthant
@@ -91,16 +92,15 @@ worked recipe for each:
 | After a pull or rebase that changed `.orthant/`    | `orthant update`                                             |
 
 Run `orthant checkin --dry-run` first when the reach of an edit is in doubt: it names the points
-whose content would change, and stores nothing. `doc/readme.md` is itself in the store as well
-as in git, so a change to it is checked in *and* committed.
+whose content would change, and stores nothing.
 
 ## Record every material change in the next release's migration notes
 
 Downstream code is upgraded across Soundness releases by an LLM agent that reads one file per
-release, `doc/migration/<version>.md`, and applies what it describes. `doc/migration.md`
+release, `doc/work/migration/<version>.md`, and applies what it describes. `doc/work/migration.md`
 explains the scheme. Since the 0.64.0 release, every PR contributes to the next file: the
-unreleased `doc/migration/<version>.md`, named from the start after the release it will be part
-of, which is the one file in `doc/migration/` whose version has no tag.
+unreleased `doc/work/migration/<version>.md`, named from the start after the release it will be part
+of, which is the one file in `doc/work/migration/` whose version has no tag.
 
 ### When an entry is required
 
@@ -155,14 +155,14 @@ A representative entry:
 
 ### Rules
 
-1. Write only to the unreleased `doc/migration/<version>.md` (check `en` out at `main`, edit,
+1. Write only to the unreleased `doc/work/migration/<version>.md` (check `en` out at `main`, edit,
    and `orthant checkin`). Never edit a released one
    except to correct an error in it. If every file there has been released, create the next,
    for the next minor version (`0.71.0.md` after 0.70.0), headed `# Changes since <previous>`.
 2. Add the entry in the same PR as the change, in the same commit as the change or a later one.
    `.orthant/` is outside the CI input set, so adding or amending an entry does not
    invalidate the PR's attestation.
-3. A release needs no preparatory PR: tagging `X.Y.Z` releases `doc/migration/X.Y.Z.md` as it
+3. A release needs no preparatory PR: tagging `X.Y.Z` releases `doc/work/migration/X.Y.Z.md` as it
    stands. The release refuses to run if `X.Y.Z.md` is missing or another version's notes are
    unreleased, so to release under a different version than the file names (1.0.0 rather than
    0.71.0, say), rename it with `git mv` in any PR and merge that before tagging.
@@ -216,7 +216,7 @@ git tag -s X.Y.Z && git push --tags
 
 There is no version to bump: `publishVersion` is driven from the tag through
 `SOUNDNESS_RELEASE_VERSION`, and nothing must merge first: the migration notes are already
-named `doc/migration/<version>.md` (above), so any green commit on `main` can be tagged with the
+named `doc/work/migration/<version>.md` (above), so any green commit on `main` can be tagged with the
 version its notes name. The tag fires
 `.github/workflows/release.yml`, which runs the shared `release.sh` in propensive/.github.
 Never publish by hand, and never create a release or upload an asset with `gh`.
@@ -240,5 +240,5 @@ What this repository needs beyond the common path — the two-step JVM-then-Scal
 it configures the release, not the build. The release notes are generated: the **Changes**
 section is built from the body of every pull request merged since the previous tag, which is
 what `pull_request_template.md` asks each PR for, and a **Migration** section links
-`doc/migration/<version>.md`. A hand-written overview can be added as `doc/notes/<version>.md`,
+`doc/work/migration/<version>.md`. A hand-written overview can be added as `doc/notes/<version>.md`,
 which is optional and ungated.

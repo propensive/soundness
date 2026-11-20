@@ -1,0 +1,91 @@
+orthant 1 language
+
+-     An error type has a bolt code — `Error(25, 1, 0)`, the first error of the twenty-fifth
+-     module, is `↯/s.25.1` — which is stable across releases, never reused, and documented at
+-     `doc/work/errors/25.1.md`; its distinct causes are the cases of a `Reason` enum extending
+-     `Clarification`, each numbered within the error (`↯/s.25.1.1`), and each rendered through
+-     its own `Communicable`. A full error, grown step by step (900 stands for the number of
+-     the module the error is in):
++     Un type d'erreur a un code bolt — `Error(25, 1, 0)`, la première erreur du vingt-cinquième
++     module, correspond à `↯/s.25.1` — stable d'une version à l'autre, jamais réutilisé, et
++     documenté dans `doc/work/errors/25.1.md` ; ses différentes causes sont les cas d'une énumération
++     `Reason` qui étend `Clarification`, chacun numéroté au sein de l'erreur (`↯/s.25.1.1`) et
++     rendu par son propre `Communicable`. Une erreur complète, construite pas à pas (900 tient lieu
++     du numéro du module où se trouve l'erreur) :
+
+-       An error is identified by three numbers, which make its bolt code. `module` is the
+-       number of the library the error is in, as the `bolt` registry's `s.tel` records it;
+-       `number` is the error's own within that library, the next free one when the error type
+-       is written, and never reused (a retired number stays in the registry, marked so); and
+-       `variant` is the number of the error's reason — the `number` of its `Reason` case, an
+-       enum extending `Clarification` — or 0 when the error has no reasons. The error is
+-       documented at `doc/work/errors/<module>.<number>.md` with its cause and the usual remedies,
+-       so that `↯/s.25.1` in a user's report can be looked up rather than guessed at. An error
+-       written `Error(message)` has `module = 0`: no code, and `getMessage` prefixes its
+-       component instead. The code renders in the `[↯/s.25.1.2]` prefix of `#labelled`, of
+-       `getMessage` and of a compile-time `halt`.
++       Une erreur est identifiée par trois nombres, qui forment son code bolt. `module` est le
++       numéro de la bibliothèque où se trouve l'erreur, tel que l'enregistre le fichier `s.tel` du
++       registre `bolt` ; `number` est le numéro propre de l'erreur au sein de cette bibliothèque,
++       le prochain libre lors de l'écriture du type d'erreur, et jamais réutilisé (un numéro retiré
++       demeure dans le registre, marqué comme tel) ; et `variant` est le numéro de la raison de
++       l'erreur — le `number` de son cas `Reason`, une énumération qui étend `Clarification` — ou 0
++       lorsque l'erreur n'a pas de raisons. L'erreur est documentée dans
++       `doc/work/errors/<module>.<number>.md` avec sa cause et les remèdes habituels, de sorte que le
++       `↯/s.25.1` d'un rapport d'utilisateur puisse être consulté plutôt que deviné. Une erreur
++       écrite `Error(message)` a `module = 0` : pas de code, et `getMessage` préfixe à la place son
++       composant. Le code est rendu dans le préfixe `[↯/s.25.1.2]` de `#labelled`, de `getMessage`
++       et d'un `halt` à la compilation.
+
+-       The house style for the message is `doc/work/standards/messages.md`: lowercase, no trailing
+-       period, present tense, the specific resource at fault interpolated as a typed value,
+-       and never *invalid* or *bad* as the whole predicate. Errors are meant to be matched on:
+-       a handler deconstructs the case class and its `Reason`, never its text.
++       Le style maison des messages est `doc/work/standards/messages.md` : en minuscules, sans point
++       final, au présent, la ressource précise en cause étant interpolée comme valeur typée, et
++       jamais *invalid* ni *bad* comme prédicat à lui seul. Les erreurs sont faites pour être
++       filtrées : un gestionnaire déconstruit la case class et sa `Reason`, jamais son texte.
+
+-     The house style for what a message says is `doc/work/standards/messages.md`.
++       Le style maison de ce que dit un message est `doc/work/standards/messages.md`.
+
+-     `trait Clarification { def number: Int }`. An error's distinct causes are the cases of a
+-     `Reason` enum extending `Clarification`, each with a number unique within the error, so
+-     that `Error(25, 1, reason.number)` renders as `↯/s.25.1.1`, `↯/s.25.1.2`… and each has a
+-     sub-section of the error's page in `doc/work/errors`. A `Reason` carries data of its own where
+-     the diagnosis needs it (`Ipv4ByteOutOfRange(byte: Int)`), and gives its own
+-     `Communicable` instance phrasing each case, which the error's message interpolates. A
+-     `halt` or `warn` given a `Clarification` puts its number in the diagnostic's prefix.
++   detail
++       `trait Clarification { def number: Int }`. Les différentes causes d'une erreur sont les
++       cas d'une énumération `Reason` qui étend `Clarification`, chacun avec un numéro unique au
++       sein de l'erreur, de sorte que `Error(25, 1, reason.number)` se rend `↯/s.25.1.1`,
++       `↯/s.25.1.2`… et que chacun ait une sous-section de la page de l'erreur dans `doc/work/errors`.
++       Une `Reason` porte ses propres données là où le diagnostic en a besoin
++       (`Ipv4ByteOutOfRange(byte: Int)`), et fournit sa propre instance `Communicable` qui formule
++       chaque cas, que le message de l'erreur interpole. Un `halt` ou un `warn` auquel on donne
++       une `Clarification` place son numéro dans le préfixe du diagnostic.
+
+-     For macro implementations, with `Quotes` in scope. `halt(message)` reports the
+-     `Message`'s text (coloured, through `Message#colorText`, when the compiler's `-color`
+-     setting is on) with `report.errorAndAbort`; `halt(message, position)` attaches a
+-     position. The numbered overloads prefix the diagnostic with the error's code as
+-     `[↯/s.25.1] ` — `halt(module, number, message)`, `halt(module, number, message,
+-     position)` — or with its reason's number as `[↯/s.25.1.2] `: `halt(module, number,
+-     reason, message)` and `halt(module, number, reason, message, position)`, where `reason`
+-     is a `Clarification`. The position parameter of the numbered
+-     forms is `Matchable`, and a value which is not a `quotes.reflect.Position` (or `null`)
+-     reports without one. Every macro-raised code has a page in `doc/work/errors`, like a runtime
+-     error's.
++   detail
++       Pour les implémentations de macros, avec `Quotes` dans la portée. `halt(message)` signale le
++       texte du `Message` (en couleur, au moyen de `Message#colorText`, lorsque le réglage `-color`
++       du compilateur est activé) avec `report.errorAndAbort` ; `halt(message, position)` y attache
++       une position. Les surcharges numérotées préfixent le diagnostic par le code de l'erreur sous
++       la forme `[↯/s.25.1] ` — `halt(module, number, message)`,
++       `halt(module, number, message, position)` — ou par le numéro de sa raison sous la forme
++       `[↯/s.25.1.2] ` : `halt(module, number, reason, message)` et
++       `halt(module, number, reason, message, position)`, où `reason` est une `Clarification`. Le
++       paramètre de position des formes numérotées est `Matchable`, et une valeur qui n'est pas une
++       `quotes.reflect.Position` (ou `null`) signale sans position. Chaque code levé par une macro
++       a une page dans `doc/work/errors`, comme celui d'une erreur à l'exécution.

@@ -1,0 +1,12 @@
+orthant 1 release
+
+- break it listed in `doc/standards/naming.md`.
++ break it listed in `doc/work/standards/naming.md`.
+
+- belong in `doc/standards/capabilities.md`, with the tag vocabulary `safety-2` relies on and the
+- one sanctioned hatch form for each tag, and a pointer from `doc/philosophy/capture-checking.md`.
++ belong in `doc/work/standards/capabilities.md`, with the tag vocabulary `safety-2` relies on and the
++ one sanctioned hatch form for each tag, and a pointer from `doc/work/philosophy/capture-checking.md`.
+
+- Done when: `doc/standards/capabilities.md` exists, defines every tag the census recognises, and
++ Done when: `doc/work/standards/capabilities.md` exists, defines every tag the census recognises, and

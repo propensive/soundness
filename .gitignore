@@ -15,6 +15,5 @@ __pycache__/
 .pyrocosm/flame/history
 
 # The working tree of the Orthant store in .orthant: the documentation is the store, and the tree
-# holds whichever point was last checked out (doc/readme.md, which says so, is the exception).
-/doc/*
-!/doc/readme.md
+# holds whichever point was last checked out. doc/readme.md, beside it, is in git and says so.
+/doc/work/

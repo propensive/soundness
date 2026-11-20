@@ -23,7 +23,7 @@ probes     beneficence.plugin larceny.plugin rudiments.core rudiments.core.js ru
 # The migration notes accumulate in <version>.md, named after the next release from the first
 # change after the last; the release refuses to run while that file is missing, or while another
 # version's notes are unreleased.
-migration  doc/migration
+migration  doc/work/migration
 
 # The trust boundary is the signed attestation note on refs/notes/ci-attestation, not the runner.
 verify     ./mill groupCheck.validate

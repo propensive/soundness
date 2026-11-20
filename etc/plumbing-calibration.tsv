@@ -1,4 +1,4 @@
-# Hand-labelled candidates for calibrating `flare assess plumbing` against doc/standards/plumbing.md,
+# Hand-labelled candidates for calibrating `flare assess plumbing` against doc/work/standards/plumbing.md,
 # identified by locus (see the standard). Re-score them with `flare assess plumbing --limit 40`
 # whenever the rubric or the model changes; every `definite` should land at 10 or above and no
 # `legitimate` above 4. Columns: locus, label, note.

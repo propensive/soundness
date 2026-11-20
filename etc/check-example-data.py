@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ratchet on example data that is not drawn from Shakespeare (doc/standards/examples.md).
+"""Ratchet on example data that is not drawn from Shakespeare (doc/work/standards/examples.md).
 
 Counts, per file, three kinds of example vocabulary the standard retires: arbitrary or real
 people (and other fiction and brands), company structure, and metasyntactic placeholders. A
@@ -186,7 +186,7 @@ for path, row in sorted(current.items()):
     elif row[name] < limit: slack += limit - row[name]
 
 if failures:
-  print('Example data outside the Shakespearean vocabulary (doc/standards/examples.md):')
+  print('Example data outside the Shakespearean vocabulary (doc/work/standards/examples.md):')
   for failure in failures: print('  '+failure)
   print('See them with `python3 etc/check-example-data.py --list <path>`.')
   sys.exit(1)

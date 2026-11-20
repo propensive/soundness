@@ -4,21 +4,17 @@ The documentation is kept in an [Orthant](https://github.com/propensive/orthant)
 `.orthant/` at the top of the repository, and not as files in git. The store holds every
 document in each language (`en`, and `fr` beneath it) at each release (0.76.0, 0.77.0 and so on,
 then `main` for what is not yet released). It stores only the lines that differ from the point
-above. This directory is the store's working tree. git ignores everything in it but this file,
-so the directory holds only this file until a point is checked out:
+above. The store's working tree is `work/`, beside this file. git ignores it, and it is empty
+until a point is checked out:
 
 ```
-orthant checkout en main            # the English as it is on main: soundness/, philosophy/, …
+orthant checkout en main              # the English on main: work/soundness/, work/philosophy/, …
 orthant checkout fr main --indirect   # the French, each line beside the English it translates
 ```
 
 A value is given for each axis: without `main`, the release is the one last checked out, or the
-oldest. The first checkout in a fresh clone needs `--force`, because Orthant takes this file,
-which it has not yet checked out, for an edit.
-
-This file is the one document kept twice, in git and in the store at `main`, so that a fresh
-clone has it to read. A change to it is checked in like any other, and the file is committed as
-well.
+oldest. This file is not in the store. It is an ordinary file in git, and no checkout touches
+it.
 
 ## How an edit travels
 
@@ -52,7 +48,7 @@ paragraph.
 
 ```
 orthant checkout en main      # the English, as plain documents
-$EDITOR doc/standards/logging.md
+$EDITOR doc/work/standards/logging.md
 orthant diff                  # the edits, before they are stored
 orthant checkin               # store them at en/main, and so at fr/main
 fuel compile                  # check the documents, as the store now holds them
@@ -93,7 +89,7 @@ out, and let Orthant send each changed line back to the release which introduced
 
 ```
 orthant checkout en main
-$EDITOR doc/soundness/modules/sockets.md
+$EDITOR doc/work/soundness/modules/sockets.md
 orthant checkin --origin release --dry-run   # the points it would change
 orthant checkin --origin release
 ```
@@ -113,7 +109,7 @@ or check that release out and edit it there:
 
 ```
 orthant checkout en 0.76.0
-$EDITOR doc/soundness/modules/sockets.md
+$EDITOR doc/work/soundness/modules/sockets.md
 orthant checkin                              # 0.76.0, and every release after it
 ```
 
@@ -126,7 +122,7 @@ language, and leaves later releases as they were:
 
 ```
 orthant checkout en 0.76.0
-$EDITOR doc/soundness/modules/sockets.md
+$EDITOR doc/work/soundness/modules/sockets.md
 orthant checkin --only release               # en and fr at 0.76.0; not 0.77.0, not main
 ```
 
@@ -164,8 +160,20 @@ Translate a `?` line by adding `+` lines beneath it:
 + # Disposition des modules
 ```
 
-A `-` line with no `+` line beneath it is left out of the translation. Then check in, which says
-how much less there is to do:
+A `-` line with no `+` line beneath it is left out of the translation. A line which reads the
+same in both languages, such as a line of TEL structure, still wants a `+` line, as a pair of
+its own:
+
+```
+-   definition
++   definition
+-       A small sample of a color.
++       Un petit échantillon d'une couleur.
+```
+
+Written as one run of `-` lines and one of `+` lines, the shared first line would be taken as
+unchanged, and left as a line yet to be translated. Then check in, which says how much less
+there is to do:
 
 ```
 orthant checkin
@@ -215,7 +223,7 @@ the English in, confirm the translation as it stands:
 
 ```
 orthant checkout en main
-$EDITOR doc/soundness/modules/audio.md
+$EDITOR doc/work/soundness/modules/audio.md
 orthant checkin               # leaves fr/main with 1 more stale passage
 orthant checkout fr main --indirect
 orthant confirm soundness/modules/audio.md
@@ -251,7 +259,7 @@ A dialect is a value beneath its language whose name has the same language code:
 ```
 orthant axis value language en/US en
 orthant checkout en/US main
-$EDITOR doc/standards/examples.md             # "colours" becomes "colors"
+$EDITOR doc/work/standards/examples.md             # "colours" becomes "colors"
 orthant checkin
 ```
 
@@ -277,7 +285,7 @@ orthant export out/site fr 0.77.0 --strict           # refuse while any translat
 ```
 
 The scripts in `etc/` which read the documents read such a copy, `out/doc`, made by `make docs`
-(`orthant export out/doc en main`), and do not read this directory.
+(`orthant export out/doc en main`), and do not read the working tree.
 
 ## Keeping the store and the working tree in step
 
@@ -286,9 +294,9 @@ The scripts in `etc/` which read the documents read such a copy, `out/doc`, made
   checked in onto the new documents.
 - **Before committing**, `orthant status --all` reports on every point, and `orthant check`
   verifies everything the store holds.
-- **Commit** `.orthant/config.tel` and `.orthant/data/`. This directory and `.orthant/work/`,
-  which records what is checked out, are ignored by git. `.orthant/` is outside the CI input
-  set, so a change to the documentation alone needs no new build to be attested.
+- **Commit** `.orthant/config.tel` and `.orthant/data/`. The working tree, `doc/work/`, and
+  `.orthant/work/`, which records what is checked out, are ignored by git. `.orthant/` is outside
+  the CI input set, so a change to the documentation alone needs no new build to be attested.
 - **To abandon edits**, `orthant checkout en main --force` discards whatever is not checked in.
 - **After a release is tagged**, `orthant sync` takes the tag up as a value. Everything checked
   in at `main` becomes that release's, and `main` starts again beneath it. Commit the change to

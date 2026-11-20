@@ -4,4 +4,7 @@ orthant 1 release
 + row  `etc/api-reduction-candidates.md` no longer exists  `api-5`
 
 - row  Every published module is covered by a `doc/en/modules/` topic  `doc-4`
-+ row  Every published module is covered by a `doc/soundness/modules/` topic  `doc-4`
++ row  Every published module is covered by a `doc/work/soundness/modules/` topic  `doc-4`
+
+-   by `dist-2` in `doc/standards/migration.md` — that convention is what makes "APIs change
++   by `dist-2` in `doc/work/standards/migration.md` — that convention is what makes "APIs change
