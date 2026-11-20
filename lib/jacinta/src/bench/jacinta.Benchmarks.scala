@@ -214,6 +214,12 @@ object Benchmarks extends Suite("json-bench", m"Jacinta JSON parser benchmarks")
   val stagedPlayParsable: BenchPlay is Json.Parsable = Json.Parsable.staged
   val stagedPlaysParsable: BenchPlays is Json.Parsable = Json.Parsable.staged
 
+  // As `stagedPlaysParsable`, but with the record's staged parser in scope when the list's is
+  // generated, so the records are staged too; without it, they fall back to derivation.
+  val stagedPlaysOfStagedPlays: BenchPlays is Json.Parsable =
+    given BenchPlay is Json.Parsable = stagedPlayParsable
+    Json.Parsable.staged
+
   // ── Fused-tokenizer spike ─────────────────────────────────────────────────
   // Hand-written approximation of what a builder-parameterized staged
   // tokenizer would GENERATE for `BenchUsers`: one function, parser state in
@@ -541,6 +547,13 @@ object Benchmarks extends Suite("json-bench", m"Jacinta JSON parser benchmarks")
         '{
             given BenchPlay is Json.Parsable = jacinta.Benchmarks.stagedPlayParsable
             given BenchPlays is Json.Parsable = jacinta.Benchmarks.stagedPlaysParsable
+            jacinta.Benchmarks.playsBytes.read[BenchPlays in Json]
+        }
+
+      bench(m"Decode wide records with staged Parsables throughout")
+        ( target = 1*Second, operationSize = jacinta.Benchmarks.playsBytes.length*Byte ):
+        '{
+            given BenchPlays is Json.Parsable = jacinta.Benchmarks.stagedPlaysOfStagedPlays
             jacinta.Benchmarks.playsBytes.read[BenchPlays in Json]
         }
 
