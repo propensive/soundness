@@ -53,12 +53,29 @@ object internal:
   def enumerable[enumeration <: reflect.Enum: Type]: Macro[enumeration is Enumerable] =
     import quotes.reflect.*
 
-    val companion = Ref(TypeRepr.of[enumeration].typeSymbol.companionModule).asExpr
+    val symbol = TypeRepr.of[enumeration].typeSymbol
+    val companion = Ref(symbol.companionModule).asExpr
+
+    // The cases' names are the texts a value is found by, unless the enumeration says
+    // otherwise by overriding `toString`; then the names are only known by asking each value.
+    val renamed = symbol.declaredMethods.exists(_.name == "toString")
+
+    val cases: scala.collection.immutable.List[(Int, String)] =
+      if renamed then scala.collection.immutable.Nil else symbol.children.map(_.name).zipWithIndex.map(_.swap)
 
     ' {
         new Enumerable:
           type Self = enumeration
           val name: Text = ${Expr(TypeRepr.of[enumeration].show)}.tt
+
+          override def value(name: Text): vacuous.Optional[enumeration] =
+            val text: String = name.s
+
+            $ {
+                val hashed = PerfectHash.dispatch(cases, 'text, Expr(-1))
+
+                if hashed == null then '{indexed(name)} else '{numbered($hashed)}
+              }
 
           val values: Array[enumeration]^{} =
             $ {

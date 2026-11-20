@@ -1161,6 +1161,15 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
         data.read[Tests.Tree in Tel]
       . assert(_ == Tests.Tree(t"root", List(Tests.Tree(t"a", Nil))))
 
+      test(m"An inlined parser reads a wide record, skipping keywords nearly its fields"):
+        given (Tests.Census is Tel.Parsable) = Inlinable.parsable[Tests.Census]
+
+        val document =
+          t"fools 8\nfool 0\nghosts 7\nduels 6\ndeaths 5\nsongs 4\nlines 3\nscenes 2\nacts 1\n"
+
+        document.read[Tests.Census in Tel]
+      . assert(_ == Tests.Census(1, 2, 3, 4, 5, 6, 7, 8))
+
       test(m"`in[Text over Tel]` writes what `read[T in Tel]` reads"):
         Tests.Person(t"Percy", 30).in[Text over Tel].read[Tests.Person in Tel]
       . assert(_ == Tests.Person(t"Percy", 30))

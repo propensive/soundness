@@ -59,7 +59,14 @@ trait Enumerable:
   val name: Text
   val values: Array[Self]^{}
 
-  def value(name: Text): Optional[Self] = valuesMap(name)
+  // The value called `name`. A derived instance of an enumeration with enough cases finds
+  // it by a perfect hash of the cases' names, generated with the instance; any other looks
+  // it up in a map made on first use, which is `indexed`.
+  def value(name: Text): Optional[Self] = indexed(name)
+  protected def indexed(name: Text): Optional[Self] = valuesMap(name)
+
+  // The value whose position among `values` a generated lookup found, or `Unset` for -1.
+  protected def numbered(index: Int): Optional[Self] = if index < 0 then Unset else values.at(index.z)
   def name(value: Self): Text = value.toString.tt
   def index(value: Self): Int = value.ordinal
 

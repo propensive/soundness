@@ -1040,6 +1040,13 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
         counts.in[Json].show.read[Counts in Json]
       . assert(_ == Counts(Map(t"a" -> 1, t"b" -> 2), t"tag"))
 
+      test(m"an inlined parser reads a wide record, skipping keys that are nearly its fields"):
+        given (Tally is Json.Parsable) = Inlinable.parsable[Tally]
+
+        t"""{"fools": 8, "fool": 0, "ghosts": 7, "duels": 6, "duel": 0, "deaths": 5, "songs": 4,
+            "lines": 3, "Lines": 0, "scenes": 2, "acts": 1, "actss": 0}""".read[Tally in Json]
+      . assert(_ == Tally(1, 2, 3, 4, 5, 6, 7, 8))
+
       test(m"Read an Int directly"):
         t"42".read[Int in Json]
       . assert(_ == 42)
