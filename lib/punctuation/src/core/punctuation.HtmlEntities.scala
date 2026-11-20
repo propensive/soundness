@@ -40,14 +40,10 @@ import vacuous.*
 // the HTML 5 additions, as the `whatwg` DOM's `entities` holds them). Only entries with a trailing
 // semicolon are kept, since CommonMark requires the `;` terminator for named entities to be valid.
 private[punctuation] object HtmlEntities:
-  private lazy val table: Map[String, String] =
-    val builder = scala.collection.immutable.Map.newBuilder[String, String]
-
+  private lazy val table: Map[String, String] = Map.build[String, String]: table =>
     honeycomb.htmlDoms.whatwg.entities.entries.foreach: (name, value) =>
       val string = name.s
-      if string.endsWith(";") then builder += (string.substring(0, string.length - 1).nn -> value.s)
-
-    builder.result().to(Map)
+      if string.endsWith(";") then table(string.substring(0, string.length - 1).nn) = value.s
 
   // Returns the decoded text for a named entity (without `&` or `;`), or
   // `Unset` if no such entity exists.

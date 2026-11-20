@@ -1538,14 +1538,12 @@ case class Bytecode
     val byOffset: Map[Int, Bytecode.Instruction] = instructions.map { i => i.offset -> i }.to[Map]
 
     val priorStacks: Map[Int, List[Bytecode.Frame]] =
-      var prev: Optional[List[Bytecode.Frame]] = Nil
-      val builder = scala.collection.immutable.Map.newBuilder[Int, List[Bytecode.Frame]]
+      Map.build[Int, List[Bytecode.Frame]]: stacks =>
+        var prev: Optional[List[Bytecode.Frame]] = Nil
 
-      instructions.each: instr =>
-        prev.let(builder += instr.offset -> _)
-        prev = instr.stack
-
-      builder.result().to(Map)
+        instructions.each: instr =>
+          prev.let { frames => stacks(instr.offset) = frames }
+          prev = instr.stack
 
     val receivers: List[Optional[Int]] = instructions.map: instr =>
       val (owner, descriptor) = instr.opcode match

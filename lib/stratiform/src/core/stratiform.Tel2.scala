@@ -848,17 +848,14 @@ trait Tel2 extends Tel3:
     val shape: Morphology = Morphology.Dict(keyCodec.shape(), valueCodec.shape())
 
     Tel.Decodable(() => shape): telVal =>
-      var accumulator = Map.empty[key, value]
-
-      for entry <- telVal.fields(t"entries") do
-        // A missing `key`/`value` child routes through `absent()` rather
-        // than decoding an empty node, so flag-natured values report their
-        // absent form (`false`) instead of misreading emptiness.
-        val k = entry.field(t"key").lay(keyCodec.absent())(keyCodec.decoded(_))
-        val v = entry.field(t"value").lay(valueCodec.absent())(valueCodec.decoded(_))
-        accumulator = accumulator.define(k, v)
-
-      accumulator
+      Map.build[key, value]: accumulator =>
+        for entry <- telVal.fields(t"entries") do
+          // A missing `key`/`value` child routes through `absent()` rather
+          // than decoding an empty node, so flag-natured values report their
+          // absent form (`false`) instead of misreading emptiness.
+          val k = entry.field(t"key").lay(keyCodec.absent())(keyCodec.decoded(_))
+          val v = entry.field(t"value").lay(valueCodec.absent())(valueCodec.decoded(_))
+          accumulator(k) = v
 
   // Helpers used by encoders to construct Tel values.
 

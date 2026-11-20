@@ -48,7 +48,6 @@ import vacuous.*
 private[facsimile] object CharMap:
   def parse(data: Data)(using Tactic[Pdf.Error]): CharMap =
     val parser: CosParser^ = CosParser(CosLexer(Scan(data)), references = false)
-    val entries = scala.collection.immutable.Map.newBuilder[Int, Text]
     var codeBytes = 1
     var done = false
 
@@ -70,53 +69,54 @@ private[facsimile] object CharMap:
       else (text.s.substring(0, text.length - 1).nn +
         (text.s.charAt(text.length - 1) + by).toChar).tt
 
-    while !done do
-      parser.instruction().let: (operands, operator) =>
-        operator.s match
-          case "endcodespacerange" => operands match
-            case low :: _ =>
-              low.chars.let: bytes => codeBytes = bytes.length.max(1)
+    val entries = Map.build[Int, Text]: entries =>
+      while !done do
+        parser.instruction().let: (operands, operator) =>
+          operator.s match
+            case "endcodespacerange" => operands match
+              case low :: _ =>
+                low.chars.let: bytes => codeBytes = bytes.length.max(1)
+
+              case _ =>
+                ()
+
+            case "endbfchar" =>
+              operands.batched(2).each:
+                case List(source, destination) =>
+                  code(source).let: code =>
+                    target(destination).let: text => entries(code) = text
+
+                case _ =>
+                  ()
+
+            case "endbfrange" =>
+              operands.batched(3).each:
+                case List(low, high, destination) =>
+                  code(low).let: start =>
+                    code(high).let: end =>
+                      if end - start >= 0 && end - start <= 65535 then destination match
+                        case Cos.Sequence(elements) =>
+                          elements.each: element =>
+                            target(element).let: text => entries(start + ordinal.n0) = text
+
+                        case single =>
+                          target(single).let: base =>
+                            var i = 0
+
+                            while i <= end - start do
+                              entries(start + i) = increment(base, i)
+                              i += 1
+
+                case _ =>
+                  ()
 
             case _ =>
               ()
 
-          case "endbfchar" =>
-            operands.batched(2).each:
-              case List(source, destination) =>
-                code(source).let: code =>
-                  target(destination).let: text => entries += code -> text
+        . or:
+            done = true
 
-              case _ =>
-                ()
-
-          case "endbfrange" =>
-            operands.batched(3).each:
-              case List(low, high, destination) =>
-                code(low).let: start =>
-                  code(high).let: end =>
-                    if end - start >= 0 && end - start <= 65535 then destination match
-                      case Cos.Sequence(elements) =>
-                        elements.each: element =>
-                          target(element).let: text => entries += (start + ordinal.n0) -> text
-
-                      case single =>
-                        target(single).let: base =>
-                          var i = 0
-
-                          while i <= end - start do
-                            entries += (start + i) -> increment(base, i)
-                            i += 1
-
-              case _ =>
-                ()
-
-          case _ =>
-            ()
-
-      . or:
-          done = true
-
-    CharMap(entries.result().to(Map), codeBytes)
+    CharMap(entries, codeBytes)
 
 private[facsimile] case class CharMap(entries: Map[Int, Text], codeBytes: Int):
   def apply(code: Int): Optional[Text] = entries(code)

@@ -1576,27 +1576,26 @@ object Yaml extends Yaml1, Dynamic:
         case xs: (Array[?]^{}) @unchecked if (xs.length & 1) == 0 =>
           // Mapping (even length, alternating keys and values flat).
           val n = xs.length / 2
-          var result: Map[Text, value] = Map.empty
-          var i = 0
 
-          while i < n do
-            val rawKey = xs(i*2).asInstanceOf[Yaml.Ast]
-            val rawValue = xs(i*2 + 1).asInstanceOf[Yaml.Ast]
+          Map.build[Text, value]: entries =>
+            var i = 0
 
-            val keyText: Text =
-              if rawKey.isNull then t"null"
-              else rawKey.asMatchable match
-                case s: String                    => s.tt
-                case k: (Long | Double | Boolean) => k.toString.tt
+            while i < n do
+              val rawKey = xs(i*2).asInstanceOf[Yaml.Ast]
+              val rawValue = xs(i*2 + 1).asInstanceOf[Yaml.Ast]
 
-                case other =>
-                  abort(Yaml.Error(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
-                                                 Yaml.Primitive.Str)))
+              val keyText: Text =
+                if rawKey.isNull then t"null"
+                else rawKey.asMatchable match
+                  case s: String                    => s.tt
+                  case k: (Long | Double | Boolean) => k.toString.tt
 
-            result = result.define(keyText, value.decoded(new Yaml(rawValue)))
-            i += 1
+                  case other =>
+                    abort(Yaml.Error(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
+                                                   Yaml.Primitive.Str)))
 
-          result
+              entries(keyText) = value.decoded(new Yaml(rawValue))
+              i += 1
 
         case other =>
           raise(Yaml.Error(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
@@ -6259,31 +6258,29 @@ object Yaml extends Yaml1, Dynamic:
         type Self = Map[Text, value]
 
         def parse(reader: Yaml.Reader^, node: Yaml.Ast): Map[Text, value] =
-          var result: Map[Text, value] = Map.empty
-
           if node.isObject then
             val entries = node.asInstanceOf[Array[Any]^{}]
 
-            Interval.zerary(0, node.objectSize).each: ordinal =>
-              val rawKey = entries.stdlib(ordinal.n0*2).asInstanceOf[Yaml.Ast]
+            Map.build[Text, value]: result =>
+              Interval.zerary(0, node.objectSize).each: ordinal =>
+                val rawKey = entries.stdlib(ordinal.n0*2).asInstanceOf[Yaml.Ast]
 
-              val key: Text =
-                if rawKey.isNull then t"null"
-                else rawKey.asMatchable match
-                  case s: String                    => s.tt
-                  case k: (Long | Double | Boolean) => k.toString.tt
+                val key: Text =
+                  if rawKey.isNull then t"null"
+                  else rawKey.asMatchable match
+                    case s: String                    => s.tt
+                    case k: (Long | Double | Boolean) => k.toString.tt
 
-                  case other =>
-                    reader.tactic.abort:
-                      Yaml.Error:
-                        Reason.NotType(Yaml.primitive(other.asInstanceOf[Yaml.Ast]),
-                            Yaml.Primitive.Str)
+                    case other =>
+                      reader.tactic.abort:
+                        Yaml.Error:
+                          Reason.NotType(Yaml.primitive(other.asInstanceOf[Yaml.Ast]),
+                              Yaml.Primitive.Str)
 
-              result = result.define(key, field.parse(reader, node.objectValue(ordinal.n0)))
+                result(key) = field.parse(reader, node.objectValue(ordinal.n0))
           else
             reader.shape(node, Yaml.Primitive.Mapping)
-
-          result
+            Map.empty
 
   object FieldDerivation extends ProductDerivable[Yaml.Field]:
     // As `DecodableDerivation`'s `gate` and `ArrayProduct`, which stay private to it: a

@@ -365,14 +365,13 @@ object Sheet:
     private[caesura] update def advanceData(): Boolean =
       if advance() then
         if isHeader && headings.absent then
-          val mapBuilder = scala.collection.immutable.Map.newBuilder[Text, Int]
-          var i = 0
+          headings = Map.build[Text, Int]: columns =>
+            var i = 0
 
-          while i < cellsBuf.length do
-            mapBuilder += cellsBuf(i) -> i
-            i += 1
+            while i < cellsBuf.length do
+              columns(cellsBuf(i)) = i
+              i += 1
 
-          headings = mapBuilder.result().to(Map)
           advanceData()
         else
           true

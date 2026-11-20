@@ -318,21 +318,19 @@ object Pdf:
           case dictionary: Cos.Dictionary =>
             pdf.resolved(dictionary(t"Differences").or(Cos.Nil)).elements.lay(Map[Int, Text]()):
               elements =>
-                var code = 0
-                val builder = scala.collection.immutable.Map.newBuilder[Int, Text]
+                Map.build[Int, Text]: entries =>
+                  var code = 0
 
-                elements.each:
-                  case Cos.Integral(value) =>
-                    code = value.toInt
+                  elements.each:
+                    case Cos.Integral(value) =>
+                      code = value.toInt
 
-                  case Cos.Name(name) =>
-                    builder += code -> PdfEncoding.glyph(name).lay(t"�")(_.show)
-                    code += 1
+                    case Cos.Name(name) =>
+                      entries(code) = PdfEncoding.glyph(name).lay(t"�")(_.show)
+                      code += 1
 
-                  case _ =>
-                    ()
-
-                builder.result().to(Map)
+                    case _ =>
+                      ()
 
           case _ =>
             Map()
@@ -392,30 +390,28 @@ object Pdf:
     :   Map[Int, Double] =
 
       pdf.resolved(value.or(Cos.Nil)).elements.lay(Map[Int, Double]()): elements =>
-        val builder = scala.collection.immutable.Map.newBuilder[Int, Double]
+        Map.build[Int, Double]: entries =>
+          def recur(elements: List[Cos]): Unit = elements match
+            case Cos.Integral(start) :: Cos.Sequence(widths) :: rest =>
+              widths.each: width =>
+                pdf.resolved(width).double.let { value => entries(start.toInt + ordinal.n0) = value }
 
-        def recur(elements: List[Cos]): Unit = elements match
-          case Cos.Integral(start) :: Cos.Sequence(widths) :: rest =>
-            widths.each: width =>
-              pdf.resolved(width).double.let(builder += (start.toInt + ordinal.n0) -> _)
+              recur(rest)
 
-            recur(rest)
+            case Cos.Integral(start) :: Cos.Integral(end) :: width :: rest =>
+              pdf.resolved(width).double.let: value =>
+                var cid = start.toInt
 
-          case Cos.Integral(start) :: Cos.Integral(end) :: width :: rest =>
-            pdf.resolved(width).double.let: value =>
-              var cid = start.toInt
+                while cid <= end.toInt do
+                  entries(cid) = value
+                  cid += 1
 
-              while cid <= end.toInt do
-                builder += cid -> value
-                cid += 1
+              recur(rest)
 
-            recur(rest)
+            case _ =>
+              ()
 
-          case _ =>
-            ()
-
-        recur(elements.map(pdf.resolved(_)))
-        builder.result().to(Map)
+          recur(elements.map(pdf.resolved(_)))
 
   // A font as a page's resources declare it (ISO 32000-2 §9): a pure, fully-materialized
   // value. An embedded font program surfaces as the phoenicia `Sfnt` its tables say it is —
@@ -488,24 +484,22 @@ object Pdf:
     // Serialises document information back to an `/Info` dictionary: text fields as PDF text
     // strings, dates in the `D:` form. Absent fields are omitted.
     private[facsimile] def dictionary(info: Info): Map[Text, Cos] =
-      var entries = Map[Text, Cos]()
+      Map.build[Text, Cos]: entries =>
+        def string(key: Text, value: Optional[Text]): Unit =
+          value.let: text => entries(key) = Cos.Chars(Cos.encodeText(text))
 
-      def string(key: Text, value: Optional[Text]): Unit =
-        value.let: text => entries = entries.define(key, Cos.Chars(Cos.encodeText(text)))
+        def date(key: Text, value: Optional[Timing]): Unit =
+          value.let: timing =>
+            entries(key) = Cos.Chars(Cos.encodeText(formatDate(timing)))
 
-      def date(key: Text, value: Optional[Timing]): Unit =
-        value.let: timing =>
-          entries = entries.define(key, Cos.Chars(Cos.encodeText(formatDate(timing))))
-
-      string(t"Title", info.title)
-      string(t"Author", info.author)
-      string(t"Subject", info.subject)
-      string(t"Keywords", info.keywords)
-      string(t"Creator", info.creator)
-      string(t"Producer", info.producer)
-      date(t"CreationDate", info.created)
-      date(t"ModDate", info.modified)
-      entries
+        string(t"Title", info.title)
+        string(t"Author", info.author)
+        string(t"Subject", info.subject)
+        string(t"Keywords", info.keywords)
+        string(t"Creator", info.creator)
+        string(t"Producer", info.producer)
+        date(t"CreationDate", info.created)
+        date(t"ModDate", info.modified)
 
     private def formatDate(timing: Timing): Text =
       import calendars.gregorianCalendar
