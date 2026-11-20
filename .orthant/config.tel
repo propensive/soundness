@@ -10,6 +10,14 @@ axis
     name fr
     parent en
     translation true
+  value
+    name de
+    parent en
+    translation true
+  value
+    name ja
+    parent en
+    translation true
 axis
   name release
   kind git
