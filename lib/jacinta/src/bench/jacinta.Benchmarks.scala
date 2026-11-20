@@ -72,6 +72,32 @@ case class BenchUsers(users: List[BenchUser])
 object BenchUsers:
   given parsable: BenchUsers is Json.Parsable = Json.Parsable.derived
 
+// A wide record, for the cost of finding which field a key names: twenty fields, all small
+// integers, so that reading the values is cheap and the dispatch on each key is what is left.
+case class BenchPlay
+  ( acts:        Int,
+    scenes:      Int,
+    lines:       Int,
+    speeches:    Int,
+    characters:  Int,
+    songs:       Int,
+    deaths:      Int,
+    duels:       Int,
+    letters:     Int,
+    ghosts:      Int,
+    kings:       Int,
+    queens:      Int,
+    fools:       Int,
+    storms:      Int,
+    feasts:      Int,
+    battles:     Int,
+    weddings:    Int,
+    disguises:   Int,
+    soliloquies: Int,
+    prologues:   Int )
+
+case class BenchPlays(plays: List[BenchPlay])
+
 // Jsoniter's view of the same records, with `String` fields and a stdlib
 // `List` as a Jsoniter user would declare them (`Text` is an opaque zero-cost
 // wrapper over `String`, so the two targets are materially identical, and
@@ -185,6 +211,8 @@ object Benchmarks extends Suite("json-bench", m"Jacinta JSON parser benchmarks")
   val usersDecodable: BenchUsers is Json.Decodable = summon[BenchUsers is Json.Decodable]
   val stagedUserParsable: BenchUser is Json.Parsable = Json.Parsable.staged
   val stagedUsersParsable: BenchUsers is Json.Parsable = Json.Parsable.staged
+  val stagedPlayParsable: BenchPlay is Json.Parsable = Json.Parsable.staged
+  val stagedPlaysParsable: BenchPlays is Json.Parsable = Json.Parsable.staged
 
   // ── Fused-tokenizer spike ─────────────────────────────────────────────────
   // Hand-written approximation of what a builder-parameterized staged
@@ -507,6 +535,15 @@ object Benchmarks extends Suite("json-bench", m"Jacinta JSON parser benchmarks")
             case JsonParser.Jackson =>
               '{ jacinta.Benchmarks.jacksonMapper.readTree($text).nn }
 
+    suite(m"Decode wide records (200 records of 20 fields)"):
+      bench(m"Decode wide records with a staged Parsable")
+        ( target = 1*Second, operationSize = jacinta.Benchmarks.playsBytes.length*Byte ):
+        '{
+            given BenchPlay is Json.Parsable = jacinta.Benchmarks.stagedPlayParsable
+            given BenchPlays is Json.Parsable = jacinta.Benchmarks.stagedPlaysParsable
+            jacinta.Benchmarks.playsBytes.read[BenchPlays in Json]
+        }
+
     suite(m"Decode example 4 into records (100 user records)"):
       bench(m"Decode via the Json AST")(target = 1*Second, operationSize = size4):
         '{
@@ -692,6 +729,38 @@ object Benchmarks extends Suite("json-bench", m"Jacinta JSON parser benchmarks")
     sb.toString.nn
 
   lazy val jsonBytes4: Data = Array.unsafeFrozen(jsonText4.getBytes("UTF-8").nn)
+
+  // Two hundred wide records, every field present, in the order the fields are declared.
+  lazy val playsText: String =
+    val names = scala.Array
+                 ( "acts", "scenes", "lines", "speeches", "characters", "songs", "deaths",
+                   "duels", "letters", "ghosts", "kings", "queens", "fools", "storms", "feasts",
+                   "battles", "weddings", "disguises", "soliloquies", "prologues" )
+
+    val text = new _root_.java.lang.StringBuilder
+    text.append("{\"plays\":[")
+    var play = 0
+
+    while play < 200 do
+      if play > 0 then text.append(',')
+      text.append('{')
+      var field = 0
+
+      while field < names.length do
+        if field > 0 then text.append(',')
+        text.append('"')
+        text.append(names(field))
+        text.append("\":")
+        text.append((play*31 + field*7)%1000)
+        field += 1
+
+      text.append('}')
+      play += 1
+
+    text.append("]}")
+    text.toString.nn
+
+  lazy val playsBytes: Data = Array.unsafeFrozen(playsText.getBytes("UTF-8").nn)
 
   // Example 5: a longer NDJSON-style log array with 500 entries; 6 keys per
   // entry, all repeating across entries. Larger than Example 4 and stresses

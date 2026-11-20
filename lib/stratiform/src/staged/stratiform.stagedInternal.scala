@@ -868,8 +868,16 @@ object stagedInternal:
         ( List(ValDef(name, Some('{$reader.keywordText.s}.asTerm))),
           stringChain(0) )
 
+    // With enough fields, a perfect hash of their packed keywords in place of the chain.
+    val packedDispatch: Term =
+      val entries = scala.collection.Iterator.range(0, arity).flatMap: index =>
+        packedKeywords(index).iterator.map { packed => (index, packed) }
+
+      val hashed = PerfectHash.dispatch(entries, wordRef, Expr(-1))
+      if hashed == null then packedChain(0) else hashed.asTerm
+
     val resolveStep: Term =
-      If('{$wordRef == TelReader.KeywordOpaque}.asTerm, textStep, packedChain(0))
+      If('{$wordRef == TelReader.KeywordOpaque}.asTerm, textStep, packedDispatch)
 
     val step: Term =
       Block
