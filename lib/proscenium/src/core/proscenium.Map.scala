@@ -73,6 +73,14 @@ object Map extends scala.caps.Pure:
 
     of(builder.result())
 
+  // A map whose keys are written out where it is made, read through a perfect hash of them
+  // which is found as the code is compiled —
+  //     val ages = Map.fixed(t"Lear" -> 80, t"Kent" -> 48, …)
+  // The keys must be literals: texts, `Int`s, `Long`s or `Char`s, all of one kind, each given
+  // once. A map that cannot be fixed is a compile error, never an ordinary map in its place.
+  inline def fixed[key, value](inline entries: (key, value)*): Map[key, value] =
+    ${PerfectMap.fixed[key, value]('entries)}
+
   // Allocate → mutate → freeze, for a map: the block is lent an exclusive `Builder` to fill in
   // place, and what it has filled comes back as an ordinary immutable `Map` without being
   // copied —
@@ -176,13 +184,13 @@ object Map extends scala.caps.Pure:
   // key is sent outside `capacity` slots, or two to the same one, or there is a `null` key,
   // `map` is handed back as it was.
   def perfect[key, value](map: Map[key, value], capacity: Int)
-    ( make: (scala.Array[Any]^{}, Int) => PerfectMap[key, value] )
+    ( make: scala.Array[Any]^{} => PerfectMap[key, value] )
   :   Map[key, value] =
 
     val count = map.size
     // [construction-fresh] an empty array, which nothing could write to
     val none: scala.Array[Any]^{} = scala.caps.unsafe.unsafeAssumePure(new scala.Array[Any](0))
-    val probe = make(none, count)
+    val probe = make(none)
     val slots: scala.Array[Any]^ = new scala.Array[Any](capacity << 1)
     val iterator = map.iterator
     var sound = count <= capacity
@@ -200,7 +208,7 @@ object Map extends scala.caps.Pure:
     if !sound then map else
       // [transfer] freeze: the table is written only above, and never after this
       val table: scala.Array[Any]^{} = scala.caps.unsafe.unsafeAssumePure(slots)
-      of(make(table, count))
+      of(make(table))
 
   // `.to[Map]` support (see `List`): the conversion is on `Map.type` only, so it cannot
   // expose members of `Map` values.

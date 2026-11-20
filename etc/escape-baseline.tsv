@@ -377,7 +377,7 @@ lib/murmuration/src/core/murmuration.Convertible.scala	0	0	0	0	1	0	0	0	0	0	0	0	0
 lib/murmuration/src/core/murmuration.Iterator.scala	1	0	1	0	0	0	0	0	1	1	0	0	0	0	2	0	0
 lib/murmuration/src/core/murmuration.Reshapable.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	3	0	0
 lib/murmuration/src/core/murmuration_core.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-lib/murmuration/src/test/murmuration_test.scala	0	0	0	0	0	0	0	0	0	0	12	0	10	1	0	0	0
+lib/murmuration/src/test/murmuration_test.scala	0	0	0	0	0	0	0	0	0	0	13	0	10	1	0	0	0
 lib/nomenclature/src/core/nomenclature.CssClass.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 lib/nomenclature/src/core/nomenclature.DomId.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 lib/nomenclature/src/core/nomenclature.Required.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
@@ -458,7 +458,7 @@ lib/proscenium/src/core/proscenium.Ledger.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	
 lib/proscenium/src/core/proscenium.List.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.Map.scala	4	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.PerfectHash.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-lib/proscenium/src/core/proscenium.PerfectMap.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+lib/proscenium/src/core/proscenium.PerfectMap.scala	2	0	1	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.Sequence.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.Set.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/test/prosceniumtest.Tests.scala	0	0	0	0	0	0	0	0	0	0	8	0	0	0	0	0	0

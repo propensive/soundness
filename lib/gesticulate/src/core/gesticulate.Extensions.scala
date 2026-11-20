@@ -40,8 +40,9 @@ import vacuous.*
 object Extensions:
   def guess(ext: Text): MediaType = mediaTypes(ext).or(media"application/octet-stream")
 
+  // Fixed: the extensions are all written here, so they are found by a perfect hash.
   val mediaTypes: Map[Text, MediaType] =
-    Map
+    Map.fixed
       ( t"aac"    -> media"audio/aac",
         t"abw"    -> media"application/x-abiword",
         t"arc"    -> media"application/x-freearc",

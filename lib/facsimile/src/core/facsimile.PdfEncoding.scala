@@ -142,8 +142,9 @@ private[facsimile] object PdfEncoding:
     else
       names(name)
 
+  // Fixed: the glyph names are all written here, so they are found by a perfect hash.
   private val names: Map[Text, Char] =
-    Map
+    Map.fixed
       ( t"space" -> ' ', t"exclam" -> '!', t"quotedbl" -> '"', t"numbersign" -> '#',
         t"dollar" -> '$', t"percent" -> '%', t"ampersand" -> '&', t"quotesingle" -> '\'',
         t"parenleft" -> '(', t"parenright" -> ')', t"asterisk" -> '*', t"plus" -> '+',
