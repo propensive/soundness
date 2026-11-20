@@ -303,3 +303,97 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
         Comparison.Less.also { evaluated = true; Comparison.More }
         evaluated
       . assert(_ == false)
+
+    suite(m"Perfect hashing"):
+      // Whether a program sends each key to a slot of its own, below its capacity.
+      def perfect(hash: PerfectHash, keys: scala.Array[Long], width: Int): Boolean =
+        val slots = scala.collection.immutable.List.tabulate(keys.length/width): index =>
+          hash.slot(keys, index*width)
+
+        slots.distinct.length == slots.length && slots.forall { slot => slot >= 0 && slot < hash.capacity }
+
+      def found(keys: scala.Array[Long], width: Int): PerfectHash =
+        PerfectHash.search(keys, width).nn
+
+      test(m"a single key has a table of one slot"):
+        val hash = found(scala.Array(42L), 1)
+        (hash.capacity, hash.slot(scala.Array(42L), 0))
+      . assert(_ == (1, 0))
+
+      test(m"consecutive integers are separated by a window of their bits"):
+        val keys = scala.Array.tabulate(16)(_.toLong)
+        val hash = found(keys, 1)
+        (perfect(hash, keys, 1), hash.capacity, hash.cost)
+      . assert(_ == (true, 16, 2))
+
+      test(m"keys differing only in their high bits are separated"):
+        val keys = scala.Array.tabulate(8) { index => index.toLong << 56 }
+        val hash = found(keys, 1)
+        (perfect(hash, keys, 1), hash.capacity)
+      . assert(_ == (true, 8))
+
+      test(m"five scattered keys fit a table of no more than eight slots"):
+        val keys = PerfectHashProbe.keys(1L, 5)
+        val hash = found(keys, 1)
+        (perfect(hash, keys, 1), hash.capacity <= 8)
+      . assert(_ == (true, true))
+
+      test(m"a thousand scattered keys are separated"):
+        val keys = PerfectHashProbe.keys(2L, 1000)
+        val hash = found(keys, 1)
+        (perfect(hash, keys, 1), hash.capacity <= 1024)
+      . assert(_ == (true, true))
+
+      test(m"a displaced program fills exactly as many slots as keys"):
+        val keys = PerfectHashProbe.keys(3L, 1000)
+        val hash = found(keys, 1)
+        (perfect(hash, keys, 1), hash.capacity, hash.table.length)
+      . assert(_ == (true, 1000, 512))
+
+      test(m"ten thousand scattered keys are separated"):
+        val keys = PerfectHashProbe.keys(4L, 10000)
+        val hash = found(keys, 1)
+        (perfect(hash, keys, 1), hash.capacity)
+      . assert(_ == (true, 10000))
+
+      test(m"keys of two words are separated"):
+        val keys = PerfectHashProbe.keys(5L, 60)
+        val hash = found(keys, 2)
+        (perfect(hash, keys, 2), hash.capacity <= 32)
+      . assert(_ == (true, true))
+
+      test(m"keys of two words differing only in the second are separated"):
+        val keys = scala.Array.tabulate(40) { index => if index%2 == 0 then 7L else index.toLong*977 }
+        val hash = found(keys, 2)
+        perfect(hash, keys, 2)
+      . assert(_ == true)
+
+      test(m"the same keys always give the same program"):
+        val keys = PerfectHashProbe.keys(8L, 300)
+        found(keys, 1).toString == found(keys, 1).toString
+      . assert(_ == true)
+
+      test(m"two equal keys cannot be separated"):
+        PerfectHash.search(scala.Array(3L, 9L, 3L), 1, 64) == null
+      . assert(_ == true)
+
+      test(m"a spliced window agrees with the program run on every key"):
+        val keys = PerfectHashProbe.keys(9L, 4)
+        val hash = found(keys, 1)
+        scala.collection.immutable.List.range(0, 4).forall: index =>
+          PerfectHashProbe.spliced(9L, 4)(keys(index)) == hash.slot(keys, index)
+      . assert(_ == true)
+
+      test(m"a spliced displacement agrees with the program run on every key"):
+        val keys = PerfectHashProbe.keys(10L, 200)
+        val hash = found(keys, 1)
+        scala.collection.immutable.List.range(0, 200).forall: index =>
+          PerfectHashProbe.spliced(10L, 200)(keys(index)) == hash.slot(keys, index)
+      . assert(_ == true)
+
+      test(m"a spliced program agrees with the program run on words that are not keys"):
+        val hash = found(PerfectHashProbe.keys(10L, 200), 1)
+        val others = PerfectHashProbe.keys(11L, 200)
+        scala.collection.immutable.List.range(0, 200).forall: index =>
+          PerfectHashProbe.spliced(10L, 200)(others(index)) == hash.slot(others, index)
+      . assert(_ == true)
