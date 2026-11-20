@@ -46,10 +46,10 @@ import vacuous.*
 // hash table behind the same opaque type as the standard library's persistent tree, so every
 // row here but the JDK's is an ordinary `Map`, differing only in how it was made and read.
 object MapBench:
-  // The contenders for a read. `Tree` and `Built` are `map.at(key)` on a map made by a literal
-  // or `from`, and on one made by `Map.build`. The two `Once` rows are the same maps read with a
-  // single `getOrElse` against a sentinel, which is what `at` would cost if it probed once
-  // rather than twice. `JavaHashMap` is the JDK's table read directly: the bound.
+  // The contenders for a read. `Tree` and `Built` are `map.at(key)` on a map grown one
+  // `define` at a time, and on one made by `Map.build`. The two `Once` rows are the same maps
+  // read with a bare `getOrElse` against a sentinel: what `at` does beneath its typeclass, and
+  // so the floor for it. `JavaHashMap` is the JDK's table read directly: the bound.
   enum Lookup:
     case Tree, Built, TreeOnce, BuiltOnce, JavaHashMap
 

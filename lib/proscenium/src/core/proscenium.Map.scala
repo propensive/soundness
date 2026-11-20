@@ -198,6 +198,17 @@ object Map extends scala.caps.Pure:
   def at[key, value](map: Map[key, value], index: key): value = map(index)
   def read[key, value](map: Map[key, value], index: key): Option[value] = map.get(index)
 
+  // The checked read in one probe: the value for `index`, or `absent`, with no `Option` made
+  // and the key hashed once, where `defines` followed by `at` hashes it twice. The by-name
+  // default is a constant object, so no closure is allocated; `equals` on it is identity.
+  def probe[key, value, absent](map: Map[key, value], index: key, absent: absent)
+  :   value | absent =
+
+    val found = map.getOrElse[Any](index, Missing)
+    if Missing.equals(found) then absent else found.asInstanceOf[value]
+
+  private object Missing
+
   def define[key, value](map: Map[key, value], index: key, value0: value): Map[key, value] =
     map.updated(index, value0)
 

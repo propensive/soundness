@@ -130,8 +130,18 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
       case _ =>
         val key: applicable.Operand = ordinal.asInstanceOf[applicable.Operand]
 
-        optimizable[applicable.Result]: default =>
-          if applicable.contains(value, key) then applicable.access(value, key) else default
+        // A receiver that can check and read in one probe (a map) does; any other is checked
+        // and then read, exactly as before.
+        summonFrom:
+          case probing: (Applicable.Probing {
+                  type Self = self
+                  type Operand = applicable.Operand
+                  type Result = applicable.Result }) =>
+            probing.probe(value, key)
+
+          case _ =>
+            optimizable[applicable.Result]: default =>
+              if applicable.contains(value, key) then applicable.access(value, key) else default
 
   transparent inline def at[index](ordinal: index)(using sub: index <:< applicable.Operand)
   :   Optional[applicable.Result] =
@@ -143,8 +153,18 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
       case _ =>
         val key: applicable.Operand = ordinal.asInstanceOf[applicable.Operand]
 
-        optimizable[applicable.Result]: default =>
-          if applicable.contains(value, key) then applicable.access(value, key) else default
+        // A receiver that can check and read in one probe (a map) does; any other is checked
+        // and then read, exactly as before.
+        summonFrom:
+          case probing: (Applicable.Probing {
+                  type Self = self
+                  type Operand = applicable.Operand
+                  type Result = applicable.Result }) =>
+            probing.probe(value, key)
+
+          case _ =>
+            optimizable[applicable.Result]: default =>
+              if applicable.contains(value, key) then applicable.access(value, key) else default
 
 // The `Sized` producer, the counterpart of `occupied`: one length check, recorded in the type.
 // A plain method, not `inline`: an inline body returning the `Optional` union of a frozen
