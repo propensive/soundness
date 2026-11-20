@@ -46,6 +46,7 @@ type Sequence[+element] = proscenium.Sequence[element]
 val Sequence: proscenium.Sequence.type = proscenium.Sequence
 export proscenium.Comparison
 export proscenium.Sized
+export proscenium.PerfectHash
 export Predef.runtimeChecked as absolve
 export scala.reflect.{ClassTag, Typeable}
 type Set[element] = proscenium.Set[element]
