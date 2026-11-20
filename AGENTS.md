@@ -72,6 +72,28 @@ the [Orthant](https://github.com/propensive/orthant) store in `.orthant/`, not a
 - `orthant status` shows what is not checked in; `orthant todo fr main` shows what has yet to be
   translated, and the translations of text that has since changed.
 
+An edit checked in at a point is seen at every point below it (later releases, and the
+translations and dialects of its language) which has not changed the same lines. Each kind of
+change is a choice of where to store the edit and how far it reaches; `doc/readme.md` has a
+worked recipe for each:
+
+| The change                                         | How                                                          |
+|----------------------------------------------------|--------------------------------------------------------------|
+| New or changed text for the next release           | `orthant checkout en main`, edit, `orthant checkin`          |
+| A removed or renamed document                      | `orthant checkin --remove`                                   |
+| A correction to text that was already released     | at `en main`, `orthant checkin --origin release`             |
+| The same, at a release you name                    | `orthant checkin --since 0.76.0`                             |
+| A correction to one release, and no later one      | `orthant checkout en 0.76.0`, `orthant checkin --only release` |
+| Translating, or revising a stale translation       | `orthant todo fr --checkout`, edit the sigils, `orthant checkin` |
+| An English edit which leaves the translation right | check in, then `orthant confirm <path>` in the `fr` checkout |
+| A new language                                     | `orthant axis value language de en`, `orthant todo de --checkout` |
+| A dialect                                          | `orthant axis value language en/US en`, `orthant checkout en/US main` |
+| After a pull or rebase that changed `.orthant/`    | `orthant update`                                             |
+
+Run `orthant checkin --dry-run` first when the reach of an edit is in doubt: it names the points
+whose content would change, and stores nothing. `doc/readme.md` is itself in the store as well
+as in git, so a change to it is checked in *and* committed.
+
 ## Record every material change in the next release's migration notes
 
 Downstream code is upgraded across Soundness releases by an LLM agent that reads one file per
