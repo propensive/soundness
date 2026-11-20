@@ -9,6 +9,9 @@ orthant 1 release
 - `doc/api-nesting-proposal.md` and closed with it.)
 + `etc/api-nesting-proposal.md` and closed with it.)
 
+- The naming standards in `doc/standards/naming.md` and `doc/standards/given-naming.md` gain a
++ The naming standards in `doc/work/standards/naming.md` and `doc/work/standards/given-naming.md` gain a
+
 -     test -f doc/api-reduction-candidates.md || echo absent    # absent
 +     test -f etc/api-reduction-candidates.md || echo absent    # absent
 

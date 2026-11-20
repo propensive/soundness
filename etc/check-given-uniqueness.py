@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Check the importable (orphan) contextual values against the naming standard
-in doc/standards/given-naming.md.
+in doc/work/standards/given-naming.md.
 
 Soundness exposes selection givens through lowercase family packages
 (`package watchers:` holding `given javaBaseWatcher`) that each component's
