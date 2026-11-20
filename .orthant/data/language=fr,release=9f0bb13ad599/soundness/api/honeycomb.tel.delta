@@ -1,0 +1,45 @@
+orthant 1 language
+
+!   entry .acceptCharset
+!     info
+!         the form's accepted encoding, on `<form>`, as `Utf8`
+-   entry .acceptCharset   `accept-charset` on `<form>`: the form's accepted encoding, as `Utf8`
++   entry .acceptCharset
++     info
++         l'encodage accepté par le formulaire, sur `<form>`, en `Utf8`
+
+!     detail
+!         The given is registered under the name `acceptCharset` rather than the
+!         specification's `accept-charset`, so `Form(acceptCharset = …)` is how it is written and
+!         `accept-charset` is what the parser would need to see; the HTML 4 dialect spells it
+!         correctly.
+-       The given is named `acceptCharset`; the attribute it registers is `accept-charset`.
++     detail
++         Le given est enregistré sous le nom `acceptCharset` plutôt que sous le nom
++         `accept-charset` de la spécification, de sorte que c'est `Form(acceptCharset = …)` qu'on
++         écrit et `accept-charset` que l'analyseur aurait besoin de voir ; le dialecte HTML 4
++         l'orthographie correctement.
+
+!   entry .usemap
+!     info
+!         the image-map reference on `<img>`, `<input>` and `<object>`, as `HashName`
+-   entry .usemap   `usemap` on `<img>`, `<input>` and `<object>`: the image-map reference, as `HashName`
++   entry .usemap
++     info
++         la référence de map d'image sur `<img>`, `<input>` et `<object>`, en `HashName`
+
+!     detail
+!         Takes `src`, `srcdoc`, `name`, `sandbox`, `allow`, `allowfullscreen`, `width`,
+!         `height`, `referrerpolicy` and `loading`. It is defined as a `Tag.Void`, so it takes
+!         no children and serializes as `<iframe …>` with no end tag, where the specification
+!         requires `</iframe>`.
+-       Takes `src`, `srcdoc`, `name`, `sandbox`, `allow`, `allowfullscreen`, `width`,
+-       `height`, `referrerpolicy` and `loading`. It admits no children, but it is not a void
+-       element: it serializes as `<iframe …></iframe>`, with the end tag the specification
++     detail
++         Prend `src`, `srcdoc`, `name`, `sandbox`, `allow`, `allowfullscreen`, `width`, `height`,
++         `referrerpolicy` et `loading`. Il est défini comme un `Tag.Void` ; il ne prend donc pas
++         d'enfants et se sérialise en `<iframe …>` sans balise fermante, là où la spécification
++         exige `</iframe>`.
+
+-       requires.

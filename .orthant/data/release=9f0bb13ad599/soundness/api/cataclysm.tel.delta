@@ -1,0 +1,52 @@
+orthant 1 release
+
+=         label A typeface, provided for the web as a linked font file
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+=             given (Typeface of "Inter") is Typesettable in Web =
+=               Web.linked(url"https://fonts.example/inter.woff2",
+-                 Coverage(weights = Weight.Thin to Weight.Black, italic = true),
++                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+
+=         label The face paired with its provision: a font for the web
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+=             given (Typeface of "Inter") is Typesettable in Web =
+=               Web.linked(url"https://fonts.example/inter.woff2",
+-                 Coverage(weights = Weight.Thin to Weight.Black, italic = true),
++                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+
+=         label The at-rule the page needs, and the declarations which select the face
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+=             given (Typeface of "Inter") is Typesettable in Web =
+=               Web.linked(url"https://fonts.example/inter.woff2",
+-                 Coverage(weights = Weight.Thin to Weight.Black, italic = true),
++                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+
+-         obtains the typeface from and whose `#coverage` is the `Coverage` it was declared
++         obtains the typeface from and whose `#coverage` is the `Font.Coverage` it was declared
+
+-       single `Generic` source and `Coverage.Unknown`, which admits every face; it renders
++       single `Generic` source and `Font.Coverage.Unknown`, which admits every face; it renders
+
+-       Urls to Text` (an `HttpUrl` from `url"…"`, or text), the `Coverage` the file is
++       Urls to Text` (an `HttpUrl` from `url"…"`, or text), the `Font.Coverage` the file is
+
+-       it, so this is the weakest provision, and its coverage — `Coverage.Unknown` unless
++       it, so this is the weakest provision, and its coverage — `Font.Coverage.Unknown` unless

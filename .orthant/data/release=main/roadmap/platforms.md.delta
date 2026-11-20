@@ -1,0 +1,10 @@
+orthant 1 release
+
+- `doc/compatibility.tsv` records the matrix, and `etc/check-compatibility.py` (run by `make
++ `etc/compatibility.tsv` records the matrix, and `etc/check-compatibility.py` (run by `make
+
+-     grep -v '^#' doc/compatibility.tsv | awk -F'\t' '$3=="yes"{n++} END{print n}'    # 104 → 145 minus inherent exclusions
++     grep -v '^#' etc/compatibility.tsv | awk -F'\t' '$3=="yes"{n++} END{print n}'    # 104 → 145 minus inherent exclusions
+
+- Done when: every exclusion reason in `doc/compatibility.tsv` describes an inherent platform
++ Done when: every exclusion reason in `etc/compatibility.tsv` describes an inherent platform

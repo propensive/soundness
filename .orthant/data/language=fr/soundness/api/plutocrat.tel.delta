@@ -1,0 +1,1322 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base plutocrat
++ base plutocrat
+
+- import soundness
++ import soundness
+
+- info   amounts of money with the currency in the type, prices with tax, and checked ISINs
++ info
++     des montants d'argent avec la devise dans le type, des prix avec taxe, et des ISIN vérifiés
+
+- detail
+-     _Plutocrat_ represents money as a fixed-point count of a currency's minor units, with
+-     the currency in the type: a `Money in "EUR"` and a `Money in "GBP"` cannot be added,
+-     because adding euros to pounds is a mistake rather than a sum. Within a currency,
+-     amounts add, subtract, scale, divide, compare and split into shares which sum exactly to
+-     the whole; a `Price` keeps a principal amount and its tax apart; and an amount renders
+-     by the `Currency.Style` in scope, with the currency's symbol or its ISO code.
++ detail
++     _Plutocrat_ représente l'argent comme un nombre en virgule fixe d'unités divisionnaires
++     d'une devise, avec la devise dans le type : un `Money in "EUR"` et un `Money in "GBP"` ne
++     peuvent pas s'additionner, car ajouter des euros à des livres est une erreur et non une
++     somme. Au sein d'une devise, les montants s'additionnent, se soustraient, se multiplient,
++     se divisent, se comparent et se répartissent en parts dont la somme est exactement le
++     tout ; un `Price` garde séparés un montant principal et sa taxe ; et un montant est rendu
++     selon le `Currency.Style` dans la portée, avec le symbole de la devise ou son code ISO.
+
+=     by the `Currency.Style` in scope, with the currency's symbol or its ISO code.
+=
+-     ```scala
++     ```scala
+
+=     by the `Currency.Style` in scope, with the currency's symbol or its ISO code.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import currencies.{Eur, Gbp}
++     import currencies.{Eur, Gbp}
+
+-     import currencyStyles.localCurrencyStyle
++     import currencyStyles.localCurrencyStyle
+
+-     val total: Money in "EUR" = Eur(3.01) + Eur(0.02)
++     val total: Money in "EUR" = Eur(3.01) + Eur(0.02)
+
+-     t"Received $total"          // t"Received €3.03"
++     t"Received $total"          // t"Received €3.03"
+
+-     Eur(3.01).share(3)          // List(Eur(1.01), Eur(1.00), Eur(1.00))
++     Eur(3.01).share(3)          // List(Eur(1.01), Eur(1.00), Eur(1.00))
+
+-     Gbp(2.30).tax(0.2).inclusive   // Gbp(2.76)
++     Gbp(2.30).tax(0.2).inclusive   // Gbp(2.76)
+
+-     Eur(1.00) + Gbp(1.00)       // does not compile
++     Eur(1.00) + Gbp(1.00)       // does not compile
+
+=     Eur(1.00) + Gbp(1.00)       // does not compile
+-     ```
++     ```
+
+-     A currency is a given, `"EUR" is Currency of "Euro" in "€" over 100`, which records its
+-     ISO code, name, symbol and the number of minor units in a major one; thirty-six of the
+-     most traded are in the `currencies` package, and another is one line. There is no
+-     exchange between currencies: a conversion has a rate, a time and a source, and is left
+-     to the program.
++     Une devise est un given, `"EUR" is Currency of "Euro" in "€" over 100`, qui enregistre son
++     code ISO, son nom, son symbole et le nombre d'unités divisionnaires dans une unité
++     principale ; trente-six des plus échangées se trouvent dans le package `currencies`, et en
++     ajouter une autre tient en une ligne. Il n'y a pas de change entre devises : une
++     conversion a un taux, une date et une source, et elle est laissée au programme.
+
+-     The library also checks the identifiers of finance: an `Isin`, the international
+-     identifier of a security, is validated with its check digit at compile time by
+-     `isin"…"` or at runtime by `Isin(…)`, and `Luhn` computes and checks the Luhn digit used
+-     by card numbers.
++     La bibliothèque vérifie aussi les identifiants de la finance : un `Isin`, l'identifiant
++     international d'un titre, est validé avec son chiffre de contrôle à la compilation par
++     `isin"…"` ou à l'exécution par `Isin(…)`, et `Luhn` calcule et vérifie le chiffre de Luhn
++     utilisé par les numéros de carte.
+
+-     The library is a single source set, `plutocrat.core`, which is platform-neutral.
+-     Everything is exported to the `soundness` umbrella. The currencies and the currency
+-     styles are givens in the `currencies` and `currencyStyles` choice packages, imported by
+-     name because `import currencies.*` does not import givens; both merge with the
+-     umbrella's packages of the same names.
++     La bibliothèque est un seul ensemble de sources, `plutocrat.core`, indépendant de la
++     plateforme. Tout est exporté vers le package parapluie `soundness`. Les devises et les
++     styles de devise sont des givens dans les packages de choix `currencies` et
++     `currencyStyles`, importés par leur nom car `import currencies.*` n'importe pas les
++     givens ; tous deux fusionnent avec les packages du même nom du package parapluie.
+
+- refer plutocrat.Money
++ refer plutocrat.Money
+
+- refer plutocrat.Currency
++ refer plutocrat.Currency
+
+- refer plutocrat.Price
++ refer plutocrat.Price
+
+- refer plutocrat.currencies
++ refer plutocrat.currencies
+
+- refer plutocrat.currencyStyles
++ refer plutocrat.currencyStyles
+
+- entry .Money   an amount of money: a whole number of a currency's minor units, with the currency in its type
++ entry .Money
++   info
++       un montant d'argent : un nombre entier d'unités divisionnaires d'une devise, avec la devise
++       dans son type
+
+-     `Money` is the opaque type `plutocrat.internal.Money`, exported here, over a `Long`.
+-     `Money in "EUR"` is an amount of euros; a bare `Money` is an amount of an unspecified
+-     currency, which every `Money in c` widens to. An amount is made by applying a currency,
+-     `Eur(3.01)`, which rounds to the nearest minor unit, or from a count of minor units
+-     with `Money["EUR"](301L)`.
++   detail
++       `Money` est le type opaque `plutocrat.internal.Money`, exporté ici, sur un `Long`.
++       `Money in "EUR"` est un montant en euros ; un `Money` nu est un montant d'une devise non
++       précisée, vers lequel tout `Money in c` s'élargit. Un montant se construit en appliquant
++       une devise, `Eur(3.01)`, qui arrondit à l'unité divisionnaire la plus proche, ou à partir
++       d'un nombre d'unités divisionnaires avec `Money["EUR"](301L)`.
+
+=     with `Money["EUR"](301L)`.
+=
+-     ```scala
++       ```scala
+
+=     with `Money["EUR"](301L)`.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+-     import currencies.Eur
++       import currencies.Eur
+
+-     Eur(3.01) + Eur(0.02)      // Eur(3.03)
++       Eur(3.01) + Eur(0.02)      // Eur(3.03)
+
+-     Eur(3.01) - Eur(0.02)      // Eur(2.99)
++       Eur(3.01) - Eur(0.02)      // Eur(2.99)
+
+-     Eur(3.01)*3.0              // Eur(9.03)
++       Eur(3.01)*3.0              // Eur(9.03)
+
+-     Eur(3.01)/3                // Eur(1.00)
++       Eur(3.01)/3                // Eur(1.00)
+
+-     Eur(3.01)/Eur(1.00)        // 3.01
++       Eur(3.01)/Eur(1.00)        // 3.01
+
+-     -Eur(1.99)                 // Eur(-1.99)
++       -Eur(1.99)                 // Eur(-1.99)
+
+-     Eur(1.01) >= Eur(1.01)     // true
++       Eur(1.01) >= Eur(1.01)     // true
+
+=     Eur(1.01) >= Eur(1.01)     // true
+-     ```
++       ```
+
+-     Operators take two amounts of the same currency, so mixing currencies is a compile
+-     error. Division by a number truncates toward zero, to whole minor units; `share` is the
+-     division which loses nothing.
++       Les opérateurs prennent deux montants de la même devise, si bien que mélanger les devises
++       est une erreur de compilation. La division par un nombre tronque vers zéro, en unités
++       divisionnaires entières ; `share` est la division qui ne perd rien.
+
+-     The three-letter currency code is packed into the top fifteen bits of the `Long`, and
+-     the amount, in minor units, into the lower forty-nine, so an amount is recoverable as
+-     money even where its type has been widened (`money.currency` gives `t"EUR"`), and the
+-     largest amount is about 2.8 × 10¹⁴ minor units. Since the representation is a `Long`,
+-     `toString` gives the packed number: render an amount with `show`, under a
+-     `Currency.Style`, or `inspect`, which gives `¤EUR301ₘ`.
++       Le code de devise à trois lettres est stocké dans les quinze bits de poids fort du `Long`,
++       et le montant, en unités divisionnaires, dans les quarante-neuf bits inférieurs ; un
++       montant reste donc interprétable comme de l'argent même lorsque son type a été élargi
++       (`money.currency` donne `t"EUR"`), et le plus grand montant est d'environ 2,8 × 10¹⁴
++       unités divisionnaires. Comme la représentation est un `Long`, `toString` donne le nombre
++       compacté : on rend un montant avec `show`, sous un `Currency.Style`, ou avec `inspect`,
++       qui donne `¤EUR301ₘ`.
+
+-     The extensions on an amount, in `plutocrat.internal`, are `currency`, `value` (the
+-     count of minor units), `tax` and `share`.
++       Les extensions d'un montant, dans `plutocrat.internal`, sont `currency`, `value` (le
++       nombre d'unités divisionnaires), `tax` et `share`.
+
+- entry .Isin   an International Securities Identification Number, validated and packed into a `Long`
++ entry .Isin
++   info
++       un International Securities Identification Number, validé et compacté dans un `Long`
+
+-     `Isin` is the opaque type `plutocrat.internal.Isin`, exported here. An ISIN is twelve
+-     characters: a two-letter country code, a nine-character national number of digits and
+-     uppercase letters, and a check digit computed by the Luhn algorithm. A value of the type
+-     has passed every check, and costs no more than a `Long` to hold or compare.
++   detail
++       `Isin` est le type opaque `plutocrat.internal.Isin`, exporté ici. Un ISIN compte douze
++       caractères : un code pays de deux lettres, un numéro national de neuf caractères composé
++       de chiffres et de lettres majuscules, et un chiffre de contrôle calculé par l'algorithme
++       de Luhn. Une valeur de ce type a passé toutes les vérifications, et ne coûte pas plus
++       qu'un `Long` à conserver ou à comparer.
+
+=     has passed every check, and costs no more than a `Long` to hold or compare.
+=
+-     ```scala
++       ```scala
+
+=     has passed every check, and costs no more than a `Long` to hold or compare.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+-     val apple: Isin = isin"US0378331005"
++       val apple: Isin = isin"US0378331005"
+
+-     apple.countryCode    // t"US"
++       apple.countryCode    // t"US"
+
+-     apple.nsin           // t"0378331005"
++       apple.nsin           // t"0378331005"
+
+-     apple.isin           // t"US0378331005"
++       apple.isin           // t"US0378331005"
+
+=     apple.isin           // t"US0378331005"
+-     ```
++       ```
+
+-     `isin"…"` checks a literal at compile time; `Isin(text)` checks one at runtime,
+-     raising `Isin.Error`. An `Isin` inspects as the interpolator which would produce it,
+-     `isin"US0378331005"`.
++       `isin"…"` vérifie un littéral à la compilation ; `Isin(text)` en vérifie un à
++       l'exécution, en levant `Isin.Error`. Un `Isin` s'inspecte sous la forme de
++       l'interpolateur qui le produirait, `isin"US0378331005"`.
+
+- entry .isin   the `isin"…"` interpolator: an ISIN checked as the code compiles
++ entry .isin
++   info
++       l'interpolateur `isin"…"` : un ISIN vérifié pendant la compilation du code
+
+-     `isin"GB00BH4HKS39"` validates its literal while the code compiles, with the same
+-     checks as `Isin(…)`, and reports a failure as a compile error carrying the
+-     `Isin.Error`'s message, such as _the ISIN number is not valid because its last digit
+-     failed the Luhn check_. It takes no substitutions.
++   detail
++       `isin"GB00BH4HKS39"` valide son littéral pendant la compilation du code, avec les mêmes
++       vérifications que `Isin(…)`, et signale un échec par une erreur de compilation portant le
++       message de l'`Isin.Error`, par exemple _the ISIN number is not valid because its last
++       digit failed the Luhn check_. Il n'accepte aucune substitution.
+
+=     failed the Luhn check_. It takes no substitutions.
+=
+-     ```scala
++       ```scala
+
+=     failed the Luhn check_. It takes no substitutions.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+-     isin"GB00BH4HKS39"
++       isin"GB00BH4HKS39"
+
+-     isin"GB00BH4HKS3"   // does not compile
++       isin"GB00BH4HKS3"   // does not compile
+
+=     isin"GB00BH4HKS3"   // does not compile
+-     ```
++       ```
+
+- entry .Currency   a currency: its ISO code, name, symbol and number of minor units, as a given
++ entry .Currency
++   info
++       une devise : son code ISO, son nom, son symbole et son nombre d'unités divisionnaires, en
++       tant que given
+
+-   detail
+-       A currency is a given whose type carries all its facts as literal types, and which
+-       constructs amounts:
++   detail
++       Une devise est un given dont le type porte toutes ses caractéristiques sous forme de
++       types littéraux, et qui construit des montants :
+
+=       constructs amounts:
+=
+-       ```scala
++       ```scala
+
+=       constructs amounts:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       given Isk: ("ISK" is Currency of "Icelandic Króna" in "kr" over 100) = Currency()
++       given Isk: ("ISK" is Currency of "Icelandic Króna" in "kr" over 100) = Currency()
+
+-       val fare: Money in "ISK" = Isk(4500.0)
++       val fare: Money in "ISK" = Isk(4500.0)
+
+=       val fare: Money in "ISK" = Isk(4500.0)
+-       ```
++       ```
+
+-       `Self` is the ISO 4217 code, `Topic` the name, `Form` the symbol and `Transport` the
+-       number of minor units in one major unit. The code must be three uppercase ASCII
+-       letters, since it is packed into each amount. The standard currencies are in the
+-       `currencies` package, each imported by name; a `Currency` in scope is also what
+-       `Money`'s `show` and its zero need.
++       `Self` est le code ISO 4217, `Topic` le nom, `Form` le symbole et `Transport` le nombre
++       d'unités divisionnaires dans une unité principale. Le code doit être composé de trois
++       lettres ASCII majuscules, puisqu'il est compacté dans chaque montant. Les devises standard
++       se trouvent dans le package `currencies`, chacune importée par son nom ; une `Currency`
++       dans la portée est aussi ce dont ont besoin le `show` de `Money` et son zéro.
+
+-   refer plutocrat.currencies
++   refer plutocrat.currencies
+
+=   refer plutocrat.currencies
+-   refer plutocrat.Money
++   refer plutocrat.Money
+
+-   entry .apply   makes a currency from the literal types of its given's declared type: `= Currency()`
++   entry .apply
++     info
++         construit une devise à partir des types littéraux du type déclaré de son given :
++         `= Currency()`
+
+-       All four facts are read from the type the result is ascribed to, so a currency is
+-       declared by its type alone.
++     detail
++         Les quatre caractéristiques sont lues dans le type attribué au résultat, si bien qu'une
++         devise se déclare par son seul type.
+
+-   entry .Style   how an amount is rendered: with the currency's symbol, or with its code
++   entry .Style
++     info
++         la manière dont un montant est rendu : avec le symbole de la devise, ou avec son code
+
+-     detail
+-         A `Currency.Style` in scope is what `Money`'s `Showable` uses. The `currencyStyles`
+-         package has two, imported by name:
++     detail
++         Un `Currency.Style` dans la portée est ce qu'utilise le `Showable` de `Money`. Le package
++         `currencyStyles` en propose deux, importés par leur nom :
+
+-         ```scala fuel
++         ```scala fuel
+
+-         alternative Local
++         alternative Local
+
+=         alternative Local
+-           code
++           code
+
+=         alternative Local
+=           code
+-               import soundness.*
++               import soundness.*
+
+=         alternative Local
+=           code
+=               import soundness.*
+-               import currencies.Eur
++               import currencies.Eur
+
+-               import currencyStyles.localCurrencyStyle
++               import currencyStyles.localCurrencyStyle
+
+-               t"Received ${Eur(3.01)}"   // t"Received €3.01"
++               t"Received ${Eur(3.01)}"   // t"Received €3.01"
+
+-         alternative Generic
++         alternative Generic
+
+=         alternative Generic
+-           code
++           code
+
+=         alternative Generic
+=           code
+-               import soundness.*
++               import soundness.*
+
+=         alternative Generic
+=           code
+=               import soundness.*
+-               import currencies.Eur
++               import currencies.Eur
+
+-               import currencyStyles.genericCurrencyStyle
++               import currencyStyles.genericCurrencyStyle
+
+-               t"Received ${Eur(3.01)}"   // t"Received 3.01 EUR"
++               t"Received ${Eur(3.01)}"   // t"Received 3.01 EUR"
+
+-         ##
++         ##
+
+=         ##
+-         ```
++         ```
+
+-         A style of one's own is a lambda from the code, the symbol, the major units and the
+-         two-digit minor units to text.
++         Un style personnalisé est une lambda qui, à partir du code, du symbole, des unités
++         principales et des unités divisionnaires sur deux chiffres, produit du texte.
+
+-     entry #format   renders an amount from the currency's code and symbol and its major and minor units
++     entry #format
++       info
++           rend un montant à partir du code et du symbole de la devise et de ses unités principales
++           et divisionnaires
+
+-   entry #Self   the currency's ISO 4217 code, as a literal type: `"EUR"`
++   entry #Self
++     info
++         le code ISO 4217 de la devise, sous forme de type littéral : `"EUR"`
+
+-   entry #Topic   the currency's name, as a literal type: `"Euro"`
++   entry #Topic
++     info
++         le nom de la devise, sous forme de type littéral : `"Euro"`
+
+-   entry #Transport   the number of minor units in one major unit, as a literal type: `100`
++   entry #Transport
++     info
++         le nombre d'unités divisionnaires dans une unité principale, sous forme de type littéral :
++         `100`
+
+-   entry #Form   the currency's symbol, as a literal type: `"€"`
++   entry #Form
++     info
++         le symbole de la devise, sous forme de type littéral : `"€"`
+
+-   entry #code   the currency's ISO 4217 code, `EUR`
++   entry #code
++     info
++         le code ISO 4217 de la devise, `EUR`
+
+-   entry #name   the currency's name, `Euro`
++   entry #name
++     info
++         le nom de la devise, `Euro`
+
+-   entry #symbol   the currency's symbol, `€`
++   entry #symbol
++     info
++         le symbole de la devise, `€`
+
+-   entry #modulus   the number of minor units in one major unit, `100`
++   entry #modulus
++     info
++         le nombre d'unités divisionnaires dans une unité principale, `100`
+
+-   entry #apply   an amount of this currency, from a decimal number rounded to the nearest minor unit
++   entry #apply
++     info
++         un montant dans cette devise, à partir d'un nombre décimal arrondi à l'unité divisionnaire
++         la plus proche
+
+-       `Eur(3.01)` is `Money in "EUR"` of 301 cents. The number is a `Double`, multiplied by
+-       the modulus and rounded, so a literal with more decimal places than the currency has
+-       is rounded rather than rejected.
++     detail
++         `Eur(3.01)` est un `Money in "EUR"` de 301 centimes. Le nombre est un `Double`, multiplié
++         par le module puis arrondi ; un littéral comportant plus de décimales que la devise n'en
++         a est donc arrondi plutôt que rejeté.
+
+- entry .Price   an amount with the tax on it kept separate: a principal and a tax
++ entry .Price
++   info
++       un montant dont la taxe est gardée à part : un principal et une taxe
+
+-   detail
+-       A `Price in "GBP"` holds the amount excluding tax and the tax itself, so the seller's,
+-       the buyer's and the tax authority's figures are each exact, rather than reconstructed
+-       by division. It is usually made with `tax` on an amount.
++   detail
++       Un `Price in "GBP"` contient le montant hors taxe et la taxe elle-même, de sorte que les
++       chiffres du vendeur, de l'acheteur et de l'administration fiscale sont chacun exacts,
++       plutôt que reconstitués par division. On le construit généralement avec `tax` sur un
++       montant.
+
+=       by division. It is usually made with `tax` on an amount.
+=
+-       ```scala
++       ```scala
+
+=       by division. It is usually made with `tax` on an amount.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import currencies.Gbp
++       import currencies.Gbp
+
+-       val price = Gbp(2.94).tax(0.2)
++       val price = Gbp(2.94).tax(0.2)
+
+-       price.tax                 // Gbp(0.59)
++       price.tax                 // Gbp(0.59)
+
+-       price.inclusive           // Gbp(3.53)
++       price.inclusive           // Gbp(3.53)
+
+-       price.effectiveTaxRate    // about 0.2007
++       price.effectiveTaxRate    // about 0.2007
+
+=       price.effectiveTaxRate    // about 0.2007
+-       ```
++       ```
+
+-       The tax is the principal times the rate, rounded to the nearest minor unit (half up),
+-       so twenty per cent of £2.94, £0.588, is £0.59. Prices of one currency add, subtract
+-       and negate, component by component, and divide by a `Double` (an anonymous given in
+-       the companion). A price has no `Showable`: whether to display the inclusive or the
+-       exclusive amount is for the program to say, by showing `#inclusive` or `#principal`.
++       La taxe est le principal multiplié par le taux, arrondi à l'unité divisionnaire la plus
++       proche (au demi supérieur) : vingt pour cent de 2,94 £, soit 0,588 £, donnent 0,59 £.
++       Les prix d'une même devise s'additionnent, se soustraient et s'opposent, composante par
++       composante, et se divisent par un `Double` (un given anonyme dans l'objet compagnon). Un
++       prix n'a pas de `Showable` : c'est au programme de dire s'il faut afficher le montant
++       toutes taxes comprises ou hors taxe, en affichant `#inclusive` ou `#principal`.
+
+=       exclusive amount is for the program to say, by showing `#inclusive` or `#principal`.
+-   refer plutocrat.Money
++   refer plutocrat.Money
+
+-   entry .apply   a price from a principal and a tax in the same currency
++   entry .apply
++     info
++         un prix à partir d'un principal et d'une taxe dans la même devise
+
+-   entry .addable   adds two prices of one currency, principal to principal and tax to tax
++   entry .addable
++     info
++         additionne deux prix d'une même devise, principal avec principal et taxe avec taxe
+
+-   entry .subtractable   subtracts one price from another of the same currency, component by component
++   entry .subtractable
++     info
++         soustrait un prix d'un autre de la même devise, composante par composante
+
+-   entry .negatable   negates both the principal and the tax of a price
++   entry .negatable
++     info
++         prend l'opposé du principal et de la taxe d'un prix
+
+-   entry #Form   the currency, as its literal ISO code
++   entry #Form
++     info
++         la devise, sous forme de son code ISO littéral
+
+-   entry #principal   the amount excluding tax
++   entry #principal
++     info
++         le montant hors taxe
+
+-   entry #tax   the tax on the principal
++   entry #tax
++     info
++         la taxe sur le principal
+
+-   entry #effectiveTaxRate   the tax as a fraction of the principal
++   entry #effectiveTaxRate
++     info
++         la taxe en tant que fraction du principal
+
+-   entry #inclusive   the amount including tax: principal plus tax
++   entry #inclusive
++     info
++         le montant toutes taxes comprises : principal plus taxe
+
+- entry .Luhn   the Luhn check digit, used by card numbers and ISINs
++ entry .Luhn
++   info
++       le chiffre de contrôle de Luhn, utilisé par les numéros de carte et les ISIN
+
+-   detail
+-       The [Luhn algorithm](https://en.wikipedia.org/wiki/Luhn_algorithm) detects any single
+-       mistyped digit and most transpositions of adjacent digits.
++   detail
++       L'[algorithme de Luhn](https://en.wikipedia.org/wiki/Luhn_algorithm) détecte toute
++       erreur de frappe sur un seul chiffre et la plupart des inversions de chiffres adjacents.
+
+=       mistyped digit and most transpositions of adjacent digits.
+=
+-       ```scala
++       ```scala
+
+=       mistyped digit and most transpositions of adjacent digits.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Luhn.check(17893729974L)   // true
++       Luhn.check(17893729974L)   // true
+
+-       Luhn.check(t"79927398713") // true
++       Luhn.check(t"79927398713") // true
+
+-       Luhn.digit(t"7992739871")  // 3
++       Luhn.digit(t"7992739871")  // 3
+
+=       Luhn.digit(t"7992739871")  // 3
+-       ```
++       ```
+
+-   entry .digit   the check digit to append to a string of decimal digits
++   entry .digit
++     info
++         le chiffre de contrôle à ajouter à la fin d'une chaîne de chiffres décimaux
+
+-       The input must be decimal digits only; other characters give a meaningless result.
++     detail
++         L'entrée ne doit contenir que des chiffres décimaux ; d'autres caractères donnent un
++         résultat dénué de sens.
+
+-   entry .check   whether a number's last digit is the correct Luhn check digit for the rest
++   entry .check
++     info
++         si le dernier chiffre d'un nombre est le bon chiffre de contrôle de Luhn pour le reste
+
+-       Takes the number as `Text` or as a `Long`. Empty text is `false`.
++     detail
++         Prend le nombre sous forme de `Text` ou de `Long`. Un texte vide donne `false`.
+
+- entry .currencyStyles   the provided currency styles, each a given to import by name
++ entry .currencyStyles
++   info
++       les styles de devise fournis, chacun un given à importer par son nom
+
+-   detail
+-       A choice package, merged with the umbrella's `currencyStyles`. An amount needs a
+-       `Currency.Style` in scope to be shown, and none is in implicit scope: one is imported
+-       by name.
++   detail
++       Un package de choix, fusionné avec le `currencyStyles` du package parapluie. Un montant a
++       besoin d'un `Currency.Style` dans la portée pour être affiché, et aucun ne se trouve dans
++       la portée implicite : on en importe un par son nom.
+
+=       by name.
+=
+-       ```scala
++       ```scala
+
+=       by name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import currencies.Usd
++       import currencies.Usd
+
+-       import currencyStyles.localCurrencyStyle
++       import currencyStyles.localCurrencyStyle
+
+-       Usd(12.50).show   // t"$12.50"
++       Usd(12.50).show   // t"$12.50"
+
+=       Usd(12.50).show   // t"$12.50"
+-       ```
++       ```
+
+-   entry .localCurrencyStyle   the currency's symbol before the amount: `€3.01`
++   entry .localCurrencyStyle
++     info
++         le symbole de la devise avant le montant : `€3.01`
+
+-       Suits a context where the currency is understood, though several currencies share a
+-       symbol (`$`, `kr`, `¥`).
++     detail
++         Convient à un contexte où la devise est sous-entendue, bien que plusieurs devises
++         partagent un même symbole (`$`, `kr`, `¥`).
+
+-   entry .genericCurrencyStyle   the amount followed by the ISO code: `3.01 EUR`
++   entry .genericCurrencyStyle
++     info
++         le montant suivi du code ISO : `3.01 EUR`
+
+-       Unambiguous, so it suits a context with more than one currency.
++     detail
++         Sans ambiguïté, il convient donc à un contexte comportant plusieurs devises.
+
+- entry .currencies   thirty-six of the most traded currencies, each a given to import by name
++ entry .currencies
++   info
++       trente-six des devises les plus échangées, chacune un given à importer par son nom
+
+-   detail
+-       A choice package, merged with the umbrella's `currencies`. Each member is the given
+-       `Currency` for one currency, named for its ISO code in title case, and is imported by
+-       name: it is both the evidence an amount's `show` needs and the value which makes
+-       amounts.
++   detail
++       Un package de choix, fusionné avec le `currencies` du package parapluie. Chaque membre est
++       le given `Currency` d'une devise, nommé d'après son code ISO avec une majuscule initiale,
++       et s'importe par son nom : c'est à la fois la preuve dont a besoin le `show` d'un montant
++       et la valeur qui construit les montants.
+
+=       amounts.
+=
+-       ```scala
++       ```scala
+
+=       amounts.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import currencies.{Eur, Gbp, Usd}
++       import currencies.{Eur, Gbp, Usd}
+
+-       val rent: Money in "GBP" = Gbp(1250.00)
++       val rent: Money in "GBP" = Gbp(1250.00)
+
+=       val rent: Money in "GBP" = Gbp(1250.00)
+-       ```
++       ```
+
+-       Every currency here has a modulus of 100, including those, such as the yen and the
+-       won, which have no minor unit in practice. A currency which is not here is declared
+-       with `Currency()`.
++       Chaque devise ici a un module de 100, y compris celles, comme le yen et le won, qui n'ont
++       pas d'unité divisionnaire en pratique. Une devise absente d'ici se déclare avec
++       `Currency()`.
+
+-   entry .Usd   the US Dollar, `USD`, shown with the symbol `$`
++   entry .Usd
++     info
++         le dollar américain, `USD`, affiché avec le symbole `$`
+
+-   entry .Eur   the Euro, `EUR`, shown with the symbol `€`
++   entry .Eur
++     info
++         l'euro, `EUR`, affiché avec le symbole `€`
+
+-   entry .Jpy   the Japanese Yen, `JPY`, shown with the symbol `¥`
++   entry .Jpy
++     info
++         le yen japonais, `JPY`, affiché avec le symbole `¥`
+
+-   entry .Gbp   the Pounds Sterling, `GBP`, shown with the symbol `£`
++   entry .Gbp
++     info
++         la livre sterling, `GBP`, affichée avec le symbole `£`
+
+-   entry .Cny   the Renminbi, `CNY`, shown with the symbol `¥`
++   entry .Cny
++     info
++         le renminbi, `CNY`, affiché avec le symbole `¥`
+
+-   entry .Aud   the Australian Dollar, `AUD`, shown with the symbol `A$`
++   entry .Aud
++     info
++         le dollar australien, `AUD`, affiché avec le symbole `A$`
+
+-   entry .Cad   the Canadian Dollar, `CAD`, shown with the symbol `C$`
++   entry .Cad
++     info
++         le dollar canadien, `CAD`, affiché avec le symbole `C$`
+
+-   entry .Chf   the Swiss Franc, `CHF`, shown with the symbol `CHF`
++   entry .Chf
++     info
++         le franc suisse, `CHF`, affiché avec le symbole `CHF`
+
+-   entry .Hkd   the Hong Kong Dollar, `HKD`, shown with the symbol `HK$`
++   entry .Hkd
++     info
++         le dollar de Hong Kong, `HKD`, affiché avec le symbole `HK$`
+
+-   entry .Sgd   the Singapore Dollar, `SGD`, shown with the symbol `S$`
++   entry .Sgd
++     info
++         le dollar de Singapour, `SGD`, affiché avec le symbole `S$`
+
+-   entry .Sek   the Swedish Krona, `SEK`, shown with the symbol `kr`
++   entry .Sek
++     info
++         la couronne suédoise, `SEK`, affichée avec le symbole `kr`
+
+-   entry .Krw   the South Korean Won, `KRW`, shown with the symbol `₩`
++   entry .Krw
++     info
++         le won sud-coréen, `KRW`, affiché avec le symbole `₩`
+
+-   entry .Nok   the Norwegian Krone, `NOK`, shown with the symbol `kr`
++   entry .Nok
++     info
++         la couronne norvégienne, `NOK`, affichée avec le symbole `kr`
+
+-   entry .Nzd   the New Zealand Dollar, `NZD`, shown with the symbol `NZ$`
++   entry .Nzd
++     info
++         le dollar néo-zélandais, `NZD`, affiché avec le symbole `NZ$`
+
+-   entry .Inr   the Indian Rupee, `INR`, shown with the symbol `₹`
++   entry .Inr
++     info
++         la roupie indienne, `INR`, affichée avec le symbole `₹`
+
+-   entry .Mxn   the Mexican Peso, `MXN`, shown with the symbol `$`
++   entry .Mxn
++     info
++         le peso mexicain, `MXN`, affiché avec le symbole `$`
+
+-   entry .Twd   the New Taiwan Dollar, `TWD`, shown with the symbol `NT$`
++   entry .Twd
++     info
++         le nouveau dollar de Taïwan, `TWD`, affiché avec le symbole `NT$`
+
+-   entry .Zar   the South African Rand, `ZAR`, shown with the symbol `R`
++   entry .Zar
++     info
++         le rand sud-africain, `ZAR`, affiché avec le symbole `R`
+
+-   entry .Brl   the Brazilian Real, `BRL`, shown with the symbol `R$`
++   entry .Brl
++     info
++         le real brésilien, `BRL`, affiché avec le symbole `R$`
+
+-   entry .Dkk   the Danish Krone, `DKK`, shown with the symbol `kr`
++   entry .Dkk
++     info
++         la couronne danoise, `DKK`, affichée avec le symbole `kr`
+
+-   entry .Pln   the Polish Złoty, `PLN`, shown with the symbol `zł`
++   entry .Pln
++     info
++         le złoty polonais, `PLN`, affiché avec le symbole `zł`
+
+-   entry .Thb   the Thai Baht, `THB`, shown with the symbol `฿`
++   entry .Thb
++     info
++         le baht thaïlandais, `THB`, affiché avec le symbole `฿`
+
+-   entry .Ils   the Israeli New Shekel, `ILS`, shown with the symbol `₪`
++   entry .Ils
++     info
++         le nouveau shekel israélien, `ILS`, affiché avec le symbole `₪`
+
+-   entry .Idr   the Indonesian Rupiah, `IDR`, shown with the symbol `Rp`
++   entry .Idr
++     info
++         la roupie indonésienne, `IDR`, affichée avec le symbole `Rp`
+
+-   entry .Czk   the Czech Koruna, `CZK`, shown with the symbol `Kč`
++   entry .Czk
++     info
++         la couronne tchèque, `CZK`, affichée avec le symbole `Kč`
+
+-   entry .Aed   the United Arab Emirates Dirham, `AED`, shown with the symbol `AED`
++   entry .Aed
++     info
++         le dirham des Émirats arabes unis, `AED`, affiché avec le symbole `AED`
+
+-   entry .Try   the Turkish Lira, `TRY`, shown with the symbol `₺`
++   entry .Try
++     info
++         la livre turque, `TRY`, affichée avec le symbole `₺`
+
+-   entry .Huf   the Hungarian Forint, `HUF`, shown with the symbol `Ft`
++   entry .Huf
++     info
++         le forint hongrois, `HUF`, affiché avec le symbole `Ft`
+
+-   entry .Clp   the Chilean Peso, `CLP`, shown with the symbol `$`
++   entry .Clp
++     info
++         le peso chilien, `CLP`, affiché avec le symbole `$`
+
+-   entry .Sar   the Saudi Riyal, `SAR`, shown with the symbol `SR`
++   entry .Sar
++     info
++         le riyal saoudien, `SAR`, affiché avec le symbole `SR`
+
+-   entry .Php   the Philippine Peso, `PHP`, shown with the symbol `₱`
++   entry .Php
++     info
++         le peso philippin, `PHP`, affiché avec le symbole `₱`
+
+-   entry .Myr   the Malaysian Ringgit, `MYR`, shown with the symbol `RM`
++   entry .Myr
++     info
++         le ringgit malaisien, `MYR`, affiché avec le symbole `RM`
+
+-   entry .Cop   the Colombian Peso, `COP`, shown with the symbol `$$`
++   entry .Cop
++     info
++         le peso colombien, `COP`, affiché avec le symbole `$$`
+
+-   entry .Rub   the Russian Ruble, `RUB`, shown with the symbol `₽`
++   entry .Rub
++     info
++         le rouble russe, `RUB`, affiché avec le symbole `₽`
+
+-   entry .Ron   the Romanian Leu, `RON`, shown with the symbol `lei`
++   entry .Ron
++     info
++         le leu roumain, `RON`, affiché avec le symbole `lei`
+
+-   entry .Pen   the Peruvian Sol, `PEN`, shown with the symbol `S/`
++   entry .Pen
++     info
++         le sol péruvien, `PEN`, affiché avec le symbole `S/`
+
+- entry .internal   the opaque types `Money` and `Isin`, their companions and extensions, and the `isin"…"` macro
++ entry .internal
++   info
++       les types opaques `Money` et `Isin`, leurs compagnons et extensions, et la macro `isin"…"`
+
+-   hidden
++   hidden
+
+-   detail
+-       The object exists so that `Money` and `Isin` can be opaque over `Long`: only here is
+-       the representation visible. Both types are exported to the `plutocrat` package, whose
+-       pages for `Money` and `Isin` have the full account; their extension methods are
+-       members of this object, and are in implicit scope for any amount or ISIN.
++   detail
++       L'objet existe pour que `Money` et `Isin` puissent être opaques sur `Long` : c'est
++       seulement ici que la représentation est visible. Les deux types sont exportés vers le
++       package `plutocrat`, dont les pages consacrées à `Money` et `Isin` en donnent la
++       description complète ; leurs méthodes d'extension sont des membres de cet objet, et se
++       trouvent dans la portée implicite de tout montant ou ISIN.
+
+-   entry .Money   an amount of money, opaque over a `Long`; see `plutocrat.Money`
++   entry .Money
++     info
++         un montant d'argent, opaque sur un `Long` ; voir `plutocrat.Money`
+
+-     detail
+-         The currency's code and the count of minor units, packed into one `Long`. Its
+-         companion holds the arithmetic, comparison and rendering givens for amounts of one
+-         currency, so none needs importing; each takes two amounts of the same currency, which
+-         is what makes mixing currencies a compile error.
++     detail
++         Le code de la devise et le nombre d'unités divisionnaires, compactés dans un seul `Long`.
++         Son compagnon contient les givens d'arithmétique, de comparaison et de rendu pour les
++         montants d'une devise, si bien qu'aucun n'a besoin d'être importé ; chacun prend deux
++         montants de la même devise, ce qui fait de tout mélange de devises une erreur de
++         compilation.
+
+-     entry .apply   an amount from a count of minor units, with the currency as a type argument
++     entry .apply
++       info
++           un montant à partir d'un nombre d'unités divisionnaires, avec la devise comme argument
++           de type
+
+-         `Money["EUR"](301L)` is €3.01, whatever the `Currency`'s modulus; no `Currency` given
+-         is needed.
++       detail
++           `Money["EUR"](301L)` vaut 3,01 €, quel que soit le module de la `Currency` ; aucun given
++           `Currency` n'est nécessaire.
+
+-     entry .underlying   evidence that an amount's representation is a primitive number, for generic numeric code
++     entry .underlying
++       info
++           la preuve que la représentation d'un montant est un nombre primitif, pour le code
++           numérique générique
+
+-     entry .showable   shows an amount by the `Currency.Style` in scope, with its currency's symbol or code
++     entry .showable
++       info
++           affiche un montant selon le `Currency.Style` dans la portée, avec le symbole ou le code
++           de sa devise
+
+-         Needs the amount's `Currency` given (from `currencies`, or declared) and a
+-         `Currency.Style` (from `currencyStyles`). The minor units are always written with
+-         two digits.
++       detail
++           Nécessite le given `Currency` du montant (issu de `currencies`, ou déclaré) et un
++           `Currency.Style` (issu de `currencyStyles`). Les unités divisionnaires sont toujours
++           écrites sur deux chiffres.
+
+=         two digits.
+=
+-         ```scala
++           ```scala
+
+=         two digits.
+=
+=         ```scala
+-         import soundness.*
++           import soundness.*
+
+-         import currencies.Eur
++           import currencies.Eur
+
+-         import currencyStyles.localCurrencyStyle
++           import currencyStyles.localCurrencyStyle
+
+-         Eur(3.01).show   // t"€3.01"
++           Eur(3.01).show   // t"€3.01"
+
+=         Eur(3.01).show   // t"€3.01"
+-         ```
++           ```
+
+-         A negative amount does not render correctly: its major and its minor units are
+-         each written with a minus sign.
++           Un montant négatif n'est pas rendu correctement : ses unités principales et ses unités
++           divisionnaires sont chacune écrites avec un signe moins.
+
+-     entry .inspectable   inspects an amount exactly, as its currency code and minor units: `¤EUR301ₘ`
++     entry .inspectable
++       info
++           inspecte un montant exactement, sous forme de son code de devise et de ses unités
++           divisionnaires : `¤EUR301ₘ`
+
+-         Needs neither a `Currency` nor a style, since the code is packed into the value. The
+-         `ₘ` marks the count as minor units, so €3.01 cannot be misread as three hundred and
+-         one euros.
++       detail
++           Ne nécessite ni `Currency` ni style, puisque le code est compacté dans la valeur. Le `ₘ`
++           indique que le nombre est en unités divisionnaires, si bien que 3,01 € ne peut être pris
++           pour trois cent un euros.
+
+-     entry .addable   adds two amounts of the same currency
++     entry .addable
++       info
++           additionne deux montants de la même devise
+
+-     entry .subtractable   subtracts an amount from another of the same currency
++     entry .subtractable
++       info
++           soustrait un montant d'un autre de la même devise
+
+-     entry .multiplicable   multiplies an amount by a `Double`, rounding to the nearest minor unit
++     entry .multiplicable
++       info
++           multiplie un montant par un `Double`, en arrondissant à l'unité divisionnaire la plus
++           proche
+
+-     entry .divisible   divides an amount by a `Double`, truncating to whole minor units
++     entry .divisible
++       info
++           divise un montant par un `Double`, en tronquant aux unités divisionnaires entières
+
+-     entry .divisible2   divides an amount by another of the same currency, giving their ratio as a `Double`
++     entry .divisible2
++       info
++           divise un montant par un autre de la même devise, en donnant leur rapport sous forme de
++           `Double`
+
+-     entry .divisible3   divides an amount by an `Int`, truncating to whole minor units
++     entry .divisible3
++       info
++           divise un montant par un `Int`, en tronquant aux unités divisionnaires entières
+
+-         For an exact division into parts, use `share`.
++       detail
++           Pour une division exacte en parts, utilisez `share`.
+
+-     entry .orderable   compares two amounts of the same currency with `<`, `<=`, `>` and `>=`
++     entry .orderable
++       info
++           compare deux montants de la même devise avec `<`, `<=`, `>` et `>=`
+
+-     entry .zeroic   the zero amount of a currency, which needs the `Currency` given
++     entry .zeroic
++       info
++           le montant nul d'une devise, qui nécessite le given `Currency`
+
+-         Lets amounts be summed, as `List(…).total`, with zero as the sum of none.
++       detail
++           Permet de sommer des montants, comme `List(…).total`, avec zéro comme somme d'aucun
++           montant.
+
+-     entry .negatable   negates an amount: `-Eur(1.99)`
++     entry .negatable
++       info
++           prend l'opposé d'un montant : `-Eur(1.99)`
+
+-   entry .Isin   an ISIN, opaque over a `Long`; see `plutocrat.Isin`
++   entry .Isin
++     info
++         un ISIN, opaque sur un `Long` ; voir `plutocrat.Isin`
+
+-     detail
+-         The two-letter country code and the nine-character national number, packed into a
+-         `Long`; the check digit is recomputed when the ISIN is rendered.
++     detail
++         Le code pays à deux lettres et le numéro national à neuf caractères, compactés dans un
++         `Long` ; le chiffre de contrôle est recalculé lorsque l'ISIN est rendu.
+
+-     entry .apply   checks an ISIN in text, raising `Isin.Error` if it is invalid
++     entry .apply
++       info
++           vérifie un ISIN contenu dans un texte, en levant `Isin.Error` s'il est invalide
+
+-         Needs a `Tactic[Isin.Error]`. The checks are the length, the country code (two
+-         uppercase letters), the characters of the national number (digits and uppercase
+-         letters), and the Luhn check digit.
++       detail
++           Nécessite une `Tactic[Isin.Error]`. Les vérifications portent sur la longueur, le code
++           pays (deux lettres majuscules), les caractères du numéro national (chiffres et lettres
++           majuscules), et le chiffre de contrôle de Luhn.
+
+=         letters), and the Luhn check digit.
+=
+-         ```scala
++           ```scala
+
+=         letters), and the Luhn check digit.
+=
+=         ```scala
+-         import soundness.*
++           import soundness.*
+
+-         import strategies.throwUnsafely
++           import strategies.throwUnsafely
+
+-         Isin(t"GB00BH4HKS39").countryCode   // t"GB"
++           Isin(t"GB00BH4HKS39").countryCode   // t"GB"
+
+=         Isin(t"GB00BH4HKS39").countryCode   // t"GB"
+-         ```
++           ```
+
+-     entry .inspectable   inspects an ISIN as the interpolator which would produce it: `isin"US0378331005"`
++     entry .inspectable
++       info
++           inspecte un ISIN sous la forme de l'interpolateur qui le produirait :
++           `isin"US0378331005"`
+
+-     entry .Error   raised when text is not a valid ISIN, saying which rule it broke
++     entry .Error
++       info
++           levée lorsqu'un texte n'est pas un ISIN valide, en indiquant quelle règle il enfreint
+
+-       detail
+-           Error `↯/s.50.1`: _the ISIN number is not valid because …_, with the reason: the wrong
+-           length (_it had length 11, but it should be 12 characters long_), a bad country
+-           code, a character which is not a digit or uppercase letter (with its position), or
+-           a failed Luhn check on the last digit. Raised by `Isin(…)`, and reported as a
+-           compile error by `isin"…"`.
++       detail
++           Erreur `↯/s.50.1` : _the ISIN number is not valid because …_, avec la raison : une
++           longueur incorrecte (_it had length 11, but it should be 12 characters long_), un code
++           pays invalide, un caractère qui n'est ni un chiffre ni une lettre majuscule (avec sa
++           position), ou un échec du contrôle de Luhn sur le dernier chiffre. Levée par `Isin(…)`,
++           et signalée comme erreur de compilation par `isin"…"`.
+
+-       entry .Reason   which rule an invalid ISIN broke
++       entry .Reason
++         info
++             la règle qu'un ISIN invalide enfreint
+
+-         detail
+-             Numbered as the error's subnumber (`↯/s.50.1.3` for the wrong length):
++         detail
++             Numérotées selon le sous-numéro de l'erreur (`↯/s.50.1.3` pour une longueur
++             incorrecte) :
+
+-             ```tabular
++             ```tabular
+
+-             column  Case
+-             column  Code
+-             column  Message
+-             column  Note
+-             row  `InvalidCharacter(index, char)`  1  _the character `char` at position `index` is not a digit or uppercase letter_
+-             row  `BadCountryCode(code)`  2  _its country code `code` was not valid_
+-             row  `WrongLength(length)`  3  _it had length `length`, but it should be 12 characters long_
+-             row  `LuhnCheck`  4  _its last digit failed the Luhn check_
++             column  Cas
++             column  Code
++             column  Message
++             column  Remarque
++             row  `InvalidCharacter(index, char)`  1  _the character `char` at position `index` is not a digit or uppercase letter_
++             row  `BadCountryCode(code)`  2  _its country code `code` was not valid_
++             row  `WrongLength(length)`  3  _it had length `length`, but it should be 12 characters long_
++             row  `LuhnCheck`  4  _its last digit failed the Luhn check_
+
+-             ```
++             ```
+
+-         entry #number   the reason's number, the error's subnumber
++         entry #number
++           info
++               le numéro de la raison, le sous-numéro de l'erreur
+
+-       entry .communicable   describes a reason as the clause which completes the error's message
++       entry .communicable
++         info
++             décrit une raison sous la forme de la proposition qui complète le message de l'erreur
+
+-       entry .InvalidCharacter   the reason for a character which is not a digit or uppercase letter, at an index
++       entry .InvalidCharacter
++         info
++             la raison pour un caractère qui n'est ni un chiffre ni une lettre majuscule, à un
++             indice
+
+-       entry .BadCountryCode   the reason for a country code which is not two uppercase letters
++       entry .BadCountryCode
++         info
++             la raison pour un code pays qui n'est pas formé de deux lettres majuscules
+
+-       entry .WrongLength   the reason for text which is not twelve characters long
++       entry .WrongLength
++         info
++             la raison pour un texte qui ne fait pas douze caractères
+
+-       entry .LuhnCheck   the reason for a last digit which is not the Luhn check digit of the rest
++       entry .LuhnCheck
++         info
++             la raison pour un dernier chiffre qui n'est pas le chiffre de contrôle de Luhn du
++             reste
+
+-       entry #reason   which rule the text broke
++       entry #reason
++         info
++             la règle que le texte enfreint
+
+-   entry .currency   the ISO code of an amount's currency, read from the amount itself: `t"EUR"`
++   entry .currency
++     info
++         le code ISO de la devise d'un montant, lu dans le montant lui-même : `t"EUR"`
+
+-       An extension on `Money`, available even when the amount's type has been widened to a
+-       bare `Money`.
++     detail
++         Une extension de `Money`, disponible même lorsque le type du montant a été élargi en un
++         `Money` nu.
+
+-   entry .value   the amount as a count of minor units: 301 for €3.01
++   entry .value
++     info
++         le montant sous forme de nombre d'unités divisionnaires : 301 pour 3,01 €
+
+-       An extension on `Money`.
++     detail
++         Une extension de `Money`.
+
+-   entry .tax   a `Price` of this amount and the tax on it at a rate: `Gbp(2.30).tax(0.2)`
++   entry .tax
++     info
++         un `Price` composé de ce montant et de la taxe calculée à un taux : `Gbp(2.30).tax(0.2)`
+
+-       An extension on `Money in c`. The tax is the amount times the rate, rounded to the
+-       nearest minor unit.
++     detail
++         Une extension de `Money in c`. La taxe est le montant multiplié par le taux, arrondi à
++         l'unité divisionnaire la plus proche.
+
+-   entry .share   divides an amount into a number of shares which sum exactly to it
++   entry .share
++     info
++         divise un montant en un nombre de parts dont la somme est exactement ce montant
+
+-       An extension on `Money in c`. The shares differ by at most one minor unit, and the
+-       larger ones come first:
++     detail
++         Une extension de `Money in c`. Les parts diffèrent d'au plus une unité divisionnaire, et
++         les plus grandes viennent en premier :
+
+=       larger ones come first:
+=
+-       ```scala
++         ```scala
+
+=       larger ones come first:
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+-       import currencies.Eur
++         import currencies.Eur
+
+-       Eur(3.01).share(3)   // List(Eur(1.01), Eur(1.00), Eur(1.00))
++         Eur(3.01).share(3)   // List(Eur(1.01), Eur(1.00), Eur(1.00))
+
+-       Eur(3.01).share(3).total == Eur(3.01)
++         Eur(3.01).share(3).total == Eur(3.01)
+
+=       Eur(3.01).share(3).total == Eur(3.01)
+-       ```
++         ```
+
+-       The number of shares must be at least one.
++         Le nombre de parts doit être au moins égal à un.
+
+-   entry .countryCode   the two-letter country code of an ISIN: `t"US"`
++   entry .countryCode
++     info
++         le code pays à deux lettres d'un ISIN : `t"US"`
+
+-   entry .nsin   the national number of an ISIN with its check digit: the last ten characters
++   entry .nsin
++     info
++         le numéro national d'un ISIN avec son chiffre de contrôle : les dix derniers caractères
+
+-   entry .isin   an ISIN as its twelve characters: `t"US0378331005"`
++   entry .isin
++     info
++         un ISIN sous forme de ses douze caractères : `t"US0378331005"`
+
+-   entry .interpolator   the macro behind `isin"…"`
++   entry .interpolator
++     info
++         la macro derrière `isin"…"`

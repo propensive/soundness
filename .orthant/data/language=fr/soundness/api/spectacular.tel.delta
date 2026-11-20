@@ -1,0 +1,1265 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base spectacular
++ base spectacular
+
+- import soundness
++ import soundness
+
+- info   two renderings of a value as text: `show` for the people using a program, `inspect` for its programmers
++ info
++     deux rendus textuels d'une valeur : `show` pour les utilisateurs d'un programme, `inspect`
++     pour ses programmeurs
+
+- detail
+-     _Spectacular_ separates the two reasons a value becomes text. `show` renders it for a
+-     **person** — the form that belongs in a message, a log line or on a screen — through a
+-     `Showable` instance, and is a compile error for a type which has none, so a value that
+-     should never reach a user simply has no instance. `inspect` renders it for a
+-     **programmer** — an unambiguous, one-line, source-like form for debugging and test output —
+-     through an `Inspectable` instance, and always succeeds, deriving a structural rendering
+-     or, in the last resort, marking a borrowed one.
++ detail
++     _Spectacular_ distingue les deux raisons pour lesquelles une valeur devient du texte.
++     `show` la rend pour une **personne** — la forme qui a sa place dans un message, une ligne
++     de journal ou à l'écran — au moyen d'une instance `Showable`, et provoque une erreur de
++     compilation pour un type qui n'en a pas ; une valeur qui ne devrait jamais atteindre un
++     utilisateur n'a donc tout simplement pas d'instance. `inspect` la rend pour un
++     **programmeur** — une forme non ambiguë, sur une ligne, proche du code source, pour le
++     débogage et la sortie des tests — au moyen d'une instance `Inspectable`, et réussit
++     toujours, en dérivant un rendu structurel ou, en dernier recours, en signalant un rendu
++     emprunté.
+
+=     or, in the last resort, marking a borrowed one.
+=
+-     ```scala
++     ```scala
+
+=     or, in the last resort, marking a borrowed one.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import affirmations.yesNoAffirmation
++     import affirmations.yesNoAffirmation
+
+-     case class Person(name: Text, age: Int)
++     case class Person(name: Text, age: Int)
+
+-     t"Lear".show                      // t"Lear"
++     t"Lear".show                      // t"Lear"
+
+-     t"Lear".inspect                   // t"t\"Lear\""
++     t"Lear".inspect                   // t"t\"Lear\""
+
+-     Person(t"Lear", 80).inspect       // t"Person(name:t\"Lear\" ╱ age:80)"
++     Person(t"Lear", 80).inspect       // t"Person(name:t\"Lear\" ╱ age:80)"
+
+-     t"adult: ${true}"                 // t"adult: yes"
++     t"adult: ${true}"                 // t"adult: yes"
+
+=     t"adult: ${true}"                 // t"adult: yes"
+-     ```
++     ```
+
+-     The same `Showable` instances drive `t"…"` interpolation, so a substituted value is shown,
+-     and a `Showable` is also `Communicable`, so it can be substituted into an `m"…"` message.
++     Les mêmes instances `Showable` pilotent l'interpolation `t"…"`, de sorte qu'une valeur
++     substituée est montrée, et un `Showable` est aussi `Communicable`, de sorte qu'il peut
++     être substitué dans un message `m"…"`.
+
+-     A `Boolean` has no single obvious rendering, so showing one needs an `Affirmation` in
+-     scope, chosen by importing one of the `affirmations` package's givens by name: `import
+-     soundness.*` does not import givens, and there is deliberately no default.
++     Un `Boolean` n'a pas de rendu évident unique ; le montrer requiert donc une `Affirmation`
++     dans la portée, choisie en important par son nom l'un des givens du package
++     `affirmations` : `import soundness.*` n'importe pas les givens, et il n'y a délibérément
++     aucune valeur par défaut.
+
+-     `Inspectable`'s renderings follow one notation across every Soundness type, so that two
+-     types never render alike:
++     Les rendus d'`Inspectable` suivent une même notation pour tous les types de Soundness, de
++     sorte que deux types ne se rendent jamais de la même façon :
+
+-     ```tabular
++     ```tabular
+
+-     column  Value
+-     column  Rendering
+-     row  a `List`  `[a, b]`
+-     row  a `Set`  `{a, b}`
+-     row  a `Map`  `{k → v}`
+-     row  a `Ledger`  `⟦k → v⟧`
+-     row  a `Sequence`  `⟨ a b ⟩`
+-     row  a product  `Name(field:value ╱ …)`
+-     row  a present `Optional`  `｢value｣`
+-     row  an absent `Optional`  `○`
+-     row  text  `t"…"`
+-     row  a character  `'x'`
+-     row  a sized number  a superscript suffix, `42ᵘ⁸`
+-     row  an ordinal  a superscript suffix, `1ˢᵗ`
++     column  Valeur
++     column  Rendu
++     row  une `List`  `[a, b]`
++     row  un `Set`  `{a, b}`
++     row  une `Map`  `{k → v}`
++     row  un `Ledger`  `⟦k → v⟧`
++     row  une `Sequence`  `⟨ a b ⟩`
++     row  un produit  `Name(field:value ╱ …)`
++     row  un `Optional` présent  `｢value｣`
++     row  un `Optional` absent  `○`
++     row  du texte  `t"…"`
++     row  un caractère  `'x'`
++     row  un nombre dimensionné  un suffixe en exposant, `42ᵘ⁸`
++     row  un ordinal  un suffixe en exposant, `1ˢᵗ`
+
+=     row  an ordinal  a superscript suffix, `1ˢᵗ`
+-     ```
++     ```
+
+-     A rendering which was *not* native carries a marker: `“…”` for a `toString`, `⸢…⸣` for a
+-     borrowed `Showable` form and `⸤…⸥` for a borrowed `Encodable in Text` form, which
+-     `Inspectable.fallbacks` finds.
++     Un rendu qui n'était *pas* natif porte un marqueur : `“…”` pour un `toString`, `⸢…⸣` pour
++     une forme `Showable` empruntée et `⸤…⸥` pour une forme `Encodable in Text` empruntée,
++     que `Inspectable.fallbacks` détecte.
+
+-     The library has one source set, `spectacular.core`, which compiles for every platform.
+-     Everything is exported to the `soundness` umbrella, and the `affirmations` choice package
+-     merges with the umbrella's own.
++     La bibliothèque a un seul ensemble de sources, `spectacular.core`, qui compile pour toutes
++     les plateformes. Tout est exporté vers le package parapluie `soundness`, et le package de
++     choix `affirmations` fusionne avec celui du package parapluie.
+
+- refer spectacular.Showable
++ refer spectacular.Showable
+
+- refer spectacular.Inspectable
++ refer spectacular.Inspectable
+
+- refer spectacular.show
++ refer spectacular.show
+
+- refer spectacular.inspect
++ refer spectacular.inspect
+
+- refer spectacular.Affirmation
++ refer spectacular.Affirmation
+
+- entry .show   renders a value as text for a person to read, through its `Showable` instance
++ entry .show
++   info
++       rend une valeur sous forme de texte destiné à une personne, au moyen de son instance
++       `Showable`
+
+-     An extension on any value whose type has a `Showable`: `value.show` is
+-     `Showable.text(value)`. A type with no instance cannot be shown, and asking is a compile
+-     error rather than a silent fallback to `toString`, so the absence of an instance is how a
+-     type says it is not meant for display.
++   detail
++       Une extension sur toute valeur dont le type a un `Showable` : `value.show` est
++       `Showable.text(value)`. Un type sans instance ne peut pas être montré, et le demander est
++       une erreur de compilation plutôt qu'un repli silencieux sur `toString` ; l'absence
++       d'instance est donc la façon dont un type indique qu'il n'est pas destiné à l'affichage.
+
+=     type says it is not meant for display.
+=
+-     ```scala
++       ```scala
+
+=     type says it is not meant for display.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+-     43.show                   // t"43"
++       43.show                   // t"43"
+
+-     List(1, 2, 3).show        // t"[1, 2, 3]"
++       List(1, 2, 3).show        // t"[1, 2, 3]"
+
+=     List(1, 2, 3).show        // t"[1, 2, 3]"
+-     ```
++       ```
+
+-     Interpolating a value into `t"…"` shows it in the same way. For a debugging form which
+-     always succeeds, use `inspect`.
++       Interpoler une valeur dans `t"…"` la montre de la même façon. Pour une forme de débogage
++       qui réussit toujours, utilisez `inspect`.
+
+- entry .inspect   renders a value as unambiguous text for a programmer, through its `Inspectable`
++ entry .inspect
++   info
++       rend une valeur sous forme de texte non ambigu destiné à un programmeur, au moyen de son
++       `Inspectable`
+
+-     An extension on any value: `value.inspect` is `Inspectable.text(value)`, and since
+-     `Inspectable.derived` covers every type, it never fails to compile. The rendering is
+-     compact, on one line, resembles valid source where that is cheap, and shows every piece
+-     of state relevant at the value's *static* type.
++   detail
++       Une extension sur toute valeur : `value.inspect` est `Inspectable.text(value)`, et
++       puisque `Inspectable.derived` couvre tous les types, elle compile toujours. Le rendu est
++       compact, sur une ligne, ressemble à du code source valide quand cela ne coûte rien, et
++       montre chaque élément d'état pertinent pour le type *statique* de la valeur.
+
+=     of state relevant at the value's *static* type.
+=
+-     ```scala
++       ```scala
+
+=     of state relevant at the value's *static* type.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+-     t"Hello\nworld".inspect            // t"t\"Hello\\nworld\""
++       t"Hello\nworld".inspect            // t"t\"Hello\\nworld\""
+
+-     (5: Optional[Int]).inspect         // t"｢5｣"
++       (5: Optional[Int]).inspect         // t"｢5｣"
+
+-     Map(1 -> 2, 3 -> 4).inspect        // t"{1 → 2, 3 → 4}"
++       Map(1 -> 2, 3 -> 4).inspect        // t"{1 → 2, 3 → 4}"
+
+=     Map(1 -> 2, 3 -> 4).inspect        // t"{1 → 2, 3 → 4}"
+-     ```
++       ```
+
+-     The rendering depends on the static type: a value typed `Any` falls back to `toString`,
+-     marked `“…”`. See `Inspectable` for the notation and the fallback chain.
++       Le rendu dépend du type statique : une valeur typée `Any` se replie sur `toString`,
++       marqué `“…”`. Voir `Inspectable` pour la notation et la chaîne de repli.
+
+- entry .Showable   the typeclass of values which may be displayed to a person, as `value is Showable`
++ entry .Showable
++   info
++       la classe de types des valeurs qui peuvent être affichées à une personne, sous la forme
++       `value is Showable`
+
+-   detail
+-       A single-method typeclass, `text(value: Self): Text`, so an instance is written as a
+-       function from the value to its text. It extends `Communicable`, so a showable value can
+-       also be substituted into a `m"…"` message, as a `Message` of its text.
++   detail
++       Une classe de types à une seule méthode, `text(value: Self): Text` ; une instance s'écrit
++       donc comme une fonction de la valeur vers son texte. Elle étend `Communicable`, de sorte
++       qu'une valeur affichable peut aussi être substituée dans un message `m"…"`, sous forme de
++       `Message` de son texte.
+
+=       also be substituted into a `m"…"` message, as a `Message` of its text.
+=
+-       ```scala
++       ```scala
+
+=       also be substituted into a `m"…"` message, as a `Message` of its text.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Money(pence: Int)
++       case class Money(pence: Int)
+
+-       given Money is Showable = money => t"£${money.pence/100}.${money.pence%100}"
++       given Money is Showable = money => t"£${money.pence/100}.${money.pence%100}"
+
+-       Money(1099).show   // t"£10.99"
++       Money(1099).show   // t"£10.99"
+
+=       Money(1099).show   // t"£10.99"
+-       ```
++       ```
+
+-       `Showable` is deliberately demanding: there is no derivation and no fallback, so a type
+-       shows only if someone has decided how it should look. The companion holds instances for
+-       the primitive types, `Text`, `String`, `Message`, `Memory`, every Scala `enum`, every
+-       `Textualizable` type, and the Soundness collections. A `Double` needs a
+-       `DecimalConverter` in scope and a `Boolean` an `Affirmation`, since neither has a single
+-       context-free form.
++       `Showable` est délibérément exigeant : il n'y a ni dérivation ni repli, de sorte qu'un
++       type ne se montre que si quelqu'un a décidé de son apparence. Le compagnon contient des
++       instances pour les types primitifs, `Text`, `String`, `Message`, `Memory`, chaque `enum`
++       Scala, chaque type `Textualizable` et les collections de Soundness. Un `Double` requiert
++       un `DecimalConverter` dans la portée et un `Boolean` une `Affirmation`, puisqu'aucun des
++       deux n'a de forme unique indépendante du contexte.
+
+-       An instance for a type which is refined (a branded list, a literal type) should be
+-       written over the subtypes of its subject (`[self <: Play] => self is Showable`), since
+-       `Self` is invariant and an instance for `Play` does not cover `Play` with a refinement.
++       Une instance pour un type raffiné (une liste marquée, un type littéral) devrait être
++       écrite sur les sous-types de son sujet (`[self <: Play] => self is Showable`), puisque
++       `Self` est invariant et qu'une instance pour `Play` ne couvre pas `Play` avec un
++       raffinement.
+
+-   refer spectacular.show
++   refer spectacular.show
+
+-   refer spectacular.Inspectable
++   refer spectacular.Inspectable
+
+-   refer spectacular.Affirmation
++   refer spectacular.Affirmation
+
+-   entry #text   renders a value as text
++   entry #text
++     info
++         rend une valeur sous forme de texte
+
+-   entry #message   renders a value as a `Message`, for `m"…"` interpolation
++   entry #message
++     info
++         rend une valeur sous forme de `Message`, pour l'interpolation `m"…"`
+
+-       `Message(text(value))`: the member which makes every `Showable` a `Communicable`.
++     detail
++         `Message(text(value))` : le membre qui fait de chaque `Showable` un `Communicable`.
+
+-   entry .showable   shows any `Textualizable` value through its textualization
++   entry .showable
++     info
++         montre toute valeur `Textualizable` au moyen de sa textualisation
+
+-   entry .text   shows `Text`, and any subtype of it, verbatim
++   entry .text
++     info
++         montre un `Text`, et tout sous-type de celui-ci, tel quel
+
+-   entry .string   shows a `String` as its text
++   entry .string
++     info
++         montre une `String` sous forme de son texte
+
+-   entry .char   shows a `Char` as a one-character text
++   entry .char
++     info
++         montre un `Char` sous forme de texte d'un caractère
+
+-   entry .long   shows a `Long` in decimal, with no suffix
++   entry .long
++     info
++         montre un `Long` en décimal, sans suffixe
+
+-   entry .int   shows an `Int` in decimal
++   entry .int
++     info
++         montre un `Int` en décimal
+
+-   entry .short   shows a `Short` in decimal
++   entry .short
++     info
++         montre un `Short` en décimal
+
+-   entry .byte   shows a `Byte` in decimal
++   entry .byte
++     info
++         montre un `Byte` en décimal
+
+-   entry .message   shows a `Message` as its text
++   entry .message
++     info
++         montre un `Message` sous forme de son texte
+
+-   entry .double   shows a `Double` through the `DecimalConverter` in scope
++   entry .double
++     info
++         montre un `Double` au moyen du `DecimalConverter` dans la portée
+
+-       Needs a `DecimalConverter`, which decides the number of digits, the notation and the
+-       rounding; without one, a `Double` does not show at all.
++     detail
++         Requiert un `DecimalConverter`, qui décide du nombre de chiffres, de la notation et de
++         l'arrondi ; sans lui, un `Double` ne se montre pas du tout.
+
+-   entry .boolean   shows a `Boolean` through the `Affirmation` in scope
++   entry .boolean
++     info
++         montre un `Boolean` au moyen de l'`Affirmation` dans la portée
+
+-       Needs an `Affirmation`, imported by name from the `affirmations` package or defined
+-       locally; without one, a `Boolean` does not show at all, since presuming `true` and
+-       `false` would be presuming the context.
++     detail
++         Requiert une `Affirmation`, importée par son nom depuis le package `affirmations` ou
++         définie localement ; sans elle, un `Boolean` ne se montre pas du tout, puisque présumer
++         `true` et `false` reviendrait à présumer du contexte.
+
+=       `false` would be presuming the context.
+=
+-       ```scala
++         ```scala
+
+=       `false` would be presuming the context.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+-       import affirmations.onOffAffirmation
++         import affirmations.onOffAffirmation
+
+-       true.show   // t"on"
++         true.show   // t"on"
+
+=       true.show   // t"on"
+-       ```
++         ```
+
+-   entry .option   shows a Scala `Option`: its value, or `none`
++   entry .option
++     info
++         montre une `Option` Scala : sa valeur, ou `none`
+
+-   entry .memory   shows a `Memory` count through its own `text` rendering
++   entry .memory
++     info
++         montre une quantité `Memory` au moyen de son propre rendu `text`
+
+-   entry .enumeration   shows a case of any Scala `enum` by its name
++   entry .enumeration
++     info
++         montre un cas de toute `enum` Scala par son nom
+
+-       Every `reflect.Enum` shows as its `toString`, the case's name, so an enum needs no
+-       instance of its own unless a different form is wanted; a parameterised case shows with
+-       its arguments but without labels.
++     detail
++         Chaque `reflect.Enum` se montre par son `toString`, le nom du cas ; une énumération n'a
++         donc pas besoin d'instance propre, à moins qu'une autre forme ne soit souhaitée ; un cas
++         paramétré se montre avec ses arguments, mais sans étiquettes.
+
+-   entry .set   shows a `Set` as `{a, b}`, each element shown
++   entry .set
++     info
++         montre un `Set` sous la forme `{a, b}`, chaque élément étant montré
+
+-   entry .list   shows a `List` as `[a, b]`, each element shown
++   entry .list
++     info
++         montre une `List` sous la forme `[a, b]`, chaque élément étant montré
+
+-       Written over the subtypes of `List[element]`, so a branded list (a `List` known to be
+-       populated) shows too.
++     detail
++         Écrite sur les sous-types de `List[element]`, de sorte qu'une liste marquée (une `List`
++         dont on sait qu'elle est peuplée) se montre aussi.
+
+-   entry .sequence   shows a `Sequence` as `[ a b ]`, each element shown
++   entry .sequence
++     info
++         montre une `Sequence` sous la forme `[ a b ]`, chaque élément étant montré
+
+-   entry .none   shows `None` as `none`
++   entry .none
++     info
++         montre `None` sous la forme `none`
+
+-   entry .specializable   shows a `Specializable` marker by its lowercased name
++   entry .specializable
++     info
++         montre un marqueur `Specializable` par son nom en minuscules
+
+-   entry .zerary   shows an `Ordinal` in its zero-based form, `3.₀`
++   entry .zerary
++     info
++         montre un `Ordinal` sous sa forme à base zéro, `3.₀`
+
+-   entry .typeRepr   shows a macro's `TypeRepr` as its source name, inside a macro
++   entry .typeRepr
++     info
++         montre le `TypeRepr` d'une macro par son nom dans le code source, dans une macro
+
+-       Needs a `Quotes`; the name is rendered as stenography renders a type.
++     detail
++         Requiert un `Quotes` ; le nom est rendu comme stenography rend un type.
+
+-   entry .meta   shows a macro's `Type[T]` as its source name, inside a macro
++   entry .meta
++     info
++         montre le `Type[T]` d'une macro par son nom dans le code source, dans une macro
+
+- entry .Inspectable   the typeclass of debug renderings, which every value has, as `value is Inspectable`
++ entry .Inspectable
++   info
++       la classe de types des rendus de débogage, que possède toute valeur, sous la forme
++       `value is Inspectable`
+
+-   detail
+-       A single-method typeclass, `text(value: Self): Text`, rendering a value for a
+-       programmer to read in a debugger or in test output. Unlike `Showable` it is total: when
+-       a type has no instance of its own, `derived` (inherited from `Inspectable2`) supplies
+-       one, trying in turn
++   detail
++       Une classe de types à une seule méthode, `text(value: Self): Text`, qui rend une valeur
++       pour qu'un programmeur la lise dans un débogueur ou dans la sortie des tests.
++       Contrairement à `Showable`, elle est totale : quand un type n'a pas d'instance propre,
++       `derived` (hérité d'`Inspectable2`) en fournit une, en essayant tour à tour
+
+-       1. an `Encodable in Text`, borrowed and marked `⸤…⸥`;
+-       2. a `Showable`, borrowed and marked `⸢…⸣`;
+-       3. an `Optional` type (`Mandatable`), as `｢value｣` or `○`;
+-       4. a structural rendering through `Derivation`, for any case class, enum or sealed
+-           hierarchy;
+-       5. the value's `toString`, marked `“…”`.
++       1. un `Encodable in Text`, emprunté et marqué `⸤…⸥` ;
++       2. un `Showable`, emprunté et marqué `⸢…⸣` ;
++       3. un type `Optional` (`Mandatable`), sous la forme `｢value｣` ou `○` ;
++       4. un rendu structurel au moyen de `Derivation`, pour toute case class, énumération ou
++           hiérarchie scellée ;
++       5. le `toString` de la valeur, marqué `“…”`.
+
+-       A native instance in the companion of the type, or here, takes precedence over all of
+-       them. The marks are deliberate: a borrowed rendering is a wire form or a human form, not
+-       a debug form, and a reader should see at a glance that a type lacks an instance.
++       Une instance native dans le compagnon du type, ou ici, a la précédence sur tous ceux-ci.
++       Les marques sont délibérées : un rendu emprunté est une forme de transmission ou une
++       forme destinée aux humains, pas une forme de débogage, et un lecteur doit voir d'un coup
++       d'œil qu'un type manque d'instance.
+
+=       a debug form, and a reader should see at a glance that a type lacks an instance.
+=
+-       ```scala
++       ```scala
+
+=       a debug form, and a reader should see at a glance that a type lacks an instance.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       enum Shape:
++       enum Shape:
+
+-         case Circle(radius: Int)
++         case Circle(radius: Int)
+
+-         case Point
++         case Point
+
+-       (Shape.Circle(5): Shape).inspect   // t"Circle(radius:5)"
++       (Shape.Circle(5): Shape).inspect   // t"Circle(radius:5)"
+
+-       (t"Lear", 80).inspect              // t"(t\"Lear\" ╱ 80)"
++       (t"Lear", 80).inspect              // t"(t\"Lear\" ╱ 80)"
+
+-       (name = t"Lear", age = 80).inspect   // t"(name:t\"Lear\" ╱ age:80)"
++       (name = t"Lear", age = 80).inspect   // t"(name:t\"Lear\" ╱ age:80)"
+
+=       (name = t"Lear", age = 80).inspect   // t"(name:t\"Lear\" ╱ age:80)"
+-       ```
++       ```
+
+-       Since a missing instance is never a compile error, coverage can regress silently: a
+-       type gains a refinement and its rendering drops to `toString`. `.fallbacks` is what a
+-       library's tests assert on to prevent that. An instance should be written over the
+-       subtypes of its subject (`[self <: Port] => self is Inspectable`), because `Self` is
+-       invariant and an instance for `Port` does not cover `Port over Tcp`; for a
+-       parameterised subject, bind the parameter with a wildcard (`[self <: Cookie[?]]`)
+-       rather than a second type parameter, which may silently fail to resolve. The opaque
+-       collections `List`, `Set`, `Map` and `Chain` are the exceptions, and keep an exact
+-       `Self`. An instance belongs in the subject's companion, not at top level, so that it
+-       needs no import to be found.
++       Puisqu'une instance manquante n'est jamais une erreur de compilation, la couverture peut
++       régresser silencieusement : un type acquiert un raffinement et son rendu retombe sur
++       `toString`. `.fallbacks` est ce sur quoi les tests d'une bibliothèque s'appuient pour
++       l'empêcher. Une instance devrait être écrite sur les sous-types de son sujet
++       (`[self <: Port] => self is Inspectable`), car `Self` est invariant et une instance pour
++       `Port` ne couvre pas `Port over Tcp` ; pour un sujet paramétré, liez le paramètre avec
++       un joker (`[self <: Cookie[?]]`) plutôt qu'avec un second paramètre de type, qui
++       pourrait silencieusement ne pas se résoudre. Les collections opaques `List`, `Set`,
++       `Map` et `Chain` font exception et conservent un `Self` exact. Une instance a sa place
++       dans le compagnon de son sujet, pas au premier niveau, afin qu'aucun import ne soit
++       nécessaire pour la trouver.
+
+-       The notation in use, by category:
++       La notation en usage, par catégorie :
+
+-       - containers: `[a, b]` list, `{a, b}` set, `{k → v}` map, `⟦k → v⟧` ledger, `⟨ a b ⟩`
+-         sequence, `⦋…⦌` array, `⁅…⁆` frozen array, `a ⋰ b ⋰ ..?` a lazy chain
+-       - products: `Name(field:value ╱ field2:value)`, `(a ╱ b)` tuple, `(name:value ╱ …)`
+-         named tuple
+-       - optionality: `｢value｣` present, `○` absent
+-       - text: `t"…"` with escapes, `'x'` a character
+-       - numbers: `3`, `3L`, `3.1F`, `3.toByte`, `BigInt(42)`; `42ᵘ⁸`, `-7ˢ³²`, `2Fᵇ⁸`,
+-         `3.14ᶠ⁶⁴` for the sized numbers
+-       - positions: `1ˢᵗ` ordinal, `1ˢᵗ‥5ᵗʰ` interval, `⟪4:8+5⟫` span
++       - conteneurs : `[a, b]` liste, `{a, b}` ensemble, `{k → v}` map, `⟦k → v⟧` ledger,
++         `⟨ a b ⟩` séquence, `⦋…⦌` tableau, `⁅…⁆` tableau gelé, `a ⋰ b ⋰ ..?` une chaîne
++         paresseuse
++       - produits : `Name(field:value ╱ field2:value)`, `(a ╱ b)` tuple, `(name:value ╱ …)`
++         tuple nommé
++       - optionnalité : `｢value｣` présent, `○` absent
++       - texte : `t"…"` avec échappements, `'x'` un caractère
++       - nombres : `3`, `3L`, `3.1F`, `3.toByte`, `BigInt(42)` ; `42ᵘ⁸`, `-7ˢ³²`, `2Fᵇ⁸`,
++         `3.14ᶠ⁶⁴` pour les nombres dimensionnés
++       - positions : `1ˢᵗ` ordinal, `1ˢᵗ‥5ᵗʰ` intervalle, `⟪4:8+5⟫` étendue
+
+-   refer spectacular.inspect
++   refer spectacular.inspect
+
+-   refer spectacular.Inspectable2
++   refer spectacular.Inspectable2
+
+-   refer spectacular.Showable
++   refer spectacular.Showable
+
+-   entry #text   renders a value for a programmer to read
++   entry #text
++     info
++         rend une valeur pour qu'un programmeur la lise
+
+-   entry #contramap   an instance for another type, rendering it through a conversion to this one
++   entry #contramap
++     info
++         une instance pour un autre type, qui le rend au moyen d'une conversion vers celui-ci
+
+-       `inspectable.contramap[Celsius](_.degrees)` renders a `Celsius` as its degrees would
+-       render. The lambda must be pure.
++     detail
++         `inspectable.contramap[Celsius](_.degrees)` rend un `Celsius` comme se rendraient ses
++         degrés. La lambda doit être pure.
+
+-   entry .fallbacks   those of some renderings which were not native: carrying `“…”`, `⸢…⸣` or `⸤…⸥`
++   entry .fallbacks
++     info
++         ceux d'entre plusieurs rendus qui n'étaient pas natifs : portant `“…”`, `⸢…⸣` ou `⸤…⸥`
+
+-       Returns the renderings, in order, which contain one of the three markers of a borrowed
+-       or `toString` rendering. A library's tests assert that its own types all inspect
+-       natively, and should pair that with a case asserting that an uncovered type *is*
+-       reported, so the check cannot pass vacuously.
++     detail
++         Renvoie, dans l'ordre, les rendus qui contiennent l'un des trois marqueurs d'un rendu
++         emprunté ou issu de `toString`. Les tests d'une bibliothèque vérifient que ses propres
++         types s'inspectent tous nativement, et devraient y adjoindre un cas vérifiant qu'un type
++         non couvert *est* signalé, afin que la vérification ne puisse pas réussir à vide.
+
+=       reported, so the check cannot pass vacuously.
+=
+-       ```scala
++         ```scala
+
+=       reported, so the check cannot pass vacuously.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+-       Inspectable.fallbacks(t"text".inspect, 'x'.inspect, Set(1, 2).inspect)   // Nil
++         Inspectable.fallbacks(t"text".inspect, 'x'.inspect, Set(1, 2).inspect)   // Nil
+
+=       Inspectable.fallbacks(t"text".inspect, 'x'.inspect, Set(1, 2).inspect)   // Nil
+-       ```
++         ```
+
+-   entry .marker   whether a character is one of the fallback markers `“`, `⸢` or `⸤`
++   entry .marker
++     info
++         indique si un caractère est l'un des marqueurs de repli `“`, `⸢` ou `⸤`
+
+-   entry .escape   escapes a character as it would be written in a Scala literal
++   entry .escape
++     info
++         échappe un caractère comme il s'écrirait dans un littéral Scala
+
+-       Newlines, tabs, carriage returns, backslashes, quotes, apostrophes, backspaces and form
+-       feeds take their backslash escapes; any other character outside printable ASCII becomes
+-       `\uXXXX`. With the second parameter `true`, the escape character is written `\e`, as in a
+-       `t"…"` literal.
++     detail
++         Les sauts de ligne, tabulations, retours chariot, barres obliques inverses, guillemets,
++         apostrophes, retours arrière et sauts de page prennent leur échappement par barre
++         oblique inverse ; tout autre caractère hors de l'ASCII imprimable devient `\uXXXX`. Avec
++         le second paramètre à `true`, le caractère d'échappement s'écrit `\e`, comme dans un
++         littéral `t"…"`.
+
+-   entry .Derivation   the structural derivation of `Inspectable` for products and sums
++   entry .Derivation
++     info
++         la dérivation structurelle d'`Inspectable` pour les produits et les sommes
+
+-     detail
+-         A wisteria `Derivable[Inspectable]`. A product renders as `Name(field:value ╱ …)`, with
+-         each field rendered by the instance for its static type, and a case object with no
+-         fields as its bare name; a tuple omits the name and labels. A sum renders the variant
+-         the value is. `derived` reaches it for any type with a `Reflection`, and `Inspectable.enumeration`
+-         for every Scala `enum`.
++     detail
++         Un `Derivable[Inspectable]` de wisteria. Un produit se rend sous la forme
++         `Name(field:value ╱ …)`, chaque champ étant rendu par l'instance de son type statique, et
++         un case object sans champs par son seul nom ; un tuple omet le nom et les étiquettes. Une
++         somme rend la variante qu'est la valeur. `derived` l'atteint pour tout type doté d'une
++         `Reflection`, et `Inspectable.enumeration` pour chaque `enum` Scala.
+
+-     entry .conjunction   the rendering of a product: its name and labelled fields
++     entry .conjunction
++       info
++           le rendu d'un produit : son nom et ses champs étiquetés
+
+-     entry .disjunction   the rendering of a sum: the rendering of its variant
++     entry .disjunction
++       info
++           le rendu d'une somme : le rendu de sa variante
+
+-   entry .char   renders a `Char` as a quoted, escaped literal, `'x'`
++   entry .char
++     info
++         rend un `Char` sous forme de littéral entre apostrophes et échappé, `'x'`
+
+-   entry .int   renders an `Int` in decimal
++   entry .int
++     info
++         rend un `Int` en décimal
+
+-   entry .long   renders a `Long` with its `L` suffix, `3L`
++   entry .long
++     info
++         rend un `Long` avec son suffixe `L`, `3L`
+
+-   entry .byte   renders a `Byte` as `3.toByte`
++   entry .byte
++     info
++         rend un `Byte` sous la forme `3.toByte`
+
+-   entry .short   renders a `Short` as `3.toShort`
++   entry .short
++     info
++         rend un `Short` sous la forme `3.toShort`
+
+-   entry .string   renders a `String` as an escaped string literal, `"…"`
++   entry .string
++     info
++         rend une `String` sous forme de littéral de chaîne échappé, `"…"`
+
+-   entry .text   renders a `Text` as an escaped `t"…"` literal
++   entry .text
++     info
++         rend un `Text` sous forme de littéral `t"…"` échappé
+
+-       Every control character and quote is escaped as Scala would escape it, and the escape
+-       character as `\e`, so a text containing a newline is distinguishable from one containing `\` and `n`
+-       and the rendering could be pasted back into code.
++     detail
++         Chaque caractère de contrôle et chaque guillemet est échappé comme Scala l'échapperait,
++         et le caractère d'échappement sous la forme `\e` ; un texte contenant un saut de ligne se
++         distingue ainsi d'un texte contenant `\` et `n`, et le rendu pourrait être recollé dans
++         du code.
+
+-   entry .float   renders a `Float` with its `F` suffix, and its infinities and NaN by name
++   entry .float
++     info
++         rend un `Float` avec son suffixe `F`, et ses infinis et NaN par leur nom
+
+-   entry .double   renders a `Double`, and its infinities and NaN by name (`Double.NaN`)
++   entry .double
++     info
++         rend un `Double`, et ses infinis et NaN par leur nom (`Double.NaN`)
+
+-   entry .boolean   renders a `Boolean` as `true` or `false`, with no `Affirmation` needed
++   entry .boolean
++     info
++         rend un `Boolean` sous la forme `true` ou `false`, sans qu'une `Affirmation` soit
++         nécessaire
+
+-   entry .unit   renders `()`
++   entry .unit
++     info
++         rend `()`
+
+-   entry .bigInt   renders a `BigInt` as `BigInt(42)`
++   entry .bigInt
++     info
++         rend un `BigInt` sous la forme `BigInt(42)`
+
+-   entry .bigDecimal   renders a `BigDecimal` as `BigDecimal(1.5)`
++   entry .bigDecimal
++     info
++         rend un `BigDecimal` sous la forme `BigDecimal(1.5)`
+
+-   entry .unset   renders `Unset` as `○`
++   entry .unset
++     info
++         rend `Unset` sous la forme `○`
+
+-   entry .reflectEnum   renders a value statically typed `reflect.Enum` by its `toString`
++   entry .reflectEnum
++     info
++         rend une valeur de type statique `reflect.Enum` par son `toString`
+
+-       Only for a value typed as `reflect.Enum` itself, for which no reflection is available; a
+-       value of a known enum type is rendered structurally by `.enumeration`.
++     detail
++         Uniquement pour une valeur typée `reflect.Enum` lui-même, pour laquelle aucune réflexion
++         n'est disponible ; une valeur d'un type d'énumération connu est rendue structurellement
++         par `.enumeration`.
+
+-   entry .enumeration   derives the rendering of any Scala `enum`, with field labels: `Circle(radius:5)`
++   entry .enumeration
++     info
++         dérive le rendu de toute `enum` Scala, avec les étiquettes des champs : `Circle(radius:5)`
+
+-       Takes priority over the borrowed `Showable` rendering every enum has (which would lose
+-       the labels), while yielding to an enum which defines an instance of its own.
++     detail
++         A la priorité sur le rendu `Showable` emprunté que possède toute énumération (qui
++         perdrait les étiquettes), tout en s'effaçant devant une énumération qui définit sa
++         propre instance.
+
+-   entry .tuple   renders a tuple as `(a ╱ b)`, each element by its static type's instance
++   entry .tuple
++     info
++         rend un tuple sous la forme `(a ╱ b)`, chaque élément par l'instance de son type statique
+
+-       Inline, since it walks the element types known at the summon site. A value typed as a
+-       bare `Tuple`, whose elements are unknown, renders as its `toString`, marked `“…”`.
++     detail
++         Inline, puisqu'elle parcourt les types d'éléments connus au point d'invocation. Une
++         valeur typée comme un simple `Tuple`, dont les éléments sont inconnus, se rend par son
++         `toString`, marqué `“…”`.
+
+-   entry .namedTuple   renders a named tuple as `(name:a ╱ age:b)`
++   entry .namedTuple
++     info
++         rend un tuple nommé sous la forme `(name:a ╱ age:b)`
+
+-       A named tuple is an opaque alias, which `Derivation` cannot see into, so it has this
+-       instance of its own. An element with no native instance degrades on its own.
++     detail
++         Un tuple nommé est un alias opaque, à l'intérieur duquel `Derivation` ne peut pas voir ;
++         il a donc sa propre instance. Un élément sans instance native se dégrade de son côté.
+
+-   entry .u8   renders a `U8` with the suffix `ᵘ⁸`: `200ᵘ⁸`
++   entry .u8
++     info
++         rend un `U8` avec le suffixe `ᵘ⁸` : `200ᵘ⁸`
+
+-   entry .u16   renders a `U16` with the suffix `ᵘ¹⁶`
++   entry .u16
++     info
++         rend un `U16` avec le suffixe `ᵘ¹⁶`
+
+-   entry .u32   renders a `U32` with the suffix `ᵘ³²`
++   entry .u32
++     info
++         rend un `U32` avec le suffixe `ᵘ³²`
+
+-   entry .u64   renders a `U64` with the suffix `ᵘ⁶⁴`
++   entry .u64
++     info
++         rend un `U64` avec le suffixe `ᵘ⁶⁴`
+
+-   entry .s8   renders an `S8` with the suffix `ˢ⁸`
++   entry .s8
++     info
++         rend un `S8` avec le suffixe `ˢ⁸`
+
+-   entry .s16   renders an `S16` with the suffix `ˢ¹⁶`
++   entry .s16
++     info
++         rend un `S16` avec le suffixe `ˢ¹⁶`
+
+-   entry .s32   renders an `S32` with the suffix `ˢ³²`: `-7ˢ³²`
++   entry .s32
++     info
++         rend un `S32` avec le suffixe `ˢ³²` : `-7ˢ³²`
+
+-   entry .s64   renders an `S64` with the suffix `ˢ⁶⁴`
++   entry .s64
++     info
++         rend un `S64` avec le suffixe `ˢ⁶⁴`
+
+-   entry .b8   renders a `B8` as two uppercase hexadecimal digits with the suffix `ᵇ⁸`: `2Fᵇ⁸`
++   entry .b8
++     info
++         rend un `B8` sous forme de deux chiffres hexadécimaux majuscules avec le suffixe `ᵇ⁸` :
++         `2Fᵇ⁸`
+
+-   entry .b16   renders a `B16` as four zero-padded hexadecimal digits with the suffix `ᵇ¹⁶`
++   entry .b16
++     info
++         rend un `B16` sous forme de quatre chiffres hexadécimaux complétés de zéros, avec le
++         suffixe `ᵇ¹⁶`
+
+-   entry .b32   renders a `B32` as eight zero-padded hexadecimal digits with the suffix `ᵇ³²`
++   entry .b32
++     info
++         rend un `B32` sous forme de huit chiffres hexadécimaux complétés de zéros, avec le suffixe
++         `ᵇ³²`
+
+-   entry .b64   renders a `B64` as sixteen hexadecimal digits with the suffix `ᵇ⁶⁴`
++   entry .b64
++     info
++         rend un `B64` sous forme de seize chiffres hexadécimaux avec le suffixe `ᵇ⁶⁴`
+
+-   entry .f32   renders an `F32` with the suffix `ᶠ³²`, and its infinities as `∞` and `-∞`
++   entry .f32
++     info
++         rend un `F32` avec le suffixe `ᶠ³²`, et ses infinis sous la forme `∞` et `-∞`
+
+-   entry .f64   renders an `F64` with the suffix `ᶠ⁶⁴`: `3.5ᶠ⁶⁴`
++   entry .f64
++     info
++         rend un `F64` avec le suffixe `ᶠ⁶⁴` : `3.5ᶠ⁶⁴`
+
+-   entry .q32   renders a `Q32` rational as a fraction with the suffix `ʳ³²`: `3/4ʳ³²`
++   entry .q32
++     info
++         rend un rationnel `Q32` sous forme de fraction avec le suffixe `ʳ³²` : `3/4ʳ³²`
+
+-   entry .q64   renders a `Q64` rational as a fraction with the suffix `ʳ⁶⁴`
++   entry .q64
++     info
++         rend un rationnel `Q64` sous forme de fraction avec le suffixe `ʳ⁶⁴`
+
+-   entry .bcd   renders a `Bcd` decimal with the suffix `ᵇᶜᵈ`
++   entry .bcd
++     info
++         rend un décimal `Bcd` avec le suffixe `ᵇᶜᵈ`
+
+-   entry .decimal   renders a `Decimal` with the suffix `ᵈ`: `3.14ᵈ`
++   entry .decimal
++     info
++         rend un `Decimal` avec le suffixe `ᵈ` : `3.14ᵈ`
+
+-   entry .ordinal   renders an `Ordinal` one-based, with its English suffix: `1ˢᵗ`, `3ʳᵈ`, `11ᵗʰ`
++   entry .ordinal
++     info
++         rend un `Ordinal` à base un, avec son suffixe anglais : `1ˢᵗ`, `3ʳᵈ`, `11ᵗʰ`
+
+-       The one-based number is the one a programmer counts with; the zero-based form is an
+-       implementation detail, and showing it would make every rendering off by one.
++     detail
++         Le nombre à base un est celui avec lequel compte un programmeur ; la forme à base zéro
++         est un détail d'implémentation, et l'afficher décalerait chaque rendu de un.
+
+-   entry .interval   renders an `Interval` as `1ˢᵗ‥5ᵗʰ`, or `∅` when empty
++   entry .interval
++     info
++         rend un `Interval` sous la forme `1ˢᵗ‥5ᵗʰ`, ou `∅` s'il est vide
+
+-   entry .span   renders a `Span` by its shape: `⟪∅⟫`, `⟪@4+5⟫`, `⟪4:8+5⟫`, `⟪4‥8⟫` or `⟪4:8‥6:2⟫`
++   entry .span
++     info
++         rend une `Span` selon sa forme : `⟪∅⟫`, `⟪@4+5⟫`, `⟪4:8+5⟫`, `⟪4‥8⟫` ou `⟪4:8‥6:2⟫`
+
+-       A `Span` packs one of five ranges into a `Long`: empty, an offset and length, a line,
+-       column and length, a range of whole lines, or an area. The numbers are one-based.
++     detail
++         Une `Span` encode l'une de cinq étendues dans un `Long` : vide, un décalage et une
++         longueur, une ligne, une colonne et une longueur, une plage de lignes entières, ou une
++         zone. Les nombres sont à base un.
+
+-   entry .memory   renders a `Memory` count exactly, as `4194304B`, never rounded
++   entry .memory
++     info
++         rend une quantité `Memory` exactement, sous la forme `4194304B`, jamais arrondie
+
+-   entry .digit   renders a `Digit` with the suffix `ᵈᵍ`
++   entry .digit
++     info
++         rend un `Digit` avec le suffixe `ᵈᵍ`
+
+-   entry .message   renders a `Message` as `m"…"`
++   entry .message
++     info
++         rend un `Message` sous la forme `m"…"`
+
+-   entry .set   renders a `Set` as `{a, b}`
++   entry .set
++     info
++         rend un `Set` sous la forme `{a, b}`
+
+-   entry .map   renders a `Map` as `{k → v, …}`, whose entries have no significant order
++   entry .map
++     info
++         rend une `Map` sous la forme `{k → v, …}`, dont les entrées n'ont pas d'ordre significatif
+
+-   entry .ledger   renders a `Ledger` as `⟦k → v, …⟧`, in insertion order
++   entry .ledger
++     info
++         rend un `Ledger` sous la forme `⟦k → v, …⟧`, dans l'ordre d'insertion
+
+-       Bracketed differently from a `Map` because a `Ledger`'s order is significant and a
+-       `Map`'s is not, and the rendering must say which a value is.
++     detail
++         Délimité autrement qu'une `Map`, car l'ordre d'un `Ledger` est significatif et celui
++         d'une `Map` ne l'est pas, et le rendu doit dire de quoi il s'agit.
+
+-   entry .sequence   renders a `Sequence` as `⟨ 1 2 3 ⟩`
++   entry .sequence
++     info
++         rend une `Sequence` sous la forme `⟨ 1 2 3 ⟩`
+
+-   entry .list   renders a `List` as `[a, b]`
++   entry .list
++     info
++         rend une `List` sous la forme `[a, b]`
+
+-   entry .array   renders a Scala array as `⦋…⦌`, with its element kind and subscripted indices
++   entry .array
++     info
++         rend un tableau Scala sous la forme `⦋…⦌`, avec la nature de ses éléments et des indices
++         en indice
+
+-       The prefix names the JVM element type (`🅸` for `Int`, `🅻` for objects, …) and the
+-       dimension, and each element is preceded by its index in subscript digits.
++     detail
++         Le préfixe nomme le type d'élément de la JVM (`🅸` pour `Int`, `🅻` pour les objets, …) et
++         la dimension, et chaque élément est précédé de son indice en chiffres souscrits.
+
+-   entry .arraySeq   renders a mutable `ArraySeq` as an array, closed with `⦌ₛ`
++   entry .arraySeq
++     info
++         rend une `ArraySeq` mutable comme un tableau, fermé par `⦌ₛ`
+
+-   entry .stream   renders a `Chain` lazily: `1 ⋰ 2 ⋰ 3 ⋰ ..?`, never forcing it
++   entry .stream
++     info
++         rend une `Chain` paresseusement : `1 ⋰ 2 ⋰ 3 ⋰ ..?`, sans jamais la forcer
+
+-       Shows at most three forced elements; an unforced tail is `∿∿∿` and the end is `⯁`.
++     detail
++         Montre au plus trois éléments forcés ; une queue non forcée s'écrit `∿∿∿` et la fin `⯁`.
+
+-   entry .frozenArray   renders a frozen `Array[element]^{}` as `⁅…⁆`, with subscripted indices
++   entry .frozenArray
++     info
++         rend un `Array[element]^{}` gelé sous la forme `⁅…⁆`, avec des indices en chiffres
++         souscrits
+
+-   entry .option   renders a Scala `Option` as `Some(3)` or `None`
++   entry .option
++     info
++         rend une `Option` Scala sous la forme `Some(3)` ou `None`
+
+-   entry .none   renders `None`
++   entry .none
++     info
++         rend `None`
+
+- entry .Inspectable2   the lower-priority home of `Inspectable.derived`, the total fallback
++ entry .Inspectable2
++   info
++       l'emplacement de moindre priorité d'`Inspectable.derived`, le repli total
+
+-   detail
+-       A trait which `Inspectable`'s companion extends, so that `derived` ranks below every
+-       instance written in the companion. Not used directly; its `derived` is found through
+-       the companion.
++   detail
++       Un trait qu'étend le compagnon d'`Inspectable`, afin que `derived` se classe en dessous
++       de toute instance écrite dans le compagnon. Pas utilisé directement ; son `derived` est
++       trouvé via le compagnon.
+
+-   entry #derived   the instance for any type without one: borrowed, derived, or `toString`
++   entry #derived
++     info
++         l'instance pour tout type qui n'en a pas : empruntée, dérivée, ou `toString`
+
+-       Tries an `Encodable in Text` (marked `⸤…⸥`), a `Showable` (marked `⸢…⸣`), an `Optional`
+-       type (`｢value｣` or `○`), a `Reflection` (structural, through `Inspectable.Derivation`),
+-       and finally the value's `toString` (marked `“…”`). A type whose encoded form is escaped
+-       or encoded must define its own instance, since the borrowed form would mislead.
++     detail
++         Essaie un `Encodable in Text` (marqué `⸤…⸥`), un `Showable` (marqué `⸢…⸣`), un type
++         `Optional` (`｢value｣` ou `○`), une `Reflection` (structurelle, au moyen
++         d'`Inspectable.Derivation`), et enfin le `toString` de la valeur (marqué `“…”`). Un type
++         dont la forme encodée est échappée ou encodée doit définir sa propre instance, puisque
++         la forme empruntée serait trompeuse.
+
+=       or encoded must define its own instance, since the borrowed form would mislead.
+=
+-       ```scala
++         ```scala
+
+=       or encoded must define its own instance, since the borrowed form would mislead.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+-       given Exception is Showable = _ => t"<exception>"
++         given Exception is Showable = _ => t"<exception>"
+
+-       Exception("error message").inspect   // t"⸢<exception>⸣"
++         Exception("error message").inspect   // t"⸢<exception>⸣"
+
+=       Exception("error message").inspect   // t"⸢<exception>⸣"
+-       ```
++         ```
+
+- entry .Affirmation   the pair of words a `Boolean` shows as: `yes`/`no`, `on`/`off`, …
++ entry .Affirmation
++   info
++       la paire de mots sous laquelle se montre un `Boolean` : `yes`/`no`, `on`/`off`, …
+
+-   detail
+-       A case class of two texts, chosen as a contextual value: `Showable.boolean` needs one,
+-       so a `Boolean` shows only once the context has said how. The `affirmations` package has
+-       four, each imported by name; any other pair is a one-line given.
++   detail
++       Une case class de deux textes, choisie comme valeur contextuelle : `Showable.boolean` en
++       requiert une, de sorte qu'un `Boolean` ne se montre qu'une fois que le contexte a dit
++       comment. Le package `affirmations` en a quatre, chacune importée par son nom ; toute
++       autre paire est un given d'une ligne.
+
+=       four, each imported by name; any other pair is a one-line given.
+=
+-       ```scala
++       ```scala
+
+=       four, each imported by name; any other pair is a one-line given.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       given Affirmation = Affirmation(t"+", t"-")
++       given Affirmation = Affirmation(t"+", t"-")
+
+-       t"${true}${false}"   // t"+-"
++       t"${true}${false}"   // t"+-"
+
+=       t"${true}${false}"   // t"+-"
+-       ```
++       ```
+
+-   refer spectacular.affirmations
++   refer spectacular.affirmations
+
+-   entry #yes   the text for `true`
++   entry #yes
++     info
++         le texte pour `true`
+
+-   entry #no   the text for `false`
++   entry #no
++     info
++         le texte pour `false`
+
+-   entry #apply   the text for a boolean: `yes` if it is `true`, and `no` otherwise
++   entry #apply
++     info
++         le texte d'un booléen : `yes` s'il vaut `true`, et `no` sinon
+
+- entry .affirmations   the standard ways to show a `Boolean`, each a given to import by name
++ entry .affirmations
++   info
++       les façons standard de montrer un `Boolean`, chacune étant un given à importer par son nom
+
+-   detail
+-       Showing a `Boolean` needs an `Affirmation`, and none is in scope by default:
+-       `import soundness.*` brings none of these in, since `import pkg.*` does not import
+-       givens, and one is imported by name.
++   detail
++       Montrer un `Boolean` requiert une `Affirmation`, et aucune n'est dans la portée par
++       défaut : `import soundness.*` n'en apporte aucune, puisque `import pkg.*` n'importe pas
++       les givens, et l'on en importe une par son nom.
+
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Yes and no
++       alternative Yes and no
+
+=       alternative Yes and no
+-         code
++         code
+
+=       alternative Yes and no
+=         code
+-             import soundness.*
++             import soundness.*
+
+-             import affirmations.yesNoAffirmation
++             import affirmations.yesNoAffirmation
+
+-             t"${true} ${false}"   // t"yes no"
++             t"${true} ${false}"   // t"yes no"
+
+-       alternative On and off
++       alternative On and off
+
+=       alternative On and off
+-         code
++         code
+
+=       alternative On and off
+=         code
+-             import soundness.*
++             import soundness.*
+
+-             import affirmations.onOffAffirmation
++             import affirmations.onOffAffirmation
+
+-             t"${true} ${false}"   // t"on off"
++             t"${true} ${false}"   // t"on off"
+
+-       alternative True and false
++       alternative True and false
+
+=       alternative True and false
+-         code
++         code
+
+=       alternative True and false
+=         code
+-             import soundness.*
++             import soundness.*
+
+-             import affirmations.trueFalseAffirmation
++             import affirmations.trueFalseAffirmation
+
+-             t"${true} ${false}"   // t"true false"
++             t"${true} ${false}"   // t"true false"
+
+-       alternative One and zero
++       alternative One and zero
+
+=       alternative One and zero
+-         code
++         code
+
+=       alternative One and zero
+=         code
+-             import soundness.*
++             import soundness.*
+
+-             import affirmations.oneZeroAffirmation
++             import affirmations.oneZeroAffirmation
+
+-             t"${true} ${false}"   // t"1 0"
++             t"${true} ${false}"   // t"1 0"
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-   entry .yesNoAffirmation   shows `true` as `yes` and `false` as `no`
++   entry .yesNoAffirmation
++     info
++         montre `true` sous la forme `yes` et `false` sous la forme `no`
+
+-   entry .onOffAffirmation   shows `true` as `on` and `false` as `off`
++   entry .onOffAffirmation
++     info
++         montre `true` sous la forme `on` et `false` sous la forme `off`
+
+-   entry .trueFalseAffirmation   shows `true` as `true` and `false` as `false`
++   entry .trueFalseAffirmation
++     info
++         montre `true` sous la forme `true` et `false` sous la forme `false`
+
+-   entry .oneZeroAffirmation   shows `true` as `1` and `false` as `0`
++   entry .oneZeroAffirmation
++     info
++         montre `true` sous la forme `1` et `false` sous la forme `0`

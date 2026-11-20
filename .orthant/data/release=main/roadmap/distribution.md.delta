@@ -1,0 +1,4 @@
+orthant 1 release
+
+-     git grep -c reliquary -- build.mill etc doc/modules | wc -l   # 0
++     git grep -c reliquary -- build.mill etc doc/soundness/modules | wc -l   # 0

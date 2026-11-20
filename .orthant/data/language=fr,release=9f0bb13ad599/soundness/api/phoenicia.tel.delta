@@ -1,0 +1,34 @@
+orthant 1 language
+
+! refer phoenicia.Coverage
+- refer phoenicia.Font.Coverage
++ refer phoenicia.Font.Coverage
+
+=       exported, and documented there.
+=   refer phoenicia.Face
+!   refer phoenicia.Coverage
+-   refer phoenicia.Font.Coverage
++   refer phoenicia.Font.Coverage
+
+=       ```
+=   refer phoenicia.Face
+!   refer phoenicia.Coverage
+-   refer phoenicia.Font.Coverage
++   refer phoenicia.Font.Coverage
+
+=   refer phoenicia.Font
+!   refer phoenicia.Coverage
+-   refer phoenicia.Font.Coverage
++   refer phoenicia.Font.Coverage
+
+!     detail
+!         A named class, so the provision has a stable type. It is `in Medium`, its sources are
+!         one `Source.Embedded` per file, and its coverage is `Coverage.combine` over the files'
+!         `Coverage.of`.
+-     detail
+-         A named class, so the provision has a stable type. It is `in Medium`, its sources are
+-         one `Source.Embedded` per file, and its coverage is `Font.Coverage.combine` over the files'
++     detail
++         Une classe nommée, pour que la fourniture ait un type stable. Elle est `in Medium`, ses
++         sources sont un `Source.Embedded` par fichier, et sa couverture est `Coverage.combine`
++         sur les `Coverage.of` des fichiers.

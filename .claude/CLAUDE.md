@@ -53,9 +53,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   opaque `proscenium` types), rival monads using their own `flatMap` rather than Soundness's
   `bind`, and conversions crossing back over the greppable `.stdlib` bridge at the boundary.
 
+## Documentation
+
+- All of `doc/` is an Orthant store in `.orthant/` (`language`: `en` → `fr`; `release`: 0.76.0 →
+  0.77.0 → `main`), not files in git. `doc/` is its git-ignored working tree, and its paths are
+  `soundness/{modules,api,glossary.tel,section.tel}`, `philosophy/`, `standards/`,
+  `migration/`, `roadmap/`, `errors/`. Edit a document with `orthant checkout en main`, edit,
+  `orthant checkin`. Fuel compiles only what is checked in. The `etc/` scripts read `out/doc`,
+  which `make docs` exports (`orthant export out/doc en main`); `make build`, `doccheck` and
+  `plumbing` run it first. `doc/readme.md` and `AGENTS.md` have the details.
+
 ## Tutorial examples
 
-- Every ` ```scala ` fence in `doc/modules/*.md` is checked by `make doccheck` (or `make doccheck
+- Every ` ```scala ` fence in `doc/soundness/modules/*.md` is checked by `make doccheck` (or `make doccheck
   DOC=<tutorial>`), which evaluates the fences in order through the flame REPL's JSON API
   (`etc/doccheck.py`; needs the `flame` binary and the release's jars resolvable, which pinning it in a consumer's `etc/refs` does, through crux) and
   checks the names they use against the source (`etc/doccheck-names.py`). Run it after changing a
@@ -63,7 +73,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   failure that names something renamed since (listed in the unreleased `doc/migration/<version>.md`) is reported
   as TOLERATED, not STALE. The conventions the checker relies on — the `// does not compile`
   marker, `<!-- doccheck: skip -->` before a fence that cannot run in a REPL, the
-  `<!-- doccheck: language … -->` request, and `doc/fixtures/<tutorial>.scala` preambles — are
+  `<!-- doccheck: language … -->` request, and `etc/fixtures/<tutorial>.scala` preambles — are
   in `doc/standards/style.md`. From a shell without `flame` on the path, set
   `FLAME=/path/to/flame`; a full run takes a couple of hours (hung fences cost two minutes
   each), so run it in the background and read the summary from stderr. `HTTP 500` means flame
@@ -177,6 +187,6 @@ This repository runs CI locally and verifies signed attestations on GitHub Actio
 - If only files outside the input set changed (docs, `.github/`, `.claude/`, etc.), the filtered tree is unchanged, so `make attest` finds the existing attestation and does not rebuild.
 - `make verify-attest` is the local dry-run of what GitHub Actions does.
 - `make push` pushes commits and the attestation notes ref together. Plain `git push` works too but you must also `git push origin refs/notes/ci-attestation`, otherwise the `Build` check will fail with "no attestation note".
-- Required tooling locally: a JDK, `curl` and network access for the first toolchain download (see above), plus the userland the suite exercises (shells like zsh/fish/tmux, and PowerShell/Zig/Rust for the modules that shell out to them), Python 3, and `ssh-keygen`. Optionally, `chromedriver` or `geckodriver`: tarantula's live browser tests run when one is on the path and are skipped with a printed notice when neither is, so a browser is not required to attest. The signing key defaults to `~/.ssh/id_ed25519`; override with `SOUNDNESS_CI_KEY=…`.
+- Required tooling locally: a JDK, `curl` and network access for the first toolchain download (see above), plus the userland the suite exercises (shells like zsh/fish/tmux, and PowerShell/Zig/Rust for the modules that shell out to them), Python 3, `ssh-keygen`, and `orthant` (pinned in `etc/tools`; `make docs` needs it). Optionally, `chromedriver` or `geckodriver`: tarantula's live browser tests run when one is on the path and are skipped with a printed notice when neither is, so a browser is not required to attest. The signing key defaults to `~/.ssh/id_ed25519`; override with `SOUNDNESS_CI_KEY=…`.
 - The `make wasm-e2e` stage (also run by `make attest`) links the `.wasi` backends into two Wasm components (`tests/wasm/`; `mill wasm.component` exports `wasi:cli/run`, `mill wasm.httpComponent` exports `wasi:http/incoming-handler`), runs their scenarios under wasmtime — the only stage that exercises the WIT ABI at runtime — then packages both as Wasm OCI Artifacts (`mill wasm.image`, `wasm.httpImage`), checks each archive against the artifact layout, and re-runs the component extracted from the archive (the HTTP one under `wasmtime serve`). Regenerating `tests/wasm/*/bindings.scala` after a world changes is a manual step (`wit-bindgen scala tests/wasm/wit --world <name>`); the output is checked in. **Known generator bug:** for an exported function taking an imported resource, `wit-bindgen scala` types the parameter as its own generated facade while the backend casts the incoming handle to the canonical `scala.scalajs.wasi.…` one, so the guest links cleanly and then traps with `wasm trap: cast failure` on the first call. Substitute the `scala.scalajs.wasi.…` types by hand, as `tests/wasm/http/bindings.scala` does and documents. It additionally requires `wasmtime` (tested with 46.x; needs the `function-references`, `gc` and `exceptions` proposals), `wasm-tools`, and the **scala-wasm fork** of `wit-bindgen` (`cargo install --git https://github.com/scala-wasm/wit-bindgen --tag scala-wasm-wasm.4 wit-bindgen-cli`; the crates.io release lacks the `scala` generator). All scenarios are offline and deterministic; set `SOUNDNESS_CI_ONLINE=1` to also run the outgoing-HTTP scenario.
 - The signer's email (from `git config user.email`) must appear in `.ci/allowed_signers` with their SSH public key. Adding a co-signer = a PR that adds a line.

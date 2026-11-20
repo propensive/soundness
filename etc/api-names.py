@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate the name tables in doc/api-reduction-candidates.md from the export files.
+"""Regenerate the name tables in etc/api-reduction-candidates.md from the export files.
 
 Reads the exported type-level names out of every `soundness_*.scala`, keeps the multi-word
 ones, and rewrites two sections in place: the prefix-family table and the singleton list.
@@ -9,7 +9,7 @@ subtracted from both, and that section is left untouched — so curation survive
 """
 import re, glob, collections, textwrap, sys
 
-DOC = 'doc/api-reduction-candidates.md'
+DOC = 'etc/api-reduction-candidates.md'
 REVIEWED = '### Reviewed items which should not be moved'
 FAMILIES = '## Remaining names by prefix family'
 SINGLETONS = '### Singletons'

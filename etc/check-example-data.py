@@ -21,18 +21,23 @@ column's words are the real thing.
 
 import re, glob, sys, os, fnmatch
 
+if not os.path.isdir('out/doc'):
+  sys.exit('out/doc is missing: run `make docs` to export the documentation from the Orthant store')
+
 SETS = [
   'lib/*/src/**/*.scala',
   'lib/*/src/**/*.java',
   'src/**/*.scala',
-  'doc/en/modules/*.md',
-  'doc/en/api/*.tel',
-  'doc/errors/*.md',
-  'doc/philosophy/*.md',
-  'doc/standards/*.md',
-  'doc/roadmap/*.md',
-  'doc/migration/*.md',
-  'doc/*.md',
+  # The documentation, as `make docs` exports it from the Orthant store.
+  'out/doc/soundness/modules/*.md',
+  'out/doc/soundness/api/*.tel',
+  'out/doc/errors/*.md',
+  'out/doc/philosophy/*.md',
+  'out/doc/standards/*.md',
+  'out/doc/roadmap/*.md',
+  'out/doc/migration/*.md',
+  'out/doc/*.md',
+  'etc/api-*.md',
   # Hand-written resources; every other `res` file is vendored or captured.
   'lib/xenophile/res/typescript/xenophile/*.ts',
   'lib/punctuation/res/bench/punctuation/*.md',
@@ -40,7 +45,7 @@ SETS = [
 ]
 
 EXEMPT = [
-  'doc/standards/examples.md',                  # names the retired vocabulary in order to retire it
+  'out/doc/standards/examples.md',                # names the retired vocabulary in order to retire it
   'lib/stratiform/res/test/stratiform/corpus/DIVERGENCES.md',  # records the renaming
   'lib/locomotion/src/bench/BenchProtos.java',  # protoc output
   'lib/polysyllabic/res/*',                     # War and Peace
@@ -51,14 +56,14 @@ GENUINE = [
   ('lib/enigmatic/src/x509/enigmatic.Distinguished.scala', 'company'),   # X.509 `O=` attribute
   ('lib/scintillate/src/server/scintillate.Reactor.scala', 'company'),   # the reactor's boss thread
   ('lib/scintillate/src/bench/scintillate.RivalNetty.scala', 'company'), # Netty's boss group
-  ('doc/en/api/scintillate.tel', 'company'),
+  ('out/doc/soundness/api/scintillate.tel', 'company'),
   ('lib/degustation/src/tasty/degustation.Universe.scala', 'placeholder'), # `$bar` is Scala's mangling of `|`
   ('lib/digression/src/core/digression.StackTrace.scala', 'placeholder'),
   ('lib/facsimile/src/core/facsimile.PdfEncoding.scala', 'placeholder'),   # Adobe glyph name `bar`
   ('lib/archimedes/src/core/archimedes.Ergo.scala', 'placeholder'),       # the overbar accent
   ('lib/tasseomancy/src/core/tasseomancy.*.scala', 'placeholder'),        # a chart's bars
-  ('doc/en/api/tasseomancy.tel', 'placeholder'),
-  ('doc/en/modules/charts.md', 'placeholder'),
+  ('out/doc/soundness/api/tasseomancy.tel', 'placeholder'),
+  ('out/doc/soundness/modules/charts.md', 'placeholder'),
   ('lib/xylophone/src/test/xylophone.ProviderTests.scala', 'people'),   # the W3C `po.xml` sample
   ('lib/aviation/src/test/aviation_test.scala', 'people'),               # Christmas Eve, New Year's Eve
   ('lib/gossamer/src/test/gossamer_test.scala', 'people'),               # a list of dictionary words
@@ -66,13 +71,13 @@ GENUINE = [
   ('lib/gossamer/src/test/gossamer_test.scala', 'placeholder'),
   ('lib/ultimatum/src/test/*', 'placeholder'),                           # progress bars
   ('lib/burdock/src/test/*', 'placeholder'),
-  ('doc/en/api/tasseomancy.tel', 'people'),                                  # a box plot's whiskers
+  ('out/doc/soundness/api/tasseomancy.tel', 'people'),                              # a box plot's whiskers
 ]
 
 # Released migration notes are frozen (AGENTS.md); only the unreleased one is checked.
 def released(path):
-  if not path.startswith('doc/migration/'): return False
-  notes = sorted(glob.glob('doc/migration/*.md'), key=lambda p: [int(n) for n in re.findall(r'\d+', p)])
+  if not path.startswith('out/doc/migration/'): return False
+  notes = sorted(glob.glob('out/doc/migration/*.md'), key=lambda p: [int(n) for n in re.findall(r'\d+', p)])
   return path != notes[-1]
 
 PEOPLE = (r'(?:\b|(?<=\\[nt]))(?:Alice|Bob|Carol|Dave|Mallory|Ada|Lovelace|Turing|Hopper|Curie|John|Jane|Doe|Smith|Jack|Jill'

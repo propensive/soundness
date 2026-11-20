@@ -1,0 +1,4115 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base tasseomancy
++ base tasseomancy
+
+- import soundness
++ import soundness
+
+- info   SVG charts from typed data: bars, lines, scatter, pie, histogram, box plots and doughnuts
++ info
++     des graphiques SVG à partir de données typées : barres, lignes, nuages de points, secteurs,
++     histogrammes, boîtes à moustaches et anneaux
+
+- detail
+-     _Tasseomancy_ draws charts as savagery `Svg` values from typed data, keeping four decisions
+-     apart which charting libraries usually tangle into one call: the **shape** of the data,
+-     the **kind** of chart, the **fit** of the one to the other, and the **style**.
++ detail
++     _Tasseomancy_ dessine des graphiques sous forme de valeurs `Svg` de savagery à partir de
++     données typées, en séparant quatre décisions que les bibliothèques de graphiques mêlent
++     d'ordinaire en un seul appel : la **forme** des données, le **genre** de graphique,
++     l'**ajustement** de l'une à l'autre, et le **style**.
+
+-     - The shape is in the types. A `Series[x, y]` is a named run of points; its abscissa type
+-       decides the axis: a `Text`, an enum or a `Chart.Category` is `Categorical`, a number, a
+-       `Duration`, an `Instant` or any `Quantity` is `Continuous`. `Samples[y]` are raw
+-       measurements, `Chart.Estimate` a value with its interval, `Noted` a value with a note, and a
+-       `Dag` of `Weighted`, `Progressive` nodes is a dependency graph.
+-     - A kind is a value — `Bars()`, `StackedBars()`, `Lines()`, `Scatter()`, `Pie()`,
+-       `Histogram()`, `Boxes()` or `Doughnut()` — and `data.chart(kind)` compiles only where a
+-       `Plottable` instance says the kind can draw the data's shape: a pie of three series or a
+-       line through category labels is a compile error.
+-     - The fit — each axis's range, transform and gradations — is chosen by a `Calibration`
+-       keyed on the axis's value type, overridden by a scoped given, an import from
+-       `calibrations`, or an argument to the kind. The result is a `Scale` or `Bands`: plain
+-       data, which is what lets a chart tell whether new data still fits its axes.
+-     - The style is a `Chart.Style` value — `Chart.Standard` by default — with a method for
+-       every component drawn, a `ChartPalette` of colours named by role, and a `FontMetric`
+-       which measures text for the layout.
++     - La forme est dans les types. Une `Series[x, y]` est une suite nommée de points ; le type
++       de son abscisse détermine l'axe : un `Text`, une énumération ou une `Chart.Category` est
++       `Categorical`, un nombre, une `Duration`, un `Instant` ou toute `Quantity` est
++       `Continuous`. Des `Samples[y]` sont des mesures brutes, une `Chart.Estimate` une valeur
++       avec son intervalle, `Noted` une valeur avec une note, et un `Dag` de nœuds `Weighted`,
++       `Progressive` est un graphe de dépendances.
++     - Un genre est une valeur — `Bars()`, `StackedBars()`, `Lines()`, `Scatter()`, `Pie()`,
++       `Histogram()`, `Boxes()` ou `Doughnut()` — et `data.chart(kind)` ne compile que là où une
++       instance `Plottable` dit que le genre peut dessiner la forme des données : un diagramme
++       en secteurs de trois séries ou une ligne passant par des étiquettes de catégories est une
++       erreur de compilation.
++     - L'ajustement — la plage, la transformation et les graduations de chaque axe — est choisi
++       par une `Calibration` indexée sur le type de valeur de l'axe, et remplacé par un given de
++       portée, un import depuis `calibrations`, ou un argument du genre. Le résultat est une
++       `Scale` ou des `Bands` : des données simples, ce qui permet à un graphique de savoir si
++       de nouvelles données tiennent encore dans ses axes.
++     - Le style est une valeur `Chart.Style` — `Chart.Standard` par défaut — avec une méthode
++       pour chaque composant dessiné, une `ChartPalette` de couleurs nommées par rôle, et une
++       `FontMetric` qui mesure le texte pour la mise en page.
+
+=       which measures text for the layout.
+=
+-     ```scala
++     ```scala
+
+=       which measures text for the layout.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val north = Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0))
++     val north = Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0))
+
+-     val south = Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0))
++     val south = Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0))
+
+-     val sales = List(north, south).chart(Bars())
++     val sales = List(north, south).chart(Bars())
+
+-     sales.fit.bands.categories           // Sequence(t"jan", t"feb", t"mar")
++     sales.fit.bands.categories           // Sequence(t"jan", t"feb", t"mar")
+
+-     sales.fit.ordinate.upper             // 6.0, padded to a whole gradation step
++     sales.fit.ordinate.upper             // 6.0, padded to a whole gradation step
+
+-     sales.in[Svg].in[Xml].show.keep(4)   // t"<svg"
++     sales.in[Svg].in[Xml].show.keep(4)   // t"<svg"
+
+=     sales.in[Svg].in[Xml].show.keep(4)   // t"<svg"
+-     ```
++     ```
+
+-     A `Chart` is immutable. `revise` takes new data and yields the next chart with a list of
+-     `Chart.Revision`s: if the fit still accommodates the data, the axes hold still and only the
+-     identified parts (`series-0`, `legend`, `rank-1`, …) that changed are replaced; otherwise
+-     the whole chart is redrawn. A page holding the SVG needs only those two operations.
++     Un `Chart` est immuable. `revise` prend de nouvelles données et produit le graphique
++     suivant avec une liste de `Chart.Revision`s : si l'ajustement accepte encore les données,
++     les axes restent fixes et seules les parties identifiées (`series-0`, `legend`, `rank-1`,
++     …) qui ont changé sont remplacées ; sinon, tout le graphique est redessiné. Une page qui
++     contient le SVG n'a besoin que de ces deux opérations.
+
+-     Rendering is `chart.in[Svg]`, which needs the kind's own style (`Bars.Style` for bars),
+-     a `ChartPalette`, a `FontMetric` and a cartouche `Arranger` in scope; every one has a
+-     companion default, so nothing need be imported. The choice packages `calibrations`,
+-     `palettes` and `fontMetrics` each hold givens to import **by name** — `import
+-     palettes.solarizedDarkChartPalette` — since `import tasseomancy.*` brings in no givens,
+-     and a lexically-scoped given outranks any companion default. Label placement is
+-     cartouche's: `import arrangers.annealingArranger` chooses simulated annealing for a
+-     crowded chart.
++     Le rendu se fait par `chart.in[Svg]`, qui nécessite dans la portée le style propre au genre
++     (`Bars.Style` pour des barres), une `ChartPalette`, une `FontMetric` et un `Arranger` de
++     cartouche ; chacun a une valeur par défaut dans son compagnon, donc rien n'a besoin d'être
++     importé. Les packages de choix `calibrations`, `palettes` et `fontMetrics` contiennent
++     chacun des givens à importer **par leur nom** — `import
++     palettes.solarizedDarkChartPalette` — puisque `import tasseomancy.*` n'importe aucun
++     given, et qu'un given de portée lexicale l'emporte sur toute valeur par défaut d'un
++     compagnon. Le placement des étiquettes relève de cartouche :
++     `import arrangers.annealingArranger` choisit le recuit simulé pour un graphique chargé.
+
+-     The library is one source set, `tasseomancy.core`, which depends on savagery, cartouche,
+-     cataclysm (for `Css.Style` and `Font in Web`), phoenicia, iridescence, quantitative,
+-     aviation and acyclicity. Everything is exported to the `soundness` umbrella, where the
+-     three choice packages merge with the umbrella's own.
++     La bibliothèque est un seul ensemble de sources, `tasseomancy.core`, qui dépend de
++     savagery, cartouche, cataclysm (pour `Css.Style` et `Font in Web`), phoenicia,
++     iridescence, quantitative, aviation et acyclicity. Tout est exporté dans le package
++     parapluie `soundness`, où les trois packages de choix fusionnent avec ceux du package
++     parapluie lui-même.
+
+- refer tasseomancy.Chart
++ refer tasseomancy.Chart
+
+- refer tasseomancy.Series
++ refer tasseomancy.Series
+
+- refer tasseomancy.Plottable
++ refer tasseomancy.Plottable
+
+- refer tasseomancy.Calibration
++ refer tasseomancy.Calibration
+
+- refer tasseomancy.Scale
++ refer tasseomancy.Scale
+
+- refer savagery.Svg
++ refer savagery.Svg
+
+- entry .chart   pairs data with a chart kind, checked for compatibility as the code compiles
++ entry .chart
++   info
++       associe des données à un genre de graphique, en vérifiant leur compatibilité pendant la
++       compilation du code
+
+-     An extension on any value: `data.chart(form)` needs a `data is Plottable in form to fit by
+-     style` instance, which exists only where the kind can draw the data's shape, and returns a
+-     `Chart[data, form, fit, style]` already fitted to the data with the instance's `fit`. The
+-     fit type is the kind's own (`Lines.Fit`, with its `abscissa` and `ordinate` scales), so
+-     the axes are visible on the result, and the style type is the kind's own too, so
+-     rendering asks for exactly the components the kind draws.
++   detail
++       Une extension sur n'importe quelle valeur : `data.chart(form)` nécessite une instance
++       `data is Plottable in form to fit by style`, qui n'existe que là où le genre peut dessiner
++       la forme des données, et renvoie un `Chart[data, form, fit, style]` déjà ajusté aux
++       données avec le `fit` de l'instance. Le type d'ajustement est celui du genre (`Lines.Fit`,
++       avec ses échelles `abscissa` et `ordinate`), de sorte que les axes sont visibles sur le
++       résultat, et le type de style est lui aussi celui du genre, de sorte que le rendu demande
++       exactement les composants que dessine le genre.
+
+=     rendering asks for exactly the components the kind draws.
+=
+-     ```scala
++       ```scala
+
+=     rendering asks for exactly the components the kind draws.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+-     val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
++       val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
+
+-     val chart: Chart[Series[Double, Double], Lines, Lines.Fit, Lines.Style] = growth.chart(Lines())
++       val chart: Chart[Series[Double, Double], Lines, Lines.Fit, Lines.Style] = growth.chart(Lines())
+
+-     chart.fit.abscissa.upper   // 10.0
++       chart.fit.abscissa.upper   // 10.0
+
+=     chart.fit.abscissa.upper   // 10.0
+-     ```
++       ```
+
+-     An incompatible pairing does not compile: a categorical series cannot be `Lines()`, a
+-     collection of series cannot be `Pie()`, `Samples` cannot be `Bars()`, and a `Dag` whose
+-     nodes lack `Weighted` or `Progressive` cannot be `Doughnut()`.
++       Une association incompatible ne compile pas : une série catégorielle ne peut pas être
++       `Lines()`, une collection de séries ne peut pas être `Pie()`, des `Samples` ne peuvent pas
++       être `Bars()`, et un `Dag` dont les nœuds ne sont pas `Weighted` ou `Progressive` ne peut
++       pas être `Doughnut()`.
+
+=     nodes lack `Weighted` or `Progressive` cannot be `Doughnut()`.
+=
+-     ```scala
++       ```scala
+
+=     nodes lack `Weighted` or `Progressive` cannot be `Doughnut()`.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+-     Series(t"a")((t"x", 1.0)).chart(Lines())   // does not compile
++       Series(t"a")((t"x", 1.0)).chart(Lines())   // does not compile
+
+=     Series(t"a")((t"x", 1.0)).chart(Lines())   // does not compile
+-     ```
++       ```
+
+- entry .Chart   data, a chart kind, and the fit of one to the other, revisable as data arrives
++ entry .Chart
++   info
++       des données, un genre de graphique, et l'ajustement de l'un à l'autre, révisable à mesure
++       que les données arrivent
+
+-   detail
+-       A `Chart[data, form, fit, style]` holds its `#data`, its kind (`#form`), the `#fit` the
+-       kind computed from the data, and the `Plottable` instance that pairs them. It is made by
+-       the `chart` extension rather than directly. The fit's type is the kind's own — `Bars.Fit`
+-       with `bands` and `ordinate`, `Lines.Fit` with two scales, `Doughnut.Fit[node]` with its
+-       bands — and the style type is the kind's style trait, so a bar chart renders against a
+-       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
++   detail
++       Un `Chart[data, form, fit, style]` contient ses données `#data`, son genre (`#form`),
++       l'ajustement `#fit` que le genre a calculé à partir des données, et l'instance `Plottable`
++       qui les associe. Il est créé par l'extension `chart` plutôt que directement. Le type de
++       l'ajustement est celui du genre — `Bars.Fit` avec `bands` et `ordinate`, `Lines.Fit` avec
++       deux échelles, `Doughnut.Fit[node]` avec ses bandes — et le type de style est le trait de
++       style du genre, de sorte qu'un graphique en barres se rend avec un `Bars.Style` et un
++       diagramme en secteurs avec un `Pie.Style` ; `Chart.Standard` les implémente tous.
+
+=       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
+=
+-       ```scala
++       ```scala
+
+=       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
+=
+=       ```scala
+=       import soundness.*
+=
+-       val sales =
++       val sales =
+
+=       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+-         List
++         List
+
+=       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+=         List
+-           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
++           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+
+=       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+=         List
+=           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+-             Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
++             Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
+
+=       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+=         List
+=           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+=             Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
+=
+-       val chart = sales.chart(Bars())
++       val chart = sales.chart(Bars())
+
+-       val svg: Svg = chart.in[Svg]
++       val svg: Svg = chart.in[Svg]
+
+-       svg.in[Xml].show.contains(t"""id="series-1"""")   // true
++       svg.in[Xml].show.contains(t"""id="series-1"""")   // true
+
+=       svg.in[Xml].show.contains(t"""id="series-1"""")   // true
+-       ```
++       ```
+
+-       Rendering as `chart.in[Svg]` (the `.encodable` given) or `#drawing` needs the kind's
+-       style, a `ChartPalette`, a `FontMetric` and an `Arranger` in scope, each of which has a
+-       companion default: `Chart.Style.standard`, `ChartPalette.slate`, `FontMetric.fromStyle`
+-       and cartouche's sequential arranger. A given `Chart.Standard` in lexical scope replaces
+-       the default style for every kind at once.
++       Le rendu en tant que `chart.in[Svg]` (le given `.encodable`) ou `#drawing` nécessite dans
++       la portée le style du genre, une `ChartPalette`, une `FontMetric` et un `Arranger`, chacun
++       ayant une valeur par défaut dans son compagnon : `Chart.Style.standard`,
++       `ChartPalette.slate`, `FontMetric.fromStyle` et l'arrangeur séquentiel de cartouche. Un
++       given `Chart.Standard` dans la portée lexicale remplace d'un coup le style par défaut de
++       tous les genres.
+
+-       A chart is immutable; `#revise` is how it follows new data, keeping the fit while it
+-       still accommodates the data so that the axes hold still, and returning what changed on
+-       the page.
++       Un graphique est immuable ; `#revise` est la façon dont il suit de nouvelles données, en
++       conservant l'ajustement tant qu'il accepte encore les données afin que les axes restent
++       fixes, et en renvoyant ce qui a changé sur la page.
+
+=       the page.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label A line chart fitted to two points
++         label A line chart fitted to two points
+
+=         label A line chart fitted to two points
+-         code
++         code
+
+=         label A line chart fitted to two points
+=         code
+-             val latency = Series(t"p99")((0.0, 12.0), (10.0, 14.0)).chart(Lines())
++             val latency = Series(t"p99")((0.0, 12.0), (10.0, 14.0)).chart(Lines())
+
+-             latency.fit.ordinate.upper                        // 14.0
++             latency.fit.ordinate.upper                        // 14.0
+
+=             latency.fit.ordinate.upper                        // 14.0
+-       frame
++       frame
+
+-         label A point within the axes replaces one part
++         label A point within the axes replaces one part
+
+=         label A point within the axes replaces one part
+-         code
++         code
+
+=         label A point within the axes replaces one part
+=         code
+-             val latency = Series(t"p99")((0.0, 12.0), (10.0, 14.0)).chart(Lines())
++             val latency = Series(t"p99")((0.0, 12.0), (10.0, 14.0)).chart(Lines())
+
+-             val (next, revisions) = latency.revise(latency.data.add((5.0, 13.0)))
++             val (next, revisions) = latency.revise(latency.data.add((5.0, 13.0)))
+
+-             revisions.size                                    // 1: a Chart.Revision.Replace of series-0
++             revisions.size                                    // 1: a Chart.Revision.Replace of series-0
+
+-             next.fit.ordinate.upper                           // 14.0: the fit survived
++             next.fit.ordinate.upper                           // 14.0: the fit survived
+
+=             next.fit.ordinate.upper                           // 14.0: the fit survived
+-       frame
++       frame
+
+-         label A point beyond them redraws the chart
++         label A point beyond them redraws the chart
+
+=         label A point beyond them redraws the chart
+-         code
++         code
+
+=         label A point beyond them redraws the chart
+=         code
+-             val latency = Series(t"p99")((0.0, 12.0), (10.0, 14.0)).chart(Lines())
++             val latency = Series(t"p99")((0.0, 12.0), (10.0, 14.0)).chart(Lines())
+
+-             val (next, revisions) = latency.revise(latency.data.add((20.0, 30.0)))
++             val (next, revisions) = latency.revise(latency.data.add((20.0, 30.0)))
+
+-             revisions.size                                    // 1: a Chart.Revision.Redraw
++             revisions.size                                    // 1: a Chart.Revision.Redraw
+
+-             next.fit.ordinate.upper                           // 30.0: a new fit
++             next.fit.ordinate.upper                           // 30.0: a new fit
+
+=             next.fit.ordinate.upper                           // 30.0: a new fit
+-       ##
++       ##
+
+=             next.fit.ordinate.upper                           // 30.0: a new fit
+=       ##
+-       ```
++       ```
+
+=       ```
+-   refer tasseomancy.chart
++   refer tasseomancy.chart
+
+-   refer tasseomancy.Plottable
++   refer tasseomancy.Plottable
+
+-   refer tasseomancy.Chart.Standard
++   refer tasseomancy.Chart.Standard
+
+=   refer tasseomancy.Chart.Standard
+-   refer tasseomancy.ChartPalette
++   refer tasseomancy.ChartPalette
+
+=   refer tasseomancy.ChartPalette
+-   refer tasseomancy.FontMetric
++   refer tasseomancy.FontMetric
+
+-   entry .Legend   where the legend goes: `Hidden`, `Right` or `Bottom`
++   entry .Legend
++     info
++         l'emplacement de la légende : `Hidden`, `Right` ou `Bottom`
+
+-       `Chart.Style#legend` chooses one. `Right` stacks a swatch and name per series beside the
+-       plot, `Bottom` flows them along the bottom in one row, and `Hidden` draws no legend and
+-       reserves no room for one. A doughnut has no legend whatever the setting.
++     detail
++         `Chart.Style#legend` en choisit un. `Right` empile une pastille et un nom par série à
++         côté du tracé, `Bottom` les dispose le long du bas sur une seule ligne, et `Hidden` ne
++         dessine aucune légende et ne lui réserve aucune place. Un anneau n'a pas de légende, quel
++         que soit le réglage.
+
+-   entry .Axis   which axis a cartesian style hook is drawing: `Abscissa` or `Ordinate`
++   entry .Axis
++     info
++         l'axe que dessine un point d'accroche de style cartésien : `Abscissa` ou `Ordinate`
+
+-       Passed to `Chart.Cartesian`'s `axisLine`, `tick`, `tickLabel`, `gridLine`, `axisTitle`,
+-       `arrowhead`, `axisBreak` and `labelRoom`, so that one override may treat the horizontal
+-       axis differently from the vertical.
++     detail
++         Passé à `axisLine`, `tick`, `tickLabel`, `gridLine`, `axisTitle`, `arrowhead`,
++         `axisBreak` et `labelRoom` de `Chart.Cartesian`, afin qu'une redéfinition puisse traiter
++         l'axe horizontal différemment de l'axe vertical.
+
+-   entry .Anchoring   where a run of text is set, as the arrangement decided: point and alignment
++   entry .Anchoring
++     info
++         l'endroit où un fragment de texte est placé, tel que l'a décidé l'agencement : point et
++         alignement
+
+-     detail
+-         A label's anchor `#point`, with the `Lettering.Anchor` and `Lettering.Baseline` that put
+-         the text on the right side of it. `Chart.Cartesian#tickLabel`, `#pointLabel` and
+-         `Pie.Style#wedgeLabel` receive one: the position is cartouche's to choose, since a
+-         label may have been moved to another side of its point, or off it with a leader line,
+-         to avoid a collision; a style draws the text at `at.point` with `at.anchor` and
+-         `at.baseline`, applying any transform of its own to the point.
++     detail
++         Le point d'ancrage `#point` d'une étiquette, avec le `Lettering.Anchor` et la
++         `Lettering.Baseline` qui placent le texte du bon côté de ce point.
++         `Chart.Cartesian#tickLabel`, `#pointLabel` et `Pie.Style#wedgeLabel` en reçoivent un : la
++         position relève du choix de cartouche, puisqu'une étiquette a pu être déplacée d'un autre
++         côté de son point, ou éloignée de celui-ci avec une ligne de rappel, pour éviter une
++         collision ; un style dessine le texte à `at.point` avec `at.anchor` et `at.baseline`, en
++         appliquant au point toute transformation qui lui est propre.
+
+-     entry .of   the anchoring for a placed cartouche `Caption.Position`
++     entry .of
++       info
++           l'ancrage pour une `Caption.Position` de cartouche déjà placée
+
+-         Text to the east of its point starts there and is centred on it vertically; text to
+-         the west ends there; text to the north sits on it (alphabetic baseline) and text to the
+-         south hangs from it; the diagonal attachments combine the two, and `Center` is middle
+-         and middle.
++       detail
++           Un texte situé à l'est de son point commence à ce point et est centré verticalement
++           dessus ; un texte à l'ouest s'y termine ; un texte au nord repose dessus (ligne de base
++           alphabétique) et un texte au sud y est suspendu ; les attaches diagonales combinent les
++           deux, et `Center` est centré dans les deux directions.
+
+-     entry #point   the anchor point, in the drawing's coordinates
++     entry #point
++       info
++           le point d'ancrage, dans les coordonnées du dessin
+
+-     entry #anchor   the `text-anchor`: whether the point is the text's start, middle or end
++     entry #anchor
++       info
++           le `text-anchor` : si le point est le début, le milieu ou la fin du texte
+
+-     entry #baseline   the `dominant-baseline`: which line of the glyphs lies on the point
++     entry #baseline
++       info
++           la `dominant-baseline` : quelle ligne des glyphes repose sur le point
+
+-   entry .Style   what every chart kind shares: canvas, font, legend, and how common components are drawn
++   entry .Style
++     info
++         ce que partagent tous les genres de graphiques : canevas, police, légende, et la façon de
++         dessiner les composants communs
+
+-     detail
+-         The root of the style hierarchy. A chart kind computes the geometry — where a label
+-         sits, how tall a bar is — and calls a method of the style for each component, which
+-         returns the `Figure`s to draw; a style overrides the methods it wants drawn differently
+-         and inherits the rest. `Chart.Cartesian` adds the axes, and each kind adds its own
+-         trait (`Bars.Style`, `Lines.Style`, `Pie.Style`, …); `Chart.Standard` implements every
+-         one, and is the companion default, so a chart renders with no style in scope.
++     detail
++         La racine de la hiérarchie des styles. Un genre de graphique calcule la géométrie —
++         l'emplacement d'une étiquette, la hauteur d'une barre — et appelle une méthode du style
++         pour chaque composant, qui renvoie les `Figure`s à dessiner ; un style redéfinit les
++         méthodes qu'il veut dessiner autrement et hérite du reste. `Chart.Cartesian` ajoute les
++         axes, et chaque genre ajoute son propre trait (`Bars.Style`, `Lines.Style`, `Pie.Style`,
++         …) ; `Chart.Standard` les implémente tous, et c'est la valeur par défaut du compagnon, de
++         sorte qu'un graphique se rend sans style dans la portée.
+
+-         The `#font` is a `Font in Web`: a face paired with a provision for its typeface, so a
+-         chart can only be set in a typeface the SVG will carry a `@font-face` for, or in a
+-         generic family. A named family is a provision plus a font:
++         La `#font` est une `Font in Web` : une fonte associée à une fourniture pour sa famille de
++         polices, de sorte qu'un graphique ne peut être composé que dans une famille pour
++         laquelle le SVG portera un `@font-face`, ou dans une famille générique. Une famille nommée
++         est une fourniture plus une police :
+
+=         generic family. A named family is a provision plus a font:
+=
+-         ```scala
++         ```scala
+
+=         generic family. A named family is a provision plus a font:
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         given (Typeface of "Menlo") is Typesettable in Web = Web.local()
++         given (Typeface of "Menlo") is Typesettable in Web = Web.local()
+
+-         given Chart.Standard = Chart.Standard(font = Web.font(Typeface["Menlo"].face))
++         given Chart.Standard = Chart.Standard(font = Web.font(Typeface["Menlo"].face))
+
+-         val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
++         val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
+
+-         growth.chart(Lines()).in[Svg].in[Xml].show.contains(t"@font-face")   // true
++         growth.chart(Lines()).in[Svg].in[Xml].show.contains(t"@font-face")   // true
+
+=         growth.chart(Lines()).in[Svg].in[Xml].show.contains(t"@font-face")   // true
+-         ```
++         ```
+
+-     refer tasseomancy.Chart.Cartesian
++     refer tasseomancy.Chart.Cartesian
+
+-     refer tasseomancy.Chart.Standard
++     refer tasseomancy.Chart.Standard
+
+-     entry .standard   the no-import default style: `Chart.Standard()`
++     entry .standard
++       info
++           le style par défaut sans import : `Chart.Standard()`
+
+-         A companion given, so any `Chart.Standard` (or other style) given in lexical scope
+-         outranks it.
++       detail
++           Un given de compagnon, de sorte que tout `Chart.Standard` (ou autre style) donné dans la
++           portée lexicale l'emporte sur lui.
+
+-     entry #width   the drawing's width, in pixels
++     entry #width
++       info
++           la largeur du dessin, en pixels
+
+-     entry #height   the drawing's height, in pixels
++     entry #height
++       info
++           la hauteur du dessin, en pixels
+
+-     entry #inset   the margin between the drawing's edge and anything drawn, in pixels
++     entry #inset
++       info
++           la marge entre le bord du dessin et tout ce qui est dessiné, en pixels
+
+-     entry #font   the font every run of text is set in, a `Font in Web`
++     entry #font
++       info
++           la police dans laquelle est composé chaque fragment de texte, une `Font in Web`
+
+-     entry #fontSize   the type size, in pixels, from which the spacing of components derives
++     entry #fontSize
++       info
++           la taille du texte, en pixels, dont découle l'espacement des composants
+
+-     entry #legend   where the legend goes, a `Chart.Legend`
++     entry #legend
++       info
++           l'emplacement de la légende, une `Chart.Legend`
+
+-     entry #gap   the unit of spacing between components: four tenths of the font size
++     entry #gap
++       info
++           l'unité d'espacement entre les composants : quatre dixièmes de la taille de police
+
+-     entry #fontStyle   the CSS for a run of text in a colour: `font-size` and `fill`
++     entry #fontStyle
++       info
++           le CSS d'un fragment de texte dans une couleur : `font-size` et `fill`
+
+-         The face itself is not here; it is the lettering's `font`. An override may add
+-         properties, such as a letter-spacing or a weight.
++       detail
++           La fonte elle-même n'est pas ici ; c'est la `font` du lettrage. Une redéfinition peut
++           ajouter des propriétés, comme un espacement des lettres ou une graisse.
+
+-     entry #lettering   sets a run of text at a point: every label, title and legend entry comes through here
++     entry #lettering
++       info
++           place un fragment de texte en un point : chaque étiquette, titre et entrée de légende
++           passe par ici
+
+-         Makes a savagery `Lettering` at the position with the anchor, baseline, `#fontStyle`
+-         of the colour, the style's `#font` and any transforms. Overriding it restyles all of a
+-         chart's text at once; the more specific hooks (`tickLabel`, `legendLabel`, …) call it.
++       detail
++           Crée un `Lettering` de savagery à la position, avec l'ancre, la ligne de base, le
++           `#fontStyle` de la couleur, la `#font` du style et toute transformation. Le redéfinir
++           change d'un coup le style de tout le texte d'un graphique ; les points d'accroche plus
++           spécifiques (`tickLabel`, `legendLabel`, …) l'appellent.
+
+-     entry #backdrop   the figures behind everything: a rectangle in the palette's background colour
++     entry #backdrop
++       info
++           les figures derrière tout le reste : un rectangle dans la couleur de fond de la palette
+
+-         Drawn first, as the `backdrop` part, so that a dark palette's lettering is not set on
+-         the page's white. Override to return `Nil` for a transparent chart.
++       detail
++           Dessiné en premier, comme partie `backdrop`, afin que le lettrage d'une palette sombre
++           ne soit pas posé sur le blanc de la page. Redéfinissez-le pour renvoyer `Nil` et obtenir
++           un graphique transparent.
+
+-     entry #legendLineHeight   the height of one legend entry: 1.6 times the font size
++     entry #legendLineHeight
++       info
++           la hauteur d'une entrée de légende : 1,6 fois la taille de police
+
+-     entry #swatchSize   the side of a legend swatch: the font size
++     entry #swatchSize
++       info
++           le côté d'une pastille de légende : la taille de police
+
+-     entry #swatch   the colour sample beside a legend entry's name: a filled square by default
++     entry #swatch
++       info
++           l'échantillon de couleur à côté du nom d'une entrée de légende : un carré plein par
++           défaut
+
+-         Takes the swatch's top-left corner, the series' colour and its index, so a style may
+-         draw a line sample for one series and a box for another.
++       detail
++           Prend le coin supérieur gauche de la pastille, la couleur de la série et son indice,
++           de sorte qu'un style peut dessiner un échantillon en ligne pour une série et une boîte
++           pour une autre.
+
+-     entry #legendLabel   a legend entry's name, set to the right of its swatch
++     entry #legendLabel
++       info
++           le nom d'une entrée de légende, placé à droite de sa pastille
+
+-     entry #leader   the line from a label that had to move away from its point back to that point
++     entry #leader
++       info
++           la ligne qui relie une étiquette ayant dû s'éloigner de son point à ce point
+
+-         A one-pixel stroked polyline by default. A point's note, or a pie wedge's percentage,
+-         is moved off with a leader when every side of its point is taken; override this to
+-         style or suppress the line.
++       detail
++           Une polyligne tracée d'un pixel par défaut. La note d'un point, ou le pourcentage d'un
++           secteur, est éloigné avec une ligne de rappel lorsque tous les côtés de son point sont
++           occupés ; redéfinissez ceci pour styliser ou supprimer la ligne.
+
+-   entry .Cartesian   what every chart with an abscissa and an ordinate shares: axes, grid, titles, markers
++   entry .Cartesian
++     info
++         ce que partagent tous les graphiques dotés d'une abscisse et d'une ordonnée : axes,
++         grille, titres, marqueurs
+
+-     detail
+-         Extends `Chart.Style` with the axis components and the parameters of their layout.
+-         Positions are given in the drawing's coordinates; the style decides the shape, the
+-         stroke and where a label sits relative to its tick. `Bars.Style`, `Lines.Style`,
+-         `Scatter.Style`, `Boxes.Style` and (through `Bars.Style`) `StackedBars.Style` and
+-         `Histogram.Style` extend it; `Pie.Style` and `Doughnut.Style` do not, having no axes.
++     detail
++         Étend `Chart.Style` avec les composants des axes et les paramètres de leur mise en page.
++         Les positions sont données dans les coordonnées du dessin ; le style décide de la forme,
++         du trait et de l'emplacement d'une étiquette par rapport à sa graduation. `Bars.Style`,
++         `Lines.Style`, `Scatter.Style`, `Boxes.Style` et (via `Bars.Style`) `StackedBars.Style`
++         et `Histogram.Style` l'étendent ; `Pie.Style` et `Doughnut.Style` non, puisqu'ils n'ont
++         pas d'axes.
+
+=         `Histogram.Style` extend it; `Pie.Style` and `Doughnut.Style` do not, having no axes.
+=
+-         ```scala
++         ```scala
+
+=         `Histogram.Style` extend it; `Pie.Style` and `Doughnut.Style` do not, having no axes.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         given Chart.Standard = new Chart.Standard(grid = false, abscissaTitle = t"month"):
++         given Chart.Standard = new Chart.Standard(grid = false, abscissaTitle = t"month"):
+
+-           override def arrowhead(tip: Point, axis: Chart.Axis, color: Color in Srgb): List[Figure] =
++           override def arrowhead(tip: Point, axis: Chart.Axis, color: Color in Srgb): List[Figure] =
+
+-             List(Polyline(List(tip, Point(tip.x - 6, tip.y - 3), Point(tip.x - 6, tip.y + 3)), closed = true))
++             List(Polyline(List(tip, Point(tip.x - 6, tip.y - 3), Point(tip.x - 6, tip.y + 3)), closed = true))
+
+=             List(Polyline(List(tip, Point(tip.x - 6, tip.y - 3), Point(tip.x - 6, tip.y + 3)), closed = true))
+-         ```
++         ```
+
+-     entry #pitch   the room one gradation wants along an axis, in pixels: how many ticks the axis gets
++     entry #pitch
++       info
++           la place que demande une graduation le long d'un axe, en pixels : combien de graduations
++           reçoit l'axe
+
+-         An axis of length `L` is given a budget of `L / pitch` gradations; the ruler chooses
+-         round steps within it, and an abscissa whose labels would still overlap is given fewer.
++       detail
++           Un axe de longueur `L` reçoit un budget de `L / pitch` graduations ; la règle choisit
++           des pas ronds dans ce budget, et une abscisse dont les étiquettes se chevaucheraient
++           encore en reçoit moins.
+
+-     entry #tickLength   how far a tick extends beyond the axis line, in pixels
++     entry #tickLength
++       info
++           la distance dont une graduation dépasse la ligne de l'axe, en pixels
+
+-     entry #grid   whether grid lines are drawn at the major gradations
++     entry #grid
++       info
++           si des lignes de grille sont dessinées aux graduations principales
+
+-     entry #abscissaTitle   a title for the abscissa, or `Unset` for the one its type supplies
++     entry #abscissaTitle
++       info
++           un titre pour l'abscisse, ou `Unset` pour celui que fournit son type
+
+-         A quantity axis is titled by its dimension and unit, `distance / m`, from the type; a
+-         title given here replaces the name but keeps the unit: `tide height / m`.
++       detail
++           Un axe de quantité est titré par sa dimension et son unité, `distance / m`, d'après le
++           type ; un titre donné ici remplace le nom mais conserve l'unité : `tide height / m`.
+
+-     entry #ordinateTitle   a title for the ordinate, or `Unset` for the one its type supplies
++     entry #ordinateTitle
++       info
++           un titre pour l'ordonnée, ou `Unset` pour celui que fournit son type
+
+-     entry #strokeWidth   the width of a series line and a box plot's median, in pixels
++     entry #strokeWidth
++       info
++           la largeur de la ligne d'une série et de la médiane d'une boîte à moustaches, en pixels
+
+-     entry #markerRadius   the radius of a point's marker, in pixels
++     entry #markerRadius
++       info
++           le rayon du marqueur d'un point, en pixels
+
+-     entry #axisLine   the line of an axis, from one end to the other
++     entry #axisLine
++       info
++           la ligne d'un axe, d'une extrémité à l'autre
+
+-     entry #arrowhead   a mark at the far end of an axis; nothing by default
++     entry #arrowhead
++       info
++           une marque à l'extrémité lointaine d'un axe ; rien par défaut
+
+-     entry #axisBreak   a mark at the origin end of a linear axis whose range excludes zero; nothing by default
++     entry #axisBreak
++       info
++           une marque à l'extrémité d'origine d'un axe linéaire dont la plage exclut zéro ; rien
++           par défaut
+
+-         Called only for a linear scale which starts above zero or ends below it, which is where
+-         a reader might otherwise assume the axis begins at zero.
++       detail
++           Appelée uniquement pour une échelle linéaire qui commence au-dessus de zéro ou se
++           termine en dessous, c'est-à-dire là où un lecteur pourrait sinon supposer que l'axe
++           commence à zéro.
+
+-     entry #gridLine   a grid line across the plot at a major gradation, if `#grid` is set
++     entry #gridLine
++       info
++           une ligne de grille traversant le tracé à une graduation principale, si `#grid` est
++           activé
+
+-     entry #tick   a tick mark at a gradation: downward from an abscissa, leftward from an ordinate
++     entry #tick
++       info
++           une marque de graduation : vers le bas depuis une abscisse, vers la gauche depuis une
++           ordonnée
+
+-         `major` is false for an unlabelled minor gradation, such as the `2`–`9` multiples on a
+-         logarithmic axis.
++       detail
++           `major` est faux pour une graduation secondaire sans étiquette, comme les multiples
++           `2`–`9` sur un axe logarithmique.
+
+-     entry #tickLabel   a gradation's label, at the anchoring the arrangement chose
++     entry #tickLabel
++       info
++           l'étiquette d'une graduation, à l'ancrage choisi par l'agencement
+
+-         Set beyond its tick by `tickLength + gap`: below an abscissa's, beside an ordinate's.
+-         A label that would overlap its neighbour is hidden rather than drawn. An override which
+-         rotates or moves labels must also override `#labelRoom`, so the layout reserves the
+-         right space.
++       detail
++           Placée au-delà de sa marque de graduation à `tickLength + gap` : sous celle d'une
++           abscisse, à côté de celle d'une ordonnée. Une étiquette qui chevaucherait sa voisine est
++           masquée au lieu d'être dessinée. Une redéfinition qui fait pivoter ou déplace les
++           étiquettes doit aussi redéfinir `#labelRoom`, afin que la mise en page réserve la bonne
++           place.
+
+-     entry #labelRoom   the room an axis's ticks and labels take beyond its line, which the layout reserves
++     entry #labelRoom
++       info
++           la place que prennent les graduations et les étiquettes d'un axe au-delà de sa ligne,
++           que réserve la mise en page
+
+-         For the abscissa, the tick, the gap and one line of text; for the ordinate, the tick,
+-         the gap and the widest label as the `FontMetric` in scope measures it.
++       detail
++           Pour l'abscisse, la marque de graduation, l'écart et une ligne de texte ; pour
++           l'ordonnée, la marque, l'écart et l'étiquette la plus large telle que la mesure la
++           `FontMetric` dans la portée.
+
+-     entry #titleRoom   the room an axis title takes: 1.6 times the font size
++     entry #titleRoom
++       info
++           la place que prend un titre d'axe : 1,6 fois la taille de police
+
+-     entry #axisTitle   an axis's title: below the middle of the abscissa, or upright beside the ordinate
++     entry #axisTitle
++       info
++           le titre d'un axe : sous le milieu de l'abscisse, ou vertical à côté de l'ordonnée
+
+-         The ordinate's title is set at the drawing's left edge, rotated ninety degrees
+-         anticlockwise about its anchor.
++       detail
++           Le titre de l'ordonnée est placé au bord gauche du dessin, pivoté de quatre-vingt-dix
++           degrés dans le sens antihoraire autour de son ancre.
+
+-     entry #marker   the mark at a point: a filled circle of `#markerRadius`
++     entry #marker
++       info
++           la marque en un point : un disque plein de rayon `#markerRadius`
+
+-         Takes the series index, so markers may differ by series.
++       detail
++           Prend l'indice de la série, de sorte que les marqueurs peuvent différer selon la série.
+
+-     entry #errorBar   the bar from a value's lower bound to its upper, with caps
++     entry #errorBar
++       info
++           la barre allant de la borne inférieure d'une valeur à sa borne supérieure, avec des
++           embouts
+
+-         Drawn for an `Estimate`: a vertical line between `top` and `bottom` and a horizontal
+-         cap of half-width `cap` at each end, in the palette's axis colour.
++       detail
++           Dessinée pour une `Estimate` : une ligne verticale entre `top` et `bottom` et un embout
++           horizontal de demi-largeur `cap` à chaque extrémité, dans la couleur des axes de la
++           palette.
+
+-     entry #pointLabel   the note a `Noted` value carries, set beside its marker
++     entry #pointLabel
++       info
++           la note que porte une valeur `Noted`, placée à côté de son marqueur
+
+-         To the right by default, or on whichever side the arrangement found clear of other
+-         labels, markers and lines, at the `Chart.Anchoring` given.
++       detail
++           À droite par défaut, ou du côté que l'agencement a trouvé libre d'autres étiquettes,
++           marqueurs et lignes, à l'ancrage `Chart.Anchoring` donné.
+
+-   entry .Standard   the default style of every chart kind, as a case class of named parameters
++   entry .Standard
++     info
++         le style par défaut de tous les genres de graphiques, sous forme de case class à
++         paramètres nommés
+
+-     detail
+-         Implements `Bars.Style`, `StackedBars.Style`, `Histogram.Style`, `Lines.Style`,
+-         `Scatter.Style`, `Boxes.Style`, `Pie.Style` and `Doughnut.Style` at once, so one value
+-         in scope styles any chart. Every parameter has a default: `width = 640.0`, `height =
+-         400.0`, `inset = 12.0`, `font = Web.sansSerifFont`, `fontSize = 12.0`, `legend =
+-         Legend.Right`, `pitch = 60.0`, `tickLength = 5.0`, `grid = true`, `abscissaTitle` and
+-         `ordinateTitle` unset, `strokeWidth = 2.0`, `markerRadius = 3.5`, `markers = false`,
+-         `smoothing = 0.0`, `barGap = 0.25`, `boxGap = 0.25`, `hole = 0.0`, `sectorGap = 2.0`
+-         and `bandGap = 2.0`. Any component's rendering is an override on an anonymous subclass:
++     detail
++         Implémente à la fois `Bars.Style`, `StackedBars.Style`, `Histogram.Style`, `Lines.Style`,
++         `Scatter.Style`, `Boxes.Style`, `Pie.Style` et `Doughnut.Style`, de sorte qu'une seule
++         valeur dans la portée stylise n'importe quel graphique. Chaque paramètre a une valeur par
++         défaut : `width = 640.0`, `height = 400.0`, `inset = 12.0`, `font = Web.sansSerifFont`,
++         `fontSize = 12.0`, `legend = Legend.Right`, `pitch = 60.0`, `tickLength = 5.0`,
++         `grid = true`, `abscissaTitle` et `ordinateTitle` non définis, `strokeWidth = 2.0`,
++         `markerRadius = 3.5`, `markers = false`, `smoothing = 0.0`, `barGap = 0.25`,
++         `boxGap = 0.25`, `hole = 0.0`, `sectorGap = 2.0` et `bandGap = 2.0`. Le rendu de tout
++         composant se redéfinit dans une sous-classe anonyme :
+
+=         and `bandGap = 2.0`. Any component's rendering is an override on an anonymous subclass:
+=
+-         ```scala
++         ```scala
+
+=         and `bandGap = 2.0`. Any component's rendering is an override on an anonymous subclass:
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         given Chart.Standard = new Chart.Standard(width = 800.0, ordinateTitle = t"units sold"):
++         given Chart.Standard = new Chart.Standard(width = 800.0, ordinateTitle = t"units sold"):
+
+-           override def bar(corner: Point, width: Double, height: Double, color: Color in Srgb, series: Int)
++           override def bar(corner: Point, width: Double, height: Double, color: Color in Srgb, series: Int)
+
+-           :   List[Figure] =
++           :   List[Figure] =
+
+-             List(Circle(corner, (width/2.0).toFloat))
++             List(Circle(corner, (width/2.0).toFloat))
+
+-         val sales = List(Series(t"north")((t"jan", 3.0), (t"feb", 5.0)))
++         val sales = List(Series(t"north")((t"jan", 3.0), (t"feb", 5.0)))
+
+-         sales.chart(Bars()).in[Svg].in[Xml].show.contains(t"<circle")   // true
++         sales.chart(Bars()).in[Svg].in[Xml].show.contains(t"<circle")   // true
+
+=         sales.chart(Bars()).in[Svg].in[Xml].show.contains(t"<circle")   // true
+-         ```
++         ```
+
+-         A helper that renders charts should take the style as a `using` parameter; one which
+-         does not silently renders with the companion defaults.
++         Une fonction utilitaire qui rend des graphiques devrait prendre le style comme paramètre
++         `using` ; une fonction qui ne le fait pas rend silencieusement avec les valeurs par défaut
++         des compagnons.
+
+-   entry .Drawing   a rendered chart as its parts, each under a stable identifier, in drawing order
++   entry .Drawing
++     info
++         un graphique rendu sous forme de ses parties, chacune sous un identifiant stable, dans
++         l'ordre de dessin
+
+-     detail
+-         The result of `Chart#drawing`: the canvas size, any SVG definitions, and a `Ledger`
+-         from `Svg.Id` to `Figure` holding `backdrop`, then (for a cartesian chart) `grid`,
+-         `abscissa`, `ordinate`, `series-0`, `series-1`, … and `legend`; a pie has `wedges` and
+-         `legend`; a doughnut `rank-0`, `rank-1`, …. The identifiers are what a
+-         `Chart.Revision.Replace` names, and each becomes the `id` of a `<g>` in the SVG.
++     detail
++         Le résultat de `Chart#drawing` : la taille du canevas, d'éventuelles définitions SVG, et
++         un `Ledger` de `Svg.Id` vers `Figure` contenant `backdrop`, puis (pour un graphique
++         cartésien) `grid`, `abscissa`, `ordinate`, `series-0`, `series-1`, … et `legend` ; un
++         diagramme en secteurs a `wedges` et `legend` ; un anneau `rank-0`, `rank-1`, …. Les
++         identifiants sont ce que nomme une `Chart.Revision.Replace`, et chacun devient l'`id`
++         d'un `<g>` dans le SVG.
+
+-     entry .encodable   the whole drawing as one `Svg`, as `drawing.in[Svg]`
++     entry .encodable
++       info
++           le dessin entier sous forme d'un seul `Svg`, comme `drawing.in[Svg]`
+
+-     entry #width   the canvas width, from the style
++     entry #width
++       info
++           la largeur du canevas, tirée du style
+
+-     entry #height   the canvas height, from the style
++     entry #height
++       info
++           la hauteur du canevas, tirée du style
+
+-     entry #defs   SVG definitions the drawing needs; none for the standard kinds
++     entry #defs
++       info
++           les définitions SVG dont a besoin le dessin ; aucune pour les genres standard
+
+-     entry #parts   the parts by identifier, in drawing order
++     entry #parts
++       info
++           les parties par identifiant, dans l'ordre de dessin
+
+-   entry .encodable   a chart as an `Svg`, as `chart.in[Svg]`, with the components it asks for
++   entry .encodable
++     info
++         un graphique sous forme de `Svg`, comme `chart.in[Svg]`, avec les composants qu'il demande
+
+-       Needs the chart's own style type (`Bars.Style` for a bar chart; `Chart.Standard`
+-       satisfies every kind), a `ChartPalette`, a `FontMetric` and an `Arranger` in scope, all
+-       of which have companion defaults. `chart.in[Svg].in[Xml].show` is the SVG text.
++     detail
++         Nécessite dans la portée le type de style propre au graphique (`Bars.Style` pour un
++         graphique en barres ; `Chart.Standard` convient à tous les genres), une `ChartPalette`,
++         une `FontMetric` et un `Arranger`, qui ont tous des valeurs par défaut dans leur
++         compagnon. `chart.in[Svg].in[Xml].show` est le texte SVG.
+
+-   entry .Revision   what changed between one drawing of a chart and the next
++   entry .Revision
++     info
++         ce qui a changé entre un dessin d'un graphique et le suivant
+
+-     detail
+-         Returned by `Chart#revise`. `Redraw(svg)` carries the whole new drawing, because the
+-         axes moved to fit the new data; `Replace(id, figure)` names one part — `series-0`,
+-         `legend`, `rank-1` — whose rendering differs, with the figure that replaces it. A page
+-         holding the SVG needs only to replace an element by its identifier, or the whole
+-         element, so a chart can be kept current over a WebSocket by sending each revision.
+-         Unchanged data yields an empty list.
++     detail
++         Renvoyé par `Chart#revise`. `Redraw(svg)` porte tout le nouveau dessin, parce que les axes
++         ont bougé pour s'ajuster aux nouvelles données ; `Replace(id, figure)` nomme une partie —
++         `series-0`, `legend`, `rank-1` — dont le rendu diffère, avec la figure qui la remplace.
++         Une page qui contient le SVG n'a qu'à remplacer un élément par son identifiant, ou
++         l'élément entier, de sorte qu'un graphique peut être tenu à jour via une WebSocket en
++         envoyant chaque révision. Des données inchangées donnent une liste vide.
+
+-   entry #data   the data the chart was made from
++   entry #data
++     info
++         les données à partir desquelles le graphique a été créé
+
+-   entry #form   the chart kind: the `Bars()`, `Lines()`, … value, with any explicit calibrations
++   entry #form
++     info
++         le genre de graphique : la valeur `Bars()`, `Lines()`, …, avec ses éventuels calibrages
++         explicites
+
+-   entry #fit   the fit of the data to the kind: the kind's own fit type, with its axes visible
++   entry #fit
++     info
++         l'ajustement des données au genre : le type d'ajustement propre au genre, avec ses axes
++         visibles
+
+-       `chart.fit.ordinate.transform` on a line chart, `chart.fit.bands.categories` on a bar
+-       chart, `chart.fit.edges` on a histogram, `chart.fit.total` on a pie.
++     detail
++         `chart.fit.ordinate.transform` sur un graphique en lignes, `chart.fit.bands.categories`
++         sur un graphique en barres, `chart.fit.edges` sur un histogramme, `chart.fit.total` sur
++         un diagramme en secteurs.
+
+-   entry #plottable   the `Plottable` instance pairing the data with the kind
++   entry #plottable
++     info
++         l'instance `Plottable` qui associe les données au genre
+
+-   entry #drawing   renders the chart as a `Chart.Drawing`: its parts under their identifiers
++   entry #drawing
++     info
++         rend le graphique sous forme de `Chart.Drawing` : ses parties sous leurs identifiants
+
+-       Needs the kind's style, a `ChartPalette`, a `FontMetric` and an `Arranger`, as `.encodable`
+-       does. The drawing is computed afresh on each call.
++     detail
++         Nécessite le style du genre, une `ChartPalette`, une `FontMetric` et un `Arranger`, comme
++         `.encodable`. Le dessin est recalculé à chaque appel.
+
+-   entry #revise   the next chart for new data, with the list of what changed on the page
++   entry #revise
++     info
++         le graphique suivant pour de nouvelles données, avec la liste de ce qui a changé sur la
++         page
+
+-       If the `Plottable`'s `accommodates` says the current fit still holds the new data, the
+-       fit is kept — the axes hold still — and each part whose rendering differs becomes a
+-       `Chart.Revision.Replace`; otherwise the data is refitted and the single revision is a
+-       `Chart.Revision.Redraw` of the new SVG. The new data must have the same type: a chart
+-       of `Series[Double, Double]` is revised with another such series, typically
+-       `chart.data.add(point)`.
++     detail
++         Si l'`accommodates` du `Plottable` dit que l'ajustement courant contient encore les
++         nouvelles données, l'ajustement est conservé — les axes restent fixes — et chaque partie
++         dont le rendu diffère devient une `Chart.Revision.Replace` ; sinon, les données sont
++         réajustées et l'unique révision est un `Chart.Revision.Redraw` du nouveau SVG. Les
++         nouvelles données doivent avoir le même type : un graphique de `Series[Double, Double]`
++         est révisé avec une autre série de ce type, typiquement `chart.data.add(point)`.
+
+=       `chart.data.add(point)`.
+=
+-       ```scala
++         ```scala
+
+=       `chart.data.add(point)`.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+=       `chart.data.add(point)`.
+=
+=       ```scala
+=       import soundness.*
+=
+-       val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
++         val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
+
+-       val chart = growth.chart(Lines())
++         val chart = growth.chart(Lines())
+
+-       chart.revise(growth)(1)                        // Nil
++         chart.revise(growth)(1)                        // Nil
+
+-       chart.revise(growth.add((5.0, 5.0)))(1).size   // 1: a Replace of series-0
++         chart.revise(growth.add((5.0, 5.0)))(1).size   // 1: a Replace of series-0
+
+-       chart.revise(growth.add((20.0, 20.0)))(1).size // 1: a Redraw
++         chart.revise(growth.add((20.0, 20.0)))(1).size // 1: a Redraw
+
+=       chart.revise(growth.add((20.0, 20.0)))(1).size // 1: a Redraw
+-       ```
++         ```
+
+-   entry .Category   a category with no type of its own: any showable value wrapped as a label
++   entry .Category
++     info
++         une catégorie sans type propre : n'importe quelle valeur affichable enveloppée comme
++         étiquette
+
+-     detail
+-         What `Series#categorical` makes from a numeric abscissa, or anything wrapped by hand:
+-         `Category(42)` has the label `t"42"`. A `Category` is `Categorical` by its `#label`.
++     detail
++         Ce que `Series#categorical` produit à partir d'une abscisse numérique, ou tout ce qu'on
++         enveloppe à la main : `Category(42)` a l'étiquette `t"42"`. Une `Category` est
++         `Categorical` par son `#label`.
+
+-     entry .apply   `Category(value)`: a category labelled by any showable value
++     entry .apply
++       info
++           `Category(value)` : une catégorie étiquetée par n'importe quelle valeur affichable
+
+-     entry #label   the label, as text
++     entry #label
++       info
++           l'étiquette, sous forme de texte
+
+-   entry .Estimate   a value with the interval it is believed to lie in, drawn with error bars or a band
++   entry .Estimate
++     info
++         une valeur avec l'intervalle dans lequel on estime qu'elle se trouve, dessinée avec des
++         barres d'erreur ou une bande
+
+-       `Estimate(value, lower, upper)`: a mean with its confidence interval, a median with its
+-       quartiles. It is `Continuous` by its `value`, with `bounds` of `(lower, upper)`, so a
+-       scatter plot or bar chart draws an error bar through each one (`Chart.Cartesian#errorBar`)
+-       and a line chart fills a translucent band between the bounds (`Lines.Style#band`); the
+-       bounds also count towards the axis's extent, so the whole interval is on the axis.
++     detail
++         `Estimate(value, lower, upper)` : une moyenne avec son intervalle de confiance, une
++         médiane avec ses quartiles. Elle est `Continuous` par sa `value`, avec des `bounds` de
++         `(lower, upper)`, de sorte qu'un nuage de points ou un graphique en barres dessine une
++         barre d'erreur à travers chacune (`Chart.Cartesian#errorBar`) et qu'un graphique en
++         lignes remplit une bande translucide entre les bornes (`Lines.Style#band`) ; les bornes
++         comptent aussi dans l'étendue de l'axe, de sorte que tout l'intervalle figure sur l'axe.
+
+=       bounds also count towards the axis's extent, so the whole interval is on the axis.
+=
+-       ```scala
++         ```scala
+
+=       bounds also count towards the axis's extent, so the whole interval is on the axis.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+-       val timings = Series(t"sort")((t"small", Chart.Estimate(5.0, 4.0, 6.0)), (t"large", Chart.Estimate(9.0, 8.5, 9.5)))
++         val timings = Series(t"sort")((t"small", Chart.Estimate(5.0, 4.0, 6.0)), (t"large", Chart.Estimate(9.0, 8.5, 9.5)))
+
+-       timings.chart(Bars()).fit.ordinate.upper   // 10.0
++         timings.chart(Bars()).fit.ordinate.upper   // 10.0
+
+=       timings.chart(Bars()).fit.ordinate.upper   // 10.0
+-       ```
++         ```
+
+- entry .Plottable   the compatibility of a shape of data with a kind of chart, and what it takes to draw it
++ entry .Plottable
++   info
++       la compatibilité d'une forme de données avec un genre de graphique, et ce qu'il faut pour la
++       dessiner
+
+-   detail
+-       `data is Plottable in form to fit by style` exists only where the kind can draw the
+-       data: a pie needs one categorical series, a line needs numeric axes, a doughnut a `Dag`
+-       of weighted, progressive nodes. The kind is the `Form`, the fit the `Result` (so a
+-       chart's fit is the kind's own, with its axes visible), and the style the `Operand`,
+-       bounded by `Chart.Style`. The standard instances live in each kind's companion —
+-       `Bars.series`, `Bars.traversable`, `Lines.series`, `Histogram.samples`, `Doughnut.dag`,
+-       … — so they are found with no import; a `traversable` instance covers any collection
+-       of series or samples (a `List`, `Set` or `Sequence`), its traversal evidence resolved
+-       before the element types' typeclasses.
++   detail
++       `data is Plottable in form to fit by style` n'existe que là où le genre peut dessiner les
++       données : un diagramme en secteurs nécessite une série catégorielle, une ligne des axes
++       numériques, un anneau un `Dag` de nœuds pondérés et progressifs. Le genre est la `Form`,
++       l'ajustement le `Result` (de sorte que l'ajustement d'un graphique est celui du genre,
++       avec ses axes visibles), et le style l'`Operand`, borné par `Chart.Style`. Les instances
++       standard résident dans le compagnon de chaque genre — `Bars.series`, `Bars.traversable`,
++       `Lines.series`, `Histogram.samples`, `Doughnut.dag`, … — de sorte qu'elles sont trouvées
++       sans import ; une instance `traversable` couvre toute collection de séries ou
++       d'échantillons (une `List`, un `Set` ou une `Sequence`), sa preuve de parcours étant
++       résolue avant les classes de types des types d'éléments.
+
+-       A new kind of chart is a new value with instances for the shapes it can draw; nothing
+-       else changes. An instance's `#draw` receives the kind's style, a `ChartPalette`, a
+-       `FontMetric` and an `Arranger`.
++       Un nouveau genre de graphique est une nouvelle valeur dotée d'instances pour les formes
++       qu'il peut dessiner ; rien d'autre ne change. Le `#draw` d'une instance reçoit le style du
++       genre, une `ChartPalette`, une `FontMetric` et un `Arranger`.
+
+=       `FontMetric` and an `Arranger`.
+-   refer tasseomancy.chart
++   refer tasseomancy.chart
+
+-   refer tasseomancy.Chart
++   refer tasseomancy.Chart
+
+-   entry #fit   chooses the axes from the data: the `Result`, such as `Lines.Fit`
++   entry #fit
++     info
++         choisit les axes à partir des données : le `Result`, comme `Lines.Fit`
+
+-   entry #accommodates   whether a fit still holds new data, so that a revision can replace one part
++   entry #accommodates
++     info
++         si un ajustement contient encore de nouvelles données, afin qu'une révision puisse
++         remplacer une partie
+
+-       For a cartesian kind, every position and interval lies within the scales and every
+-       category is a known band; for a pie, the categories are unchanged; for a doughnut, the
+-       graph's shape and weights are unchanged.
++     detail
++         Pour un genre cartésien, chaque position et chaque intervalle se trouve dans les échelles
++         et chaque catégorie est une bande connue ; pour un diagramme en secteurs, les catégories
++         sont inchangées ; pour un anneau, la forme et les poids du graphe sont inchangés.
+
+-   entry #draw   renders the data against a fit as a `Chart.Drawing`
++   entry #draw
++     info
++         rend les données selon un ajustement sous forme de `Chart.Drawing`
+
+-       Takes the style (the `Operand`), a `ChartPalette`, a `FontMetric` and an `Arranger` as
+-       contextual values.
++     detail
++         Prend comme valeurs contextuelles le style (l'`Operand`), une `ChartPalette`, une
++         `FontMetric` et un `Arranger`.
+
+- entry .Series   one named run of points: the unit of data a chart kind is compatible with
++ entry .Series
++   info
++       une suite nommée de points : l'unité de données avec laquelle un genre de graphique est
++       compatible
+
+-   detail
+-       A `Series[x, y]` is a name and a `Sequence` of `(x, y)` pairs. The abscissa type decides
+-       the axis: a `Text`, enum or `Chart.Category` is `Categorical` and suits `Bars`, `StackedBars`
+-       and `Pie`; a number, `Duration`, `Instant` or `Quantity` is `Continuous` and suits
+-       `Lines` and `Scatter`. The ordinate is always `Continuous`, and may be an `Chart.Estimate`
+-       (drawn with error bars or a band) or a `Noted` value (labelled beside its marker).
+-       Several series are any collection of them — a `List`, `Set` or `Sequence` — since the
+-       kinds' `traversable` instances cover anything traversable by series.
++   detail
++       Une `Series[x, y]` est un nom et une `Sequence` de paires `(x, y)`. Le type de l'abscisse
++       détermine l'axe : un `Text`, une énumération ou une `Chart.Category` est `Categorical` et
++       convient à `Bars`, `StackedBars` et `Pie` ; un nombre, une `Duration`, un `Instant` ou
++       une `Quantity` est `Continuous` et convient à `Lines` et `Scatter`. L'ordonnée est
++       toujours `Continuous`, et peut être une `Chart.Estimate` (dessinée avec des barres
++       d'erreur ou une bande) ou une valeur `Noted` (étiquetée à côté de son marqueur).
++       Plusieurs séries forment n'importe quelle collection — une `List`, un `Set` ou une
++       `Sequence` — puisque les instances `traversable` des genres couvrent tout ce qui se
++       parcourt par séries.
+
+=       kinds' `traversable` instances cover anything traversable by series.
+=
+-       ```scala
++       ```scala
+
+=       kinds' `traversable` instances cover anything traversable by series.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val north = Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0))
++       val north = Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0))
+
+-       val timings = Series(t"sort")((1000, Chart.Estimate(2.1, 1.9, 2.4)), (10000, Chart.Estimate(24.0, 22.5, 26.1)))
++       val timings = Series(t"sort")((1000, Chart.Estimate(2.1, 1.9, 2.4)), (10000, Chart.Estimate(24.0, 22.5, 26.1)))
+
+-       val cities = Series(t"cities")((1.0, Noted(3.0, t"Paris")), (2.0, Noted(5.0, t"Rome")))
++       val cities = Series(t"cities")((1.0, Noted(3.0, t"Paris")), (2.0, Noted(5.0, t"Rome")))
+
+-       val year = Series(2024)((t"jan", 1.0))   // named by any showable value
++       val year = Series(2024)((t"jan", 1.0))   // named by any showable value
+
+-       year.name                                 // t"2024"
++       year.name                                 // t"2024"
+
+=       year.name                                 // t"2024"
+-       ```
++       ```
+
+-       A series is immutable; `#add` appends a point in amortized constant time, which is what
+-       a chart fed one measurement at a time needs.
++       Une série est immuable ; `#add` ajoute un point en temps constant amorti, ce dont a
++       besoin un graphique alimenté une mesure à la fois.
+
+=       a chart fed one measurement at a time needs.
+-   refer tasseomancy.chart
++   refer tasseomancy.chart
+
+=   refer tasseomancy.chart
+-   refer tasseomancy.Samples
++   refer tasseomancy.Samples
+
+-   entry .apply   `Series(name)(points*)`: a series named by any showable value, with its points
++   entry .apply
++     info
++         `Series(name)(points*)` : une série nommée par n'importe quelle valeur affichable, avec
++         ses points
+
+-       The name is shown once, at construction: `Series(t"north")(…)`, `Series(2024)(…)` or
+-       `Series(Quarter.Q1)(…)` all give a `Text` name.
++     detail
++         Le nom est affiché une seule fois, à la construction : `Series(t"north")(…)`,
++         `Series(2024)(…)` ou `Series(Quarter.Q1)(…)` donnent tous un nom `Text`.
+
+-   entry #name   the series' name, as text: its legend entry
++   entry #name
++     info
++         le nom de la série, sous forme de texte : son entrée de légende
+
+-   entry #points   the points, in the order given
++   entry #points
++     info
++         les points, dans l'ordre donné
+
+-       A line chart sorts them by abscissa before drawing; a scatter plot and a bar chart keep
+-       the order, which for bars is the order categories first appear.
++     detail
++         Un graphique en lignes les trie par abscisse avant de dessiner ; un nuage de points et
++         un graphique en barres conservent l'ordre, qui pour les barres est l'ordre de première
++         apparition des catégories.
+
+-   entry #add   the series with one more point, appended in amortized constant time
++   entry #add
++     info
++         la série avec un point de plus, ajouté en temps constant amorti
+
+-   entry #categorical   the same points with each abscissa as a `Category`, for a bar chart over a numeric axis
++   entry #categorical
++     info
++         les mêmes points avec chaque abscisse sous forme de `Category`, pour un graphique en
++         barres sur un axe numérique
+
+-       Needs `x is Showable`. A series over input sizes becomes a bar per size rather than a
+-       line over sizes: `timings.categorical.chart(Bars())`.
++     detail
++         Nécessite `x is Showable`. Une série sur des tailles d'entrée devient une barre par
++         taille plutôt qu'une ligne sur les tailles : `timings.categorical.chart(Bars())`.
+
+- entry .Samples   raw measurements under one name, before any summary: what a histogram bins and a box plot summarizes
++ entry .Samples
++   info
++       des mesures brutes sous un même nom, avant tout résumé : ce que répartit un histogramme et
++       ce que résume une boîte à moustaches
+
+-   detail
+-       `Samples[y]` is a name and a `Sequence` of values of a `Continuous` type. `Histogram`
+-       cuts their range into bins and counts them; `Boxes` summarizes them as quartiles and
+-       extremes. A collection of sample sets is drawn as one series per set.
++   detail
++       `Samples[y]` est un nom et une `Sequence` de valeurs d'un type `Continuous`. `Histogram`
++       découpe leur plage en classes et les compte ; `Boxes` les résume en quartiles et
++       extrêmes. Une collection d'ensembles d'échantillons est dessinée à raison d'une série par
++       ensemble.
+
+=       extremes. A collection of sample sets is drawn as one series per set.
+=
+-       ```scala
++       ```scala
+
+=       extremes. A collection of sample sets is drawn as one series per set.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val before = Samples(t"before")(21.0, 22.5, 23.1, 22.8, 24.0)
++       val before = Samples(t"before")(21.0, 22.5, 23.1, 22.8, 24.0)
+
+-       val after = Samples(t"after")(18.2, 18.9, 19.5, 18.1, 19.0)
++       val after = Samples(t"after")(18.2, 18.9, 19.5, 18.1, 19.0)
+
+-       List(before, after).chart(Boxes()).fit.summaries.size   // 2
++       List(before, after).chart(Boxes()).fit.summaries.size   // 2
+
+=       List(before, after).chart(Boxes()).fit.summaries.size   // 2
+-       ```
++       ```
+
+=       ```
+-   refer tasseomancy.Histogram
++   refer tasseomancy.Histogram
+
+=   refer tasseomancy.Histogram
+-   refer tasseomancy.Boxes
++   refer tasseomancy.Boxes
+
+-   entry .apply   `Samples(name)(values*)`: a sample set named by any showable value
++   entry .apply
++     info
++         `Samples(name)(values*)` : un ensemble d'échantillons nommé par n'importe quelle valeur
++         affichable
+
+-   entry #name   the set's name, as text
++   entry #name
++     info
++         le nom de l'ensemble, sous forme de texte
+
+-   entry #values   the measurements, in the order given
++   entry #values
++     info
++         les mesures, dans l'ordre donné
+
+-   entry #add   the set with one more measurement appended
++   entry #add
++     info
++         l'ensemble avec une mesure de plus ajoutée à la fin
+
+- entry .Noted   a value with a note attached, which a scatter plot or line chart sets beside its marker
++ entry .Noted
++   info
++       une valeur accompagnée d'une note, qu'un nuage de points ou un graphique en lignes place à
++       côté de son marqueur
+
+-     `Noted(value, note)`: the value is `Continuous` by `value`, and its `annotation` is the
+-     note, which `Chart.Cartesian#pointLabel` sets to the right of the marker, or on another
+-     side, or off with a leader, as cartouche's arrangement finds room. Either coordinate of a
+-     point may be `Noted`; the abscissa's note wins if both are.
++   detail
++       `Noted(value, note)` : la valeur est `Continuous` par `value`, et son `annotation` est la
++       note, que `Chart.Cartesian#pointLabel` place à droite du marqueur, ou d'un autre côté, ou
++       à l'écart avec une ligne de rappel, selon la place que trouve l'agencement de cartouche.
++       L'une ou l'autre coordonnée d'un point peut être `Noted` ; la note de l'abscisse
++       l'emporte si les deux le sont.
+
+=     point may be `Noted`; the abscissa's note wins if both are.
+=
+-     ```scala
++       ```scala
+
+=     point may be `Noted`; the abscissa's note wins if both are.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+-     val cities = Series(t"cities")((1.0, Noted(3.0, t"Paris")), (2.0, Noted(5.0, t"Rome")))
++       val cities = Series(t"cities")((1.0, Noted(3.0, t"Paris")), (2.0, Noted(5.0, t"Rome")))
+
+-     cities.chart(Scatter()).in[Svg].in[Xml].show.contains(t">Paris<")   // true
++       cities.chart(Scatter()).in[Svg].in[Xml].show.contains(t">Paris<")   // true
+
+=     cities.chart(Scatter()).in[Svg].in[Xml].show.contains(t">Paris<")   // true
+-     ```
++       ```
+
+-     The name was `Annotated` until 0.72.0; it collided in the umbrella with adversaria's
+-     `Annotated` typeclass.
++       Le nom était `Annotated` jusqu'à la 0.72.0 ; il entrait en conflit, dans le package
++       parapluie, avec la classe de types `Annotated` d'adversaria.
+
+- entry .Categorical   a value that names a category on an axis: distinct labels, no arithmetic
++ entry .Categorical
++   info
++       une valeur qui nomme une catégorie sur un axe : des étiquettes distinctes, sans arithmétique
+
+-   detail
+-       The typeclass of a bar chart's or a pie's abscissa. Categories are distinct labels in
+-       first-appearance order across all the series, with no positions between them. `Text`,
+-       `Chart.Category` and any `scala.reflect.Enum` with an `Enumerable` instance are `Categorical`
+-       through the companion; a type of your own needs one line:
++   detail
++       La classe de types de l'abscisse d'un graphique en barres ou d'un diagramme en secteurs.
++       Les catégories sont des étiquettes distinctes dans l'ordre de première apparition à
++       travers toutes les séries, sans positions entre elles. `Text`, `Chart.Category` et toute
++       `scala.reflect.Enum` dotée d'une instance `Enumerable` sont `Categorical` via le
++       compagnon ; un type à vous n'a besoin que d'une ligne :
+
+=       through the companion; a type of your own needs one line:
+=
+-       ```scala
++       ```scala
+
+=       through the companion; a type of your own needs one line:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Region(name: Text)
++       case class Region(name: Text)
+
+-       given Region is Categorical = _.name
++       given Region is Categorical = _.name
+
+=       given Region is Categorical = _.name
+-       ```
++       ```
+
+-   entry .text   text is its own label
++   entry .text
++     info
++         un texte est sa propre étiquette
+
+-   entry .category   a `Category` by its label
++   entry .category
++     info
++         une `Category` par son étiquette
+
+-   entry .enumerable   an enum case by its name, through its `Enumerable` instance
++   entry .enumerable
++     info
++         un cas d'énumération par son nom, via son instance `Enumerable`
+
+-   entry #label   the label a value contributes to the axis
++   entry #label
++     info
++         l'étiquette qu'une valeur apporte à l'axe
+
+- entry .Continuous   a value with a position on a numeric axis, and optionally an interval around it
++ entry .Continuous
++   info
++       une valeur ayant une position sur un axe numérique, et éventuellement un intervalle autour
+
+-   detail
+-       The typeclass of every numeric axis. `#position` is the number drawn from, `#bounds` an
+-       optional interval (an `Chart.Estimate` has one), `#annotation` an optional note (a `Noted`
+-       value has one), and `#notation` says how an axis of this type is graduated, written and
+-       titled, since seconds are read differently from counts and a quantity is measured in
+-       units. The companion covers `Int`, `Long`, `Double`, `Float`, `F64`, every `Quantity`,
+-       `Duration`, `Instant`, `Chart.Estimate` and `Noted`; a type of your own needs only a position:
++   detail
++       La classe de types de tout axe numérique. `#position` est le nombre à partir duquel on
++       dessine, `#bounds` un intervalle optionnel (une `Chart.Estimate` en a un), `#annotation`
++       une note optionnelle (une valeur `Noted` en a une), et `#notation` dit comment un axe de
++       ce type est gradué, écrit et titré, puisque des secondes se lisent autrement que des
++       effectifs et qu'une quantité se mesure en unités. Le compagnon couvre `Int`, `Long`,
++       `Double`, `Float`, `F64`, toute `Quantity`, `Duration`, `Instant`, `Chart.Estimate` et
++       `Noted` ; un type à vous n'a besoin que d'une position :
+
+=       `Duration`, `Instant`, `Chart.Estimate` and `Noted`; a type of your own needs only a position:
+=
+-       ```scala
++       ```scala
+
+=       `Duration`, `Instant`, `Chart.Estimate` and `Noted`; a type of your own needs only a position:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Reading(celsius: Double)
++       case class Reading(celsius: Double)
+
+-       given Reading is Continuous = _.celsius
++       given Reading is Continuous = _.celsius
+
+=       given Reading is Continuous = _.celsius
+-       ```
++       ```
+
+-   refer tasseomancy.Scale.Notation
++   refer tasseomancy.Scale.Notation
+
+=   refer tasseomancy.Scale.Notation
+-   refer tasseomancy.Calibration
++   refer tasseomancy.Calibration
+
+-   entry .int   an `Int` by its value
++   entry .int
++     info
++         un `Int` par sa valeur
+
+-   entry .long   a `Long` by its value
++   entry .long
++     info
++         un `Long` par sa valeur
+
+-   entry .double   a `Double` by itself
++   entry .double
++     info
++         un `Double` par lui-même
+
+-   entry .float   a `Float` by its value
++   entry .float
++     info
++         un `Float` par sa valeur
+
+-   entry .f64   a hypotenuse `F64` by its value
++   entry .f64
++     info
++         un `F64` d'hypotenuse par sa valeur
+
+-   entry .quantity   any `Quantity`, by its magnitude in its own units, which name and title the axis
++   entry .quantity
++     info
++         toute `Quantity`, par sa grandeur dans ses propres unités, qui nomment et titrent l'axe
+
+-       An inline given: the units and the quantity's dimension are read from the type where
+-       the chart is made, so an axis of `Quantity[Metres[1]]` is titled `distance / m` and one
+-       of `Metre/Second` values `velocity / m·s¯¹`, with the units written as they are
+-       everywhere in Soundness. A style's `abscissaTitle` or `ordinateTitle` replaces the name
+-       and keeps the unit. The more specific `.duration` takes precedence for seconds.
++     detail
++         Un given inline : les unités et la dimension de la quantité sont lues dans le type là où
++         le graphique est créé, de sorte qu'un axe de `Quantity[Metres[1]]` est titré
++         `distance / m` et un axe de valeurs `Metre/Second` `velocity / m·s¯¹`, les unités étant
++         écrites comme partout ailleurs dans Soundness. L'`abscissaTitle` ou l'`ordinateTitle`
++         d'un style remplace le nom et conserve l'unité. Le `.duration`, plus spécifique, a la
++         priorité pour les secondes.
+
+-   entry .QuantityContinuous   the class behind `.quantity`: a `Continuous` for one `Quantity` type with its notation
++   entry .QuantityContinuous
++     info
++         la classe derrière `.quantity` : un `Continuous` pour un type `Quantity` donné, avec sa
++         notation
+
+-       Named rather than anonymous, because an inline given would otherwise duplicate the
+-       class at every expansion site. Not normally written by a user.
++     detail
++         Nommée plutôt qu'anonyme, car un given inline dupliquerait sinon la classe à chaque site
++         d'expansion. Normalement pas écrite par l'utilisateur.
+
+-   entry .duration   an aviation `Duration`, by its seconds, on a clock-stepped axis titled `time`
++   entry .duration
++     info
++         une `Duration` d'aviation, par ses secondes, sur un axe gradué comme une horloge et titré
++         `time`
+
+-       Its notation is `Spacing.Sexagesimal` and `Labelling.Interval`: gradations fall at
+-       seconds, half-minutes, minutes, hours, and carry their own units, `250ms`, `1m30s`.
++     detail
++         Sa notation est `Spacing.Sexagesimal` et `Labelling.Interval` : les graduations tombent
++         sur des secondes, des demi-minutes, des minutes, des heures, et portent leurs propres
++         unités, `250ms`, `1m30s`.
+
+-   entry .instant   an aviation `Instant`, by its seconds since the epoch, labelled as a time of day
++   entry .instant
++     info
++         un `Instant` d'aviation, par ses secondes depuis l'epoch, étiqueté comme une heure de la
++         journée
+
+-       Whatever the resolution of its timeline. The notation is sexagesimal with
+-       `Labelling.Clock`, so gradations read `01:01:01`, in UTC.
++     detail
++         Quelle que soit la résolution de sa ligne de temps. La notation est sexagésimale avec
++         `Labelling.Clock`, de sorte que les graduations se lisent `01:01:01`, en UTC.
+
+-   entry .estimate   an `Estimate` by its value, with its interval as the bounds
++   entry .estimate
++     info
++         une `Estimate` par sa valeur, avec son intervalle comme bornes
+
+-   entry .noted   a `Noted` value by its value, with its note as the annotation
++   entry .noted
++     info
++         une valeur `Noted` par sa valeur, avec sa note comme annotation
+
+-   entry #position   where the value lies on the axis, as a number
++   entry #position
++     info
++         l'endroit où se trouve la valeur sur l'axe, sous forme de nombre
+
+-   entry #bounds   the interval around the value, or `Unset`
++   entry #bounds
++     info
++         l'intervalle autour de la valeur, ou `Unset`
+
+-       Drawn as an error bar or a band, and included in the axis's extent.
++     detail
++         Dessiné sous forme de barre d'erreur ou de bande, et inclus dans l'étendue de l'axe.
+
+-   entry #annotation   a note to set beside the value's marker, or `Unset`
++   entry #annotation
++     info
++         une note à placer à côté du marqueur de la valeur, ou `Unset`
+
+-   entry #notation   how an axis of this type is spaced, labelled, named and united: a `Scale.Notation`
++   entry #notation
++     info
++         la façon dont un axe de ce type est espacé, étiqueté, nommé et doté d'unités : une
++         `Scale.Notation`
+
+-       Decimal spacing with bare numbers and no name or unit, unless overridden.
++     detail
++         Un espacement décimal avec des nombres nus, sans nom ni unité, sauf redéfinition.
+
+- entry .Weighted   the extent of a doughnut's node: its share of its rank's angle and of the band's thickness
++ entry .Weighted
++   info
++       l'étendue d'un nœud d'anneau : sa part de l'angle de son rang et de l'épaisseur de la bande
+
+-     `node is Weighted` gives `weight(node): Double`. In a `Doughnut`, a node's sector sweeps
+-     the share of its band's turn that its weight is of the rank's total, and a band is as
+-     thick as its rank's share of the whole graph's weight. A negative weight counts as zero.
++   detail
++       `node is Weighted` donne `weight(node): Double`. Dans un `Doughnut`, le secteur d'un nœud
++       balaie la part du tour de sa bande que représente son poids dans le total du rang, et une
++       bande est aussi épaisse que la part de son rang dans le poids du graphe entier. Un poids
++       négatif compte pour zéro.
+
+=     thick as its rank's share of the whole graph's weight. A negative weight counts as zero.
+=
+-     ```scala
++       ```scala
+
+=     thick as its rank's share of the whole graph's weight. A negative weight counts as zero.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+=     thick as its rank's share of the whole graph's weight. A negative weight counts as zero.
+=
+=     ```scala
+=     import soundness.*
+=
+-     case class Step(name: Text, size: Double, done: Double)
++       case class Step(name: Text, size: Double, done: Double)
+
+-     given Step is Weighted = _.size
++       given Step is Weighted = _.size
+
+=     given Step is Weighted = _.size
+-     ```
++       ```
+
+-     The name was `Sized` until 0.74.0, when that name went to proscenium's length proof.
++       Le nom était `Sized` jusqu'à la 0.74.0, lorsque ce nom est allé à la preuve de longueur
++       de proscenium.
+
+- entry .Progressive   how far a doughnut's node has come, from 0 (not started) to 1 (done)
++ entry .Progressive
++   info
++       l'avancement d'un nœud d'anneau, de 0 (non commencé) à 1 (terminé)
+
+-     `node is Progressive` gives `completion(node): Double`, clipped to `[0, 1]` when drawn.
+-     A node carries its own progress, so a doughnut is revised like any chart, with a new
+-     `Dag` of the same shape whose nodes have come further, and only the bands whose sectors
+-     filled further are replaced.
++   detail
++       `node is Progressive` donne `completion(node): Double`, ramené à `[0, 1]` au dessin. Un
++       nœud porte son propre avancement, de sorte qu'un anneau se révise comme n'importe quel
++       graphique, avec un nouveau `Dag` de même forme dont les nœuds ont avancé, et seules les
++       bandes dont les secteurs se sont davantage remplis sont remplacées.
+
+=     filled further are replaced.
+=
+-     ```scala
++       ```scala
+
+=     filled further are replaced.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+=     filled further are replaced.
+=
+=     ```scala
+=     import soundness.*
+=
+-     case class Step(name: Text, size: Double, done: Double)
++       case class Step(name: Text, size: Double, done: Double)
+
+-     given Step is Progressive = _.done
++       given Step is Progressive = _.done
+
+=     given Step is Progressive = _.done
+-     ```
++       ```
+
+- entry .Bars   bars grouped by category: one bar per series in each category's band, from zero
++ entry .Bars
++   info
++       des barres groupées par catégorie : une barre par série dans la bande de chaque catégorie, à
++       partir de zéro
+
+-   detail
+-       A chart kind for one `Series[x, y]` or any collection of them, where `x` is
+-       `Categorical` and `y` is `Continuous` with a `Calibration`. Each category is a band of
+-       the abscissa, in first-appearance order across all the series, and within it one bar per
+-       series rises (or falls) from zero to the value, with an error bar where the value is an
+-       `Chart.Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
++   detail
++       Un genre de graphique pour une `Series[x, y]` ou n'importe quelle collection de séries, où
++       `x` est `Categorical` et `y` est `Continuous` avec une `Calibration`. Chaque catégorie est
++       une bande de l'abscisse, dans l'ordre de première apparition à travers toutes les séries,
++       et à l'intérieur une barre par série monte (ou descend) de zéro jusqu'à la valeur, avec
++       une barre d'erreur là où la valeur est une `Chart.Estimate`. L'ordonnée est ancrée à
++       zéro, puisque la longueur d'une barre est sa signification.
+
+=       `Chart.Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
+=
+-       ```scala
++       ```scala
+
+=       `Chart.Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Chart.Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
+=
+=       ```scala
+=       import soundness.*
+=
+-       val sales =
++       val sales =
+
+=       `Chart.Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+-         List
++         List
+
+=       `Chart.Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+=         List
+-           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
++           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+
+=       `Chart.Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+=         List
+=           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+-             Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
++             Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
+
+=       `Chart.Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+=         List
+=           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+=             Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
+=
+-       val chart = sales.chart(Bars())
++       val chart = sales.chart(Bars())
+
+-       chart.fit.bands.categories     // Sequence(t"jan", t"feb", t"mar")
++       chart.fit.bands.categories     // Sequence(t"jan", t"feb", t"mar")
+
+-       chart.fit.ordinate.lower       // 0.0
++       chart.fit.ordinate.lower       // 0.0
+
+=       chart.fit.ordinate.lower       // 0.0
+-       ```
++       ```
+
+-       `Bars(ordinate = calibrations.logarithmicCalibration)` fixes the ordinate's calibration
+-       for this chart alone; otherwise the `Calibration` given for `y` applies. The drawing's
+-       parts are `backdrop`, `grid`, `abscissa`, `ordinate`, `series-0`, …, `legend`.
++       `Bars(ordinate = calibrations.logarithmicCalibration)` fixe le calibrage de l'ordonnée
++       pour ce seul graphique ; sinon, la `Calibration` donnée pour `y` s'applique. Les parties
++       du dessin sont `backdrop`, `grid`, `abscissa`, `ordinate`, `series-0`, …, `legend`.
+
+-   refer tasseomancy.StackedBars
++   refer tasseomancy.StackedBars
+
+=   refer tasseomancy.StackedBars
+-   refer tasseomancy.Bands
++   refer tasseomancy.Bands
+
+-   entry .Fit   a bar chart's fit: the categories as `#bands` and the ordinate `Scale`
++   entry .Fit
++     info
++         l'ajustement d'un graphique en barres : les catégories comme `#bands` et l'ordonnée
++         `Scale`
+
+-     entry #bands   the `Bands` of the abscissa: one per category, in first-appearance order
++     entry #bands
++       info
++           les `Bands` de l'abscisse : une par catégorie, dans l'ordre de première apparition
+
+-     entry #ordinate   the ordinate `Scale`, anchored at zero
++     entry #ordinate
++       info
++           l'ordonnée `Scale`, ancrée à zéro
+
+-   entry .Style   the components of a bar chart beyond the axes: the bars, and the gap within a band
++   entry .Style
++     info
++         les composants d'un graphique en barres au-delà des axes : les barres, et l'écart à
++         l'intérieur d'une bande
+
+-     detail
+-         Extends `Chart.Cartesian`. `StackedBars.Style` and `Histogram.Style` extend this in
+-         turn, so a `bar` override applies to all three kinds.
++     detail
++         Étend `Chart.Cartesian`. `StackedBars.Style` et `Histogram.Style` l'étendent à leur tour,
++         de sorte qu'une redéfinition de `bar` s'applique aux trois genres.
+
+-     entry #barGap   the fraction of a category's band left empty around its group of bars
++     entry #barGap
++       info
++           la fraction de la bande d'une catégorie laissée vide autour de son groupe de barres
+
+-         `0.25` in `Chart.Standard`: the group takes three quarters of the band.
++       detail
++           `0.25` dans `Chart.Standard` : le groupe occupe les trois quarts de la bande.
+
+-     entry #bar   one bar, from its top-left corner with its width and height, in the series' colour
++     entry #bar
++       info
++           une barre, à partir de son coin supérieur gauche avec sa largeur et sa hauteur, dans la
++           couleur de la série
+
+-         A filled `Rectangle` by default. The corner is the top of a positive bar, or the
+-         zero line of a negative one, so the rectangle always extends downward.
++       detail
++           Un `Rectangle` plein par défaut. Le coin est le sommet d'une barre positive, ou la ligne
++           du zéro d'une barre négative, de sorte que le rectangle s'étend toujours vers le bas.
+
+-   entry .series   one categorical series is plottable as bars
++   entry .series
++     info
++         une série catégorielle peut être tracée en barres
+
+-       Needs `x is Categorical`, `y is Continuous` and `y is Calibration`.
++     detail
++         Nécessite `x is Categorical`, `y is Continuous` et `y is Calibration`.
+
+-   entry .traversable   any collection traversable by categorical series is plottable as bars
++   entry .traversable
++     info
++         toute collection parcourable par séries catégorielles peut être tracée en barres
+
+-       The traversal evidence is resolved first, since it is what determines `x` and `y`.
++     detail
++         La preuve de parcours est résolue en premier, puisque c'est elle qui détermine `x` et `y`.
+
+=       The traversal evidence is resolved first, since it is what determines `x` and `y`.
+-   entry #ordinate   a calibration for the ordinate, or `Unset` for the one given for the value type
++   entry #ordinate
++     info
++         un calibrage pour l'ordonnée, ou `Unset` pour celui donné pour le type de valeur
+
+- entry .StackedBars   bars stacked by category: each series' value sits on the total of those before it
++ entry .StackedBars
++   info
++       des barres empilées par catégorie : la valeur de chaque série repose sur le total des
++       précédentes
+
+-   detail
+-       As `Bars`, but one bar per category, whose full height is the category's total: each
+-       series' value is stacked on the running total of the series before it, with positive and
+-       negative values stacking apart in opposite directions from zero. The ordinate spans the
+-       largest total, anchored at zero.
++   detail
++       Comme `Bars`, mais une barre par catégorie, dont la hauteur totale est le total de la
++       catégorie : la valeur de chaque série est empilée sur le total cumulé des séries qui la
++       précèdent, les valeurs positives et négatives s'empilant séparément, dans des directions
++       opposées à partir de zéro. L'ordonnée couvre le plus grand total, ancrée à zéro.
+
+=       largest total, anchored at zero.
+=
+-       ```scala
++       ```scala
+
+=       largest total, anchored at zero.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       largest total, anchored at zero.
+=
+=       ```scala
+=       import soundness.*
+=
+-       val sales =
++       val sales =
+
+=       largest total, anchored at zero.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+-         List
++         List
+
+=       largest total, anchored at zero.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+=         List
+-           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
++           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+
+=       largest total, anchored at zero.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+=         List
+=           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+-             Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
++             Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
+
+-       sales.chart(StackedBars()).fit.ordinate.upper   // 10.0
++       sales.chart(StackedBars()).fit.ordinate.upper   // 10.0
+
+=       sales.chart(StackedBars()).fit.ordinate.upper   // 10.0
+-       ```
++       ```
+
+-       Only a collection of series is plottable as stacked bars: a single series has nothing
+-       to stack, and is drawn as `Bars`.
++       Seule une collection de séries peut être tracée en barres empilées : une série seule n'a
++       rien à empiler, et se dessine comme `Bars`.
+
+-   refer tasseomancy.Bars
++   refer tasseomancy.Bars
+
+-   entry .Fit   a stacked chart's fit: the categories as `#bands` and the ordinate `Scale`
++   entry .Fit
++     info
++         l'ajustement d'un graphique empilé : les catégories comme `#bands` et l'ordonnée `Scale`
+
+-     entry #bands   the `Bands` of the abscissa, one per category
++     entry #bands
++       info
++           les `Bands` de l'abscisse, une par catégorie
+
+-     entry #ordinate   the ordinate `Scale`, anchored at zero and spanning the largest total
++     entry #ordinate
++       info
++           l'ordonnée `Scale`, ancrée à zéro et couvrant le plus grand total
+
+-   entry .Style   the same components as `Bars.Style`: a stacked chart draws what a grouped one does
++   entry .Style
++     info
++         les mêmes composants que `Bars.Style` : un graphique empilé dessine ce que dessine un
++         graphique groupé
+
+-   entry .traversable   any collection traversable by categorical series is plottable as stacked bars
++   entry .traversable
++     info
++         toute collection parcourable par séries catégorielles peut être tracée en barres empilées
+
+=   entry .traversable   any collection traversable by categorical series is plottable as stacked bars
+-   entry #ordinate   a calibration for the ordinate, or `Unset` for the one given for the value type
++   entry #ordinate
++     info
++         un calibrage pour l'ordonnée, ou `Unset` pour celui donné pour le type de valeur
+
+- entry .Histogram   the distribution of samples: the range cut into equal bins, and a bar per series in each
++ entry .Histogram
++   info
++       la distribution d'échantillons : la plage découpée en classes égales, et une barre par série
++       dans chacune
+
+-   detail
+-       A chart kind for `Samples[y]` or any collection of sample sets, where `y` is
+-       `Continuous` with a `Calibration`. The range of all the samples is cut into equal bins —
+-       `#bins` of them if given, otherwise by Sturges' rule, one more than the base-two
+-       logarithm of the sample count — at round edges in the value type's notation, and a bar
+-       per series in each bin counts the samples that fall in it. The ordinate is a linear count
+-       from zero, titled `count`.
++   detail
++       Un genre de graphique pour des `Samples[y]` ou n'importe quelle collection d'ensembles
++       d'échantillons, où `y` est `Continuous` avec une `Calibration`. La plage de tous les
++       échantillons est découpée en classes égales — `#bins` classes si ce nombre est donné,
++       sinon selon la règle de Sturges, un de plus que le logarithme en base deux du nombre
++       d'échantillons — à des bornes rondes dans la notation du type de valeur, et une barre par
++       série dans chaque classe compte les échantillons qui y tombent. L'ordonnée est un effectif
++       linéaire à partir de zéro, titré `count`.
+
+=       from zero, titled `count`.
+=
+-       ```scala
++       ```scala
+
+=       from zero, titled `count`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val samples = Samples(t"s")(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0)
++       val samples = Samples(t"s")(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0)
+
+-       samples.chart(Histogram()).fit.edges.size      // 5: four bins
++       samples.chart(Histogram()).fit.edges.size      // 5: four bins
+
+-       samples.chart(Histogram(bins = 2)).fit.edges.size   // 3
++       samples.chart(Histogram(bins = 2)).fit.edges.size   // 3
+
+=       samples.chart(Histogram(bins = 2)).fit.edges.size   // 3
+-       ```
++       ```
+
+=       samples.chart(Histogram(bins = 2)).fit.edges.size   // 3
+=       ```
+-   refer tasseomancy.Samples
++   refer tasseomancy.Samples
+
+=   refer tasseomancy.Samples
+-   refer tasseomancy.Boxes
++   refer tasseomancy.Boxes
+
+-   entry .Fit   a histogram's fit: the bin `#edges`, the abscissa over them and the ordinate of counts
++   entry .Fit
++     info
++         l'ajustement d'un histogramme : les bornes de classes `#edges`, l'abscisse sur celles-ci
++         et l'ordonnée des effectifs
+
+-     entry #edges   the bin edges, one more than the bins, at round steps
++     entry #edges
++       info
++           les bornes des classes, une de plus que les classes, à des pas ronds
+
+-     entry #abscissa   the linear `Scale` from the first edge to the last
++     entry #abscissa
++       info
++           la `Scale` linéaire de la première borne à la dernière
+
+-     entry #ordinate   the `Scale` of counts, from zero to the most-counted bin, padded to a round step
++     entry #ordinate
++       info
++           la `Scale` des effectifs, de zéro jusqu'à la classe la plus fournie, complétée jusqu'à
++           un pas rond
+
+-   entry .Style   the same components as `Bars.Style`: a histogram draws bars
++   entry .Style
++     info
++         les mêmes composants que `Bars.Style` : un histogramme dessine des barres
+
+-   entry .samples   one sample set is plottable as a histogram
++   entry .samples
++     info
++         un ensemble d'échantillons peut être tracé en histogramme
+
+-   entry .traversable   any collection traversable by sample sets is plottable as a histogram
++   entry .traversable
++     info
++         toute collection parcourable par ensembles d'échantillons peut être tracée en histogramme
+
+-   entry #bins   the number of bins, or `Unset` for Sturges' rule
++   entry #bins
++     info
++         le nombre de classes, ou `Unset` pour la règle de Sturges
+
+-   entry #ordinate   a calibration for the ordinate of counts, or `Unset` for linear
++   entry #ordinate
++     info
++         un calibrage pour l'ordonnée des effectifs, ou `Unset` pour un calibrage linéaire
+
+- entry .Lines   a line per series through its points in abscissa order, with bands for intervals
++ entry .Lines
++   info
++       une ligne par série passant par ses points dans l'ordre des abscisses, avec des bandes pour
++       les intervalles
+
+-   detail
+-       A chart kind for one `Series[x, y]` or any collection of them, where both `x` and `y`
+-       are `Continuous` with a `Calibration`. Each series is a polyline through its points
+-       sorted by abscissa; where the values are `Chart.Estimate`s a translucent band is filled
+-       between their bounds; markers are drawn at the points if the style's `markers` is set;
+-       and a `Noted` value's note is set beside its marker. Neither axis is anchored at zero: a
+-       line shows change, not magnitude. The same fit as `Scatter`.
++   detail
++       Un genre de graphique pour une `Series[x, y]` ou n'importe quelle collection de séries, où
++       `x` et `y` sont tous deux `Continuous` avec une `Calibration`. Chaque série est une
++       polyligne passant par ses points triés par abscisse ; là où les valeurs sont des
++       `Chart.Estimate`s, une bande translucide est remplie entre leurs bornes ; des marqueurs
++       sont dessinés aux points si l'option `markers` du style est activée ; et la note d'une
++       valeur `Noted` est placée à côté de son marqueur. Aucun axe n'est ancré à zéro : une ligne
++       montre une variation, pas une grandeur. Le même ajustement que `Scatter`.
+
+=       line shows change, not magnitude. The same fit as `Scatter`.
+=
+-       ```scala
++       ```scala
+
+=       line shows change, not magnitude. The same fit as `Scatter`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       line shows change, not magnitude. The same fit as `Scatter`.
+=
+=       ```scala
+=       import soundness.*
+=
+-       val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
++       val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
+
+-       val decay = Series(t"decay")((0.0, 10.0), (10.0, 0.0))
++       val decay = Series(t"decay")((0.0, 10.0), (10.0, 0.0))
+
+-       List(growth, decay).chart(Lines()).fit.abscissa.upper   // 10.0
++       List(growth, decay).chart(Lines()).fit.abscissa.upper   // 10.0
+
+=       List(growth, decay).chart(Lines()).fit.abscissa.upper   // 10.0
+-       ```
++       ```
+
+-       A style with `smoothing > 0.0` draws each line through the Kalman-smoothed values of
+-       its points instead, while the markers stay at the points measured:
++       Un style avec `smoothing > 0.0` dessine plutôt chaque ligne à travers les valeurs de ses
++       points lissées par un filtre de Kalman, tandis que les marqueurs restent aux points
++       mesurés :
+
+=       its points instead, while the markers stay at the points measured:
+=
+-       ```scala
++       ```scala
+
+=       its points instead, while the markers stay at the points measured:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       given Chart.Standard = Chart.Standard(markers = true, smoothing = 4.0)
++       given Chart.Standard = Chart.Standard(markers = true, smoothing = 4.0)
+
+-       val noisy = Series(t"noisy")((0.0, 10.0), (1.0, 10.0), (2.0, 20.0), (3.0, 10.0), (4.0, 10.0))
++       val noisy = Series(t"noisy")((0.0, 10.0), (1.0, 10.0), (2.0, 20.0), (3.0, 10.0), (4.0, 10.0))
+
+-       noisy.chart(Lines()).in[Svg].in[Xml].show.contains(t"<circle")   // true
++       noisy.chart(Lines()).in[Svg].in[Xml].show.contains(t"<circle")   // true
+
+=       noisy.chart(Lines()).in[Svg].in[Xml].show.contains(t"<circle")   // true
+-       ```
++       ```
+
+-       `Lines(abscissa = …, ordinate = …)` fixes a calibration for either axis of this chart
+-       alone, which is how two axes of the same type are calibrated differently.
++       `Lines(abscissa = …, ordinate = …)` fixe un calibrage pour l'un ou l'autre axe de ce seul
++       graphique, ce qui permet de calibrer différemment deux axes de même type.
+
+-   refer tasseomancy.Scatter
++   refer tasseomancy.Scatter
+
+-   refer tasseomancy.Kalman
++   refer tasseomancy.Kalman
+
+-   entry .Fit   a line chart's fit: the `#abscissa` and `#ordinate` scales
++   entry .Fit
++     info
++         l'ajustement d'un graphique en lignes : les échelles `#abscissa` et `#ordinate`
+
+-     entry #abscissa   the abscissa `Scale`, over the extent of the positions
++     entry #abscissa
++       info
++           l'abscisse `Scale`, sur l'étendue des positions
+
+-     entry #ordinate   the ordinate `Scale`, over the extent of the positions and their intervals
++     entry #ordinate
++       info
++           l'ordonnée `Scale`, sur l'étendue des positions et de leurs intervalles
+
+-   entry .Style   the components of a line chart beyond the axes: the line, the band and the markers
++   entry .Style
++     info
++         les composants d'un graphique en lignes au-delà des axes : la ligne, la bande et les
++         marqueurs
+
+-     detail
+-         Extends `Chart.Cartesian` with `#markers` and `#smoothing` as parameters and three
+-         hooks. A series' colour and index are passed to each, so lines may differ by series.
++     detail
++         Étend `Chart.Cartesian` avec `#markers` et `#smoothing` comme paramètres et trois points
++         d'accroche. La couleur et l'indice d'une série sont passés à chacun, de sorte que les
++         lignes peuvent différer selon la série.
+
+-     entry #markers   whether a marker is drawn at each point
++     entry #markers
++       info
++           si un marqueur est dessiné à chaque point
+
+-     entry #smoothing   how much the line is smoothed: the Kalman measurement-to-process noise ratio
++     entry #smoothing
++       info
++           le degré de lissage de la ligne : le rapport entre bruit de mesure et bruit de processus
++           du filtre de Kalman
+
+-         Zero draws the line through the points; a larger ratio trusts each measurement less
+-         and smooths more. See `Kalman.smooth`.
++       detail
++           Zéro trace la ligne par les points ; un rapport plus grand accorde moins de confiance à
++           chaque mesure et lisse davantage. Voir `Kalman.smooth`.
+
+-     entry #line   the line through a series' points: a polyline stroked at `strokeWidth`
++     entry #line
++       info
++           la ligne passant par les points d'une série : une polyligne tracée avec l'épaisseur
++           `strokeWidth`
+
+-     entry #band   the area between a series' upper and lower bounds: a closed polyline filled at 20% opacity
++     entry #band
++       info
++           la zone entre les bornes supérieures et inférieures d'une série : une polyligne fermée
++           remplie à 20 % d'opacité
+
+-         The points run along the upper bounds and back along the lower.
++       detail
++           Les points suivent les bornes supérieures puis reviennent le long des bornes
++           inférieures.
+
+-     entry #lineMarker   the marker at a point, if `#markers` is set: `marker` by default
++     entry #lineMarker
++       info
++           le marqueur en un point, si `#markers` est activé : `marker` par défaut
+
+-   entry .series   one series with continuous axes is plottable as lines
++   entry .series
++     info
++         une série à axes continus peut être tracée en lignes
+
+-   entry .traversable   any collection traversable by such series is plottable as lines
++   entry .traversable
++     info
++         toute collection parcourable par de telles séries peut être tracée en lignes
+
+=   entry .traversable   any collection traversable by such series is plottable as lines
+-   entry #abscissa   a calibration for the abscissa, or `Unset` for the one given for its type
++   entry #abscissa
++     info
++         un calibrage pour l'abscisse, ou `Unset` pour celui donné pour son type
+
+=   entry .traversable   any collection traversable by such series is plottable as lines
+=   entry #abscissa   a calibration for the abscissa, or `Unset` for the one given for its type
+-   entry #ordinate   a calibration for the ordinate, or `Unset` for the one given for its type
++   entry #ordinate
++     info
++         un calibrage pour l'ordonnée, ou `Unset` pour celui donné pour son type
+
+- entry .Scatter   a marker per point, with error bars for intervals and labels for notes
++ entry .Scatter
++   info
++       un marqueur par point, avec des barres d'erreur pour les intervalles et des étiquettes pour
++       les notes
+
+-   detail
+-       A chart kind for one `Series[x, y]` or any collection of them, where both `x` and `y`
+-       are `Continuous` with a `Calibration`. Every point is a marker (`Chart.Cartesian#marker`),
+-       an `Chart.Estimate` adds an error bar, and a `Noted` value a label beside the marker, placed
+-       by cartouche so that notes at the same point are set on different sides. The fit is
+-       exactly a line chart's; only the drawing differs.
++   detail
++       Un genre de graphique pour une `Series[x, y]` ou n'importe quelle collection de séries, où
++       `x` et `y` sont tous deux `Continuous` avec une `Calibration`. Chaque point est un
++       marqueur (`Chart.Cartesian#marker`), une `Chart.Estimate` ajoute une barre d'erreur, et
++       une valeur `Noted` une étiquette à côté du marqueur, placée par cartouche de sorte que des
++       notes au même point soient placées de côtés différents. L'ajustement est exactement celui
++       d'un graphique en lignes ; seul le dessin diffère.
+
+=       exactly a line chart's; only the drawing differs.
+=
+-       ```scala
++       ```scala
+
+=       exactly a line chart's; only the drawing differs.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       given Chart.Standard = Chart.Standard(grid = false, legend = Chart.Legend.Hidden)
++       given Chart.Standard = Chart.Standard(grid = false, legend = Chart.Legend.Hidden)
+
+=       given Chart.Standard = Chart.Standard(grid = false, legend = Chart.Legend.Hidden)
+-       val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
++       val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
+
+-       growth.chart(Scatter()).in[Svg].in[Xml].show.contains(t"<circle")   // true
++       growth.chart(Scatter()).in[Svg].in[Xml].show.contains(t"<circle")   // true
+
+=       growth.chart(Scatter()).in[Svg].in[Xml].show.contains(t"<circle")   // true
+-       ```
++       ```
+
+-   refer tasseomancy.Lines
++   refer tasseomancy.Lines
+
+-   entry .Fit   a scatter plot's fit: the `#abscissa` and `#ordinate` scales
++   entry .Fit
++     info
++         l'ajustement d'un nuage de points : les échelles `#abscissa` et `#ordinate`
+
+-     entry #abscissa   the abscissa `Scale`
++     entry #abscissa
++       info
++           l'abscisse `Scale`
+
+-     entry #ordinate   the ordinate `Scale`, including any intervals
++     entry #ordinate
++       info
++           l'ordonnée `Scale`, intervalles compris
+
+-   entry .Style   a scatter plot's components are the ones every cartesian chart shares: `Chart.Cartesian`
++   entry .Style
++     info
++         les composants d'un nuage de points sont ceux que partagent tous les graphiques
++         cartésiens : `Chart.Cartesian`
+
+-   entry .series   one series with continuous axes is plottable as a scatter plot
++   entry .series
++     info
++         une série à axes continus peut être tracée en nuage de points
+
+-   entry .traversable   any collection traversable by such series is plottable as a scatter plot
++   entry .traversable
++     info
++         toute collection parcourable par de telles séries peut être tracée en nuage de points
+
+=   entry .traversable   any collection traversable by such series is plottable as a scatter plot
+-   entry #abscissa   a calibration for the abscissa, or `Unset` for the one given for its type
++   entry #abscissa
++     info
++         un calibrage pour l'abscisse, ou `Unset` pour celui donné pour son type
+
+=   entry .traversable   any collection traversable by such series is plottable as a scatter plot
+=   entry #abscissa   a calibration for the abscissa, or `Unset` for the one given for its type
+-   entry #ordinate   a calibration for the ordinate, or `Unset` for the one given for its type
++   entry #ordinate
++     info
++         un calibrage pour l'ordonnée, ou `Unset` pour celui donné pour son type
+
+- entry .Boxes   a box per set of samples: quartiles, median and whiskers to the extremes
++ entry .Boxes
++   info
++       une boîte par ensemble d'échantillons : quartiles, médiane et moustaches jusqu'aux extrêmes
+
+-   detail
+-       A chart kind for `Samples[y]` or any collection of sample sets, where `y` is
+-       `Continuous` with a `Calibration`. Each set is a category on the abscissa, drawn as a
+-       box from its lower to its upper quartile with the median across it, and whiskers with
+-       caps to its least and greatest sample. The ordinate spans all the extremes and is not
+-       anchored at zero.
++   detail
++       Un genre de graphique pour des `Samples[y]` ou n'importe quelle collection d'ensembles
++       d'échantillons, où `y` est `Continuous` avec une `Calibration`. Chaque ensemble est une
++       catégorie de l'abscisse, dessinée comme une boîte allant de son quartile inférieur à son
++       quartile supérieur, traversée par la médiane, avec des moustaches munies d'embouts
++       jusqu'à son plus petit et son plus grand échantillon. L'ordonnée couvre tous les extrêmes
++       et n'est pas ancrée à zéro.
+
+=       anchored at zero.
+=
+-       ```scala
++       ```scala
+
+=       anchored at zero.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val runs = List(Samples(t"a")(1.0, 2.0, 3.0), Samples(t"b")(2.0, 4.0, 8.0))
++       val runs = List(Samples(t"a")(1.0, 2.0, 3.0), Samples(t"b")(2.0, 4.0, 8.0))
+
+-       runs.chart(Boxes()).fit.summaries.size   // 2
++       runs.chart(Boxes()).fit.summaries.size   // 2
+
+=       runs.chart(Boxes()).fit.summaries.size   // 2
+-       ```
++       ```
+
+=       runs.chart(Boxes()).fit.summaries.size   // 2
+=       ```
+-   refer tasseomancy.Samples
++   refer tasseomancy.Samples
+
+=   refer tasseomancy.Samples
+-   refer tasseomancy.Histogram
++   refer tasseomancy.Histogram
+
+-   entry .Summary   the five-number summary of one set of samples
++   entry .Summary
++     info
++         le résumé à cinq nombres d'un ensemble d'échantillons
+
+-     detail
+-         `Summary(minimum, lowerQuartile, median, upperQuartile, maximum)`, computed by `.of`
+-         with quartiles interpolated linearly between the order statistics either side, so the
+-         lower quartile of `1, 2, 3, 4` is `1.75`.
++     detail
++         `Summary(minimum, lowerQuartile, median, upperQuartile, maximum)`, calculé par `.of`
++         avec des quartiles interpolés linéairement entre les statistiques d'ordre de part et
++         d'autre, de sorte que le quartile inférieur de `1, 2, 3, 4` est `1.75`.
+
+=         lower quartile of `1, 2, 3, 4` is `1.75`.
+=
+-         ```scala
++         ```scala
+
+=         lower quartile of `1, 2, 3, 4` is `1.75`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Boxes.Summary.of(Sequence(5.0, 1.0, 4.0, 2.0, 3.0))   // Summary(1.0, 2.0, 3.0, 4.0, 5.0)
++         Boxes.Summary.of(Sequence(5.0, 1.0, 4.0, 2.0, 3.0))   // Summary(1.0, 2.0, 3.0, 4.0, 5.0)
+
+=         Boxes.Summary.of(Sequence(5.0, 1.0, 4.0, 2.0, 3.0))   // Summary(1.0, 2.0, 3.0, 4.0, 5.0)
+-         ```
++         ```
+
+-     entry .of   the summary of a sequence of values, sorted and interpolated
++     entry .of
++       info
++           le résumé d'une séquence de valeurs, triées et interpolées
+
+-     entry #minimum   the least value
++     entry #minimum
++       info
++           la plus petite valeur
+
+-     entry #lowerQuartile   the value a quarter of the way through the sorted values
++     entry #lowerQuartile
++       info
++           la valeur située au quart des valeurs triées
+
+-     entry #median   the middle value
++     entry #median
++       info
++           la valeur médiane
+
+-     entry #upperQuartile   the value three quarters of the way through
++     entry #upperQuartile
++       info
++           la valeur située aux trois quarts
+
+-     entry #maximum   the greatest value
++     entry #maximum
++       info
++           la plus grande valeur
+
+-   entry .Fit   a box plot's fit: the sets as `#bands`, the ordinate `Scale` and each set's `#summaries`
++   entry .Fit
++     info
++         l'ajustement d'une boîte à moustaches : les ensembles comme `#bands`, l'ordonnée `Scale`
++         et les `#summaries` de chaque ensemble
+
+-     entry #bands   the `Bands` of the abscissa, one per sample set, by name
++     entry #bands
++       info
++           les `Bands` de l'abscisse, une par ensemble d'échantillons, par nom
+
+-     entry #ordinate   the ordinate `Scale`, spanning every set's extremes
++     entry #ordinate
++       info
++           l'ordonnée `Scale`, couvrant les extrêmes de chaque ensemble
+
+-     entry #summaries   one `Boxes.Summary` per set, in the sets' order
++     entry #summaries
++       info
++           un `Boxes.Summary` par ensemble, dans l'ordre des ensembles
+
+-   entry .Style   the components of a box plot beyond the axes: box, whiskers, caps and median
++   entry .Style
++     info
++         les composants d'une boîte à moustaches au-delà des axes : boîte, moustaches, embouts et
++         médiane
+
+-     detail
+-         Extends `Chart.Cartesian`. Whiskers, caps and medians are drawn in the palette's axis
+-         colour; the box in the series' colour.
++     detail
++         Étend `Chart.Cartesian`. Les moustaches, les embouts et les médianes sont dessinés dans
++         la couleur des axes de la palette ; la boîte dans la couleur de la série.
+
+-     entry #boxGap   the fraction of a set's band left empty around its box: `0.25` by default
++     entry #boxGap
++       info
++           la fraction de la bande d'un ensemble laissée vide autour de sa boîte : `0.25` par
++           défaut
+
+-     entry #box   the box between the quartiles: a filled rectangle
++     entry #box
++       info
++           la boîte entre les quartiles : un rectangle plein
+
+-     entry #whisker   the line from a quartile to an extreme
++     entry #whisker
++       info
++           la ligne allant d'un quartile à un extrême
+
+-     entry #whiskerCap   the short crossbar at an extreme
++     entry #whiskerCap
++       info
++           la courte barre transversale à un extrême
+
+-     entry #median   the line across the box at the median, stroked at `strokeWidth`
++     entry #median
++       info
++           la ligne traversant la boîte à la médiane, tracée avec l'épaisseur `strokeWidth`
+
+-   entry .samples   one sample set is plottable as a box plot
++   entry .samples
++     info
++         un ensemble d'échantillons peut être tracé en boîte à moustaches
+
+-   entry .traversable   any collection traversable by sample sets is plottable as a box plot
++   entry .traversable
++     info
++         toute collection parcourable par ensembles d'échantillons peut être tracée en boîtes à
++         moustaches
+
+=   entry .traversable   any collection traversable by sample sets is plottable as a box plot
+-   entry #ordinate   a calibration for the ordinate, or `Unset` for the one given for the value type
++   entry #ordinate
++     info
++         un calibrage pour l'ordonnée, ou `Unset` pour celui donné pour le type de valeur
+
+- entry .Pie   parts of a whole: one series, each category a wedge proportional to its value
++ entry .Pie
++   info
++       les parties d'un tout : une série, chaque catégorie étant un secteur proportionnel à sa
++       valeur
+
+-   detail
+-       A chart kind for exactly one `Series[x, y]`, where `x` is `Categorical` and `y` is
+-       `Continuous`; a collection of series is not plottable as a pie. Wedges run clockwise from
+-       the top, each sweeping its share of the total of the non-negative values, with its
+-       percentage set inside it (or moved outward with a leader where a neighbour's label is in
+-       the way) when the share is at least the style's `labelThreshold`. A pie has no axes and
+-       needs no `Calibration`.
++   detail
++       Un genre de graphique pour exactement une `Series[x, y]`, où `x` est `Categorical` et `y`
++       est `Continuous` ; une collection de séries ne peut pas être tracée en secteurs. Les
++       secteurs se succèdent dans le sens horaire à partir du haut, chacun balayant sa part du
++       total des valeurs non négatives, avec son pourcentage placé à l'intérieur (ou déplacé vers
++       l'extérieur avec une ligne de rappel là où l'étiquette d'un voisin gêne) lorsque la part
++       atteint au moins le `labelThreshold` du style. Un diagramme en secteurs n'a pas d'axes et
++       ne nécessite aucune `Calibration`.
+
+=       needs no `Calibration`.
+=
+-       ```scala
++       ```scala
+
+=       needs no `Calibration`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val share = Series(t"share")((t"a", 25.0), (t"b", 75.0))
++       val share = Series(t"share")((t"a", 25.0), (t"b", 75.0))
+
+-       share.chart(Pie()).fit.total                                   // 100.0
++       share.chart(Pie()).fit.total                                   // 100.0
+
+-       share.chart(Pie()).in[Svg].in[Xml].show.contains(t"75%")       // true
++       share.chart(Pie()).in[Svg].in[Xml].show.contains(t"75%")       // true
+
+=       share.chart(Pie()).in[Svg].in[Xml].show.contains(t"75%")       // true
+-       ```
++       ```
+
+-       `Chart.Standard(hole = 0.3)` hollows the centre to three tenths of the radius. The
+-       drawing's parts are `backdrop`, `wedges` and `legend`. A pie has no axes to hold still,
+-       so a revision keeps the fit — and replaces only `wedges` — while the categories are the
+-       same, and redraws otherwise.
++       `Chart.Standard(hole = 0.3)` évide le centre sur trois dixièmes du rayon. Les parties du
++       dessin sont `backdrop`, `wedges` et `legend`. Un diagramme en secteurs n'a pas d'axes à
++       maintenir fixes, donc une révision conserve l'ajustement — et ne remplace que `wedges` —
++       tant que les catégories sont les mêmes, et redessine sinon.
+
+-   refer tasseomancy.Doughnut
++   refer tasseomancy.Doughnut
+
+-   entry .Fit   a pie's fit: the category `#labels` in order and the `#total` they share
++   entry .Fit
++     info
++         l'ajustement d'un diagramme en secteurs : les étiquettes de catégories `#labels` dans
++         l'ordre et le `#total` qu'elles se partagent
+
+-     entry #labels   the categories, in the series' order
++     entry #labels
++       info
++           les catégories, dans l'ordre de la série
+
+-     entry #total   the sum of the non-negative values
++     entry #total
++       info
++           la somme des valeurs non négatives
+
+-   entry .Style   the components of a pie: its wedges and their percentage labels
++   entry .Style
++     info
++         les composants d'un diagramme en secteurs : ses secteurs et leurs étiquettes de
++         pourcentage
+
+-     detail
+-         Extends `Chart.Style` (not `Chart.Cartesian`). `Chart.Standard` supplies `hole`.
++     detail
++         Étend `Chart.Style` (et non `Chart.Cartesian`). `Chart.Standard` fournit `hole`.
+
+-     entry #hole   the fraction of the radius hollowed from the centre: `0.0` for a full pie
++     entry #hole
++       info
++           la fraction du rayon évidée à partir du centre : `0.0` pour un disque plein
+
+-         Clipped to `[0, 0.95]`. A hollow pie's wedges are rings cut by the even-odd rule.
++       detail
++           Ramenée à `[0, 0.95]`. Les secteurs d'un diagramme évidé sont des anneaux découpés selon
++           la règle pair-impair.
+
+-     entry #labelThreshold   the least share of the whole a wedge needs for its percentage to be set: `0.04`
++     entry #labelThreshold
++       info
++           la plus petite part du tout dont un secteur a besoin pour que son pourcentage soit
++           affiché : `0.04`
+
+-     entry #wedge   one wedge, from the path operations of its outline, in the series' colour
++     entry #wedge
++       info
++           un secteur, à partir des opérations de tracé de son contour, dans la couleur de la série
+
+-         An `Outline` filled with `fill-rule: evenodd`, so that a hollow wedge keeps its hole.
+-         The operations are listed last to first, as an `Outline` holds them.
++       detail
++           Un `Outline` rempli avec `fill-rule: evenodd`, afin qu'un secteur évidé conserve son
++           trou. Les opérations sont listées de la dernière à la première, comme les contient un
++           `Outline`.
+
+-     entry #wedgeLabel   a wedge's percentage, at the anchoring the arrangement chose
++     entry #wedgeLabel
++       info
++           le pourcentage d'un secteur, à l'ancrage choisi par l'agencement
+
+-         Centred in the wedge when that is clear of other labels, or moved outward with a
+-         leader when it is not.
++       detail
++           Centré dans le secteur lorsque cette position est libre d'autres étiquettes, ou déplacé
++           vers l'extérieur avec une ligne de rappel sinon.
+
+-   entry .series   one categorical series is plottable as a pie
++   entry .series
++     info
++         une série catégorielle peut être tracée en secteurs
+
+- entry .Doughnut   a dependency graph as concentric bands: one per rank, each node a sector filled as far as it is complete
++ entry .Doughnut
++   info
++       un graphe de dépendances sous forme de bandes concentriques : une par rang, chaque nœud
++       étant un secteur rempli selon son avancement
+
+-   detail
+-       A chart kind for an acyclicity `Dag[node]` whose nodes are `Weighted` and
+-       `Progressive`, with a `Ranking` in scope (acyclicity's companion default; `import
+-       rankings.balancedRanking` draws each node as close to its dependents as it can be). The
+-       nodes depending on nothing form the innermost band, each further band the nodes one
+-       rank further out, so a build fills in from the centre outward. A node's sector sweeps an
+-       angle proportional to its weight within its rank, ordered so that it sits over the
+-       dependencies it was drawn to, and a band is as thick as its rank's share of the total
+-       weight. The sector fills clockwise as far as the node is complete, with the remainder in
+-       a subdued tint; the colour is the palette's first colour shaded by where the sector
+-       lies. A doughnut has no labels, no axes and no legend.
++   detail
++       Un genre de graphique pour un `Dag[node]` d'acyclicity dont les nœuds sont `Weighted` et
++       `Progressive`, avec un `Ranking` dans la portée (la valeur par défaut du compagnon
++       d'acyclicity ; `import rankings.balancedRanking` dessine chaque nœud aussi près que
++       possible de ses dépendants). Les nœuds qui ne dépendent de rien forment la bande la plus
++       intérieure, chaque bande suivante les nœuds d'un rang plus éloigné, de sorte qu'un build
++       se remplit du centre vers l'extérieur. Le secteur d'un nœud balaie un angle proportionnel
++       à son poids au sein de son rang, ordonné de façon à se placer au-dessus des dépendances
++       vers lesquelles il a été attiré, et une bande est aussi épaisse que la part de son rang
++       dans le poids total. Le secteur se remplit dans le sens horaire selon l'avancement du
++       nœud, le reste étant dans une teinte atténuée ; la couleur est la première couleur de la
++       palette, nuancée selon la position du secteur. Un anneau n'a ni étiquettes, ni axes, ni
++       légende.
+
+=       lies. A doughnut has no labels, no axes and no legend.
+=
+-       ```scala
++       ```scala
+
+=       lies. A doughnut has no labels, no axes and no legend.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Step(name: Text, size: Double, done: Double)
++       case class Step(name: Text, size: Double, done: Double)
+
+-       given Step is Weighted = _.size
++       given Step is Weighted = _.size
+
+-       given Step is Progressive = _.done
++       given Step is Progressive = _.done
+
+-       val parse = Step(t"parse", 2.0, 1.0)
++       val parse = Step(t"parse", 2.0, 1.0)
+
+-       val typecheck = Step(t"typecheck", 3.0, 0.5)
++       val typecheck = Step(t"typecheck", 3.0, 0.5)
+
+-       val emit = Step(t"emit", 1.0, 0.0)
++       val emit = Step(t"emit", 1.0, 0.0)
+
+-       val doughnut = Dag(typecheck -> parse, emit -> typecheck).chart(Doughnut())
++       val doughnut = Dag(typecheck -> parse, emit -> typecheck).chart(Doughnut())
+
+-       doughnut.fit.bands.size   // 3: one band per rank
++       doughnut.fit.bands.size   // 3: one band per rank
+
+-       val typechecked = typecheck.copy(done = 1.0)
++       val typechecked = typecheck.copy(done = 1.0)
+
+-       doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size   // 1: a Replace of rank-1
++       doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size   // 1: a Replace of rank-1
+
+=       doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size   // 1: a Replace of rank-1
+-       ```
++       ```
+
+-       The drawing's parts are `backdrop` and `rank-0`, `rank-1`, …, each a group of
+-       `sector-N` and `sector-N-rest` paths. The fit depends on the graph's shape and weights
+-       alone, so it survives a graph of the same shape whose nodes have only progressed, and a
+-       revision replaces only the bands whose sectors filled further.
++       Les parties du dessin sont `backdrop` et `rank-0`, `rank-1`, …, chacune étant un groupe
++       de tracés `sector-N` et `sector-N-rest`. L'ajustement ne dépend que de la forme et des
++       poids du graphe, de sorte qu'il survit à un graphe de même forme dont les nœuds ont
++       seulement avancé, et une révision ne remplace que les bandes dont les secteurs se sont
++       davantage remplis.
+
+-   refer tasseomancy.Weighted
++   refer tasseomancy.Weighted
+
+-   refer tasseomancy.Progressive
++   refer tasseomancy.Progressive
+
+-   refer tasseomancy.Pie
++   refer tasseomancy.Pie
+
+-   entry .Sector   a node's place in its band: the angles its sector starts and ends at, and its weight
++   entry .Sector
++     info
++         la place d'un nœud dans sa bande : les angles auxquels son secteur commence et se termine,
++         et son poids
+
+-     detail
+-         Angles are in radians, clockwise from north.
++     detail
++         Les angles sont en radians, dans le sens horaire à partir du nord.
+
+-     entry #node   the node
++     entry #node
++       info
++           le nœud
+
+-     entry #start   the angle the sector starts at
++     entry #start
++       info
++           l'angle auquel le secteur commence
+
+-     entry #end   the angle the sector ends at
++     entry #end
++       info
++           l'angle auquel le secteur se termine
+
+-     entry #size   the weight the sector was laid out with
++     entry #size
++       info
++           le poids avec lequel le secteur a été disposé
+
+-   entry .Band   a rank's band, counted outward from the centre, with its edges and its sectors
++   entry .Band
++     info
++         la bande d'un rang, comptée vers l'extérieur à partir du centre, avec ses bords et ses
++         secteurs
+
+-     detail
+-         `#inner` and `#outer` are fractions of the distance between the hole and the rim.
++     detail
++         `#inner` et `#outer` sont des fractions de la distance entre le trou et le bord extérieur.
+
+-     entry #rank   the rank, from `0` at the centre
++     entry #rank
++       info
++           le rang, à partir de `0` au centre
+
+-     entry #inner   the inner edge, as a fraction of the usable radius
++     entry #inner
++       info
++           le bord intérieur, en fraction du rayon utilisable
+
+-     entry #outer   the outer edge, as a fraction of the usable radius
++     entry #outer
++       info
++           le bord extérieur, en fraction du rayon utilisable
+
+-     entry #sectors   the rank's sectors, in drawing order
++     entry #sectors
++       info
++           les secteurs du rang, dans l'ordre de dessin
+
+-   entry .Fit   everything that holds still across revisions: the `#bands`
++   entry .Fit
++     info
++         tout ce qui reste fixe d'une révision à l'autre : les `#bands`
+
+-     detail
+-         Completion is not here; it is read from the nodes on every draw.
++     detail
++         L'avancement n'est pas ici ; il est lu dans les nœuds à chaque dessin.
+
+-     entry #bands   the bands, innermost first
++     entry #bands
++       info
++           les bandes, de la plus intérieure à la plus extérieure
+
+-   entry .Style   the components of a doughnut: each sector's completed part and remainder, and the grout
++   entry .Style
++     info
++         les composants d'un anneau : la partie terminée et le reste de chaque secteur, et les
++         joints
+
+-     detail
+-         Extends `Chart.Style`. `Chart.Standard` supplies `hole`, `sectorGap` and `bandGap`.
++     detail
++         Étend `Chart.Style`. `Chart.Standard` fournit `hole`, `sectorGap` et `bandGap`.
+
+-     entry #hole   the fraction of the radius hollowed from the centre, shared with `Pie.Style`
++     entry #hole
++       info
++           la fraction du rayon évidée à partir du centre, partagée avec `Pie.Style`
+
+-     entry #sectorGap   the width in pixels of the grout between neighbouring sectors
++     entry #sectorGap
++       info
++           la largeur en pixels du joint entre secteurs voisins
+
+-     entry #bandGap   the width in pixels of the grout between neighbouring bands
++     entry #bandGap
++       info
++           la largeur en pixels du joint entre bandes voisines
+
+-     entry #shade   a sector's colour from its position, from the palette's first colour
++     entry #shade
++       info
++           la couleur d'un secteur selon sa position, à partir de la première couleur de la palette
+
+-         `x` and `y` run from -1 at the left or bottom of the doughnut to 1 at the right or
+-         top: the hue turns through thirty degrees from left to right, and from bottom to top
+-         the colour passes from a fifth darker, through the pure hue, to a fifth lighter.
++       detail
++           `x` et `y` vont de -1 à gauche ou en bas de l'anneau à 1 à droite ou en haut : la teinte
++           tourne de trente degrés de gauche à droite, et de bas en haut la couleur passe d'un
++           cinquième plus sombre, par la teinte pure, à un cinquième plus clair.
+
+-     entry #sector   the completed part of a node's sector, from its path operations: `sector-N`
++     entry #sector
++       info
++           la partie terminée du secteur d'un nœud, à partir de ses opérations de tracé :
++           `sector-N`
+
+-     entry #remainder   the unfinished part, in a subdued tint: `sector-N-rest`
++     entry #remainder
++       info
++           la partie inachevée, dans une teinte atténuée : `sector-N-rest`
+
+-   entry .dag   a `Dag` of weighted, progressive nodes is plottable as a doughnut, given a `Ranking`
++   entry .dag
++     info
++         un `Dag` de nœuds pondérés et progressifs peut être tracé en anneau, étant donné un
++         `Ranking`
+
+- entry .Ruler   the mapping of an axis: a `Scale` over a numeric range, or the `Bands` of a categorical one
++ entry .Ruler
++   info
++       la correspondance d'un axe : une `Scale` sur une plage numérique, ou les `Bands` d'un axe
++       catégoriel
+
+-   detail
+-       A ruler says where its gradations fall, as fractions of the axis's length, given how
+-       many the axis has room for. `Scale` and `Bands` are the two rulers; a fit holds one per
+-       axis, and the layout asks each for its `gradations(budget)` to draw ticks, labels and
+-       grid lines.
++   detail
++       Une règle indique où tombent ses graduations, en fractions de la longueur de l'axe, selon
++       le nombre de graduations pour lesquelles l'axe a de la place. `Scale` et `Bands` sont les
++       deux règles ; un ajustement en contient une par axe, et la mise en page demande à chacune
++       ses `gradations(budget)` pour dessiner les graduations, les étiquettes et les lignes de
++       grille.
+
+-   entry #gradations   the marks for a budget of about so many, each with its position and label
++   entry #gradations
++     info
++         les marques pour un budget d'environ tant de marques, chacune avec sa position et son
++         étiquette
+
+- entry .Gradation   one mark on an axis: where it lies, as a fraction of the axis's length, and its label
++ entry .Gradation
++   info
++       une marque sur un axe : l'endroit où elle se trouve, en fraction de la longueur de l'axe, et
++       son étiquette
+
+-   detail
+-       `Gradation(position, label, major = true)`. A minor gradation — the `2`–`9` multiples
+-       between the decades of a logarithmic axis — has an empty label, is drawn as a tick
+-       without a label, and gets no grid line.
++   detail
++       `Gradation(position, label, major = true)`. Une graduation secondaire — les multiples
++       `2`–`9` entre les décades d'un axe logarithmique — a une étiquette vide, est dessinée comme
++       une marque sans étiquette, et n'a pas de ligne de grille.
+
+-   entry #position   the mark's position, from `0.0` at the axis's start to `1.0` at its end
++   entry #position
++     info
++         la position de la marque, de `0.0` au début de l'axe à `1.0` à sa fin
+
+-   entry #label   the label text, empty for a minor gradation
++   entry #label
++     info
++         le texte de l'étiquette, vide pour une graduation secondaire
+
+-   entry #major   whether the mark is labelled and gridded
++   entry #major
++     info
++         si la marque est étiquetée et accompagnée d'une ligne de grille
+
+- entry .Bands   the categorical counterpart of a `Scale`: the axis divided into equal bands, one per category
++ entry .Bands
++   info
++       le pendant catégoriel d'une `Scale` : l'axe divisé en bandes égales, une par catégorie
+
+-   detail
+-       A `Ruler` over a `Sequence` of category labels in first-appearance order. The axis is
+-       divided into `#count` equal bands of `#width`, and a value is placed at the `#centre` of
+-       its band; `#index` finds a label's band, or `Unset` for a category the fit never saw,
+-       which is what makes a bar chart redraw rather than revise when a new category arrives.
++   detail
++       Une `Ruler` sur une `Sequence` d'étiquettes de catégories dans l'ordre de première
++       apparition. L'axe est divisé en `#count` bandes égales de largeur `#width`, et une valeur
++       est placée au centre `#centre` de sa bande ; `#index` trouve la bande d'une étiquette, ou
++       `Unset` pour une catégorie que l'ajustement n'a jamais vue, et c'est ce qui fait qu'un
++       graphique en barres se redessine plutôt que de se réviser lorsqu'une nouvelle catégorie
++       arrive.
+
+=       which is what makes a bar chart redraw rather than revise when a new category arrives.
+=
+-       ```scala
++       ```scala
+
+=       which is what makes a bar chart redraw rather than revise when a new category arrives.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val bands = Bands(Sequence(t"jan", t"feb", t"mar"))
++       val bands = Bands(Sequence(t"jan", t"feb", t"mar"))
+
+-       bands.index(t"feb")    // 1
++       bands.index(t"feb")    // 1
+
+-       bands.centre(1)        // 0.5
++       bands.centre(1)        // 0.5
+
+-       bands.index(t"apr")    // Unset
++       bands.index(t"apr")    // Unset
+
+=       bands.index(t"apr")    // Unset
+-       ```
++       ```
+
+=       ```
+-   refer tasseomancy.Scale
++   refer tasseomancy.Scale
+
+-   entry #categories   the category labels, in first-appearance order
++   entry #categories
++     info
++         les étiquettes de catégories, dans l'ordre de première apparition
+
+-   entry #count   the number of bands
++   entry #count
++     info
++         le nombre de bandes
+
+-   entry #width   one band's share of the axis: `1.0/count`, or `1.0` for no bands
++   entry #width
++     info
++         la part de l'axe occupée par une bande : `1.0/count`, ou `1.0` s'il n'y a pas de bandes
+
+-   entry #centre   the position of a band's middle, from its index
++   entry #centre
++     info
++         la position du milieu d'une bande, à partir de son indice
+
+-   entry #index   the band of a label, or `Unset` if the label is not a category
++   entry #index
++     info
++         la bande d'une étiquette, ou `Unset` si l'étiquette n'est pas une catégorie
+
+-   entry #gradations   one major gradation per category, at its centre, labelled with it
++   entry #gradations
++     info
++         une graduation principale par catégorie, en son centre, étiquetée avec elle
+
+-       The budget is ignored: every category is marked. The layout hides a label that would
+-       overlap its neighbour.
++     detail
++         Le budget est ignoré : chaque catégorie est marquée. La mise en page masque une étiquette
++         qui chevaucherait sa voisine.
+
+- entry .Scale   a fitted numeric axis: its range, its transform, and how it is graduated and labelled
++ entry .Scale
++   info
++       un axe numérique ajusté : sa plage, sa transformation, et la façon dont il est gradué et
++       étiqueté
+
+-   detail
+-       `Scale(lower, upper, transform, notation)` is plain data, which is what lets a chart
+-       tell whether a new point still fits the axis it was drawn with (`#accommodates`). A
+-       `Calibration` produces one from the data's extent; `#unit` places a value along it; and
+-       `#gradations` chooses round steps for a budget — multiples of 1, 2 and 5 across the
+-       decades for decimal notation, clock steps (seconds, half-minutes, hours, days) for
+-       sexagesimal, powers of ten with minor marks at their multiples on a logarithmic scale.
++   detail
++       `Scale(lower, upper, transform, notation)` est une donnée simple, ce qui permet à un
++       graphique de savoir si un nouveau point tient encore dans l'axe avec lequel il a été
++       dessiné (`#accommodates`). Une `Calibration` en produit une à partir de l'étendue des
++       données ; `#unit` place une valeur le long de l'axe ; et `#gradations` choisit des pas
++       ronds pour un budget — multiples de 1, 2 et 5 à travers les décades pour la notation
++       décimale, pas d'horloge (secondes, demi-minutes, heures, jours) pour la notation
++       sexagésimale, puissances de dix avec des marques secondaires à leurs multiples sur une
++       échelle logarithmique.
+
+=       sexagesimal, powers of ten with minor marks at their multiples on a logarithmic scale.
+=
+-       ```scala
++       ```scala
+
+=       sexagesimal, powers of ten with minor marks at their multiples on a logarithmic scale.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
++       val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
+
+-       val scale: Scale = growth.chart(Lines()).fit.ordinate
++       val scale: Scale = growth.chart(Lines()).fit.ordinate
+
+-       (scale.lower, scale.upper)                                         // (0.0, 100.0)
++       (scale.lower, scale.upper)                                         // (0.0, 100.0)
+
+-       scale.gradations(5).filter(_.major).map(_.label).to[List]         // List(t"0", t"20", t"40", t"60", t"80", t"100")
++       scale.gradations(5).filter(_.major).map(_.label).to[List]         // List(t"0", t"20", t"40", t"60", t"80", t"100")
+
+-       scale.unit(50.0)                                                   // 0.5
++       scale.unit(50.0)                                                   // 0.5
+
+=       scale.unit(50.0)                                                   // 0.5
+-       ```
++       ```
+
+-       The companion holds the number formatting the labels use — `.step`, `.format`,
+-       `.interval`, `.clock` — which is fixed decimals from the step rather than a
+-       `DecimalConverter`, since gradation labels are multiples of a known step.
++       Le compagnon contient le formatage des nombres qu'utilisent les étiquettes — `.step`,
++       `.format`, `.interval`, `.clock` — qui produit un nombre fixe de décimales déduit du pas
++       plutôt que de passer par un `DecimalConverter`, puisque les étiquettes de graduation sont
++       des multiples d'un pas connu.
+
+=       `DecimalConverter`, since gradation labels are multiples of a known step.
+-   refer tasseomancy.Calibration
++   refer tasseomancy.Calibration
+
+=   refer tasseomancy.Calibration
+-   refer tasseomancy.Bands
++   refer tasseomancy.Bands
+
+-   refer tasseomancy.Ruler
++   refer tasseomancy.Ruler
+
+-   entry .Transform   how a position follows from a value: `Linear`, `Logarithmic` or `Exponential(curvature)`
++   entry .Transform
++     info
++         la façon dont une position découle d'une valeur : `Linear`, `Logarithmic` ou
++         `Exponential(curvature)`
+
+-       Linear is in proportion to the value; logarithmic to its logarithm, where a value at or
+-       below zero has no position and is clipped to the axis's start; exponential to an
+-       exponential of it, which opens up the top of the range so that small differences among
+-       large values show. On an exponential axis the gradations still fall at regular intervals
+-       of value, as on a linear one; it is their spacing that grows. The `curvature` is the
+-       exponent's range across the axis: the top is stretched `e^curvature` times as much as
+-       the bottom.
++     detail
++         Linéaire, la position est proportionnelle à la valeur ; logarithmique, à son logarithme,
++         une valeur inférieure ou égale à zéro n'ayant alors pas de position et étant ramenée au
++         début de l'axe ; exponentielle, à une exponentielle de celle-ci, ce qui dilate le haut de
++         la plage afin que de petites différences entre de grandes valeurs soient visibles. Sur un
++         axe exponentiel, les graduations tombent toujours à intervalles de valeur réguliers, comme
++         sur un axe linéaire ; c'est leur espacement qui croît. La `curvature` est l'étendue de
++         l'exposant à travers l'axe : le haut est étiré `e^curvature` fois plus que le bas.
+
+-   entry .Spacing   how gradations are spaced on a linear scale: `Decimal` or `Sexagesimal`
++   entry .Spacing
++     info
++         la façon dont les graduations sont espacées sur une échelle linéaire : `Decimal` ou
++         `Sexagesimal`
+
+-       Decimal steps are 1, 2 and 5 times a power of ten, as numbers are read; sexagesimal
+-       steps are those of clock time, from a millisecond to a day, and decimal days beyond.
++     detail
++         Les pas décimaux valent 1, 2 et 5 fois une puissance de dix, comme on lit les nombres ;
++         les pas sexagésimaux sont ceux de l'heure d'horloge, d'une milliseconde à un jour, puis
++         des jours décimaux au-delà.
+
+-   entry .Labelling   how a gradation's value is written: a `Number(suffix)`, an `Interval` or a `Clock` time
++   entry .Labelling
++     info
++         la façon dont la valeur d'une graduation est écrite : un `Number(suffix)`, un `Interval`
++         ou une heure `Clock`
+
+-       `Number(t"")` writes `250`; `Interval` writes seconds as `250ms`, `2m30s`, `1h05m`;
+-       `Clock` writes seconds since the epoch as `HH:MM:SS` in UTC.
++     detail
++         `Number(t"")` écrit `250` ; `Interval` écrit des secondes sous la forme `250ms`, `2m30s`,
++         `1h05m` ; `Clock` écrit des secondes depuis l'epoch sous la forme `HH:MM:SS` en UTC.
+
+-   entry .Notation   how an axis of some type is read: spacing, labelling, name and unit
++   entry .Notation
++     info
++         la façon dont se lit un axe d'un certain type : espacement, étiquetage, nom et unité
+
+-     detail
+-         `Notation(spacing = Decimal, labelling = Number(t""), name = Unset, unit = Unset)`
+-         travels from a `Continuous` instance through `Calibration#scale` into the `Scale`.
+-         The name and unit make the axis title — `distance / m` — unless the style gives a
+-         title, in which case the unit is appended to that instead.
++     detail
++         `Notation(spacing = Decimal, labelling = Number(t""), name = Unset, unit = Unset)`
++         passe d'une instance `Continuous` à la `Scale` via `Calibration#scale`. Le nom et l'unité
++         forment le titre de l'axe — `distance / m` — à moins que le style ne donne un titre,
++         auquel cas l'unité est ajoutée à celui-ci.
+
+-     entry #spacing   decimal or sexagesimal steps
++     entry #spacing
++       info
++           pas décimaux ou sexagésimaux
+
+-     entry #labelling   how each gradation is written
++     entry #labelling
++       info
++           la façon dont chaque graduation est écrite
+
+-     entry #name   what the quantity is called — `distance`, `time` — or `Unset`
++     entry #name
++       info
++           le nom de la quantité — `distance`, `time` — ou `Unset`
+
+-     entry #unit   the unit the values are in — `m`, `kg·s¯²` — or `Unset`
++     entry #unit
++       info
++           l'unité dans laquelle sont les valeurs — `m`, `kg·s¯²` — ou `Unset`
+
+-     entry #title   the axis title: a supplied title or the name, with ` / unit` appended if there is one
++     entry #title
++       info
++           le titre de l'axe : un titre fourni ou le nom, suivi de ` / unit` s'il y a une unité
+
+-         `Unset` if there is neither a title, a name nor a unit, as for a bare number.
++       detail
++           `Unset` s'il n'y a ni titre, ni nom, ni unité, comme pour un nombre nu.
+
+-   entry .step   the smallest of 1, 2 and 5 times a power of ten no less than a raw step
++   entry .step
++     info
++         le plus petit multiple de 1, 2 ou 5 fois une puissance de dix qui ne soit pas inférieur à
++         un pas brut
+
+-       `Scale.step(1.9)` is `2.0`, `Scale.step(0.3)` is `0.5`; a raw step at or below zero
+-       gives `1.0`.
++     detail
++         `Scale.step(1.9)` donne `2.0`, `Scale.step(0.3)` donne `0.5` ; un pas brut inférieur ou
++         égal à zéro donne `1.0`.
+
+-   entry .sexagesimalStep   the smallest clock step no less than a raw step, in seconds
++   entry .sexagesimalStep
++     info
++         le plus petit pas d'horloge qui ne soit pas inférieur à un pas brut, en secondes
+
+-       From a millisecond through seconds, quarter- and half-minutes, minutes, hours and
+-       half-days to a day; beyond a day, decimal multiples of a day. Below a millisecond,
+-       `.step`.
++     detail
++         D'une milliseconde aux secondes, aux quarts et demi-minutes, aux minutes, aux heures et
++         aux demi-journées jusqu'à un jour ; au-delà d'un jour, des multiples décimaux d'un jour.
++         En dessous d'une milliseconde, `.step`.
+
+-   entry .decimals   the decimal places needed to write multiples of a step exactly
++   entry .decimals
++     info
++         le nombre de décimales nécessaire pour écrire exactement les multiples d'un pas
+
+-       `0` for a step of `1.0` or more, `1` for `0.5`, `2` for `0.05`.
++     detail
++         `0` pour un pas de `1.0` ou plus, `1` pour `0.5`, `2` pour `0.05`.
+
+-   entry .format   a number to a fixed count of decimal places: `format(2.5, 1)` is `2.5`
++   entry .format
++     info
++         un nombre avec un nombre fixe de décimales : `format(2.5, 1)` donne `2.5`
+
+-       A whole number has no point (`format(1000.0, 0)` is `1000`), a small negative keeps its
+-       leading zero (`-0.05`), and zero is `0`.
++     detail
++         Un nombre entier n'a pas de point décimal (`format(1000.0, 0)` donne `1000`), un petit
++         nombre négatif conserve son zéro initial (`-0.05`), et zéro s'écrit `0`.
+
+-   entry .interval   seconds as a short interval: `250ms`, `1.5µs`, `41s`, `1m30s`, `1h01m`, `3d02h`
++   entry .interval
++     info
++         des secondes sous forme d'intervalle court : `250ms`, `1.5µs`, `41s`, `1m30s`, `1h01m`,
++         `3d02h`
+
+-       Below a second the unit keeps the number short and trailing zeros are trimmed; from a
+-       minute, the two largest units are paired, the minor one zero-padded, and dropped when it
+-       rounds to nothing (`2m`, not `2m00s`).
++     detail
++         En dessous d'une seconde, l'unité garde le nombre court et les zéros finaux sont
++         supprimés ; à partir d'une minute, les deux plus grandes unités sont associées, la
++         mineure complétée par des zéros, et omise lorsqu'elle s'arrondit à rien (`2m`, et non
++         `2m00s`).
+
+-   entry .clock   seconds since the epoch as a time of day, `HH:MM:SS`, in UTC
++   entry .clock
++     info
++         des secondes depuis l'epoch sous forme d'heure de la journée, `HH:MM:SS`, en UTC
+
+-   entry #lower   the value at the axis's start
++   entry #lower
++     info
++         la valeur au début de l'axe
+
+-   entry #upper   the value at the axis's end
++   entry #upper
++     info
++         la valeur à la fin de l'axe
+
+-   entry #transform   linear, logarithmic or exponential positions
++   entry #transform
++     info
++         positions linéaires, logarithmiques ou exponentielles
+
+-   entry #notation   the `Scale.Notation` the axis is graduated and titled with
++   entry #notation
++     info
++         la `Scale.Notation` avec laquelle l'axe est gradué et titré
+
+-   entry #spacing   the notation's spacing
++   entry #spacing
++     info
++         l'espacement de la notation
+
+-   entry #labelling   the notation's labelling
++   entry #labelling
++     info
++         l'étiquetage de la notation
+
+-   entry #unit   where a value lies along the axis, as a fraction of its length
++   entry #unit
++     info
++         l'endroit où se trouve une valeur le long de l'axe, en fraction de sa longueur
+
+-       `0.5` everywhere on an empty range; on a logarithmic scale, `0.0` for a value at or
+-       below zero.
++     detail
++         `0.5` partout sur une plage vide ; sur une échelle logarithmique, `0.0` pour une valeur
++         inférieure ou égale à zéro.
+
+-   entry #accommodates   whether a value lies within `[lower, upper]`
++   entry #accommodates
++     info
++         si une valeur se trouve dans `[lower, upper]`
+
+-   entry #label   a value's label for a given step, in the scale's labelling
++   entry #label
++     info
++         l'étiquette d'une valeur pour un pas donné, dans l'étiquetage de l'échelle
+
+-   entry #gradations   round-stepped marks for a budget: the largest step giving about that many
++   entry #gradations
++     info
++         des marques à pas ronds pour un budget : le plus grand pas en donnant à peu près autant
+
+-       A linear or exponential scale steps decimally or sexagesimally per its spacing from the
+-       first multiple at or above `lower`; a logarithmic scale marks the powers of ten (every
+-       `stride`th decade when there are more decades than budget) and, when the budget allows
+-       two marks per decade, the `2`–`9` multiples as minor gradations. A logarithmic scale
+-       with a non-positive `lower` is graduated linearly.
++     detail
++         Une échelle linéaire ou exponentielle progresse par pas décimaux ou sexagésimaux selon son
++         espacement à partir du premier multiple supérieur ou égal à `lower` ; une échelle
++         logarithmique marque les puissances de dix (une décade sur `stride` lorsqu'il y a plus de
++         décades que le budget) et, lorsque le budget permet deux marques par décade, les multiples
++         `2`–`9` comme graduations secondaires. Une échelle logarithmique dont le `lower` n'est pas
++         positif est graduée linéairement.
+
+- entry .Calibration   how the extent of the data becomes the range of an axis
++ entry .Calibration
++   info
++       la façon dont l'étendue des données devient la plage d'un axe
+
+-   detail
+-       `value is Calibration` gives `scale(lower, upper, anchored, notation): Scale`: whether
+-       positions are linear, logarithmic or exponential, whether the range is padded out to
+-       whole gradation steps or tight to the data, and (when the chart kind asks, as a bar
+-       chart does) whether it must include zero. It is keyed on the type of the values on the
+-       axis, so a scoped given for one type changes every axis of that type; the methods never
+-       mention `Self`, so the polymorphic `calibrations.*` givens double as explicit
+-       `Optional[Calibration]` arguments to a chart kind, for one axis alone.
++   detail
++       `value is Calibration` donne `scale(lower, upper, anchored, notation): Scale` : si les
++       positions sont linéaires, logarithmiques ou exponentielles, si la plage est étendue
++       jusqu'à des pas de graduation entiers ou ajustée au plus près des données, et (lorsque le
++       genre de graphique le demande, comme le fait un graphique en barres) si elle doit inclure
++       zéro. Elle est indexée sur le type des valeurs de l'axe, de sorte qu'un given de portée
++       pour un type modifie tous les axes de ce type ; les méthodes ne mentionnent jamais
++       `Self`, de sorte que les givens polymorphes `calibrations.*` servent aussi d'arguments
++       `Optional[Calibration]` explicites à un genre de graphique, pour un seul axe.
+
+=       `Optional[Calibration]` arguments to a chart kind, for one axis alone.
+=
+-       ```scala
++       ```scala
+
+=       `Optional[Calibration]` arguments to a chart kind, for one axis alone.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val sizes = Series(t"sort")((100, 1.2), (1000, 14.0), (10000, 160.0), (100000, 1900.0))
++       val sizes = Series(t"sort")((100, 1.2), (1000, 14.0), (10000, 160.0), (100000, 1900.0))
+
+-       val logged =
++       val logged =
+
+-         given Int is Calibration = calibrations.logarithmicCalibration
++         given Int is Calibration = calibrations.logarithmicCalibration
+
+-         sizes.chart(Lines())
++         sizes.chart(Lines())
+
+-       logged.fit.abscissa.transform                                  // Scale.Transform.Logarithmic
++       logged.fit.abscissa.transform                                  // Scale.Transform.Logarithmic
+
+-       sizes.chart(Lines(ordinate = calibrations.adaptiveCalibration)).fit.ordinate.transform
++       sizes.chart(Lines(ordinate = calibrations.adaptiveCalibration)).fit.ordinate.transform
+
+=       sizes.chart(Lines(ordinate = calibrations.adaptiveCalibration)).fit.ordinate.transform
+-       ```
++       ```
+
+-       The no-import default, `.linear`, is linear and padded. A logarithmic calibration over
+-       a range that includes zero or a negative falls back to linear rather than failing.
++       La valeur par défaut sans import, `.linear`, est linéaire et étendue. Un calibrage
++       logarithmique sur une plage qui inclut zéro ou une valeur négative se replie sur un
++       calibrage linéaire au lieu d'échouer.
+
+-   refer tasseomancy.calibrations
++   refer tasseomancy.calibrations
+
+=   refer tasseomancy.calibrations
+-   refer tasseomancy.Scale
++   refer tasseomancy.Scale
+
+-   entry .linear   the no-import default for every value type: linear, padded to whole steps
++   entry .linear
++     info
++         la valeur par défaut sans import pour tout type de valeur : linéaire, étendue jusqu'à des
++         pas entiers
+
+-       A companion given, outranked by any `import calibrations.…` or scoped given.
++     detail
++         Un given de compagnon, sur lequel l'emporte tout `import calibrations.…` ou given de
++         portée.
+
+-   entry .Policy   the choices a calibration makes: `Linear`, `Logarithmic`, `Adaptive`, `Tight` or `Exponential(curvature)`
++   entry .Policy
++     info
++         les choix que fait un calibrage : `Linear`, `Logarithmic`, `Adaptive`, `Tight` ou
++         `Exponential(curvature)`
+
+-       `Linear` pads outward to whole gradation steps; `Tight` is linear over exactly the
+-       data's extent; `Logarithmic` spans whole decades, falling back to linear where a
+-       logarithm is undefined; `Adaptive` is logarithmic when the range's ratio is at least a
+-       thousand and linear otherwise, which is what benchmark timings over input sizes want;
+-       `Exponential` has a linear scale's range and gradations with exponentially spread
+-       positions, its curvature defaulting to `Calibration.curvature`.
++     detail
++         `Linear` étend la plage vers l'extérieur jusqu'à des pas de graduation entiers ; `Tight`
++         est linéaire sur exactement l'étendue des données ; `Logarithmic` couvre des décades
++         entières, en se repliant sur le linéaire là où un logarithme n'est pas défini ;
++         `Adaptive` est logarithmique lorsque le rapport de la plage vaut au moins mille et
++         linéaire sinon, ce que veulent des temps de benchmark sur des tailles d'entrée ;
++         `Exponential` a la plage et les graduations d'une échelle linéaire avec des positions
++         réparties exponentiellement, sa courbure valant par défaut `Calibration.curvature`.
+
+-   entry .curvature   the curvature of an exponential axis unless a policy gives one: `3.0`
++   entry .curvature
++     info
++         la courbure d'un axe exponentiel à moins qu'une politique n'en donne une : `3.0`
+
+-       The top of the axis is stretched about twenty times as much as the bottom.
++     detail
++         Le haut de l'axe est étiré environ vingt fois plus que le bas.
+
+-   entry .apply   `Calibration[value](policy)`: a calibration for one type from a policy
++   entry .apply
++     info
++         `Calibration[value](policy)` : un calibrage pour un type à partir d'une politique
+
+=   entry .apply   `Calibration[value](policy)`: a calibration for one type from a policy
+-       ```scala
++     detail
++         ```scala
+
+=   entry .apply   `Calibration[value](policy)`: a calibration for one type from a policy
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+-       val decimal = Scale.Notation()
++         val decimal = Scale.Notation()
+
+-       Calibration[Double](Calibration.Policy.Adaptive).scale(1.0, 5000.0, false, decimal).transform
++         Calibration[Double](Calibration.Policy.Adaptive).scale(1.0, 5000.0, false, decimal).transform
+
+-       // Scale.Transform.Logarithmic
++         // Scale.Transform.Logarithmic
+
+=       // Scale.Transform.Logarithmic
+-       ```
++         ```
+
+-   entry #scale   the `Scale` for a data extent: `scale(lower, upper, anchored, notation)`
++   entry #scale
++     info
++         la `Scale` pour une étendue de données : `scale(lower, upper, anchored, notation)`
+
+-       `anchored` asks for zero to be included, which a bar chart, stacked bar chart and
+-       histogram do and a line chart does not. The notation is carried into the scale.
++     detail
++         `anchored` demande l'inclusion de zéro, ce que font un graphique en barres, un graphique
++         en barres empilées et un histogramme, mais pas un graphique en lignes. La notation est
++         transmise à l'échelle.
+
+- entry .Kalman   a Kalman smoother for a run of measurements in order, used by a smoothed line chart
++ entry .Kalman
++   info
++       un lisseur de Kalman pour une suite ordonnée de mesures, utilisé par un graphique en lignes
++       lissé
+
+-   detail
+-       The model is a constant velocity: each value is the last plus its rate of change, both
+-       perturbed by process noise of unit variance, and observed with measurement noise of
+-       variance `ratio`, so a larger ratio trusts each measurement less and smooths more. The
+-       forward filter is followed by the Rauch–Tung–Striebel backward pass, so the estimate at
+-       each point draws on the points after it as well as those before: a smoothed line follows
+-       a rise without lagging it and settles on a plateau without overshooting.
+-       `Lines.Style#smoothing` is the ratio a line chart passes.
++   detail
++       Le modèle est à vitesse constante : chaque valeur est la précédente plus son taux de
++       variation, tous deux perturbés par un bruit de processus de variance unité, et observée
++       avec un bruit de mesure de variance `ratio`, de sorte qu'un rapport plus grand accorde
++       moins de confiance à chaque mesure et lisse davantage. Le filtre aller est suivi de la
++       passe arrière de Rauch–Tung–Striebel, de sorte que l'estimation en chaque point s'appuie
++       sur les points qui le suivent autant que sur ceux qui le précèdent : une ligne lissée
++       suit une montée sans retard et se stabilise sur un plateau sans dépassement.
++       `Lines.Style#smoothing` est le rapport que passe un graphique en lignes.
+
+-   entry .smooth   the smoothed values of a list, in order, for a noise ratio
++   entry .smooth
++     info
++         les valeurs lissées d'une liste, dans l'ordre, pour un rapport de bruit
+
+=   entry .smooth   the smoothed values of a list, in order, for a noise ratio
+-       ```scala
++     detail
++         ```scala
+
+=   entry .smooth   the smoothed values of a list, in order, for a noise ratio
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+-       Kalman.smooth(List(5.0, 5.0, 5.0, 5.0), 4.0)     // List(5.0, 5.0, 5.0, 5.0)
++         Kalman.smooth(List(5.0, 5.0, 5.0, 5.0), 4.0)     // List(5.0, 5.0, 5.0, 5.0)
+
+-       Kalman.smooth(List(10.0, 10.0, 20.0, 10.0, 10.0), 4.0).at(Ter).or(0.0)   // between 10.0 and 20.0
++         Kalman.smooth(List(10.0, 10.0, 20.0, 10.0, 10.0), 4.0).at(Ter).or(0.0)   // between 10.0 and 20.0
+
+=       Kalman.smooth(List(10.0, 10.0, 20.0, 10.0, 10.0), 4.0).at(Ter).or(0.0)   // between 10.0 and 20.0
+-       ```
++         ```
+
+-       The result has the length and order of its input; an empty list smooths to itself.
++         Le résultat a la longueur et l'ordre de son entrée ; une liste vide se lisse en elle-même.
+
+- entry .FontMetric   the width of a run of text in ems, as the chart's typeface will set it
++ entry .FontMetric
++   info
++       la largeur d'un fragment de texte en cadratins, telle que la composera la famille de
++       polices du graphique
+
+-   detail
+-       Multiplied by the style's font size, this decides how much room an axis's labels and a
+-       legend need, and whether an abscissa's labels would overlap. The no-import default,
+-       `.fromStyle`, follows the style's font: an embedded font file's own glyph advances, so
+-       the face measured is the face rendered and the margins fit exactly, or an average width
+-       for a font without a file to hand. `fontMetrics.averageFontMetric` and
+-       `fontMetrics.tabularFontMetric` override it by import.
++   detail
++       Multipliée par la taille de police du style, elle détermine la place dont ont besoin les
++       étiquettes d'un axe et une légende, et si les étiquettes d'une abscisse se
++       chevaucheraient. La valeur par défaut sans import, `.fromStyle`, suit la police du style :
++       les avances de glyphes propres d'un fichier de police incorporé, de sorte que la fonte
++       mesurée est la fonte rendue et que les marges s'ajustent exactement, ou une largeur
++       moyenne pour une police dont on n'a pas le fichier. `fontMetrics.averageFontMetric` et
++       `fontMetrics.tabularFontMetric` la remplacent par import.
+
+=       `fontMetrics.tabularFontMetric` override it by import.
+=
+-       ```scala
++       ```scala
+
+=       `fontMetrics.tabularFontMetric` override it by import.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       summon[FontMetric].width(t"abcde").value   // 3.0: six tenths of an em per character
++       summon[FontMetric].width(t"abcde").value   // 3.0: six tenths of an em per character
+
+=       summon[FontMetric].width(t"abcde").value   // 3.0: six tenths of an em per character
+-       ```
++       ```
+
+-   refer tasseomancy.fontMetrics
++   refer tasseomancy.fontMetrics
+
+-   refer tasseomancy.Chart.Style
++   refer tasseomancy.Chart.Style
+
+-   entry .fromStyle   the no-import default: the metric of the style's font, embedded or average
++   entry .fromStyle
++     info
++         la valeur par défaut sans import : la métrique de la police du style, incorporée ou
++         moyenne
+
+-       Needs a `Chart.Style` in scope. Any `import fontMetrics.…` outranks it.
++     detail
++         Nécessite un `Chart.Style` dans la portée. Tout `import fontMetrics.…` l'emporte sur elle.
+
+-   entry .of   the metric of an `Sfnt` font's own glyph advances, or of a `Font`'s first embedded file
++   entry .of
++     info
++         la métrique des avances de glyphes propres d'une police `Sfnt`, ou du premier fichier
++         incorporé d'une `Font`
+
+-       `FontMetric.of(sfnt)` sums the advances of a text's glyphs; a character the face lacks
+-       would raise, so the average width stands in for any text containing one.
+-       `FontMetric.of(font)` uses the first `Typesettable.Source.Embedded` among the font's
+-       provision's sources, and the average metric if there is none (a `Web.local()` or
+-       generic family).
++     detail
++         `FontMetric.of(sfnt)` additionne les avances des glyphes d'un texte ; un caractère absent
++         de la fonte lèverait une erreur, donc la largeur moyenne est utilisée pour tout texte qui
++         en contient un. `FontMetric.of(font)` utilise la première
++         `Typesettable.Source.Embedded` parmi les sources de la fourniture de la police, et la
++         métrique moyenne s'il n'y en a pas (une famille `Web.local()` ou générique).
+
+-   entry #width   the width of a text, as a `Quantity[Ems[1]]`
++   entry #width
++     info
++         la largeur d'un texte, sous forme de `Quantity[Ems[1]]`
+
+- entry .ChartPalette   the colours a chart draws with, named by the role each plays rather than by hue
++ entry .ChartPalette
++   info
++       les couleurs avec lesquelles dessine un graphique, nommées par le rôle que chacune joue
++       plutôt que par leur teinte
+
+-   detail
+-       The series ramp (cycled when there are more series than colours), the axes and their
+-       gradations, the grid, the lettering, and — as a `Palette` — the background and
+-       foreground. One style renders under any palette. The no-import default is `.slate`, a
+-       light palette with eight distinguishable hues; `palettes.solarizedDarkChartPalette` and
+-       `palettes.solarizedLightChartPalette` are chosen by import, and `.of` makes one from an
+-       iridescence `Theme`.
++   detail
++       La gamme des séries (parcourue en boucle lorsqu'il y a plus de séries que de couleurs),
++       les axes et leurs graduations, la grille, le lettrage, et — sous forme de `Palette` — le
++       fond et le premier plan. Un même style se rend sous n'importe quelle palette. La valeur
++       par défaut sans import est `.slate`, une palette claire à huit teintes distinctes ;
++       `palettes.solarizedDarkChartPalette` et `palettes.solarizedLightChartPalette` se
++       choisissent par import, et `.of` en crée une à partir d'un `Theme` d'iridescence.
+
+=       iridescence `Theme`.
+=
+-       ```scala
++       ```scala
+
+=       iridescence `Theme`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import palettes.solarizedDarkChartPalette
++       import palettes.solarizedDarkChartPalette
+
+=       import palettes.solarizedDarkChartPalette
+=
+-       val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
++       val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
+
+-       growth.chart(Lines()).in[Svg].in[Xml].show.contains(t"#002b36")   // true: the backdrop
++       growth.chart(Lines()).in[Svg].in[Xml].show.contains(t"#002b36")   // true: the backdrop
+
+=       growth.chart(Lines()).in[Svg].in[Xml].show.contains(t"#002b36")   // true: the backdrop
+-       ```
++       ```
+
+-   refer tasseomancy.palettes
++   refer tasseomancy.palettes
+
+-   entry .slate   the no-import default: a light palette with a categorical ramp of eight hues
++   entry .slate
++     info
++         la valeur par défaut sans import : une palette claire avec une gamme catégorielle de huit
++         teintes
+
+-       A companion given, outranked by any `import palettes.…`.
++     detail
++         Un given de compagnon, sur lequel l'emporte tout `import palettes.…`.
+
+-   entry .of   a palette from an `Srgb` `Theme`: its colours for the series, its foreground for axes and text
++   entry .of
++     info
++         une palette à partir d'un `Theme` `Srgb` : ses couleurs pour les séries, son premier plan
++         pour les axes et le texte
+
+-       The axis colour is the foreground mixed three tenths of the way to the background; the
+-       grid, 85% of the way.
++     detail
++         La couleur des axes est le premier plan mélangé aux trois dixièmes vers le fond ; celle
++         de la grille, à 85 %.
+
+-   entry #series   the colours for the series, in order
++   entry #series
++     info
++         les couleurs des séries, dans l'ordre
+
+-   entry #axis   the colour of the axis lines, ticks, whiskers and error bars
++   entry #axis
++     info
++         la couleur des lignes d'axe, des graduations, des moustaches et des barres d'erreur
+
+-   entry #grid   the colour of grid lines
++   entry #grid
++     info
++         la couleur des lignes de grille
+
+-   entry #text   the colour of all lettering
++   entry #text
++     info
++         la couleur de tout le lettrage
+
+-   entry #color   the colour of a series by index, cycling through `#series`; the foreground if there are none
++   entry #color
++     info
++         la couleur d'une série par indice, en parcourant `#series` en boucle ; le premier plan
++         s'il n'y en a aucune
+
+- entry .calibrations   the standard calibrations, each a given to import by name, or to pass to a chart kind
++ entry .calibrations
++   info
++       les calibrages standard, chacun étant un given à importer par son nom, ou à passer à un
++       genre de graphique
+
+-   detail
+-       Each is polymorphic in the value type, so one import changes every axis of every type,
+-       while a scoped `given Int is Calibration = calibrations.logarithmicCalibration` changes
+-       every axis of one type, and `Lines(ordinate = calibrations.tightCalibration)` changes
+-       one axis of one chart. `import tasseomancy.*` brings none of them in, and the
+-       companion default `Calibration.linear` applies until one is imported.
++   detail
++       Chacun est polymorphe dans le type de valeur, de sorte qu'un seul import modifie tous les
++       axes de tous les types, tandis qu'un
++       `given Int is Calibration = calibrations.logarithmicCalibration` de portée modifie tous
++       les axes d'un type, et que `Lines(ordinate = calibrations.tightCalibration)` modifie un
++       seul axe d'un seul graphique. `import tasseomancy.*` n'en importe aucun, et la valeur
++       par défaut du compagnon `Calibration.linear` s'applique tant qu'aucun n'est importé.
+
+=       companion default `Calibration.linear` applies until one is imported.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Default
++       alternative Default
+
+=       alternative Default
+-         code
++         code
+
+=         code
+-             val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
++             val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
+
+=         code
+=             val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
+-             val fit = growth.chart(Lines()).fit
++             val fit = growth.chart(Lines()).fit
+
+-             (fit.ordinate.transform, fit.ordinate.upper)     // (Scale.Transform.Linear, 100.0)
++             (fit.ordinate.transform, fit.ordinate.upper)     // (Scale.Transform.Linear, 100.0)
+
+-       alternative Tight
++       alternative Tight
+
+=       alternative Tight
+-         code
++         code
+
+-             import calibrations.tightCalibration
++             import calibrations.tightCalibration
+
+=             import calibrations.tightCalibration
+-             val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
++             val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
+
+=             import calibrations.tightCalibration
+=             val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
+-             val fit = growth.chart(Lines()).fit
++             val fit = growth.chart(Lines()).fit
+
+-             (fit.ordinate.transform, fit.ordinate.upper)     // (Scale.Transform.Linear, 97.0)
++             (fit.ordinate.transform, fit.ordinate.upper)     // (Scale.Transform.Linear, 97.0)
+
+-       alternative Logarithmic
++       alternative Logarithmic
+
+=       alternative Logarithmic
+-         code
++         code
+
+-             import calibrations.logarithmicCalibration
++             import calibrations.logarithmicCalibration
+
+=             import calibrations.logarithmicCalibration
+-             val growth = Series(t"growth")((1.0, 3.0), (10.0, 4200.0))
++             val growth = Series(t"growth")((1.0, 3.0), (10.0, 4200.0))
+
+=             import calibrations.logarithmicCalibration
+=             val growth = Series(t"growth")((1.0, 3.0), (10.0, 4200.0))
+-             val fit = growth.chart(Lines()).fit
++             val fit = growth.chart(Lines()).fit
+
+-             (fit.ordinate.transform, fit.ordinate.upper)     // (Scale.Transform.Logarithmic, 10000.0)
++             (fit.ordinate.transform, fit.ordinate.upper)     // (Scale.Transform.Logarithmic, 10000.0)
+
+-       alternative Adaptive
++       alternative Adaptive
+
+=       alternative Adaptive
+-         code
++         code
+
+-             import calibrations.adaptiveCalibration
++             import calibrations.adaptiveCalibration
+
+=             import calibrations.adaptiveCalibration
+-             val growth = Series(t"growth")((1.0, 3.0), (10.0, 4200.0))
++             val growth = Series(t"growth")((1.0, 3.0), (10.0, 4200.0))
+
+=             import calibrations.adaptiveCalibration
+=             val growth = Series(t"growth")((1.0, 3.0), (10.0, 4200.0))
+-             val fit = growth.chart(Lines()).fit
++             val fit = growth.chart(Lines()).fit
+
+-             (fit.abscissa.transform, fit.ordinate.transform)   // (Scale.Transform.Linear, Scale.Transform.Logarithmic)
++             (fit.abscissa.transform, fit.ordinate.transform)   // (Scale.Transform.Linear, Scale.Transform.Logarithmic)
+
+=             (fit.abscissa.transform, fit.ordinate.transform)   // (Scale.Transform.Linear, Scale.Transform.Logarithmic)
+-       ##
++       ##
+
+=             (fit.abscissa.transform, fit.ordinate.transform)   // (Scale.Transform.Linear, Scale.Transform.Logarithmic)
+=       ##
+-       ```
++       ```
+
+=       ```
+-   refer tasseomancy.Calibration
++   refer tasseomancy.Calibration
+
+-   entry .linearCalibration   linear positions, padded outward to whole gradation steps: the same as the default
++   entry .linearCalibration
++     info
++         positions linéaires, étendues vers l'extérieur jusqu'à des pas de graduation entiers :
++         comme la valeur par défaut
+
+-   entry .logarithmicCalibration   logarithmic positions over whole decades; linear where the range reaches zero or below
++   entry .logarithmicCalibration
++     info
++         positions logarithmiques sur des décades entières ; linéaires là où la plage atteint zéro
++         ou moins
+
+-   entry .adaptiveCalibration   logarithmic when the range's ratio is a thousand or more, linear otherwise
++   entry .adaptiveCalibration
++     info
++         logarithmique lorsque le rapport de la plage vaut mille ou plus, linéaire sinon
+
+-   entry .exponentialCalibration   exponential positions with the default curvature `3.0`, over a linear scale's range
++   entry .exponentialCalibration
++     info
++         positions exponentielles avec la courbure par défaut `3.0`, sur la plage d'une échelle
++         linéaire
+
+-       Not mirrored in the `soundness` umbrella's `calibrations` package, so it is imported as
+-       `import tasseomancy.calibrations.exponentialCalibration`; `Calibration[Double]
+-       (Calibration.Policy.Exponential(2.0))` makes one with another curvature.
++     detail
++         Non reproduit dans le package `calibrations` du package parapluie `soundness`, il
++         s'importe donc avec `import tasseomancy.calibrations.exponentialCalibration` ;
++         `Calibration[Double]
++         (Calibration.Policy.Exponential(2.0))` en crée un avec une autre courbure.
+
+-   entry .tightCalibration   linear positions over exactly the data's extent, with no padding
++   entry .tightCalibration
++     info
++         positions linéaires sur exactement l'étendue des données, sans extension
+
+- entry .palettes   the standard chart palettes, each a given to import by name
++ entry .palettes
++   info
++       les palettes de graphiques standard, chacune étant un given à importer par son nom
+
+-   detail
+-       `import tasseomancy.*` brings none in; the companion default is `ChartPalette.slate`,
+-       which `slateChartPalette` repeats. A lexically-scoped import outranks the default:
++   detail
++       `import tasseomancy.*` n'en importe aucune ; la valeur par défaut du compagnon est
++       `ChartPalette.slate`, que reprend `slateChartPalette`. Un import de portée lexicale
++       l'emporte sur la valeur par défaut :
+
+=       which `slateChartPalette` repeats. A lexically-scoped import outranks the default:
+=
+-       ```scala
++       ```scala
+
+=       which `slateChartPalette` repeats. A lexically-scoped import outranks the default:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import palettes.solarizedLightChartPalette
++       import palettes.solarizedLightChartPalette
+
+=       import palettes.solarizedLightChartPalette
+-       ```
++       ```
+
+=       ```
+-   refer tasseomancy.ChartPalette
++   refer tasseomancy.ChartPalette
+
+-   entry .slateChartPalette   a light palette: white background, dark grey text and axes, eight distinct hues
++   entry .slateChartPalette
++     info
++         une palette claire : fond blanc, texte et axes gris foncé, huit teintes distinctes
+
+-   entry .solarizedDarkChartPalette   the Solarized dark theme: deep blue-black background, eight Solarized accents
++   entry .solarizedDarkChartPalette
++     info
++         le thème sombre Solarized : fond noir bleuté profond, huit couleurs d'accent Solarized
+
+-   entry .solarizedLightChartPalette   the Solarized light theme: cream background, the same eight accents
++   entry .solarizedLightChartPalette
++     info
++         le thème clair Solarized : fond crème, les mêmes huit couleurs d'accent
+
+- entry .fontMetrics   text metrics to import by name, when the style's font should not decide
++ entry .fontMetrics
++   info
++       des métriques de texte à importer par leur nom, lorsque la police du style ne doit pas
++       décider
+
+-   detail
+-       The companion default, `FontMetric.fromStyle`, measures with the style's font's own
+-       advances where it has an embedded file, and otherwise with the average; these two fix a
+-       metric regardless. `import tasseomancy.*` brings neither in.
++   detail
++       La valeur par défaut du compagnon, `FontMetric.fromStyle`, mesure avec les avances propres
++       de la police du style lorsqu'elle a un fichier incorporé, et sinon avec la moyenne ; ces
++       deux-ci fixent une métrique quoi qu'il arrive. `import tasseomancy.*` n'importe ni l'une
++       ni l'autre.
+
+=       metric regardless. `import tasseomancy.*` brings neither in.
+=
+-       ```scala
++       ```scala
+
+=       metric regardless. `import tasseomancy.*` brings neither in.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import fontMetrics.tabularFontMetric
++       import fontMetrics.tabularFontMetric
+
+=       import fontMetrics.tabularFontMetric
+-       ```
++       ```
+
+=       ```
+-   refer tasseomancy.FontMetric
++   refer tasseomancy.FontMetric
+
+-   entry .averageFontMetric   six tenths of an em per character: the width of an average proportional face
++   entry .averageFontMetric
++     info
++         six dixièmes de cadratin par caractère : la largeur d'une fonte proportionnelle moyenne
+
+-   entry .tabularFontMetric   half an em per character: a monospace face
++   entry .tabularFontMetric
++     info
++         un demi-cadratin par caractère : une fonte à chasse fixe

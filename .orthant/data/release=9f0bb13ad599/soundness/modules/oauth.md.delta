@@ -1,0 +1,41 @@
+orthant 1 release
+
+= An `Authorizations` holds the state of each session.
+=
++ ### Identifying the user
++
++ OAuth 2 says what a client may do, but not who the user is.
++ [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html) adds that, as an *ID
++ token* beside the access token. It is a [JWT](jose.md), signed by the provider, and an
++ `Authorization` keeps it as it arrived, in `identityToken`.
++
++ `Oidc.discover` reads a provider's endpoints, and the location of its keys, from its
++ well-known URL. The provider is then an `Issuer` for a client which is registered with it:
++
++ ```scala fuel
++ typecheck
++ ##
++ import providers.javaBaseProvider
++ import cloaks.heapCloak
++
++ val provider = Oidc.discover(t"https://accounts.example")
++ val login = provider.client(t"client-1", t"s3cret", url"https://app.example/callback")
++ ```
++
++ `Oidc.identify` verifies the ID token. The provider's keys are a `Jwks`, among which the
++ token names one. The type argument is the cipher those keys are read as, and so the one
++ signature algorithm which is accepted:
++
++ ```scala fuel
++ typecheck
++ ##
++ def identify(authorization: Authorization, keys: Jwks): Optional[Text] =
++   Oidc.identify[Rsa[2048]](authorization, keys, provider.issuer, t"client-1", t"n-0S6_WzA2Mj")
++   . claims.subject
++ ```
++
++ The token must be signed by the provider, be issued for this client, and be within its
++ validity period by the `Clock` in scope. Where a *nonce* was sent with the authorization
++ request, the token must carry the same one, which ties it to that request. Anything else
++ raises an `OAuth.Error`, and the user is not identified.
++

@@ -13,3 +13,8 @@ __pycache__/
 
 # flame keeps its prompt history here; the directory is tracked for its config.tel.
 .pyrocosm/flame/history
+
+# The working tree of the Orthant store in .orthant: the documentation is the store, and the tree
+# holds whichever point was last checked out (doc/readme.md, which says so, is the exception).
+/doc/*
+!/doc/readme.md

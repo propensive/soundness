@@ -1,0 +1,4 @@
+orthant 1 release
+
+-       val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
++       val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str)(text => Json(text.upper))

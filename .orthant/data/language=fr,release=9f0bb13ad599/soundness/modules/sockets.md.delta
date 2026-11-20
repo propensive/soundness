@@ -1,0 +1,14 @@
+orthant 1 language
+
+= to the group, to the one sender, or not at all:
+=
+= ```scala fuel
+! parse
+- typecheck
++ typecheck
+
+-   val group = Multicast(ip"224.0.0.251", udp"mdns")
++   val group = Multicast(ip"224.0.0.251", udp"mdns")
+
+- val addresses = resolver.ask(dns"example.com").map(_.rdata)
++ val addresses = resolver.ask(dns"example.com").map(_.rdata)

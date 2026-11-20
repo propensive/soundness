@@ -1,0 +1,21 @@
+orthant 1 release
+
+- entry .Sha384   SHA-384 as its own algorithm type, with a multihash code but no `Hash` of its own
+-     A 384-bit `Algorithm` whose `Multicodec` instance shares the code of `Sha2[384]`, `0x20`,
+-     since they are the same function. Digesting is done through `Sha2[384]`: no `Hash in
+-     Sha384` is derived, so `digest[Sha384]` does not compile; the type exists for a value
+-     which names the algorithm without a bit-count parameter.
+-
+- entry .Sha512   SHA-512 as its own algorithm type, with a multihash code but no `Hash` of its own
+-     A 512-bit `Algorithm` whose `Multicodec` instance shares the code of `Sha2[512]`, `0x13`.
+-     Digesting is done through `Sha2[512]`: no `Hash in Sha512` is derived, so `digest[Sha512]`
+-     does not compile.
+-
+
+-       row  `Sha2[512]`, `Sha512`  `0x13`  `sha2-512`
+-       row  `Sha2[384]`, `Sha384`  `0x20`  `sha2-384`
++       row  `Sha2[512]`  `0x13`  `sha2-512`
++       row  `Sha2[384]`  `0x20`  `sha2-384`
+
+-   entry .sha384   `0x20`, `sha2-384`, for the `Sha384` type
+-   entry .sha512   `0x13`, `sha2-512`, for the `Sha512` type

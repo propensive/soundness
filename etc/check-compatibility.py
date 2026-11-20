@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate the platform matrix in doc/compatibility.tsv from build.mill and fail if the
+"""Regenerate the platform matrix in etc/compatibility.tsv from build.mill and fail if the
 committed copy has drifted from it (roadmap item plat-1).
 
 The matrix has one row per library under lib/. Its platform columns are derived, not written:
@@ -11,15 +11,15 @@ Only `notes` — the reason for every exclusion — is written by hand, and it i
 the committed file by module name; an exclusion with no reason fails the check.
 
 Usage:
-    python3 etc/check-compatibility.py            # diff against doc/compatibility.tsv; exit 1 on drift
-    python3 etc/check-compatibility.py --update   # rewrite doc/compatibility.tsv, keeping notes
+    python3 etc/check-compatibility.py            # diff against etc/compatibility.tsv; exit 1 on drift
+    python3 etc/check-compatibility.py --update   # rewrite etc/compatibility.tsv, keeping notes
     python3 etc/check-compatibility.py --table    # print the regenerated matrix
 Run by `make build`.
 """
 import os, re, sys
 
 BUILD = 'build.mill'
-TSV = 'doc/compatibility.tsv'
+TSV = 'etc/compatibility.tsv'
 COLUMNS = ['module', 'jvm', 'js', 'native', 'wasm', 'submodules', 'notes']
 
 LIBRARY = re.compile(r'^object (\w+) extends Library', re.M)
@@ -194,7 +194,7 @@ def main():
             failed = True
             print('%s: row for a library that no longer exists' % name)
     if failed:
-        print('doc/compatibility.tsv is out of date: run `python3 etc/check-compatibility.py --update` '
+        print('etc/compatibility.tsv is out of date: run `python3 etc/check-compatibility.py --update` '
               'and fill in `notes` for any new exclusion.')
     sys.exit(1 if failed else 0)
 

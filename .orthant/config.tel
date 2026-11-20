@@ -1,0 +1,30 @@
+format 1
+tree doc
+axis
+  name language
+  kind language
+  prefer own
+  value
+    name en
+  value
+    name fr
+    parent en
+    translation true
+axis
+  name release
+  kind git
+  prefer own
+  value
+    name b3da55b7f89b
+    label 0.76.0
+    commit b3da55b7f89b55c685dbaafc3733a9c3b60e53a2
+  value
+    name 9f0bb13ad599
+    parent b3da55b7f89b
+    label 0.77.0
+    commit 9f0bb13ad599b47803efa7f7b1b8331612509548
+  value
+    name main
+    parent 9f0bb13ad599
+    branch true
+  pattern 0.*

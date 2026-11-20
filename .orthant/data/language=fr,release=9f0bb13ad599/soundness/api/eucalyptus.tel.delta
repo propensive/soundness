@@ -1,0 +1,22 @@
+orthant 1 language
+
+!     detail
+!         A `Message is Inscribable in Text`, in `eucalyptus.gcp`, which writes
+!         `{"severity":"WARNING","message":"…"}`, the structured form Google Cloud's logging
+!         agent reads from a container's standard output. The levels map to `DEBUG`, `INFO`,
+!         `WARNING` and `ERROR`; the message is its plain text, without styling. No timestamp is
+!         written, as the agent records its own, and the record has no trailing newline.
+-       A `Message is Inscribable in Text`, in `eucalyptus.gcp`, which writes
+-       `{"severity":"WARNING","message":"…"}`, the structured form Google Cloud's logging
+-       agent reads from a container's standard output. The levels map to `DEBUG`, `INFO`,
+-       `WARNING` and `ERROR`; the message is its plain text, without styling. No timestamp is
+-       written, as the agent records its own. Each record ends with a newline: one object
++     detail
++         Un `Message is Inscribable in Text`, dans `eucalyptus.gcp`, qui écrit
++         `{"severity":"WARNING","message":"…"}`, la forme structurée que lit l'agent de
++         journalisation de Google Cloud depuis la sortie standard d'un conteneur. Les niveaux
++         correspondent à `DEBUG`, `INFO`, `WARNING` et `ERROR` ; le message est son texte brut,
++         sans style. Aucun horodatage n'est écrit, car l'agent enregistre le sien, et
++         l'enregistrement n'a pas de saut de ligne final.
+
+-       per line.

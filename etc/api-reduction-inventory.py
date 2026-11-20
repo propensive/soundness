@@ -268,7 +268,7 @@ A("- **L2**: deleting the old `module.Xxx.scala` file is required (the type is n
 A("- **Enum cases** (`Proprietary`, `fromOrdinal`) resolve unqualified inside the nested "
   "companion object exactly as they did at top level — no change needed there.\n")
 
-open(os.path.join(ROOT,"doc","api-reduction-candidates.md"),"w").write("\n".join(lines))
-print("wrote doc/api-reduction-candidates.md")
+open(os.path.join(ROOT,"etc","api-reduction-candidates.md"),"w").write("\n".join(lines))
+print("wrote etc/api-reduction-candidates.md")
 print("C1 strong:", len(strong), "C2:", len(set(c2)), "C3:", len(c3),
       "C4-homonym:", len(c4h), "C4-syn families:", len(synfam))

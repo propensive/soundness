@@ -1,0 +1,571 @@
+orthant 1 language
+
+- ## Trees
++ ## Arbres
+
+- ### About
++ ### Présentation
+
+- A hierarchy, such as a file listing or an organization, is drawn as text with box-drawing
+- characters. A `TreeDiagram` draws a tree. The DAG diagrams draw [graphs](graphs.md) whose nodes
+- may have several parents, in a dense grid or in the lanes familiar from `git log --graph`.
++ Une hiérarchie, comme une liste de fichiers ou une organisation, se dessine sous forme de texte
++ avec des caractères de tracé de boîtes. Un `TreeDiagram` dessine un arbre. Les diagrammes de DAG
++ dessinent des [graphes](graphs.md) dont les nœuds peuvent avoir plusieurs parents, dans une
++ grille dense ou dans les voies familières de `git log --graph`.
+
+- Each diagram is a value which produces lines. Its output is printed, styled or embedded like any
+- other text.
++ Chaque diagramme est une valeur qui produit des lignes. Sa sortie s'affiche, se stylise ou
++ s'incorpore comme n'importe quel autre texte.
+
+- ### On drawing hierarchies
++ ### Dessiner des hiérarchies
+
+- The `└─` and `├─` of a directory listing look trivial, and are not. The prefix of each line
+- depends on which of its ancestors have later siblings, so the state of the drawing is threaded
+- through the whole traversal. A directed acyclic graph is harder. A node with two parents cannot
+- be drawn as a tree at all, and laying out the lanes which connect the nodes is a real algorithm.
++ Les `└─` et `├─` d'un listing de répertoire semblent triviaux, et ne le sont pas. Le préfixe de
++ chaque ligne dépend de ceux de ses ancêtres qui ont des frères et sœurs suivants : l'état du
++ dessin est donc transmis tout au long du parcours. Un graphe orienté acyclique est plus
++ difficile. Un nœud à deux parents ne peut pas du tout être dessiné comme un arbre, et disposer
++ les voies qui relient les nœuds est un véritable algorithme.
+
+- Layout and rendering are kept apart. A diagram computes rows of *tiles*, and a style maps each
+- tile to characters. The same layout is therefore drawn in Unicode or in ASCII, plain or styled.
+- This is [decoupling](../../philosophy/decoupling.md) of structure from appearance.
++ La disposition et le rendu restent séparés. Un diagramme calcule des lignes de *tuiles*, et un
++ style associe des caractères à chaque tuile. La même disposition se dessine donc en Unicode ou
++ en ASCII, brute ou stylisée. C'est le [découplage](../../philosophy/decoupling.md) de la
++ structure et de l'apparence.
+
+- Everything comes from the `soundness` package. The other imports choose a style for trees, and
+- let the samples print their results:
++ Tout provient du package `soundness`. Les autres imports choisissent un style pour les arbres,
++ et permettent aux exemples d'afficher leurs résultats :
+
+= let the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import treeStyles.squareTreeStyle
++ import treeStyles.squareTreeStyle
+
+- import stdios.javaLangSystemStdio
++ import stdios.javaLangSystemStdio
+
+- import termcapDefinitions.basicTermcap
++ import termcapDefinitions.basicTermcap
+
+= import termcapDefinitions.basicTermcap
+- ```
++ ```
+
+- ### Trees
++ ### Arbres
+
+- A tree is given as its roots, and a way to reach the children of any node. Here the way is a
+- function, `_.children`:
++ Un arbre est donné par ses racines, et par un moyen d'atteindre les enfants de n'importe quel
++ nœud. Ici, ce moyen est une fonction, `_.children` :
+
+= function, `_.children`:
+=
+- ```scala
++ ```scala
+
+- case class Taxon(name: Text, children: List[Taxon] = Nil)
++ case class Taxon(name: Text, children: List[Taxon] = Nil)
+
+- val animalia = Taxon
++ val animalia = Taxon
+
+-   ( t"animalia",
++   ( t"animalia",
+
+-     List(Taxon(t"chordata", List(Taxon(t"mammalia"))), Taxon(t"arthropoda")) )
++     List(Taxon(t"chordata", List(Taxon(t"mammalia"))), Taxon(t"arthropoda")) )
+
+- val diagram = TreeDiagram.by[Taxon](_.children)(animalia)
++ val diagram = TreeDiagram.by[Taxon](_.children)(animalia)
+
+= val diagram = TreeDiagram.by[Taxon](_.children)(animalia)
+- ```
++ ```
+
+- `render` takes a function from a node to its label, and gives the lines to print:
++ `render` prend une fonction d'un nœud vers son étiquette, et donne les lignes à afficher :
+
+= `render` takes a function from a node to its label, and gives the lines to print:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `render` takes a function from a node to its label, and gives the lines to print:
+=
+= ```scala fuel
+- run
++ run
+
+= `render` takes a function from a node to its label, and gives the lines to print:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- diagram.render(_.name).each(Out.println(_))
++ diagram.render(_.name).each(Out.println(_))
+
+= diagram.render(_.name).each(Out.println(_))
+- ```
++ ```
+
+- Another style draws the same diagram differently. `roundedTreeStyle` curves the corners:
++ Un autre style dessine le même diagramme différemment. `roundedTreeStyle` arrondit les coins :
+
+= Another style draws the same diagram differently. `roundedTreeStyle` curves the corners:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Another style draws the same diagram differently. `roundedTreeStyle` curves the corners:
+=
+= ```scala fuel
+- run
++ run
+
+= Another style draws the same diagram differently. `roundedTreeStyle` curves the corners:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= Another style draws the same diagram differently. `roundedTreeStyle` curves the corners:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import treeStyles.roundedTreeStyle
++   import treeStyles.roundedTreeStyle
+
+=   import treeStyles.roundedTreeStyle
+-   diagram.render(_.name).each(Out.println(_))
++   diagram.render(_.name).each(Out.println(_))
+
+=   import treeStyles.roundedTreeStyle
+=   diagram.render(_.name).each(Out.println(_))
+- ```
++ ```
+
+- `asciiTreeStyle` uses only ASCII characters, for output which must survive the plainest
+- terminal:
++ `asciiTreeStyle` n'utilise que des caractères ASCII, pour une sortie qui doit survivre au plus
++ rudimentaire des terminaux :
+
+= terminal:
+=
+- ```scala fuel
++ ```scala fuel
+
+= terminal:
+=
+= ```scala fuel
+- run
++ run
+
+= terminal:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= terminal:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import treeStyles.asciiTreeStyle
++   import treeStyles.asciiTreeStyle
+
+=   import treeStyles.asciiTreeStyle
+-   diagram.render(_.name).each(Out.println(_))
++   diagram.render(_.name).each(Out.println(_))
+
+=   import treeStyles.asciiTreeStyle
+=   diagram.render(_.name).each(Out.println(_))
+- ```
++ ```
+
+- ### Graphs
++ ### Graphes
+
+- A [`Dag`](graphs.md) is drawn in two layouts. `DagDiagram` is the dense form, with every edge
+- drawn in a grid of connecting tiles. `LaneDagDiagram` is the lane form, which is how the history
+- of a repository is usually drawn: nodes are bullets on vertical lanes, and edges flow between
+- them.
++ Un [`Dag`](graphs.md) se dessine selon deux dispositions. `DagDiagram` est la forme dense, où
++ chaque arête est dessinée dans une grille de tuiles de liaison. `LaneDagDiagram` est la forme
++ en voies, celle qu'on utilise d'ordinaire pour dessiner l'historique d'un dépôt : les nœuds
++ sont des puces sur des voies verticales, et les arêtes circulent entre elles.
+
+= them.
+=
+- ```scala
++ ```scala
+
+- import laneDagStyles.boxDrawingLaneDagStyle
++ import laneDagStyles.boxDrawingLaneDagStyle
+
+- import textMetrics.uniformMetric
++ import textMetrics.uniformMetric
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- val history = Dag(t"C" -> Set(t"B"), t"B" -> Set(t"A"), t"A" -> Set())
++ val history = Dag(t"C" -> Set(t"B"), t"B" -> Set(t"A"), t"A" -> Set())
+
+= val history = Dag(t"C" -> Set(t"B"), t"B" -> Set(t"A"), t"A" -> Set())
+- ```
++ ```
+
+= val history = Dag(t"C" -> Set(t"B"), t"B" -> Set(t"A"), t"A" -> Set())
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val history = Dag(t"C" -> Set(t"B"), t"B" -> Set(t"A"), t"A" -> Set())
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val history = Dag(t"C" -> Set(t"B"), t"B" -> Set(t"A"), t"A" -> Set())
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- LaneDagDiagram(history).render(node => t" $node").each(Out.println(_))
++ LaneDagDiagram(history).render(node => t" $node").each(Out.println(_))
+
+= LaneDagDiagram(history).render(node => t" $node").each(Out.println(_))
+- ```
++ ```
+
+- A history which branches and merges needs a second lane:
++ Un historique qui se ramifie et fusionne a besoin d'une seconde voie :
+
+= A history which branches and merges needs a second lane:
+=
+- ```scala
++ ```scala
+
+- val merged = Dag
++ val merged = Dag
+
+-   ( t"merge" -> Set(t"feature", t"fix"),
++   ( t"merge" -> Set(t"feature", t"fix"),
+
+-     t"feature" -> Set(t"base"),
++     t"feature" -> Set(t"base"),
+
+-     t"fix" -> Set(t"base"),
++     t"fix" -> Set(t"base"),
+
+-     t"base" -> Set() )
++     t"base" -> Set() )
+
+=     t"base" -> Set() )
+- ```
++ ```
+
+=     t"base" -> Set() )
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=     t"base" -> Set() )
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=     t"base" -> Set() )
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- LaneDagDiagram(merged).render(node => t" $node").each(Out.println(_))
++ LaneDagDiagram(merged).render(node => t" $node").each(Out.println(_))
+
+= LaneDagDiagram(merged).render(node => t" $node").each(Out.println(_))
+- ```
++ ```
+
+- A glyph function, given per node, marks chosen nodes such as the current commit or a failing
+- build. `compact` tightens the layout. `LayeredDagDiagram` arranges the nodes in levels instead
+- of lanes.
++ Une fonction de glyphe, donnée par nœud, marque des nœuds choisis, comme le commit courant ou
++ un build en échec. `compact` resserre la disposition. `LayeredDagDiagram` range les nœuds en
++ niveaux plutôt qu'en voies.
+
+- ### Structure and style apart
++ ### Structure et style séparés
+
+- A diagram exposes its rows: the tiles of each line, and the node which the line is for. A
+- consumer can therefore render the lines itself, coloring the labels of one kind of node or
+- adding a note to another. The box-drawing characters remain the business of the style, and the
+- meaning remains the caller's.
++ Un diagramme expose ses lignes : les tuiles de chaque ligne, et le nœud auquel correspond la
++ ligne. Un consommateur peut donc rendre les lignes lui-même, en colorant les étiquettes d'un
++ type de nœud ou en ajoutant une note à un autre. Les caractères de tracé de boîtes restent
++ l'affaire du style, et le sens reste celle de l'appelant.
+
+= meaning remains the caller's.
+=
+- ```scala
++ ```scala
+
+- import dysasymptotics.linearSize
++ import dysasymptotics.linearSize
+
+= import dysasymptotics.linearSize
+- ```
++ ```
+
+= import dysasymptotics.linearSize
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import dysasymptotics.linearSize
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import dysasymptotics.linearSize
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- diagram.map { tiles => node => t"${tiles.size} ${node.name}" }.each(Out.println(_))
++ diagram.map { tiles => node => t"${tiles.size} ${node.name}" }.each(Out.println(_))
+
+= diagram.map { tiles => node => t"${tiles.size} ${node.name}" }.each(Out.println(_))
+- ```
++ ```
+
+- `nodes` gives the node of each line, in drawing order, and `tiles` gives the tiles of each line.
+- Here each label is preceded by the number of tiles on its line, which is the depth of its node.
++ `nodes` donne le nœud de chaque ligne, dans l'ordre du dessin, et `tiles` donne les tuiles de
++ chaque ligne. Ici, chaque étiquette est précédée du nombre de tuiles de sa ligne, qui est la
++ profondeur de son nœud.
+
+- A `TreeDiagram.Tile` is one of four things, and a style says what each becomes. A
+- `TreeDiagram.TextualStyle` says it with four short pieces of text, which is all that a new style
+- needs:
++ Un `TreeDiagram.Tile` est l'une de quatre choses, et un style dit ce que devient chacune. Un
++ `TreeDiagram.TextualStyle` le dit avec quatre courts morceaux de texte, ce qui est tout ce dont
++ un nouveau style a besoin :
+
+= needs:
+=
+- ```tabular
++ ```tabular
+
+- column  Tile
+- column  Is
+- column  Argument
+- column  In `myStyle`
+- row  `Space`  a space  `space`  two spaces
+- row  `Last`  a last branch  `last`  `└─`
+- row  `Branch`  a branch  `branch`  `├─`
+- row  `Extender`  a line carried down past a node  `extender`  `│` and a space
++ column  Tuile
++ column  Est
++ column  Argument
++ column  Dans `myStyle`
++ row  `Space`  un espace  `space`  deux espaces
++ row  `Last`  une dernière branche  `last`  `└─`
++ row  `Branch`  une branche  `branch`  `├─`
++ row  `Extender`  une ligne prolongée vers le bas au-delà d'un nœud  `extender`  `│` et un espace
+
+= row  `Extender`  a line carried down past a node  `extender`  `│` and a space
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- val myStyle = TreeDiagram.TextualStyle[Text](t"  ", t"└─", t"├─", t"│ ")
++ val myStyle = TreeDiagram.TextualStyle[Text](t"  ", t"└─", t"├─", t"│ ")
+
+= val myStyle = TreeDiagram.TextualStyle[Text](t"  ", t"└─", t"├─", t"│ ")
+- ```
++ ```
+
+- A style is parameterized by the type of line, and is not fixed to `Text`. A diagram can
+- therefore be rendered directly into styled [terminal output](terminal.md), with the lines of the
+- tree in one color and the labels in another, and with the widths still computed correctly.
++ Un style est paramétré par le type de ligne, et n'est pas figé à `Text`. Un diagramme peut donc
++ être rendu directement en [sortie de terminal](terminal.md) stylisée, avec les lignes de l'arbre
++ d'une couleur et les étiquettes d'une autre, et des largeurs toujours calculées correctement.
+
+- ### Supplying the tree
++ ### Fournir l'arbre
+
+- A tree is given in one of two ways. `TreeDiagram.by` takes a function from a node to its
+- children. This suits a structure which is already in hand.
++ Un arbre se donne de l'une de deux façons. `TreeDiagram.by` prend une fonction d'un nœud vers
++ ses enfants. Cela convient à une structure qu'on a déjà sous la main.
+
+- `TreeDiagram.apply` takes only the roots, and finds children through an `Expandable` instance on
+- the node type. This suits a node type which has one natural meaning of "children": a filesystem
+- path, a dependency, a syntax node.
++ `TreeDiagram.apply` ne prend que les racines, et trouve les enfants grâce à une instance
++ d'`Expandable` sur le type de nœud. Cela convient à un type de nœud qui a un sens naturel
++ unique d'« enfants » : un chemin du système de fichiers, une dépendance, un nœud syntaxique.
+
+= path, a dependency, a syntax node.
+=
+- ```scala fuel
++ ```scala fuel
+
+- alternative `TreeDiagram.by`
++ alternative `TreeDiagram.by`
+
+= alternative `TreeDiagram.by`
+-   code
++   code
+
+-       TreeDiagram.by[Taxon](_.children)(animalia)
++       TreeDiagram.by[Taxon](_.children)(animalia)
+
+- alternative `Expandable`
++ alternative `Expandable`
+
+= alternative `Expandable`
+-   code
++   code
+
+-       given Taxon is Expandable = _.children
++       given Taxon is Expandable = _.children
+
+-       TreeDiagram(animalia)
++       TreeDiagram(animalia)
+
+=       TreeDiagram(animalia)
+- ##
++ ##
+
+= ##
+- ```
++ ```
+
+- The lines are produced lazily. A large or deep tree is drawn as far as it is consumed, and no
+- further.
++ Les lignes sont produites paresseusement. Un arbre grand ou profond est dessiné aussi loin
++ qu'il est consommé, et pas au-delà.
+
+- The laziness has one limit, which belongs to the drawing itself. To render a line, the diagram
+- must know how many children each *ancestor* of the current node has. A node whose grandparent
+- has later siblings needs a vertical line running down the grandparent's column. A node whose
+- grandparent was the last of its siblings needs that column blank. Nothing about the descendants
+- of *later* nodes is needed until the traversal reaches them, so an infinite tree can still be
+- drawn.
++ La paresse a une limite, qui tient au dessin lui-même. Pour rendre une ligne, le diagramme doit
++ savoir combien d'enfants a chaque *ancêtre* du nœud courant. Un nœud dont le grand-parent a des
++ frères et sœurs suivants a besoin d'une ligne verticale descendant dans la colonne du
++ grand-parent. Un nœud dont le grand-parent était le dernier de ses frères et sœurs a besoin que
++ cette colonne reste vide. Rien des descendants des nœuds *suivants* n'est nécessaire avant que
++ le parcours ne les atteigne : un arbre infini peut donc tout de même être dessiné.
+
+- ### Choosing a graph layout
++ ### Choisir une disposition de graphe
+
+- The three graph diagrams answer different questions:
++ Les trois diagrammes de graphe répondent à des questions différentes :
+
+= The three graph diagrams answer different questions:
+=
+- ```tabular
++ ```tabular
+
+- column  Diagram
+- column  Draws
+- column  Suits
+- row  `DagDiagram`  every edge, in a grid of connecting tiles  a small graph with complicated edges
+- row  `LaneDagDiagram`  each node on a vertical lane, as version-control history is drawn  a long graph with few concurrent branches
+- row  `LayeredDagDiagram`  nodes in levels by depth, ordered within each level so that as few connecting lines cross as possible  showing what depends on what, rather than what happened in what order
++ column  Diagramme
++ column  Dessine
++ column  Convient à
++ row  `DagDiagram`  chaque arête, dans une grille de tuiles de liaison  un petit graphe aux arêtes compliquées
++ row  `LaneDagDiagram`  chaque nœud sur une voie verticale, comme on dessine l'historique d'un gestionnaire de versions  un long graphe avec peu de branches concurrentes
++ row  `LayeredDagDiagram`  les nœuds en niveaux selon leur profondeur, ordonnés dans chaque niveau pour que le moins possible de lignes de liaison se croisent  montrer ce qui dépend de quoi, plutôt que ce qui s'est passé dans quel ordre
+
+= row  `LayeredDagDiagram`  nodes in levels by depth, ordered within each level so that as few connecting lines cross as possible  showing what depends on what, rather than what happened in what order
+- ```
++ ```
+
+- The levels of a `LayeredDagDiagram` come from the `layered` arrangement of the graph. So
+- `import rankings.balancedRanking` changes the drawing, as it changes the
+- [layering](graphs.md).
++ Les niveaux d'un `LayeredDagDiagram` proviennent de l'arrangement `layered` du graphe. Ainsi,
++ `import rankings.balancedRanking` change le dessin, comme il change la
++ [stratification](graphs.md).
+
+- All three take any graph which has a topological order: a `Dag`, a frozen `Topology` or a
+- `Hasse`. Drawing one cannot fail. A `Digraph` may hold a cycle, and has no drawing until
+- `acyclic` has converted it.
++ Les trois prennent tout graphe qui a un ordre topologique : un `Dag`, une `Topology` gelée ou un
++ `Hasse`. En dessiner un ne peut pas échouer. Un `Digraph` peut contenir un cycle, et n'a pas de
++ dessin tant qu'`acyclic` ne l'a pas converti.
+
+- ### Related
++ ### Voir aussi
+
+- - [Graphs](graphs.md) describes `Dag`, `Digraph` and the layering which these diagrams draw.
+- - [Terminal](terminal.md) describes the styled text which a diagram can be rendered into.
+- - [Filesystem](filesystem.md) and [paths](paths.md) describe a common source of trees.
+- - [Git](git.md) reads the commit history which a lane diagram suits.
+- - [Tables](tables.md) lays out tabular data as text, in the same spirit.
++ - [Graphes](graphs.md) décrit `Dag`, `Digraph` et la stratification que dessinent ces
++   diagrammes.
++ - [Terminal](terminal.md) décrit le texte stylisé en lequel un diagramme peut être rendu.
++ - [Système de fichiers](filesystem.md) et [chemins](paths.md) décrivent une source courante
++   d'arbres.
++ - [Git](git.md) lit l'historique des commits auquel convient un diagramme en voies.
++ - [Tableaux](tables.md) dispose des données tabulaires sous forme de texte, dans le même esprit.

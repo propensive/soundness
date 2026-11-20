@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Evaluate every ```scala example in the tutorials under doc/en/modules/ through the flame REPL,
-and report each fence as ran, rejected, or thrown.
+"""Evaluate every ```scala example in the tutorials under doc/soundness/modules/ through the flame
+REPL, and report each fence as ran, rejected, or thrown. The tutorials are read from out/doc, the
+copy of the Orthant store's English which `make docs` exports.
 
 flame (the Soundness REPL, https://github.com/propensive/flame) exposes its engine as a JSON
 API when started with `flame serve`: `POST /api/sessions` creates a named session and
@@ -81,10 +82,10 @@ RENAMED_GROUP = re.compile(r'`(?:[a-z]\w*\.)?([a-z]\w*)\.\{([^}]*)\}`(?:\s*\([^)
 FLATTENED = re.compile(r'`([a-z]\w*)\.([a-z]\w*)\.([A-Za-z]\w*)` → `([A-Za-z]\w*)`')
 
 def unreleased_notes():
-    """The text of the unreleased migration notes: the newest doc/migration/<version>.md, unless
+    """The text of the unreleased migration notes: the newest migration/<version>.md, unless
     its version is already tagged, when nothing has changed since the release."""
     versions = [tuple(map(int, os.path.basename(path)[:-3].split('.')))
-                for path in glob.glob('doc/migration/*.md')
+                for path in glob.glob('out/doc/migration/*.md')
                 if re.fullmatch(r'\d+\.\d+\.\d+\.md', os.path.basename(path))]
     if not versions:
         return ''
@@ -93,7 +94,7 @@ def unreleased_notes():
                             capture_output=True).returncode == 0
     if tagged:
         return ''
-    with open(f'doc/migration/{version}.md', encoding='utf-8') as file:
+    with open(f'out/doc/migration/{version}.md', encoding='utf-8') as file:
         return file.read()
 
 def release_names():
@@ -397,7 +398,7 @@ def prepare(server, path, jars, args, replay):
             print(f'{path}: classload of {jar} failed: {summarise(reply)}', file=sys.stderr)
     if jars and args.verbose:
         print(f'{path}: loaded {len(jars)} jars in {time.time() - started:.1f}s', file=sys.stderr)
-    fixture = os.path.join('doc', 'fixtures', name + '.scala')
+    fixture = os.path.join('etc', 'fixtures', name + '.scala')
     fixture_reply = None
     if os.path.exists(fixture):
         lines = open(fixture, encoding='utf-8').read().split('\n')
@@ -492,7 +493,7 @@ def main():
     sys.stdout.reconfigure(line_buffering=True)
     global FULL, OLDER
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('docs', nargs='*', help='tutorial names (json) or paths; default: all of doc/en/modules')
+    parser.add_argument('docs', nargs='*', help='tutorial names (json) or paths; default: all of doc/soundness/modules')
     parser.add_argument('--port', type=int, default=8765)
     parser.add_argument('--release', help='the Soundness release flame is built against (default: the most-populated version in ~/.ivy2/local)')
     parser.add_argument('--values', action='store_true', help='print each fence\'s printed output, value and type')
@@ -508,8 +509,8 @@ def main():
     FULL = args.full
     OLDER = release_names()
 
-    docs = [d if d.endswith('.md') else os.path.join('doc', 'modules', d + '.md') for d in args.docs] \
-        or sorted(glob.glob('doc/en/modules/*.md'))
+    docs = [d if d.endswith('.md') else os.path.join('out', 'doc', 'soundness', 'modules', d + '.md') for d in args.docs] \
+        or sorted(glob.glob('out/doc/soundness/modules/*.md'))
     for doc in docs:
         if not os.path.exists(doc):
             raise SystemExit(f'no such tutorial: {doc}')

@@ -1,0 +1,34 @@
+orthant 1 release
+
+-   criterion  CI regenerates doc/compatibility.tsv, fails on divergence, and no exclusion lacks a reason
++   criterion  CI regenerates etc/compatibility.tsv, fails on divergence, and no exclusion lacks a reason
+
+-   criterion  every exclusion reason in doc/compatibility.tsv is inherent; a reason-vocabulary check enforces it in CI
++   criterion  every exclusion reason in etc/compatibility.tsv is inherent; a reason-vocabulary check enforces it in CI
+
+-   criterion  the rename table in doc/api-nesting-proposal.md is fully applied, and the 'Remaining names by prefix family' section of doc/api-reduction-candidates.md lists no name outside 'Reviewed items which should not be moved'
++   criterion  the rename table in etc/api-nesting-proposal.md is fully applied, and the 'Remaining names by prefix family' section of etc/api-reduction-candidates.md lists no name outside 'Reviewed items which should not be moved'
+
+-   criterion  the C2 section of doc/api-reduction-candidates.md is empty (C3 and C3b were superseded by doc/api-nesting-proposal.md and closed with it)
++   criterion  the C2 section of etc/api-reduction-candidates.md is empty (C3 and C3b were superseded by etc/api-nesting-proposal.md and closed with it)
+
+-   criterion  doc/api-reduction-candidates.md no longer exists
++   criterion  etc/api-reduction-candidates.md no longer exists
+
+-   criterion  no name is exported by more than one library, no @unexported dodges a clash, and every row of the R8 tables in doc/api-nesting-proposal.md is applied or reviewed-kept
++   criterion  no name is exported by more than one library, no @unexported dodges a clash, and every row of the R8 tables in etc/api-nesting-proposal.md is applied or reviewed-kept
+
+-   baseline  101 topics in doc/modules/; 145 of 145 libraries covered (2026-10-21; 1 of 144 uncovered on 2026-09-25; 91 topics and 35 uncovered on 2026-08-01)
++   baseline  101 topics in doc/soundness/modules/; 145 of 145 libraries covered (2026-10-21; 1 of 144 uncovered on 2026-09-25; 91 topics and 35 uncovered on 2026-08-01)
+
+-   baseline  the scripted DAP suite breaks, steps and inspects values through their Inspectable instances; topic doc/modules/debugging.md (2026-10-21; objects inspected as JVM class names and no topic on 2026-09-25)
++   baseline  the scripted DAP suite breaks, steps and inspects values through their Inspectable instances; topic doc/soundness/modules/debugging.md (2026-10-21; objects inspected as JVM class names and no topic on 2026-09-25)
+
+-   criterion  lib/reliquary is absent, no lib/*/src/lira directory remains, and build.mill, etc/ and doc/modules do not mention reliquary
++   criterion  lib/reliquary is absent, no lib/*/src/lira directory remains, and build.mill, etc/ and doc/soundness/modules do not mention reliquary
+
+-   baseline  lib/sigillate: Jws, Jwe, Jwk and Jwt, with `http` and `server` components; 95 tests, taking their vectors from RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 and RFC 8037; `↯/s.147.1`; doc/en/modules/jose.md (2026-11-20)
++   baseline  lib/sigillate: Jws, Jwe, Jwk and Jwt, with `http` and `server` components; 95 tests, taking their vectors from RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 and RFC 8037; `↯/s.147.1`; doc/soundness/modules/jose.md (2026-11-20)
+
+-   baseline  lib/chatelaine: WebAuthn.registration/register and authentication/authenticate, `none` and `packed` attestation, with a `server` component; the registration and authentication ceremonies of the W3C specification's test vectors (§16.2–16.11) pass, as do scripted ceremonies against a software authenticator in the test sources; no browser's virtual authenticator has been driven; `↯/s.148.1`; doc/en/modules/webauthn.md (2026-11-20)
++   baseline  lib/chatelaine: WebAuthn.registration/register and authentication/authenticate, `none` and `packed` attestation, with a `server` component; the registration and authentication ceremonies of the W3C specification's test vectors (§16.2–16.11) pass, as do scripted ceremonies against a software authenticator in the test sources; no browser's virtual authenticator has been driven; `↯/s.148.1`; doc/soundness/modules/webauthn.md (2026-11-20)

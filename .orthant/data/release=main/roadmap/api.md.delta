@@ -1,0 +1,19 @@
+orthant 1 release
+
+- The surface has already been measured: `doc/api-reduction-candidates.md` inventories every
++ The surface has already been measured: `etc/api-reduction-candidates.md` inventories every
+
+- Done when: the rename table in `doc/api-nesting-proposal.md` (which superseded the C1
++ Done when: the rename table in `etc/api-nesting-proposal.md` (which superseded the C1
+
+- `doc/api-nesting-proposal.md` and closed with it.)
++ `etc/api-nesting-proposal.md` and closed with it.)
+
+-     test -f doc/api-reduction-candidates.md || echo absent    # absent
++     test -f etc/api-reduction-candidates.md || echo absent    # absent
+
+- case by case against rule R8 in `doc/api-nesting-proposal.md`. Convenience keeps a name
++ case by case against rule R8 in `etc/api-nesting-proposal.md`. Convenience keeps a name
+
+- `doc/api-nesting-proposal.md` has been either applied or moved to its "Reviewed and kept
++ `etc/api-nesting-proposal.md` has been either applied or moved to its "Reviewed and kept

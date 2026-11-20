@@ -1,0 +1,16 @@
+orthant 1 release
+
+-   def stage(out: Path on Linux): LocalClasspath = classpath(out)
++   def stage(out: Path on Local): LocalClasspath = classpath(out)
+
+- Code which runs elsewhere can fail, and the failure has to come back. An error raised in the
+- staged block is carried across and raised again at the call site. So `dispatch` reports the
+- failure of the remote computation, and not that the remote computation could not be reached. A
+- failure of the rig itself, such as a subprocess which would not start or a classloader which
+- could not be built, is distinct, since the two call for different responses.
++ Code which runs elsewhere can fail, but an error raised in the staged block is not carried back
++ across the boundary as itself. `dispatch` raises only a `Compiler.Error`, if the staged code
++ does not compile, or a `Rig.Error`, for a failure of the rig. With the `Jvm` rig, staged code
++ which throws makes its subprocess exit with a failure, which is reported as a `Rig.Error` whose
++ reason is `Invocation`: the same error as a subprocess which would not start. Staged code which
++ may fail should therefore return its failure as a value.

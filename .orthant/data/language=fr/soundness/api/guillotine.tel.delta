@@ -1,0 +1,3988 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base guillotine
++ base guillotine
+
+- import soundness
++ import soundness
+
+- info   external processes as typed values: commands checked at compile time, run, piped and read as types
++ info
++     des processus externes comme valeurs typées : des commandes vérifiées à la compilation,
++     exécutées, chaînées et lues comme des types
+
+- detail
+-     _Guillotine_ runs external programs. A command is a `Command` — a list of arguments, with no
+-     shell in between — built by the `sh"…"` interpolator, which parses quotes and escapes as a
+-     POSIX shell would **while the code compiles**: an unclosed quote is a compile error, and a
+-     value substituted into the command is escaped for the position it lands in, so a filename
+-     with a space stays one argument. Commands join into a `Pipeline` with `|`, and either runs
+-     synchronously with `exec[T]()`, whose type parameter decides how the process's output is
+-     read, or starts in the background with `fork[T]()`, which returns a `Job` to write to, read
+-     from, await, abort or kill.
++ detail
++     _Guillotine_ exécute des programmes externes. Une commande est une `Command` — une liste
++     d'arguments, sans shell intermédiaire — construite par l'interpolateur `sh"…"`, qui
++     analyse les guillemets et les échappements comme le ferait un shell POSIX **pendant la
++     compilation du code** : un guillemet non fermé est une erreur de compilation, et une valeur
++     substituée dans la commande est échappée selon la position où elle se trouve, de sorte
++     qu'un nom de fichier contenant une espace reste un seul argument. Les commandes se
++     combinent en un `Pipeline` avec `|`, et l'un comme l'autre s'exécute de façon synchrone
++     avec `exec[T]()`, dont le paramètre de type décide de la façon dont la sortie du processus
++     est lue, ou démarre en arrière-plan avec `fork[T]()`, qui renvoie un `Job` dans lequel
++     écrire, à lire, à attendre, à abandonner ou à tuer.
+
+=     from, await, abort or kill.
+=
+-     ```scala
++     ```scala
+
+=     from, await, abort or kill.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import environments.javaBaseEnvironment
++     import environments.javaBaseEnvironment
+
+-     import logging.silentLogging
++     import logging.silentLogging
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import workingDirectories.javaBaseWorkingDirectory
++     import workingDirectories.javaBaseWorkingDirectory
+
+-     val file = t"notes of the day.txt"
++     val file = t"notes of the day.txt"
+
+-     val lines: List[Text] = sh"cat $file".exec[List[Text]]()
++     val lines: List[Text] = sh"cat $file".exec[List[Text]]()
+
+-     val status: Exit = sh"false".exec[Exit]()
++     val status: Exit = sh"false".exec[Exit]()
+
+-     val count: Text = (sh"cat $file" | sh"wc -l").exec[Text]().trim
++     val count: Text = (sh"cat $file" | sh"wc -l").exec[Text]().trim
+
+=     val count: Text = (sh"cat $file" | sh"wc -l").exec[Text]().trim
+-     ```
++     ```
+
+-     Every run needs four contextual values: a `WorkingDirectory` (the process's working
+-     directory; `workingDirectories.javaBaseWorkingDirectory` is this JVM's), an `Environment`
+-     (its variables; `environments.javaBaseEnvironment` inherits this process's,
+-     `environments.emptyEnvironment` gives it none, and `variables(…)` adds to either), a
+-     `Tactic[Exec.Error]` (`strategies.throwUnsafely`, or a `tend`/`mitigate` block), and an
+-     `Exec.Event is Loggable` (`logging.silentLogging`, or a real log). None of these comes with
+-     `import soundness.*`, since each selects a policy: `import pkg.*` does not import givens,
+-     so each is imported by name.
++     Chaque exécution nécessite quatre valeurs contextuelles : un `WorkingDirectory` (le
++     répertoire de travail du processus ; `workingDirectories.javaBaseWorkingDirectory` est
++     celui de cette JVM), un `Environment` (ses variables ; `environments.javaBaseEnvironment`
++     hérite de celles de ce processus, `environments.emptyEnvironment` ne lui en donne aucune, et
++     `variables(…)` en ajoute à l'un ou l'autre), une `Tactic[Exec.Error]`
++     (`strategies.throwUnsafely`, ou un bloc `tend`/`mitigate`), et un
++     `Exec.Event is Loggable` (`logging.silentLogging`, ou un vrai journal). Aucune ne vient
++     avec `import soundness.*`, puisque chacune choisit une politique : `import pkg.*`
++     n'importe pas les givens, donc chacune s'importe par son nom.
+
+-     The result type of `exec` and `fork` is anything with a `Computable` instance: `Text` and
+-     `String` (the whole of standard output, read when the process ends), `List[Text]` and
+-     `Chain[Text]` (its lines, the chain pulled lazily as the process writes), `Data` (the raw
+-     bytes), `Stderr` (standard error as text), `Exit` (the exit status, `Exit.Ok` or
+-     `Exit.Fail(code)`), `Unit` (wait, and discard the output), and any path type (the trimmed
+-     output, decoded). A command whose name is a POSIX utility may be applied with no type at
+-     all — `sh"echo hi"()` — and the `Intelligible` givens in `PosixCommands` choose the result
+-     type the command implies.
++     Le type de résultat d'`exec` et de `fork` est tout type doté d'une instance `Computable` :
++     `Text` et `String` (toute la sortie standard, lue à la fin du processus), `List[Text]` et
++     `Chain[Text]` (ses lignes, la chaîne étant tirée paresseusement à mesure que le processus
++     écrit), `Data` (les octets bruts), `Stderr` (la sortie d'erreur sous forme de texte), `Exit`
++     (le statut de sortie, `Exit.Ok` ou `Exit.Fail(code)`), `Unit` (attendre, et ignorer la
++     sortie), et tout type de chemin (la sortie élaguée, décodée). Une commande dont le nom est
++     un utilitaire POSIX peut être appliquée sans aucun type — `sh"echo hi"()` — et les givens
++     `Intelligible` de `PosixCommands` choisissent le type de résultat qu'implique la commande.
+
+-     A command may also be run on a pseudo-terminal with `Command#pty`, so that it finds a
+-     terminal on its standard streams, and driven interactively through a `session`; its line
+-     discipline is a `Termios`. A process which should outlive this one is started with
+-     `detach`, which keeps only its `Pid`. `Process` is a handle to any process on the system,
+-     by `Pid`, with its parent, children, start time and CPU time; `Pid.Error` is raised when no
+-     such process is running.
++     Une commande peut aussi être exécutée sur un pseudo-terminal avec `Command#pty`, afin
++     qu'elle trouve un terminal sur ses flux standard, et pilotée de façon interactive par une
++     `session` ; sa discipline de ligne est un `Termios`. Un processus qui doit survivre à
++     celui-ci est démarré avec `detach`, qui ne conserve que son `Pid`. `Process` est une
++     poignée vers n'importe quel processus du système, par `Pid`, avec son parent, ses enfants,
++     son heure de démarrage et son temps CPU ; `Pid.Error` est levée lorsqu'aucun processus de
++     ce type n'est en cours d'exécution.
+
+-     The library is the single component `guillotine.core`, which compiles for the JVM and
+-     Scala Native (not Scala.js, which has no `ProcessBuilder`). Three private pieces are split
+-     by platform: the pseudo-terminal (through the foreign function API on the JVM, through C
+-     interop on Native, on Linux and macOS in both cases), the wiring of a pipeline (the JDK's
+-     `startPipeline` on the JVM; on Native each stage is started on pipes and a daemon thread
+-     copies its predecessor's output into it), and a process's start time and CPU time, which
+-     the Native javalib cannot report, so `Process#startTime` and `Process#cpuUsage` are `Unset`
+-     there. Everything is exported to the `soundness` umbrella.
++     La bibliothèque est l'unique composant `guillotine.core`, qui compile pour la JVM et Scala
++     Native (pas Scala.js, qui n'a pas de `ProcessBuilder`). Trois éléments privés sont
++     répartis par plateforme : le pseudo-terminal (via l'API de fonctions étrangères sur la JVM,
++     via l'interopérabilité C sur Native, sous Linux et macOS dans les deux cas), le câblage
++     d'un pipeline (le `startPipeline` du JDK sur la JVM ; sur Native, chaque étape est démarrée
++     sur des tubes et un thread démon copie la sortie de son prédécesseur dans son entrée), et
++     l'heure de démarrage et le temps CPU d'un processus, que la javalib de Native ne peut pas
++     fournir, de sorte que `Process#startTime` et `Process#cpuUsage` y valent `Unset`. Tout est
++     exporté dans le package parapluie `soundness`.
+
+- refer guillotine.Command
++ refer guillotine.Command
+
+- refer guillotine.sh
++ refer guillotine.sh
+
+- refer guillotine.Job
++ refer guillotine.Job
+
+- refer guillotine.Computable
++ refer guillotine.Computable
+
+- refer guillotine.Process
++ refer guillotine.Process
+
+- refer guillotine.Exec
++ refer guillotine.Exec
+
+- entry .sh   the `sh"…"` interpolator: a `Command` parsed as the code compiles, with escaped substitutions
++ entry .sh
++   info
++       l'interpolateur `sh"…"` : une `Command` analysée pendant la compilation du code, avec des
++       substitutions échappées
+
+-     `sh"ls -la $directory"` is a `Command` whose arguments are the words of the literal, split on
+-     whitespace with single quotes, double quotes and backslash escapes honoured as a POSIX shell
+-     honours them. No shell runs: the arguments go straight to the program, so a metacharacter
+-     in a substituted value is never interpreted. The parsing happens while the code compiles,
+-     through the `Sh.Runtime` parser, and an error is reported at the character which caused
+-     it: _this single quote is never closed_ and _this double quote is never closed_ at the
+-     quote that was opened, _a command cannot end with an escape character_ at the trailing
+-     backslash, and _an escape character cannot appear immediately before a substitution_ at a
+-     backslash written before a `$`.
++   detail
++       `sh"ls -la $directory"` est une `Command` dont les arguments sont les mots du littéral,
++       découpés sur les espaces, les guillemets simples, les guillemets doubles et les
++       échappements par barre oblique inverse étant respectés comme un shell POSIX les respecte.
++       Aucun shell ne s'exécute : les arguments vont directement au programme, si bien qu'un
++       métacaractère dans une valeur substituée n'est jamais interprété. L'analyse a lieu pendant
++       la compilation du code, via l'analyseur `Sh.Runtime`, et une erreur est signalée au
++       caractère qui l'a causée : _this single quote is never closed_ et _this double quote is
++       never closed_ au guillemet ouvert, _a command cannot end with an escape character_ à la
++       barre oblique inverse finale, et _an escape character cannot appear immediately before a
++       substitution_ à une barre oblique inverse écrite avant un `$`.
+
+=     backslash written before a `$`.
+=
+-     ```scala
++       ```scala
+
+=     backslash written before a `$`.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+-     val file = t"a file.txt"
++       val file = t"a file.txt"
+
+-     sh"cat $file"                   // Command(t"cat", t"a file.txt"): one argument
++       sh"cat $file"                   // Command(t"cat", t"a file.txt"): one argument
+
+-     sh"""echo "quoted $file" x"""   // Command(t"echo", t"quoted a file.txt", t"x")
++       sh"""echo "quoted $file" x"""   // Command(t"echo", t"quoted a file.txt", t"x")
+
+-     sh"echo 'Hello world"           // does not compile
++       sh"echo 'Hello world"           // does not compile
+
+=     sh"echo 'Hello world"           // does not compile
+-     ```
++       ```
+
+-     A substituted value is escaped for the position it lands in. Unquoted, a `Text` is exactly
+-     one argument whatever it contains, and a `List[Text]` is one argument per element (an empty
+-     list contributes none); inside quotes, a list's elements are joined with spaces into the
+-     one argument the quotes delimit. A value adjacent to literal text joins it (`${a}x` gives
+-     `ax`). A `Command` substitutes as its arguments, so that `sh"sh -c '$inner'"` passes an
+-     inner command to a shell as a single argument. Any other type substitutes through a
+-     `Parameterizable` instance — `Pid` renders as `↯42`, and anything `Encodable in Text`
+-     (a `Path`, a URL) as its encoding — and a type with none is a compile error, _can't
+-     substitute `T` into a sh-interpolator_. The selection of a `val` member of an enclosing
+-     class (`$config.host`) cannot be substituted; bind it to a local first.
++       Une valeur substituée est échappée selon la position où elle se trouve. Hors guillemets, un
++       `Text` est exactement un argument quel que soit son contenu, et une `List[Text]` donne un
++       argument par élément (une liste vide n'en apporte aucun) ; entre guillemets, les éléments
++       d'une liste sont joints par des espaces en l'unique argument que délimitent les
++       guillemets. Une valeur adjacente à du texte littéral s'y joint (`${a}x` donne `ax`). Une
++       `Command` se substitue sous forme de ses arguments, de sorte que `sh"sh -c '$inner'"` passe
++       une commande interne à un shell en un seul argument. Tout autre type se substitue via une
++       instance `Parameterizable` — `Pid` se rend comme `↯42`, et tout ce qui est
++       `Encodable in Text` (un `Path`, une URL) comme son encodage — et un type qui n'en a pas est
++       une erreur de compilation, _can't substitute `T` into a sh-interpolator_. La sélection d'un
++       membre `val` d'une classe englobante (`$config.host`) ne peut pas être substituée ;
++       liez-la d'abord à une valeur locale.
+
+-     The result's static type is a refinement, `Command { type Exec = "ls" }`, carrying the
+-     command's name as a literal type, which is what `Executable#apply()` uses to find the
+-     `Intelligible` evidence giving the command's implied result type. Two commands written
+-     with different whitespace or quoting are equal when their arguments are.
++       Le type statique du résultat est un raffinement, `Command { type Exec = "ls" }`, qui porte
++       le nom de la commande sous forme de type littéral, ce qu'utilise `Executable#apply()` pour
++       trouver la preuve `Intelligible` donnant le type de résultat implicite de la commande. Deux
++       commandes écrites avec des espaces ou des guillemets différents sont égales lorsque leurs
++       arguments le sont.
+
+- entry .Executable   what can be run: a `Command` or a `Pipeline`, with `exec`, `fork`, `detach` and `|`
++ entry .Executable
++   info
++       ce qui peut être exécuté : une `Command` ou un `Pipeline`, avec `exec`, `fork`, `detach` et
++       `|`
+
+-   detail
+-       The sealed trait of the two runnable things, `Command` and `Pipeline`, and the home of
+-       the operations shared by both. Each run takes a `WorkingDirectory` and an `Environment`
+-       for the child (an environment which can enumerate its variables replaces this process's
+-       entirely, and a bare command name is then looked up on *that* environment's `PATH`,
+-       since the JDK would search this JVM's), a `Tactic[Exec.Error]` for a process which
+-       cannot be started, and an `Exec.Event is Loggable` for the start, exit, abort and kill
+-       events.
++   detail
++       Le trait scellé des deux choses exécutables, `Command` et `Pipeline`, et le lieu des
++       opérations qu'elles partagent. Chaque exécution prend un `WorkingDirectory` et un
++       `Environment` pour l'enfant (un environnement capable d'énumérer ses variables remplace
++       entièrement celui de ce processus, et un simple nom de commande est alors recherché dans le
++       `PATH` de *cet* environnement, puisque le JDK chercherait dans celui de cette JVM), une
++       `Tactic[Exec.Error]` pour un processus qui ne peut pas être démarré, et un
++       `Exec.Event is Loggable` pour les événements de démarrage, de sortie, d'abandon et de mise
++       à mort.
+
+=       events.
+=
+-       ```scala
++       ```scala
+
+=       events.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       events.
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       events.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       events.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       events.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import workingDirectories.javaBaseWorkingDirectory
++       import workingDirectories.javaBaseWorkingDirectory
+
+-       sh"echo hi".exec[Text]()                    // waits; t"hi\n"
++       sh"echo hi".exec[Text]()                    // waits; t"hi\n"
+
+-       val job = sh"sleep 5".fork[Unit]()          // returns at once
++       val job = sh"sleep 5".fork[Unit]()          // returns at once
+
+-       job.abort()
++       job.abort()
+
+-       (sh"echo a" | sh"tr a b").exec[Text]()      // a pipeline runs the same way
++       (sh"echo a" | sh"tr a b").exec[Text]()      // a pipeline runs the same way
+
+=       (sh"echo a" | sh"tr a b").exec[Text]()      // a pipeline runs the same way
+-       ```
++       ```
+
+-       `exec` waits for the process and interprets its output as the type named; `fork` starts
+-       it and returns the `Job`; `detach` starts it and keeps only its `Pid`. The nullary
+-       `apply()` is `exec` with the result type implied by the command's name.
++       `exec` attend le processus et interprète sa sortie comme le type nommé ; `fork` le démarre
++       et renvoie le `Job` ; `detach` le démarre et ne conserve que son `Pid`. L'`apply()` sans
++       argument est `exec` avec le type de résultat qu'implique le nom de la commande.
+
+=       `apply()` is `exec` with the result type implied by the command's name.
+-   refer guillotine.Command
++   refer guillotine.Command
+
+=   refer guillotine.Command
+-   refer guillotine.Pipeline
++   refer guillotine.Pipeline
+
+=   refer guillotine.Pipeline
+-   refer guillotine.Job
++   refer guillotine.Job
+
+=   refer guillotine.Job
+-   refer guillotine.Computable
++   refer guillotine.Computable
+
+-   entry #Exec   the command's name as a literal type, when known
++   entry #Exec
++     info
++         le nom de la commande sous forme de type littéral, lorsqu'il est connu
+
+-       A `Command` built by `sh"…"` has `Exec` set to its first word (`sh"ls -la"` is a `Command
+-       { type Exec = "ls" }`); one built with `Command(…)` leaves it abstract. `apply()` uses it
+-       to summon `Exec is Intelligible`, the evidence for the result type a command implies, and
+-       a `Job`'s first type parameter is it.
++     detail
++         Une `Command` construite par `sh"…"` a `Exec` fixé à son premier mot (`sh"ls -la"` est une
++         `Command { type Exec = "ls" }`) ; une commande construite avec `Command(…)` le laisse
++         abstrait. `apply()` l'utilise pour invoquer `Exec is Intelligible`, la preuve du type de
++         résultat qu'implique une commande, et c'est le premier paramètre de type d'un `Job`.
+
+-   entry #fork   starts the process and returns its `Job` without waiting
++   entry #fork
++     info
++         démarre le processus et renvoie son `Job` sans attendre
+
+-       `fork[result]()` starts the command (or every stage of a pipeline, wired together) and
+-       returns a `Job[Exec, result]^` at once: the result type is fixed now, and read with
+-       `Job#await()` later. The job is a capability, tracked fresh, so it cannot escape into an
+-       untracked value. Needs a `WorkingDirectory`, an `Environment`, a `Tactic[Exec.Error]`
+-       (raised when the program cannot be started) and an `Exec.Event is Loggable`, and logs
+-       `Exec.Event.ProcessStart` or `PipelineStart` at `info`.
++     detail
++         `fork[result]()` démarre la commande (ou chaque étape d'un pipeline, reliées entre elles)
++         et renvoie immédiatement un `Job[Exec, result]^` : le type de résultat est fixé
++         maintenant, et lu plus tard avec `Job#await()`. Le job est une capacité, suivie comme
++         fraîche, de sorte qu'il ne peut pas s'échapper dans une valeur non suivie. Nécessite un
++         `WorkingDirectory`, un `Environment`, une `Tactic[Exec.Error]` (levée lorsque le
++         programme ne peut pas être démarré) et un `Exec.Event is Loggable`, et journalise
++         `Exec.Event.ProcessStart` ou `PipelineStart` au niveau `info`.
+
+=       `Exec.Event.ProcessStart` or `PipelineStart` at `info`.
+=
+-       ```scala
++         ```scala
+
+=       `Exec.Event.ProcessStart` or `PipelineStart` at `info`.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+=       `Exec.Event.ProcessStart` or `PipelineStart` at `info`.
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++         import environments.javaBaseEnvironment
+
+=       `Exec.Event.ProcessStart` or `PipelineStart` at `info`.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+-       import logging.silentLogging
++         import logging.silentLogging
+
+=       `Exec.Event.ProcessStart` or `PipelineStart` at `info`.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=       `Exec.Event.ProcessStart` or `PipelineStart` at `info`.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import workingDirectories.javaBaseWorkingDirectory
++         import workingDirectories.javaBaseWorkingDirectory
+
+=       `Exec.Event.ProcessStart` or `PipelineStart` at `info`.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import workingDirectories.javaBaseWorkingDirectory
+=
+-       val job = sh"cat".fork[Text]()
++         val job = sh"cat".fork[Text]()
+
+-       job.stdin(Stream(Data(104, 105, 10)))
++         job.stdin(Stream(Data(104, 105, 10)))
+
+-       job.await().trim   // t"hi"
++         job.await().trim   // t"hi"
+
+=       job.await().trim   // t"hi"
+-       ```
++         ```
+
+-   entry #detach   starts the process to outlive this one, keeping only its `Pid`
++   entry #detach
++     info
++         démarre le processus pour qu'il survive à celui-ci, en ne conservant que son `Pid`
+
+-       For a child which should run beyond this program — a server, a daemon. Its standard
+-       input is the null device, and its output and errors are discarded (`detach()`) or
+-       appended to a log file (`detach(log)`, taking any path type `Abstractable across Paths
+-       to Text`, and making the log's parent directories). A `fork`ed child inherits pipes
+-       nobody drains, and a server writing to them eventually blocks; a detached one cannot.
+-       For a pipeline, the head reads the null device, the tail writes the log, and every
+-       stage's errors go with the tail's; the `Pid` is the tail's. The child's environment is
+-       the `Environment` in scope, so `environments.emptyEnvironment` with `variables(…)` gives
+-       it exactly the variables named. Logs `ProcessStart`, and raises `Exec.Error` if the
+-       program cannot be started.
++     detail
++         Pour un enfant qui doit continuer de tourner au-delà de ce programme — un serveur, un
++         démon. Son entrée standard est le périphérique nul, et sa sortie et ses erreurs sont
++         ignorées (`detach()`) ou ajoutées à un fichier journal (`detach(log)`, qui prend tout type
++         de chemin `Abstractable across Paths to Text` et crée les répertoires parents du journal).
++         Un enfant lancé par `fork` hérite de tubes que personne ne vide, et un serveur qui y écrit
++         finit par se bloquer ; un enfant détaché ne le peut pas. Pour un pipeline, la tête lit le
++         périphérique nul, la queue écrit dans le journal, et les erreurs de chaque étape vont avec
++         celles de la queue ; le `Pid` est celui de la queue. L'environnement de l'enfant est
++         l'`Environment` dans la portée, donc `environments.emptyEnvironment` avec `variables(…)`
++         lui donne exactement les variables nommées. Journalise `ProcessStart`, et lève
++         `Exec.Error` si le programme ne peut pas être démarré.
+
+=       program cannot be started.
+=
+-       ```scala fuel
++         ```scala fuel
+
+-       typecheck
++         typecheck
+
+=       typecheck
+-       ##
++         ##
+
+=       ##
+-       import soundness.*
++         import soundness.*
+
+=       ##
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++         import environments.javaBaseEnvironment
+
+=       ##
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+-       import logging.silentLogging
++         import logging.silentLogging
+
+=       ##
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=       ##
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import workingDirectories.javaBaseWorkingDirectory
++         import workingDirectories.javaBaseWorkingDirectory
+
+-       val pid: Pid = sh"server --port 8080".detach(t"/var/log/server.log")
++         val pid: Pid = sh"server --port 8080".detach(t"/var/log/server.log")
+
+=       val pid: Pid = sh"server --port 8080".detach(t"/var/log/server.log")
+-       ```
++         ```
+
+-   entry #exec   runs the process to completion and reads its output as the type named
++   entry #exec
++     info
++         exécute le processus jusqu'à son terme et lit sa sortie comme le type nommé
+
+-       `exec[result]()` is `fork[result]().await()`: the process runs, and its output is
+-       interpreted by the `result is Computable` instance in scope — `Text`, `List[Text]`,
+-       `Chain[Text]`, `Data`, `Stderr`, `Exit`, `Unit`, or a path type (see `Computable`).
+-       The type decides more than a conversion: which stream is read, whether a non-zero status
+-       is a failure or an answer, and whether the call returns when the process ends (`Text`)
+-       or as soon as it has started (`Chain[Text]`, whose lines arrive lazily).
++     detail
++         `exec[result]()` équivaut à `fork[result]().await()` : le processus s'exécute, et sa
++         sortie est interprétée par l'instance `result is Computable` dans la portée — `Text`,
++         `List[Text]`, `Chain[Text]`, `Data`, `Stderr`, `Exit`, `Unit`, ou un type de chemin (voir
++         `Computable`). Le type décide de plus qu'une conversion : quel flux est lu, si un statut
++         non nul est un échec ou une réponse, et si l'appel revient à la fin du processus (`Text`)
++         ou dès qu'il a démarré (`Chain[Text]`, dont les lignes arrivent paresseusement).
+
+=       or as soon as it has started (`Chain[Text]`, whose lines arrive lazily).
+=
+-       ```scala
++         ```scala
+
+=       or as soon as it has started (`Chain[Text]`, whose lines arrive lazily).
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+=       or as soon as it has started (`Chain[Text]`, whose lines arrive lazily).
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++         import environments.javaBaseEnvironment
+
+=       or as soon as it has started (`Chain[Text]`, whose lines arrive lazily).
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+-       import logging.silentLogging
++         import logging.silentLogging
+
+=       or as soon as it has started (`Chain[Text]`, whose lines arrive lazily).
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=       or as soon as it has started (`Chain[Text]`, whose lines arrive lazily).
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import workingDirectories.javaBaseWorkingDirectory
++         import workingDirectories.javaBaseWorkingDirectory
+
+-       sh"echo hello".exec[Text]().trim            // t"hello"
++         sh"echo hello".exec[Text]().trim            // t"hello"
+
+-       sh"printf 'a\nb\nc\n'".exec[List[Text]]()   // List(t"a", t"b", t"c")
++         sh"printf 'a\nb\nc\n'".exec[List[Text]]()   // List(t"a", t"b", t"c")
+
+-       sh"false".exec[Exit]()                      // Exit.Fail(1)
++         sh"false".exec[Exit]()                      // Exit.Fail(1)
+
+-       sh"sh -c 'echo oops 1>&2'".exec[Stderr]()   // Stderr(t"oops\n")
++         sh"sh -c 'echo oops 1>&2'".exec[Stderr]()   // Stderr(t"oops\n")
+
+=       sh"sh -c 'echo oops 1>&2'".exec[Stderr]()   // Stderr(t"oops\n")
+-       ```
++         ```
+
+-       `Exec.Error` is raised when the program cannot be started — a missing binary, a
+-       directory which is not executable — and names the command that failed; a read of the
+-       output which is cut short (a `Truncation.Error`) is reported as the same error, with the
+-       last command of a pipeline as its command. A program which runs and exits non-zero is
+-       not an error: ask for an `Exit` to see its status.
++         `Exec.Error` est levée lorsque le programme ne peut pas être démarré — un binaire absent,
++         un répertoire qui n'est pas exécutable — et nomme la commande qui a échoué ; une lecture
++         de la sortie interrompue prématurément (une `Truncation.Error`) est signalée comme la même
++         erreur, avec la dernière commande d'un pipeline comme commande. Un programme qui s'exécute
++         et se termine avec un statut non nul n'est pas une erreur : demandez un `Exit` pour voir
++         son statut.
+
+-   entry #apply   `command()`: runs it with the result type its name implies; `a(b)`: the pipeline `b | a`
++   entry #apply
++     info
++         `command()` : l'exécute avec le type de résultat qu'implique son nom ; `a(b)` : le
++         pipeline `b | a`
+
+-       The nullary `apply()` runs the command as `exec` does, with the result type chosen by
+-       the `Intelligible` evidence for the command's `Exec` name: `sh"echo hi"()` is a `Text`,
+-       `sh"ls"()` a `Chain[Text]`, `sh"sleep 1"()` an `Exit`, as the givens in `PosixCommands`
+-       say. It is `inline`, and needs the same `WorkingDirectory`, `Environment`, `Computable`,
+-       `Tactic[Exec.Error]` and `Exec.Event is Loggable` as `exec`. A command whose name has no
+-       `Intelligible` instance, or which was built with `Command(…)` rather than `sh"…"`, does
+-       not compile this way: name the type with `exec[T]()`.
++     detail
++         L'`apply()` sans argument exécute la commande comme le fait `exec`, avec le type de
++         résultat choisi par la preuve `Intelligible` pour le nom `Exec` de la commande :
++         `sh"echo hi"()` est un `Text`, `sh"ls"()` une `Chain[Text]`, `sh"sleep 1"()` un `Exit`,
++         comme le disent les givens de `PosixCommands`. Elle est `inline`, et nécessite les mêmes
++         `WorkingDirectory`, `Environment`, `Computable`, `Tactic[Exec.Error]` et
++         `Exec.Event is Loggable` qu'`exec`. Une commande dont le nom n'a pas d'instance
++         `Intelligible`, ou qui a été construite avec `Command(…)` plutôt que `sh"…"`, ne compile
++         pas ainsi : nommez le type avec `exec[T]()`.
+
+=       not compile this way: name the type with `exec[T]()`.
+=
+-       ```scala
++         ```scala
+
+=       not compile this way: name the type with `exec[T]()`.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+=       not compile this way: name the type with `exec[T]()`.
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++         import environments.javaBaseEnvironment
+
+=       not compile this way: name the type with `exec[T]()`.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+-       import logging.silentLogging
++         import logging.silentLogging
+
+=       not compile this way: name the type with `exec[T]()`.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=       not compile this way: name the type with `exec[T]()`.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import workingDirectories.javaBaseWorkingDirectory
++         import workingDirectories.javaBaseWorkingDirectory
+
+-       sh"echo hi"().trim                   // t"hi"
++         sh"echo hi"().trim                   // t"hi"
+
+-       sh"head -n 1 /dev/null"().to[List]   // Nil
++         sh"head -n 1 /dev/null"().to[List]   // Nil
+
+-       sh"sleep 0.01"()                     // Exit.Ok
++         sh"sleep 0.01"()                     // Exit.Ok
+
+=       sh"sleep 0.01"()                     // Exit.Ok
+-       ```
++         ```
+
+-       `apply(command: Executable)` is the other way round from `|`: `b(a)` is `a | b`, the
+-       pipeline in which `a`'s output feeds `b`. Both flatten, so a pipeline applied to a
+-       pipeline is one pipeline of all their commands.
++         `apply(command: Executable)` est l'inverse de `|` : `b(a)` équivaut à `a | b`, le pipeline
++         dans lequel la sortie de `a` alimente `b`. Les deux aplatissent, de sorte qu'un pipeline
++         appliqué à un pipeline donne un seul pipeline de toutes leurs commandes.
+
+-   entry #|   `a | b`: the pipeline whose first stage's output is its second's input
++   entry #|
++     info
++         `a | b` : le pipeline dont la sortie de la première étape est l'entrée de la seconde
+
+-       Builds a `Pipeline`, flattening: `a | b | c` is one `Pipeline` of three commands, and a
+-       pipeline piped into a command, or a command into a pipeline, extends it rather than
+-       nesting. The pipeline's output and exit status are its last command's, and input written
+-       to it goes to its first.
++     detail
++         Construit un `Pipeline`, en aplatissant : `a | b | c` est un seul `Pipeline` de trois
++         commandes, et un pipeline chaîné dans une commande, ou une commande dans un pipeline,
++         l'étend au lieu de s'imbriquer. La sortie et le statut de sortie du pipeline sont ceux de
++         sa dernière commande, et l'entrée qu'on y écrit va à la première.
+
+=       to it goes to its first.
+=
+-       ```scala
++         ```scala
+
+=       to it goes to its first.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+-       (sh"echo a" | sh"cat" | sh"wc").commands.length   // 3
++         (sh"echo a" | sh"cat" | sh"wc").commands.length   // 3
+
+=       (sh"echo a" | sh"cat" | sh"wc").commands.length   // 3
+-       ```
++         ```
+
+- entry .Command   a program and its arguments, as a value: built by `sh"…"`, run with `exec`, `fork` or `pty`
++ entry .Command
++   info
++       un programme et ses arguments, comme valeur : construite par `sh"…"`, exécutée avec `exec`,
++       `fork` ou `pty`
+
+-   detail
+-       A `Command` is a list of `#arguments`, the first naming the program, with no shell in
+-       between: each argument reaches the program exactly as it is held. It is an
+-       `Executable`, so `exec[T]()`, `fork[T]()`, `detach`, `apply()` and `|` are the ways to
+-       run and combine it. `sh"…"` is the usual way to build one, and `Command(t"ls", t"-la")`
+-       the direct one; the two are equal when their arguments are, though only the interpolated
+-       form carries its name in its `Exec` type.
++   detail
++       Une `Command` est une liste d'`#arguments`, dont le premier nomme le programme, sans shell
++       intermédiaire : chaque argument parvient au programme exactement tel qu'il est conservé.
++       C'est un `Executable`, donc `exec[T]()`, `fork[T]()`, `detach`, `apply()` et `|` sont les
++       façons de l'exécuter et de la combiner. `sh"…"` est la façon habituelle d'en construire
++       une, et `Command(t"ls", t"-la")` la façon directe ; les deux sont égales lorsque leurs
++       arguments le sont, bien que seule la forme interpolée porte son nom dans son type `Exec`.
+
+=       form carries its name in its `Exec` type.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label A command, with a value escaped into one argument
++         label A command, with a value escaped into one argument
+
+=         label A command, with a value escaped into one argument
+-         code
++         code
+
+=         label A command, with a value escaped into one argument
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A command, with a value escaped into one argument
+=         code
+=             import soundness.*
+=
+-             val file = t"notes of the day.txt"
++             val file = t"notes of the day.txt"
+
+-             sh"cat $file"                         // Command(t"cat", t"notes of the day.txt")
++             sh"cat $file"                         // Command(t"cat", t"notes of the day.txt")
+
+=             sh"cat $file"                         // Command(t"cat", t"notes of the day.txt")
+-       frame
++       frame
+
+-         label Piped into a second command
++         label Piped into a second command
+
+=         label Piped into a second command
+-         code
++         code
+
+=         label Piped into a second command
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Piped into a second command
+=         code
+=             import soundness.*
+=
+-             val file = t"notes of the day.txt"
++             val file = t"notes of the day.txt"
+
+-             sh"cat $file" | sh"grep -c TODO"      // a Pipeline of two commands
++             sh"cat $file" | sh"grep -c TODO"      // a Pipeline of two commands
+
+=             sh"cat $file" | sh"grep -c TODO"      // a Pipeline of two commands
+-       frame
++       frame
+
+-         label Run, with its output read as the type named
++         label Run, with its output read as the type named
+
+=         label Run, with its output read as the type named
+-         code
++         code
+
+=         label Run, with its output read as the type named
+=         code
+-             import soundness.*
++             import soundness.*
+
+-             import environments.javaBaseEnvironment
++             import environments.javaBaseEnvironment
+
+-             import logging.silentLogging
++             import logging.silentLogging
+
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+-             import workingDirectories.javaBaseWorkingDirectory
++             import workingDirectories.javaBaseWorkingDirectory
+
+=             import workingDirectories.javaBaseWorkingDirectory
+=
+-             val file = t"notes of the day.txt"
++             val file = t"notes of the day.txt"
+
+-             val todos: Int = (sh"cat $file" | sh"grep -c TODO").exec[Text]().trim.decode[Int]
++             val todos: Int = (sh"cat $file" | sh"grep -c TODO").exec[Text]().trim.decode[Int]
+
+=             val todos: Int = (sh"cat $file" | sh"grep -c TODO").exec[Text]().trim.decode[Int]
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       A command renders two ways: `show` gives it as it would be typed at a shell, each argument
+-       quoted only if it needs to be (`echo 'a b'`), and `inspect` gives the source which would
+-       build it (`sh"echo 'a b'"`, in triple quotes if a double quote is needed). `#escape`
+-       gives the strict form, every argument single-quoted, for passing a whole command to a
+-       shell. A command is also substitutable into another `sh"…"`, as its arguments.
++       Une commande se rend de deux façons : `show` la donne telle qu'on la taperait dans un
++       shell, chaque argument n'étant mis entre guillemets que si nécessaire (`echo 'a b'`), et
++       `inspect` donne le code source qui la construirait (`sh"echo 'a b'"`, entre triples
++       guillemets si un guillemet double est nécessaire). `#escape` donne la forme stricte, chaque
++       argument entre guillemets simples, pour passer une commande entière à un shell. Une
++       commande peut aussi être substituée dans un autre `sh"…"`, sous forme de ses arguments.
+
+-       On the JVM and on Scala Native, `#pty` runs the command on a pseudo-terminal rather than
+-       on pipes; `Command.OnTerminal` is the value it returns.
++       Sur la JVM et sur Scala Native, `#pty` exécute la commande sur un pseudo-terminal plutôt
++       que sur des tubes ; `Command.OnTerminal` est la valeur qu'il renvoie.
+
+=       on pipes; `Command.OnTerminal` is the value it returns.
+-   refer guillotine.sh
++   refer guillotine.sh
+
+=   refer guillotine.sh
+-   refer guillotine.Executable
++   refer guillotine.Executable
+
+=   refer guillotine.Executable
+-   refer guillotine.Pipeline
++   refer guillotine.Pipeline
+
+=   refer guillotine.Pipeline
+-   refer guillotine.Command.OnTerminal
++   refer guillotine.Command.OnTerminal
+
+-   entry .inspectable   renders a command as the `sh"…"` source which builds it
++   entry .inspectable
++     info
++         rend une commande sous la forme du code source `sh"…"` qui la construit
+
+-       `sh"echo 'a b'"`, with each argument quoted as `show` quotes it, and triple-quoted when an
+-       argument contains a double quote. The given is bounded over subtypes of `Command`, so
+-       the refined type `sh"…"` expands to finds it too.
++     detail
++         `sh"echo 'a b'"`, chaque argument étant mis entre guillemets comme le fait `show`, et
++         entre triples guillemets lorsqu'un argument contient un guillemet double. Le given est
++         borné sur les sous-types de `Command`, de sorte que le type raffiné auquel se développe
++         `sh"…"` le trouve aussi.
+
+-   entry .showable   renders a command as it would be typed at a shell
++   entry .showable
++     info
++         rend une commande telle qu'on la taperait dans un shell
+
+-       Each argument is written bare if it is plain, in single quotes if it contains a space,
+-       tab, backslash or double quote, in double quotes if it contains a single quote, and in
+-       double quotes with the double quotes escaped if it contains both; the arguments are
+-       joined with spaces. `sh"echo 'a b'".show` is `echo 'a b'`.
++     detail
++         Chaque argument est écrit tel quel s'il est simple, entre guillemets simples s'il contient
++         une espace, une tabulation, une barre oblique inverse ou un guillemet double, entre
++         guillemets doubles s'il contient un guillemet simple, et entre guillemets doubles avec les
++         guillemets doubles échappés s'il contient les deux ; les arguments sont joints par des
++         espaces. `sh"echo 'a b'".show` donne `echo 'a b'`.
+
+-   entry .OnTerminal   a command to be run on a fresh pseudo-terminal of a given size
++   entry .OnTerminal
++     info
++         une commande à exécuter sur un nouveau pseudo-terminal d'une taille donnée
+
+-     detail
+-         What `Command#pty` returns: the command, the terminal's `#width` and `#height` in
+-         characters, and the `#termios` line discipline to set before it starts, or `Unset` to
+-         leave the system's. It is a description, not a terminal: each `#exec` or `session`
+-         allocates a pseudo-terminal with `posix_openpt`, runs the command on its slave side as
+-         a session leader (so the terminal is its controlling terminal, and `^C` typed at it
+-         interrupts it), and releases the terminal afterwards. On the JVM this goes through the
+-         foreign function API, so run with `--enable-native-access=ALL-UNNAMED` to silence the
+-         JDK's warning; on Scala Native through C interop. Linux and macOS only.
++     detail
++         Ce que renvoie `Command#pty` : la commande, la largeur `#width` et la hauteur `#height` du
++         terminal en caractères, et la discipline de ligne `#termios` à définir avant son
++         démarrage, ou `Unset` pour conserver celle du système. C'est une description, pas un
++         terminal : chaque `#exec` ou `session` alloue un pseudo-terminal avec `posix_openpt`,
++         exécute la commande sur son côté esclave en tant que leader de session (de sorte que le
++         terminal est son terminal de contrôle, et qu'un `^C` tapé dessus l'interrompt), et libère
++         le terminal ensuite. Sur la JVM, cela passe par l'API de fonctions étrangères, donc
++         exécutez avec `--enable-native-access=ALL-UNNAMED` pour faire taire l'avertissement du
++         JDK ; sur Scala Native, par l'interopérabilité C. Linux et macOS uniquement.
+
+-         ```scala fuel
++         ```scala fuel
+
+-         typecheck
++         typecheck
+
+-         ##
++         ##
+
+=         ##
+-         import soundness.*
++         import soundness.*
+
+=         ##
+=         import soundness.*
+-         import environments.javaBaseEnvironment
++         import environments.javaBaseEnvironment
+
+=         ##
+=         import soundness.*
+=         import environments.javaBaseEnvironment
+-         import logging.silentLogging
++         import logging.silentLogging
+
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         import strategies.throwUnsafely
+-         import workingDirectories.javaBaseWorkingDirectory
++         import workingDirectories.javaBaseWorkingDirectory
+
+-         sh"stty size".pty(100, 30).exec[Text]().trim   // t"30 100"
++         sh"stty size".pty(100, 30).exec[Text]().trim   // t"30 100"
+
+-         sh"sh -c 'read line; stty size'".pty().session: terminal ?=>
++         sh"sh -c 'read line; stty size'".pty().session: terminal ?=>
+
+-           terminal.resize(132, 50)   // the program receives SIGWINCH
++           terminal.resize(132, 50)   // the program receives SIGWINCH
+
+-           t"\r".writeTo(terminal)    // press Return
++           t"\r".writeTo(terminal)    // press Return
+
+-           terminal.text().trim       // t"50 132"
++           terminal.text().trim       // t"50 132"
+
+=           terminal.text().trim       // t"50 132"
+-         ```
++         ```
+
+-         A `session` (aperture's extension, through `.sessional`) lends the running command to
+-         a block as a `Command.OnTerminal.Job`, and ends it when the block returns or throws:
+-         a command still running is hung up on (`SIGHUP`), as closing a real terminal would,
+-         and killed if it has not exited within a second. The job's output is everything the
+-         program writes to the terminal, standard error included, escape sequences and all;
+-         anything `Writable` to it — `Text`, `Data`, a stream — is typed at the terminal. A
+-         terminal has no end of input: a program reading until end of file is sent the
+-         end-of-file character, `^D` (byte 4), rather than having its input closed.
++         Une `session` (l'extension d'aperture, via `.sessional`) prête la commande en cours
++         d'exécution à un bloc sous forme de `Command.OnTerminal.Job`, et y met fin lorsque le bloc
++         se termine ou lève une exception : une commande encore en cours reçoit un raccrochage
++         (`SIGHUP`), comme le ferait la fermeture d'un vrai terminal, et est tuée si elle ne s'est
++         pas terminée dans la seconde. La sortie du job est tout ce que le programme écrit sur le
++         terminal, sortie d'erreur comprise, séquences d'échappement et tout ; tout ce qui y est
++         `Writable` — `Text`, `Data`, un flux — est tapé sur le terminal. Un terminal n'a pas de
++         fin d'entrée : un programme qui lit jusqu'à la fin du fichier reçoit le caractère de fin
++         de fichier, `^D` (octet 4), au lieu de voir son entrée fermée.
+
+-     refer guillotine.Termios
++     refer guillotine.Termios
+
+-     refer guillotine.Command.OnTerminal.Job
++     refer guillotine.Command.OnTerminal.Job
+
+-     entry .showable   renders the command and its terminal's size: `stty size on 80×24`
++     entry .showable
++       info
++           rend la commande et la taille de son terminal : `stty size on 80×24`
+
+-     entry .Sessional   the `Sessional` instance class: lends a running `OnTerminal.Job` to a block
++     entry .Sessional
++       info
++           la classe d'instance `Sessional` : prête un `OnTerminal.Job` en cours d'exécution à un
++           bloc
+
+-         The class behind `.sessional`, a named class (as a `Sessional` instance must be) which
+-         takes the `WorkingDirectory`, `Environment`, `Tactic[Exec.Error]` and `Exec.Event is
+-         Loggable` the command's run needs, and whose `session` starts the command on a fresh
+-         terminal, passes its `Job` to the block as a contextual value, and ends it afterwards.
++       detail
++           La classe derrière `.sessional`, une classe nommée (comme doit l'être une instance
++           `Sessional`) qui prend le `WorkingDirectory`, l'`Environment`, la `Tactic[Exec.Error]`
++           et l'`Exec.Event is Loggable` dont a besoin l'exécution de la commande, et dont la
++           `session` démarre la commande sur un nouveau terminal, passe son `Job` au bloc comme
++           valeur contextuelle, et y met fin ensuite.
+
+-     entry .sessional   the given which makes `onTerminal.session: terminal ?=> …` work
++     entry .sessional
++       info
++           le given qui fait fonctionner `onTerminal.session: terminal ?=> …`
+
+-         In implicit scope, so it needs no import, but it needs a `WorkingDirectory`, an
+-         `Environment`, a `Tactic[Exec.Error]` and an `Exec.Event is Loggable` in scope where
+-         `session` is called. The block receives a `Command.OnTerminal.Job` as its contextual
+-         `session` value, which may be used inside the block but not kept.
++       detail
++           Dans la portée implicite, il ne demande donc aucun import, mais il nécessite un
++           `WorkingDirectory`, un `Environment`, une `Tactic[Exec.Error]` et un
++           `Exec.Event is Loggable` dans la portée là où `session` est appelée. Le bloc reçoit un
++           `Command.OnTerminal.Job` comme valeur contextuelle `session`, qui peut être utilisée
++           dans le bloc mais pas conservée.
+
+-     entry .Job   a `Job` running on a pseudo-terminal: resizable, with a settable line discipline
++     entry .Job
++       info
++           un `Job` s'exécutant sur un pseudo-terminal : redimensionnable, avec une discipline de
++           ligne modifiable
+
+-       detail
+-           The handle a `session` lends: a `guillotine.Job` whose result type is `Exit`, with
+-           everything a job has — `text()`, `stdin`, `await()`, `exitStatus()`, `kill()` — and
+-           three things only a terminal has. Its output stream is the terminal's, carrying
+-           standard error too, and its error stream is empty.
++       detail
++           La poignée que prête une `session` : un `guillotine.Job` dont le type de résultat est
++           `Exit`, avec tout ce qu'a un job — `text()`, `stdin`, `await()`, `exitStatus()`,
++           `kill()` — et trois choses que seul un terminal possède. Son flux de sortie est celui du
++           terminal, qui porte aussi la sortie d'erreur, et son flux d'erreur est vide.
+
+-           ```scala fuel
++           ```scala fuel
+
+-           typecheck
++           typecheck
+
+-           ##
++           ##
+
+-           import soundness.*
++           import soundness.*
+
+-           import environments.javaBaseEnvironment
++           import environments.javaBaseEnvironment
+
+-           import logging.silentLogging
++           import logging.silentLogging
+
+-           import strategies.throwUnsafely
++           import strategies.throwUnsafely
+
+-           import workingDirectories.javaBaseWorkingDirectory
++           import workingDirectories.javaBaseWorkingDirectory
+
+-           sh"head -c 2".pty(termios = Termios.raw).session: terminal ?=>
++           sh"head -c 2".pty(termios = Termios.raw).session: terminal ?=>
+
+-             t"hi".writeTo(terminal)      // delivered at once, without a newline
++             t"hi".writeTo(terminal)      // delivered at once, without a newline
+
+-             terminal.mode.canonical      // false
++             terminal.mode.canonical      // false
+
+-             terminal.mode = Termios.cooked
++             terminal.mode = Termios.cooked
+
+-             terminal.text()              // t"hi", unechoed
++             terminal.text()              // t"hi", unechoed
+
+-           ```
++           ```
+
+-       entry #resize   sets the terminal's size, in characters; the program receives `SIGWINCH`
++       entry #resize
++         info
++             définit la taille du terminal, en caractères ; le programme reçoit `SIGWINCH`
+
+-       entry #mode   the terminal's line discipline, as a `Termios`, readable and assignable while the command runs
++       entry #mode
++         info
++             la discipline de ligne du terminal, sous forme de `Termios`, lisible et affectable
++             pendant l'exécution de la commande
+
+-           `terminal.mode` reads the switches `Termios` names from the terminal, and
+-           `terminal.mode = Termios.raw` sets them, leaving the rest of the discipline as it
+-           is — what the program itself would do with `stty`. Turning `canonical` off also
+-           makes a read return as soon as one byte has arrived.
++         detail
++             `terminal.mode` lit dans le terminal les options que nomme `Termios`, et
++             `terminal.mode = Termios.raw` les définit, en laissant le reste de la discipline tel
++             quel — ce que ferait le programme lui-même avec `stty`. Désactiver `canonical` fait
++             aussi qu'une lecture revient dès qu'un octet est arrivé.
+
+-     entry #command   the command to run
++     entry #command
++       info
++           la commande à exécuter
+
+-     entry #width   the terminal's width, in characters
++     entry #width
++       info
++           la largeur du terminal, en caractères
+
+-     entry #height   the terminal's height, in characters
++     entry #height
++       info
++           la hauteur du terminal, en caractères
+
+-     entry #termios   the line discipline to set before the command starts, or `Unset` for the system's
++     entry #termios
++       info
++           la discipline de ligne à définir avant le démarrage de la commande, ou `Unset` pour
++           celle du système
+
+-     entry #exec   runs the command on its terminal to completion, reading its output as the type named
++     entry #exec
++       info
++           exécute la commande sur son terminal jusqu'à son terme, en lisant sa sortie comme le
++           type nommé
+
+-         As `Executable#exec`, but on a fresh pseudo-terminal: the output read is the
+-         terminal's, with standard error mixed in, and the exit status is reported as on pipes
+-         (`Exit.Fail(137)` for a killed command). Needs a `Computable` for the result, a
+-         `WorkingDirectory`, an `Environment`, a `Tactic[Exec.Error]` — raised for a command
+-         which cannot be found or started — and an `Exec.Event is Loggable`.
++       detail
++           Comme `Executable#exec`, mais sur un nouveau pseudo-terminal : la sortie lue est celle
++           du terminal, mêlée à la sortie d'erreur, et le statut de sortie est rapporté comme sur
++           des tubes (`Exit.Fail(137)` pour une commande tuée). Nécessite un `Computable` pour le
++           résultat, un `WorkingDirectory`, un `Environment`, une `Tactic[Exec.Error]` — levée pour
++           une commande qui ne peut pas être trouvée ou démarrée — et un `Exec.Event is Loggable`.
+
+-   entry #arguments   the program and its arguments, in order
++   entry #arguments
++     info
++         le programme et ses arguments, dans l'ordre
+
+-   entry #detach   starts the command to outlive this program, keeping only its `Pid`
++   entry #detach
++     info
++         démarre la commande pour qu'elle survive à ce programme, en ne conservant que son `Pid`
+
+-       The command's input is the null device, and its output and errors go nowhere, or are
+-       appended to the log file given (its parent directories made). See `Executable#detach`.
++     detail
++         L'entrée de la commande est le périphérique nul, et sa sortie et ses erreurs ne vont
++         nulle part, ou sont ajoutées au fichier journal donné (dont les répertoires parents sont
++         créés). Voir `Executable#detach`.
+
+-   entry #fork   starts the command and returns its `Job` without waiting
++   entry #fork
++     info
++         démarre la commande et renvoie son `Job` sans attendre
+
+-       Starts the program on pipes, in the `WorkingDirectory` and with the `Environment` in
+-       scope, logs `Exec.Event.ProcessStart`, and returns a `Job[Exec, result]^`. Raises
+-       `Exec.Error` if the program cannot be started. See `Executable#fork`.
++     detail
++         Démarre le programme sur des tubes, dans le `WorkingDirectory` et avec l'`Environment`
++         dans la portée, journalise `Exec.Event.ProcessStart`, et renvoie un `Job[Exec, result]^`.
++         Lève `Exec.Error` si le programme ne peut pas être démarré. Voir `Executable#fork`.
+
+-   entry #pty   this command, to be run on a pseudo-terminal of the given size
++   entry #pty
++     info
++         cette commande, à exécuter sur un pseudo-terminal de la taille donnée
+
+-       `pty(width = 80, height = 24, termios = Unset)` returns a `Command.OnTerminal`: nothing
+-       runs until its `exec` or a `session`. A `Termios` given here is set before the command
+-       starts; `Termios.raw` is what a full-screen program wants.
++     detail
++         `pty(width = 80, height = 24, termios = Unset)` renvoie un `Command.OnTerminal` : rien ne
++         s'exécute avant son `exec` ou une `session`. Un `Termios` donné ici est défini avant le
++         démarrage de la commande ; `Termios.raw` est ce que veut un programme plein écran.
+
+-   entry #escape   the command as one line a POSIX shell parses back into these arguments
++   entry #escape
++     info
++         la commande sous forme d'une seule ligne qu'un shell POSIX réanalyse en ces arguments
+
+-       Every argument single-quoted, with a single quote inside one written as `'\''`, since
+-       nothing is escapable inside single quotes. `Command(t"echo", t"a b").escape` is
+-       `'echo' 'a b'`. This is the form to hand a whole command to `sh -c`, `ssh` or anything
+-       else which re-parses it.
++     detail
++         Chaque argument entre guillemets simples, un guillemet simple à l'intérieur étant écrit
++         `'\''`, puisque rien ne peut être échappé entre guillemets simples.
++         `Command(t"echo", t"a b").escape` donne `'echo' 'a b'`. C'est la forme à utiliser pour
++         confier une commande entière à `sh -c`, `ssh` ou à tout autre programme qui la réanalyse.
+
+- entry .Pipeline   several commands, each one's output the next's input, run as one
++ entry .Pipeline
++   info
++       plusieurs commandes, la sortie de chacune étant l'entrée de la suivante, exécutées comme une
++       seule
+
+-   detail
+-       Built with `|` (or `apply`) from `Command`s, and always flat: `#commands` holds every
+-       stage, however the pipeline was assembled. It is an `Executable`, run as a command is:
+-       `exec[T]()` reads the last stage's output as `T`, and the last stage's exit status is
+-       the pipeline's; `fork[T]()` gives a `Job` whose `stdin` writes to the first stage and
+-       whose streams read from the last (the JDK replaces every later stage's input with a
+-       stream which throws on write); `detach` starts every stage detached.
++   detail
++       Construit avec `|` (ou `apply`) à partir de `Command`s, et toujours plat : `#commands`
++       contient chaque étape, quelle que soit la façon dont le pipeline a été assemblé. C'est un
++       `Executable`, exécuté comme l'est une commande : `exec[T]()` lit la sortie de la dernière
++       étape comme `T`, et le statut de sortie de la dernière étape est celui du pipeline ;
++       `fork[T]()` donne un `Job` dont le `stdin` écrit dans la première étape et dont les flux
++       lisent depuis la dernière (le JDK remplace l'entrée de chaque étape ultérieure par un flux
++       qui lève une exception à l'écriture) ; `detach` démarre chaque étape de façon détachée.
+
+=       stream which throws on write); `detach` starts every stage detached.
+=
+-       ```scala
++       ```scala
+
+=       stream which throws on write); `detach` starts every stage detached.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       stream which throws on write); `detach` starts every stage detached.
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       stream which throws on write); `detach` starts every stage detached.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       stream which throws on write); `detach` starts every stage detached.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       stream which throws on write); `detach` starts every stage detached.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import workingDirectories.javaBaseWorkingDirectory
++       import workingDirectories.javaBaseWorkingDirectory
+
+-       (sh"echo 'a b c'" | sh"tr ' ' '\n'" | sh"wc -l").exec[Text]().trim   // t"3"
++       (sh"echo 'a b c'" | sh"tr ' ' '\n'" | sh"wc -l").exec[Text]().trim   // t"3"
+
+=       (sh"echo 'a b c'" | sh"tr ' ' '\n'" | sh"wc -l").exec[Text]().trim   // t"3"
+-       ```
++       ```
+
+-       On the JVM the stages are wired in the kernel by `ProcessBuilder.startPipeline`; on
+-       Scala Native each stage is started on pipes and a daemon thread copies its
+-       predecessor's output into its input, closing it at end of stream. A pipeline renders
+-       with `show` and `inspect` as its commands joined by ` | `.
++       Sur la JVM, les étapes sont reliées dans le noyau par `ProcessBuilder.startPipeline` ; sur
++       Scala Native, chaque étape est démarrée sur des tubes et un thread démon copie la sortie
++       de son prédécesseur dans son entrée, en la fermant en fin de flux. Un pipeline se rend avec
++       `show` et `inspect` sous forme de ses commandes jointes par ` | `.
+
+=       with `show` and `inspect` as its commands joined by ` | `.
+-   refer guillotine.Command
++   refer guillotine.Command
+
+=   refer guillotine.Command
+-   refer guillotine.Executable
++   refer guillotine.Executable
+
+-   entry .communicable   a pipeline as a message: its commands' `show` forms joined by ` | `
++   entry .communicable
++     info
++         un pipeline sous forme de message : les formes `show` de ses commandes jointes par ` | `
+
+-   entry .inspectable   renders a pipeline as its commands' `sh"…"` forms joined by ` | `
++   entry .inspectable
++     info
++         rend un pipeline sous forme des formes `sh"…"` de ses commandes jointes par ` | `
+
+-   entry .showable   renders a pipeline as its commands' shell forms joined by ` | `
++   entry .showable
++     info
++         rend un pipeline sous forme des formes shell de ses commandes jointes par ` | `
+
+-   entry #commands   the stages, in order, flattened
++   entry #commands
++     info
++         les étapes, dans l'ordre, aplaties
+
+-   entry #detach   starts every stage detached, keeping only the last stage's `Pid`
++   entry #detach
++     info
++         démarre chaque étape de façon détachée, en ne conservant que le `Pid` de la dernière étape
+
+-       The first stage reads the null device, the last writes the log (or nowhere), and every
+-       stage's standard error goes where the last's output goes. See `Executable#detach`.
++     detail
++         La première étape lit le périphérique nul, la dernière écrit dans le journal (ou nulle
++         part), et la sortie d'erreur standard de chaque étape va là où va la sortie de la
++         dernière. Voir `Executable#detach`.
+
+-   entry #fork   starts every stage, wired together, and returns the `Job` of the whole
++   entry #fork
++     info
++         démarre chaque étape, reliées entre elles, et renvoie le `Job` de l'ensemble
+
+-       Logs `Exec.Event.PipelineStart`. The job's output, exit status and `pid` are the last
+-       stage's; its `stdin` and `intake` write to the first. See `Executable#fork`.
++     detail
++         Journalise `Exec.Event.PipelineStart`. La sortie, le statut de sortie et le `pid` du job
++         sont ceux de la dernière étape ; son `stdin` et son `intake` écrivent dans la première.
++         Voir `Executable#fork`.
+
+- entry .Job   a running subprocess, from `fork`: its streams, its result, its exit and its lifetime
++ entry .Job
++   info
++       un sous-processus en cours d'exécution, issu de `fork` : ses flux, son résultat, sa sortie
++       et sa durée de vie
+
+-   detail
+-       `Job[exec, result]` is what `Executable#fork[result]()` returns: a live handle to the
+-       process, tracked as a capability (fresh from `fork`, so it cannot be stored in an
+-       untracked value, though it may be shared among tasks: one draining each stream, another
+-       awaiting it, a third aborting it). It is a `Subprocess` (the streams and status a
+-       `Computable` reads), a `Process.Ref` (the pid and the signals), and `Durable`. Its
+-       `result` type was fixed at the fork, and `#await` reads it through the `Computable`
+-       in scope.
++   detail
++       `Job[exec, result]` est ce que renvoie `Executable#fork[result]()` : une poignée vivante
++       sur le processus, suivie comme une capacité (fraîche à la sortie de `fork`, de sorte
++       qu'elle ne peut pas être stockée dans une valeur non suivie, bien qu'elle puisse être
++       partagée entre des tâches : l'une vidant chaque flux, une autre l'attendant, une troisième
++       l'abandonnant). C'est un `Subprocess` (les flux et le statut que lit un `Computable`), une
++       `Process.Ref` (le pid et les signaux), et un `Durable`. Son type `result` a été fixé au
++       fork, et `#await` le lit via le `Computable` dans la portée.
+
+=       in scope.
+=
+-       ```scala
++       ```scala
+
+=       in scope.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       in scope.
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import workingDirectories.javaBaseWorkingDirectory
++       import workingDirectories.javaBaseWorkingDirectory
+
+=       in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import workingDirectories.javaBaseWorkingDirectory
+=
+-       val job = sh"cat".fork[Text]()
++       val job = sh"cat".fork[Text]()
+
+-       job.alive                              // true
++       job.alive                              // true
+
+-       job.stdin(Stream(Data(104, 105, 10)))  // writes, then closes the pipe
++       job.stdin(Stream(Data(104, 105, 10)))  // writes, then closes the pipe
+
+-       job.await().trim                       // t"hi"
++       job.await().trim                       // t"hi"
+
+-       job.exitStatus()                       // Exit.Ok
++       job.exitStatus()                       // Exit.Ok
+
+=       job.exitStatus()                       // Exit.Ok
+-       ```
++       ```
+
+-       For a pipeline the job has a process at each end: output, exit status and `pid` are the
+-       last stage's, and `stdin` and `intake` write to the first. A job on a pseudo-terminal is
+-       a `Command.OnTerminal.Job`, which adds `resize` and `mode`.
++       Pour un pipeline, le job a un processus à chaque extrémité : la sortie, le statut de
++       sortie et le `pid` sont ceux de la dernière étape, et `stdin` et `intake` écrivent dans la
++       première. Un job sur un pseudo-terminal est un `Command.OnTerminal.Job`, qui ajoute
++       `resize` et `mode`.
+
+=       a `Command.OnTerminal.Job`, which adds `resize` and `mode`.
+-   refer guillotine.Executable
++   refer guillotine.Executable
+
+=       a `Command.OnTerminal.Job`, which adds `resize` and `mode`.
+=   refer guillotine.Executable
+-   refer guillotine.Computable
++   refer guillotine.Computable
+
+=   refer guillotine.Computable
+-   refer guillotine.Process
++   refer guillotine.Process
+
+-   refer guillotine.Command.OnTerminal.Job
++   refer guillotine.Command.OnTerminal.Job
+
+-   entry .writable   `stream.writeTo(job)`: any stream the job's `Process.Input` can take, to its standard input
++   entry .writable
++     info
++         `stream.writeTo(job)` : tout flux que peut accepter le `Process.Input` du job, vers son
++         entrée standard
+
+-       The `Writable` given for a tracked `Job^`, by any chunk type for which `Process.Input
+-       is Writable` — `Data` (needing an `Emit[Truncation.Error]`) or `Text` (and a
+-       `Codepage`). It delegates to `#stdin`, which closes the pipe when the stream ends.
++     detail
++         Le given `Writable` pour un `Job^` suivi, pour tout type de morceau pour lequel
++         `Process.Input is Writable` — `Data` (qui nécessite un `Emit[Truncation.Error]`) ou `Text`
++         (et une `Codepage`). Il délègue à `#stdin`, qui ferme le tube à la fin du flux.
+
+-   entry .writableText   `text.writeTo(job)`: text encoded with the system codepage, to standard input
++   entry .writableText
++     info
++         `text.writeTo(job)` : du texte encodé avec la page de codes du système, vers l'entrée
++         standard
+
+-       The `Writable by Text` given for a tracked `Job^`, needing only an
+-       `Emit[Truncation.Error]`: the text is encoded with `Codepage.system`. This is what
+-       `t"hi\r".writeTo(terminal)` uses in a pseudo-terminal session.
++     detail
++         Le given `Writable by Text` pour un `Job^` suivi, qui ne nécessite qu'un
++         `Emit[Truncation.Error]` : le texte est encodé avec `Codepage.system`. C'est ce
++         qu'utilise `t"hi\r".writeTo(terminal)` dans une session de pseudo-terminal.
+
+-   entry #pid   the process's `Pid`; a pipeline's is its last stage's
++   entry #pid
++     info
++         le `Pid` du processus ; celui d'un pipeline est celui de sa dernière étape
+
+=   entry #pid   the process's `Pid`; a pipeline's is its last stage's
+-   entry #alive   whether the process is still running
++   entry #alive
++     info
++         indique si le processus est toujours en cours d'exécution
+
+-   entry #attend   waits for the process to exit, discarding its status and output
++   entry #attend
++     info
++         attend la fin du processus, en ignorant son statut et sa sortie
+
+-   entry #stdout   standard output as a lazy byte stream, read on from the live pipe
++   entry #stdout
++     info
++         la sortie standard sous forme de flux d'octets paresseux, lu au fil du tube vivant
+
+-       A `Stream[Data] over Credit`, pulled as it is forced; each call reads on from where the
+-       pipe is, and nothing is cached unless `memoize` is called. Needs a
+-       `Tactic[Truncation.Error]`, raised if the stream ends before its framing says it should.
++     detail
++         Un `Stream[Data] over Credit`, tiré à mesure qu'il est forcé ; chaque appel lit à partir
++         de là où en est le tube, et rien n'est mis en cache à moins d'appeler `memoize`.
++         Nécessite une `Tactic[Truncation.Error]`, levée si le flux se termine avant ce que prévoit
++         son tramage.
+
+-   entry #stderr   standard error as a lazy byte stream
++   entry #stderr
++     info
++         la sortie d'erreur standard sous forme de flux d'octets paresseux
+
+-       As `#stdout`, from the error pipe. On a pseudo-terminal the error stream is empty, since
+-       the program's standard error is the terminal.
++     detail
++         Comme `#stdout`, depuis le tube d'erreur. Sur un pseudo-terminal, le flux d'erreur est
++         vide, puisque la sortie d'erreur standard du programme est le terminal.
+
+=       the program's standard error is the terminal.
+=
+-       ```scala
++         ```scala
+
+=       the program's standard error is the terminal.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+=       the program's standard error is the terminal.
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++         import environments.javaBaseEnvironment
+
+=       the program's standard error is the terminal.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+-       import logging.silentLogging
++         import logging.silentLogging
+
+=       the program's standard error is the terminal.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=       the program's standard error is the terminal.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import workingDirectories.javaBaseWorkingDirectory
++         import workingDirectories.javaBaseWorkingDirectory
+
+-       val job = sh"sh -c 'echo err 1>&2'".fork[Unit]()
++         val job = sh"sh -c 'echo err 1>&2'".fork[Unit]()
+
+-       val bytes = job.stderr().memoize
++         val bytes = job.stderr().memoize
+
+-       job.await()
++         job.await()
+
+-       bytes.utf8.trim   // t"err"
++         bytes.utf8.trim   // t"err"
+
+=       bytes.utf8.trim   // t"err"
+-       ```
++         ```
+
+-   entry #text   the whole of standard output, as UTF-8 text, read to the end of the stream
++   entry #text
++     info
++         toute la sortie standard, en texte UTF-8, lue jusqu'à la fin du flux
+
+-       Blocks until the process closes its output (normally, until it exits).
++     detail
++         Bloque jusqu'à ce que le processus ferme sa sortie (normalement, jusqu'à ce qu'il se
++         termine).
+
+-   entry #errorText   the whole of standard error, as UTF-8 text, read to the end of the stream
++   entry #errorText
++     info
++         toute la sortie d'erreur standard, en texte UTF-8, lue jusqu'à la fin du flux
+
+-   entry #lines   standard output as a lazy stream of its lines
++   entry #lines
++     info
++         la sortie standard sous forme de flux paresseux de ses lignes
+
+-       UTF-8, with `\n`, `\r\n` and `\r` each ending a line, as `BufferedReader.readLine`
+-       treats them; a `Stream[Array[Text]] over Credit` whose `records` are the lines one at a
+-       time. Needs a `Tactic[Truncation.Error]`. The `Chain[Text]` and `List[Text]`
+-       `Computable` instances read this.
++     detail
++         En UTF-8, `\n`, `\r\n` et `\r` terminant chacun une ligne, comme les traite
++         `BufferedReader.readLine` ; un `Stream[Array[Text]] over Credit` dont les `records` sont
++         les lignes une par une. Nécessite une `Tactic[Truncation.Error]`. Les instances
++         `Computable` de `Chain[Text]` et `List[Text]` lisent ceci.
+
+-   entry #status   waits for the process to exit, and gives its raw exit code
++   entry #status
++     info
++         attend la fin du processus, et donne son code de sortie brut
+
+-       `0` for success; for a process ended by a signal, 128 plus the signal number
+-       (`137` for `SIGKILL`). `#exitStatus` gives the same as an `Exit`, logged.
++     detail
++         `0` en cas de succès ; pour un processus terminé par un signal, 128 plus le numéro du
++         signal (`137` pour `SIGKILL`). `#exitStatus` donne la même chose sous forme d'`Exit`,
++         journalisé.
+
+-   entry #stdin   writes a whole stream to standard input and closes the pipe when it ends
++   entry #stdin
++     info
++         écrit un flux entier sur l'entrée standard et ferme le tube à sa fin
+
+-       `job.stdin(stream)` takes a `Stream[chunk] over Credit` for any chunk type `Process.Input
+-       is Writable by` — `Data`, or `Text` with a `Codepage` in scope — writes it, and closes
+-       the process's input, which suits a program that reads its input to the end and exits.
+-       For a pipeline the stream goes to the first stage. A long-lived child driven message by
+-       message wants `#intake` instead.
++     detail
++         `job.stdin(stream)` prend un `Stream[chunk] over Credit` pour tout type de morceau par
++         lequel `Process.Input is Writable by` — `Data`, ou `Text` avec une `Codepage` dans la
++         portée — l'écrit, et ferme l'entrée du processus, ce qui convient à un programme qui lit
++         son entrée jusqu'au bout puis se termine. Pour un pipeline, le flux va à la première
++         étape. Un enfant de longue durée piloté message par message demande plutôt `#intake`.
+
+-   entry #intake   standard input as a push endpoint, for driving a live process incrementally
++   entry #intake
++     info
++         l'entrée standard sous forme d'endpoint de poussée, pour piloter un processus vivant de
++         façon incrémentale
+
+-       An `Intake[Data] over Credit` on the process's input pipe: each `put` is written and
+-       `flush` sends it, with the pipe left open, so a language server or a REPL can be fed a
+-       message, its reply read, and another sent; `finish` closes the pipe. Needs a
+-       `java.io.OutputStream is Sink by Data over Credit`, which turbulence provides.
++     detail
++         Un `Intake[Data] over Credit` sur le tube d'entrée du processus : chaque `put` est écrit
++         et `flush` l'envoie, le tube restant ouvert, de sorte qu'on peut envoyer un message à un
++         serveur de langage ou à un REPL, lire sa réponse, puis en envoyer un autre ; `finish`
++         ferme le tube. Nécessite un `java.io.OutputStream is Sink by Data over Credit`, que
++         fournit turbulence.
+
+=       `java.io.OutputStream is Sink by Data over Credit`, which turbulence provides.
+=
+-       ```scala
++         ```scala
+
+=       `java.io.OutputStream is Sink by Data over Credit`, which turbulence provides.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+=       `java.io.OutputStream is Sink by Data over Credit`, which turbulence provides.
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++         import environments.javaBaseEnvironment
+
+=       `java.io.OutputStream is Sink by Data over Credit`, which turbulence provides.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+-       import logging.silentLogging
++         import logging.silentLogging
+
+=       `java.io.OutputStream is Sink by Data over Credit`, which turbulence provides.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=       `java.io.OutputStream is Sink by Data over Credit`, which turbulence provides.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import workingDirectories.javaBaseWorkingDirectory
++         import workingDirectories.javaBaseWorkingDirectory
+
+=       `java.io.OutputStream is Sink by Data over Credit`, which turbulence provides.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import workingDirectories.javaBaseWorkingDirectory
+=
+-       val job = sh"cat".fork[Text]()
++         val job = sh"cat".fork[Text]()
+
+-       val intake = job.intake
++         val intake = job.intake
+
+-       intake.put(Data(104, 105, 10))
++         intake.put(Data(104, 105, 10))
+
+-       intake.flush()
++         intake.flush()
+
+-       job.alive              // true: the pipe is open and cat is still echoing
++         job.alive              // true: the pipe is open and cat is still echoing
+
+-       intake.put(Data(98, 121, 101, 10))
++         intake.put(Data(98, 121, 101, 10))
+
+-       intake.finish()
++         intake.finish()
+
+-       job.await().trim       // t"hi\nbye"
++         job.await().trim       // t"hi\nbye"
+
+=       job.await().trim       // t"hi\nbye"
+-       ```
++         ```
+
+-   entry #await   the job's result, through the `Computable` in scope, now or within a duration
++   entry #await
++     info
++         le résultat du job, via le `Computable` dans la portée, maintenant ou dans un délai donné
+
+-       `await()` computes the `result` the job was forked for: for `Text` it waits for the
+-       output to end, for `Exit` for the process to exit, for `Chain[Text]` it returns at once
+-       with a lazy chain. It needs the `result is Computable` and a
+-       `Tactic[Truncation.Error]`, raised if the output ends before its framing says it should.
++     detail
++         `await()` calcule le `result` pour lequel le job a été lancé : pour `Text`, il attend la
++         fin de la sortie, pour `Exit` la fin du processus, pour `Chain[Text]` il revient
++         immédiatement avec une chaîne paresseuse. Il nécessite le `result is Computable` et une
++         `Tactic[Truncation.Error]`, levée si la sortie se termine avant ce que prévoit son
++         tramage.
+
+-       `await(duration)` takes any duration type `Abstractable across Durations to Long`
+-       (nanoseconds; a plain `Long` of milliseconds with
+-       `abstractables.millisecondsAbstractable`), waits at most that long for the process to
+-       exit, and then computes the result; if it has not exited, raises
+-       `Async.Error(Async.Error.Reason.Timeout)` through a `Tactic[Async.Error]`.
++         `await(duration)` prend tout type de durée `Abstractable across Durations to Long`
++         (en nanosecondes ; un simple `Long` de millisecondes avec
++         `abstractables.millisecondsAbstractable`), attend au plus ce délai la fin du processus,
++         puis calcule le résultat ; s'il ne s'est pas terminé, lève
++         `Async.Error(Async.Error.Reason.Timeout)` via une `Tactic[Async.Error]`.
+
+=       `Async.Error(Async.Error.Reason.Timeout)` through a `Tactic[Async.Error]`.
+=
+-       ```scala
++         ```scala
+
+=       `Async.Error(Async.Error.Reason.Timeout)` through a `Tactic[Async.Error]`.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+-       import abstractables.millisecondsAbstractable
++         import abstractables.millisecondsAbstractable
+
+=       import abstractables.millisecondsAbstractable
+-       import environments.javaBaseEnvironment
++         import environments.javaBaseEnvironment
+
+=       import abstractables.millisecondsAbstractable
+=       import environments.javaBaseEnvironment
+-       import logging.silentLogging
++         import logging.silentLogging
+
+=       import abstractables.millisecondsAbstractable
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=       import abstractables.millisecondsAbstractable
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import workingDirectories.javaBaseWorkingDirectory
++         import workingDirectories.javaBaseWorkingDirectory
+
+-       val job = sh"sleep 1".fork[Unit]()
++         val job = sh"sleep 1".fork[Unit]()
+
+-       val outcome = capture[Async.Error](job.await(50L))   // Reason.Timeout
++         val outcome = capture[Async.Error](job.await(50L))   // Reason.Timeout
+
+-       job.kill()
++         job.kill()
+
+=       job.kill()
+-       ```
++         ```
+
+-   entry #exitStatus   waits for the process to exit and gives its status as an `Exit`, logged
++   entry #exitStatus
++     info
++         attend la fin du processus et donne son statut sous forme d'`Exit`, journalisé
+
+-       `Exit.Ok` for zero, otherwise `Exit.Fail(code)`; logs `Exec.Event.ProcessExit` at `fine`
+-       for zero and as a warning otherwise, so it needs an `Exec.Event is Loggable`. A killed
+-       process reports `Exit.Fail(137)`, and one interrupted by `^C` at its terminal
+-       `Exit.Fail(130)`.
++     detail
++         `Exit.Ok` pour zéro, `Exit.Fail(code)` sinon ; journalise `Exec.Event.ProcessExit` au
++         niveau `fine` pour zéro et comme avertissement sinon, il nécessite donc un
++         `Exec.Event is Loggable`. Un processus tué renvoie `Exit.Fail(137)`, et un processus
++         interrompu par `^C` sur son terminal `Exit.Fail(130)`.
+
+-   entry #abort   asks the process to stop, with `SIGTERM`
++   entry #abort
++     info
++         demande au processus de s'arrêter, avec `SIGTERM`
+
+-       `destroy()`: the process may catch the signal and clean up, or ignore it. Logs
+-       `Exec.Event.AbortProcess` at `info`.
++     detail
++         `destroy()` : le processus peut intercepter le signal et faire le ménage, ou l'ignorer.
++         Journalise `Exec.Event.AbortProcess` au niveau `info`.
+
+-   entry #kill   stops the process, with `SIGKILL`
++   entry #kill
++     info
++         arrête le processus, avec `SIGKILL`
+
+-       `destroyForcibly()`: the process cannot ignore it. Logs `Exec.Event.KillProcess` as a
+-       warning.
++     detail
++         `destroyForcibly()` : le processus ne peut pas l'ignorer. Journalise
++         `Exec.Event.KillProcess` comme avertissement.
+
+-   entry #process   the operating-system `Process` behind the job, by its pid
++   entry #process
++     info
++         le `Process` du système d'exploitation derrière le job, par son pid
+
+-       `Process(pid)`, so it needs a `Tactic[Pid.Error]`, raised if the process has already
+-       gone; the result is a tracked `Process^`, with the parent, children and process tree
+-       a `Job` does not have.
++     detail
++         `Process(pid)`, il nécessite donc une `Tactic[Pid.Error]`, levée si le processus a déjà
++         disparu ; le résultat est un `Process^` suivi, avec le parent, les enfants et l'arbre de
++         processus que n'a pas un `Job`.
+
+-   entry #startTime   when the process started, as any instant type, or `Unset`
++   entry #startTime
++     info
++         le moment où le processus a démarré, dans n'importe quel type d'instant, ou `Unset`
+
+-       Through `Process#startTime`, swallowing a `Pid.Error` as `Unset`; takes an instant type
+-       `Instantiable across Instants from Long` (milliseconds). Always `Unset` on Scala Native.
++     detail
++         Via `Process#startTime`, en absorbant une `Pid.Error` en `Unset` ; prend un type d'instant
++         `Instantiable across Instants from Long` (en millisecondes). Toujours `Unset` sur Scala
++         Native.
+
+-   entry #cpuUsage   the CPU time the process has used, as any duration type, or `Unset`
++   entry #cpuUsage
++     info
++         le temps CPU qu'a utilisé le processus, dans n'importe quel type de durée, ou `Unset`
+
+-       Through `Process#cpuUsage`; takes a duration type `Instantiable across Durations from
+-       Long` (nanoseconds). Always `Unset` on Scala Native.
++     detail
++         Via `Process#cpuUsage` ; prend un type de durée `Instantiable across Durations from
++         Long` (en nanosecondes). Toujours `Unset` sur Scala Native.
+
+- entry .Subprocess   what a `Computable` reads: a running process's streams and exit status, platform-free
++ entry .Subprocess
++   info
++       ce que lit un `Computable` : les flux et le statut de sortie d'un processus en cours,
++       indépendamment de la plateforme
+
+-   detail
+-       The trait a `Computable` instance computes its result from: standard output and error
+-       as lazy byte streams or as whole text, the output's lines, and the exit status, with no
+-       mention of `java.lang.Process` or any other platform type. `Job` is its one
+-       implementation. A new `Computable` is written against this.
++   detail
++       Le trait à partir duquel une instance `Computable` calcule son résultat : les sorties
++       standard et d'erreur sous forme de flux d'octets paresseux ou de texte entier, les lignes
++       de la sortie, et le statut de sortie, sans mention de `java.lang.Process` ni d'aucun autre
++       type propre à une plateforme. `Job` en est l'unique implémentation. Un nouveau
++       `Computable` s'écrit à partir de ce trait.
+
+=       implementation. A new `Computable` is written against this.
+-   refer guillotine.Computable
++   refer guillotine.Computable
+
+=   refer guillotine.Computable
+-   refer guillotine.Job
++   refer guillotine.Job
+
+-   entry #stdout   standard output as a lazy byte stream; needs a `Tactic[Truncation.Error]`
++   entry #stdout
++     info
++         la sortie standard sous forme de flux d'octets paresseux ; nécessite une
++         `Tactic[Truncation.Error]`
+
+-   entry #stderr   standard error as a lazy byte stream; needs a `Tactic[Truncation.Error]`
++   entry #stderr
++     info
++         la sortie d'erreur standard sous forme de flux d'octets paresseux ; nécessite une
++         `Tactic[Truncation.Error]`
+
+-   entry #text   the whole of standard output as UTF-8 text, read to its end
++   entry #text
++     info
++         toute la sortie standard en texte UTF-8, lue jusqu'à sa fin
+
+-   entry #errorText   the whole of standard error as UTF-8 text, read to its end
++   entry #errorText
++     info
++         toute la sortie d'erreur standard en texte UTF-8, lue jusqu'à sa fin
+
+-   entry #lines   standard output as a lazy stream of lines; needs a `Tactic[Truncation.Error]`
++   entry #lines
++     info
++         la sortie standard sous forme de flux paresseux de lignes ; nécessite une
++         `Tactic[Truncation.Error]`
+
+-   entry #status   waits for the exit, and gives the raw exit code
++   entry #status
++     info
++         attend la fin, et donne le code de sortie brut
+
+- entry .Computable   how a process's output becomes a result of type `T`: the typeclass behind `exec[T]`
++ entry .Computable
++   info
++       la façon dont la sortie d'un processus devient un résultat de type `T` : la classe de types
++       derrière `exec[T]`
+
+-   detail
+-       `T is Computable` says how to read a `Subprocess` as a `T`: which stream, when, and what
+-       the exit status means. `exec[T]()` and `Job#await()` summon it for their type
+-       parameter, so the type named *is* the interpretation. The instances in the companion,
+-       found with no import:
++   detail
++       `T is Computable` dit comment lire un `Subprocess` en tant que `T` : quel flux, quand, et
++       ce que signifie le statut de sortie. `exec[T]()` et `Job#await()` l'invoquent pour leur
++       paramètre de type, de sorte que le type nommé *est* l'interprétation. Les instances du
++       compagnon, trouvées sans import :
+
+-       ```tabular
++       ```tabular
+
+-       column  Result type
+-       column  Reads
+-       column  Needs
+-       row  `Text`, `String`  the whole of standard output, when the process closes it
+-       row  `List[Text]`  the lines of standard output, when it ends
+-       row  `Chain[Text]`  the lines as a lazy, memoizing chain, pulled as the process writes them, so the call returns at once  a `Buffering`
+-       row  `Data`  the whole of standard output as bytes, memoized  a `Buffering`
+-       row  `Exit`  the exit status, `Exit.Ok` or `Exit.Fail(code)`; non-zero is an answer, not an error
+-       row  `Unit`  nothing: waits for the exit and discards everything
+-       row  `Stderr`  standard error, as `Stderr(text)`; the given is in `Stderr`'s companion
+-       row  any path type `Instantiable across Paths from Text`  standard output, trimmed, decoded as the path: `sh"which git".exec[Path on Linux]()`
++       column  Type de résultat
++       column  Lit
++       column  Nécessite
++       row  `Text`, `String`  toute la sortie standard, lorsque le processus la ferme
++       row  `List[Text]`  les lignes de la sortie standard, lorsqu'elle se termine
++       row  `Chain[Text]`  les lignes sous forme de chaîne paresseuse et mémoïsante, tirées à mesure que le processus les écrit, de sorte que l'appel revient immédiatement  un `Buffering`
++       row  `Data`  toute la sortie standard sous forme d'octets, mémoïsée  un `Buffering`
++       row  `Exit`  le statut de sortie, `Exit.Ok` ou `Exit.Fail(code)` ; un statut non nul est une réponse, pas une erreur
++       row  `Unit`  rien : attend la fin et ignore tout
++       row  `Stderr`  la sortie d'erreur standard, sous forme de `Stderr(text)` ; le given est dans le compagnon de `Stderr`
++       row  tout type de chemin `Instantiable across Paths from Text`  la sortie standard, élaguée, décodée en tant que chemin : `sh"which git".exec[Path on Linux]()`
+
+=       row  any path type `Instantiable across Paths from Text`  standard output, trimmed, decoded as the path: `sh"which git".exec[Path on Linux]()`
+-       ```
++       ```
+
+-       The line-at-a-time type is a `Chain` because an exclusive `Iterator` cannot be the result
+-       of the erased `Intelligible` evidence. For the bytes lazily, use `Subprocess#stdout()` on a
+-       forked `Job`.
++       Le type ligne par ligne est une `Chain` parce qu'un `Iterator` exclusif ne peut pas être
++       le résultat de la preuve effacée `Intelligible`. Pour les octets de façon paresseuse,
++       utilisez `Subprocess#stdout()` sur un `Job` lancé en arrière-plan.
+
+-       A type not covered gains an instance by mapping one (`Computable` is a functor) or
+-       through the `.apply` factory, taking the `Subprocess` and the `Tactic[Truncation.Error]`
+-       its reads need:
++       Un type non couvert obtient une instance en en transformant une (`Computable` est un
++       foncteur) ou via la fabrique `.apply`, qui prend le `Subprocess` et la
++       `Tactic[Truncation.Error]` dont ses lectures ont besoin :
+
+=       its reads need:
+=
+-       ```scala
++       ```scala
+
+=       its reads need:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Count(value: Int)
++       case class Count(value: Int)
+
+-       given Count is Computable = summon[Text is Computable].map: text =>
++       given Count is Computable = summon[Text is Computable].map: text =>
+
+-         Count(text.trim.s.toInt)
++         Count(text.trim.s.toInt)
+
+-       given List[Data] is Computable = Computable: (process, tactic) =>
++       given List[Data] is Computable = Computable: (process, tactic) =>
+
+-         given Tactic[Truncation.Error] = tactic
++         given Tactic[Truncation.Error] = tactic
+
+-         process.stdout().to[List]
++         process.stdout().to[List]
+
+=         process.stdout().to[List]
+-       ```
++       ```
+
+-       A read cut short — the stream ending before its framing says it should — is a
+-       `Truncation.Error` through the tactic, which `exec` reports as `Exec.Error` for the
+-       command.
++       Une lecture interrompue prématurément — le flux se terminant avant ce que prévoit son
++       tramage — est une `Truncation.Error` via la tactique, qu'`exec` signale comme une
++       `Exec.Error` pour la commande.
+
+-   refer guillotine.Subprocess
++   refer guillotine.Subprocess
+
+=   refer guillotine.Subprocess
+-   refer guillotine.Executable
++   refer guillotine.Executable
+
+-   refer guillotine.Stderr
++   refer guillotine.Stderr
+
+-   entry .apply   makes an instance from a function of the `Subprocess` and the truncation tactic
++   entry .apply
++     info
++         crée une instance à partir d'une fonction du `Subprocess` et de la tactique de troncature
+
+-       `Computable[T]((process, tactic) => …)`: the factory to write an instance with, since a
+-       method with a `using` clause is not a single abstract method and a lambda does not
+-       convert to one. The tactic is passed as a plain second argument; bind it with
+-       `given Tactic[Truncation.Error] = tactic` where a read needs it.
++     detail
++         `Computable[T]((process, tactic) => …)` : la fabrique avec laquelle écrire une instance,
++         puisqu'une méthode dotée d'une clause `using` n'est pas une méthode abstraite unique et
++         qu'une lambda ne s'y convertit pas. La tactique est passée comme simple second argument ;
++         liez-la avec `given Tactic[Truncation.Error] = tactic` là où une lecture en a besoin.
+
+-   entry .lineStream   `Chain[Text]`: the lines of standard output, lazily, as the process writes them
++   entry .lineStream
++     info
++         `Chain[Text]` : les lignes de la sortie standard, paresseusement, à mesure que le
++         processus les écrit
+
+-       Needs a `Buffering` in scope. The chain is pure and memoizing: forcing it pulls the next
+-       line from the live pipe, and a line once read is kept.
++     detail
++         Nécessite un `Buffering` dans la portée. La chaîne est pure et mémoïsante : la forcer tire
++         la ligne suivante du tube vivant, et une ligne lue est conservée.
+
+-   entry .list   `List[Text]`: the lines of standard output, once it has ended
++   entry .list
++     info
++         `List[Text]` : les lignes de la sortie standard, une fois celle-ci terminée
+
+-   entry .text   `Text`: the whole of standard output, UTF-8, once the process closes it
++   entry .text
++     info
++         `Text` : toute la sortie standard, en UTF-8, une fois que le processus la ferme
+
+-   entry .string   `String`: as `.text`, as a Java string
++   entry .string
++     info
++         `String` : comme `.text`, sous forme de chaîne Java
+
+-   entry .data   `Data`: the whole of standard output as bytes, memoized; needs a `Buffering`
++   entry .data
++     info
++         `Data` : toute la sortie standard sous forme d'octets, mémoïsée ; nécessite un `Buffering`
+
+-   entry .exitStatus   `Exit`: `Exit.Ok` for zero, `Exit.Fail(code)` otherwise, once the process exits
++   entry .exitStatus
++     info
++         `Exit` : `Exit.Ok` pour zéro, `Exit.Fail(code)` sinon, une fois le processus terminé
+
+-   entry .unit   `Unit`: waits for the process to exit and discards its output and status
++   entry .unit
++     info
++         `Unit` : attend la fin du processus et ignore sa sortie et son statut
+
+-   entry .instantiable   any path type: standard output, trimmed, decoded as the path
++   entry .instantiable
++     info
++         tout type de chemin : la sortie standard, élaguée, décodée en tant que chemin
+
+-       For a type `Instantiable across Paths from Text`, such as `Path on Linux`: what
+-       `sh"which git".exec[Path on Linux]()` and the `which` command's implied result use.
++     detail
++         Pour un type `Instantiable across Paths from Text`, comme `Path on Linux` : ce
++         qu'utilisent `sh"which git".exec[Path on Linux]()` et le résultat implicite de la
++         commande `which`.
+
+-   entry #compute   reads the `Subprocess` as a `Self`, raising `Truncation.Error` for a read cut short
++   entry #compute
++     info
++         lit le `Subprocess` en tant que `Self`, en levant `Truncation.Error` pour une lecture
++         interrompue
+
+-   entry #map   an instance for another type, by a function of this one's result
++   entry #map
++     info
++         une instance pour un autre type, par une fonction du résultat de celle-ci
+
+-       `summon[Text is Computable].map(_.trim)` is a `Text is Computable` which trims, and
+-       `map(Count(_))` one for a `Count`: the usual way to cover a new type.
++     detail
++         `summon[Text is Computable].map(_.trim)` est un `Text is Computable` qui élague, et
++         `map(Count(_))` une instance pour un `Count` : la façon habituelle de couvrir un nouveau
++         type.
+
+- entry .Stderr   a process's standard error as text: `exec[Stderr]()`
++ entry .Stderr
++   info
++       la sortie d'erreur standard d'un processus sous forme de texte : `exec[Stderr]()`
+
+-   detail
+-       A wrapper for a result read from the error stream rather than the output stream. Its
+-       companion's `Computable` instance reads the whole of standard error, once the process
+-       closes it, as UTF-8 text.
++   detail
++       Une enveloppe pour un résultat lu dans le flux d'erreur plutôt que dans le flux de sortie.
++       L'instance `Computable` de son compagnon lit toute la sortie d'erreur standard, une fois
++       que le processus la ferme, en texte UTF-8.
+
+=       closes it, as UTF-8 text.
+=
+-       ```scala
++       ```scala
+
+=       closes it, as UTF-8 text.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       closes it, as UTF-8 text.
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       closes it, as UTF-8 text.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       closes it, as UTF-8 text.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       closes it, as UTF-8 text.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import workingDirectories.javaBaseWorkingDirectory
++       import workingDirectories.javaBaseWorkingDirectory
+
+-       sh"sh -c 'echo oops 1>&2'".exec[Stderr]().text.trim   // t"oops"
++       sh"sh -c 'echo oops 1>&2'".exec[Stderr]().text.trim   // t"oops"
+
+=       sh"sh -c 'echo oops 1>&2'".exec[Stderr]().text.trim   // t"oops"
+-       ```
++       ```
+
+=       ```
+-   refer guillotine.Computable
++   refer guillotine.Computable
+
+-   entry .computable   reads the whole of standard error, as text, into a `Stderr`
++   entry .computable
++     info
++         lit toute la sortie d'erreur standard, sous forme de texte, dans un `Stderr`
+
+-   entry #text   what the process wrote to standard error
++   entry #text
++     info
++         ce que le processus a écrit sur la sortie d'erreur standard
+
+- entry .Process   a handle to any process on the system, by `Pid`: its tree, lifetime and signals
++ entry .Process
++   info
++       une poignée vers n'importe quel processus du système, par `Pid` : son arbre, sa durée de vie
++       et ses signaux
+
+-   detail
+-       A `Process` wraps a `ProcessHandle`: a live, tracked handle to an operating-system
+-       process, whether this program started it or not. `Process()` is the current process,
+-       `Process(pid)` any running one (raising `Pid.Error` if none has that pid), `Process.all`
+-       every process visible to this one and `Process.roots` those with no parent. It is a
+-       `Process.Ref` — `pid`, `alive`, `attend()`, `kill()`, `abort()` — with `#parent` and
+-       `#children` for walking the tree, and `Durable`. It is a shared capability: several
+-       tasks may observe it and one may abort it.
++   detail
++       Un `Process` enveloppe un `ProcessHandle` : une poignée vivante et suivie vers un processus
++       du système d'exploitation, que ce programme l'ait démarré ou non. `Process()` est le
++       processus courant, `Process(pid)` n'importe quel processus en cours (en levant `Pid.Error`
++       si aucun n'a ce pid), `Process.all` tous les processus visibles par celui-ci et
++       `Process.roots` ceux qui n'ont pas de parent. C'est une `Process.Ref` — `pid`, `alive`,
++       `attend()`, `kill()`, `abort()` — avec `#parent` et `#children` pour parcourir l'arbre, et
++       un `Durable`. C'est une capacité partagée : plusieurs tâches peuvent l'observer et l'une
++       d'elles peut l'abandonner.
+
+=       tasks may observe it and one may abort it.
+=
+-       ```scala
++       ```scala
+
+=       tasks may observe it and one may abort it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       import soundness.*
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val me: Process = Process()
++       val me: Process = Process()
+
+-       me.pid
++       me.pid
+
+-       me.parent.lay(t"none")(_.pid.show)
++       me.parent.lay(t"none")(_.pid.show)
+
+-       me.children.map(_.pid)
++       me.children.map(_.pid)
+
+=       me.children.map(_.pid)
+-       ```
++       ```
+
+-       Under `import soundness.*`, `Process` is this type, not `java.lang.Process`; write the
+-       latter in full where it is meant. A `Job` reaches its own `Process` with `Job#process`.
++       Avec `import soundness.*`, `Process` est ce type, et non `java.lang.Process` ; écrivez ce
++       dernier en entier là où c'est lui qu'on veut dire. Un `Job` atteint son propre `Process`
++       avec `Job#process`.
+
+-   refer guillotine.Pid
++   refer guillotine.Pid
+
+=   refer guillotine.Pid
+-   refer guillotine.Job
++   refer guillotine.Job
+
+-   entry .apply   `Process()`: this process; `Process(pid)`: the running process with that pid
++   entry .apply
++     info
++         `Process()` : ce processus ; `Process(pid)` : le processus en cours d'exécution ayant ce
++         pid
+
+-       `Process(pid)` needs a `Tactic[Pid.Error]`, raised when no process with that pid is
+-       running. The result is tracked (`Process^`), so it may be used but not stored in an
+-       untracked value; take its `pid` or another plain value out of a `capture` or a task.
++     detail
++         `Process(pid)` nécessite une `Tactic[Pid.Error]`, levée lorsqu'aucun processus ayant ce
++         pid n'est en cours d'exécution. Le résultat est suivi (`Process^`), il peut donc être
++         utilisé mais pas stocké dans une valeur non suivie ; extrayez son `pid` ou une autre
++         valeur simple d'une `capture` ou d'une tâche.
+
+-   entry .all   every process visible to this one
++   entry .all
++     info
++         tous les processus visibles par celui-ci
+
+-   entry .roots   every visible process which has no parent
++   entry .roots
++     info
++         tous les processus visibles qui n'ont pas de parent
+
+-   entry .Input   a process's standard input as a sink, written to by `Job#stdin`
++   entry .Input
++     info
++         l'entrée standard d'un processus sous forme de puits, dans lequel écrit `Job#stdin`
+
+-     detail
+-         The type a `Job`'s input is written through, so that `java.io.OutputStream` never
+-         appears in the API: `Process.Input is Writable by Data` and `by Text` are the givens
+-         in its companion, and `Job.writable` lifts them to the job itself. A user does not
+-         construct one; its constructor is internal.
++     detail
++         Le type à travers lequel est écrite l'entrée d'un `Job`, afin que `java.io.OutputStream`
++         n'apparaisse jamais dans l'API : `Process.Input is Writable by Data` et `by Text` sont
++         les givens de son compagnon, et `Job.writable` les élève au job lui-même. L'utilisateur
++         n'en construit pas ; son constructeur est interne.
+
+-     entry .data   writes a `Data` stream to a process's input; needs an `Emit[Truncation.Error]`
++     entry .data
++       info
++           écrit un flux de `Data` sur l'entrée d'un processus ; nécessite un
++           `Emit[Truncation.Error]`
+
+-     entry .text   writes a `Text` stream to a process's input, through the `Codepage` in scope
++     entry .text
++       info
++           écrit un flux de `Text` sur l'entrée d'un processus, via la `Codepage` dans la portée
+
+-         Needs a `Codepage` (`codepages.utf8Codepage`) and an `Emit[Truncation.Error]`.
++       detail
++           Nécessite une `Codepage` (`codepages.utf8Codepage`) et un `Emit[Truncation.Error]`.
+
+-   entry .Ref   what every process handle can do: `pid`, `alive`, `attend`, `kill`, `abort`, timings
++   entry .Ref
++     info
++         ce que peut faire toute poignée de processus : `pid`, `alive`, `attend`, `kill`, `abort`,
++         mesures de temps
+
+-     detail
+-         The trait `Process` and `Job` share: a reference to a process on the system, by pid,
+-         with its lifetime, the two signals, and its start time and CPU usage where the platform
+-         reports them. Code which only needs to wait for or stop a process can take a
+-         `Process.Ref` and be handed either.
++     detail
++         Le trait que partagent `Process` et `Job` : une référence vers un processus du système,
++         par pid, avec sa durée de vie, les deux signaux, et son heure de démarrage et son
++         utilisation CPU là où la plateforme les fournit. Du code qui a seulement besoin
++         d'attendre ou d'arrêter un processus peut prendre une `Process.Ref` et recevoir l'un ou
++         l'autre.
+
+-     entry #pid   the process's `Pid`
++     entry #pid
++       info
++           le `Pid` du processus
+
+-     entry #kill   stops the process with `SIGKILL`; needs an `Exec.Event is Loggable`
++     entry #kill
++       info
++           arrête le processus avec `SIGKILL` ; nécessite un `Exec.Event is Loggable`
+
+-     entry #abort   asks the process to stop with `SIGTERM`; needs an `Exec.Event is Loggable`
++     entry #abort
++       info
++           demande au processus de s'arrêter avec `SIGTERM` ; nécessite un `Exec.Event is Loggable`
+
+-     entry #alive   whether the process is still running
++     entry #alive
++       info
++           indique si le processus est toujours en cours d'exécution
+
+-     entry #attend   waits for the process to exit
++     entry #attend
++       info
++           attend la fin du processus
+
+-     entry #startTime   when the process started, as any instant type `Instantiable across Instants from Long`, or `Unset`
++     entry #startTime
++       info
++           le moment où le processus a démarré, dans tout type d'instant
++           `Instantiable across Instants from Long`, ou `Unset`
+
+-     entry #cpuUsage   the CPU time used, as any duration type `Instantiable across Durations from Long`, or `Unset`
++     entry #cpuUsage
++       info
++           le temps CPU utilisé, dans tout type de durée `Instantiable across Durations from Long`,
++           ou `Unset`
+
+-   entry #pid   the process's `Pid`
++   entry #pid
++     info
++         le `Pid` du processus
+
+-   entry #kill   stops the process with `SIGKILL`, through `ProcessHandle.destroyForcibly`
++   entry #kill
++     info
++         arrête le processus avec `SIGKILL`, via `ProcessHandle.destroyForcibly`
+
+-   entry #abort   asks the process to stop with `SIGTERM`, through `ProcessHandle.destroy`
++   entry #abort
++     info
++         demande au processus de s'arrêter avec `SIGTERM`, via `ProcessHandle.destroy`
+
+=   entry #abort   asks the process to stop with `SIGTERM`, through `ProcessHandle.destroy`
+-   entry #alive   whether the process is still running
++   entry #alive
++     info
++         indique si le processus est toujours en cours d'exécution
+
+-   entry #attend   blocks until the process exits
++   entry #attend
++     info
++         bloque jusqu'à la fin du processus
+
+-   entry #parent   the parent process, or `Unset` for a process with none
++   entry #parent
++     info
++         le processus parent, ou `Unset` pour un processus qui n'en a pas
+
+-       `Process().parent` is the shell or launcher which started this program. The element is
+-       a tracked `Process`, so match on it or take its `pid` with `lay`.
++     detail
++         `Process().parent` est le shell ou le lanceur qui a démarré ce programme. L'élément est un
++         `Process` suivi, donc faites un filtrage dessus ou extrayez son `pid` avec `lay`.
+
+-   entry #children   the process's direct children, as `Process` handles
++   entry #children
++     info
++         les enfants directs du processus, sous forme de poignées `Process`
+
+-   entry #startTime   when the process started, in any instant type, from `ProcessHandle.Info`
++   entry #startTime
++     info
++         le moment où le processus a démarré, dans n'importe quel type d'instant, tiré de
++         `ProcessHandle.Info`
+
+-       Takes a type `Instantiable across Instants from Long` (milliseconds since the epoch):
+-       `startTime[Moment]` with aviation. `Unset` when the platform does not report it, and
+-       always on Scala Native, whose javalib lacks `java.time`.
++     detail
++         Prend un type `Instantiable across Instants from Long` (en millisecondes depuis
++         l'epoch) : `startTime[Moment]` avec aviation. `Unset` lorsque la plateforme ne le
++         fournit pas, et toujours sur Scala Native, dont la javalib n'a pas `java.time`.
+
+-   entry #cpuUsage   the total CPU time the process has used, in any duration type
++   entry #cpuUsage
++     info
++         le temps CPU total qu'a utilisé le processus, dans n'importe quel type de durée
+
+-       Takes a type `Instantiable across Durations from Long` (nanoseconds). `Unset` when the
+-       platform does not report it, and always on Scala Native.
++     detail
++         Prend un type `Instantiable across Durations from Long` (en nanosecondes). `Unset`
++         lorsque la plateforme ne le fournit pas, et toujours sur Scala Native.
+
+- entry .Pid   a process identifier, as its own type: renders as `↯1234`, parses from a number
++ entry .Pid
++   info
++       un identifiant de processus, avec son propre type : se rend comme `↯1234`, s'analyse à
++       partir d'un nombre
+
+-   detail
+-       `Pid(value: Long)` is a process id, distinct from an exit code or a descriptor number
+-       so the three cannot be confused. It shows, encodes and inspects as the number marked
+-       with `↯` (`Pid(1234L).show` is `↯1234`), decodes from a plain number (`t"42".as[Pid]`),
+-       and substitutes into `sh"…"` as its shown form. `Job#pid` and `Process#pid` give one,
+-       `Process(pid)` looks one up, and `Executable#detach` returns one.
++   detail
++       `Pid(value: Long)` est un identifiant de processus, distinct d'un code de sortie ou d'un
++       numéro de descripteur afin que les trois ne puissent pas être confondus. Il s'affiche,
++       s'encode et s'inspecte sous la forme du nombre marqué de `↯` (`Pid(1234L).show` donne
++       `↯1234`), se décode à partir d'un simple nombre (`t"42".as[Pid]`), et se substitue dans
++       `sh"…"` sous sa forme affichée. `Job#pid` et `Process#pid` en donnent un, `Process(pid)`
++       en recherche un, et `Executable#detach` en renvoie un.
+
+=       `Process(pid)` looks one up, and `Executable#detach` returns one.
+=
+-       ```scala
++       ```scala
+
+=       `Process(pid)` looks one up, and `Executable#detach` returns one.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       Pid(123L).show      // t"↯123"
++       Pid(123L).show      // t"↯123"
+
+-       t"42".as[Pid]       // Pid(42L)
++       t"42".as[Pid]       // Pid(42L)
+
+-       t"abc".as[Pid]      // raises Number.Error
++       t"abc".as[Pid]      // raises Number.Error
+
+=       t"abc".as[Pid]      // raises Number.Error
+-       ```
++       ```
+
+=       ```
+-   refer guillotine.Process
++   refer guillotine.Process
+
+-   refer guillotine.Pid.Error
++   refer guillotine.Pid.Error
+
+-   entry .showable   renders a pid as `↯` followed by its number
++   entry .showable
++     info
++         rend un pid sous la forme de `↯` suivi de son numéro
+
+-   entry .encodable   encodes a pid in text, as `↯1234`
++   entry .encodable
++     info
++         encode un pid dans du texte, sous la forme `↯1234`
+
+-   entry .inspectable   the debug rendering, the same `↯1234`
++   entry .inspectable
++     info
++         le rendu de débogage, le même `↯1234`
+
+-   entry .decodable   reads a pid from a decimal number in text, raising `Number.Error` otherwise
++   entry .decodable
++     info
++         lit un pid à partir d'un nombre décimal dans du texte, en levant `Number.Error` sinon
+
+-       `t"42".as[Pid]` is `Pid(42L)`; the text is parsed as a `Long`, and a malformed value
+-       raises `Number.Error(text, Long, Unparseable)` through a `Tactic[Number.Error]`.
++     detail
++         `t"42".as[Pid]` donne `Pid(42L)` ; le texte est analysé comme un `Long`, et une valeur mal
++         formée lève `Number.Error(text, Long, Unparseable)` via une `Tactic[Number.Error]`.
+
+-   entry .sshAgentPid   the `SSH_AGENT_PID` environment variable, read as a `Pid`
++   entry .sshAgentPid
++     info
++         la variable d'environnement `SSH_AGENT_PID`, lue comme un `Pid`
+
+-       An ambience `Variable["sshAgentPid", Pid]`, so `Environment.sshAgentPid` (with an
+-       `Environment` in scope) is the pid of the running SSH agent; raises `Number.Error` if
+-       the variable is not a number. Needs a `Tactic[Number.Error]`.
++     detail
++         Une `Variable["sshAgentPid", Pid]` d'ambience, de sorte que `Environment.sshAgentPid`
++         (avec un `Environment` dans la portée) est le pid de l'agent SSH en cours d'exécution ;
++         lève `Number.Error` si la variable n'est pas un nombre. Nécessite une
++         `Tactic[Number.Error]`.
+
+-   entry .Error   raised when no process with a given pid is running
++   entry .Error
++     info
++         levée lorsqu'aucun processus ayant un pid donné n'est en cours d'exécution
+
+-     detail
+-         Error `↯/s.84.2`: _the process with PID `1234` is not running_. Raised by `Process(pid)`, and
+-         so by `Job#process`, when `ProcessHandle.of` finds nothing: the process has exited,
+-         or never existed. Needs a `Diagnostics` in scope to construct.
++     detail
++         Erreur `↯/s.84.2` : _the process with PID `1234` is not running_. Levée par
++         `Process(pid)`, et donc par `Job#process`, lorsque `ProcessHandle.of` ne trouve rien : le
++         processus s'est terminé, ou n'a jamais existé. Nécessite des `Diagnostics` dans la portée
++         pour être construite.
+
+-     entry #pid   the pid that was looked up
++     entry #pid
++       info
++           le pid qui a été recherché
+
+-   entry #value   the number
++   entry #value
++     info
++         le nombre
+
+- entry .Exec   the vocabulary of running a command: `Exec.Error` and the `Exec.Event`s logged
++ entry .Exec
++   info
++       le vocabulaire de l'exécution d'une commande : `Exec.Error` et les `Exec.Event`s journalisés
+
+-   detail
+-       A namespace, not a type: an execution itself is a `Job` or a `Process`. `Exec.Error`
+-       is raised when a command cannot be run, and `Exec.Event` is what the starts, exits and
+-       signals log. (`Executable#Exec`, the type member holding a command's name, is a
+-       different thing which shares the word.)
++   detail
++       Un espace de noms, pas un type : une exécution est elle-même un `Job` ou un `Process`.
++       `Exec.Error` est levée lorsqu'une commande ne peut pas être exécutée, et `Exec.Event` est
++       ce que journalisent les démarrages, les fins et les signaux. (`Executable#Exec`, le membre
++       de type qui contient le nom d'une commande, est une chose différente qui partage le mot.)
+
+=       different thing which shares the word.)
+-   refer guillotine.Executable
++   refer guillotine.Executable
+
+-   entry .Error   raised when a command cannot be run: a missing binary, or a read of its output cut short
++   entry .Error
++     info
++         levée lorsqu'une commande ne peut pas être exécutée : un binaire absent, ou une lecture de
++         sa sortie interrompue
+
+-     detail
+-         Error `↯/s.84.1`: _execution of the command `ls -la` failed_. Raised by `exec`, `fork`,
+-         `detach` and `Command.OnTerminal#exec` when the program cannot be started — it is not
+-         on the `PATH`, or the file is not executable — and by `exec` when a read of the output
+-         is cut short (a `Truncation.Error`, re-raised as this for the command; the last
+-         command of a pipeline). It names the `#command`, so a failure reports what was
+-         attempted rather than an errno; the `#stdout` and `#stderr` fields are empty unless
+-         the raiser had output to attach.
++     detail
++         Erreur `↯/s.84.1` : _execution of the command `ls -la` failed_. Levée par `exec`, `fork`,
++         `detach` et `Command.OnTerminal#exec` lorsque le programme ne peut pas être démarré — il
++         n'est pas dans le `PATH`, ou le fichier n'est pas exécutable — et par `exec` lorsqu'une
++         lecture de la sortie est interrompue prématurément (une `Truncation.Error`, relevée sous
++         cette forme pour la commande ; la dernière commande d'un pipeline). Elle nomme la
++         `#command`, de sorte qu'un échec indique ce qui a été tenté plutôt qu'un errno ; les
++         champs `#stdout` et `#stderr` sont vides à moins que l'émetteur n'ait eu une sortie à
++         joindre.
+
+-         ```scala
++         ```scala
+
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         ```scala
+=         import soundness.*
+-         import environments.javaBaseEnvironment
++         import environments.javaBaseEnvironment
+
+=         ```scala
+=         import soundness.*
+=         import environments.javaBaseEnvironment
+-         import logging.silentLogging
++         import logging.silentLogging
+
+=         import logging.silentLogging
+-         import workingDirectories.javaBaseWorkingDirectory
++         import workingDirectories.javaBaseWorkingDirectory
+
+-         capture[Exec.Error](sh"no-such-binary".exec[Text]()).command.arguments.head
++         capture[Exec.Error](sh"no-such-binary".exec[Text]()).command.arguments.head
+
+-         // t"no-such-binary"
++         // t"no-such-binary"
+
+=         // t"no-such-binary"
+-         ```
++         ```
+
+-         A program which starts and exits non-zero does not raise this: its status is its
+-         result, read as an `Exit`.
++         Un programme qui démarre et se termine avec un statut non nul ne lève pas cette erreur :
++         son statut est son résultat, lu comme un `Exit`.
+
+-     entry #command   the command which could not be run
++     entry #command
++       info
++           la commande qui n'a pas pu être exécutée
+
+-     entry #stdout   any standard output attached, as `Data`; empty by default
++     entry #stdout
++       info
++           la sortie standard éventuellement jointe, sous forme de `Data` ; vide par défaut
+
+-     entry #stderr   any standard error attached, as `Data`; empty by default
++     entry #stderr
++       info
++           la sortie d'erreur standard éventuellement jointe, sous forme de `Data` ; vide par
++           défaut
+
+-   entry .Event   what running a command logs: starts, exits, aborts and kills
++   entry .Event
++     info
++         ce que journalise l'exécution d'une commande : démarrages, fins, abandons et mises à mort
+
+-     detail
+-         Every `Event` is tagged `Log.Process`. `ProcessStart(command)` is logged at `info` by
+-         `fork`, `exec`, `detach` and a terminal session; `PipelineStart(commands)` likewise for
+-         a pipeline; `ProcessExit(pid, code)` by `Job#exitStatus()`, at `fine` for zero and as
+-         a warning otherwise; `AbortProcess(pid)` at `info` by `Job#abort()`; and
+-         `KillProcess(pid)` as a warning by `Job#kill()`. An `Exec.Event is Loggable` must be
+-         in scope wherever these run; `logging.silentLogging` discards them.
++     detail
++         Chaque `Event` est tagué `Log.Process`. `ProcessStart(command)` est journalisé au
++         niveau `info` par `fork`, `exec`, `detach` et une session de terminal ;
++         `PipelineStart(commands)` de même pour un pipeline ; `ProcessExit(pid, code)` par
++         `Job#exitStatus()`, au niveau `fine` pour zéro et comme avertissement sinon ;
++         `AbortProcess(pid)` au niveau `info` par `Job#abort()` ; et `KillProcess(pid)` comme
++         avertissement par `Job#kill()`. Un `Exec.Event is Loggable` doit être dans la portée
++         partout où ceux-ci s'exécutent ; `logging.silentLogging` les ignore.
+
+-     entry .communicable   renders each event as a message
++     entry .communicable
++       info
++           rend chaque événement sous forme de message
+
+-         _starting the process `ls -la`_, _starting the pipeline `cat x` `wc -l`_, _the process
+-         with PID `↯1234` exited with code `0`_, _aborted the process with PID `↯1234`_,
+-         _killed the process with PID `↯1234`_.
++       detail
++           _starting the process `ls -la`_, _starting the pipeline `cat x` `wc -l`_, _the process
++           with PID `↯1234` exited with code `0`_, _aborted the process with PID `↯1234`_,
++           _killed the process with PID `↯1234`_.
+
+- entry .Intelligible   evidence that a command's name implies its result type, for `sh"…"()`
++ entry .Intelligible
++   info
++       la preuve que le nom d'une commande implique son type de résultat, pour `sh"…"()`
+
+-   detail
+-       `"ls" is Intelligible to Chain[Text]` says that a command named `ls` is read as a
+-       `Chain[Text]` when it is applied with no type: `sh"ls -la"()` summons the `Intelligible`
+-       evidence for the `Exec` type member of the command (its name, as a literal type) and
+-       runs `exec` with the evidence's `Result` type (inherited from `Resultant`). The trait is sealed and its instances are
+-       erased: they exist only for the compiler to choose a type, and cost nothing at run
+-       time. The companion extends `PosixCommands`, so every POSIX utility's evidence is in
+-       implicit scope with no import; a command outside that list has no implied type and is
+-       run with `exec[T]()`.
++   detail
++       `"ls" is Intelligible to Chain[Text]` dit qu'une commande nommée `ls` est lue comme une
++       `Chain[Text]` lorsqu'elle est appliquée sans type : `sh"ls -la"()` invoque la preuve
++       `Intelligible` pour le membre de type `Exec` de la commande (son nom, sous forme de type
++       littéral) et exécute `exec` avec le type `Result` de la preuve (hérité de `Resultant`). Le
++       trait est scellé et ses instances sont effacées : elles n'existent que pour que le
++       compilateur choisisse un type, et ne coûtent rien à l'exécution. Le compagnon étend
++       `PosixCommands`, de sorte que la preuve de chaque utilitaire POSIX est dans la portée
++       implicite sans import ; une commande absente de cette liste n'a pas de type implicite et
++       s'exécute avec `exec[T]()`.
+
+=       run with `exec[T]()`.
+=
+-       ```scala
++       ```scala
+
+=       run with `exec[T]()`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       run with `exec[T]()`.
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       run with `exec[T]()`.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       run with `exec[T]()`.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       run with `exec[T]()`.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import workingDirectories.javaBaseWorkingDirectory
++       import workingDirectories.javaBaseWorkingDirectory
+
+-       sh"echo hi"()          // Text
++       sh"echo hi"()          // Text
+
+-       sh"ls"()               // Chain[Text]
++       sh"ls"()               // Chain[Text]
+
+-       sh"mkdir -p tmp"()     // Exit
++       sh"mkdir -p tmp"()     // Exit
+
+=       sh"mkdir -p tmp"()     // Exit
+-       ```
++       ```
+
+-       An instance for a program of one's own is an `erased given ("mytool" is Intelligible
+-       to Text)` — written as the `PosixCommands` givens are — but its construction needs the
+-       companion's private `Evidence` class, so in practice the list is the library's.
++       Une instance pour un programme à soi est un `erased given ("mytool" is Intelligible
++       to Text)` — écrit comme le sont les givens de `PosixCommands` — mais sa construction
++       nécessite la classe privée `Evidence` du compagnon, si bien qu'en pratique la liste est
++       celle de la bibliothèque.
+
+-   refer guillotine.PosixCommands
++   refer guillotine.PosixCommands
+
+=   refer guillotine.PosixCommands
+-   refer guillotine.Executable
++   refer guillotine.Executable
+
+=   refer guillotine.PosixCommands
+=   refer guillotine.Executable
+-   refer guillotine.Computable
++   refer guillotine.Computable
+
+-   entry #Self   the command's name, as a literal type such as `"ls"`
++   entry #Self
++     info
++         le nom de la commande, sous forme de type littéral comme `"ls"`
+
+- entry .PosixCommands   the result type each POSIX utility implies, one erased given per command
++ entry .PosixCommands
++   info
++       le type de résultat qu'implique chaque utilitaire POSIX, un given effacé par commande
+
+-   detail
+-       The trait holding an `Intelligible` given for each of the POSIX shell utilities, mixed
+-       into `Intelligible`'s companion so they are found with no import. Each says what
+-       `sh"<command> …"()` returns: `Text` for a utility whose output is a report read whole
+-       (`echo`, `date`, `wc`, `pwd`, `uname`, most of the list); `Chain[Text]` for one whose
+-       output is lines worth reading as they arrive (`cat`, `grep`, `head`, `ls`, `man`,
+-       `sed`, `sort`, `strings`, `tail`, `uniq`); `Exit` for one whose effect, not its output,
+-       is the point (`chgrp`, `chmod`, `chown`, `cp`, `kill`, `ln`, `mkdir`, `mkfifo`,
+-       `mknod`, `mv`, `newgrp`, `rm`, `rmdir`, `sleep`, `touch`); and for `which`, any path
+-       type the caller asks for. All are `erased`: no instance exists at run time, and the
+-       choice is made entirely by the compiler. The given for `wait` is named `waitCommand`,
+-       since `wait` is a method of every object.
++   detail
++       Le trait contenant un given `Intelligible` pour chacun des utilitaires du shell POSIX,
++       mélangé dans le compagnon d'`Intelligible` afin qu'ils soient trouvés sans import. Chacun
++       dit ce que renvoie `sh"<command> …"()` : `Text` pour un utilitaire dont la sortie est un
++       rapport lu en entier (`echo`, `date`, `wc`, `pwd`, `uname`, la plus grande partie de la
++       liste) ; `Chain[Text]` pour un utilitaire dont la sortie est faite de lignes qu'il vaut
++       la peine de lire à mesure qu'elles arrivent (`cat`, `grep`, `head`, `ls`, `man`, `sed`,
++       `sort`, `strings`, `tail`, `uniq`) ; `Exit` pour un utilitaire dont c'est l'effet, et non
++       la sortie, qui compte (`chgrp`, `chmod`, `chown`, `cp`, `kill`, `ln`, `mkdir`, `mkfifo`,
++       `mknod`, `mv`, `newgrp`, `rm`, `rmdir`, `sleep`, `touch`) ; et pour `which`, tout type de
++       chemin que demande l'appelant. Tous sont `erased` : aucune instance n'existe à
++       l'exécution, et le choix est fait entièrement par le compilateur. Le given pour `wait`
++       s'appelle `waitCommand`, puisque `wait` est une méthode de tout objet.
+
+=       since `wait` is a method of every object.
+=
+-       ```scala
++       ```scala
+
+=       since `wait` is a method of every object.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       since `wait` is a method of every object.
+=
+=       ```scala
+=       import soundness.*
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       since `wait` is a method of every object.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       since `wait` is a method of every object.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       since `wait` is a method of every object.
+=
+=       ```scala
+=       import soundness.*
+=       import environments.javaBaseEnvironment
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import workingDirectories.javaBaseWorkingDirectory
++       import workingDirectories.javaBaseWorkingDirectory
+
+-       val lines: Chain[Text] = sh"ls -la"()
++       val lines: Chain[Text] = sh"ls -la"()
+
+-       val today: Text = sh"date"()
++       val today: Text = sh"date"()
+
+-       val made: Exit = sh"mkdir -p build"()
++       val made: Exit = sh"mkdir -p build"()
+
+=       val made: Exit = sh"mkdir -p build"()
+-       ```
++       ```
+
+-   refer guillotine.Intelligible
++   refer guillotine.Intelligible
+
+=   refer guillotine.Intelligible
+-   refer guillotine.Computable
++   refer guillotine.Computable
+
+-   entry #alias   `alias` (lists or defines shell aliases) runs as `Text`: the whole of its output, once it ends
++   entry #alias
++     info
++         `alias` (liste ou définit des alias de shell) s'exécute comme `Text` : toute sa sortie,
++         une fois terminée
+
+-   entry #ar   `ar` (maintains archive libraries) runs as `Text`: the whole of its output, once it ends
++   entry #ar
++     info
++         `ar` (gère des bibliothèques d'archives) s'exécute comme `Text` : toute sa sortie, une
++         fois terminée
+
+-   entry #at   `at` (queues a command to run later) runs as `Text`: the whole of its output, once it ends
++   entry #at
++     info
++         `at` (met en file une commande à exécuter plus tard) s'exécute comme `Text` : toute sa
++         sortie, une fois terminée
+
+-   entry #awk   `awk` (the pattern-scanning language) runs as `Text`: the whole of its output, once it ends
++   entry #awk
++     info
++         `awk` (le langage de recherche de motifs) s'exécute comme `Text` : toute sa sortie, une
++         fois terminée
+
+-   entry #basename   `basename` (strips a path to its last segment) runs as `Text`: the whole of its output, once it ends
++   entry #basename
++     info
++         `basename` (réduit un chemin à son dernier segment) s'exécute comme `Text` : toute sa
++         sortie, une fois terminée
+
+-   entry #batch   `batch` (queues a command to run when the load allows) runs as `Text`: the whole of its output, once it ends
++   entry #batch
++     info
++         `batch` (met en file une commande à exécuter quand la charge le permet) s'exécute comme
++         `Text` : toute sa sortie, une fois terminée
+
+-   entry #bc   `bc` (the arbitrary-precision calculator) runs as `Text`: the whole of its output, once it ends
++   entry #bc
++     info
++         `bc` (la calculatrice en précision arbitraire) s'exécute comme `Text` : toute sa sortie,
++         une fois terminée
+
+-   entry #cat   `cat` (concatenates files) runs as `Chain[Text]`: its lines, lazily
++   entry #cat
++     info
++         `cat` (concatène des fichiers) s'exécute comme `Chain[Text]` : ses lignes, paresseusement
+
+-   entry #chgrp   `chgrp` (changes a file's group) runs as `Exit`: its status is its result
++   entry #chgrp
++     info
++         `chgrp` (change le groupe d'un fichier) s'exécute comme `Exit` : son statut est son
++         résultat
+
+-   entry #chmod   `chmod` (changes a file's mode) runs as `Exit`: its status is its result
++   entry #chmod
++     info
++         `chmod` (change le mode d'un fichier) s'exécute comme `Exit` : son statut est son résultat
+
+-   entry #chown   `chown` (changes a file's owner) runs as `Exit`: its status is its result
++   entry #chown
++     info
++         `chown` (change le propriétaire d'un fichier) s'exécute comme `Exit` : son statut est son
++         résultat
+
+-   entry #cksum   `cksum` (a file's CRC checksum and size) runs as `Text`: the whole of its output, once it ends
++   entry #cksum
++     info
++         `cksum` (la somme de contrôle CRC et la taille d'un fichier) s'exécute comme `Text` :
++         toute sa sortie, une fois terminée
+
+-   entry #cmp   `cmp` (compares two files byte by byte) runs as `Text`: the whole of its output, once it ends
++   entry #cmp
++     info
++         `cmp` (compare deux fichiers octet par octet) s'exécute comme `Text` : toute sa sortie,
++         une fois terminée
+
+-   entry #comm   `comm` (the lines two sorted files share or do not) runs as `Text`: the whole of its output, once it ends
++   entry #comm
++     info
++         `comm` (les lignes que deux fichiers triés partagent ou non) s'exécute comme `Text` :
++         toute sa sortie, une fois terminée
+
+-   entry #command   `command` (runs a command bypassing shell functions) runs as `Text`: the whole of its output, once it ends
++   entry #command
++     info
++         `command` (exécute une commande en contournant les fonctions du shell) s'exécute comme
++         `Text` : toute sa sortie, une fois terminée
+
+-   entry #cp   `cp` (copies files) runs as `Exit`: its status is its result
++   entry #cp
++     info
++         `cp` (copie des fichiers) s'exécute comme `Exit` : son statut est son résultat
+
+-   entry #crontab   `crontab` (edits the cron table) runs as `Text`: the whole of its output, once it ends
++   entry #crontab
++     info
++         `crontab` (modifie la table cron) s'exécute comme `Text` : toute sa sortie, une fois
++         terminée
+
+-   entry #csplit   `csplit` (splits a file by context) runs as `Text`: the whole of its output, once it ends
++   entry #csplit
++     info
++         `csplit` (découpe un fichier selon le contexte) s'exécute comme `Text` : toute sa sortie,
++         une fois terminée
+
+-   entry #cut   `cut` (selects columns of each line) runs as `Text`: the whole of its output, once it ends
++   entry #cut
++     info
++         `cut` (sélectionne des colonnes de chaque ligne) s'exécute comme `Text` : toute sa sortie,
++         une fois terminée
+
+-   entry #date   `date` (prints or sets the date) runs as `Text`: the whole of its output, once it ends
++   entry #date
++     info
++         `date` (affiche ou définit la date) s'exécute comme `Text` : toute sa sortie, une fois
++         terminée
+
+-   entry #dd   `dd` (copies and converts blocks) runs as `Text`: the whole of its output, once it ends
++   entry #dd
++     info
++         `dd` (copie et convertit des blocs) s'exécute comme `Text` : toute sa sortie, une fois
++         terminée
+
+-   entry #df   `df` (free disk space) runs as `Text`: the whole of its output, once it ends
++   entry #df
++     info
++         `df` (l'espace disque libre) s'exécute comme `Text` : toute sa sortie, une fois terminée
+
+-   entry #diff   `diff` (the differences between two files) runs as `Text`: the whole of its output, once it ends
++   entry #diff
++     info
++         `diff` (les différences entre deux fichiers) s'exécute comme `Text` : toute sa sortie, une
++         fois terminée
+
+-   entry #dirname   `dirname` (strips a path to its directory) runs as `Text`: the whole of its output, once it ends
++   entry #dirname
++     info
++         `dirname` (réduit un chemin à son répertoire) s'exécute comme `Text` : toute sa sortie,
++         une fois terminée
+
+-   entry #du   `du` (disk usage) runs as `Text`: the whole of its output, once it ends
++   entry #du
++     info
++         `du` (l'utilisation du disque) s'exécute comme `Text` : toute sa sortie, une fois terminée
+
+-   entry #echo   `echo` (writes its arguments) runs as `Text`: the whole of its output, once it ends
++   entry #echo
++     info
++         `echo` (écrit ses arguments) s'exécute comme `Text` : toute sa sortie, une fois terminée
+
+-   entry #ed   `ed` (the line editor) runs as `Text`: the whole of its output, once it ends
++   entry #ed
++     info
++         `ed` (l'éditeur de lignes) s'exécute comme `Text` : toute sa sortie, une fois terminée
+
+-   entry #env   `env` (prints or modifies the environment) runs as `Text`: the whole of its output, once it ends
++   entry #env
++     info
++         `env` (affiche ou modifie l'environnement) s'exécute comme `Text` : toute sa sortie, une
++         fois terminée
+
+-   entry #expand   `expand` (turns tabs into spaces) runs as `Text`: the whole of its output, once it ends
++   entry #expand
++     info
++         `expand` (transforme les tabulations en espaces) s'exécute comme `Text` : toute sa sortie,
++         une fois terminée
+
+-   entry #expr   `expr` (evaluates an expression) runs as `Text`: the whole of its output, once it ends
++   entry #expr
++     info
++         `expr` (évalue une expression) s'exécute comme `Text` : toute sa sortie, une fois terminée
+
+-   entry #file   `file` (guesses a file's type) runs as `Text`: the whole of its output, once it ends
++   entry #file
++     info
++         `file` (devine le type d'un fichier) s'exécute comme `Text` : toute sa sortie, une fois
++         terminée
+
+-   entry #find   `find` (walks a directory tree) runs as `Text`: the whole of its output, once it ends
++   entry #find
++     info
++         `find` (parcourt une arborescence de répertoires) s'exécute comme `Text` : toute sa
++         sortie, une fois terminée
+
+-   entry #fold   `fold` (wraps long lines) runs as `Text`: the whole of its output, once it ends
++   entry #fold
++     info
++         `fold` (coupe les lignes longues) s'exécute comme `Text` : toute sa sortie, une fois
++         terminée
+
+-   entry #gencat   `gencat` (builds a message catalogue) runs as `Text`: the whole of its output, once it ends
++   entry #gencat
++     info
++         `gencat` (construit un catalogue de messages) s'exécute comme `Text` : toute sa sortie,
++         une fois terminée
+
+-   entry #getconf   `getconf` (configuration values) runs as `Text`: the whole of its output, once it ends
++   entry #getconf
++     info
++         `getconf` (les valeurs de configuration) s'exécute comme `Text` : toute sa sortie, une
++         fois terminée
+
+-   entry #getopts   `getopts` (parses option arguments) runs as `Text`: the whole of its output, once it ends
++   entry #getopts
++     info
++         `getopts` (analyse les arguments d'option) s'exécute comme `Text` : toute sa sortie, une
++         fois terminée
+
+-   entry #grep   `grep` (the lines matching a pattern) runs as `Chain[Text]`: its lines, lazily
++   entry #grep
++     info
++         `grep` (les lignes correspondant à un motif) s'exécute comme `Chain[Text]` : ses lignes,
++         paresseusement
+
+-   entry #hash   `hash` (the shell's command hash table) runs as `Text`: the whole of its output, once it ends
++   entry #hash
++     info
++         `hash` (la table de hachage des commandes du shell) s'exécute comme `Text` : toute sa
++         sortie, une fois terminée
+
+-   entry #head   `head` (the first lines of a file) runs as `Chain[Text]`: its lines, lazily
++   entry #head
++     info
++         `head` (les premières lignes d'un fichier) s'exécute comme `Chain[Text]` : ses lignes,
++         paresseusement
+
+-   entry #iconv   `iconv` (converts between character encodings) runs as `Text`: the whole of its output, once it ends
++   entry #iconv
++     info
++         `iconv` (convertit entre encodages de caractères) s'exécute comme `Text` : toute sa
++         sortie, une fois terminée
+
+-   entry #id   `id` (the user's and groups' identities) runs as `Text`: the whole of its output, once it ends
++   entry #id
++     info
++         `id` (les identités de l'utilisateur et des groupes) s'exécute comme `Text` : toute sa
++         sortie, une fois terminée
+
+-   entry #join   `join` (joins two files on a common field) runs as `Text`: the whole of its output, once it ends
++   entry #join
++     info
++         `join` (joint deux fichiers sur un champ commun) s'exécute comme `Text` : toute sa sortie,
++         une fois terminée
+
+-   entry #kill   `kill` (sends a signal) runs as `Exit`: its status is its result
++   entry #kill
++     info
++         `kill` (envoie un signal) s'exécute comme `Exit` : son statut est son résultat
+
+-   entry #ln   `ln` (makes a link) runs as `Exit`: its status is its result
++   entry #ln
++     info
++         `ln` (crée un lien) s'exécute comme `Exit` : son statut est son résultat
+
+-   entry #locale   `locale` (locale information) runs as `Text`: the whole of its output, once it ends
++   entry #locale
++     info
++         `locale` (les informations de locale) s'exécute comme `Text` : toute sa sortie, une fois
++         terminée
+
+-   entry #localedef   `localedef` (compiles a locale definition) runs as `Text`: the whole of its output, once it ends
++   entry #localedef
++     info
++         `localedef` (compile une définition de locale) s'exécute comme `Text` : toute sa sortie,
++         une fois terminée
+
+-   entry #logger   `logger` (writes to the system log) runs as `Text`: the whole of its output, once it ends
++   entry #logger
++     info
++         `logger` (écrit dans le journal système) s'exécute comme `Text` : toute sa sortie, une
++         fois terminée
+
+-   entry #logname   `logname` (the login name) runs as `Text`: the whole of its output, once it ends
++   entry #logname
++     info
++         `logname` (le nom de connexion) s'exécute comme `Text` : toute sa sortie, une fois
++         terminée
+
+-   entry #lp   `lp` (sends a file to a printer) runs as `Text`: the whole of its output, once it ends
++   entry #lp
++     info
++         `lp` (envoie un fichier à une imprimante) s'exécute comme `Text` : toute sa sortie, une
++         fois terminée
+
+-   entry #ls   `ls` (lists a directory) runs as `Chain[Text]`: its lines, lazily
++   entry #ls
++     info
++         `ls` (liste un répertoire) s'exécute comme `Chain[Text]` : ses lignes, paresseusement
+
+-   entry #m4   `m4` (the macro processor) runs as `Text`: the whole of its output, once it ends
++   entry #m4
++     info
++         `m4` (le processeur de macros) s'exécute comme `Text` : toute sa sortie, une fois terminée
+
+-   entry #mailx   `mailx` (sends and reads mail) runs as `Text`: the whole of its output, once it ends
++   entry #mailx
++     info
++         `mailx` (envoie et lit du courrier) s'exécute comme `Text` : toute sa sortie, une fois
++         terminée
+
+-   entry #man   `man` (a manual page) runs as `Chain[Text]`: its lines, lazily
++   entry #man
++     info
++         `man` (une page de manuel) s'exécute comme `Chain[Text]` : ses lignes, paresseusement
+
+-   entry #mesg   `mesg` (permits or denies messages to the terminal) runs as `Text`: the whole of its output, once it ends
++   entry #mesg
++     info
++         `mesg` (autorise ou refuse les messages vers le terminal) s'exécute comme `Text` : toute
++         sa sortie, une fois terminée
+
+-   entry #mkdir   `mkdir` (makes a directory) runs as `Exit`: its status is its result
++   entry #mkdir
++     info
++         `mkdir` (crée un répertoire) s'exécute comme `Exit` : son statut est son résultat
+
+-   entry #mkfifo   `mkfifo` (makes a named pipe) runs as `Exit`: its status is its result
++   entry #mkfifo
++     info
++         `mkfifo` (crée un tube nommé) s'exécute comme `Exit` : son statut est son résultat
+
+-   entry #mknod   `mknod` (makes a special file) runs as `Exit`: its status is its result
++   entry #mknod
++     info
++         `mknod` (crée un fichier spécial) s'exécute comme `Exit` : son statut est son résultat
+
+-   entry #mv   `mv` (moves files) runs as `Exit`: its status is its result
++   entry #mv
++     info
++         `mv` (déplace des fichiers) s'exécute comme `Exit` : son statut est son résultat
+
+-   entry #newgrp   `newgrp` (changes the current group) runs as `Exit`: its status is its result
++   entry #newgrp
++     info
++         `newgrp` (change le groupe courant) s'exécute comme `Exit` : son statut est son résultat
+
+-   entry #od   `od` (dumps a file in octal or another base) runs as `Text`: the whole of its output, once it ends
++   entry #od
++     info
++         `od` (affiche un fichier en octal ou dans une autre base) s'exécute comme `Text` : toute
++         sa sortie, une fois terminée
+
+-   entry #paste   `paste` (joins files line by line) runs as `Text`: the whole of its output, once it ends
++   entry #paste
++     info
++         `paste` (joint des fichiers ligne par ligne) s'exécute comme `Text` : toute sa sortie, une
++         fois terminée
+
+-   entry #patch   `patch` (applies a diff) runs as `Text`: the whole of its output, once it ends
++   entry #patch
++     info
++         `patch` (applique un diff) s'exécute comme `Text` : toute sa sortie, une fois terminée
+
+-   entry #patchchk   `patchchk` (checks a patch) runs as `Text`: the whole of its output, once it ends
++   entry #patchchk
++     info
++         `patchchk` (vérifie un correctif) s'exécute comme `Text` : toute sa sortie, une fois
++         terminée
+
+-   entry #pax   `pax` (the portable archiver) runs as `Text`: the whole of its output, once it ends
++   entry #pax
++     info
++         `pax` (l'archiveur portable) s'exécute comme `Text` : toute sa sortie, une fois terminée
+
+-   entry #pr   `pr` (paginates a file for printing) runs as `Text`: the whole of its output, once it ends
++   entry #pr
++     info
++         `pr` (met en pages un fichier pour l'impression) s'exécute comme `Text` : toute sa sortie,
++         une fois terminée
+
+-   entry #printf   `printf` (formatted output) runs as `Text`: the whole of its output, once it ends
++   entry #printf
++     info
++         `printf` (la sortie formatée) s'exécute comme `Text` : toute sa sortie, une fois terminée
+
+-   entry #ps   `ps` (the running processes) runs as `Text`: the whole of its output, once it ends
++   entry #ps
++     info
++         `ps` (les processus en cours d'exécution) s'exécute comme `Text` : toute sa sortie, une
++         fois terminée
+
+-   entry #pwd   `pwd` (the working directory) runs as `Text`: the whole of its output, once it ends
++   entry #pwd
++     info
++         `pwd` (le répertoire de travail) s'exécute comme `Text` : toute sa sortie, une fois
++         terminée
+
+-   entry #read   `read` (reads a line into variables) runs as `Text`: the whole of its output, once it ends
++   entry #read
++     info
++         `read` (lit une ligne dans des variables) s'exécute comme `Text` : toute sa sortie, une
++         fois terminée
+
+-   entry #renice   `renice` (alters a process's priority) runs as `Text`: the whole of its output, once it ends
++   entry #renice
++     info
++         `renice` (modifie la priorité d'un processus) s'exécute comme `Text` : toute sa sortie,
++         une fois terminée
+
+-   entry #rm   `rm` (removes files) runs as `Exit`: its status is its result
++   entry #rm
++     info
++         `rm` (supprime des fichiers) s'exécute comme `Exit` : son statut est son résultat
+
+-   entry #rmdir   `rmdir` (removes an empty directory) runs as `Exit`: its status is its result
++   entry #rmdir
++     info
++         `rmdir` (supprime un répertoire vide) s'exécute comme `Exit` : son statut est son résultat
+
+-   entry #sed   `sed` (the stream editor) runs as `Chain[Text]`: its lines, lazily
++   entry #sed
++     info
++         `sed` (l'éditeur de flux) s'exécute comme `Chain[Text]` : ses lignes, paresseusement
+
+-   entry #sleep   `sleep` (pauses for a time) runs as `Exit`: its status is its result
++   entry #sleep
++     info
++         `sleep` (fait une pause pendant un certain temps) s'exécute comme `Exit` : son statut est
++         son résultat
+
+-   entry #sort   `sort` (sorts lines) runs as `Chain[Text]`: its lines, lazily
++   entry #sort
++     info
++         `sort` (trie des lignes) s'exécute comme `Chain[Text]` : ses lignes, paresseusement
+
+-   entry #split   `split` (splits a file into pieces) runs as `Text`: the whole of its output, once it ends
++   entry #split
++     info
++         `split` (découpe un fichier en morceaux) s'exécute comme `Text` : toute sa sortie, une
++         fois terminée
+
+-   entry #strings   `strings` (the printable strings in a binary) runs as `Chain[Text]`: its lines, lazily
++   entry #strings
++     info
++         `strings` (les chaînes imprimables d'un binaire) s'exécute comme `Chain[Text]` : ses
++         lignes, paresseusement
+
+-   entry #stty   `stty` (reads or sets the terminal's line discipline) runs as `Text`: the whole of its output, once it ends
++   entry #stty
++     info
++         `stty` (lit ou définit la discipline de ligne du terminal) s'exécute comme `Text` : toute
++         sa sortie, une fois terminée
+
+-   entry #tabs   `tabs` (sets the terminal's tab stops) runs as `Text`: the whole of its output, once it ends
++   entry #tabs
++     info
++         `tabs` (définit les taquets de tabulation du terminal) s'exécute comme `Text` : toute sa
++         sortie, une fois terminée
+
+-   entry #tail   `tail` (the last lines of a file) runs as `Chain[Text]`: its lines, lazily
++   entry #tail
++     info
++         `tail` (les dernières lignes d'un fichier) s'exécute comme `Chain[Text]` : ses lignes,
++         paresseusement
+
+-   entry #tee   `tee` (copies input to files and to output) runs as `Text`: the whole of its output, once it ends
++   entry #tee
++     info
++         `tee` (copie l'entrée vers des fichiers et vers la sortie) s'exécute comme `Text` : toute
++         sa sortie, une fois terminée
+
+-   entry #test   `test` (evaluates a condition) runs as `Text`: the whole of its output, once it ends
++   entry #test
++     info
++         `test` (évalue une condition) s'exécute comme `Text` : toute sa sortie, une fois terminée
+
+-   entry #touch   `touch` (updates a file's timestamps, making it if needed) runs as `Exit`: its status is its result
++   entry #touch
++     info
++         `touch` (met à jour les horodatages d'un fichier, en le créant au besoin) s'exécute comme
++         `Exit` : son statut est son résultat
+
+-   entry #tput   `tput` (terminal capabilities) runs as `Text`: the whole of its output, once it ends
++   entry #tput
++     info
++         `tput` (les capacités du terminal) s'exécute comme `Text` : toute sa sortie, une fois
++         terminée
+
+-   entry #tr   `tr` (translates characters) runs as `Text`: the whole of its output, once it ends
++   entry #tr
++     info
++         `tr` (transpose des caractères) s'exécute comme `Text` : toute sa sortie, une fois
++         terminée
+
+-   entry #tsort   `tsort` (a topological sort) runs as `Text`: the whole of its output, once it ends
++   entry #tsort
++     info
++         `tsort` (un tri topologique) s'exécute comme `Text` : toute sa sortie, une fois terminée
+
+-   entry #tty   `tty` (the terminal's device name) runs as `Text`: the whole of its output, once it ends
++   entry #tty
++     info
++         `tty` (le nom de périphérique du terminal) s'exécute comme `Text` : toute sa sortie, une
++         fois terminée
+
+-   entry #umask   `umask` (the file creation mask) runs as `Text`: the whole of its output, once it ends
++   entry #umask
++     info
++         `umask` (le masque de création de fichiers) s'exécute comme `Text` : toute sa sortie, une
++         fois terminée
+
+-   entry #unalias   `unalias` (removes an alias) runs as `Text`: the whole of its output, once it ends
++   entry #unalias
++     info
++         `unalias` (supprime un alias) s'exécute comme `Text` : toute sa sortie, une fois terminée
+
+-   entry #uname   `uname` (the system's name) runs as `Text`: the whole of its output, once it ends
++   entry #uname
++     info
++         `uname` (le nom du système) s'exécute comme `Text` : toute sa sortie, une fois terminée
+
+-   entry #unexpand   `unexpand` (turns spaces into tabs) runs as `Text`: the whole of its output, once it ends
++   entry #unexpand
++     info
++         `unexpand` (transforme les espaces en tabulations) s'exécute comme `Text` : toute sa
++         sortie, une fois terminée
+
+-   entry #uniq   `uniq` (drops or counts repeated lines) runs as `Chain[Text]`: its lines, lazily
++   entry #uniq
++     info
++         `uniq` (supprime ou compte les lignes répétées) s'exécute comme `Chain[Text]` : ses
++         lignes, paresseusement
+
+-   entry #uudecode   `uudecode` (decodes a uuencoded file) runs as `Text`: the whole of its output, once it ends
++   entry #uudecode
++     info
++         `uudecode` (décode un fichier uuencodé) s'exécute comme `Text` : toute sa sortie, une fois
++         terminée
+
+-   entry #uuencode   `uuencode` (encodes a file for mail) runs as `Text`: the whole of its output, once it ends
++   entry #uuencode
++     info
++         `uuencode` (encode un fichier pour le courrier) s'exécute comme `Text` : toute sa sortie,
++         une fois terminée
+
+-   entry #waitCommand   `wait` (waits for a background job) runs as `Text`: the whole of its output, once it ends
++   entry #waitCommand
++     info
++         `wait` (attend un job en arrière-plan) s'exécute comme `Text` : toute sa sortie, une fois
++         terminée
+
+-   entry #wc   `wc` (counts lines, words and bytes) runs as `Text`: the whole of its output, once it ends
++   entry #wc
++     info
++         `wc` (compte les lignes, les mots et les octets) s'exécute comme `Text` : toute sa sortie,
++         une fois terminée
+
+-   entry #who   `who` (who is logged in) runs as `Text`: the whole of its output, once it ends
++   entry #who
++     info
++         `who` (qui est connecté) s'exécute comme `Text` : toute sa sortie, une fois terminée
+
+-   entry #write   `write` (writes to another user's terminal) runs as `Text`: the whole of its output, once it ends
++   entry #write
++     info
++         `write` (écrit sur le terminal d'un autre utilisateur) s'exécute comme `Text` : toute sa
++         sortie, une fois terminée
+
+-   entry #which   `which` (finds a program on the `PATH`) runs as the path type the caller asks for
++   entry #which
++     info
++         `which` (trouve un programme dans le `PATH`) s'exécute comme le type de chemin que demande
++         l'appelant
+
+-       An inline given, for any type `Instantiable across Paths from Text`: `val git: Path on
+-       Linux = sh"which git"()` reads the trimmed output as a path, through the `Computable`
+-       instance for path types. The type must be fixed by the expected type, since the
+-       command alone cannot choose it.
++     detail
++         Un given inline, pour tout type `Instantiable across Paths from Text` : `val git: Path on
++         Linux = sh"which git"()` lit la sortie élaguée comme un chemin, via l'instance
++         `Computable` des types de chemin. Le type doit être fixé par le type attendu, puisque la
++         commande seule ne peut pas le choisir.
+
+- entry .Parameterizable   how a value of a type is rendered as a command argument in `sh"…"`
++ entry .Parameterizable
++   info
++       la façon dont une valeur d'un type est rendue comme argument de commande dans `sh"…"`
+
+-   detail
+-       `T is Parameterizable` lets a `T` be substituted into the `sh"…"` interpolator:
+-       `#show` renders it as the text of one argument, which the interpolator then escapes for
+-       its position, so the instance never concerns itself with quoting. The companion's
+-       `.encodable` covers every type `Encodable in Text` — a `Path`, a URL, a `Pid` — and a
+-       type with neither is a compile error at the substitution. `Text`, `List[Text]` and
+-       `Command` substitute through their own `Sh` insertions rather than this.
++   detail
++       `T is Parameterizable` permet de substituer un `T` dans l'interpolateur `sh"…"` : `#show`
++       le rend sous forme du texte d'un argument, que l'interpolateur échappe ensuite selon sa
++       position, de sorte que l'instance n'a jamais à se soucier des guillemets. Le `.encodable`
++       du compagnon couvre tout type `Encodable in Text` — un `Path`, une URL, un `Pid` — et un
++       type qui n'a ni l'un ni l'autre est une erreur de compilation à la substitution. `Text`,
++       `List[Text]` et `Command` se substituent par leurs propres insertions `Sh` plutôt que par
++       ceci.
+
+=       `Command` substitute through their own `Sh` insertions rather than this.
+=
+-       ```scala
++       ```scala
+
+=       `Command` substitute through their own `Sh` insertions rather than this.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Tag(value: Int)
++       case class Tag(value: Int)
+
+-       given Tag is Parameterizable = summon[Text is Parameterizable].contramap(tag => t"<${tag.value}>")
++       given Tag is Parameterizable = summon[Text is Parameterizable].contramap(tag => t"<${tag.value}>")
+
+-       sh"echo ${Tag(7)}"   // Command(t"echo", t"<7>")
++       sh"echo ${Tag(7)}"   // Command(t"echo", t"<7>")
+
+=       sh"echo ${Tag(7)}"   // Command(t"echo", t"<7>")
+-       ```
++       ```
+
+=       ```
+-   refer guillotine.sh
++   refer guillotine.sh
+
+-   entry .encodable   any type `Encodable in Text` substitutes as its encoding
++   entry .encodable
++     info
++         tout type `Encodable in Text` se substitue sous forme de son encodage
+
+-       A `Path on Linux` substitutes as `/etc/hosts`, a `Pid` as `↯42`, a URL as its text.
++     detail
++         Un `Path on Linux` se substitue comme `/etc/hosts`, un `Pid` comme `↯42`, une URL comme
++         son texte.
+
+-   entry #show   the value as the text of one command argument
++   entry #show
++     info
++         la valeur sous forme du texte d'un argument de commande
+
+-   entry #contramap   an instance for another type, by a function to this one's
++   entry #contramap
++     info
++         une instance pour un autre type, par une fonction vers celui-ci
+
+-       `summon[Text is Parameterizable].contramap(f)` is the usual way to write an instance for
+-       a type which has a textual form of its own.
++     detail
++         `summon[Text is Parameterizable].contramap(f)` est la façon habituelle d'écrire une
++         instance pour un type qui a sa propre forme textuelle.
+
+- entry .Termios   a terminal's line discipline: the `stty` switches a program most often changes
++ entry .Termios
++   info
++       la discipline de ligne d'un terminal : les options `stty` qu'un programme modifie le plus
++       souvent
+
+-   detail
+-       The settings of a pseudo-terminal which decide how what is typed reaches the program
+-       and how what it writes reaches the screen, named after the POSIX `termios` flags they
+-       stand for, each a `Boolean` defaulting to on. `.cooked` is everything on — line editing,
+-       echo, signals and the translations a shell expects — and `.raw` everything off, as a
+-       full-screen program sets before it draws. A `Termios` given to `Command#pty` is set
+-       before the command starts, and a running command's is read and changed through
+-       `Command.OnTerminal.Job#mode`.
++   detail
++       Les réglages d'un pseudo-terminal qui décident de la façon dont ce qui est tapé parvient
++       au programme et dont ce qu'il écrit parvient à l'écran, nommés d'après les indicateurs POSIX
++       `termios` qu'ils représentent, chacun étant un `Boolean` activé par défaut. `.cooked`
++       active tout — l'édition de ligne, l'écho, les signaux et les traductions qu'attend un
++       shell — et `.raw` désactive tout, comme le fait un programme plein écran avant de
++       dessiner. Un `Termios` donné à `Command#pty` est défini avant le démarrage de la
++       commande, et celui d'une commande en cours est lu et modifié via
++       `Command.OnTerminal.Job#mode`.
+
+=       `Command.OnTerminal.Job#mode`.
+=
+-       ```scala
++       ```scala
+
+=       `Command.OnTerminal.Job#mode`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Termios.raw.show                               // t"-echo -icanon -isig -iexten -icrnl -ixon -opost"
++       Termios.raw.show                               // t"-echo -icanon -isig -iexten -icrnl -ixon -opost"
+
+-       Termios(echo = false)                          // cooked, but unechoed: for typing a password
++       Termios(echo = false)                          // cooked, but unechoed: for typing a password
+
+-       Termios.raw == Termios(false, false, false, false, false, false, false)
++       Termios.raw == Termios(false, false, false, false, false, false, false)
+
+=       Termios.raw == Termios(false, false, false, false, false, false, false)
+-       ```
++       ```
+
+=       ```
+-   refer guillotine.Command.OnTerminal
++   refer guillotine.Command.OnTerminal
+
+-   entry .cooked   every switch on: input edited and echoed a line at a time, `^C` a signal
++   entry .cooked
++     info
++         toutes les options activées : l'entrée éditée et renvoyée en écho ligne par ligne, `^C` un
++         signal
+
+-   entry .raw   every switch off: each byte delivered as typed, unechoed, `^C` an ordinary byte
++   entry .raw
++     info
++         toutes les options désactivées : chaque octet livré tel que tapé, sans écho, `^C` un octet
++         ordinaire
+
+-       What `stty raw -echo` sets, and what a full-screen program such as an editor needs.
+-       Turning `canonical` off also sets the read to return each byte as it arrives.
++     detail
++         Ce que définit `stty raw -echo`, et ce dont a besoin un programme plein écran comme un
++         éditeur. Désactiver `canonical` fait aussi que la lecture renvoie chaque octet dès son
++         arrivée.
+
+-   entry .showable   renders the switches as `stty` reports them: `echo -icanon isig …`
++   entry .showable
++     info
++         rend les options telles que les rapporte `stty` : `echo -icanon isig …`
+
+-       Each switch by its POSIX flag name, prefixed with `-` when off, in the order `echo`,
+-       `icanon`, `isig`, `iexten`, `icrnl`, `ixon`, `opost`.
++     detail
++         Chaque option par son nom d'indicateur POSIX, préfixé de `-` lorsqu'elle est désactivée,
++         dans l'ordre `echo`, `icanon`, `isig`, `iexten`, `icrnl`, `ixon`, `opost`.
+
+-   entry #echo   `echo`: whether typed characters are echoed back to the terminal
++   entry #echo
++     info
++         `echo` : si les caractères tapés sont renvoyés en écho au terminal
+
+-   entry #canonical   `icanon`: whether input is gathered and edited a line at a time, or delivered as typed
++   entry #canonical
++     info
++         `icanon` : si l'entrée est rassemblée et éditée ligne par ligne, ou livrée telle que tapée
+
+-   entry #signals   `isig`: whether `^C` and `^Z` signal the foreground program
++   entry #signals
++     info
++         `isig` : si `^C` et `^Z` envoient un signal au programme au premier plan
+
+-   entry #extensions   `iexten`: whether the extra line-editing characters are interpreted
++   entry #extensions
++     info
++         `iexten` : si les caractères d'édition de ligne supplémentaires sont interprétés
+
+-   entry #translateReturn   `icrnl`: whether a typed carriage return arrives as a newline
++   entry #translateReturn
++     info
++         `icrnl` : si un retour chariot tapé arrive comme un saut de ligne
+
+-   entry #flowControl   `ixon`: whether `^S` and `^Q` pause and resume output
++   entry #flowControl
++     info
++         `ixon` : si `^S` et `^Q` suspendent et reprennent la sortie
+
+-   entry #postprocessing   `opost` with `onlcr`: whether a newline the program writes is sent as carriage return and newline
++   entry #postprocessing
++     info
++         `opost` avec `onlcr` : si un saut de ligne écrit par le programme est envoyé comme retour
++         chariot et saut de ligne
+
+- entry .Sh   the `sh"…"` interpolator's parser and its insertion rules
++ entry .Sh
++   info
++       l'analyseur de l'interpolateur `sh"…"` et ses règles d'insertion
+
+-   detail
+-       The machinery behind `sh"…"`: the parser (`.Runtime`) which both the macro runs at
+-       compile time, to check the literal, and the generated code runs at run time, to
+-       assemble the arguments with the substituted values; the parser's `.State` and
+-       `.Context`; the `.Parameters` a substitution contributes; the `.Error` a malformed
+-       literal raises; and the contextual `Insertion` givens which say how a `Text`, a
+-       `List[Text]`, a `Command` or any `Parameterizable` value becomes parameters. A program
+-       does not call these directly, but a `given Insertion[Sh.Parameters, T]` in scope at the
+-       interpolation is one way to substitute a type, where `Parameterizable` is the usual.
++   detail
++       La mécanique derrière `sh"…"` : l'analyseur (`.Runtime`) qu'exécutent à la fois la macro
++       à la compilation, pour vérifier le littéral, et le code généré à l'exécution, pour
++       assembler les arguments avec les valeurs substituées ; l'état `.State` et le contexte
++       `.Context` de l'analyseur ; les `.Parameters` qu'apporte une substitution ; l'`.Error`
++       que lève un littéral mal formé ; et les givens contextuels `Insertion` qui disent comment
++       un `Text`, une `List[Text]`, une `Command` ou toute valeur `Parameterizable` devient des
++       paramètres. Un programme ne les appelle pas directement, mais un
++       `given Insertion[Sh.Parameters, T]` dans la portée de l'interpolation est une façon de
++       substituer un type, `Parameterizable` étant la façon habituelle.
+
+=       interpolation is one way to substitute a type, where `Parameterizable` is the usual.
+-   refer guillotine.sh
++   refer guillotine.sh
+
+-   refer guillotine.Parameterizable
++   refer guillotine.Parameterizable
+
+-   entry .Context   where the parser is: `Awaiting` a word, in an `Unquoted` word, in `Quotes2` or `Quotes1`
++   entry .Context
++     info
++         l'endroit où se trouve l'analyseur : `Awaiting` un mot, dans un mot `Unquoted`, dans
++         `Quotes2` ou `Quotes1`
+
+-       `Awaiting` is between arguments, `Unquoted` inside a bare word, `Quotes2` inside double
+-       quotes and `Quotes1` inside single quotes, where a backslash is literal.
++     detail
++         `Awaiting` se situe entre les arguments, `Unquoted` à l'intérieur d'un mot nu, `Quotes2`
++         entre guillemets doubles et `Quotes1` entre guillemets simples, où une barre oblique
++         inverse est littérale.
+
+-   entry .State   the parser's state: context, a pending escape, the arguments so far, and offsets
++   entry .State
++     info
++         l'état de l'analyseur : contexte, échappement en attente, arguments jusqu'ici, et
++         décalages
+
+-     detail
+-         `State(current, escape, arguments, offset, quoteStart)`: the `Context`, whether the
+-         last character was an unconsumed backslash, the arguments completed and in progress,
+-         how many characters have been consumed (each substitution counting as one), and the
+-         offset of the opening quote of the current quoted context, or `-1`, so that an
+-         unclosed quote is reported where it was opened.
++     detail
++         `State(current, escape, arguments, offset, quoteStart)` : le `Context`, si le dernier
++         caractère était une barre oblique inverse non consommée, les arguments terminés et en
++         cours, le nombre de caractères consommés (chaque substitution comptant pour un), et le
++         décalage du guillemet ouvrant du contexte entre guillemets courant, ou `-1`, afin qu'un
++         guillemet non fermé soit signalé là où il a été ouvert.
+
+-     entry #current   the parsing context
++     entry #current
++       info
++           le contexte d'analyse
+
+-     entry #escape   whether a backslash is pending
++     entry #escape
++       info
++           si une barre oblique inverse est en attente
+
+-     entry #arguments   the arguments so far, the last possibly still being built
++     entry #arguments
++       info
++           les arguments jusqu'ici, le dernier étant peut-être encore en construction
+
+-     entry #offset   characters consumed, each substitution counting as one
++     entry #offset
++       info
++           les caractères consommés, chaque substitution comptant pour un
+
+-     entry #quoteStart   the offset of the open quote of the current quoted context, or `-1`
++     entry #quoteStart
++       info
++           le décalage du guillemet ouvrant du contexte entre guillemets courant, ou `-1`
+
+-   entry .Parameters   what one substitution contributes: zero or more argument texts
++   entry .Parameters
++     info
++         ce qu'apporte une substitution : zéro ou plusieurs textes d'argument
+
+-     detail
+-         A `Text` contributes one, a `List[Text]` one per element, a `Command` its arguments.
+-         Unquoted, each is an argument of its own (joined to any adjacent literal text);
+-         inside quotes they are joined with spaces into the one argument the quotes delimit.
++     detail
++         Un `Text` en apporte un, une `List[Text]` un par élément, une `Command` ses arguments.
++         Hors guillemets, chacun est un argument à part entière (joint à tout texte littéral
++         adjacent) ; entre guillemets, ils sont joints par des espaces en l'unique argument que
++         délimitent les guillemets.
+
+-     entry #params   the texts contributed
++     entry #params
++       info
++           les textes apportés
+
+-   entry .Error   a malformed `sh"…"` literal: an unclosed quote or a stray escape, with its offset
++   entry .Error
++     info
++         un littéral `sh"…"` mal formé : un guillemet non fermé ou un échappement isolé, avec son
++         décalage
+
+-     detail
+-         Thrown by the parser and reported by the macro as a compile error at the offending
+-         character: _this double quote is never closed_, _this single quote is never closed_,
+-         _a command cannot end with an escape character_, _an escape character cannot appear
+-         immediately before a substitution_. At run time, the literal having already been
+-         checked, it cannot arise.
++     detail
++         Levée par l'analyseur et signalée par la macro comme erreur de compilation au caractère
++         fautif : _this double quote is never closed_, _this single quote is never closed_,
++         _a command cannot end with an escape character_, _an escape character cannot appear
++         immediately before a substitution_. À l'exécution, le littéral ayant déjà été vérifié,
++         elle ne peut pas survenir.
+
+-     entry #detail   the message
++     entry #detail
++       info
++           le message
+
+-     entry #offset   where in the literal the fault is, counting each substitution as one character
++     entry #offset
++       info
++           l'endroit du littéral où se trouve la faute, chaque substitution comptant pour un
++           caractère
+
+-   entry .Runtime   the parser: `initial`, `parse`, `insert`, `skip` and `complete`
++   entry .Runtime
++     info
++         l'analyseur : `initial`, `parse`, `insert`, `skip` et `complete`
+
+-     detail
+-         A small state machine over the characters of the literal parts, which the macro drives
+-         with `skip` in place of each substitution to check the literal, and the generated code
+-         drives with `insert` to splice the real values. Not for direct use.
++     detail
++         Un petit automate sur les caractères des parties littérales, que la macro pilote avec
++         `skip` à la place de chaque substitution pour vérifier le littéral, et que le code généré
++         pilote avec `insert` pour insérer les vraies valeurs. Pas destiné à un usage direct.
+
+-     entry .initial   the state before any character: awaiting a word, with no arguments
++     entry .initial
++       info
++           l'état avant tout caractère : en attente d'un mot, sans arguments
+
+-     entry .parse   feeds the characters of a literal part to the state
++     entry .parse
++       info
++           fournit les caractères d'une partie littérale à l'état
+
+-     entry .insert   splices a substitution's `Parameters` into the state, according to its context
++     entry .insert
++       info
++           insère les `Parameters` d'une substitution dans l'état, selon son contexte
+
+-     entry .skip   advances past a substitution at compile time, when its value is not yet known
++     entry .skip
++       info
++           avance au-delà d'une substitution à la compilation, lorsque sa valeur n'est pas encore
++           connue
+
+-     entry .complete   finishes: the `Command`, or `Sh.Error` for an unclosed quote or trailing escape
++     entry .complete
++       info
++           termine : la `Command`, ou `Sh.Error` pour un guillemet non fermé ou un échappement
++           final
+
+-   entry .nothing   a `Nothing` substitution contributes the empty argument
++   entry .nothing
++     info
++         une substitution `Nothing` apporte l'argument vide
+
+-   entry .text   a `Text` substitution is exactly one argument, whatever it contains
++   entry .text
++     info
++         une substitution `Text` est exactement un argument, quel que soit son contenu
+
+-   entry .list   a `List[Text]` substitution is one argument per element, or, in quotes, one joined by spaces
++   entry .list
++     info
++         une substitution `List[Text]` donne un argument par élément ou, entre guillemets, un seul
++         joint par des espaces
+
+-   entry .command   a `Command` substitution is its arguments, so `sh"sh -c '$inner'"` passes it as one
++   entry .command
++     info
++         une substitution `Command` donne ses arguments, de sorte que `sh"sh -c '$inner'"` la passe
++         en un seul
+
+-   entry .parameterizable   any `Parameterizable` value substitutes as its `show` text, as one argument
++   entry .parameterizable
++     info
++         toute valeur `Parameterizable` se substitue sous forme de son texte `show`, en un seul
++         argument
+
+- entry .internal   the macro implementation behind `sh"…"`
++ entry .internal
++   info
++       l'implémentation de la macro derrière `sh"…"`
+
+-   hidden
++   hidden
+
+-   detail
+-       Not for direct use: the object exists so that the `sh` macro has a stable home.
++   detail
++       Pas destiné à un usage direct : l'objet existe pour que la macro `sh` ait un emplacement
++       stable.
+
+-   entry .sh   the macro: parses the literal parts at compile time, positions errors, and splices the runtime parse
++   entry .sh
++     info
++         la macro : analyse les parties littérales à la compilation, positionne les erreurs, et
++         insère l'analyse à l'exécution
+
+-       Checks the literal with `Sh.Runtime` (reporting a `Sh.Error` at the character which
+-       caused it, mapped back through `$$` and unicode escapes to the source), summons an
+-       `Insertion[Sh.Parameters, T]` for each substituted type (failing with _can't substitute
+-       `T` into a sh-interpolator_), and produces a `Command` refined with its first word as
+-       the `Exec` type.
++     detail
++         Vérifie le littéral avec `Sh.Runtime` (en signalant une `Sh.Error` au caractère qui l'a
++         causée, ramené au code source à travers `$$` et les échappements Unicode), invoque une
++         `Insertion[Sh.Parameters, T]` pour chaque type substitué (en échouant avec _can't
++         substitute `T` into a sh-interpolator_), et produit une `Command` raffinée avec son
++         premier mot comme type `Exec`.

@@ -1,0 +1,103 @@
+orthant 1 language
+
+!     detail
+!         `encoded(text)` encodes a whole `Text` as one `Data`, through `String#getBytes` with the
+!         resolved charset. `encoded(stream)` takes a `Chain[Text]` and gives a `Chain[Data]`,
+!         encoding buffer-load by buffer-load: a surrogate pair whose halves fall in different
+!         chunks is carried across and encoded whole, a stateful encoding is flushed once at the
+!         end, and empty chunks are dropped from the output. Malformed or unmappable input is
+!         replaced, never raised.
+-       `encoded(text)` encodes a whole `Text` as one `Data`, through `String#getBytes` with the
+-       resolved charset. `encoded(stream)` takes a `Chain[Text]` and gives a `Chain[Data]`,
+-       encoding buffer-load by buffer-load: a surrogate pair whose halves fall in different
+-       chunks is carried across and encoded whole, a stateful encoding is flushed once at the
+-       end, and empty chunks are dropped from the output. Malformed or unmappable input is
++     detail
++         `encoded(text)` encode un `Text` entier en des `Data` uniques, par `String#getBytes` avec
++         le charset résolu. `encoded(stream)` prend une `Chain[Text]` et donne une `Chain[Data]`,
++         en encodant tampon par tampon : une paire de substitution dont les moitiés tombent dans
++         des morceaux différents est reportée et encodée en entier, un encodage à état est vidé une
++         fois à la fin, et les morceaux vides sont retirés de la sortie. Une entrée malformée ou
++         non représentable est remplacée, jamais levée comme erreur.
+
+-       replaced, or reported to the codepage's `EncodingSanitizer`, which the strict one
+-       raises as `Codepage.Error`.
+
+!   detail
+!       Which encoding bytes are read as is decided by the `Charset` given in scope, and the
+!       choice is never implicit: `import soundness.*` brings none of these in, and one is
+!       imported by name. Each resolves the `TextSanitizer` in scope at the use site, so the
+!       same `utf8Charset` is strict where `strictSanitizer` is imported and tolerant where
+!       `skipSanitizer` is; `iso88591Charset` alone fixes the skipping sanitiser, since every
+!       byte is valid Latin-1.
+-   detail
+-       Which encoding bytes are read as is decided by the `Charset` given in scope, and the
+-       choice is never implicit: `import soundness.*` brings none of these in, and one is
+-       imported by name. Each resolves the `TextSanitizer` in scope at the use site, so the
+-       same `utf8Charset` is strict where `strictSanitizer` is imported and tolerant where
++   detail
++       L'encodage dans lequel les octets sont lus est décidé par le given `Charset` dans la portée,
++       et le choix n'est jamais implicite : `import soundness.*` n'en amène aucun, et on en importe
++       un par son nom. Chacun résout le `TextSanitizer` dans la portée sur le site d'utilisation ;
++       le même `utf8Charset` est donc strict là où `strictSanitizer` est importé et tolérant là où
++       c'est `skipSanitizer` ; seul `iso88591Charset` fixe l'assainisseur qui saute, puisque tout
++       octet est du Latin-1 valide.
+
+-   entry .iso88591Charset   ISO-8859-1 (Latin-1), with the sanitiser in scope
++   entry .iso88591Charset   ISO-8859-1 (Latin-1), with the sanitiser in scope
+
+!     detail
+!         Every byte is a valid Latin-1 character, so there is nothing to sanitise and no
+!         `TextSanitizer` is needed in scope. Declared in `hieroglyph.charsets` only; the
+!         `soundness` umbrella's `charsets` package does not re-export it, so it is imported as
+!         `hieroglyph.charsets.iso88591Charset`.
+-       Every byte is a valid Latin-1 character, so the sanitiser is never consulted, but one
++     detail
++         Tout octet est un caractère Latin-1 valide ; il n'y a donc rien à assainir et aucun
++         `TextSanitizer` n'est nécessaire dans la portée. Déclaré seulement dans
++         `hieroglyph.charsets` ; le package `charsets` du parapluie `soundness` ne le réexporte
++         pas ; il s'importe donc par `hieroglyph.charsets.iso88591Charset`.
+
+-       must be in scope, as for the other charsets.
+
+!     detail
+!         Declared in `hieroglyph.codepages` only; the `soundness` umbrella's `codepages` package
+!         does not re-export it, so it is imported as `hieroglyph.codepages.iso88591Codepage`.
+!
+-
+- entry .encodingSanitizers   the policies for unencodable characters, each an `EncodingSanitizer` given to import by name
+-   detail
+-       A `Codepage` consults the `EncodingSanitizer` in scope where it is summoned for each
+-       character its encoding cannot represent. Unlike a `TextSanitizer`, one is always
+-       available: the default, in `EncodingSanitizer`'s companion, substitutes silently, so
+-       importing from here is needed only to be strict.
+-
+-       ```scala
+-       import soundness.*
+-       import strategies.throwUnsafely
+-       import encodingSanitizers.strictEncodingSanitizer
+-
+-       codepages.asciiCodepage.encoded(t"café")   // raises Codepage.Error('é', ASCII)
+-       ```
+-   refer hieroglyph.EncodingSanitizer
+-   refer hieroglyph.Codepage
+-   entry .strictEncodingSanitizer   an unencodable character raises `Codepage.Error`; needs a `Tactic[Codepage.Error]`
+-   entry .substituteEncodingSanitizer   an unencodable character is written as the encoding's substitute: the default, by name
+-
+- entry .EncodingSanitizer   what a `Codepage` does with a character its encoding cannot represent
+-   detail
+-       The encoding counterpart of `TextSanitizer`. The codepage calls `#unmappable` with each
+-       character it cannot encode; if that returns, the encoding's substitute is written in
+-       the character's place. An instance whose `#substitutes` is `true` is never called, and
+-       the substitution is left to the JDK's encoder, which is the fast path the default
+-       takes.
+-   refer hieroglyph.encodingSanitizers
+-   entry .substitute   the default: substitute silently
+-   entry #substitutes   whether unencodable characters are replaced without `#unmappable` being called
+-   entry #unmappable   called with each character which cannot be encoded, and the encoding
+-
++     detail
++         Déclaré seulement dans `hieroglyph.codepages` ; le package `codepages` du parapluie
++         `soundness` ne le réexporte pas ; il s'importe donc par
++         `hieroglyph.codepages.iso88591Codepage`.
++

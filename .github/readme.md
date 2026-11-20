@@ -1,7 +1,7 @@
 ![Latest version](https://img.shields.io/github/v/tag/propensive/soundness?label=LATEST+VERSION&style=for-the-badge&labelColor=444444&color=ea8433)
 
-![Soundness](/doc/logo.svg#gh-dark-mode-only)
-![Soundness](/doc/logo2.svg#gh-light-mode-only)
+![Soundness](/.github/logo.svg#gh-dark-mode-only)
+![Soundness](/.github/logo2.svg#gh-light-mode-only)
 
 Soundness is an ecosystem of libraries for writing direct-style code with Scala
 3, in a number of broad domains:

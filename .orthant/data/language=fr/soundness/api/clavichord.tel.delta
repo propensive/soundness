@@ -1,0 +1,243 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base clavichord
++ base clavichord
+
+- import soundness
++ import soundness
+
+- info   a keypress as a value: a character, a named key, or either held with modifiers
++ info
++     une frappe de touche comme valeur : un caractère, une touche nommée, ou l'un ou l'autre avec
++     des modificateurs
+
+- detail
+-     _Clavichord_ is the vocabulary of keys shared by everything in Soundness that reads or
+-     produces a keypress. Terminals and browsers agree on what a keypress *is* and disagree
+-     only on how it is encoded, so the model lives here, apart from either: profanity decodes
+-     a terminal's escape sequences into `Keypress` values, and tarantula renders them as the
+-     key actions the WebDriver protocol defines, without either knowing about the other.
++ detail
++     _Clavichord_ est le vocabulaire de touches partagé par tout ce qui, dans Soundness, lit ou
++     produit une frappe de touche. Les terminaux et les navigateurs s'accordent sur ce qu'*est* une
++     frappe et ne divergent que sur la façon de l'encoder : le modèle vit donc ici, à l'écart des
++     deux. profanity décode les séquences d'échappement d'un terminal en valeurs `Keypress`, et
++     tarantula les rend sous forme des actions de touche que définit le protocole WebDriver, sans
++     que l'un ni l'autre ne connaisse l'autre.
+
+-     A `Keypress` is an ordinary character, a function key, one of the named editing keys, an
+-     otherwise unnamed escape sequence, or one of those wrapped in the modifiers held with it.
+-     A modifier accepts only what can meaningfully be modified, so the type rules out
+-     keypresses no keyboard can produce.
++     Un `Keypress` est un caractère ordinaire, une touche de fonction, l'une des touches d'édition
++     nommées, une séquence d'échappement sans autre nom, ou l'un de ceux-là enveloppé dans les
++     modificateurs maintenus en même temps. Un modificateur n'accepte que ce qui peut être modifié
++     de façon sensée : le type exclut donc les frappes qu'aucun clavier ne peut produire.
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     def describe(keypress: Keypress): Text = keypress match
++     def describe(keypress: Keypress): Text = keypress match
+
+-       case Keypress.CharKey(char)              => t"typed $char"
++       case Keypress.CharKey(char)              => t"typed $char"
+
+-       case Keypress.Ctrl('C')                  => t"interrupt"
++       case Keypress.Ctrl('C')                  => t"interrupt"
+
+-       case Keypress.Shift(Keypress.Enter)      => t"new line"
++       case Keypress.Shift(Keypress.Enter)      => t"new line"
+
+-       case Keypress.Up | Keypress.Down         => t"history"
++       case Keypress.Up | Keypress.Down         => t"history"
+
+-       case other                               => other.show
++       case other                               => other.show
+
+-     Keypress.Ctrl(Keypress.Alt(Keypress.Left)).show   // t"[⌃]+[⌥]+[←]"
++     Keypress.Ctrl(Keypress.Alt(Keypress.Left)).show   // t"[⌃]+[⌥]+[←]"
+
+-     ```
++     ```
+
+-     The library has a single source set, `clavichord.core`, for every platform, and
+-     everything is exported to the `soundness` umbrella.
++     La bibliothèque a un seul ensemble de sources, `clavichord.core`, pour toutes les plateformes,
++     et tout est exporté vers le package parapluie `soundness`.
+
+- refer clavichord.Keypress
++ refer clavichord.Keypress
+
+- entry .Keypress   a key as pressed: a character, a named or function key, or one held with modifiers
++ entry .Keypress
++   info
++       une touche telle que frappée : un caractère, une touche nommée ou de fonction, ou une touche
++       maintenue avec des modificateurs
+
+-   detail
+-       An enum whose cases are:
++   detail
++       Une énumération dont les cas sont :
+
+-       - the named editing keys, `Tab`, `Enter`, `Backspace`, `Delete`, `Escape`, `Insert`,
+-         `Home`, `End`, `PageUp`, `PageDown`, `Left`, `Right`, `Up` and `Down`, each also a
+-         `Keypress.Editing`;
+-       - `CharKey(char)`, an ordinary character, with any shift already applied (a shifted
+-         `a` is `CharKey('A')`);
+-       - `FunctionKey(number)`, `F1` to `F12` and beyond;
+-       - `EscapeSeq(id, content*)`, an escape sequence with no other name, by its final
+-         identifying character and its parameters;
+-       - and the modifiers, which nest outwards in a fixed order: `Shift` of an editing or
+-         function key; `Alt` of those or a `Shift`; `Ctrl` of those, an `Alt`, or one of the
+-         characters a control code can carry (`'A'` to `'Z'`, `'['`, `'\\'`, `']'`, `'^'`,
+-         `'_'` and `'@'`); and `Meta` of any of the other modifiers or keys.
++       - les touches d'édition nommées, `Tab`, `Enter`, `Backspace`, `Delete`, `Escape`, `Insert`,
++         `Home`, `End`, `PageUp`, `PageDown`, `Left`, `Right`, `Up` et `Down`, chacune étant aussi
++         un `Keypress.Editing` ;
++       - `CharKey(char)`, un caractère ordinaire, avec la majuscule déjà appliquée le cas échéant
++         (un `a` avec Shift est `CharKey('A')`) ;
++       - `FunctionKey(number)`, `F1` à `F12` et au-delà ;
++       - `EscapeSeq(id, content*)`, une séquence d'échappement sans autre nom, désignée par son
++         caractère d'identification final et ses paramètres ;
++       - et les modificateurs, qui s'imbriquent vers l'extérieur dans un ordre fixe : `Shift` d'une
++         touche d'édition ou de fonction ; `Alt` de celles-ci ou d'un `Shift` ; `Ctrl` de
++         celles-ci, d'un `Alt`, ou de l'un des caractères que peut porter un code de contrôle
++         (`'A'` à `'Z'`, `'['`, `'\\'`, `']'`, `'^'`, `'_'` et `'@'`) ; et `Meta` de n'importe
++         lequel des autres modificateurs ou touches.
+
+-       The modifiers' parameter types follow that order, so `Shift(CharKey('a'))` and
+-       `Alt(Ctrl('C'))` do not compile: `Ctrl(Alt(Left))` is the one way to write that
+-       combination, and a match need consider only one.
++       Les types des paramètres des modificateurs suivent cet ordre : `Shift(CharKey('a'))` et
++       `Alt(Ctrl('C'))` ne compilent donc pas. `Ctrl(Alt(Left))` est la seule façon d'écrire cette
++       combinaison, et un filtrage n'a à en considérer qu'une.
+
+=       combination, and a match need consider only one.
+=
+-       ```scala
++       ```scala
+
+=       combination, and a match need consider only one.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Keypress.Ctrl('C')
++       Keypress.Ctrl('C')
+
+-       Keypress.Shift(Keypress.Enter)
++       Keypress.Shift(Keypress.Enter)
+
+-       Keypress.Meta(Keypress.Ctrl(Keypress.Alt(Keypress.Shift(Keypress.Home))))
++       Keypress.Meta(Keypress.Ctrl(Keypress.Alt(Keypress.Shift(Keypress.Home))))
+
+-       Keypress.Shift(Keypress.CharKey('a'))   // does not compile
++       Keypress.Shift(Keypress.CharKey('a'))   // does not compile
+
+=       Keypress.Shift(Keypress.CharKey('a'))   // does not compile
+-       ```
++       ```
+
+-       A keypress shows (`.showable`) with a Unicode symbol in square brackets for each key
+-       and modifier, joined to what it modifies with `+`.
++       Une frappe s'affiche (`.showable`) avec un symbole Unicode entre crochets pour chaque touche
++       et chaque modificateur, joint à ce qu'il modifie par `+`.
+
+-   refer clavichord.Keypress.EditKey
++   refer clavichord.Keypress.EditKey
+
+-   entry .Editing   the marker trait of the fourteen named editing keys
++   entry .Editing
++     info
++         le trait marqueur des quatorze touches d'édition nommées
+
+-       `Tab`, `Home`, `End`, `PageUp`, `PageDown`, `Insert`, `Delete`, `Enter`, `Backspace`,
+-       `Escape`, `Left`, `Right`, `Up` and `Down` each extend it. It is a nominal marker
+-       rather than a union of the cases' singleton types so that it still admits them when
+-       they are reached through the umbrella's export forwarders, as `soundness.Keypress.Enter`.
++     detail
++         `Tab`, `Home`, `End`, `PageUp`, `PageDown`, `Insert`, `Delete`, `Enter`, `Backspace`,
++         `Escape`, `Left`, `Right`, `Up` et `Down` l'étendent chacune. C'est un marqueur nominal
++         plutôt qu'une union des types singletons des cas, afin qu'il les admette encore lorsqu'on
++         les atteint par les redirections d'export du package parapluie, comme
++         `soundness.Keypress.Enter`.
+
+-   entry .EditKey   any one of the named editing keys: `Keypress & Keypress.Editing`
++   entry .EditKey
++     info
++         l'une quelconque des touches d'édition nommées : `Keypress & Keypress.Editing`
+
+-       The type of a key which `Shift`, `Alt`, `Ctrl` and `Meta` may wrap besides function
+-       keys, and the type to use for a method which handles only editing keys.
++     detail
++         Le type d'une touche que `Shift`, `Alt`, `Ctrl` et `Meta` peuvent envelopper en plus des
++         touches de fonction, et le type à utiliser pour une méthode qui ne traite que les touches
++         d'édition.
+
+=       keys, and the type to use for a method which handles only editing keys.
+=
+-       ```scala
++         ```scala
+
+=       keys, and the type to use for a method which handles only editing keys.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+-       val key: Keypress.EditKey = Keypress.PageDown
++         val key: Keypress.EditKey = Keypress.PageDown
+
+=       val key: Keypress.EditKey = Keypress.PageDown
+-       ```
++         ```
+
+-   entry .showable   shows a keypress with a bracketed Unicode symbol per key and modifier
++   entry .showable
++     info
++         affiche une frappe avec un symbole Unicode entre crochets par touche et par modificateur
+
+-       Shift is `[⇧]`, Alt `[⌥]`, Ctrl `[⌃]` and Meta `[⌘]`, each joined to what it
+-       modifies with `+`. The editing keys are `[⇥]`, `[↵]`, `[⌫]`, `[⌦]`, `[⎋]`, `[⎀]`, the
+-       arrows `[↑]` `[↓]` `[←]` `[→]`, `[↖]` for Home, `[↘]` for End, and `[⇞]` `[⇟]` for the
+-       page keys. A character is bracketed as itself, except a space, `[␣]`; a function key is
+-       `[F5]`; and an escape sequence is `[⎋R]`, showing its identifier but not its content.
++     detail
++         Shift est `[⇧]`, Alt `[⌥]`, Ctrl `[⌃]` et Meta `[⌘]`, chacun joint à ce qu'il modifie par
++         `+`. Les touches d'édition sont `[⇥]`, `[↵]`, `[⌫]`, `[⌦]`, `[⎋]`, `[⎀]`, les flèches
++         `[↑]` `[↓]` `[←]` `[→]`, `[↖]` pour Home, `[↘]` pour End, et `[⇞]` `[⇟]` pour les touches
++         de page. Un caractère est mis entre crochets tel quel, sauf une espace, `[␣]` ; une touche
++         de fonction est `[F5]` ; et une séquence d'échappement est `[⎋R]`, qui montre son
++         identifiant mais pas son contenu.
+
+=       `[F5]`; and an escape sequence is `[⎋R]`, showing its identifier but not its content.
+=
+-       ```scala
++         ```scala
+
+=       `[F5]`; and an escape sequence is `[⎋R]`, showing its identifier but not its content.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+-       Keypress.Shift(Keypress.Enter).show   // t"[⇧]+[↵]"
++         Keypress.Shift(Keypress.Enter).show   // t"[⇧]+[↵]"
+
+-       Keypress.Ctrl('C').show               // t"[⌃]+[C]"
++         Keypress.Ctrl('C').show               // t"[⌃]+[C]"
+
+-       Keypress.FunctionKey(12).show         // t"[F12]"
++         Keypress.FunctionKey(12).show         // t"[F12]"
+
+=       Keypress.FunctionKey(12).show         // t"[F12]"
+-       ```
++         ```

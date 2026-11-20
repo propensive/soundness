@@ -1,0 +1,35 @@
+orthant 1 release
+
+-   entry .acceptCharset   the form's accepted encoding, on `<form>`, as `Utf8`
+-       The given is registered under the name `acceptCharset` rather than the
+-       specification's `accept-charset`, so `Form(acceptCharset = …)` is how it is written and
+-       `accept-charset` is what the parser would need to see; the HTML 4 dialect spells it
+-       correctly.
++   entry .acceptCharset   `accept-charset` on `<form>`: the form's accepted encoding, as `Utf8`
++       The given is named `acceptCharset`; the attribute it registers is `accept-charset`.
+
+-       The given is registered under the attribute name `headingoffset`, not `headingreset`,
+-       so `headingreset = true` writes a bare `headingoffset`.
+
+-   entry .usemap   the image-map reference on `<img>`, `<input>` and `<object>`, as `HashName`
+-       The given is registered under the attribute name `usemaptype`, not the specification's
+-       `usemap`, so what it writes is `usemaptype="#map"`.
++   entry .usemap   `usemap` on `<img>`, `<input>` and `<object>`: the image-map reference, as `HashName`
+
+-         the `shape` attribute; note that in the current source they are built with the
+-         label `input`, so `Area.Rect` serializes as `<input shape="rect">`.
++         the `shape` attribute, so `Area.Rect` serializes as `<area shape="rect">`.
+
+-   entry #Iframe   `<iframe>`: a nested browsing context; void in this vocabulary
++   entry #Iframe   `<iframe>`: a nested browsing context, with no content
+
+-       `height`, `referrerpolicy` and `loading`. It is defined as a `Tag.Void`, so it takes
+-       no children and serializes as `<iframe …>` with no end tag, where the specification
+-       requires `</iframe>`.
++       `height`, `referrerpolicy` and `loading`. It admits no children, but it is not a void
++       element: it serializes as `<iframe …></iframe>`, with the end tag the specification
++       requires.
+
+-       In the current source the tag is built with the label `label`, so a `Legend(…)`
+-       serializes as `<label>`; the parser's `<legend>` resolves through `#elements` by that
+-       label too.

@@ -1,0 +1,11 @@
+orthant 1 release
+
+- in the [filesystem](../en/modules/filesystem.md) API is defined in terms of them. The
++ in the [filesystem](/doc/soundness/modules/filesystem.md) API is defined in terms of them. The
+
+- same shape gives [sockets](../en/modules/sockets.md) a `SocketBackend`,
+- [compression](../en/modules/compression.md) its per-platform DEFLATE engines, and
+- [images](../en/modules/images.md) their codecs.
++ same shape gives [sockets](/doc/soundness/modules/sockets.md) a `SocketBackend`,
++ [compression](/doc/soundness/modules/compression.md) its per-platform DEFLATE engines, and
++ [images](/doc/soundness/modules/images.md) their codecs.

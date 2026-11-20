@@ -1,0 +1,20 @@
+orthant 1 release
+
+-   entry .int   decodes an `Int` from decimal text, raising `Number.Error` if it is unparseable
++   entry .int   decodes an `Int` from decimal text, distinguishing unparseable from out-of-range
+
+-       optionally-signed decimal integer with no surrounding space; any failure, including
+-       overflow, is `Number.Error.Reason.Unparseable`.
++       optionally-signed decimal integer with no surrounding space. Text which is not an
++       integer raises `Number.Error` with `Reason.Unparseable`; an integer outside the range
++       of an `Int` raises it with `Reason.OutOfRange`.
+
+-   entry .long   decodes a `Long` from decimal text, raising `Number.Error` if it is unparseable
+-       Needs a `Tactic[Number.Error]`; parses with `java.lang.Long.parseLong`.
++   entry .long   decodes a `Long` from decimal text, distinguishing unparseable from out-of-range
++       Needs a `Tactic[Number.Error]`; parses with `java.lang.Long.parseLong`. Text which is
++       not an integer raises `Number.Error` with `Reason.Unparseable`; an integer outside the
++       range of a `Long` raises it with `Reason.OutOfRange`.
+
+-   entry .intDoule   widens an `Int` to a `Double` (the name is misspelt in the source)
++   entry .intDouble   widens an `Int` to a `Double`
