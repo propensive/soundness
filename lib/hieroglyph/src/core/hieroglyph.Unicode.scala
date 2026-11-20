@@ -119,7 +119,7 @@ object Unicode:
 
             (name.nn.tt, value)
 
-    Map.from(murmuration.Reshapable.build(entries, scala.collection.immutable.Map.newBuilder))
+    Map.build[Text, Char | Text] { names => entries.each(entry => names(entry(0)) = entry(1)) }
 
   lazy val unicodeNames: Map[Char | Text, Text] =
     unicodeData.remap: (key, value) =>

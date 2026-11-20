@@ -675,23 +675,20 @@ object Xml extends Tag.Container
           . or(Absent)
 
         def decoded(xml: Xml): Map[key, value] =
-          var accumulator = Map.empty[key, value]
+          Map.build[key, value]: accumulator =>
+            def entry(element: Element): Unit =
+              val key = keyDecodable.decoded(childOf(element, t"key"))
+              val value = valueDecodable.decoded(childOf(element, t"value"))
+              accumulator(key) = value
 
-          def entry(element: Element): Unit =
-            val key = keyDecodable.decoded(childOf(element, t"key"))
-            val value = valueDecodable.decoded(childOf(element, t"value"))
-            accumulator = accumulator.define(key, value)
+            xml match
+              case Fragment(nodes*) =>
+                nodes.each:
+                  case element: Element => entry(element)
+                  case _                => ()
 
-          xml match
-            case Fragment(nodes*) =>
-              nodes.each:
-                case element: Element => entry(element)
-                case _                => ()
-
-            case element: Element => entry(element)
-            case _                => ()
-
-          accumulator
+              case element: Element => entry(element)
+              case _                => ()
 
   // Single entry-point for resolving `Decodable in Xml`. Prefers a textual
   // decoder when one exists (so any `Decodable in Text` value works as a

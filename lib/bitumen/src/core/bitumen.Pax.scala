@@ -56,47 +56,45 @@ object Pax:
     Array.from(pairs.fold(empty) { (bytes, pair) => bytes ++ record(pair(0), pair(1)).stdlib })
 
   def parse(data: Data): Map[Text, Text] raises Tar.Error =
-    val builder = scala.collection.immutable.Map.newBuilder[Text, Text]
-    var pos = 0
+    Map.build[Text, Text]: records =>
+      var pos = 0
 
-    while pos < data.length do
-      var lengthEnd = pos
+      while pos < data.length do
+        var lengthEnd = pos
 
-      while lengthEnd < data.length &&
-        data.readUnchecked(lengthEnd) >= '0'.toByte &&
-        data.readUnchecked(lengthEnd) <= '9'.toByte
-      do lengthEnd += 1
+        while lengthEnd < data.length &&
+          data.readUnchecked(lengthEnd) >= '0'.toByte &&
+          data.readUnchecked(lengthEnd) <= '9'.toByte
+        do lengthEnd += 1
 
-      if lengthEnd == pos || lengthEnd >= data.length || data.readUnchecked(lengthEnd) != ' '.toByte
-      then
-        raise(Tar.Error(Tar.Error.Reason.BadPaxRecord(data)))
-        pos = data.length
-      else
-        // The scanned slice is all ASCII digits, so decoding fails only on an overflowing run
-        // of digits; fall back to 0 so the `length < 1` check below rejects it.
-        val length = safely(data.segment((pos).z till (lengthEnd).z).ascii.as[Int]).or(0)
-
-        if length < 1 || pos + length > data.length ||
-          data.readUnchecked(pos + length - 1) != '\n'.toByte
+        if lengthEnd == pos || lengthEnd >= data.length || data.readUnchecked(lengthEnd) != ' '.toByte
         then
           raise(Tar.Error(Tar.Error.Reason.BadPaxRecord(data)))
           pos = data.length
         else
-          val content: String = data.segment((lengthEnd + 1).z till (pos + length - 1).z).utf8.s
-          val eqIdx: Int = content.indexOf('=')
+          // The scanned slice is all ASCII digits, so decoding fails only on an overflowing run
+          // of digits; fall back to 0 so the `length < 1` check below rejects it.
+          val length = safely(data.segment((pos).z till (lengthEnd).z).ascii.as[Int]).or(0)
 
-          if eqIdx < 0 then
-            // Unlike a malformed length prefix (which desynchronizes the cursor and must
-            // terminate the scan), a record with no `=` has a known extent: record its error
-            // and skip just that record, so every malformed record accrues rather than only
-            // the first.
+          if length < 1 || pos + length > data.length ||
+            data.readUnchecked(pos + length - 1) != '\n'.toByte
+          then
             raise(Tar.Error(Tar.Error.Reason.BadPaxRecord(data)))
-            pos = pos + length
+            pos = data.length
           else
-            builder += ((content.substring(0, eqIdx).nn.tt, content.substring(eqIdx + 1).nn.tt))
-            pos = pos + length
+            val content: String = data.segment((lengthEnd + 1).z till (pos + length - 1).z).utf8.s
+            val eqIdx: Int = content.indexOf('=')
 
-    builder.result().to(Map)
+            if eqIdx < 0 then
+              // Unlike a malformed length prefix (which desynchronizes the cursor and must
+              // terminate the scan), a record with no `=` has a known extent: record its error
+              // and skip just that record, so every malformed record accrues rather than only
+              // the first.
+              raise(Tar.Error(Tar.Error.Reason.BadPaxRecord(data)))
+              pos = pos + length
+            else
+              records(content.substring(0, eqIdx).nn.tt) = content.substring(eqIdx + 1).nn.tt
+              pos = pos + length
 
   private def computeLength(payloadLen: Int): Int =
     var n = 1

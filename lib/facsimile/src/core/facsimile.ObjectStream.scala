@@ -44,14 +44,13 @@ import vacuous.*
 private[facsimile] object ObjectStream:
   def apply(data: Data, first: Int, count: Int)(using Tactic[Pdf.Error]): ObjectStream =
     val lexer: CosLexer^ = CosLexer(Scan(data))
-    var offsets = Map[Int, Int]()
+    val offsets = Map.build[Int, Int]: offsets =>
+      for _ <- 0 until count do (lexer.next(), lexer.next()) match
+        case (CosToken.Integral(number), CosToken.Integral(offset)) =>
+          offsets(number.toInt) = offset.toInt
 
-    for _ <- 0 until count do (lexer.next(), lexer.next()) match
-      case (CosToken.Integral(number), CosToken.Integral(offset)) =>
-        offsets = offsets.define(number.toInt, offset.toInt)
-
-      case _ =>
-        abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"ObjStm")))
+        case _ =>
+          abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"ObjStm")))
 
     new ObjectStream(data, first, offsets)
 

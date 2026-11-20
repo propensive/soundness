@@ -159,9 +159,12 @@ extension [self](self: self)(using traversable: self is Traversable)
     ( using reshapable: self is Reshapable by traversable.Operand to result )
   :   Map[key, result] =
 
-    Reshapable.build(traversable.traverse(self), sci.List.newBuilder).groupBy(lambda)
-    . map: (key, elements) => (key, reshapable.reshape(Iterator.from(elements.iterator)))
-    . to(Map)
+    val groups =
+      Reshapable.build(traversable.traverse(self), sci.List.newBuilder).groupBy(lambda)
+
+    Map.build[key, result]: map =>
+      groups.foreachEntry: (key, elements) =>
+        map(key) = reshapable.reshape(Iterator.from(elements.iterator))
 
   def distinct[result]
     ( using reshapable: self is Reshapable.Stable by traversable.Operand to result )

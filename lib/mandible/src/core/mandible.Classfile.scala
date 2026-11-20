@@ -115,16 +115,13 @@ class Classfile private (model: jlc.ClassModel):
 
         val elements = code.elementList.nn.to[List]
 
-        val labels: Map[jlc.Label, Int] =
-          val builder = scala.collection.immutable.Map.newBuilder[jlc.Label, Int]
+        val labels: Map[jlc.Label, Int] = Map.build[jlc.Label, Int]: labels =>
           var offset = 0
 
           elements.each:
             case instr: jlc.Instruction       => offset += instr.sizeInBytes
-            case target: jlci.LabelTarget     => builder += target.label.nn -> offset
+            case target: jlci.LabelTarget     => labels(target.label.nn) = offset
             case _                            => ()
-
-          builder.result().to(Map)
 
         val stackMaps: Map[jlc.Label, List[Bytecode.Frame]] =
           val attr =

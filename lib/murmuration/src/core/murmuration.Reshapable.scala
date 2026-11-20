@@ -89,10 +89,11 @@ object Reshapable extends Reshapable.Fallback:
   =>  (Array[element]^{}) is Reshapable.Stable by element2 to (Array[element2]^{}) =
     elements => Array.unsafeFrozen(build(elements, sci.List.newBuilder[element2]).toArray)
 
-  // A `Map` rebuilt from pairs remains a `Map`…
+  // A `Map` rebuilt from pairs remains a `Map`, filled in place.
   given map: [key, value, key2, value2]
   =>  Map[key, value] is Reshapable by (key2, value2) to Map[key2, value2] =
-    elements => Map.from(build(elements, sci.Map.newBuilder[key2, value2]))
+    elements =>
+      Map.build[key2, value2] { map => elements.each(pair => map(pair(0)) = pair(1)) }
 
   // A `Ledger` rebuilt from pairs remains a `Ledger`, and legitimately `Stable`: insertion
   // order is its identity, so it carries the whole order-sensitive surface (`sort`, `distinct`,

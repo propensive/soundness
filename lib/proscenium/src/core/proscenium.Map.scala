@@ -48,14 +48,29 @@ object Map extends scala.caps.Pure:
   private[proscenium] def of[key, value](map: sci.Map[key, value]): Map[key, value] =
     map.asInstanceOf[Map[key, value]]
 
-  def apply[key, value](pairs: (key, value)*): Map[key, value] = of(sci.Map(pairs*))
+  // A literal is filled in place like any other map made all at once: five entries or more
+  // are a flat hash table, fewer the standard library's small maps in the order written.
+  def apply[key, value](pairs: (key, value)*): Map[key, value] = filled(pairs)
   def empty[key, value]: Map[key, value] = of(sci.Map.empty[key, value])
 
-  // The standard library's `from` hands back only its own maps unchanged, and would copy a
-  // built one into a tree, so a table is recognised here first.
+  // What is already a map is handed back as it is: a built one recognised here first, since
+  // the standard library's `from` passes only its own maps through and would copy a table into
+  // a tree. Anything else is filled in place.
   def from[key, value](pairs: IterableOnce[(key, value)]^): Map[key, value] =
     if pairs.isInstanceOf[FlatMap[?, ?]] then of(pairs.asInstanceOf[FlatMap[key, value]])
-    else of(sci.Map.from(pairs))
+    else if pairs.isInstanceOf[sci.Map[?, ?]] then of(sci.Map.from(pairs))
+    else filled(pairs)
+
+  private def filled[key, value](pairs: IterableOnce[(key, value)]^): Map[key, value] =
+    val builder: Builder[key, value]^ = new Builder[key, value]()
+    val iterator = pairs.iterator
+
+    // Terminated by the source's own state.
+    while iterator.hasNext do
+      val pair = iterator.next()
+      builder(pair._1) = pair._2
+
+    of(builder.result())
 
   // Allocate → mutate → freeze, for a map: the block is lent an exclusive `Builder` to fill in
   // place, and what it has filled comes back as an ordinary immutable `Map` without being
@@ -220,8 +235,17 @@ object Map extends scala.caps.Pure:
     left ++ right
 
   // `map` transforms the *values*, keys structural — the shape `Mappable` gives a `Map`.
+  // Filled in place: the result is a new map made all at once, of the same size as its source.
   def map[key, value, value2](map: Map[key, value], lambda: value => value2): Map[key, value2] =
-    map.view.mapValues(lambda).toMap
+    val builder: Builder[key, value2]^ = new Builder[key, value2]()
+    val iterator = map.iterator
+
+    // Terminated by the source's own state.
+    while iterator.hasNext do
+      val pair = iterator.next()
+      builder(pair._1) = lambda(pair._2)
+
+    of(builder.result())
 
   def iterator[key, value](map: Map[key, value]): Iterator[(key, value)] = map.iterator
 

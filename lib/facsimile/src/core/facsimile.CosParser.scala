@@ -196,22 +196,21 @@ extends scala.caps.Mutable:
     Cos.Sequence(elements.result().to(List))
 
   private update def dictionary()(using Tactic[Pdf.Error]): Cos =
-    val entries = scala.collection.immutable.Map.newBuilder[Text, Cos]
+    val entries = Map.build[Text, Cos]: entries =>
+      while
+        advance() match
+          case CosToken.DictEnd =>
+            false
 
-    while
-      advance() match
-        case CosToken.DictEnd =>
-          false
+          case CosToken.Name(key) =>
+            entries(key) = value()
+            true
 
-        case CosToken.Name(key) =>
-          entries += key -> value()
-          true
+          case CosToken.End =>
+            abort(Pdf.Error(Pdf.Error.Reason.Truncated))
 
-        case CosToken.End =>
-          abort(Pdf.Error(Pdf.Error.Reason.Truncated))
+          case token =>
+            abort(Pdf.Error(Pdf.Error.Reason.Unparseable(offset, t"a name key")))
+      do ()
 
-        case token =>
-          abort(Pdf.Error(Pdf.Error.Reason.Unparseable(offset, t"a name key")))
-    do ()
-
-    Cos.Dictionary(entries.result().to(Map))
+    Cos.Dictionary(entries)

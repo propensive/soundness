@@ -234,10 +234,11 @@ object StackTrace:
 
   // Each glyph `rewrite` produces, with what it means; a number following a glyph is the
   // compiler's own numbering, in subscript, and `⁅…⁆` brackets a package file's name.
-  val legend: Map[Text, Text] =
-    Marker.all.fold(Map[Text, Text]()): (map, marker) =>
-      if map.at(marker.glyph).present then map else map.define(marker.glyph, marker.meaning)
-    . define("⁅⁆".tt, "package file".tt)
+  val legend: Map[Text, Text] = Map.build[Text, Text]: legend =>
+    Marker.all.each: marker =>
+      if !legend.defines(marker.glyph) then legend(marker.glyph) = marker.meaning
+
+    legend("⁅⁆".tt) = "package file".tt
 
   def rewrite(name: String, method: Boolean = false): Text =
     val buffer: StringBuilder = StringBuilder()

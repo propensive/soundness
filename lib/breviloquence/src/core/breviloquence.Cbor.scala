@@ -187,19 +187,18 @@ trait Cbor2:
                   infer[Tactic[Cbor.Error]] )
 
     // The map's entries by text key — a plain method, NOT part of the inline expansion, which is
-    // repeated at every summon site of every derived type. Built immutably: the per-field lambda
-    // is polymorphic and must be pure, so it may only close over pure values — a mutable map
-    // would be a capability.
+    // repeated at every summon site of every derived type. Filled in place, and immutable once
+    // filled: the per-field lambda is polymorphic and must be pure, so it may only close over
+    // pure values — a map still being written would be a capability, and `Map.build` hands
+    // back one that is not.
     private def entries(root: Cbor.Ast, count: Int)(using Tactic[Cbor.Error]): Map[String, Ast] =
-      val builder = scala.collection.immutable.Map.newBuilder[String, Ast]
-      var index = 0
+      Map.build[String, Ast]: entries =>
+        var index = 0
 
-      while index < count do
-        val key = root.key(index)
-        if key.isTextString then builder += key.string -> root.value(index)
-        index += 1
-
-      builder.result().to(Map)
+        while index < count do
+          val key = root.key(index)
+          if key.isTextString then entries(key.string) = root.value(index)
+          index += 1
 
     private inline def decodeRecord[derivation <: Product]
       ( cbor: Cbor, renames: Map[Text, Text] )
@@ -1274,19 +1273,18 @@ object Cbor extends Cbor1, Dynamic:
     value =>
       val root = value.root
       val count = if root.isMap then root.entries else 0
-      var index = 0
-      var map = Map.empty[key, element]
 
-      while index < count do
-        val key = root.key(index)
+      Map.build[key, element]: entries =>
+        var index = 0
 
-        if key.isTextString
-        then map = map.define(key.string.tt.as, decodable.decoded(ast(root.value(index))))
-        else abort(Cbor.Error(Reason.NonStringKey))
+        while index < count do
+          val key = root.key(index)
 
-        index += 1
+          if key.isTextString
+          then entries(key.string.tt.as) = decodable.decoded(ast(root.value(index)))
+          else abort(Cbor.Error(Reason.NonStringKey))
 
-      map
+          index += 1
 
   given mapEncodable: [key: Encodable in Text, element]
   =>  ( encodable: element is Encodable in Cbor )

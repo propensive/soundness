@@ -1210,15 +1210,14 @@ object Json extends Json1, Dynamic:
           def shape(): Morphology = Morphology.Dict(Morphology.Str, field.shape())
 
           def parse(reader: Json.Reader^): Map[key, element] =
-            var entries = Map.empty[key, element]
             reader.openObject()
-            var name: String | Null = reader.keyName()
 
-            while name != null do
-              entries = entries.define(name.nn.tt.as[key], field.parse(reader))
-              name = reader.keyName()
+            Map.build[key, element]: entries =>
+              var name: String | Null = reader.keyName()
 
-            entries
+              while name != null do
+                entries(name.nn.tt.as[key]) = field.parse(reader)
+                name = reader.keyName()
 
     // Support points for staged parsers, which are generated into user
     // modules and so may only reference public members.
@@ -3105,18 +3104,13 @@ object Json extends Json1, Dynamic:
       Json.Decodable(shape()): value =>
         val root = value.root
         val n = root.objectSize
-        var i = 0
-        var acc = Map.empty[key, element]
 
-        while i < n do
-          acc =
-            acc.define
-              ( root.objectKey(i).tt.as,
-                decodable.decoded(Json.ast(root.objectValue(i))) )
+        Map.build[key, element]: entries =>
+          var i = 0
 
-          i += 1
-
-        acc
+          while i < n do
+            entries(root.objectKey(i).tt.as) = decodable.decoded(Json.ast(root.objectValue(i)))
+            i += 1
 
   given mapEncodable: [key: anticipation.Encodable in Text, element]
   =>  ( encodable: element is Json.Encodable )
@@ -3649,14 +3643,15 @@ extends Dynamic, Topical, Original derives CanEqual:
 
         if ast.isObject then
           val n = ast.objectSize
-          var acc = Map.empty[String, Int]
-          var i = 0
 
-          while i < n do
-            acc = acc.define(ast.objectKey(i), recur(ast.objectValue(i)))
-            i += 1
+          val hashes = Map.build[String, Int]: entries =>
+            var i = 0
 
-          acc.##
+            while i < n do
+              entries(ast.objectKey(i)) = recur(ast.objectValue(i))
+              i += 1
+
+          hashes.##
         else
           val n = ast.arrayLength
           var acc = n.##
@@ -3695,19 +3690,19 @@ extends Dynamic, Topical, Original derives CanEqual:
 
         if rn != ln then false
         else
-          var leftMap = Map.empty[String, Json.Ast]
-          var i = 0
+          val leftMap = Map.build[String, Json.Ast]: entries =>
+            var i = 0
 
-          while i < ln do
-            leftMap = leftMap.define(leftAst.objectKey(i), leftAst.objectValue(i))
-            i += 1
+            while i < ln do
+              entries(leftAst.objectKey(i)) = leftAst.objectValue(i)
+              i += 1
 
-          var rightMap = Map.empty[String, Json.Ast]
-          i = 0
+          val rightMap = Map.build[String, Json.Ast]: entries =>
+            var i = 0
 
-          while i < rn do
-            rightMap = rightMap.define(rightAst.objectKey(i), rightAst.objectValue(i))
-            i += 1
+            while i < rn do
+              entries(rightAst.objectKey(i)) = rightAst.objectValue(i)
+              i += 1
 
           leftMap.size == rightMap.size && leftMap.all: (key, leftValue) =>
             rightMap(key).lay(false)(recur(leftValue, _))

@@ -105,53 +105,55 @@ private[facsimile] object Xref:
   // members. The trailer is the last `trailer` dictionary if any, else synthesized by finding
   // the catalog among the recovered objects.
   private[facsimile] def rebuild(source: ByteSource)(using Tactic[Pdf.Error]): Xref =
-    var entries = Map[Int, Entry]()
     val objectStreams = scala.collection.immutable.List.newBuilder[Int]
     val size = source.size
     val chunkSize = 65536
     val overlap = 32 // long enough to hold "NNNNNN GGGGG obj" split across a chunk boundary
-    var base = 0L
 
-    while base < size do
-      val length = (size - base).min((chunkSize + overlap).toLong).toInt
-      val chunk = source.read(base, length)
-      val limit = if base + length >= size then chunk.length else chunk.length - overlap
-      var i = 0
+    val direct = Map.build[Int, Entry]: entries =>
+      var base = 0L
 
-      while i < limit do
-        // A candidate object header is `<digits> <digits> obj` at a token boundary.
-        if matches(chunk, i, t"obj") &&
-          (i + 3 >= chunk.length || !CosLexer.regular(chunk.readUnchecked(i + 3) & 0xff)) &&
-          (i == 0 || CosLexer.whitespace(chunk.readUnchecked(i - 1) & 0xff))
-        then
-          objectHeader(chunk, i).let: (number, generation, start) =>
-            val offset = base + start
-            entries = entries.define(number, Entry.Direct(offset, generation))
+      while base < size do
+        val length = (size - base).min((chunkSize + overlap).toLong).toInt
+        val chunk = source.read(base, length)
+        val limit = if base + length >= size then chunk.length else chunk.length - overlap
+        var i = 0
 
-        i += 1
+        while i < limit do
+          // A candidate object header is `<digits> <digits> obj` at a token boundary.
+          if matches(chunk, i, t"obj") &&
+            (i + 3 >= chunk.length || !CosLexer.regular(chunk.readUnchecked(i + 3) & 0xff)) &&
+            (i == 0 || CosLexer.whitespace(chunk.readUnchecked(i - 1) & 0xff))
+          then
+            objectHeader(chunk, i).let: (number, generation, start) =>
+              val offset = base + start
+              entries(number) = Entry.Direct(offset, generation)
 
-      base += (if limit == chunk.length then chunk.length else limit).toLong
+          i += 1
+
+        base += (if limit == chunk.length then chunk.length else limit).toLong
 
     // Expand object streams: each `/Type /ObjStm` object's members become compressed entries,
     // unless a direct copy of that member was already recovered (a later direct object wins).
-    val direct = entries
+    val entries = Map.build[Int, Entry]: entries =>
+      direct.each { (number, entry) => entries(number) = entry }
 
-    direct.each: (container, entry) =>
-      entry match
-        case Entry.Direct(offset, _) =>
-          safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (_, _, content) =>
-            content match
-              case body @ Cos.Body(dictionary, _)
-              if dictionary(t"Type").let(_.name) == t"ObjStm" =>
-                objStmMembers(source, body).each: number =>
-                  if !direct.defines(number)
-                  then entries = entries.define(number, Entry.Compressed(container, 0))
+      direct.each: (container, entry) =>
+        entry match
+          case Entry.Direct(offset, _) =>
+            safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (_, _, content) =>
+              content match
+                case body @ Cos.Body(dictionary, _)
+                if dictionary(t"Type").let(_.name) == t"ObjStm" =>
+                  objStmMembers(source, body).each: number =>
+                    if !direct.defines(number)
+                    then entries(number) = Entry.Compressed(container, 0)
 
-              case _ =>
-                ()
+                case _ =>
+                  ()
 
-        case _ =>
-          ()
+          case _ =>
+            ()
 
     Xref(entries, recoverTrailer(source, entries))
 
@@ -286,41 +288,43 @@ private[facsimile] object Xref:
   ( using Tactic[Pdf.Error] )
   :   (Map[Int, Entry], Map[Text, Cos]) =
 
-    var entries = Map[Int, Entry]()
+    var trailer: Map[Text, Cos] = Map()
 
-    // The lexer is passed rather than captured: a local def's capture of it reads back
-    // read-only, and each step advances it.
-    def subsections(lexer: CosLexer^): Map[Text, Cos] = lexer.next() match
-      case CosToken.Integral(first) =>
-        val count = lexer.next() match
-          case CosToken.Integral(count) => count.toInt
-          case _                        => abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
+    val entries = Map.build[Int, Entry]: entries =>
+      // The lexer is passed rather than captured: a local def's capture of it reads back
+      // read-only, and each step advances it.
+      def subsections(lexer: CosLexer^): Map[Text, Cos] = lexer.next() match
+        case CosToken.Integral(first) =>
+          val count = lexer.next() match
+            case CosToken.Integral(count) => count.toInt
+            case _                        => abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
-        for index <- 0 until count do
-          val entry = (lexer.next(), lexer.next(), lexer.next()) match
-            case (CosToken.Integral(position), CosToken.Integral(generation),
-                  CosToken.Keyword(kind)) =>
-              kind.s match
-                case "n" => Entry.Direct(position, generation.toInt)
-                case "f" => Entry.Free
-                case _   => abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
+          for index <- 0 until count do
+            val entry = (lexer.next(), lexer.next(), lexer.next()) match
+              case (CosToken.Integral(position), CosToken.Integral(generation),
+                    CosToken.Keyword(kind)) =>
+                kind.s match
+                  case "n" => Entry.Direct(position, generation.toInt)
+                  case "f" => Entry.Free
+                  case _   => abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
-            case _ =>
-              abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
+              case _ =>
+                abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
-          entries = entries.define(first.toInt + index, entry)
+            entries(first.toInt + index) = entry
 
-        subsections(lexer)
+          subsections(lexer)
 
-      case CosToken.Keyword(word) if word.s == "trailer" =>
-        CosParser(lexer).value() match
-          case Cos.Dictionary(trailer) => trailer
-          case _                       => abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
+        case CosToken.Keyword(word) if word.s == "trailer" =>
+          CosParser(lexer).value() match
+            case Cos.Dictionary(trailer) => trailer
+            case _                       => abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
-      case _ =>
-        abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
+        case _ =>
+          abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
-    val trailer = subsections(lexer)
+      trailer = subsections(lexer)
+
     (entries, trailer)
 
   // A cross-reference stream (ISO 32000-2 §7.5.8): the stream dictionary is the trailer, and
@@ -368,27 +372,27 @@ private[facsimile] object Xref:
                 case _                  => abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
         val rowLength = widths.total
-        var entries = Map[Int, Entry]()
-        var position = 0
+        val entries = Map.build[Int, Entry]: entries =>
+          var position = 0
 
-        for (first, count) <- ranges do
-          for index <- 0L until count do
-            if position + rowLength > data.length
-            then abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
+          for (first, count) <- ranges do
+            for index <- 0L until count do
+              if position + rowLength > data.length
+              then abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
-            // A zero-width first field defaults to type 1; other absent fields default to 0.
-            val kind = if width0 == 0 then 1L else field(data, position, width0)
-            val second = field(data, position + width0, width1)
-            val third = field(data, position + width0 + width1, width2)
-            position += rowLength
+              // A zero-width first field defaults to type 1; other absent fields default to 0.
+              val kind = if width0 == 0 then 1L else field(data, position, width0)
+              val second = field(data, position + width0, width1)
+              val third = field(data, position + width0 + width1, width2)
+              position += rowLength
 
-            val entry = kind match
-              case 0L => Entry.Free
-              case 1L => Entry.Direct(second, third.toInt)
-              case 2L => Entry.Compressed(second.toInt, third.toInt)
-              case _  => Entry.Free // unknown types are reserved and must be treated as free
+              val entry = kind match
+                case 0L => Entry.Free
+                case 1L => Entry.Direct(second, third.toInt)
+                case 2L => Entry.Compressed(second.toInt, third.toInt)
+                case _  => Entry.Free // unknown types are reserved and must be treated as free
 
-            entries = entries.define((first + index).toInt, entry)
+              entries((first + index).toInt) = entry
 
         (entries, dictionary)
 
