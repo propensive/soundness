@@ -61,9 +61,8 @@ object Nodal:
     def has(self: map, node: node): Boolean = Map.defines(self, node)
 
     def successors(self: map, node: node): Iterator[node]^ =
-      Map.read(self, node) match
-        case Some(targets) => Iterator.from(Set.iterator(targets))
-        case None          => Iterator.empty
+      val targets = Map.read(self, node)
+      if targets == null then Iterator.empty else Iterator.from(Set.iterator(targets))
 
   given ledger: [node, ledger <: Ledger[node, Set[node]]] => (ledger is Nodal by node) = new Nodal:
     type Self = ledger
@@ -72,9 +71,8 @@ object Nodal:
     def has(self: ledger, node: node): Boolean = Ledger.defines(self, node)
 
     def successors(self: ledger, node: node): Iterator[node]^ =
-      Ledger.read(self, node) match
-        case Some(targets) => Iterator.from(Set.iterator(targets))
-        case None          => Iterator.empty
+      val targets = Ledger.read(self, node)
+      if targets == null then Iterator.empty else Iterator.from(Set.iterator(targets))
 
 trait Nodal extends Typeclass.Pure, Operable:
   def nodes(self: Self): Iterator[Operand]^

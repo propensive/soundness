@@ -94,7 +94,8 @@ object Ledger:
   def nil[key, value](ledger: Ledger[key, value]): Boolean = ledger.isEmpty
   def defines[key, value](ledger: Ledger[key, value], index: key): Boolean = ledger.contains(index)
   def at[key, value](ledger: Ledger[key, value], index: key): value = ledger(index)
-  def read[key, value](ledger: Ledger[key, value], index: key): Option[value] = ledger.get(index)
+  def read[key, value](ledger: Ledger[key, value], index: key): value | Null =
+    ledger.getOrElse[value | Null](index, null)
 
   def define[key, value](ledger: Ledger[key, value], index: key, value0: value)
   :   Ledger[key, value] =

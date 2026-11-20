@@ -205,13 +205,14 @@ object Map extends scala.caps.Pure:
 
   // The primitive operations, for the typeclass instances defined in the libraries above;
   // see `List` for the rationale. Within this file the opaque alias is transparent. `read`
-  // mirrors the stdlib's `Option`-returning `get`: the ergonomic `Optional` form is layered
-  // above, in `vacuous`-aware libraries.
+  // gives `null` for a key that is not defined, with no `Option` made: the ergonomic
+  // `Optional` form is layered above, in `vacuous`-aware libraries.
   def size[key, value](map: Map[key, value]): Int = map.size
   def nil[key, value](map: Map[key, value]): Boolean = map.isEmpty
   def defines[key, value](map: Map[key, value], index: key): Boolean = map.contains(index)
   def at[key, value](map: Map[key, value], index: key): value = map(index)
-  def read[key, value](map: Map[key, value], index: key): Option[value] = map.get(index)
+  def read[key, value](map: Map[key, value], index: key): value | Null =
+    map.getOrElse[value | Null](index, null)
 
   // The checked read in one probe: the value for `index`, or `absent`, with no `Option` made
   // and the key hashed once, where `defines` followed by `at` hashes it twice. The by-name
