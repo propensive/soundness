@@ -1,0 +1,1989 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base mandible
++ base mandible
+
+- import soundness
++ import soundness
+
+- info   JVM class files as values: methods, bytecode with simulated stacks, declaration surfaces and supertype closures
++ info
++     les fichiers de classe JVM en valeurs : méthodes, bytecode à piles simulées, surfaces de
++     déclaration et fermetures des supertypes
+
+- detail
+-     _Mandible_ reads JVM class files — the `.class` output of `scalac` or `javac` — into
+-     immutable, typed values, so that a program can inspect what the compiler and the optimizer
+-     actually produced rather than assume it. It reads the files through the JDK's own
+-     `java.lang.classfile` API and presents three views of a class, each a value:
++ detail
++     _Mandible_ lit les fichiers de classe JVM — la sortie `.class` de `scalac` ou de `javac` — en
++     valeurs immuables et typées, pour qu'un programme puisse inspecter ce que le compilateur et
++     l'optimiseur ont réellement produit plutôt que de le présumer. Il lit les fichiers par l'API
++     `java.lang.classfile` propre au JDK et présente trois vues d'une classe, chacune une valeur :
+
+-     - `Classfile` is the **bytecode** view: the methods of a class, each with its `Bytecode`,
+-       a list of `Bytecode.Instruction`s decoded to a typed `Bytecode.Opcode`, carrying the
+-       source line it came from and a simulation of the operand stack after it runs. It
+-       renders as a coloured table at a terminal, and `disassemble` compiles a quoted block
+-       and reads its bytecode straight back.
+-     - `ClassSurface` is the **declaration** view: the names, descriptors, access flags,
+-       supertypes and generic signatures a compiled consumer links against, and nothing that
+-       can legitimately differ between two builds of the same source.
+-     - `ClasspathIndex` resolves JVM internal class names to their `ClassSurface`s over a set
+-       of classes held in memory plus a classpath, and walks a class's supertype closure.
++     - `Classfile` est la vue **bytecode** : les méthodes d'une classe, chacune avec son
++       `Bytecode`, une liste de `Bytecode.Instruction` décodées en un `Bytecode.Opcode` typé,
++       portant la ligne source dont elle provient et une simulation de la pile d'opérandes après
++       son exécution. Elle se rend sous forme de tableau coloré dans un terminal, et
++       `disassemble` compile un bloc quoté et en relit aussitôt le bytecode.
++     - `ClassSurface` est la vue **déclaration** : les noms, descripteurs, indicateurs d'accès,
++       supertypes et signatures génériques auxquels se lie un consommateur compilé, et rien de ce
++       qui peut légitimement différer entre deux builds du même code source.
++     - `ClasspathIndex` résout les noms internes de classes JVM en leurs `ClassSurface` sur un
++       ensemble de classes tenues en mémoire plus un classpath, et parcourt la fermeture des
++       supertypes d'une classe.
+
+=       of classes held in memory plus a classpath, and walks a class's supertype closure.
+=
+-     ```scala
++     ```scala
+
+=       of classes held in memory plus a classpath, and walks a class's supertype closure.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import classloaders.threadContextClassloader
++     import classloaders.threadContextClassloader
+
+-     val classfile: Optional[Classfile] = Classfile[StackTrace]
++     val classfile: Optional[Classfile] = Classfile[StackTrace]
+
+-     val bytecode: Optional[Bytecode] =
++     val bytecode: Optional[Bytecode] =
+
+-       classfile.let(_.methods.seek(_.name == t"rewrite")).let(_.bytecode)
++       classfile.let(_.methods.seek(_.name == t"rewrite")).let(_.bytecode)
+
+-     bytecode.let(_.instructions.map(_.opcode.show))
++     bytecode.let(_.instructions.map(_.opcode.show))
+
+=     bytecode.let(_.instructions.map(_.opcode.show))
+-     ```
++     ```
+
+-     A class file is found through the `Classloader` given in scope, chosen by name from the
+-     `classloaders` package (`import soundness.*` imports no givens), or read from any stream
+-     of bytes with `read[Classfile]`. The library has a single source set, `mandible.core`,
+-     which is JVM-only: it depends on `java.lang.classfile`, on the staging compiler for
+-     `disassemble` and on the JVM classpath. Everything is exported to the `soundness`
+-     umbrella.
++     Un fichier de classe se trouve par le given `Classloader` dans la portée, choisi par son nom
++     dans le package `classloaders` (`import soundness.*` n'importe aucun given), ou se lit à
++     partir de n'importe quel flux d'octets avec `read[Classfile]`. La bibliothèque a un seul
++     ensemble de sources, `mandible.core`, réservé à la JVM : il dépend de `java.lang.classfile`,
++     du compilateur de mise en étapes pour `disassemble` et du classpath de la JVM. Tout est
++     exporté vers le package parapluie `soundness`.
+
+-     Rendering `Bytecode` to a terminal needs a `BytecodePalette` in scope, a `Palette` naming
+-     the colours for source references, source lines and the stack outline; no default
+-     palette is provided, so a program defines its own.
++     Rendre du `Bytecode` dans un terminal requiert une `BytecodePalette` dans la portée, une
++     `Palette` nommant les couleurs des références au code source, des lignes source et du
++     contour de la pile ; aucune palette par défaut n'est fournie ; un programme définit donc la
++     sienne.
+
+- refer mandible.Classfile
++ refer mandible.Classfile
+
+- refer mandible.Bytecode
++ refer mandible.Bytecode
+
+- refer mandible.ClassSurface
++ refer mandible.ClassSurface
+
+- refer mandible.disassemble
++ refer mandible.disassemble
+
+- entry .Classfile   a parsed JVM class file: its methods, their bytecode and its source attributes
++ entry .Classfile
++   info
++       un fichier de classe JVM analysé : ses méthodes, leur bytecode et ses attributs de source
+
+-   detail
+-       A `Classfile` wraps the bytes of one `.class` file, parsed on first use through the
+-       JDK's `java.lang.classfile` API. It is found on the classpath by name or by type, through
+-       the `Classloader` given in scope, or read from any source of bytes — a file, a resource,
+-       a stream — with `read[Classfile]`, since it is `Aggregable by Data`.
++   detail
++       Un `Classfile` enveloppe les octets d'un fichier `.class`, analysés à la première
++       utilisation par l'API `java.lang.classfile` du JDK. Il se trouve dans le classpath par son
++       nom ou par son type, par le given `Classloader` dans la portée, ou se lit à partir de
++       n'importe quelle source d'octets — un fichier, une ressource, un flux — avec
++       `read[Classfile]`, puisqu'il est `Aggregable by Data`.
+
+=       a stream — with `read[Classfile]`, since it is `Aggregable by Data`.
+=
+-       ```scala
++       ```scala
+
+=       a stream — with `read[Classfile]`, since it is `Aggregable by Data`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       a stream — with `read[Classfile]`, since it is `Aggregable by Data`.
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+-       Classfile[StackTrace].let(_.methods.map(_.name))
++       Classfile[StackTrace].let(_.methods.map(_.name))
+
+-       Classfile(t"scala/Option.class").let(_.sourceFile)
++       Classfile(t"scala/Option.class").let(_.sourceFile)
+
+=       Classfile(t"scala/Option.class").let(_.sourceFile)
+-       ```
++       ```
+
+-       Its members are the parts a disassembler and a stack-trace resolver need: `#methods`,
+-       each a `Classfile.Method` whose `bytecode` is decoded on request; `#sourceFile`, the
+-       `SourceFile` attribute; and `#sourceDebugExtension`, the JSR-45 SMAP which maps the
+-       synthetic line numbers of inlined code back to where it was written. The declaration
+-       surface of a class — fields, flags, supertypes, signatures — is the separate
+-       `ClassSurface` view.
++       Ses membres sont les parties dont ont besoin un désassembleur et un résolveur de traces
++       de pile : `#methods`, chacune une `Classfile.Method` dont le `bytecode` est décodé à la
++       demande ; `#sourceFile`, l'attribut `SourceFile` ; et `#sourceDebugExtension`, la SMAP
++       JSR-45 qui fait correspondre les numéros de ligne synthétiques du code inliné à l'endroit où
++       il a été écrit. La surface de déclaration d'une classe — champs, indicateurs, supertypes,
++       signatures — est la vue distincte `ClassSurface`.
+
+-       A `Classfile` holds no capability: its bytes are copied in at construction, so the
+-       value may be kept, shared and passed freely.
++       Un `Classfile` ne détient aucune capacité : ses octets sont copiés à la construction ; la
++       valeur peut donc être conservée, partagée et transmise librement.
+
+=       value may be kept, shared and passed freely.
+-   refer mandible.Bytecode
++   refer mandible.Bytecode
+
+=   refer mandible.Bytecode
+-   refer mandible.ClassSurface
++   refer mandible.ClassSurface
+
+=   refer mandible.ClassSurface
+-   refer mandible.disassemble
++   refer mandible.disassemble
+
+-   entry .Error   raised when a class file cannot be read
++   entry .Error
++     info
++         levée lorsqu'un fichier de classe ne peut être lu
+
+-       Error `↯/s.88.2`: _there was an error reading the classfile_. Declared for readers of class
+-       files to raise; the `Classfile` constructor itself defers parsing until a member is
+-       first used, and `Classfile.apply` gives `Unset` for a class the classloader does not
+-       have rather than raising.
++     detail
++         Erreur `↯/s.88.2` : _there was an error reading the classfile_. Déclarée pour que les
++         lecteurs de fichiers de classe la lèvent ; le constructeur de `Classfile` lui-même diffère
++         l'analyse jusqu'à la première utilisation d'un membre, et `Classfile.apply` donne `Unset`
++         pour une classe que le chargeur de classes n'a pas plutôt que de lever une erreur.
+
+-   entry .aggregable   reads a `Classfile` from any stream of bytes, as `read[Classfile]`
++   entry .aggregable
++     info
++         lit un `Classfile` à partir de n'importe quel flux d'octets, par `read[Classfile]`
+
+-       The `Aggregable by Data` given which lets a file, a classpath resource or any other
+-       `Readable` source be read as a class file: the whole stream is collected into one `Data`
+-       and wrapped. The bytes are not parsed until a member of the result is used.
++     detail
++         Le given `Aggregable by Data` qui permet de lire comme fichier de classe un fichier, une
++         ressource du classpath ou toute autre source `Readable` : tout le flux est rassemblé en un
++         seul `Data` et enveloppé. Les octets ne sont analysés qu'à l'utilisation d'un membre du
++         résultat.
+
+=       and wrapped. The bytes are not parsed until a member of the result is used.
+=
+-       ```scala
++         ```scala
+
+=       and wrapped. The bytes are not parsed until a member of the result is used.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+=       and wrapped. The bytes are not parsed until a member of the result is used.
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++         import classloaders.threadContextClassloader
+
+=       and wrapped. The bytes are not parsed until a member of the result is used.
+=
+=       ```scala
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-       val classfile: Classfile = cp"/scala/Option.class".read[Classfile]
++         val classfile: Classfile = cp"/scala/Option.class".read[Classfile]
+
+=       val classfile: Classfile = cp"/scala/Option.class".read[Classfile]
+-       ```
++         ```
+
+-   entry .apply   the class file of a resource name, or of a type, through the `Classloader` in scope
++   entry .apply
++     info
++         le fichier de classe d'un nom de ressource, ou d'un type, par le `Classloader` dans la
++         portée
+
+-       `Classfile(name)` reads the classpath resource at `name` — a JVM internal name with its
+-       extension, `scala/Option.class` — through the `Classloader` given in scope, and
+-       `Classfile[T]` finds the class of `T` by its `ClassTag` and reads the resource its
+-       binary name denotes, so a nested class resolves to `Outer$Nested.class`. Both give
+-       `Unset` when the classloader has no such resource.
++     detail
++         `Classfile(name)` lit la ressource du classpath située à `name` — un nom interne JVM avec
++         son extension, `scala/Option.class` — par le given `Classloader` dans la portée, et
++         `Classfile[T]` trouve la classe de `T` par son `ClassTag` et lit la ressource que désigne
++         son nom binaire ; une classe imbriquée se résout donc en `Outer$Nested.class`. Tous deux
++         donnent `Unset` lorsque le chargeur de classes n'a pas une telle ressource.
+
+=       `Unset` when the classloader has no such resource.
+=
+-       ```scala
++         ```scala
+
+=       `Unset` when the classloader has no such resource.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+=       `Unset` when the classloader has no such resource.
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++         import classloaders.threadContextClassloader
+
+-       Classfile[StackTrace].let(_.methods.size)
++         Classfile[StackTrace].let(_.methods.size)
+
+-       Classfile(t"scala/Option.class").let(_.methods.size)
++         Classfile(t"scala/Option.class").let(_.methods.size)
+
+=       Classfile(t"scala/Option.class").let(_.methods.size)
+-       ```
++         ```
+
+-       The type form takes a `ClassTag`, so it works for a class or an object's type, but not
+-       for an unapplied type constructor; `Classloader[T]` in hellenism is the companion
+-       operation for finding the classloader itself.
++         La forme par type prend un `ClassTag` ; elle fonctionne donc pour le type d'une classe ou
++         d'un objet, mais pas pour un constructeur de type non appliqué ; `Classloader[T]` dans
++         hellenism est l'opération compagne pour trouver le chargeur de classes lui-même.
+
+-   entry #sourceFile   the `SourceFile` attribute: the name of the source the class was compiled from
++   entry #sourceFile
++     info
++         l'attribut `SourceFile` : le nom du fichier source à partir duquel la classe a été
++         compilée
+
+-       The file name alone, `Option.scala`, with no directory, as the compiler records it; or
+-       `Unset` when the class file carries no such attribute, as some generated classes do not.
+-       It is the file name a stack trace reports, and `Bytecode#sourceFile` carries it on to
+-       the rendered listing.
++     detail
++         Le nom de fichier seul, `Option.scala`, sans répertoire, tel que l'enregistre le
++         compilateur ; ou `Unset` lorsque le fichier de classe ne porte pas cet attribut, ce qui
++         est le cas de certaines classes générées. C'est le nom de fichier que signale une pile
++         d'appels, et `Bytecode#sourceFile` le transmet au listing rendu.
+
+-   entry #sourceDebugExtension   the JSR-45 `SourceDebugExtension` attribute, as text, if present
++   entry #sourceDebugExtension
++     info
++         l'attribut JSR-45 `SourceDebugExtension`, sous forme de texte, s'il est présent
+
+-       The body of the attribute is an SMAP, a source map which translates the synthetic line
+-       numbers the compiler allocates to inlined code back to the file and line they were
+-       written at, level by level. It is `Unset` for a class with no inlining. A stack-trace
+-       resolver reads it to give an inlined frame its real call-site line; `Smap.parse` in
+-       digression decodes the text.
++     detail
++         Le corps de l'attribut est une SMAP, une table de correspondance de sources qui ramène les
++         numéros de ligne synthétiques que le compilateur attribue au code inliné au fichier et à
++         la ligne où il a été écrit, niveau par niveau. Elle vaut `Unset` pour une classe sans
++         inlining. Un résolveur de piles d'appels la lit pour donner à une trame inlinée sa
++         véritable ligne d'appel ; `Smap.parse` dans digression décode le texte.
+
+-   entry #methods   the methods of the class, in class-file order, each a `Classfile.Method`
++   entry #methods
++     info
++         les méthodes de la classe, dans l'ordre du fichier de classe, chacune une
++         `Classfile.Method`
+
+-       Constructors appear as `<init>`, a static initializer as `<clinit>`, and the compiler's
+-       synthetic methods — lambda bodies, bridges, default getters — under their compiled
+-       names. The list is computed once, on first use, and parsing happens then.
++     detail
++         Les constructeurs apparaissent sous `<init>`, un initialiseur statique sous `<clinit>`, et
++         les méthodes synthétiques du compilateur — corps de lambdas, ponts, accesseurs de valeurs
++         par défaut — sous leurs noms compilés. La liste est calculée une fois, à la première
++         utilisation, et c'est alors qu'a lieu l'analyse.
+
+-   entry #Method   one method of a class file, with its name and its decoded bytecode
++   entry #Method
++     info
++         une méthode d'un fichier de classe, avec son nom et son bytecode décodé
+
+-     detail
+-         A `Classfile.Method` is created by `Classfile#methods` and is not constructed directly.
+-         Its `#name` is the method's compiled name, and `#bytecode` decodes its `Code`
+-         attribute into a `Bytecode` value: every instruction with its offset, the source line
+-         it belongs to, and the operand stack as simulated from the method's stack-map frames.
++     detail
++         Une `Classfile.Method` est créée par `Classfile#methods` et ne se construit pas
++         directement. Son `#name` est le nom compilé de la méthode, et `#bytecode` décode son
++         attribut `Code` en une valeur `Bytecode` : chaque instruction avec son décalage, la ligne
++         source à laquelle elle appartient, et la pile d'opérandes telle que simulée à partir des
++         trames de la stack map de la méthode.
+
+=         it belongs to, and the operand stack as simulated from the method's stack-map frames.
+=
+-         ```scala
++         ```scala
+
+=         it belongs to, and the operand stack as simulated from the method's stack-map frames.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         import classloaders.threadContextClassloader
++         import classloaders.threadContextClassloader
+
+-         Classfile[StackTrace].let(_.methods.seek(_.name == t"rewrite")).let(_.bytecode)
++         Classfile[StackTrace].let(_.methods.seek(_.name == t"rewrite")).let(_.bytecode)
+
+=         Classfile[StackTrace].let(_.methods.seek(_.name == t"rewrite")).let(_.bytecode)
+-         ```
++         ```
+
+-     entry #name   the method's name as the class file spells it
++     entry #name
++       info
++           le nom de la méthode tel que l'écrit le fichier de classe
+
+-         The compiled name, not the source name: a constructor is `<init>`, an operator such as
+-         `+` is `$plus`, and a lambda body is `$anonfun$…`. `StackTrace.rewrite` in digression
+-         turns such a name back toward its source spelling.
++       detail
++           Le nom compilé, non le nom dans le code source : un constructeur est `<init>`, un
++           opérateur comme `+` est `$plus`, et un corps de lambda est `$anonfun$…`.
++           `StackTrace.rewrite` dans digression ramène un tel nom vers son écriture dans le code
++           source.
+
+-     entry #bytecode   the method's `Code` attribute decoded to a `Bytecode`, or `Unset` for an abstract method
++     entry #bytecode
++       info
++           l'attribut `Code` de la méthode décodé en un `Bytecode`, ou `Unset` pour une méthode
++           abstraite
+
+-         Decodes every instruction of the method to a `Bytecode.Opcode`, resolving branch
+-         targets to byte offsets, and threads a simulation of the operand stack through them:
+-         the stack after each instruction is computed by `Bytecode.Opcode#transform`, and reset
+-         at every label from the method's `StackMapTable` frames, so the stack at a branch
+-         target is what the verifier records, not what the fall-through path left. Line
+-         numbers from the `LineNumberTable` are attached to the first instruction of each line.
+-         A method with no code — abstract or native — gives `Unset`.
++       detail
++           Décode chaque instruction de la méthode en un `Bytecode.Opcode`, en résolvant les cibles
++           de branchement en décalages en octets, et fait passer par elles une simulation de la
++           pile d'opérandes : la pile après chaque instruction est calculée par
++           `Bytecode.Opcode#transform`, et réinitialisée à chaque étiquette d'après les trames de
++           la `StackMapTable` de la méthode ; la pile à une cible de branchement est donc ce
++           qu'enregistre le vérificateur, et non ce qu'a laissé le chemin séquentiel. Les numéros
++           de ligne de la `LineNumberTable` sont attachés à la première instruction de chaque
++           ligne. Une méthode sans code — abstraite ou native — donne `Unset`.
+
+-         The result carries the class's `sourceFile`, and the method's declared `maxStack` and
+-         `maxLocals`.
++           Le résultat porte le `sourceFile` de la classe, et les `maxStack` et `maxLocals`
++           déclarés de la méthode.
+
+- entry .Bytecode   a method's instructions, each decoded, placed on its source line, with its simulated operand stack
++ entry .Bytecode
++   info
++       les instructions d'une méthode, chacune décodée, placée sur sa ligne source, avec sa pile
++       d'opérandes simulée
+
+-   detail
+-       A `Bytecode` is the decoded `Code` attribute of one method: its `#instructions`, each a
+-       `Bytecode.Instruction` pairing a typed `Bytecode.Opcode` with its byte `offset`, the
+-       source `line` it begins, and the operand `stack` — a list of `Bytecode.Frame`s — as it
+-       stands after the instruction runs; plus the method's declared `#maxStack` and
+-       `#maxLocals` and the class's `#sourceFile`. It is produced by `Classfile.Method#bytecode`
+-       from a class on the classpath, or by `disassemble` from a quoted block compiled on the
+-       spot, and may also be built by hand from `Instruction`s for analysis.
++   detail
++       Un `Bytecode` est l'attribut `Code` décodé d'une méthode : ses `#instructions`, chacune une
++       `Bytecode.Instruction` associant un `Bytecode.Opcode` typé à son `offset` en octets, la
++       `line` source qu'elle commence, et la `stack` d'opérandes — une liste de `Bytecode.Frame` —
++       telle qu'elle se trouve après l'exécution de l'instruction ; plus les `#maxStack` et
++       `#maxLocals` déclarés de la méthode et le `#sourceFile` de la classe. Il est produit par
++       `Classfile.Method#bytecode` à partir d'une classe du classpath, ou par `disassemble` à
++       partir d'un bloc quoté compilé sur-le-champ, et peut aussi être construit à la main à partir
++       d'`Instruction` pour l'analyse.
+
+=       spot, and may also be built by hand from `Instruction`s for analysis.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label A class file, found through the classloader in scope
++         label A class file, found through the classloader in scope
+
+=         label A class file, found through the classloader in scope
+-         code
++         code
+
+=         label A class file, found through the classloader in scope
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A class file, found through the classloader in scope
+=         code
+=             import soundness.*
+-             import classloaders.threadContextClassloader
++             import classloaders.threadContextClassloader
+
+=         label A class file, found through the classloader in scope
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+-             val classfile: Optional[Classfile] = Classfile[StackTrace]
++             val classfile: Optional[Classfile] = Classfile[StackTrace]
+
+=             val classfile: Optional[Classfile] = Classfile[StackTrace]
+-       frame
++       frame
+
+-         label One of its methods, by name
++         label One of its methods, by name
+
+=         label One of its methods, by name
+-         code
++         code
+
+=         label One of its methods, by name
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label One of its methods, by name
+=         code
+=             import soundness.*
+-             import classloaders.threadContextClassloader
++             import classloaders.threadContextClassloader
+
+=         label One of its methods, by name
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+-             val classfile: Optional[Classfile] = Classfile[StackTrace]
++             val classfile: Optional[Classfile] = Classfile[StackTrace]
+
+=         label One of its methods, by name
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+=             val classfile: Optional[Classfile] = Classfile[StackTrace]
+-             val method: Optional[Classfile.Method] =
++             val method: Optional[Classfile.Method] =
+
+=         label One of its methods, by name
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+=             val classfile: Optional[Classfile] = Classfile[StackTrace]
+=             val method: Optional[Classfile.Method] =
+-               classfile.let(_.methods.seek(_.name == t"rewrite"))
++               classfile.let(_.methods.seek(_.name == t"rewrite"))
+
+=               classfile.let(_.methods.seek(_.name == t"rewrite"))
+-       frame
++       frame
+
+-         label Its bytecode, listed as opcodes
++         label Its bytecode, listed as opcodes
+
+=         label Its bytecode, listed as opcodes
+-         code
++         code
+
+=         label Its bytecode, listed as opcodes
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Its bytecode, listed as opcodes
+=         code
+=             import soundness.*
+-             import classloaders.threadContextClassloader
++             import classloaders.threadContextClassloader
+
+=         label Its bytecode, listed as opcodes
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+-             val classfile: Optional[Classfile] = Classfile[StackTrace]
++             val classfile: Optional[Classfile] = Classfile[StackTrace]
+
+=         label Its bytecode, listed as opcodes
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+=             val classfile: Optional[Classfile] = Classfile[StackTrace]
+-             val method: Optional[Classfile.Method] =
++             val method: Optional[Classfile.Method] =
+
+=         label Its bytecode, listed as opcodes
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+=             val classfile: Optional[Classfile] = Classfile[StackTrace]
+=             val method: Optional[Classfile.Method] =
+-               classfile.let(_.methods.seek(_.name == t"rewrite"))
++               classfile.let(_.methods.seek(_.name == t"rewrite"))
+
+=         label Its bytecode, listed as opcodes
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+=             val classfile: Optional[Classfile] = Classfile[StackTrace]
+=             val method: Optional[Classfile.Method] =
+=               classfile.let(_.methods.seek(_.name == t"rewrite"))
+-             val bytecode: Optional[Bytecode] = method.let(_.bytecode)
++             val bytecode: Optional[Bytecode] = method.let(_.bytecode)
+
+-             bytecode.let(_.instructions.map(_.opcode.show))   // List(t"a·load₀", t"invoke·virtual …", …)
++             bytecode.let(_.instructions.map(_.opcode.show))   // List(t"a·load₀", t"invoke·virtual …", …)
+
+=             bytecode.let(_.instructions.map(_.opcode.show))   // List(t"a·load₀", t"invoke·virtual …", …)
+-       frame
++       frame
+
+-         label One instruction, decoded: its offset, its line and the stack it leaves
++         label One instruction, decoded: its offset, its line and the stack it leaves
+
+=         label One instruction, decoded: its offset, its line and the stack it leaves
+-         code
++         code
+
+=         label One instruction, decoded: its offset, its line and the stack it leaves
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label One instruction, decoded: its offset, its line and the stack it leaves
+=         code
+=             import soundness.*
+-             import classloaders.threadContextClassloader
++             import classloaders.threadContextClassloader
+
+=         label One instruction, decoded: its offset, its line and the stack it leaves
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+-             val classfile: Optional[Classfile] = Classfile[StackTrace]
++             val classfile: Optional[Classfile] = Classfile[StackTrace]
+
+=         label One instruction, decoded: its offset, its line and the stack it leaves
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+=             val classfile: Optional[Classfile] = Classfile[StackTrace]
+-             val method: Optional[Classfile.Method] =
++             val method: Optional[Classfile.Method] =
+
+=         label One instruction, decoded: its offset, its line and the stack it leaves
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+=             val classfile: Optional[Classfile] = Classfile[StackTrace]
+=             val method: Optional[Classfile.Method] =
+-               classfile.let(_.methods.seek(_.name == t"rewrite"))
++               classfile.let(_.methods.seek(_.name == t"rewrite"))
+
+=         label One instruction, decoded: its offset, its line and the stack it leaves
+=         code
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=
+=             val classfile: Optional[Classfile] = Classfile[StackTrace]
+=             val method: Optional[Classfile.Method] =
+=               classfile.let(_.methods.seek(_.name == t"rewrite"))
+-             val bytecode: Optional[Bytecode] = method.let(_.bytecode)
++             val bytecode: Optional[Bytecode] = method.let(_.bytecode)
+
+-             bytecode.let(_.instructions.seek(_.opcode == Bytecode.Opcode.Aload0)).let: instruction =>
++             bytecode.let(_.instructions.seek(_.opcode == Bytecode.Opcode.Aload0)).let: instruction =>
+
+-               (instruction.offset, instruction.line, instruction.stack.let(_.map(_.show)))
++               (instruction.offset, instruction.line, instruction.stack.let(_.map(_.show)))
+
+=               (instruction.offset, instruction.line, instruction.stack.let(_.map(_.show)))
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       The operand stack is a simulation, not a measurement: `Bytecode.Opcode#transform` pushes
+-       and pops what each opcode is defined to, and the method's `StackMapTable` resets it at
+-       every branch target. A reference on the stack is a `Frame.L(className)` where the
+-       instruction that pushed it names a class, and `Frame.L(t"?")` where it does not.
++       La pile d'opérandes est une simulation, non une mesure : `Bytecode.Opcode#transform` empile
++       et dépile ce que chaque opcode est défini pour empiler et dépiler, et la `StackMapTable` de
++       la méthode la réinitialise à chaque cible de branchement. Une référence sur la pile est un
++       `Frame.L(className)` lorsque l'instruction qui l'a empilée nomme une classe, et
++       `Frame.L(t"?")` sinon.
+
+-       Rendering needs a `BytecodePalette` in scope: `bytecode.teletype` is a four-column table
+-       of source position, offset, opcode (coloured by `Opcode#cost`) and stack, and
+-       `bytecode.printable` prints it. `#linearize` follows the static and effectively-static
+-       calls a method makes into their callees' bytecode, to a bounded depth, which is how a
+-       hot path's full instruction sequence is seen in one listing.
++       Le rendu requiert une `BytecodePalette` dans la portée : `bytecode.teletype` est un tableau
++       à quatre colonnes donnant la position dans le code source, le décalage, l'opcode (coloré
++       selon `Opcode#cost`) et la pile, et `bytecode.printable` l'affiche. `#linearize` suit les
++       appels statiques et effectivement statiques que fait une méthode dans le bytecode de ses
++       appelées, jusqu'à une profondeur bornée ; c'est ainsi qu'on voit en un seul listing la
++       séquence d'instructions complète d'un chemin critique.
+
+=       hot path's full instruction sequence is seen in one listing.
+-   refer mandible.Classfile
++   refer mandible.Classfile
+
+=   refer mandible.Classfile
+-   refer mandible.disassemble
++   refer mandible.disassemble
+
+-   refer mandible.BytecodePalette
++   refer mandible.BytecodePalette
+
+-   entry .teletypeable   renders bytecode as a coloured table: source line, offset, opcode and stack
++   entry .teletypeable
++     info
++         rend le bytecode sous forme de tableau coloré : ligne source, décalage, opcode et pile
+
+-       The `Teletypeable` given, needing a `BytecodePalette`. One row per instruction: the
+-       source file and line (in the palette's `bytecode` and `sourceCode` colours) where the
+-       instruction begins a line, the byte offset as subscripts, the opcode coloured by its
+-       `Opcode#cost`, and the simulated stack, outlined in the palette's `outline` colour. The
+-       table is laid out for 160 columns.
++     detail
++         Le given `Teletypeable`, qui requiert une `BytecodePalette`. Une ligne par instruction :
++         le fichier et la ligne source (dans les couleurs `bytecode` et `sourceCode` de la palette)
++         là où l'instruction commence une ligne, le décalage en octets en indices, l'opcode coloré
++         selon son `Opcode#cost`, et la pile simulée, entourée dans la couleur `outline` de la
++         palette. Le tableau est mis en page pour 160 colonnes.
+
+-   entry .printable   prints a bytecode listing, as `Printable`
++   entry .printable
++     info
++         affiche un listing de bytecode, en tant que `Printable`
+
+-       Renders `.teletypeable`'s table for the terminal it is printed to; needs a
+-       `BytecodePalette`.
++     detail
++         Rend le tableau de `.teletypeable` pour le terminal dans lequel il est affiché ; requiert
++         une `BytecodePalette`.
+
+-   entry .stack   renders a simulated operand stack, a `List[Bytecode.Frame]`, in one line
++   entry .stack
++     info
++         rend une pile d'opérandes simulée, une `List[Bytecode.Frame]`, sur une ligne
+
+-       The `Teletypeable` given for a stack, needing a `BytecodePalette`: frames are shown
+-       bottom-first, separated by `┊` and outlined with `┃` in the palette's `outline` colour.
++     detail
++         Le given `Teletypeable` pour une pile, qui requiert une `BytecodePalette` : les éléments
++         sont affichés du bas vers le haut, séparés par `┊` et entourés de `┃` dans la couleur
++         `outline` de la palette.
+
+-   entry .Frame   one slot of the operand stack or one verification type: a primitive, a reference or an array
++   entry .Frame
++     info
++         un emplacement de la pile d'opérandes ou un type de vérification : une primitive, une
++         référence ou un tableau
+
+-     detail
+-         The cases are the JVM's descriptor letters for the primitives — `Z` (boolean), `B`
+-         (byte), `C` (char), `S` (short), `I` (int), `J` (long), `F` (float), `D` (double) —
+-         with `L(name)` for a reference to a class, by its binary name (`java.lang.String`),
+-         and `Array(frame)` for an array of another frame. A reference whose class is unknown is
+-         `L(t"?")`; the verifier's special types appear as `L(t"null")`, `L(t"this")`,
+-         `L(t"top")` and `L(t"uninit")`.
++     detail
++         Les cas sont les lettres de descripteur de la JVM pour les primitives — `Z` (boolean), `B`
++         (byte), `C` (char), `S` (short), `I` (int), `J` (long), `F` (float), `D` (double) — avec
++         `L(name)` pour une référence à une classe, par son nom binaire (`java.lang.String`), et
++         `Array(frame)` pour un tableau d'un autre élément. Une référence dont la classe est
++         inconnue est `L(t"?")` ; les types spéciaux du vérificateur apparaissent sous la forme
++         `L(t"null")`, `L(t"this")`, `L(t"top")` et `L(t"uninit")`.
+
+=         `L(t"top")` and `L(t"uninit")`.
+=
+-         ```scala
++         ```scala
+
+=         `L(t"top")` and `L(t"uninit")`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Bytecode.Frame.fromFieldDescriptor(t"[Ljava/lang/String;")
++         Bytecode.Frame.fromFieldDescriptor(t"[Ljava/lang/String;")
+
+-         // Bytecode.Frame.Array(Bytecode.Frame.L(t"java.lang.String"))
++         // Bytecode.Frame.Array(Bytecode.Frame.L(t"java.lang.String"))
+
+=         // Bytecode.Frame.Array(Bytecode.Frame.L(t"java.lang.String"))
+-         ```
++         ```
+
+-         A `Frame` shows as its letter, as `*name` for a reference and `[frame]` for an array.
++         Un `Frame` s'affiche par sa lettre, par `*name` pour une référence et par `[frame]` pour
++         un tableau.
+
+-     entry .showable   renders a frame: a primitive's letter, `*name` for a reference, `[frame]` for an array
++     entry .showable
++       info
++           rend un élément de pile : la lettre d'une primitive, `*name` pour une référence,
++           `[frame]` pour un tableau
+
+-     entry .parseOne   reads one type from a descriptor at a position, giving the frame and the position after it
++     entry .parseOne
++       info
++           lit un type d'un descripteur à une position, en donnant l'élément et la position qui le
++           suit
+
+-         `Frame.parseOne(descriptor, cursor)` decodes the type whose descriptor begins at
+-         `cursor` — a letter, a `[`-prefixed array or an `L…;` class — and returns it with the
+-         index just past it, for a caller walking a method descriptor's parameter list. An
+-         unexpected character is a panic, since a descriptor from a class file is well-formed.
++       detail
++           `Frame.parseOne(descriptor, cursor)` décode le type dont le descripteur commence à
++           `cursor` — une lettre, un tableau préfixé par `[` ou une classe `L…;` — et le renvoie
++           avec l'index qui le suit immédiatement, pour un appelant qui parcourt la liste des
++           paramètres d'un descripteur de méthode. Un caractère inattendu est une panique,
++           puisqu'un descripteur issu d'un fichier de classe est bien formé.
+
+-     entry .fromFieldDescriptor   the frame of a field descriptor, `I` or `Ljava/lang/String;`
++     entry .fromFieldDescriptor
++       info
++           l'élément de pile d'un descripteur de champ, `I` ou `Ljava/lang/String;`
+
+-         Decodes a whole field descriptor to one `Frame`, with `/` in a class name rewritten to
+-         `.`.
++       detail
++           Décode un descripteur de champ entier en un seul `Frame`, les `/` d'un nom de classe
++           étant réécrits en `.`.
+
+-     entry .fromVerificationType   the frame of a `StackMapTable` verification type
++     entry .fromVerificationType
++       info
++           l'élément de pile d'un type de vérification de `StackMapTable`
+
+-         Maps the JDK's `VerificationTypeInfo` to a `Frame`: the simple types to their
+-         primitives, an object type to `L(name)` (or an array frame when the class is an array
+-         class), `null`, `uninitializedThis` and `top` to `L(t"null")`, `L(t"this")` and
+-         `L(t"top")`, and an uninitialized object to `L(t"uninit")`.
++       detail
++           Fait correspondre le `VerificationTypeInfo` du JDK à un `Frame` : les types simples à
++           leurs primitives, un type objet à `L(name)` (ou à un élément tableau lorsque la classe
++           est une classe de tableau), `null`, `uninitializedThis` et `top` à `L(t"null")`,
++           `L(t"this")` et `L(t"top")`, et un objet non initialisé à `L(t"uninit")`.
+
+-   entry .Descriptor   a method descriptor parsed into its parameter frames and its result
++   entry .Descriptor
++     info
++         un descripteur de méthode analysé en les éléments de ses paramètres et son résultat
+
+-     detail
+-         `Bytecode.Descriptor.parse(t"(Ljava/lang/String;I)V")` gives a `Descriptor` whose
+-         `#args` are the frames `L(java.lang.String)` and `I` and whose `#result` is `Unset`,
+-         since `V` is void. The instruction decoder uses it to know how many operands an
+-         invocation pops and whether it pushes a result.
++     detail
++         `Bytecode.Descriptor.parse(t"(Ljava/lang/String;I)V")` donne un `Descriptor` dont les
++         `#args` sont les éléments `L(java.lang.String)` et `I` et dont le `#result` est `Unset`,
++         puisque `V` est void. Le décodeur d'instructions s'en sert pour savoir combien d'opérandes
++         une invocation dépile et si elle empile un résultat.
+
+=         invocation pops and whether it pushes a result.
+=
+-         ```scala
++         ```scala
+
+=         invocation pops and whether it pushes a result.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val descriptor = Bytecode.Descriptor.parse(t"([[Ljava/lang/Object;J)Z")
++         val descriptor = Bytecode.Descriptor.parse(t"([[Ljava/lang/Object;J)Z")
+
+-         descriptor.args.size     // 2
++         descriptor.args.size     // 2
+
+-         descriptor.result        // Bytecode.Frame.Z
++         descriptor.result        // Bytecode.Frame.Z
+
+=         descriptor.result        // Bytecode.Frame.Z
+-         ```
++         ```
+
+-     entry .parse   reads a `(…)R` method descriptor into a `Descriptor`
++     entry .parse
++       info
++           lit un descripteur de méthode `(…)R` en un `Descriptor`
+
+-         The text must begin with `(`; the parameter types up to `)` become `#args`, and the
+-         return type `#result`, with `V` as `Unset`. A malformed descriptor panics.
++       detail
++           Le texte doit commencer par `(` ; les types de paramètres jusqu'à `)` deviennent
++           `#args`, et le type de retour `#result`, `V` donnant `Unset`. Un descripteur malformé
++           provoque une panique.
+
+-     entry #args   the parameter types, in order
++     entry #args
++       info
++           les types de paramètres, dans l'ordre
+
+-     entry #result   the return type, or `Unset` for `void`
++     entry #result
++       info
++           le type de retour, ou `Unset` pour `void`
+
+-   entry .Instruction   one decoded instruction: its opcode, source line, resulting stack and offset
++   entry .Instruction
++     info
++         une instruction décodée : son opcode, sa ligne source, la pile résultante et son décalage
+
+-     detail
+-         The element of `Bytecode#instructions`. `#line` is set on the first instruction of
+-         each source line and `Unset` on the rest; `#stack` is the simulated operand stack
+-         after the instruction, or `Unset` once the simulation has been lost; `#offset` is the
+-         instruction's position in the method's code, in bytes, which is what branch targets
+-         and `Bytecode#effectivelyStaticCalls` refer to.
++     detail
++         L'élément de `Bytecode#instructions`. `#line` est défini sur la première instruction de
++         chaque ligne source et vaut `Unset` sur les autres ; `#stack` est la pile d'opérandes
++         simulée après l'instruction, ou `Unset` une fois la simulation perdue ; `#offset` est la
++         position de l'instruction dans le code de la méthode, en octets, à laquelle se réfèrent
++         les cibles de branchement et `Bytecode#effectivelyStaticCalls`.
+
+=         and `Bytecode#effectivelyStaticCalls` refer to.
+=
+-         ```scala
++         ```scala
+
+=         and `Bytecode#effectivelyStaticCalls` refer to.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val instruction =
++         val instruction =
+
+-           Bytecode.Instruction(Bytecode.Opcode.Iconst1, Unset, List(Bytecode.Frame.I), 0)
++           Bytecode.Instruction(Bytecode.Opcode.Iconst1, Unset, List(Bytecode.Frame.I), 0)
+
+=           Bytecode.Instruction(Bytecode.Opcode.Iconst1, Unset, List(Bytecode.Frame.I), 0)
+-         ```
++         ```
+
+-     entry #opcode   the instruction, as a `Bytecode.Opcode`
++     entry #opcode
++       info
++           l'instruction, sous forme de `Bytecode.Opcode`
+
+-     entry #line   the source line this instruction begins, or `Unset` if it continues one
++     entry #line
++       info
++           la ligne source que commence cette instruction, ou `Unset` si elle en continue une
+
+-     entry #stack   the simulated operand stack after the instruction, top first, if known
++     entry #stack
++       info
++           la pile d'opérandes simulée après l'instruction, sommet en premier, si elle est connue
+
+-     entry #offset   the instruction's byte offset within the method's code
++     entry #offset
++       info
++           le décalage en octets de l'instruction dans le code de la méthode
+
+-   entry .Linearized   one instruction of a linearized listing, with its inlining depth and the method it came from
++   entry .Linearized
++     info
++         une instruction d'un listing linéarisé, avec sa profondeur d'inlining et la méthode d'où
++         elle provient
+
+-     detail
+-         The element of the list `Bytecode#linearize` returns. `#depth` is `0` for the
+-         method's own instructions and one more for each call followed into a callee;
+-         `#source` names the callee as `owner.method`, and is empty at depth `0`;
+-         `#instruction` is the instruction itself. A `List[Linearized]` renders, with a
+-         `BytecodePalette`, as an indented listing.
++     detail
++         L'élément de la liste que renvoie `Bytecode#linearize`. `#depth` vaut `0` pour les
++         instructions propres à la méthode et un de plus pour chaque appel suivi dans une appelée ;
++         `#source` nomme l'appelée sous la forme `owner.method`, et est vide à la profondeur `0` ;
++         `#instruction` est l'instruction elle-même. Une `List[Linearized]` se rend, avec une
++         `BytecodePalette`, sous forme de listing indenté.
+
+-     entry .teletypeable   renders a linearized listing, indented two spaces per level of depth
++     entry .teletypeable
++       info
++           rend un listing linéarisé, indenté de deux espaces par niveau de profondeur
+
+-         The `Teletypeable` given for `List[Bytecode.Linearized]`, needing a `BytecodePalette`:
+-         each line is indented by its depth, prefixed with its source method in the palette's
+-         `bytecode` colour, and followed by the opcode.
++       detail
++           Le given `Teletypeable` pour `List[Bytecode.Linearized]`, qui requiert une
++           `BytecodePalette` : chaque ligne est indentée selon sa profondeur, préfixée par sa
++           méthode source dans la couleur `bytecode` de la palette, et suivie de l'opcode.
+
+-     entry #depth   how many calls deep the instruction is: `0` in the listed method itself
++     entry #depth
++       info
++           la profondeur d'appels de l'instruction : `0` dans la méthode listée elle-même
+
+-     entry #source   the `owner.method` the instruction was inlined from, or empty at depth `0`
++     entry #source
++       info
++           le `owner.method` dont l'instruction a été inlinée, ou vide à la profondeur `0`
+
+-     entry #instruction   the instruction
++     entry #instruction
++       info
++           l'instruction
+
+-   entry .Opcode   every JVM instruction as an enum case, with its operands decoded
++   entry .Opcode
++     info
++         chaque instruction JVM sous forme de cas d'énumération, avec ses opérandes décodés
+
+-     detail
+-         One case per opcode of the JVM instruction set, in opcode order, so a case's
+-         `ordinal` is its opcode number: `Nop` (0) through `Jsr`, `GotoW` (200) and `JsrW`
+-         (201), with the reserved `Breakpoint`, `Impdep1`, `Impdep2` and the unassigned
+-         `OpCb` … `OpFd` filling the gaps. Operands are decoded into fields: a load or store
+-         carries its `slot`; `Bipush`, `Sipush`, `Ldc`, `LdcW` and `Ldc2W` their `value`;
+-         every branch its `target` as a byte offset; `Tableswitch` and `Lookupswitch` their
+-         tables; a field instruction its `owner`, `field` and `descriptor`; an invocation its
+-         `owner`, `method` and `descriptor` (`Invokeinterface` also its `count`, and
+-         `Invokedynamic` only `method` and `descriptor`); `New`, `Checkcast`, `Instanceof` and
+-         `Anewarray` their class; `Newarray` its element `Frame`; `Multianewarray` its class
+-         and `dimensions`; `Iinc` its `slot` and `const`.
++     detail
++         Un cas par opcode du jeu d'instructions JVM, dans l'ordre des opcodes ; l'`ordinal` d'un
++         cas est donc son numéro d'opcode : de `Nop` (0) à `Jsr`, `GotoW` (200) et `JsrW` (201),
++         les réservés `Breakpoint`, `Impdep1`, `Impdep2` et les non attribués `OpCb` … `OpFd`
++         comblant les trous. Les opérandes sont décodés en champs : un chargement ou un stockage
++         porte son `slot` ; `Bipush`, `Sipush`, `Ldc`, `LdcW` et `Ldc2W` leur `value` ; chaque
++         branchement sa `target` sous forme de décalage en octets ; `Tableswitch` et `Lookupswitch`
++         leurs tables ; une instruction de champ son `owner`, son `field` et son `descriptor` ; une
++         invocation son `owner`, sa `method` et son `descriptor` (`Invokeinterface` aussi son
++         `count`, et `Invokedynamic` seulement `method` et `descriptor`) ; `New`, `Checkcast`,
++         `Instanceof` et `Anewarray` leur classe ; `Newarray` son `Frame` d'élément ;
++         `Multianewarray` sa classe et ses `dimensions` ; `Iinc` son `slot` et sa `const`.
+
+-         Class names are binary names with `.`, as `java.lang.String`; an `Invokedynamic`
+-         method name is demangled with `StackTrace.rewrite`, so a lambda call site reads as
+-         `λ₁` rather than `$anonfun$1`.
++         Les noms de classes sont des noms binaires avec des `.`, comme `java.lang.String` ; le nom
++         de méthode d'un `Invokedynamic` est démanglé avec `StackTrace.rewrite` ; un site d'appel
++         de lambda se lit donc `λ₁` plutôt que `$anonfun$1`.
+
+=         `λ₁` rather than `$anonfun$1`.
+=
+-         ```scala
++         ```scala
+
+=         `λ₁` rather than `$anonfun$1`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val call = Bytecode.Opcode.Invokevirtual(t"java.lang.String", t"length", t"()I")
++         val call = Bytecode.Opcode.Invokevirtual(t"java.lang.String", t"length", t"()I")
+
+-         call.show         // t"invoke·virtual java.lang.String ⌗ length"
++         call.show         // t"invoke·virtual java.lang.String ⌗ length"
+
+-         call.cost         // 2
++         call.cost         // 2
+
+-         call.transform(List(Bytecode.Frame.L(t"java.lang.String")))   // List(Bytecode.Frame.I)
++         call.transform(List(Bytecode.Frame.L(t"java.lang.String")))   // List(Bytecode.Frame.I)
+
+=         call.transform(List(Bytecode.Frame.L(t"java.lang.String")))   // List(Bytecode.Frame.I)
+-         ```
++         ```
+
+-         An opcode is `Showable` as its mnemonic, written with `·` between the parts of a
+-         compound name and subscripts for constants and slots (`a·load₀`, `i·const₋₁`,
+-         `dup²∕₁`), followed by its operands; and `Teletypeable`, which colours the mnemonic by
+-         `#cost` and italicises the operands. Both givens are anonymous, in the companion, so
+-         they are always in scope. An `Opcode` is read from the JDK's instruction model with
+-         `.apply`.
++         Un opcode est `Showable` sous la forme de son mnémonique, écrit avec `·` entre les parties
++         d'un nom composé et des indices pour les constantes et les emplacements (`a·load₀`,
++         `i·const₋₁`, `dup²∕₁`), suivi de ses opérandes ; et `Teletypeable`, qui colore le
++         mnémonique selon `#cost` et met les opérandes en italique. Les deux givens sont anonymes,
++         dans le compagnon ; ils sont donc toujours dans la portée. Un `Opcode` se lit à partir du
++         modèle d'instructions du JDK avec `.apply`.
+
+-     entry .apply   decodes a `java.lang.classfile.Instruction` to an `Opcode`
++     entry .apply
++       info
++           décode une `java.lang.classfile.Instruction` en un `Opcode`
+
+-         `Opcode(instruction, labels)` maps the JDK's instruction object to the enum case for
+-         its opcode, decoding its operands. `labels` maps the code's `Label`s to byte offsets,
+-         so that a branch's `target` is an offset; an instruction whose label is absent from
+-         the map gets `0`. An opcode the decoder does not recognise is a panic.
++       detail
++           `Opcode(instruction, labels)` fait correspondre l'objet instruction du JDK au cas
++           d'énumération de son opcode, en décodant ses opérandes. `labels` fait correspondre les
++           `Label` du code à des décalages en octets, pour que la `target` d'un branchement soit un
++           décalage ; une instruction dont l'étiquette est absente de la correspondance reçoit `0`.
++           Un opcode que le décodeur ne reconnaît pas provoque une panique.
+
+-     entry #cost   a rough relative cost of the instruction, from `0` to `3`
++     entry #cost
++       info
++           un coût relatif approximatif de l'instruction, de `0` à `3`
+
+-         A coarse ranking used to colour a listing: `0` for constants, loads, stores, stack
+-         shuffles and widening conversions; `1` for arithmetic, comparisons, conditional
+-         branches and static or special calls; `2` for array accesses, field accesses, casts,
+-         unconditional jumps, returns and virtual calls; `3` for switches, allocations,
+-         monitors, `athrow`, interface and dynamic calls.
++       detail
++           Un classement grossier servant à colorer un listing : `0` pour les constantes, les
++           chargements, les stockages, les réarrangements de pile et les conversions
++           élargissantes ; `1` pour l'arithmétique, les comparaisons, les branchements
++           conditionnels et les appels statiques ou spéciaux ; `2` pour les accès aux tableaux, les
++           accès aux champs, les conversions de type, les sauts inconditionnels, les retours et les
++           appels virtuels ; `3` pour les switchs, les allocations, les moniteurs, `athrow`, les
++           appels d'interface et dynamiques.
+
+-     entry #describe   a one-line description of what the instruction does, for the opcodes it knows
++     entry #describe
++       info
++           une description en une ligne de ce que fait l'instruction, pour les opcodes qu'elle
++           connaît
+
+-         Describes the constant and push instructions and the reserved opcodes in words —
+-         `push the int constant 1` — and gives `unrecognized` for the rest.
++       detail
++           Décrit en mots les instructions de constante et d'empilement et les opcodes réservés —
++           `push the int constant 1` — et donne `unrecognized` pour le reste.
+
+-     entry #highlight   the colour for the instruction's `#cost`, from teal (`0`) to crimson (`3`)
++     entry #highlight
++       info
++           la couleur du `#cost` de l'instruction, du bleu-vert (`0`) au cramoisi (`3`)
+
+-     entry #transform   the operand stack after this instruction, given the stack before it
++     entry #transform
++       info
++           la pile d'opérandes après cette instruction, étant donné la pile avant elle
+
+-         The stack simulation: pops what the instruction consumes and pushes what it produces,
+-         with `Frame.I` for an `int` result, `Frame.L(name)` for a `new` object or a loaded
+-         field of class type, `Frame.L(t"?")` for a reference the instruction cannot name, and
+-         a method's return frame for an invocation (parsed from its descriptor). The stack is
+-         top first. A `Dup` on an empty stack fails; a shuffle on a stack shorter than it
+-         needs leaves the stack as it was.
++       detail
++           La simulation de la pile : dépile ce que l'instruction consomme et empile ce qu'elle
++           produit, avec `Frame.I` pour un résultat `int`, `Frame.L(name)` pour un objet `new` ou
++           un champ chargé de type classe, `Frame.L(t"?")` pour une référence que l'instruction ne
++           peut nommer, et l'élément de retour d'une méthode pour une invocation (analysé à partir
++           de son descripteur). La pile a son sommet en premier. Un `Dup` sur une pile vide
++           échoue ; un réarrangement sur une pile plus courte qu'il ne lui faut laisse la pile
++           telle qu'elle était.
+
+-   entry .Error   raised by `disassemble` when the compiled class file cannot be opened or read
++   entry .Error
++     info
++         levée par `disassemble` lorsque le fichier de classe compilé ne peut être ouvert ou lu
+
+-     detail
+-         Error `↯/s.88.3`, _the bytecode could not be extracted because …_, with a `#reason`:
+-         `ClassfileMissing` (295.1, _the generated classfile could not be opened_) when the
+-         staging compiler left no class file to read, and `ClassfileUnreadable` (295.2, _the
+-         generated classfile could not be read_) when the file was truncated or the generated
+-         method was not found in it. `disassemble` needs a `Tactic[Bytecode.Error]` in scope.
++     detail
++         Erreur `↯/s.88.3`, _the bytecode could not be extracted because …_, avec un `#reason` :
++         `ClassfileMissing` (295.1, _the generated classfile could not be opened_) lorsque le
++         compilateur de mise en étapes n'a laissé aucun fichier de classe à lire, et
++         `ClassfileUnreadable` (295.2, _the generated classfile could not be read_) lorsque le
++         fichier était tronqué ou que la méthode générée n'y a pas été trouvée. `disassemble`
++         requiert une `Tactic[Bytecode.Error]` dans la portée.
+
+-     entry .Reason   why extraction failed: `ClassfileMissing` or `ClassfileUnreadable`
++     entry .Reason
++       info
++           la raison de l'échec de l'extraction : `ClassfileMissing` ou `ClassfileUnreadable`
+
+-         A `Clarification` whose `number` is the error's sub-number: `ClassfileMissing` is `1`
+-         and `ClassfileUnreadable` is `2`.
++       detail
++           Une `Clarification` dont le `number` est le sous-numéro de l'erreur : `ClassfileMissing`
++           vaut `1` et `ClassfileUnreadable` vaut `2`.
+
+-     entry .communicable   renders a `Reason` as the message the error embeds
++     entry .communicable
++       info
++           rend une `Reason` sous la forme du message qu'intègre l'erreur
+
+-     entry #reason   the reason
++     entry #reason
++       info
++           la raison
+
+-   entry #sourceFile   the name of the source file the method's class was compiled from, if recorded
++   entry #sourceFile
++     info
++         le nom du fichier source à partir duquel la classe de la méthode a été compilée, s'il est
++         enregistré
+
+-   entry #instructions   the method's instructions, in code order
++   entry #instructions
++     info
++         les instructions de la méthode, dans l'ordre du code
+
+-   entry #maxStack   the maximum operand stack depth the method declares
++   entry #maxStack
++     info
++         la profondeur maximale de pile d'opérandes que déclare la méthode
+
+-   entry #maxLocals   the number of local variable slots the method declares
++   entry #maxLocals
++     info
++         le nombre d'emplacements de variables locales que déclare la méthode
+
+-   entry #embed   shifts the listing's line numbers to a `Codepoint`, as if the code were written there
++   entry #embed
++     info
++         décale les numéros de ligne du listing vers un `Codepoint`, comme si le code y avait été
++         écrit
+
+-       `bytecode.embed(codepoint)` adds the codepoint's line (less one) to every instruction's
+-       `line`, and replaces `sourceFile` with the last segment of the codepoint's source path.
+-       `disassemble` uses it so that the bytecode of a block compiled in a temporary file is
+-       reported against the file and line the block was written at.
++     detail
++         `bytecode.embed(codepoint)` ajoute la ligne du codepoint (moins un) à la `line` de chaque
++         instruction, et remplace `sourceFile` par le dernier segment du chemin source du
++         codepoint. `disassemble` s'en sert pour que le bytecode d'un bloc compilé dans un fichier
++         temporaire soit rapporté au fichier et à la ligne où le bloc a été écrit.
+
+-   entry #linearize   follows calls into their callees' bytecode, to a bounded depth and length
++   entry #linearize
++     info
++         suit les appels dans le bytecode de leurs appelées, jusqu'à une profondeur et une longueur
++         bornées
+
+-       `bytecode.linearize(resolver, maxDepth, maxInstructions)` walks the instructions and,
+-       at each `Invokestatic` and at each `Invokevirtual` or `Invokeinterface` which
+-       `#effectivelyStaticCalls` has shown to dispatch to a known class, asks `resolver(owner,
+-       method, descriptor)` for the callee's `Bytecode` and lists its instructions in place,
+-       one level deeper, after the call instruction. The resolver returns `Unset` for a method
+-       it cannot find, and the call is then listed alone. `maxDepth` (default `3`) bounds the
+-       nesting and `maxInstructions` (default `1000`) the total length of the listing.
++     detail
++         `bytecode.linearize(resolver, maxDepth, maxInstructions)` parcourt les instructions et, à
++         chaque `Invokestatic` et à chaque `Invokevirtual` ou `Invokeinterface` dont
++         `#effectivelyStaticCalls` a montré qu'il est réparti vers une classe connue, demande à
++         `resolver(owner, method, descriptor)` le `Bytecode` de l'appelée et liste ses instructions
++         sur place, un niveau plus bas, après l'instruction d'appel. Le résolveur renvoie `Unset`
++         pour une méthode qu'il ne trouve pas, et l'appel est alors listé seul. `maxDepth` (par
++         défaut `3`) borne l'imbrication et `maxInstructions` (par défaut `1000`) la longueur
++         totale du listing.
+
+=       nesting and `maxInstructions` (default `1000`) the total length of the listing.
+=
+-       ```scala
++         ```scala
+
+=       nesting and `maxInstructions` (default `1000`) the total length of the listing.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+-       val nop = Bytecode.Instruction(Bytecode.Opcode.Nop, Unset, Nil, 0)
++         val nop = Bytecode.Instruction(Bytecode.Opcode.Nop, Unset, Nil, 0)
+
+-       val caller = Bytecode(Unset, List.fill(50)(nop), 0, 0)
++         val caller = Bytecode(Unset, List.fill(50)(nop), 0, 0)
+
+-       caller.linearize((_, _, _) => Unset, maxInstructions = 7).size   // 7
++         caller.linearize((_, _, _) => Unset, maxInstructions = 7).size   // 7
+
+=       caller.linearize((_, _, _) => Unset, maxInstructions = 7).size   // 7
+-       ```
++         ```
+
+-       A resolver over the classpath is written with `Classfile`: find the owner's class file,
+-       seek the method by name, and take its `bytecode`.
++         Un résolveur sur le classpath s'écrit avec `Classfile` : trouver le fichier de classe du
++         propriétaire, y chercher la méthode par son nom, et prendre son `bytecode`.
+
+-   entry #effectivelyStaticCalls   the offsets of the virtual and interface calls whose receiver is a known singleton
++   entry #effectivelyStaticCalls
++     info
++         les décalages des appels virtuels et d'interface dont le receveur est un singleton connu
+
+-       A call through `invokevirtual` or `invokeinterface` whose receiver, in the simulated
+-       stack before the call, is a `Frame.L(owner)` of exactly the call's own owner class —
+-       as a call on a Scala `object`'s `MODULE$` is — can only dispatch to that class, so it
+-       may be followed like a static call. The result is the set of such calls' byte offsets;
+-       a receiver of unknown class (`L(t"?")`) or of a different class is excluded, as is a call
+-       whose simulated stack is too shallow to hold its receiver.
++     detail
++         Un appel par `invokevirtual` ou `invokeinterface` dont le receveur, dans la pile simulée
++         avant l'appel, est un `Frame.L(owner)` de la classe propriétaire de l'appel exactement —
++         comme l'est un appel sur le `MODULE$` d'un `object` Scala — ne peut être réparti que vers
++         cette classe ; il peut donc être suivi comme un appel statique. Le résultat est l'ensemble
++         des décalages en octets de ces appels ; un receveur de classe inconnue (`L(t"?")`) ou
++         d'une autre classe est exclu, tout comme un appel dont la pile simulée est trop peu
++         profonde pour contenir son receveur.
+
+=       whose simulated stack is too shallow to hold its receiver.
+=
+-       ```scala
++         ```scala
+
+=       whose simulated stack is too shallow to hold its receiver.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+-       val module = Bytecode.Frame.L(t"Play$$")
++         val module = Bytecode.Frame.L(t"Play$$")
+
+-       val load = Bytecode.Instruction
++         val load = Bytecode.Instruction
+
+-         (Bytecode.Opcode.Getstatic(t"Play$$", t"MODULE$$", t"LPlay$$;"), Unset, List(module), 0)
++           (Bytecode.Opcode.Getstatic(t"Play$$", t"MODULE$$", t"LPlay$$;"), Unset, List(module), 0)
+
+-       val call = Bytecode.Instruction
++         val call = Bytecode.Instruction
+
+-         (Bytecode.Opcode.Invokevirtual(t"Play$$", t"doIt", t"()V"), Unset, Nil, 3)
++           (Bytecode.Opcode.Invokevirtual(t"Play$$", t"doIt", t"()V"), Unset, Nil, 3)
+
+-       Bytecode(Unset, List(load, call), 1, 0).effectivelyStaticCalls   // Set(3)
++         Bytecode(Unset, List(load, call), 1, 0).effectivelyStaticCalls   // Set(3)
+
+=       Bytecode(Unset, List(load, call), 1, 0).effectivelyStaticCalls   // Set(3)
+-       ```
++         ```
+
+- entry .ClassSurface   the declaration surface of a class: what a compiled consumer links against, and nothing else
++ entry .ClassSurface
++   info
++       la surface de déclaration d'une classe : ce à quoi se lie un consommateur compilé, et rien
++       d'autre
+
+-   detail
+-       A `ClassSurface` is a class file reduced to its **linkage surface**: its internal
+-       `#name`, access `#flags`, `#superclass`, `#interfaces`, generic `#signature`, and its
+-       `#members` — fields and methods as `ClassSurface.Member`s, each with name, descriptor,
+-       flags, generic signature, declared exceptions and inlinable constant. `Code`,
+-       `SourceFile`, `LineNumberTable` and annotations are deliberately dropped: two builds of
+-       the same source may differ in all of them without changing what a consumer binds to.
+-       This is the view for comparing releases for binary compatibility, which is why members
+-       are sorted by selector and interfaces and exceptions by name, rather than kept in file
+-       order, which is an artifact of the compilation.
++   detail
++       Une `ClassSurface` est un fichier de classe réduit à sa **surface de liaison** : son `#name`
++       interne, ses `#flags` d'accès, sa `#superclass`, ses `#interfaces`, sa `#signature`
++       générique, et ses `#members` — champs et méthodes sous forme de `ClassSurface.Member`,
++       chacun avec son nom, son descripteur, ses indicateurs, sa signature générique, ses
++       exceptions déclarées et sa constante inlinable. `Code`, `SourceFile`, `LineNumberTable` et
++       les annotations sont délibérément abandonnés : deux builds du même code source peuvent
++       différer sur tous ces points sans changer ce à quoi se lie un consommateur. C'est la vue qui
++       sert à comparer des versions pour la compatibilité binaire ; c'est pourquoi les membres sont
++       triés par sélecteur et les interfaces et exceptions par nom, plutôt que conservés dans
++       l'ordre du fichier, qui est un artefact de la compilation.
+
+=       order, which is an artifact of the compilation.
+=
+-       ```scala
++       ```scala
+
+=       order, which is an artifact of the compilation.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       order, which is an artifact of the compilation.
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       order, which is an artifact of the compilation.
+=
+=       ```scala
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val surface: ClassSurface = ClassSurface(cp"/scala/Option.class".read[Data])
++       val surface: ClassSurface = ClassSurface(cp"/scala/Option.class".read[Data])
+
+-       surface.name                       // t"scala/Option"
++       surface.name                       // t"scala/Option"
+
+-       surface.supertypes                 // superclass first, then interfaces
++       surface.supertypes                 // superclass first, then interfaces
+
+-       surface.members.filter(_.visible).map(_.selector)
++       surface.members.filter(_.visible).map(_.selector)
+
+=       surface.members.filter(_.visible).map(_.selector)
+-       ```
++       ```
+
+-       Names are JVM internal names, `java/lang/String`, as every reference inside a class
+-       file spells them. Accessibility of a nested class is read from the `InnerClasses`
+-       attribute (`#innerFlags`) where the class's own flags would misreport a `protected`
+-       member class as package-private.
++       Les noms sont des noms internes JVM, `java/lang/String`, tels que les écrit chaque référence
++       à l'intérieur d'un fichier de classe. L'accessibilité d'une classe imbriquée est lue dans
++       l'attribut `InnerClasses` (`#innerFlags`), là où les indicateurs propres à la classe
++       présenteraient à tort une classe membre `protected` comme privée au package.
+
+-   refer mandible.ClasspathIndex
++   refer mandible.ClasspathIndex
+
+=   refer mandible.ClasspathIndex
+-   refer mandible.Classfile
++   refer mandible.Classfile
+
+-   entry .Kind   whether a member is a `Method` or a `Field`
++   entry .Kind
++     info
++         si un membre est une `Method` ou un `Field`
+
+-   entry .Member   one field or method of a class, as the JVM resolves it
++   entry .Member
++     info
++         un champ ou une méthode d'une classe, tel que le résout la JVM
+
+-     detail
+-         A member has a `#kind`, its `#name`, its `#descriptor` (such as `(I)V` or `Ljava/lang/String;`),
+-         its access `#flags`, an optional generic `#signature`, the sorted internal names of
+-         its declared `#exceptions` (methods only) and, for a `static final` field, the
+-         `#constant` its `ConstantValue` attribute carries. Predicates read the flag bits;
+-         `#visible` is whether the member is `public` or `protected`, the only accessibilities
+-         a consumer outside the package can link to.
++     detail
++         Un membre a un `#kind`, son `#name`, son `#descriptor` (comme `(I)V` ou
++         `Ljava/lang/String;`), ses `#flags` d'accès, une `#signature` générique optionnelle, les
++         noms internes triés de ses `#exceptions` déclarées (méthodes seulement) et, pour un champ
++         `static final`, la `#constant` que porte son attribut `ConstantValue`. Les prédicats
++         lisent les bits des indicateurs ; `#visible` indique si le membre est `public` ou
++         `protected`, les seules accessibilités auxquelles peut se lier un consommateur extérieur
++         au package.
+
+=         a consumer outside the package can link to.
+=
+-         ```scala
++         ```scala
+
+=         a consumer outside the package can link to.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val member = ClassSurface.Member(ClassSurface.Kind.Method, t"length", t"()I", 1)
++         val member = ClassSurface.Member(ClassSurface.Kind.Method, t"length", t"()I", 1)
+
+-         member.selector   // t"#length:()I"
++         member.selector   // t"#length:()I"
+
+-         member.public     // true
++         member.public     // true
+
+=         member.public     // true
+-         ```
++         ```
+
+-     entry #kind   `Kind.Method` or `Kind.Field`
++     entry #kind
++       info
++           `Kind.Method` ou `Kind.Field`
+
+-     entry #name   the member's name, as compiled
++     entry #name
++       info
++           le nom du membre, tel que compilé
+
+-     entry #descriptor   the JVM descriptor: a method's `(params)result` or a field's type
++     entry #descriptor
++       info
++           le descripteur JVM : le `(params)result` d'une méthode ou le type d'un champ
+
+-     entry #flags   the `access_flags` bitmask
++     entry #flags
++       info
++           le masque de bits `access_flags`
+
+-     entry #signature   the generic `Signature` attribute, kept because erasure loses what a recompiling consumer needs
++     entry #signature
++       info
++           l'attribut générique `Signature`, conservé parce que l'effacement perd ce dont a besoin
++           un consommateur qui recompile
+
+-     entry #exceptions   the internal names of the `Exceptions` attribute, sorted; `Nil` for a field
++     entry #exceptions
++       info
++           les noms internes de l'attribut `Exceptions`, triés ; `Nil` pour un champ
+
+-     entry #constant   a `static final` field's `ConstantValue`, as `class:value`, for example `java.lang.Integer:1`
++     entry #constant
++       info
++           la `ConstantValue` d'un champ `static final`, sous la forme `class:value`, par exemple
++           `java.lang.Integer:1`
+
+-         The constant's class is folded in with its value, since `1` as an `Integer` and `"1"`
+-         as a `String` are different contracts whose `toString`s coincide.
++       detail
++           La classe de la constante est intégrée à sa valeur, puisque `1` en tant qu'`Integer` et
++           `"1"` en tant que `String` sont des contrats différents dont les `toString` coïncident.
+
+-     entry #selector   the member's key within its class: the name and descriptor, prefixed `#` for a method or `.` for a field
++     entry #selector
++       info
++           la clé du membre dans sa classe : le nom et le descripteur, préfixés de `#` pour une
++           méthode ou de `.` pour un champ
+
+-         The sigil keeps a method and a field of the same name apart, and the descriptor keeps
+-         overloads apart, so a selector identifies one member of a class.
++       detail
++           Le sigle distingue une méthode et un champ de même nom, et le descripteur distingue les
++           surcharges ; un sélecteur identifie donc un seul membre d'une classe.
+
+-     entry #public   whether `ACC_PUBLIC` is set
++     entry #public
++       info
++           si `ACC_PUBLIC` est positionné
+
+-     entry #protect   whether `ACC_PROTECTED` is set
++     entry #protect
++       info
++           si `ACC_PROTECTED` est positionné
+
+-     entry #priv   whether `ACC_PRIVATE` is set
++     entry #priv
++       info
++           si `ACC_PRIVATE` est positionné
+
+-     entry #static   whether `ACC_STATIC` is set
++     entry #static
++       info
++           si `ACC_STATIC` est positionné
+
+-     entry #finl   whether `ACC_FINAL` is set
++     entry #finl
++       info
++           si `ACC_FINAL` est positionné
+
+-     entry #abstrakt   whether `ACC_ABSTRACT` is set
++     entry #abstrakt
++       info
++           si `ACC_ABSTRACT` est positionné
+
+-     entry #bridge   whether `ACC_BRIDGE` is set: a compiler-generated bridge method
++     entry #bridge
++       info
++           si `ACC_BRIDGE` est positionné : une méthode pont générée par le compilateur
+
+-     entry #synthetic   whether `ACC_SYNTHETIC` is set
++     entry #synthetic
++       info
++           si `ACC_SYNTHETIC` est positionné
+
+-     entry #visible   whether the member is `public` or `protected`: linkable from outside its package
++     entry #visible
++       info
++           si le membre est `public` ou `protected` : accessible à la liaison hors de son package
+
+-     entry #inlinable   whether a consumer's compiler may already have copied this field's value into its own constant pool
++     entry #inlinable
++       info
++           si le compilateur d'un consommateur a déjà pu copier la valeur de ce champ dans son
++           propre pool de constantes
+
+-         True for a `static final` field of primitive or `String` type which has a
+-         `#constant`: by the JLS's rules a compiler inlines such a constant at every use, so
+-         changing its value does not break linkage, but does change consumers' behaviour
+-         until they are recompiled. A `ConstantValue` on any other field is not inlined, so
+-         the attribute alone is not the test.
++       detail
++           Vrai pour un champ `static final` de type primitif ou `String` qui a une `#constant` :
++           selon les règles de la JLS, un compilateur inline une telle constante à chaque
++           utilisation ; changer sa valeur ne casse donc pas la liaison, mais change le
++           comportement des consommateurs jusqu'à ce qu'ils soient recompilés. Une `ConstantValue`
++           sur tout autre champ n'est pas inlinée ; l'attribut seul ne suffit donc pas à en
++           décider.
+
+-   entry .apply   parses the bytes of a class file to its `ClassSurface`
++   entry .apply
++     info
++         analyse les octets d'un fichier de classe en sa `ClassSurface`
+
+-       `ClassSurface(data)` reads the class file through `java.lang.classfile` and keeps only
+-       the linkage surface. Fields are read with their signature and constant, methods with
+-       their signature and exceptions; members are sorted by `Member#selector` and interfaces
+-       by name. The bytes are not retained.
++     detail
++         `ClassSurface(data)` lit le fichier de classe par `java.lang.classfile` et ne garde que la
++         surface de liaison. Les champs sont lus avec leur signature et leur constante, les
++         méthodes avec leur signature et leurs exceptions ; les membres sont triés par
++         `Member#selector` et les interfaces par nom. Les octets ne sont pas conservés.
+
+-   entry #name   the class's internal name, `scala/Option`
++   entry #name
++     info
++         le nom interne de la classe, `scala/Option`
+
+-   entry #flags   the class's `access_flags` bitmask, as the class file records it
++   entry #flags
++     info
++         le masque de bits `access_flags` de la classe, tel que l'enregistre le fichier de classe
+
+-   entry #superclass   the superclass's internal name, or `Unset` for `java/lang/Object` itself
++   entry #superclass
++     info
++         le nom interne de la superclasse, ou `Unset` pour `java/lang/Object` lui-même
+
+-   entry #interfaces   the internal names of the directly implemented interfaces, sorted
++   entry #interfaces
++     info
++         les noms internes des interfaces directement implémentées, triés
+
+-   entry #signature   the class's generic `Signature` attribute, if any
++   entry #signature
++     info
++         l'attribut générique `Signature` de la classe, s'il y en a un
+
+-   entry #members   the fields and methods, sorted by `Member#selector`
++   entry #members
++     info
++         les champs et les méthodes, triés par `Member#selector`
+
+-   entry #innerFlags   the flags the `InnerClasses` attribute records for this class, if it is nested
++   entry #innerFlags
++     info
++         les indicateurs que l'attribut `InnerClasses` enregistre pour cette classe, si elle est
++         imbriquée
+
+-       A nested class's own `access_flags` show the outer view, where a `protected` member
+-       class is neither public nor protected; its real accessibility is in the enclosing
+-       class's `InnerClasses` entry for it, which this reads back. `Unset` for a top-level
+-       class.
++     detail
++         Les `access_flags` propres à une classe imbriquée montrent la vue extérieure, où une
++         classe membre `protected` n'est ni publique ni protégée ; sa véritable accessibilité se
++         trouve dans l'entrée `InnerClasses` que lui consacre la classe englobante, que ceci relit.
++         `Unset` pour une classe de premier niveau.
+
+-   entry #interface   whether the class is an interface (`ACC_INTERFACE`)
++   entry #interface
++     info
++         si la classe est une interface (`ACC_INTERFACE`)
+
+-   entry #isFinal   whether the class is final (`ACC_FINAL`)
++   entry #isFinal
++     info
++         si la classe est finale (`ACC_FINAL`)
+
+-   entry #synthetic   whether the class is compiler-generated (`ACC_SYNTHETIC`)
++   entry #synthetic
++     info
++         si la classe est générée par le compilateur (`ACC_SYNTHETIC`)
+
+-   entry #access   the flags which decide accessibility: `#innerFlags` where present, else `#flags`
++   entry #access
++     info
++         les indicateurs qui décident de l'accessibilité : `#innerFlags` s'ils sont présents, sinon
++         `#flags`
+
+-   entry #visible   whether the class is `public` or `protected` by its `#access` flags
++   entry #visible
++     info
++         si la classe est `public` ou `protected` d'après ses indicateurs `#access`
+
+-   entry #supertypes   the directly named supertypes, superclass first, then interfaces
++   entry #supertypes
++     info
++         les supertypes directement nommés, la superclasse d'abord, puis les interfaces
+
+-       The order the JVM's own resolution walks, and the order inherited members are keyed
+-       in by `ClasspathIndex#closure`.
++     detail
++         L'ordre que parcourt la résolution propre à la JVM, et l'ordre dans lequel les membres
++         hérités sont indexés par `ClasspathIndex#closure`.
+
+-   entry #member   the member with a given `Member#selector`, or `Unset`
++   entry #member
++     info
++         le membre ayant un `Member#selector` donné, ou `Unset`
+
+- entry .ClasspathIndex   resolves internal class names to their surfaces, over in-memory classes plus a classpath
++ entry .ClasspathIndex
++   info
++       résout des noms internes de classes en leurs surfaces, sur des classes en mémoire plus un
++       classpath
+
+-   detail
+-       A `ClasspathIndex` answers "what does class `name` declare?" for every class a set of
+-       classes may refer to. It holds the surfaces of the classes it is given eagerly — a
+-       release's own, which are the ones being examined — and resolves everything else lazily
+-       by reading `name.class` from a `URLClassLoader` over the classpath entries, with the
+-       platform classloader as its parent so the JDK's own classes resolve too. Every
+-       resolution, including a failed one, is memoized, which keeps a walk over many classes'
+-       supertypes linear.
++   detail
++       Un `ClasspathIndex` répond à « que déclare la classe `name` ? » pour chaque classe à
++       laquelle peut se référer un ensemble de classes. Il détient d'emblée les surfaces des
++       classes qu'on lui donne — celles d'une version, qui sont celles qu'on examine — et résout
++       tout le reste paresseusement en lisant `name.class` depuis un `URLClassLoader` sur les
++       entrées du classpath, avec le chargeur de classes de la plateforme comme parent, pour que
++       les classes propres au JDK se résolvent aussi. Chaque résolution, y compris en échec, est
++       mémoïsée, ce qui garde linéaire un parcours des supertypes de nombreuses classes.
+
+=       supertypes linear.
+=
+-       ```scala
++       ```scala
+
+=       supertypes linear.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       supertypes linear.
+=
+=       ```scala
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       supertypes linear.
+=
+=       ```scala
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val own = Map(t"com/example/Main" -> ClassSurface(cp"/com/example/Main.class".read[Data]))
++       val own = Map(t"com/example/Main" -> ClassSurface(cp"/com/example/Main.class".read[Data]))
+
+-       val index = ClasspathIndex(own, List(t"/lib/dependency.jar"))
++       val index = ClasspathIndex(own, List(t"/lib/dependency.jar"))
+
+-       index(t"java/lang/Object")
++       index(t"java/lang/Object")
+
+-       index.closure(t"com/example/Main")
++       index.closure(t"com/example/Main")
+
+=       index.closure(t"com/example/Main")
+-       ```
++       ```
+
+-       A class in the in-memory map is never shadowed by a same-named class earlier on the
+-       classpath.
++       Une classe de la map en mémoire n'est jamais masquée par une classe homonyme située plus tôt
++       dans le classpath.
+
+=       classpath.
+-   refer mandible.ClassSurface
++   refer mandible.ClassSurface
+
+-   entry .apply   an index over a map of surfaces by internal name, plus classpath entries as text
++   entry .apply
++     info
++         un index sur une map de surfaces par nom interne, plus des entrées de classpath sous forme
++         de texte
+
+-       Each classpath entry is a directory or JAR path, as text; a directory must exist on
+-       disk for the loader to treat it as one. An entry which does not exist resolves nothing.
++     detail
++         Chaque entrée de classpath est un chemin de répertoire ou de JAR, sous forme de texte ; un
++         répertoire doit exister sur le disque pour que le chargeur le traite comme tel. Une entrée
++         qui n'existe pas ne résout rien.
+
+-   entry #own   the internal names of the classes held in memory, sorted
++   entry #own
++     info
++         les noms internes des classes tenues en mémoire, triés
+
+-   entry #apply   the surface of a class by internal name, or `Unset` if nothing can supply it
++   entry #apply
++     info
++         la surface d'une classe par nom interne, ou `Unset` si rien ne peut la fournir
+
+-       Looks in the in-memory map first, then reads the class file from the classpath,
+-       caching the answer either way.
++     detail
++         Cherche d'abord dans la map en mémoire, puis lit le fichier de classe depuis le classpath,
++         en mettant la réponse en cache dans les deux cas.
+
+-   entry #closure   a class's transitive supertypes, nearest first, and the names which could not be resolved
++   entry #closure
++     info
++         les supertypes transitifs d'une classe, les plus proches d'abord, et les noms qui n'ont
++         pas pu être résolus
+
+-       `index.closure(name)` walks `ClassSurface#supertypes` breadth-first from `name`,
+-       excluding `name` itself, and returns a pair: the supertypes found, in order of
+-       discovery, and the names of those which no source could resolve. An unresolvable
+-       supertype is reported rather than skipped, because without it the class's inherited
+-       member set is unknown.
++     detail
++         `index.closure(name)` parcourt `ClassSurface#supertypes` en largeur à partir de `name`, en
++         excluant `name` lui-même, et renvoie une paire : les supertypes trouvés, dans l'ordre de
++         leur découverte, et les noms de ceux qu'aucune source n'a pu résoudre. Un supertype non
++         résoluble est signalé plutôt qu'ignoré, car sans lui l'ensemble des membres hérités de la
++         classe est inconnu.
+
+- entry .disassemble   compiles a quoted block with the staging compiler and reads its bytecode back
++ entry .disassemble
++   info
++       compile un bloc quoté avec le compilateur de mise en étapes et en relit le bytecode
+
+-   detail
+-       `disassemble(code)` takes a `Quotes ?=> Expr[Any]` — a block of code quoted with `'{…}` —
+-       wraps it in a method, compiles it with the staging compiler into a temporary directory,
+-       reads the resulting class file and returns the method's `Bytecode`, with its line
+-       numbers shifted by `Bytecode#embed` to the call site's `Codepoint`, so the listing reads
+-       against the file the block was written in.
++   detail
++       `disassemble(code)` prend une `Quotes ?=> Expr[Any]` — un bloc de code quoté avec `'{…}` —,
++       l'enveloppe dans une méthode, le compile avec le compilateur de mise en étapes dans un
++       répertoire temporaire, lit le fichier de classe résultant et renvoie le `Bytecode` de la
++       méthode, ses numéros de ligne étant décalés par `Bytecode#embed` vers le `Codepoint` du site
++       d'appel ; le listing se lit donc par rapport au fichier dans lequel le bloc a été écrit.
+
+=       against the file the block was written in.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       typecheck
++       typecheck
+
+=       typecheck
+-       ##
++       ##
+
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       ##
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       import temporaryDirectories.systemTemporaryDirectory
++       import temporaryDirectories.systemTemporaryDirectory
+
+-       val bytecode: Bytecode = disassemble('{ (1 to 10).map(_ * 2).sum })
++       val bytecode: Bytecode = disassemble('{ (1 to 10).map(_ * 2).sum })
+
+-       bytecode.instructions.map(_.opcode.show)
++       bytecode.instructions.map(_.opcode.show)
+
+=       bytecode.instructions.map(_.opcode.show)
+-       ```
++       ```
+
+-       It needs a `TemporaryDirectory` for the compiler's output, a `Classloader` for the
+-       compiler to load against (its `java` instance is handed to the staging compiler), and a
+-       `Tactic[Bytecode.Error]`, raised as `ClassfileMissing` when no class file appears and
+-       `ClassfileUnreadable` when it cannot be read or the generated method is not in it. The
+-       block is compiled with the experimental language flag enabled, under Scala 3.6's
+-       settings. Compilation takes a moment, so this is a tool for examining what the compiler
+-       and its optimizer produce, not for a hot path.
++       Il lui faut un `TemporaryDirectory` pour la sortie du compilateur, un `Classloader` contre
++       lequel le compilateur charge (son instance `java` est remise au compilateur de mise en
++       étapes), et une `Tactic[Bytecode.Error]`, levée sous la forme `ClassfileMissing`
++       lorsqu'aucun fichier de classe n'apparaît et `ClassfileUnreadable` lorsqu'il ne peut être lu
++       ou que la méthode générée n'y figure pas. Le bloc est compilé avec l'option de langage
++       expérimental activée, avec les réglages de Scala 3.6. La compilation prend un moment ; c'est
++       donc un outil pour examiner ce que produisent le compilateur et son optimiseur, non pour un
++       chemin critique.
+
+=       and its optimizer produce, not for a hot path.
+-   refer mandible.Bytecode
++   refer mandible.Bytecode
+
+=   refer mandible.Bytecode
+-   refer mandible.Classfile
++   refer mandible.Classfile
+
+- entry .BytecodePalette   the colours a bytecode listing is rendered with
++ entry .BytecodePalette
++   info
++       les couleurs avec lesquelles se rend un listing de bytecode
+
+-     A `Palette` in sRGB with, beyond the `background` and `foreground` every palette has, three colours: `bytecode`, for the source-file reference and the
+-     method a linearized instruction came from; `sourceCode`, for line numbers; and `outline`,
+-     for the frame of the stack column. A `BytecodePalette` must be in scope to render a
+-     `Bytecode`, a `List[Bytecode.Frame]` or a `List[Bytecode.Linearized]` as `Teletype`; the
+-     library supplies no default, so a program defines one. Opcode colours are not in the
+-     palette: they come from `Bytecode.Opcode#highlight`, by cost.
++   detail
++       Une `Palette` en sRGB avec, au-delà du `background` et du `foreground` qu'a toute palette,
++       trois couleurs : `bytecode`, pour la référence au fichier source et la méthode d'où provient
++       une instruction linéarisée ; `sourceCode`, pour les numéros de ligne ; et `outline`, pour le
++       cadre de la colonne de pile. Une `BytecodePalette` doit être dans la portée pour rendre un
++       `Bytecode`, une `List[Bytecode.Frame]` ou une `List[Bytecode.Linearized]` en `Teletype` ; la
++       bibliothèque n'en fournit aucune par défaut ; un programme en définit donc une. Les couleurs
++       des opcodes ne sont pas dans la palette : elles viennent de `Bytecode.Opcode#highlight`,
++       selon le coût.
+
+=     palette: they come from `Bytecode.Opcode#highlight`, by cost.
+=
+-     ```scala
++       ```scala
+
+=     palette: they come from `Bytecode.Opcode#highlight`, by cost.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+-     given palette: BytecodePalette = new Palette:
++       given palette: BytecodePalette = new Palette:
+
+-       type Form = Srgb
++         type Form = Srgb
+
+-       def background: Color in Srgb = WebColors.Black
++         def background: Color in Srgb = WebColors.Black
+
+-       def foreground: Color in Srgb = WebColors.White
++         def foreground: Color in Srgb = WebColors.White
+
+-       def bytecode: Color in Srgb   = WebColors.Teal
++         def bytecode: Color in Srgb   = WebColors.Teal
+
+-       def sourceCode: Color in Srgb = WebColors.YellowGreen
++         def sourceCode: Color in Srgb = WebColors.YellowGreen
+
+-       def outline: Color in Srgb    = WebColors.Gray
++         def outline: Color in Srgb    = WebColors.Gray
+
+=       def outline: Color in Srgb    = WebColors.Gray
+-     ```
++       ```
+
+- entry .internal   the home of a macro which disassembles a method selected by a lambda
++ entry .internal
++   info
++       le foyer d'une macro qui désassemble une méthode sélectionnée par une lambda
+
+-   hidden
++   hidden
+
+-   detail
+-       Not for direct use. Holds `disassemble`, a macro implementation which, given a lambda
+-       of the form `_.method` over a type and a `Classloader` expression, splices a lookup of
+-       that method's `Bytecode` through `Classfile`; no public inline entry point currently
+-       invokes it.
++   detail
++       Pas destiné à un usage direct. Contient `disassemble`, une implémentation de macro qui, à
++       partir d'une lambda de la forme `_.method` sur un type et d'une expression `Classloader`,
++       insère par splice une recherche du `Bytecode` de cette méthode par `Classfile` ; aucun point
++       d'entrée inline public ne l'invoque actuellement.
+
+-   entry .disassemble   the macro: a `target => Any` selecting a method, to that method's bytecode
++   entry .disassemble
++     info
++         la macro : d'un `target => Any` sélectionnant une méthode au bytecode de cette méthode
+
+-       Halts with _this type of lambda is not supported_ (code 91) for a lambda which is not a
+-       plain member selection.
++     detail
++         S'arrête avec _this type of lambda is not supported_ (code 91) pour une lambda qui n'est
++         pas une simple sélection de membre.

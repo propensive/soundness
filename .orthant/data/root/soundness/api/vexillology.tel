@@ -1,0 +1,91 @@
+tel 1.0
+
+base vexillology
+import soundness
+
+info   sets of an enumeration's cases packed into the bits of one `Long`, tested and set by case
+detail
+    _Vexillology_ gives bit flags a typed surface. `Flags[Color]` is a set of on-or-off
+    flags over the cases of the enumeration `Color`, held in the bits of a single `Long`,
+    each case owning the bit of its ordinal. A flag is tested and set by naming the case
+    rather than by a magic bit number, so a bit which means something else, or nothing,
+    cannot be reached; and the value stays one machine word — free to copy, cheap to store,
+    natural in a binary format — where a `Set[Color]` would allocate.
+
+    ```scala
+    import soundness.*
+
+    enum Color:
+      case Red, Orange, Yellow, Green, Blue, Indigo, Violet
+
+    import Color.*
+
+    var flags = Flags[Color]()
+    flags = flags(Orange) = true
+    flags = flags(Green) = true
+
+    flags(Orange)   // true
+    flags(Red)      // false
+    flags.set       // Set(Orange, Green)
+    ```
+
+    A `Flags` value is immutable: each assignment makes a new one, so the variable is
+    reassigned with the update syntax, `flags = flags(Orange) = true`. The operations need
+    the enumeration to be `Enumerable`, which every Scala 3 `enum` of singleton cases is.
+
+    The library has a single source set, `vexillology.core`, and everything is exported to
+    the `soundness` umbrella.
+
+refer vexillology.Flags
+
+entry .Flags   a set of an enumeration's cases, packed as bits into one `Long`
+  detail
+      `Flags[Enumeration]` is the opaque type `vexillology.internal.Flags`, exported here: a
+      `Long` in which bit *n* is set when the enumeration's case of ordinal *n* is in the
+      set. `Flags[Color]()` is the empty set, and three extension methods, in implicit scope
+      without any import, use it:
+
+      - `flags(case)` tests whether a case is set;
+      - `flags(case) = enabled` (that is, `flags.update(case, enabled)`) makes a new value
+        with the case set or cleared;
+      - `flags.set` reads the flags out as an ordinary `Set` of the cases.
+
+      ```scala
+      import soundness.*
+
+      enum Permission:
+        case Read, Write, Execute
+
+      val none = Flags[Permission]()
+      val readable = none(Permission.Read) = true
+      val both = readable(Permission.Write) = true
+
+      both(Permission.Write)   // true
+      both.set.size            // 2
+      ```
+
+      A `Long` has 64 bits, so an enumeration of up to 64 cases fits. Beyond that, a case's
+      bit position wraps around and it shares a bit with a lower case: there is no check.
+      Each method takes a case of a singleton type, so an enum case with parameters cannot
+      be a flag.
+  refer vexillology.internal
+
+entry .internal   the home of the opaque `Flags` type and its operations
+  hidden
+  detail
+      Not for direct use: the object exists to hold the opaque type `Flags` and the
+      extension methods on it, which are in implicit scope wherever a `Flags` is, since they
+      share its enclosing object. `Flags` is exported from here to the `vexillology`
+      package, whose page has the full account.
+  entry .Flags   a set of an enumeration's cases packed into a `Long`; see `vexillology.Flags`
+    detail
+        The opaque type over `Long`. Its page under the `vexillology` package has the full
+        account.
+    entry .apply   the empty set of flags over an enumeration, with no bit set, `Flags[Color]()`
+  entry .apply   whether a case is set in some flags, `flags(case)`
+      Needs the enumeration to be `Enumerable`, to find the case's ordinal.
+  entry .update   a copy of some flags with a case set or cleared, `flags(case) = enabled`
+      Returns the new `Flags` rather than changing the receiver, so a variable holding the
+      flags is reassigned: `flags = flags(Orange) = true`.
+  entry .set   the cases set in some flags, as a `Set` of the enumeration
+      Visits only the set bits, lowest first.

@@ -1,0 +1,556 @@
+orthant 1 language
+
+- ## The Browser DOM
++ ## Le DOM du navigateur
+
+- ### About
++ ### Présentation
+
+- A web page is a tree of live objects: the document, its elements, and the window around
+- them. The browser publishes their interface in
+- [WebIDL](https://en.wikipedia.org/wiki/Web_IDL), which says which members `Document` has,
+- what `getElementById` takes, and what it returns.
++ Une page web est un arbre d'objets vivants : le document, ses éléments, et la fenêtre qui
++ les entoure. Le navigateur publie leur interface en
++ [WebIDL](https://en.wikipedia.org/wiki/Web_IDL), qui indique quels membres possède
++ `Document`, ce que prend `getElementById`, et ce que cette méthode renvoie.
+
+- Those definitions are read at [compiletime]. An expression over the page, which finds an
+- element, gives it focus, or scrolls the window, is written in Scala. It is checked, member
+- by member, against the browser's own declarations, and is written out as JavaScript for the
+- page to run.
++ Ces définitions sont lues [à la compilation][compilation]. Une expression sur la page, qui
++ trouve un élément, lui donne le focus, ou fait défiler la fenêtre, s'écrit en Scala. Elle
++ est vérifiée, membre par membre, par rapport aux propres déclarations du navigateur, et est
++ écrite en JavaScript pour que la page l'exécute.
+
+- The page's globals, `document` and `window`, are foreign values of the `Browser`
+- *ecosystem*. They are navigated as though the DOM's interfaces were Scala types, and every
+- step gives another foreign value, of the declared type. The resulting expression can be
+- serialized to JavaScript text, or placed directly in an event-handler attribute of an
+- [HTML](html.md) element, such as `onclick`.
++ Les globales de la page, `document` et `window`, sont des valeurs étrangères de
++ l'*écosystème* `Browser`. On les parcourt comme si les interfaces du DOM étaient des types
++ Scala, et chaque étape donne une autre valeur étrangère, du type déclaré. L'expression
++ résultante peut être sérialisée en texte JavaScript, ou placée directement dans un attribut
++ de gestionnaire d'événement d'un élément [HTML](html.md), comme `onclick`.
+
+- ### On scripting the browser from Scala
++ ### Scripter le navigateur depuis Scala
+
+- A Scala program which generates a page runs on the JVM, but the behavior which it attaches
+- to the page runs in a browser. The usual way to bridge the gap is a string: `onclick="…"`,
+- holding JavaScript which the compiler never sees. A misspelled method, an argument of the
+- wrong type, or a call on something which is not an element, each survives compilation, and
+- fails, silently or loudly, in someone else's browser.
++ Un programme Scala qui génère une page s'exécute sur la JVM, mais le comportement qu'il
++ attache à la page s'exécute dans un navigateur. La manière habituelle de combler l'écart est
++ une chaîne : `onclick="…"`, contenant du JavaScript que le compilateur ne voit jamais. Une
++ méthode mal orthographiée, un argument du mauvais type, ou un appel sur quelque chose qui
++ n'est pas un élément, survivent chacun à la compilation, et échouent, silencieusement ou
++ bruyamment, dans le navigateur de quelqu'un d'autre.
+
+- Nothing here runs the DOM on the JVM. A navigation over `document` builds an *expression*: a
+- typed tree of references, selections and applications. It performs nothing itself. The
+- expression is serialized to JavaScript, and handed to the page.
++ Rien ici n'exécute le DOM sur la JVM. Un parcours de `document` construit une
++ *expression* : un arbre typé de références, de sélections et d'applications. Elle n'effectue
++ rien par elle-même. L'expression est sérialisée en JavaScript, et transmise à la page.
+
+- What the compiler checks is the construction. A member must exist on the foreign type, and
+- an argument must be a Scala value with a known foreign counterpart. The mechanism is the
+- general one for [foreign interfaces](foreign-interop.md), with the browser as its ecosystem,
+- and the DOM's WebIDL as its definition file.
++ Ce que vérifie le compilateur, c'est la construction. Un membre doit exister sur le type
++ étranger, et un argument doit être une valeur Scala dotée d'une contrepartie étrangère
++ connue. Le mécanisme est le mécanisme général des
++ [interfaces étrangères](foreign-interop.md), avec le navigateur comme écosystème, et le
++ WebIDL du DOM comme fichier de définitions.
+
+- Everything comes from the `soundness` package. The second import lets the samples print
+- their results:
++ Tout provient du package `soundness`. Le second import permet aux exemples d'afficher leurs
++ résultats :
+
+= their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### The page's globals
++ ### Les globales de la page
+
+- `document` and `window` are values of the types `Foreign of "Document" from Browser` and
+- `Foreign of "Window" from Browser`. Each is a foreign value, whose *topic* is the name of a
+- WebIDL interface, and whose *origin* is the `Browser` ecosystem. Each stands for the
+- JavaScript global of the same name, and nothing more: a reference, to be resolved when the
+- page runs.
++ `document` et `window` sont des valeurs des types `Foreign of "Document" from Browser` et
++ `Foreign of "Window" from Browser`. Chacune est une valeur étrangère, dont le *sujet* est le
++ nom d'une interface WebIDL, et dont l'*origine* est l'écosystème `Browser`. Chacune
++ représente la globale JavaScript du même nom, et rien de plus : une référence, à résoudre
++ lorsque la page s'exécute.
+
+= page runs.
+=
+- ```scala
++ ```scala
+
+- val page: Foreign of "Document" from Browser = document
++ val page: Foreign of "Document" from Browser = document
+
+- val frame: Foreign of "Window" from Browser = window
++ val frame: Foreign of "Window" from Browser = window
+
+= val frame: Foreign of "Window" from Browser = window
+- ```
++ ```
+
+- The `Browser` ecosystem has its own interface definitions, so no further import is needed
+- to navigate from either value.
++ L'écosystème `Browser` a ses propres définitions d'interfaces ; aucun import supplémentaire
++ n'est donc nécessaire pour naviguer à partir de l'une ou l'autre valeur.
+
+- ### Navigating the DOM
++ ### Parcourir le DOM
+
+- The members of a foreign value are the members which its WebIDL interface declares, and
+- selecting one gives a foreign value of the declared result type. `Document` declares
+- `getElementById`, which returns an `HTMLElement`. The result is therefore navigated onward,
+- to the members of `HTMLElement`, such as `focus`, `click` and `blur`. Inheritance is
+- flattened, so an `HTMLElement` also offers everything which `Element` and `Node` declare:
++ Les membres d'une valeur étrangère sont les membres que déclare son interface WebIDL, et en
++ sélectionner un donne une valeur étrangère du type de résultat déclaré. `Document` déclare
++ `getElementById`, qui renvoie un `HTMLElement`. On poursuit donc le parcours à partir du
++ résultat, vers les membres de `HTMLElement`, comme `focus`, `click` et `blur`. L'héritage est
++ aplati ; un `HTMLElement` offre donc aussi tout ce que déclarent `Element` et `Node` :
+
+= flattened, so an `HTMLElement` also offers everything which `Element` and `Node` declare:
+=
+- ```scala
++ ```scala
+
+- val heading: Foreign of "HTMLElement" from Browser = document.getElementById(t"heading")
++ val heading: Foreign of "HTMLElement" from Browser = document.getElementById(t"heading")
+
+- val focused = heading.focus()
++ val focused = heading.focus()
+
+- val hidden = heading.setAttribute(t"hidden", t"true")
++ val hidden = heading.setAttribute(t"hidden", t"true")
+
+= val hidden = heading.setAttribute(t"hidden", t"true")
+- ```
++ ```
+
+- `querySelectorAll` returns a sequence, and a sequence is indexed with an integer, to give an
+- element of its declared type. `Window` declares a `document` attribute, so the same page can
+- be reached by either route:
++ `querySelectorAll` renvoie une séquence, et une séquence s'indexe avec un entier, pour donner
++ un élément de son type déclaré. `Window` déclare un attribut `document` ; on peut donc
++ atteindre la même page par l'un ou l'autre chemin :
+
+= be reached by either route:
+=
+- ```scala
++ ```scala
+
+- val first: Foreign of "HTMLElement" from Browser = document.querySelectorAll(t".btn")(0)
++ val first: Foreign of "HTMLElement" from Browser = document.querySelectorAll(t".btn")(0)
+
+- val viaWindow = window.document.getElementById(t"x").focus()
++ val viaWindow = window.document.getElementById(t"x").focus()
+
+= val viaWindow = window.document.getElementById(t"x").focus()
+- ```
++ ```
+
+- A member which the interface does not declare is a compile error. It is the mistake which a
+- browser would otherwise report as `undefined is not a function`, caught where the expression
+- is written:
++ Un membre que l'interface ne déclare pas est une erreur de compilation. C'est l'erreur qu'un
++ navigateur signalerait autrement sous la forme `undefined is not a function`, détectée là où
++ l'expression est écrite :
+
+= is written:
+=
+- ```scala fuel
++ ```scala fuel
+
+= is written:
+=
+= ```scala fuel
+- compile
++ compile
+
+= is written:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= is written:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- document.getElementByld(t"heading")
++ document.getElementByld(t"heading")
+
+= document.getElementByld(t"heading")
+- ```
++ ```
+
+- So is an argument of the wrong type:
++ Il en va de même d'un argument du mauvais type :
+
+= So is an argument of the wrong type:
+=
+- ```scala fuel
++ ```scala fuel
+
+= So is an argument of the wrong type:
+=
+= ```scala fuel
+- compile
++ compile
+
+= So is an argument of the wrong type:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= So is an argument of the wrong type:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- document.getElementById(42)
++ document.getElementById(42)
+
+= document.getElementById(42)
+- ```
++ ```
+
+- ### Values that cross the boundary
++ ### Les valeurs qui franchissent la frontière
+
+- A Scala value is passed as an argument only where an `Interoperable` instance says which
+- foreign type it corresponds to:
++ Une valeur Scala n'est passée comme argument que là où une instance d'`Interoperable`
++ indique à quel type étranger elle correspond :
+
+= foreign type it corresponds to:
+=
+- ```tabular
++ ```tabular
+
+- column  Scala type
+- column  WebIDL type
+- row  `Text`  `DOMString`, `USVString`, `ByteString`, `CSSOMString`
+- row  `Boolean`  `boolean`
+- row  `S8`  `byte`
+- row  `U8`  `octet`
+- row  `S16`  `short`
+- row  `U16`  `unsigned short`
+- row  `S32`  `long`
+- row  `U32`  `unsigned long`
+- row  `S64`  `long long`
+- row  `U64`  `unsigned long long`
+- row  `F32`  `float`, `unrestricted float`
+- row  `F64`  `double`, `unrestricted double`
+- row  `List[T]`  `sequence<T>`, `FrozenArray<T>`
+- row  `Map[K, V]`  `record<K, V>`
+- row  `Optional[T]`  `T?`, with `Unset` as `null`
++ column  Type Scala
++ column  Type WebIDL
++ row  `Text`  `DOMString`, `USVString`, `ByteString`, `CSSOMString`
++ row  `Boolean`  `boolean`
++ row  `S8`  `byte`
++ row  `U8`  `octet`
++ row  `S16`  `short`
++ row  `U16`  `unsigned short`
++ row  `S32`  `long`
++ row  `U32`  `unsigned long`
++ row  `S64`  `long long`
++ row  `U64`  `unsigned long long`
++ row  `F32`  `float`, `unrestricted float`
++ row  `F64`  `double`, `unrestricted double`
++ row  `List[T]`  `sequence<T>`, `FrozenArray<T>`
++ row  `Map[K, V]`  `record<K, V>`
++ row  `Optional[T]`  `T?`, avec `Unset` pour `null`
+
+= row  `Optional[T]`  `T?`, with `Unset` as `null`
+- ```
++ ```
+
+- The numbers are [sized](numbers.md#numeric-types), so a parameter which is declared `long`
+- takes an `S32`, and not an unsized `Int`:
++ Les nombres ont une [taille](numbers.md#numeric-types) ; un paramètre déclaré `long` prend
++ donc un `S32`, et non un `Int` sans taille :
+
+= takes an `S32`, and not an unsized `Int`:
+=
+- ```scala
++ ```scala
+
+- val left: S32 = 0
++ val left: S32 = 0
+
+- val top: S32 = 480
++ val top: S32 = 480
+
+- val scrolled = window.scrollTo(left, top)
++ val scrolled = window.scrollTo(left, top)
+
+= val scrolled = window.scrollTo(left, top)
+- ```
++ ```
+
+- Each argument is checked against the declared type of its parameter, in the foreign type
+- system's own terms. `scrollTo` wants two values of the foreign type `s32`, and an `S32` is
+- the Scala value which provides one.
++ Chaque argument est vérifié par rapport au type déclaré de son paramètre, dans les termes
++ propres au système de types étranger. `scrollTo` attend deux valeurs du type étranger `s32`,
++ et un `S32` est la valeur Scala qui en fournit une.
+
+- ### Serializing to JavaScript
++ ### Sérialiser en JavaScript
+
+- A foreign value's `expr` is its expression, a `Foreign.Expression`, which is a small tree of
+- these nodes:
++ L'`expr` d'une valeur étrangère est son expression, une `Foreign.Expression`, qui est un
++ petit arbre composé de ces nœuds :
+
+= these nodes:
+=
+- ```tabular
++ ```tabular
+
+- column  Node
+- column  Stands for
+- column  Renders as
+- row  `Reference(name)`  a global  `document`
+- row  `Select(target, member, owner)`  a member of a value  `target.member`
+- row  `Apply(target, arguments)`  a call  `target(arguments)`
+- row  `Index(target, index)`  an index access  `target[index]`
+- row  `Literal(value)`  a constant  `'text'`, `42`
++ column  Nœud
++ column  Représente
++ column  Se rend en
++ row  `Reference(name)`  une globale  `document`
++ row  `Select(target, member, owner)`  un membre d'une valeur  `target.member`
++ row  `Apply(target, arguments)`  un appel  `target(arguments)`
++ row  `Index(target, index)`  un accès indexé  `target[index]`
++ row  `Literal(value)`  une constante  `'text'`, `42`
+
+= row  `Literal(value)`  a constant  `'text'`, `42`
+- ```
++ ```
+
+- `Javascript.serialize` writes the tree as JavaScript source text:
++ `Javascript.serialize` écrit l'arbre sous forme de code source JavaScript :
+
+= `Javascript.serialize` writes the tree as JavaScript source text:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `Javascript.serialize` writes the tree as JavaScript source text:
+=
+= ```scala fuel
+- run
++ run
+
+= `Javascript.serialize` writes the tree as JavaScript source text:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Javascript.serialize(focused.expr))
++ Out.println(Javascript.serialize(focused.expr))
+
+- Out.println(Javascript.serialize(first.click().expr))
++ Out.println(Javascript.serialize(first.click().expr))
+
+- Out.println(Javascript.serialize(scrolled.expr))
++ Out.println(Javascript.serialize(scrolled.expr))
+
+= Out.println(Javascript.serialize(scrolled.expr))
+- ```
++ ```
+
+- String literals are written with single quotes, so the output nests cleanly inside the
+- double quotes of an HTML attribute. A backslash, a quote or a line break in the text is
+- escaped:
++ Les littéraux de chaîne s'écrivent entre apostrophes simples ; la sortie s'imbrique donc
++ proprement dans les guillemets doubles d'un attribut HTML. Une barre oblique inverse, un
++ guillemet ou un saut de ligne dans le texte est échappé :
+
+= escaped:
+=
+- ```scala fuel
++ ```scala fuel
+
+= escaped:
+=
+= ```scala fuel
+- run
++ run
+
+= escaped:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Javascript.serialize(window.alert(t"it's done").expr))
++ Out.println(Javascript.serialize(window.alert(t"it's done").expr))
+
+= Out.println(Javascript.serialize(window.alert(t"it's done").expr))
+- ```
++ ```
+
+- The expression itself is plain data, and can be inspected, or matched on. The first sample
+- above is an `Apply` of a `Select` of the `Reference` named `document`, with a single
+- `Literal` argument, and [tests](testing.md) of generated scripts can assert on exactly that
+- structure.
++ L'expression elle-même est une simple donnée, et peut être inspectée ou filtrée. Le premier
++ exemple ci-dessus est un `Apply` d'un `Select` de la `Reference` nommée `document`, avec un
++ unique argument `Literal`, et les [tests](testing.md) de scripts générés peuvent vérifier
++ exactement cette structure.
+
+- ### Scripts in HTML attributes
++ ### Scripts dans les attributs HTML
+
+- An event-handler attribute of an HTML element, such as `onclick` or `onchange`, expects a
+- *script*. That is a distinct type of attribute, which ordinary text does not satisfy. A
+- foreign DOM expression does satisfy it, and is serialized to JavaScript when the page is
+- shown:
++ Un attribut de gestionnaire d'événement d'un élément HTML, comme `onclick` ou `onchange`,
++ attend un *script*. C'est un type d'attribut distinct, que le texte ordinaire ne satisfait
++ pas. Une expression DOM étrangère le satisfait, et est sérialisée en JavaScript lorsque la
++ page est affichée :
+
+= shown:
+=
+- ```scala
++ ```scala
+
+- import htmlDoms.html4Transitional
++ import htmlDoms.html4Transitional
+
+- import html4Transitional.*
++ import html4Transitional.*
+
+= import html4Transitional.*
+- ```
++ ```
+
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Button(onclick = heading.focus()).show)
++ Out.println(Button(onclick = heading.focus()).show)
+
+= Out.println(Button(onclick = heading.focus()).show)
+- ```
++ ```
+
+- A string in the same position is rejected, which is the point of the distinction. The
+- JavaScript which reaches the page was constructed by navigating the DOM's own definitions,
+- and no unchecked text can take its place:
++ Une chaîne à la même position est rejetée, et c'est tout l'intérêt de la distinction. Le
++ JavaScript qui atteint la page a été construit en parcourant les propres définitions du
++ DOM, et aucun texte non vérifié ne peut prendre sa place :
+
+= and no unchecked text can take its place:
+=
+- ```scala fuel
++ ```scala fuel
+
+= and no unchecked text can take its place:
+=
+= ```scala fuel
+- compile
++ compile
+
+= and no unchecked text can take its place:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= and no unchecked text can take its place:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Button(onclick = t"document.getElementById('heading').focus()")
++ Button(onclick = t"document.getElementById('heading').focus()")
+
+= Button(onclick = t"document.getElementById('heading').focus()")
+- ```
++ ```
+
+- Only a foreign value from the `Browser` ecosystem is accepted. A foreign expression from
+- another ecosystem, such as a TypeScript declaration or a WebAssembly interface, has the same
+- shape, but no way to run in a page. It cannot be an event handler, however well typed it is.
++ Seule une valeur étrangère de l'écosystème `Browser` est acceptée. Une expression étrangère
++ d'un autre écosystème, comme une déclaration TypeScript ou une interface WebAssembly, a la
++ même forme, mais aucun moyen de s'exécuter dans une page. Elle ne peut pas être un
++ gestionnaire d'événement, aussi bien typée soit-elle.
+
+- ### Related
++ ### Voir aussi
+
+- - [HTML](html.md#attributes) builds the elements which scripts are attached to.
+- - [Foreign interfaces](foreign-interop.md) describes the general mechanism, for other
+-   ecosystems.
+- - [Web automation](web-automation.md) drives a real browser from outside the page.
++ - [HTML](html.md#attributes) construit les éléments auxquels les scripts sont attachés.
++ - [Interfaces étrangères](foreign-interop.md) décrit le mécanisme général, pour d'autres
++   écosystèmes.
++ - [Automatisation web](web-automation.md) pilote un vrai navigateur depuis l'extérieur de
++   la page.

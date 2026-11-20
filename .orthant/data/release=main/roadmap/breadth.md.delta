@@ -1,0 +1,26 @@
+orthant 1 release
+
+= already provides, alongside its COSE support.
+=
+- Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and
++ Done when: the module ships with tests, error pages and a `doc/soundness/modules/` topic, and
+
+= it still reads what others write.
+=
+- Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and
++ Done when: the module ships with tests, error pages and a `doc/soundness/modules/` topic, and
+
+= carries.
+=
+- Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and a
++ Done when: the module ships with tests, error pages and a `doc/soundness/modules/` topic, and a
+
+= below them.
+=
+- Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and
++ Done when: the module ships with tests, error pages and a `doc/soundness/modules/` topic, and
+
+= Mail retrieval, completing what caduceus's SMTP support begins.
+=
+- Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and a
++ Done when: the module ships with tests, error pages and a `doc/soundness/modules/` topic, and a

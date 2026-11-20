@@ -1,0 +1,12 @@
+orthant 1 release
+
+= charisma: chemistry periodic-table chemical-equation molecule chemical-formula
++ chatelaine: webauthn passkey fido2 authentication passwordless security-key attestation
+
+- polaris: binary-serialization buffer pack unpack byte-buffer
+
+= sibylline: llm anthropic openai gemini chat-completions tool-use structured-output streaming
++ sigillate: jose jwt jws jwe jwk token bearer authentication signing encryption
+
+- zephyrine: parser parsing cursor emitter sparse-format
++ zephyrine: parser parsing cursor emitter sparse-format binary-layout pack unpack

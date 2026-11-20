@@ -1,0 +1,25 @@
+orthant 1 language
+
+=       label A directory, archived
+=       code
+=           import soundness.*
+=           import filesystemBackends.javaBaseFilesystem
+!           import filesystemOptions.createNonexistentParents
+-           import filesystemOptions.createParents
++             import filesystemOptions.createParents
+
+=       label Compressed and written to disk
+=       code
+=           import soundness.*
+=           import filesystemBackends.javaBaseFilesystem
+!           import filesystemOptions.createNonexistentParents
+-           import filesystemOptions.createParents
++             import filesystemOptions.createParents
+
+=       label Unpacked somewhere else
+=       code
+=           import soundness.*
+=           import filesystemBackends.javaBaseFilesystem
+!           import filesystemOptions.createNonexistentParents
+-           import filesystemOptions.createParents
++             import filesystemOptions.createParents

@@ -1,6 +1,0 @@
-tel 1.0
-
-# What a reader is told of the section `soundness`: its title in the navigation.
-title
-    - Soundness
-    + Soundness

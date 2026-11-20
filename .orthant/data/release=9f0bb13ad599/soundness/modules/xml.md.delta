@@ -1,0 +1,7 @@
+orthant 1 release
+
+= import temporaryDirectories.javaBaseTemporaryDirectory
++ import systems.javaBaseSystem
+
+- val feed: Path on Linux = temporaryDirectory[Path on Linux] / "feed.xml"
++ val feed: Path on Local = temporaryDirectory[Path on Local] / "feed.xml"

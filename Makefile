@@ -17,6 +17,9 @@ publishLocal:
 # in `etc/ci/attest.sh`); override it with `make test JOBS=8`.
 JOBS ?= $(or $(SOUNDNESS_CI_JOBS),4)
 
+# The Orthant command which reads the documentation store.
+ORTHANT ?= orthant
+
 test:
 	./mill -j $(JOBS) test.assembly
 	./etc/ci/fume-run.sh -c out/test/assembly.dest/out.jar $(TESTS)
@@ -71,14 +74,22 @@ check-scratch:
 unsafety:
 	flare metrics --dry-run
 
+# The documentation is held in the Orthant store in .orthant (doc/readme.md), so nothing in the
+# checkout is a file of it: the scripts which read it read the English at `main`, exported to
+# out/doc. It is the store as committed, not the working tree in doc/, which may have another
+# point checked out or edits not yet checked in.
+docs:
+	rm -rf out/doc
+	$(ORTHANT) export out/doc en main
+
 # The coercion-helper census: small defs that only re-wrap a value, found from the parse tree and
-# judged by a model against doc/standards/plumbing.md, recorded in git notes under
+# judged by a model against doc/standards/plumbing.md (read from out/doc), recorded in git notes under
 # refs/notes/flare-assess/plumbing (rule `plumbing` in .pyrocosm/flare/config.tel). Needs the
 # `anthropic` credential in Pyrocosm's cascade; nothing here fails.
-plumbing:
+plumbing: docs
 	flare assess plumbing $(PLUMBING_ARGS)
 
-build:
+build: docs
 	./mill groupCheck.validate
 	$(MAKE) check-iarray
 	$(MAKE) check-scratch
@@ -100,10 +111,10 @@ ci:
 wasm-e2e:
 	./etc/ci/wasm-e2e.sh
 
-# Evaluate every tutorial example in doc/en/modules/ through the flame REPL (`make doccheck`, or
+# Evaluate every tutorial example in doc/soundness/modules/ through the flame REPL (`make doccheck`, or
 # `make doccheck DOC=json` for one tutorial), and check the names the examples use against the
 # source. See etc/doccheck.py for what it needs and how it reads the results.
-doccheck:
+doccheck: docs
 	python3 etc/doccheck-names.py $(DOC)
 	python3 etc/doccheck.py $(DOC)
 
@@ -128,7 +139,7 @@ push:
 
 # Releases are cut by tagging, not by make. There is no version to bump — `publishVersion` comes
 # from the tag — and nothing to merge first, since the notes accumulate in
-# doc/migration/<version>.md from the start: `git tag -s X.Y.Z && git push --tags`. The tag
+# doc/migration/<version>.md (in the Orthant store) from the start: `git tag -s X.Y.Z && git push --tags`. The tag
 # fires .github/workflows/release.yml, which runs the shared release.sh in propensive/.github: it
 # gates on a signed tag, on CI already being green on that commit (which verifies the attestation
 # note), on the migration notes for that version, on groupCheck, and on every pin being a release;
@@ -143,7 +154,7 @@ release:
 	@echo "See propensive/.github." >&2
 	@exit 1
 
-# Install the commands pinned in etc/tools (fume, flare, flame, fuel) through their releases' installers.
+# Install the commands pinned in etc/tools (fume, flare, flame, fuel, orthant) through their releases' installers.
 tools:
 	./etc/shared tools.sh
 
@@ -188,4 +199,4 @@ matrix:
 	    $(foreach scala,3.6.1 3.6.2 3.6.3 3.6.4 3.7.0 3.7.1 3.7.1 main, \
 			    $(MAKE) bootstrap/$(scala):$(jdk);))
 
-.PHONY: publishLocal build dev ci check-givens check-while check-escapes check-scratch unsafety wasm-e2e doccheck fuelcheck test bench matrix attest verify-attest push release tools snapshot snapshot-prune xek-fetch
+.PHONY: publishLocal docs plumbing build dev ci check-givens check-while check-escapes check-scratch unsafety wasm-e2e doccheck fuelcheck test bench matrix attest verify-attest push release tools snapshot snapshot-prune xek-fetch

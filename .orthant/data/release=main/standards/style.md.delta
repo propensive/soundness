@@ -1,0 +1,10 @@
+orthant 1 release
+
+- The documents in `doc/modules/` are tutorials, each introducing one feature of
++ The documents in `doc/soundness/modules/` are tutorials, each introducing one feature of
+
+-   `doc/fixtures/<tutorial>.scala`, which both checkers compile before the first fence.
++   `etc/fixtures/<tutorial>.scala`, which both checkers compile before the first fence.
+
+- package* — is defined in `doc/en/glossary.tel`, and written in brackets where a reader may not yet
++ package* — is defined in `doc/soundness/glossary.tel`, and written in brackets where a reader may not yet

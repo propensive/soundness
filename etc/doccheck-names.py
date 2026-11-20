@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Check the names the tutorials' ```scala examples use against the source of `main`.
 
-The examples under doc/en/modules/ are prose, so nothing compiles them against the tree they
-live in. This script does the mechanical part: every `import family.member` in a fence must
+The examples under doc/soundness/modules/ are prose (read from out/doc, the copy of the Orthant
+store's English which `make docs` exports), so nothing compiles them against the tree they live
+in. This script does the mechanical part: every `import family.member` in a fence must
 name a member declared somewhere under lib/, every capitalised name must be declared in lib/
 (or by the fences themselves), and a short list of retired vocabulary must not appear at all.
 For a missing name it looks for the `// OldName → New.Name` comment the API-nesting drive
@@ -98,8 +99,8 @@ def source_text():
     return '\n'.join(chunks), renames
 
 def main():
-    docs = [d if d.endswith('.md') else os.path.join('doc', 'modules', d + '.md') for d in sys.argv[1:]] \
-        or sorted(glob.glob('doc/en/modules/*.md'))
+    docs = [d if d.endswith('.md') else os.path.join('out', 'doc', 'soundness', 'modules', d + '.md') for d in sys.argv[1:]] \
+        or sorted(glob.glob('out/doc/soundness/modules/*.md'))
     source, renames = source_text()
     declared_in_source = set(re.findall(r'(?:class|object|enum|trait|type|val|def|given|case)\s+([A-Z][A-Za-z0-9]*)', source))
     exported = set(re.findall(r'\b([A-Z][A-Za-z0-9]*)\b', '\n'.join(

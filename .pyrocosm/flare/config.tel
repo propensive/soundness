@@ -78,7 +78,7 @@ model haiku
 rule plumbing
   assess def
   model  haiku
-  rubric doc/standards/plumbing.md
+  rubric out/doc/standards/plumbing.md
   criterion S1 +2 single expression
   criterion S2 +3 adapters only
   criterion S3 +3 round trip

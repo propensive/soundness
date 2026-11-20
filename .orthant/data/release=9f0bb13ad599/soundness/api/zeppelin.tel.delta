@@ -1,0 +1,22 @@
+orthant 1 release
+
+-     import filesystemOptions.{createNonexistentParents, overwritePreexisting}
++     import filesystemOptions.{createParents, overwritePreexisting}
+
+=       destination with `write`.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+=       import filesystemBackends.javaBaseFilesystem
+-       import filesystemOptions.{createNonexistentParents, overwritePreexisting}
++       import filesystemOptions.{createParents, overwritePreexisting}
+
+=       entry `Jar.manifest` makes first.
+=
+=       ```scala
+=       import soundness.*
+=       import charsets.utf8Charset
+=       import filesystemBackends.javaBaseFilesystem
+-       import filesystemOptions.{createNonexistentParents, overwritePreexisting}
++       import filesystemOptions.{createParents, overwritePreexisting}

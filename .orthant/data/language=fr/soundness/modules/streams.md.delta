@@ -1,0 +1,990 @@
+orthant 1 language
+
+- ## Streams
++ ## Flux
+
+- ### About
++ ### Présentation
+
+- Some data arrives or departs over time: a file too large to hold in memory, a network
+- connection, the output of a process. It is handled as a stream. One set of operations moves
+- data between sources and sinks:
++ Certaines données arrivent ou partent au fil du temps : un fichier trop volumineux pour tenir
++ en mémoire, une connexion réseau, la sortie d'un processus. Elles sont traitées sous forme de
++ flux. Un seul ensemble d'opérations déplace les données entre sources et puits :
+
+= data between sources and sinks:
+=
+- ```tabular
++ ```tabular
+
+- column  Operation
+- column  Does
+- row  `read`  pulls a source in, as a chosen type
+- row  `writeTo`  sends a value to a destination
+- row  `stream`  exposes a value as a stream of pieces
++ column  Opération
++ column  Effet
++ row  `read`  fait entrer une source, sous un type choisi
++ row  `writeTo`  envoie une valeur vers une destination
++ row  `stream`  expose une valeur sous forme de flux de morceaux
+
+= row  `stream`  exposes a value as a stream of pieces
+- ```
++ ```
+
+- What can be read, and what can be written, is decided by [typeclasses][typeclass]. A type
+- which describes how it becomes a stream can be read. A type which describes how it consumes
+- one can be written to. A new source or sink therefore joins the same `read` and `writeTo` as
+- everything else, with no plumbing of its own. One verb for each operation, ranging over every
+- type which supports it, is the [small APIs](../../philosophy/small-apis.md) discipline.
++ Ce qui peut être lu, et ce qui peut être écrit, est déterminé par des
++ [classes de types][classe de types]. Un type qui décrit comment il devient un flux peut être
++ lu. Un type qui décrit comment il en consomme un peut recevoir des écritures. Une nouvelle
++ source ou un nouveau puits rejoint donc les mêmes `read` et `writeTo` que tout le reste, sans
++ tuyauterie propre. Un verbe par opération, portant sur tous les types qui la prennent en
++ charge, c'est la discipline des [petites API](../../philosophy/small-apis.md).
+
+- Underneath those operations is a streaming *kernel*, whose central type is a `Stream`. It is
+- not a lazy sequence of chunks. It is an endpoint which is pulled from, over a buffer whose
+- readable window is handed to exactly one consumer, without copying.
++ Sous ces opérations se trouve un *noyau* de flux, dont le type central est un `Stream`. Ce
++ n'est pas une séquence paresseuse de morceaux. C'est un endpoint dans lequel on
++ puise, sur un tampon dont la fenêtre lisible est remise à exactement un consommateur, sans
++ copie.
+
+- ### On streaming
++ ### À propos des flux
+
+- The JVM's streaming is a pair of mutable objects, an `InputStream` and an `OutputStream`. They
+- are read and written by side effect, one imperative call at a time, and the reader is
+- responsible for buffering, decoding and closing. Nothing in a method's type says whether it
+- streams, what kind of element it streams, or how the bytes become text.
++ Les flux de la JVM sont une paire d'objets mutables, un `InputStream` et un `OutputStream`. On
++ les lit et on y écrit par effet de bord, un appel impératif à la fois, et le lecteur est
++ responsable de la mise en tampon, du décodage et de la fermeture. Rien dans le type d'une
++ méthode ne dit si elle produit un flux, quel genre d'élément elle produit, ni comment les
++ octets deviennent du texte.
+
+- The obvious functional answer is a lazy list of chunks. That fixes the typing, and loses the
+- performance. Every chunk is an allocation, and every stage copies. The memoization which makes
+- a lazy list replayable is exactly what keeps a large source alive in memory when nothing
+- wanted it kept.
++ La réponse fonctionnelle évidente est une liste paresseuse de morceaux. Elle règle le typage,
++ et perd la performance. Chaque morceau est une allocation, et chaque étape copie. La
++ mémoïsation qui rend une liste paresseuse rejouable est exactement ce qui maintient en mémoire
++ une source volumineuse alors que personne ne voulait la conserver.
+
+- Here a third route is taken. A `Stream` is a *pull endpoint*. A consumer calls `refill` with
+- the amount it is prepared to take, and gets back a window into a buffer, which it reads and
+- then skips past. Nothing is copied, and nothing is retained.
++ Ici, une troisième voie est suivie. Un `Stream` est un *endpoint de tirage*. Un
++ consommateur appelle `refill` avec la quantité qu'il est prêt à prendre, et reçoit en retour
++ une fenêtre sur un tampon, qu'il lit puis dépasse. Rien n'est copié, et rien n'est retenu.
+
+- Two properties follow from that design:
++ Deux propriétés découlent de cette conception :
+
+- - **Backpressure needs no mechanism.** A consumer which does not pull demands nothing, so
+-   backpressure is simply the absence of a call.
+- - **Stages compose without queues.** They run as nested calls on the consumer's thread, with
+-   no synchronization, until a stage explicitly crosses to another thread.
++ - **La contre-pression ne requiert aucun mécanisme.** Un consommateur qui ne tire pas ne
++   demande rien, si bien que la contre-pression est simplement l'absence d'un appel.
++ - **Les étapes se composent sans files d'attente.** Elles s'exécutent sous forme d'appels
++   imbriqués sur le thread du consommateur, sans synchronisation, jusqu'à ce qu'une étape passe
++   explicitement sur un autre thread.
+
+- The design has one requirement. A window belongs to one consumer, so a stream must not be read
+- twice, or shared. This is checked, and not merely documented. A stream is an exclusive
+- [capability], and the streaming libraries are compiled with
+- [capture and separation checking](../../philosophy/capture-checking.md) enabled. Aliasing a
+- stream, or letting one escape the scope which owns its source, is a compile error. Where
+- replay really is wanted, `memoize` drains the stream once into an [immutable] value, which may
+- then be shared freely. That is the explicit, bounded replacement for a lazy list's implicit
+- caching.
++ La conception a une exigence. Une fenêtre appartient à un seul consommateur, si bien qu'un
++ flux ne doit pas être lu deux fois, ni partagé. Cela est vérifié, et pas seulement documenté.
++ Un flux est une [capacité] exclusive, et les bibliothèques de flux sont compilées avec le
++ [contrôle des captures et de la séparation](../../philosophy/capture-checking.md) activé.
++ Créer un alias d'un flux, ou en laisser un s'échapper de la portée qui possède sa source, est
++ une erreur de compilation. Là où l'on veut réellement rejouer, `memoize` vide le flux une fois
++ dans une valeur [immuable], qui peut ensuite être partagée librement. C'est le remplacement
++ explicite et borné de la mise en cache implicite d'une liste paresseuse.
+
+- Everything comes from the `soundness` package. An encoding and a decoding of characters are in
+- scope, for the boundary between text and bytes, and the last two imports let the samples print
+- their results:
++ Tout provient du package `soundness`. Un encodage et un décodage de caractères sont dans la
++ portée, pour la frontière entre texte et octets, et les deux derniers imports permettent aux
++ exemples d'afficher leurs résultats :
+
+= their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import charsets.utf8Charset
++ import charsets.utf8Charset
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLinux
+
+- import filesystemOptions.overwritePreexisting
++ import filesystemOptions.overwritePreexisting
+
+- import filesystemOptions.createNonexistentParents
++ import filesystemOptions.createNonexistentParents
+
+- import stdios.javaLangSystemStdio
++ import stdios.javaLangSystemStdio
+
+- import termcapDefinitions.basicTermcap
++ import termcapDefinitions.basicTermcap
+
+= import termcapDefinitions.basicTermcap
+- ```
++ ```
+
+- ### Reading a source
++ ### Lire une source
+
+- `read` pulls a source in, as the type named. A source of bytes reads equally as `Text`, as raw
+- `Data`, or as a stream of either, and the [encoding](characters.md) in scope bridges bytes and
+- text:
++ `read` fait entrer une source, sous le type nommé. Une source d'octets se lit aussi bien en
++ `Text`, en `Data` brutes, ou en flux de l'un ou de l'autre, et l'[encodage](characters.md)
++ dans la portée fait le pont entre octets et texte :
+
+= text:
+=
+- ```scala
++ ```scala
+
+- val source = t"The quick brown fox"
++ val source = t"The quick brown fox"
+
+= val source = t"The quick brown fox"
+- ```
++ ```
+
+= val source = t"The quick brown fox"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val source = t"The quick brown fox"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val source = t"The quick brown fox"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(source.read[Text])
++ Out.println(source.read[Text])
+
+- Out.println(source.read[Data].length.show)
++ Out.println(source.read[Data].length.show)
+
+= Out.println(source.read[Data].length.show)
+- ```
++ ```
+
+- The same `read` works on any source with a `Readable` instance, such as a
+- [file](filesystem.md#reading-and-writing), a [network socket](sockets.md) or the output of a
+- [process](processes.md). Reading a [URL](http-client.md) as text, and reading a file as bytes,
+- are the one operation.
++ Le même `read` fonctionne sur toute source dotée d'une instance `Readable`, telle qu'un
++ [fichier](filesystem.md#reading-and-writing), un [socket réseau](sockets.md) ou la sortie
++ d'un [processus](processes.md). Lire une [URL](http-client.md) en texte, et lire un fichier en
++ octets, sont une seule et même opération.
+
+- ### Writing to a sink
++ ### Écrire dans un puits
+
+- `writeTo` sends a value to a destination which knows how to consume it. The value may be text,
+- bytes, or a stream of either, and the destination's `Writable` instance receives it:
++ `writeTo` envoie une valeur vers une destination qui sait la consommer. La valeur peut être du
++ texte, des octets, ou un flux de l'un ou de l'autre, et l'instance `Writable` de la
++ destination la reçoit :
+
+= bytes, or a stream of either, and the destination's `Writable` instance receives it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= bytes, or a stream of either, and the destination's `Writable` instance receives it:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= bytes, or a stream of either, and the destination's `Writable` instance receives it:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val destination = t"/tmp/streams-tutorial.txt".as[Path on Linux]
++ val destination = t"/tmp/streams-tutorial.txt".as[Path on Linux]
+
+- source.writeTo(destination)
++ source.writeTo(destination)
+
+= source.writeTo(destination)
+- ```
++ ```
+
+- ### Making a value readable or writable
++ ### Rendre une valeur lisible ou inscriptible
+
+- A type becomes a source by describing how it turns into a stream, and a sink by describing how
+- it consumes one. Each is a typeclass with a single method:
++ Un type devient une source en décrivant comment il se transforme en flux, et un puits en
++ décrivant comment il en consomme un. Chacun est une classe de types à méthode unique :
+
+= it consumes one. Each is a typeclass with a single method:
+=
+- ```scala
++ ```scala
+
+- case class Row(name: Text, count: Int)
++ case class Row(name: Text, count: Int)
+
+- given rowStreamable: (Row is Streamable by Text over Credit) =
++ given rowStreamable: (Row is Streamable by Text over Credit) =
+
+-   row => Stream(t"${row.name},${row.count}")
++   row => Stream(t"${row.name},${row.count}")
+
+=   row => Stream(t"${row.name},${row.count}")
+- ```
++ ```
+
+- With that instance in scope, a `Row` can be `read`, sent with `writeTo`, or exposed with
+- `stream`, without any further definitions:
++ Avec cette instance dans la portée, une `Row` peut être lue avec `read`, envoyée avec
++ `writeTo`, ou exposée avec `stream`, sans aucune autre définition :
+
+= `stream`, without any further definitions:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `stream`, without any further definitions:
+=
+= ```scala fuel
+- run
++ run
+
+= `stream`, without any further definitions:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Row(t"apples", 3).read[Text])
++ Out.println(Row(t"apples", 3).read[Text])
+
+= Out.println(Row(t"apples", 3).read[Text])
+- ```
++ ```
+
+- ### Streaming a value
++ ### Produire un flux à partir d'une valeur
+
+- `stream` turns a value into a pull endpoint. `source` does the same through a `Streamable`
+- instance, and names the type of element:
++ `stream` transforme une valeur en endpoint de tirage. `source` fait de même via une
++ instance `Streamable`, et nomme le type d'élément :
+
+= instance, and names the type of element:
+=
+- ```scala
++ ```scala
+
+- val bytes = t"The quick brown fox".in[Data].stream
++ val bytes = t"The quick brown fox".in[Data].stream
+
+- val text = Row(t"apples", 3).source[Text]
++ val text = Row(t"apples", 3).source[Text]
+
+= val text = Row(t"apples", 3).source[Text]
+- ```
++ ```
+
+- The first is a `Stream[Data]`, and the second a `Stream[Text]`.
++ Le premier est un `Stream[Data]`, et le second un `Stream[Text]`.
+
+- ### Composing a pipeline
++ ### Composer un pipeline
+
+- A stage transforms a stream into a stream of a different type. `via` attaches one on the pull
+- side. The whole chain runs on the consumer's thread, as nested refills, with no threads, no
+- queues and no intermediate collections. Each stage takes what the last one produced, which is
+- [composability](../../philosophy/composability.md) in its most literal form:
++ Une étape transforme un flux en un flux d'un autre type. `via` en attache une du côté du
++ tirage. Toute la chaîne s'exécute sur le thread du consommateur, sous forme de remplissages
++ imbriqués, sans threads, sans files d'attente et sans collections intermédiaires. Chaque étape
++ prend ce que la précédente a produit, ce qui est la
++ [composabilité](../../philosophy/composability.md) sous sa forme la plus littérale :
+
+= [composability](../../philosophy/composability.md) in its most literal form:
+=
+- ```scala fuel
++ ```scala fuel
+
+= [composability](../../philosophy/composability.md) in its most literal form:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= [composability](../../philosophy/composability.md) in its most literal form:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import textSanitizers.skipSanitizer
++ import textSanitizers.skipSanitizer
+
+- val compressed = t"The quick brown fox".in[Data].compress[Gzip]
++ val compressed = t"The quick brown fox".in[Data].compress[Gzip]
+
+- val decompressor = summon[Gzip is Compression].decompressor()
++ val decompressor = summon[Gzip is Compression].decompressor()
+
+- val decoder = summon[Charset]
++ val decoder = summon[Charset]
+
+- compressed.stream.viaDuct(decompressor).via(decoder)
++ compressed.stream.viaDuct(decompressor).via(decoder)
+
+= compressed.stream.viaDuct(decompressor).via(decoder)
+- ```
++ ```
+
+- A `Duct` is the kernel's type for a transformation, and is what the `decompressor()` of a
+- [compression format](compression.md) returns. It is attached with `viaDuct`. Any other value
+- which describes a transformation, and has a `Ductile` instance, such as a character encoding
+- or a [base encoding](base-encoding.md#encoding-a-stream), is attached with `via`.
++ Un `Duct` est le type du noyau pour une transformation, et c'est ce que renvoie le
++ `decompressor()` d'un [format de compression](compression.md). Il s'attache avec `viaDuct`.
++ Toute autre valeur qui décrit une transformation, et dotée d'une instance `Ductile`, telle
++ qu'un encodage de caractères ou un [encodage en base](base-encoding.md#encoding-a-stream),
++ s'attache avec `via`.
+
+- A pipeline ends in a *terminal* operation, which drains the endpoint and closes it:
++ Un pipeline se termine par une opération *terminale*, qui vide l'endpoint et le
++ ferme :
+
+= A pipeline ends in a *terminal* operation, which drains the endpoint and closes it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A pipeline ends in a *terminal* operation, which drains the endpoint and closes it:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= A pipeline ends in a *terminal* operation, which drains the endpoint and closes it:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- var count = 0
++ var count = 0
+
+- compressed.stream.memoize
++ compressed.stream.memoize
+
+- compressed.stream.drain: region =>
++ compressed.stream.drain: region =>
+
+-   window => count += (window: Interval).size
++   window => count += (window: Interval).size
+
+=   window => count += (window: Interval).size
+- ```
++ ```
+
+- `memoize` drains the stream into one immutable value. `drain` hands each raw window to a
+- function, and `gather` is its accumulating counterpart. Both expose the raw window, not boxed
+- elements, so a reduction over bytes runs over the array with no cost for each element.
++ `memoize` vide le flux dans une seule valeur immuable. `drain` remet chaque fenêtre brute à
++ une fonction, et `gather` en est l'équivalent accumulateur. Tous deux exposent la fenêtre
++ brute, et non des éléments boxés, si bien qu'une réduction sur des octets parcourt le
++ tableau sans coût par élément.
+
+- `truncate` and `discard` bound a stream without draining it, and release the rest of the
+- upstream unread. They count bytes or records, not the elements of a collection, which is why
+- they do not borrow the names `take` and `drop`.
++ `truncate` et `discard` bornent un flux sans le vider, et libèrent le reste de l'amont sans le
++ lire. Ils comptent des octets ou des enregistrements, et non les éléments d'une collection,
++ et c'est pourquoi ils n'empruntent pas les noms `take` et `drop`.
+
+- Where a pipeline ends in a chain which is *pushed* to, instead of in a value, `pump` is the
+- single point at which data crosses from the pull side to the push side:
++ Là où un pipeline se termine par une chaîne dans laquelle on *pousse*, au lieu d'une valeur,
++ `pump` est l'unique point où les données passent du côté du tirage au côté de la poussée :
+
+= single point at which data crosses from the pull side to the push side:
+=
+- ```scala fuel
++ ```scala fuel
+
+= single point at which data crosses from the pull side to the push side:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= single point at which data crosses from the pull side to the push side:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- def forward(stream: Stream[Data] over Credit, intake: Intake[Data] over Credit): Unit =
++ def forward(stream: Stream[Data] over Credit, intake: Intake[Data] over Credit): Unit =
+
+-   stream.pump(intake)
++   stream.pump(intake)
+
+=   stream.pump(intake)
+- ```
++ ```
+
+- In summary:
++ En résumé :
+
+= In summary:
+=
+- ```tabular
++ ```tabular
+
+- column  Operation
+- column  Drains the stream
+- column  Gives
+- row  `memoize`  yes  one immutable value
+- row  `drain`  yes  each raw window, to a function
+- row  `gather`  yes  an accumulator threaded through each raw window
+- row  `pump`  yes  every window, pushed into an `Intake`
+- row  `truncate`  no  the first records or bytes, releasing the remainder unread
+- row  `discard`  no  everything after the first records or bytes
++ column  Opération
++ column  Vide le flux
++ column  Donne
++ row  `memoize`  oui  une seule valeur immuable
++ row  `drain`  oui  chaque fenêtre brute, à une fonction
++ row  `gather`  oui  un accumulateur passé à travers chaque fenêtre brute
++ row  `pump`  oui  chaque fenêtre, poussée dans un `Intake`
++ row  `truncate`  non  les premiers enregistrements ou octets, en libérant le reste sans le lire
++ row  `discard`  non  tout ce qui suit les premiers enregistrements ou octets
+
+= row  `discard`  no  everything after the first records or bytes
+- ```
++ ```
+
+- ### Parsing with a cursor
++ ### Analyser avec un curseur
+
+- A parser does not consume a stream in bulk. It takes one element at a time, and looks at the
+- next element before deciding what to do with it. A `Cursor` is that view: a position over a
+- sequence of `Text` or `Data` blocks, built from an iterator, a `Chain` or a `Stream`. It
+- refills from its source as the position advances, so the parser sees one continuous run of
+- characters or bytes, however the source was divided into chunks:
++ Un analyseur ne consomme pas un flux en bloc. Il prend un élément à la fois, et regarde
++ l'élément suivant avant de décider quoi en faire. Un `Cursor` est cette vue : une position sur
++ une séquence de blocs `Text` ou `Data`, construite à partir d'un itérateur, d'une `Chain` ou
++ d'un `Stream`. Il se remplit depuis sa source à mesure que la position avance, si bien que
++ l'analyseur voit une suite continue de caractères ou d'octets, quelle que soit la manière dont
++ la source a été découpée en morceaux :
+
+= characters or bytes, however the source was divided into chunks:
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Does
+- row  `peek`  shows the current element without consuming it, as a `Datum`
+- row  `advance()`  moves past the current element
+- row  `next()`  moves past it, and reports whether anything remains
+- row  `position`, `line`, `column`  say where the cursor has reached
++ column  Méthode
++ column  Effet
++ row  `peek`  montre l'élément courant sans le consommer, sous forme de `Datum`
++ row  `advance()`  dépasse l'élément courant
++ row  `next()`  le dépasse, et indique s'il reste quelque chose
++ row  `position`, `line`, `column`  disent où est arrivé le curseur
+
+= row  `position`, `line`, `column`  say where the cursor has reached
+- ```
++ ```
+
+- A `Datum` compares directly with a `Char`, and is `Datum.End` once the source is exhausted:
++ Un `Datum` se compare directement à un `Char`, et vaut `Datum.End` une fois la source épuisée :
+
+= A `Datum` compares directly with a `Char`, and is `Datum.End` once the source is exhausted:
+=
+- ```scala
++ ```scala
+
+- val cursor = Cursor(Iterator(t"hello", t"world"))
++ val cursor = Cursor(Iterator(t"hello", t"world"))
+
+= val cursor = Cursor(Iterator(t"hello", t"world"))
+- ```
++ ```
+
+= val cursor = Cursor(Iterator(t"hello", t"world"))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val cursor = Cursor(Iterator(t"hello", t"world"))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val cursor = Cursor(Iterator(t"hello", t"world"))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((cursor.peek == 'h').inspect)
++ Out.println((cursor.peek == 'h').inspect)
+
+- cursor.advance()
++ cursor.advance()
+
+- Out.println(cursor.position.inspect)
++ Out.println(cursor.position.inspect)
+
+= Out.println(cursor.position.inspect)
+- ```
++ ```
+
+- A `mark` records a point to return to, or to copy from. `grab` gives everything between two
+- marks as one value, even where it straddles the blocks which the source was supplied in. A
+- mark may be taken only within `hold`, which keeps the marked region in the buffer until the
+- block ends. Outside `hold`, the cursor is free to discard what it has already passed:
++ Un `mark` enregistre un point auquel revenir, ou à partir duquel copier. `grab` donne tout ce
++ qui se trouve entre deux marques sous forme d'une seule valeur, même lorsque cela chevauche
++ les blocs dans lesquels la source a été fournie. Une marque ne peut être prise qu'à
++ l'intérieur de `hold`, qui conserve la région marquée dans le tampon jusqu'à la fin du bloc.
++ Hors de `hold`, le curseur est libre de jeter ce qu'il a déjà dépassé :
+
+= block ends. Outside `hold`, the cursor is free to discard what it has already passed:
+=
+- ```scala fuel
++ ```scala fuel
+
+= block ends. Outside `hold`, the cursor is free to discard what it has already passed:
+=
+= ```scala fuel
+- run
++ run
+
+= block ends. Outside `hold`, the cursor is free to discard what it has already passed:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val grabbed = cursor.hold:
++ val grabbed = cursor.hold:
+
+-   val start = cursor.mark
++   val start = cursor.mark
+
+-   for i <- 1 to 5 do cursor.next()
++   for i <- 1 to 5 do cursor.next()
+
+-   cursor.grab(start, cursor.mark)
++   cursor.grab(start, cursor.mark)
+
+- Out.println(grabbed)
++ Out.println(grabbed)
+
+= Out.println(grabbed)
+- ```
++ ```
+
+- The grabbed text runs from the end of the first block into the second. The parsers for
+- [JSON](json.md), [XML](xml.md) and the other formats are built on cursors, which is how they
+- read a document from a stream without holding it whole.
++ Le texte saisi s'étend de la fin du premier bloc jusque dans le second. Les analyseurs de
++ [JSON](json.md), de [XML](xml.md) et des autres formats sont construits sur des curseurs, et
++ c'est ainsi qu'ils lisent un document depuis un flux sans le conserver en entier.
+
+- ### Records
++ ### Enregistrements
+
+- Between raw windows and whole collections sits streaming by the record: rows, events, frames,
+- messages. A `Records[record]` is a stream whose windows are chunks of records, so its credit
+- counts records, not bytes. `delineate` splits a source of characters into lines, and `records`
+- iterates the parsed records of such a stream:
++ Entre les fenêtres brutes et les collections entières se situe le flux par enregistrement :
++ des lignes, des événements, des trames, des messages. Un `Records[record]` est un flux dont
++ les fenêtres sont des morceaux d'enregistrements, si bien que son crédit compte des
++ enregistrements, et non des octets. `delineate` découpe une source de caractères en lignes, et
++ `records` itère sur les enregistrements analysés d'un tel flux :
+
+= iterates the parsed records of such a stream:
+=
+- ```scala
++ ```scala
+
+- import lineSeparation.adaptiveLinefeedLineSeparation
++ import lineSeparation.adaptiveLinefeedLineSeparation
+
+- val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.as[Int]).to[List]
++ val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.as[Int]).to[List]
+
+= val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.as[Int]).to[List]
+- ```
++ ```
+
+= val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.as[Int]).to[List]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.as[Int]).to[List]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val numbers = t"1\n2\n3".source[Text].delineate.records.map(_.as[Int]).to[List]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(numbers.inspect)
++ Out.println(numbers.inspect)
+
+= Out.println(numbers.inspect)
+- ```
++ ```
+
+- Records are immutable values, so, unlike windows, they cross between stages and between
+- threads by reference. [CSV](csv.md#reading-rows) reads rows in this way, and
+- [JSON](json.md#ndjson) reads newline-delimited documents.
++ Les enregistrements sont des valeurs immuables, si bien que, contrairement aux fenêtres, ils
++ passent d'une étape à l'autre et d'un thread à l'autre par référence.
++ [CSV](csv.md#reading-rows) lit des lignes de cette manière, et [JSON](json.md#ndjson) lit des
++ documents délimités par des sauts de ligne.
+
+- ### Standard streams
++ ### Flux standard
+
+- Standard output and standard error are reached through `Out` and `Err`, which print through
+- the `Stdio` capability in scope. Standard output is a capability, not a global, so a test or a
+- [daemon](daemons.md) can redirect it:
++ La sortie standard et l'erreur standard s'atteignent via `Out` et `Err`, qui affichent via la
++ capacité `Stdio` dans la portée. La sortie standard est une capacité, et non une variable
++ globale, si bien qu'un test ou un [démon](daemons.md) peut la rediriger :
+
+= [daemon](daemons.md) can redirect it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= [daemon](daemons.md) can redirect it:
+=
+= ```scala fuel
+- run
++ run
+
+= [daemon](daemons.md) can redirect it:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"started")
++ Out.println(t"started")
+
+- Err.println(t"a warning")
++ Err.println(t"a warning")
+
+= Err.println(t"a warning")
+- ```
++ ```
+
+- ### Producing a stream over time
++ ### Produire un flux au fil du temps
+
+- Sometimes the elements of a stream are produced by one part of a program, and consumed by
+- another. A `Relay` bridges the two. Any number of producers `put` records into it as they
+- arise, one of them eventually calls `stop`, and a single reader owns the resulting stream:
++ Parfois, les éléments d'un flux sont produits par une partie d'un programme, et consommés par
++ une autre. Un `Relay` fait le pont entre les deux. Un nombre quelconque de producteurs y
++ déposent des enregistrements avec `put` à mesure qu'ils apparaissent, l'un d'eux appelle
++ finalement `stop`, et un unique lecteur possède le flux résultant :
+
+= arise, one of them eventually calls `stop`, and a single reader owns the resulting stream:
+=
+- ```scala
++ ```scala
+
+- val relay = Relay[Text]()
++ val relay = Relay[Text]()
+
+- relay.put(t"first")
++ relay.put(t"first")
+
+- relay.put(t"second")
++ relay.put(t"second")
+
+- relay.stop()
++ relay.stop()
+
+- val relayed = relay.stream
++ val relayed = relay.stream
+
+= val relayed = relay.stream
+- ```
++ ```
+
+- A relay's refill blocks for the first record. It then drains whatever else has already arrived
+- into the same window, so records are batched across the boundary between threads, and do not
+- each pay for a hand-off.
++ Le remplissage d'un relais bloque jusqu'au premier enregistrement. Il vide ensuite tout ce qui
++ est déjà arrivé dans la même fenêtre, si bien que les enregistrements sont regroupés par lots
++ à travers la frontière entre threads, et ne paient pas chacun le coût d'un transfert.
+
+- For traffic in bytes or characters between two threads, a `Conduit` is the counterpart which
+- has strictly one producer and one consumer, and is structured in blocks. Data crosses in
+- blocks, through a bounded queue. A writer which outpaces its reader therefore parks, which is
+- backpressure across threads, and the free capacity is exactly the credit which the reader
+- reports as demand.
++ Pour un trafic d'octets ou de caractères entre deux threads, un `Conduit` est l'équivalent qui
++ a strictement un producteur et un consommateur, et qui est structuré en blocs. Les données
++ passent par blocs, à travers une file d'attente bornée. Un écrivain qui va plus vite que son
++ lecteur se met donc en attente, ce qui est de la contre-pression entre threads, et la capacité
++ libre est exactement le crédit que le lecteur signale comme demande.
+
+- ### Combining and replicating streams
++ ### Combiner et répliquer des flux
+
+- `Confluence` merges several streams into one, in order of arrival, with one pump running for
+- each input. A slow consumer applies backpressure to every input, and the merged stream ends
+- when all of them have. It draws on [concurrency](concurrency.md), so it runs inside a
+- supervised scope:
++ `Confluence` fusionne plusieurs flux en un seul, dans l'ordre d'arrivée, avec une pompe en
++ cours d'exécution pour chaque entrée. Un consommateur lent exerce une contre-pression sur
++ chaque entrée, et le flux fusionné se termine lorsque toutes se sont terminées. Il s'appuie
++ sur la [concurrence](concurrency.md), si bien qu'il s'exécute à l'intérieur d'une portée
++ supervisée :
+
+= supervised scope:
+=
+- ```scala
++ ```scala
+
+- import threads.platformThreads
++ import threads.platformThreads
+
+- import probates.cancelProbate
++ import probates.cancelProbate
+
+- val first = Stream(t"one")
++ val first = Stream(t"one")
+
+- val second = Stream(t"two")
++ val second = Stream(t"two")
+
+- val third = Stream(t"three")
++ val third = Stream(t"three")
+
+- val merged = supervise(Confluence(first, second, third).memoize)
++ val merged = supervise(Confluence(first, second, third).memoize)
+
+= val merged = supervise(Confluence(first, second, third).memoize)
+- ```
++ ```
+
+- `Divergence` is the opposite. One source is delivered to several subscribers, and each chunk
+- is materialized once, and shared immutably between them. A subscriber whose queue is full
+- parks the pump, so the slowest subscriber sets the pace of the source, which is the correct
+- behavior for replication.
++ `Divergence` est l'inverse. Une source est livrée à plusieurs abonnés, et chaque morceau est
++ matérialisé une fois, et partagé de manière immuable entre eux. Un abonné dont la file
++ d'attente est pleine met la pompe en attente, si bien que l'abonné le plus lent impose le
++ rythme de la source, ce qui est le comportement correct pour une réplication.
+
+- ### Tuning backpressure
++ ### Régler la contre-pression
+
+- Every stage which allocates a buffer consults the `Buffering` policy in scope, so one given
+- tunes a whole pipeline. Its members are:
++ Chaque étape qui alloue un tampon consulte la politique `Buffering` dans la portée, si bien
++ qu'un seul given règle tout un pipeline. Ses membres sont :
+
+= tunes a whole pipeline. Its members are:
+=
+- ```tabular
++ ```tabular
+
+- column  Member
+- column  Meaning
+- column  Default
+- row  `capacity(substrate)`  the staging block size  4096 bytes, 2048 characters or 256 records
+- row  `transfer(substrate)`  the size of a block crossing an asynchronous boundary  sixteen staging blocks
+- row  `depth`  the transfer blocks of headroom a `Conduit` holds between writer and reader  16
+- row  `recycle`  whether drained transfer blocks return to the writer for reuse  on
++ column  Membre
++ column  Signification
++ column  Valeur par défaut
++ row  `capacity(substrate)`  la taille des blocs de transit  4096 octets, 2048 caractères ou 256 enregistrements
++ row  `transfer(substrate)`  la taille d'un bloc qui franchit une frontière asynchrone  seize blocs de transit
++ row  `depth`  la marge, en blocs de transfert, qu'un `Conduit` maintient entre écrivain et lecteur  16
++ row  `recycle`  si les blocs de transfert vidés retournent à l'écrivain pour être réutilisés  activé
+
+= row  `recycle`  whether drained transfer blocks return to the writer for reuse  on
+- ```
++ ```
+
+- The sizes are chosen for two reasons. Staging blocks want to stay in the processor's cache.
+- And every transfer block costs a synchronized hand-off, so the blocks which cross a boundary
+- want to be much larger than staging blocks.
++ Les tailles sont choisies pour deux raisons. Les blocs de transit doivent rester dans le cache
++ du processeur. Et chaque bloc de transfert coûte un transfert synchronisé, si bien que les
++ blocs qui franchissent une frontière doivent être bien plus grands que les blocs de transit.
+
+- The data in flight in a conduit is bounded by `(depth + 1)` transfer blocks. The throughput of
+- hand-offs collapses at very shallow depths: a depth of 2 reaches less than a tenth of the
+- default's throughput in the benchmarks. It levels off around the default, for a producer and
+- consumer in step with each other. A pipeline which works in bursts still gains from a depth
+- which covers the size of its bursts, in transfer blocks. Recycled blocks go to a shared pool
+- of capped size, which spreads the cost of allocating blocks across conduits.
++ Les données en vol dans un conduit sont bornées par `(depth + 1)` blocs de transfert. Le débit
++ des transferts s'effondre à des profondeurs très faibles : une profondeur de 2 atteint moins
++ d'un dixième du débit de la valeur par défaut dans les benchmarks. Il se stabilise autour de
++ la valeur par défaut, pour un producteur et un consommateur qui avancent au même pas. Un
++ pipeline qui fonctionne par rafales gagne tout de même à avoir une profondeur qui couvre la
++ taille de ses rafales, en blocs de transfert. Les blocs recyclés vont dans un pool partagé de
++ taille plafonnée, ce qui répartit le coût d'allocation des blocs entre les conduits.
+
+- Backpressure applies wherever data crosses between threads:
++ La contre-pression s'applique partout où des données passent d'un thread à l'autre :
+
+= Backpressure applies wherever data crosses between threads:
+=
+- ```tabular
++ ```tabular
+
+- column  Structure
+- column  Carries
+- column  Under backpressure
+- row  `Conduit`  bytes or characters, from one writer to one reader  the writer parks on a full ring
+- row  `Divergence`  one source, to several subscribers  the pump parks on the slowest subscriber's ring, until that stream is closed
+- row  `Confluence`  several streams, merged into one  the pumps park uniformly on the shared queue
+- row  HTTP/2  a body, in both directions  the peer waits for credit: the receive window, replenished only as the body is drained
+- row  `Relay`  records, from many producers to one reader  producers never block
++ column  Structure
++ column  Transporte
++ column  Sous contre-pression
++ row  `Conduit`  des octets ou des caractères, d'un écrivain vers un lecteur  l'écrivain se met en attente sur un anneau plein
++ row  `Divergence`  une source, vers plusieurs abonnés  la pompe se met en attente sur l'anneau de l'abonné le plus lent, jusqu'à la fermeture de ce flux
++ row  `Confluence`  plusieurs flux, fusionnés en un seul  les pompes se mettent uniformément en attente sur la file partagée
++ row  HTTP/2  un corps, dans les deux sens  le pair attend du crédit : la fenêtre de réception, renouvelée seulement à mesure que le corps est vidé
++ row  `Relay`  des enregistrements, de nombreux producteurs vers un lecteur  les producteurs ne bloquent jamais
+
+= row  `Relay`  records, from many producers to one reader  producers never block
+- ```
++ ```
+
+- The receive window which HTTP/2 advertises is 1 MiB by default, and can be tuned for each
+- connection. It bounds how far a peer can run ahead of a consumer which has stopped reading.
+- [HTTP server](http-server.md#http2) describes it.
++ La fenêtre de réception qu'annonce HTTP/2 est de 1 Mio par défaut, et peut être réglée pour
++ chaque connexion. Elle borne l'avance que peut prendre un pair sur un consommateur qui a cessé
++ de lire. [Serveur HTTP](http-server.md#http2) la décrit.
+
+- One structure deliberately opts out. `Relay` is the bus for records from many producers, and
+- its contract is that producers never block. HTTP/2's multiplexer for outbound frames depends
+- on that, since a blocking `put` there would risk a deadlock between streams. A relay's
+- discipline is therefore its single consumer, and not a bound.
++ Une structure s'en exclut délibérément. `Relay` est le bus des enregistrements issus de
++ nombreux producteurs, et son contrat est que les producteurs ne bloquent jamais. Le
++ multiplexeur de HTTP/2 pour les trames sortantes en dépend, puisqu'un `put` bloquant à cet
++ endroit risquerait un interblocage entre flux. La discipline d'un relais tient donc à son
++ consommateur unique, et non à une borne.
+
+- ### Compression
++ ### Compression
+
+- A stream of bytes is compressed and decompressed with a named scheme, as a stage of a pipeline
+- or over a whole value. [Compression](compression.md) describes the formats:
++ Un flux d'octets se compresse et se décompresse avec un schéma nommé, comme étape d'un
++ pipeline ou sur une valeur entière. [Compression](compression.md) décrit les formats :
+
+= or over a whole value. [Compression](compression.md) describes the formats:
+=
+- ```scala fuel
++ ```scala fuel
+
+= or over a whole value. [Compression](compression.md) describes the formats:
+=
+= ```scala fuel
+- run
++ run
+
+= or over a whole value. [Compression](compression.md) describes the formats:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"The quick brown fox".in[Data].compress[Gzip].decompress[Gzip].utf8)
++ Out.println(t"The quick brown fox".in[Data].compress[Gzip].decompress[Gzip].utf8)
+
+= Out.println(t"The quick brown fox".in[Data].compress[Gzip].decompress[Gzip].utf8)
+- ```
++ ```

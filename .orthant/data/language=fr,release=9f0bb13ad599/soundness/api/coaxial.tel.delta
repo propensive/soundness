@@ -1,0 +1,43 @@
+orthant 1 language
+
+! refer coaxial.query
+- refer coaxial.ask
++ refer coaxial.ask
+
+=     navigation is typechecked against. In `coaxial.wasi` only.
+=
++ entry .ask
+
+!   info
+!       a DNS query to a nameserver over UDP: one message out, its answer back; in `coaxial.dns`
+- entry .ask   a DNS query to a nameserver over UDP: one message out, its answer back; in `coaxial.dns`
++   info
++       une requête DNS vers un serveur de noms sur UDP : un message envoyé, sa réponse en
++       retour ; dans `coaxial.dns`
+
+-       val addresses = resolver.ask(dns"example.com").map(_.rdata)
++       val addresses = resolver.ask(dns"example.com").map(_.rdata)
+
+-       val mail = resolver.ask(dns"example.com", Dns.Type.MX)
++       val mail = resolver.ask(dns"example.com", Dns.Type.MX)
+
+!       The wait is bounded by a `Socket.Option.Timeout` in scope, or five seconds; a lost
+!       datagram is a `Dns.Error(Timeout)`, and the caller decides whether to ask again — there
+!       is no retransmission. Any other socket failure passes through as a `Socket.Error`. The
+!       method needs a `Socket.Backend` and the `Every[Socket.Option.Udp]` in scope, and raises
+!       `Dns.Error` and `Socket.Error`. The message and record types are urticose's `Dns`.
+!       It is `query` rather than `lookup`, a name `soundness` reserves for anamnesis.
+-       The wait is bounded by a `Socket.Option.Timeout` in scope, or five seconds; a lost
+-       datagram is a `Dns.Error(Timeout)`, and the caller decides whether to ask again — there
+-       is no retransmission. Any other socket failure passes through as a `Socket.Error`. The
+-       method needs a `Socket.Backend` and the `Every[Socket.Option.Udp]` in scope, and raises
+-       `Dns.Error` and `Socket.Error`. The message and record types are urticose's `Dns`.
+-       It is `ask` rather than `lookup`, `resolve` or `query`, names `soundness` reserves for
++       L'attente est bornée par une `Socket.Option.Timeout` dans la portée, ou cinq
++       secondes ; un datagramme perdu donne une `Dns.Error(Timeout)`, et c'est l'appelant
++       qui décide s'il redemande — il n'y a pas de retransmission. Tout autre échec de
++       socket est transmis sous forme de `Socket.Error`. La méthode exige un
++       `Socket.Backend` et l'`Every[Socket.Option.Udp]` dans la portée, et lève `Dns.Error`
++       et `Socket.Error`. Les types de messages et d'enregistrements sont le `Dns`
++       d'urticose. Elle s'appelle `query` plutôt que `lookup`, un nom que `soundness`
++       réserve à anamnesis.

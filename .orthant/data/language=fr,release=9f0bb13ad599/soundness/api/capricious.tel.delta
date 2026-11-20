@@ -1,0 +1,40 @@
+orthant 1 language
+
+!   entry .apply
+!     info
+!         a new `Random` from the `Randomization` in scope
+-   entry .apply   a new `Random` from the `Randomization` in scope, seeded with the given `Seed`
++   entry .apply
++     info
++         un nouveau `Random` issu de la `Randomization` dans la portée
+
+!     detail
+!         `Random(seed)` initializes a generator from the contextual `Randomization`. The `seed`
+!         argument is not passed to it: a seeded generator takes its seed from the `Seed` given
+!         which `seededRandomization` itself requires, so `Seed#stochastic` is the reliable way to
+!         seed a scope.
+-       `Random(seed)` initializes a generator from the contextual `Randomization`, which is
++     detail
++         `Random(seed)` initialise un générateur à partir de la `Randomization` contextuelle.
++         L'argument `seed` ne lui est pas passé : un générateur avec graine prend sa graine du
++         given `Seed` que requiert `seededRandomization` lui-même, si bien que `Seed#stochastic`
++         est la manière fiable de donner une graine à une portée.
+
+-       resolved with `seed` in scope: under `seededRandomization` the generator starts from
+-       `seed`, as it does in `Seed#stochastic`, and an unseeded randomization ignores it.
+
+!   entry .conjunction
+!     info
+!         the derived instance of a product: each field drawn in turn
+-   entry .conjunction   the derived instance of a product: each field drawn in turn from the same `Random`
++   entry .conjunction
++     info
++         l'instance dérivée d'un produit : chaque champ tiré à tour de rôle
+
+!   entry .disjunction
+!     info
+!         the derived instance of a sum: a variant chosen uniformly, then drawn
+-   entry .disjunction   the derived instance of a sum: a variant chosen uniformly, then drawn from the same `Random`
++   entry .disjunction
++     info
++         l'instance dérivée d'une somme : une variante choisie uniformément, puis tirée

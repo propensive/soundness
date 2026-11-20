@@ -1,0 +1,6 @@
+orthant 1 release
+
+-       their languages, and any other text — including a regional form such as `t"fr-CA"`, or
+-       upper case — is silently `en`. Normalise the code first if the fallback matters.
++       their languages, in any case and with any region subtag ignored, so `t"FR"`, `t"fr-CA"`
++       and `t"fr_CA"` are all French. Any other text is silently `en`.

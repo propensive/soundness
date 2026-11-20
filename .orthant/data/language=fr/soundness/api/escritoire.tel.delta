@@ -1,0 +1,3419 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base escritoire
++ base escritoire
+
+- import soundness
++ import soundness
+
+- info   tables for the terminal: columns which wrap, truncate or collapse to fit a width, drawn in a chosen style
++ info
++     tableaux pour le terminal : colonnes qui s'enroulent, se tronquent ou disparaissent pour tenir
++     dans une largeur, dans un style choisi
+
+- detail
+-     _Escritoire_ renders tabular data as text, for a terminal or a log, taking seriously the
+-     part that a format string cannot: fitting columns of uneven content into a fixed width.
+-     Each column declares a **sizing strategy** — wrap as a paragraph, truncate with an
+-     ellipsis, hold a fixed width, or collapse entirely when space runs out — and the layout
+-     engine negotiates the width between them, wrapping with hyphenation where wrapping is
+-     allowed, and drawing the result with box characters in a `Table.Style` chosen in scope.
++ detail
++     _Escritoire_ rend des données tabulaires sous forme de texte, pour un terminal ou un journal,
++     en prenant au sérieux ce qu'une chaîne de format ne sait pas faire : faire tenir des colonnes
++     au contenu inégal dans une largeur fixe. Chaque colonne déclare une **stratégie de
++     dimensionnement** — s'enrouler comme un paragraphe, se tronquer avec des points de suspension,
++     garder une largeur fixe ou disparaître entièrement quand la place manque — et le moteur de
++     mise en page négocie la largeur entre elles, en enroulant avec césure là où l'enroulement est
++     permis, et dessine le résultat avec des caractères de boîte dans un `Table.Style` choisi dans
++     la portée.
+
+-     Three types carry a table from definition to text. A `Scaffold` says how a row type is
+-     put into `Column`s — titles, content, alignment, sizing — and holds no data. A
+-     `Tabulation` is data arranged by a scaffold: the cells' text, no longer referring to the
+-     row type. A `Grid` is a tabulation fitted to one width, which is where a column may
+-     shrink or vanish, and `Grid#render` is the lines. The `tabulation` extension derives the
+-     scaffold for a case class — a column per field, titled from the field names — and
+-     applies it in one step:
++     Trois types mènent un tableau de sa définition au texte. Un `Scaffold` dit comment un type de
++     ligne est réparti en `Column`s — titres, contenu, alignement, dimensionnement — et ne contient
++     aucune donnée. Une `Tabulation` est un ensemble de données disposées par un scaffold : le
++     texte des cellules, qui ne fait plus référence au type de ligne. Une `Grid` est une tabulation
++     ajustée à une largeur donnée, c'est-à-dire là où une colonne peut rétrécir ou disparaître, et
++     `Grid#render` en donne les lignes. L'extension `tabulation` dérive le scaffold d'une case
++     class — une colonne par champ, intitulée d'après les noms des champs — et l'applique en une
++     seule étape :
+
+=     applies it in one step:
+=
+-     ```scala
++     ```scala
+
+=     applies it in one step:
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     applies it in one step:
+=
+=     ```scala
+=     import soundness.*
+-     import tableStyles.thinRoundedTableStyle
++     import tableStyles.thinRoundedTableStyle
+
+=     applies it in one step:
+=
+=     ```scala
+=     import soundness.*
+=     import tableStyles.thinRoundedTableStyle
+-     import textMetrics.uniformMetric
++     import textMetrics.uniformMetric
+
+=     applies it in one step:
+=
+=     ```scala
+=     import soundness.*
+=     import tableStyles.thinRoundedTableStyle
+=     import textMetrics.uniformMetric
+-     import columnAttenuation.ignoreAttenuation
++     import columnAttenuation.ignoreAttenuation
+
+=     applies it in one step:
+=
+=     ```scala
+=     import soundness.*
+=     import tableStyles.thinRoundedTableStyle
+=     import textMetrics.uniformMetric
+=     import columnAttenuation.ignoreAttenuation
+=
+-     case class Person(name: Text, age: Int)
++     case class Person(name: Text, age: Int)
+
+-     val people: List[Person] = List(Person(t"Poins", 30), Person(t"Hal", 16))
++     val people: List[Person] = List(Person(t"Poins", 30), Person(t"Hal", 16))
+
+-     people.tabulation.grid(40).render.to[List]
++     people.tabulation.grid(40).render.to[List]
+
+-     // ╭───────┬─────╮
++     // ╭───────┬─────╮
+
+-     // │ Name  │ Age │
++     // │ Name  │ Age │
+
+-     // ├───────┼─────┤
++     // ├───────┼─────┤
+
+-     // │ Poins │  30 │
++     // │ Poins │  30 │
+
+-     // │ Hal   │  16 │
++     // │ Hal   │  16 │
+
+-     // ╰───────┴─────╯
++     // ╰───────┴─────╯
+
+=     // ╰───────┴─────╯
+-     ```
++     ```
+
+-     Laying out a table needs four contextual values, three of which are chosen by importing
+-     a given by name, since `import soundness.*` imports no givens:
++     La mise en page d'un tableau requiert quatre valeurs contextuelles, dont trois se choisissent
++     en important un given par son nom, puisque `import soundness.*` n'importe aucun given :
+
+-     - a `Table.Style`, from the `tableStyles` package — the rules, corners and padding;
+-     - an `Attenuation`, from `columnAttenuation` — what happens when no arrangement of the
+-       columns fits the width: `ignoreAttenuation` renders anyway, `failAttenuation` raises
+-       `Table.Error`;
+-     - a `Text is Measurable`, from hieroglyph's `textMetrics` — how wide a character is, so
+-       that `wideCharacterWidthMetric` sizes CJK text by its two-cell glyphs;
+-     - a `Hyphenation`, from polysyllabic, which falls back to no hyphenation unless
+-       `hyphenations.englishHyphenation` is imported.
++     - un `Table.Style`, du package `tableStyles` — les filets, les coins et le remplissage ;
++     - une `Attenuation`, de `columnAttenuation` — ce qui se passe quand aucune disposition des
++       colonnes ne tient dans la largeur : `ignoreAttenuation` rend quand même, `failAttenuation`
++       lève une `Table.Error` ;
++     - un `Text is Measurable`, du `textMetrics` de hieroglyph — la largeur d'un caractère, de
++       sorte que `wideCharacterWidthMetric` dimensionne le texte CJK selon ses glyphes de deux
++       cellules ;
++     - une `Hyphenation`, de polysyllabic, qui se replie sur l'absence de césure à moins que
++       `hyphenations.englishHyphenation` ne soit importé.
+
+-     The cell type is any `Textual` whose elements are `Char`: `Text`, or escapade's
+-     `Teletype` for colour and style, in which case a cell's width is its visible width, not
+-     the length of its escape codes. A table is `Printable`, so `Out.println(table)` lays it
+-     out at the terminal's own width.
++     Le type des cellules est n'importe quel `Textual` dont les éléments sont des `Char` : `Text`,
++     ou le `Teletype` d'escapade pour la couleur et le style, auquel cas la largeur d'une cellule
++     est sa largeur visible, et non la longueur de ses codes d'échappement. Un tableau est
++     `Printable`, de sorte que `Out.println(table)` le met en page à la largeur même du terminal.
+
+-     The library is one source set, `escritoire.core`, built for the JVM, Scala.js and Scala
+-     Native. Everything is exported to the `soundness` umbrella except `Layout` and `Cells`,
+-     which are the incremental layout engine's own vocabulary and are named as
+-     `escritoire.Layout` and `escritoire.Cells`, and the three choice packages `tableStyles`,
+-     `columnAttenuation` and `columnar` merge with the umbrella's packages of the same names
+-     (the umbrella's `columnar` mirrors every strategy but `ParagraphOrBreak`, which is named
+-     as `escritoire.columnar.ParagraphOrBreak`).
++     La bibliothèque forme un seul ensemble de sources, `escritoire.core`, construit pour la JVM,
++     Scala.js et Scala Native. Tout est exporté vers le package parapluie `soundness`, sauf
++     `Layout` et `Cells`, qui constituent le vocabulaire propre du moteur de mise en page
++     incrémentale et se nomment `escritoire.Layout` et `escritoire.Cells` ; les trois packages de
++     choix `tableStyles`, `columnAttenuation` et `columnar` fusionnent avec les packages homonymes
++     du parapluie (le `columnar` du parapluie reprend toutes les stratégies sauf
++     `ParagraphOrBreak`, qui se nomme `escritoire.columnar.ParagraphOrBreak`).
+
+- refer escritoire.Scaffold
++ refer escritoire.Scaffold
+
+- refer escritoire.Column
++ refer escritoire.Column
+
+- refer escritoire.Tabulation
++ refer escritoire.Tabulation
+
+- refer escritoire.Grid
++ refer escritoire.Grid
+
+- refer escritoire.Tabulable
++ refer escritoire.Tabulable
+
+- refer escritoire.tableStyles
++ refer escritoire.tableStyles
+
+- refer escritoire.columnar
++ refer escritoire.columnar
+
+- entry .Scaffold   how a row type is put into columns: a table definition which holds no data
++ entry .Scaffold
++   info
++       la façon dont un type de ligne est réparti en colonnes : une définition de tableau qui ne
++       contient aucune donnée
+
+-   detail
+-       A `Scaffold[row, text]` is an ordered list of `Column[row, text]`s, built with
+-       `Scaffold[row](columns*)`: the row type is given, and the text type — `Text` or
+-       `Teletype` — is inferred from the titles. It is the stage before data: `#tabulate` applies
+-       it to a `List[row]` to make a `Tabulation`, and `#layout` solves the column widths of the
+-       titles alone, for a table which admits its rows one at a time.
++   detail
++       Un `Scaffold[row, text]` est une liste ordonnée de `Column[row, text]`s, construite avec
++       `Scaffold[row](columns*)` : le type de ligne est donné, et le type de texte — `Text` ou
++       `Teletype` — est inféré à partir des titres. C'est l'étape qui précède les données :
++       `#tabulate` l'applique à une `List[row]` pour produire une `Tabulation`, et `#layout`
++       calcule les largeurs des colonnes à partir des seuls titres, pour un tableau qui admet ses
++       lignes une à une.
+
+=       titles alone, for a table which admits its rows one at a time.
+=
+-       ```scala
++       ```scala
+
+=       titles alone, for a table which admits its rows one at a time.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       titles alone, for a table which admits its rows one at a time.
+=
+=       ```scala
+=       import soundness.*
+-       import tableStyles.thinRoundedTableStyle
++       import tableStyles.thinRoundedTableStyle
+
+=       titles alone, for a table which admits its rows one at a time.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+=       titles alone, for a table which admits its rows one at a time.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+-       import columnAttenuation.ignoreAttenuation
++       import columnAttenuation.ignoreAttenuation
+
+=       titles alone, for a table which admits its rows one at a time.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       val scaffold: Scaffold[Person, Text] =
++       val scaffold: Scaffold[Person, Text] =
+
+-         Scaffold[Person]
++         Scaffold[Person]
+
+=         Scaffold[Person]
+-           ( Column(t"Name")(_.name),
++           ( Column(t"Name")(_.name),
+
+-             Column(t"Age")(_.age) )
++             Column(t"Age")(_.age) )
+
+-       scaffold.tabulate(List(Person(t"Poins", 30), Person(t"Hal", 16))).grid(40).render.to[List]
++       scaffold.tabulate(List(Person(t"Poins", 30), Person(t"Hal", 16))).grid(40).render.to[List]
+
+=       scaffold.tabulate(List(Person(t"Poins", 30), Person(t"Hal", 16))).grid(40).render.to[List]
+-       ```
++       ```
+
+-       A `Tabulable` instance for a type is a function returning its scaffold, so a type whose
+-       columns are not its fields — a record read from a schema, or computed display columns —
+-       is tabulated by giving one. The derived instance for a case class builds a scaffold with
+-       one column per field.
++       Une instance de `Tabulable` pour un type est une fonction qui renvoie son scaffold ; un type
++       dont les colonnes ne sont pas ses champs — un enregistrement lu d'après un schéma, ou des
++       colonnes d'affichage calculées — se tabule donc en en fournissant une. L'instance dérivée
++       pour une case class construit un scaffold avec une colonne par champ.
+
+=       one column per field.
+-   refer escritoire.Column
++   refer escritoire.Column
+
+=   refer escritoire.Column
+-   refer escritoire.Tabulation
++   refer escritoire.Tabulation
+
+=   refer escritoire.Tabulation
+-   refer escritoire.Layout
++   refer escritoire.Layout
+
+-   entry .apply   `Scaffold[row](columns*)`: a scaffold of the given columns, in order
++   entry .apply
++     info
++         `Scaffold[row](columns*)` : un scaffold des colonnes données, dans l'ordre
+
+-       The row type is the one explicit type argument; the text type is inferred from the
+-       columns, which all share it. A title written as `t"…"` makes a `Scaffold[row, Text]`; one
+-       written as `e"…"` makes a `Scaffold[row, Teletype]`. The method takes an erased `Void`
+-       parameter between its two type-parameter lists only so that the row type can be given
+-       without the text type.
++     detail
++         Le type de ligne est le seul argument de type explicite ; le type de texte est inféré à
++         partir des colonnes, qui le partagent toutes. Un titre écrit `t"…"` produit un
++         `Scaffold[row, Text]` ; un titre écrit `e"…"` produit un `Scaffold[row, Teletype]`. La
++         méthode prend un paramètre `Void` effacé entre ses deux listes de paramètres de type,
++         uniquement pour que le type de ligne puisse être donné sans le type de texte.
+
+-   entry #columns0   the columns, as given to the constructor
++   entry #columns0
++     info
++         les colonnes, telles que données au constructeur
+
+-       The repeated parameter the scaffold was built from; `#columns` is the same columns as
+-       an array, which is what the layout engine reads.
++     detail
++         Le paramètre répété à partir duquel le scaffold a été construit ; `#columns` contient les
++         mêmes colonnes sous forme de tableau, ce que lit le moteur de mise en page.
+
+-   entry #columns   the columns, as an array, in order
++   entry #columns
++     info
++         les colonnes, sous forme de tableau, dans l'ordre
+
+-   entry #titles   the title cells, one row of them, each title cut into its lines
++   entry #titles
++     info
++         les cellules de titre, sur une ligne, chaque titre découpé en ses lignes
+
+-       A title may contain `\n`, which makes a title of several lines; the titles are held
+-       as a single-element list so that they can be measured and rendered like any row.
++     detail
++         Un titre peut contenir `\n`, ce qui donne un titre sur plusieurs lignes ; les titres sont
++         conservés sous forme de liste à un seul élément afin de pouvoir être mesurés et rendus
++         comme n'importe quelle ligne.
+
+-   entry #cells   a row phrased through the columns, ahead of any layout
++   entry #cells
++     info
++         une ligne exprimée à travers les colonnes, avant toute mise en page
+
+-       `scaffold.cells(row)` reads every column's content from the row, cuts each into lines
+-       and measures their widths, giving a `Cells[text]`. The cells are independent of any
+-       width, so they can be tested against a `Layout` with `Layout#accommodates`, admitted
+-       with `Layout#extend`, and rendered against it later. Needs a `Text is Measurable`.
++     detail
++         `scaffold.cells(row)` lit le contenu de chaque colonne dans la ligne, découpe chacun en
++         lignes et en mesure les largeurs, ce qui donne un `Cells[text]`. Les cellules sont
++         indépendantes de toute largeur : on peut donc les confronter à un `Layout` avec
++         `Layout#accommodates`, les admettre avec `Layout#extend`, et les rendre plus tard selon
++         lui. Requiert un `Text is Measurable`.
+
+-   entry #layout   the layout of the titles alone, at a width
++   entry #layout
++     info
++         la mise en page des seuls titres, à une largeur donnée
+
+-       `scaffold.layout(width)` solves the column widths from the titles' claims and nothing
+-       else, for a table which is built incrementally: each row is then phrased with `#cells`
+-       and admitted with `Layout#extend`, which re-solves the widths only when the row's cells
+-       exceed what the layout has already seen. Needs a `Table.Style`, a `Text is Measurable`
+-       and an `Attenuation` in scope.
++     detail
++         `scaffold.layout(width)` calcule les largeurs des colonnes à partir des seules
++         revendications des titres, pour un tableau construit de façon incrémentale : chaque ligne
++         est ensuite exprimée avec `#cells` et admise avec `Layout#extend`, qui ne recalcule les
++         largeurs que lorsque les cellules de la ligne dépassent ce que la mise en page a déjà vu.
++         Requiert un `Table.Style`, un `Text is Measurable` et une `Attenuation` dans la portée.
+
+=       and an `Attenuation` in scope.
+=
+-       ```scala
++         ```scala
+
+=       and an `Attenuation` in scope.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+=       and an `Attenuation` in scope.
+=
+=       ```scala
+=       import soundness.*
+-       import tableStyles.thinRoundedTableStyle
++         import tableStyles.thinRoundedTableStyle
+
+=       and an `Attenuation` in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+-       import textMetrics.uniformMetric
++         import textMetrics.uniformMetric
+
+=       and an `Attenuation` in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+-       import columnAttenuation.ignoreAttenuation
++         import columnAttenuation.ignoreAttenuation
+
+=       and an `Attenuation` in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+-       case class Person(name: Text, age: Int)
++         case class Person(name: Text, age: Int)
+
+=       and an `Attenuation` in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+=       case class Person(name: Text, age: Int)
+-       val scaffold = Scaffold[Person](Column(t"Name")(_.name), Column(t"Age")(_.age))
++         val scaffold = Scaffold[Person](Column(t"Name")(_.name), Column(t"Age")(_.age))
+
+-       val titles = scaffold.layout(40)
++         val titles = scaffold.layout(40)
+
+-       val row = scaffold.cells(Person(t"Cleopatra", 38))
++         val row = scaffold.cells(Person(t"Cleopatra", 38))
+
+-       titles.accommodates(row)           // false: the name is wider than the title
++         titles.accommodates(row)           // false: the name is wider than the title
+
+-       val layout = titles.extend(row)    // re-solved with the wider claim
++         val layout = titles.extend(row)    // re-solved with the wider claim
+
+-       layout.lines(row, Nil)             // the row's lines at the settled widths
++         layout.lines(row, Nil)             // the row's lines at the settled widths
+
+=       layout.lines(row, Nil)             // the row's lines at the settled widths
+-       ```
++         ```
+
+-   entry #tabulate   the scaffold applied to data: a `Tabulation`
++   entry #tabulate
++     info
++         le scaffold appliqué aux données : une `Tabulation`
+
+-       `scaffold.tabulate(rows)` reads every column of every row into text at once, and
+-       records each row's cell decorations, so the result refers to the row type only as its
+-       `Row` type member. The row count is taken once, when the tabulation is built.
++     detail
++         `scaffold.tabulate(rows)` lit en une fois chaque colonne de chaque ligne sous forme de
++         texte, et enregistre les décorations des cellules de chaque ligne, de sorte que le
++         résultat ne fait plus référence au type de ligne que par son membre de type `Row`. Le
++         nombre de lignes est compté une seule fois, à la construction de la tabulation.
+
+- entry .Column   one column of a table: its title, how it reads a cell from a row, and how it is sized
++ entry .Column
++   info
++       une colonne d'un tableau : son titre, la façon dont elle lit une cellule dans une ligne, et
++       la façon dont elle est dimensionnée
+
+-   detail
+-       A `Column[row, text]` is a title, a function `#get` from the row to the cell's text, a
+-       horizontal and a vertical alignment, a `Columnar` sizing strategy, and an optional
+-       per-row `#decorate` applied to the whole rendered cell. The factory `Column.apply` is
+-       the usual way to make one; the case-class constructor takes every field explicitly.
++   detail
++       Une `Column[row, text]` est un titre, une fonction `#get` de la ligne vers le texte de la
++       cellule, un alignement horizontal et un alignement vertical, une stratégie de
++       dimensionnement `Columnar`, et un `#decorate` optionnel par ligne appliqué à toute la
++       cellule rendue. La fabrique `Column.apply` est la façon habituelle d'en créer une ; le
++       constructeur de la case class prend chaque champ explicitement.
+
+=       the usual way to make one; the case-class constructor takes every field explicitly.
+=
+-       ```scala
++       ```scala
+
+=       the usual way to make one; the case-class constructor takes every field explicitly.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       the usual way to make one; the case-class constructor takes every field explicitly.
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       val name: Column[Person, Text] = Column(t"Name")(_.name)
++       val name: Column[Person, Text] = Column(t"Name")(_.name)
+
+-       val age: Column[Person, Text] = Column(t"Age", sizing = columnar.Collapsible(0.5))(_.age)
++       val age: Column[Person, Text] = Column(t"Age", sizing = columnar.Collapsible(0.5))(_.age)
+
+-       val note: Column[Person, Text] =
++       val note: Column[Person, Text] =
+
+-         Column(t"Note", textAlign = TextAlignment.Justify, sizing = columnar.Paragraph): person =>
++         Column(t"Note", textAlign = TextAlignment.Justify, sizing = columnar.Paragraph): person =>
+
+-           t"${person.name} is ${person.age}"
++           t"${person.name} is ${person.age}"
+
+=           t"${person.name} is ${person.age}"
+-       ```
++       ```
+
+-       The lambda's result need not be text: the title fixes the text type, and the value is
+-       shown through that type's `Show`, so `_.age` gives a column of `Int`s shown as text.
+-       The default alignment comes from `Column.Alignment[cell]` — numbers right, text left —
+-       unless `textAlign` or `verticalAlign` is given.
++       Le résultat de la lambda n'a pas besoin d'être du texte : le titre fixe le type de texte, et
++       la valeur est affichée par le `Show` de ce type, de sorte que `_.age` donne une colonne
++       d'`Int`s affichés sous forme de texte. L'alignement par défaut provient de
++       `Column.Alignment[cell]` — les nombres à droite, le texte à gauche — à moins que `textAlign`
++       ou `verticalAlign` ne soit donné.
+
+=       unless `textAlign` or `verticalAlign` is given.
+-   refer escritoire.Columnar
++   refer escritoire.Columnar
+
+=   refer escritoire.Columnar
+-   refer escritoire.columnar
++   refer escritoire.columnar
+
+=   refer escritoire.columnar
+-   refer escritoire.Scaffold
++   refer escritoire.Scaffold
+
+-   entry .apply   `Column(title, textAlign, verticalAlign, sizing, decorate)(get)`: makes a column
++   entry .apply
++     info
++         `Column(title, textAlign, verticalAlign, sizing, decorate)(get)` : crée une colonne
+
+-       The first parameter list is the title and four optional settings; the second is the
+-       function from the row to the cell value, which is shown through the title's `Textual`
+-       type's `Show`. `textAlign` and `verticalAlign` default to the `Column.Alignment` given
+-       for the cell type (`topLeft` where none is defined); `sizing` defaults to
+-       `columnar.Paragraph`; `decorate` defaults to no decoration.
++     detail
++         La première liste de paramètres contient le titre et quatre réglages optionnels ; la
++         seconde est la fonction de la ligne vers la valeur de la cellule, qui est affichée par le
++         `Show` du type `Textual` du titre. `textAlign` et `verticalAlign` valent par défaut le
++         `Column.Alignment` donné pour le type de cellule (`topLeft` s'il n'y en a aucun) ;
++         `sizing` vaut par défaut `columnar.Paragraph` ; `decorate` vaut par défaut l'absence de
++         décoration.
+
+-       `decorate` is a function from the row to an optional transformation of the rendered
+-       cell — content and padding together, after alignment — so a `Teletype` table can paint a
+-       whole cell's background by row, and the padding is painted too:
++         `decorate` est une fonction de la ligne vers une transformation optionnelle de la cellule
++         rendue — contenu et remplissage ensemble, après alignement — de sorte qu'un tableau
++         `Teletype` peut peindre le fond d'une cellule entière selon la ligne, remplissage
++         compris :
+
+=       whole cell's background by row, and the padding is painted too:
+=
+-       ```scala
++         ```scala
+
+=       whole cell's background by row, and the padding is painted too:
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+=       whole cell's background by row, and the padding is painted too:
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Person(name: Text, age: Int)
++         case class Person(name: Text, age: Int)
+
+-       val highlighted: Column[Person, Teletype] =
++         val highlighted: Column[Person, Teletype] =
+
+-         Column
++           Column
+
+-           ( e"Name",
++             ( e"Name",
+
+-             decorate = person => if person.age > 18 then (line: Teletype) => e"$Bold($line)" else Unset )
++               decorate = person => if person.age > 18 then (line: Teletype) => e"$Bold($line)" else Unset )
+
+-           ( _.name )
++             ( _.name )
+
+=           ( _.name )
+-       ```
++         ```
+
+-       The row type is inferred from the lambda or given explicitly as
+-       `Column[Person, Text, Text](t"Name")(_.name)`, whose three type arguments are the row,
+-       the cell value and the text type.
++         Le type de ligne est inféré à partir de la lambda ou donné explicitement, comme dans
++         `Column[Person, Text, Text](t"Name")(_.name)`, dont les trois arguments de type sont la
++         ligne, la valeur de la cellule et le type de texte.
+
+-   entry .Alignment   the default text and vertical alignment for a cell type
++   entry .Alignment
++     info
++         l'alignement horizontal et vertical par défaut pour un type de cellule
+
+-     detail
+-         `Column.Alignment[cell]` is the alignment a column of `cell` values takes when
+-         `Column.apply` is given neither `textAlign` nor `verticalAlign`: `Byte`, `Short`, `Int`
+-         and `Long` are right-aligned, `Text` left, all at the top. The givens are in the
+-         companion, so a column of `Int`s is right-aligned without an import; `topLeft` is the
+-         default for any other type. It is contravariant in the cell type, so an alignment for
+-         `Any` serves every type.
++     detail
++         `Column.Alignment[cell]` est l'alignement que prend une colonne de valeurs `cell` quand
++         `Column.apply` ne reçoit ni `textAlign` ni `verticalAlign` : `Byte`, `Short`, `Int` et
++         `Long` sont alignés à droite, `Text` à gauche, tous en haut. Les givens se trouvent dans
++         l'objet compagnon, de sorte qu'une colonne d'`Int`s est alignée à droite sans import ;
++         `topLeft` est la valeur par défaut pour tout autre type. Il est contravariant dans le type
++         de cellule, si bien qu'un alignement pour `Any` sert pour tous les types.
+
+=         `Any` serves every type.
+=
+-         ```scala
++         ```scala
+
+=         `Any` serves every type.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         import soundness.*
+=
+-         case class Person(name: Text, age: Int)
++         case class Person(name: Text, age: Int)
+
+-         Column[Person, Int, Text](t"Age")(_.age).textAlign    // TextAlignment.Right
++         Column[Person, Int, Text](t"Age")(_.age).textAlign    // TextAlignment.Right
+
+-         Column[Person, Text, Text](t"Name")(_.name).textAlign // TextAlignment.Left
++         Column[Person, Text, Text](t"Name")(_.name).textAlign // TextAlignment.Left
+
+=         Column[Person, Text, Text](t"Name")(_.name).textAlign // TextAlignment.Left
+-         ```
++         ```
+
+-     entry .topLeft   left-aligned, at the top: the default for a type with no alignment of its own
++     entry .topLeft
++       info
++           aligné à gauche, en haut : la valeur par défaut pour un type sans alignement propre
+
+-     entry .byte   `Byte` cells align right
++     entry .byte
++       info
++           les cellules `Byte` s'alignent à droite
+
+-     entry .short   `Short` cells align right
++     entry .short
++       info
++           les cellules `Short` s'alignent à droite
+
+-     entry .int   `Int` cells align right
++     entry .int
++       info
++           les cellules `Int` s'alignent à droite
+
+-     entry .long   `Long` cells align right
++     entry .long
++       info
++           les cellules `Long` s'alignent à droite
+
+-     entry .text   `Text` cells align left
++     entry .text
++       info
++           les cellules `Text` s'alignent à gauche
+
+-     entry #text   the horizontal alignment: `Left`, `Right`, `Center` or `Justify`
++     entry #text
++       info
++           l'alignement horizontal : `Left`, `Right`, `Center` ou `Justify`
+
+-     entry #vertical   the vertical alignment: `Top`, `Middle` or `Bottom`
++     entry #vertical
++       info
++           l'alignement vertical : `Top`, `Middle` ou `Bottom`
+
+-   entry #title   the column's heading, in the table's text type
++   entry #title
++     info
++         l'en-tête de la colonne, dans le type de texte du tableau
+
+-   entry #get   the cell's text for a row
++   entry #get
++     info
++         le texte de la cellule pour une ligne
+
+-       The function from the row to the cell, already shown as text. In a column made with
+-       `Column.apply`, this is the lambda composed with the cell type's `Show`.
++     detail
++         La fonction de la ligne vers la cellule, déjà affichée sous forme de texte. Dans une
++         colonne créée avec `Column.apply`, c'est la lambda composée avec le `Show` du type de
++         cellule.
+
+-   entry #textAlign   how a cell's lines sit within the column's width
++   entry #textAlign
++     info
++         la façon dont les lignes d'une cellule se placent dans la largeur de la colonne
+
+-   entry #verticalAlign   where a short cell sits in a row that other cells have made taller
++   entry #verticalAlign
++     info
++         l'endroit où se place une cellule courte dans une ligne que d'autres cellules ont rendue
++         plus haute
+
+-   entry #sizing   the `Columnar` strategy which decides the column's claim on the width
++   entry #sizing
++     info
++         la stratégie `Columnar` qui décide de la revendication de la colonne sur la largeur
+
+-   entry #decorate   a per-row transformation of the rendered cell, or `Unset` for none
++   entry #decorate
++     info
++         une transformation par ligne de la cellule rendue, ou `Unset` pour aucune
+
+-       Applied by the renderer after alignment and padding, to the whole cell including its
+-       gutter, so a background painted here covers the cell edge to edge while the rules stay
+-       undecorated. The renderer knows nothing of styling: the function is in the table's own
+-       text type.
++     detail
++         Appliquée par le moteur de rendu après l'alignement et le remplissage, à toute la cellule
++         y compris sa gouttière, de sorte qu'un fond peint ici couvre la cellule d'un bord à
++         l'autre tandis que les filets restent sans décoration. Le moteur de rendu ignore tout du
++         style : la fonction est dans le type de texte propre au tableau.
+
+-   entry #contramap   the same column reading from another row type
++   entry #contramap
++     info
++         la même colonne, lisant depuis un autre type de ligne
+
+-       `column.contramap(lambda)` adapts a column defined for one row type to any type from
+-       which `lambda` can produce that row, keeping the title, alignment, sizing and
+-       decoration. This is how a column defined once serves every type which can supply its
+-       value:
++     detail
++         `column.contramap(lambda)` adapte une colonne définie pour un type de ligne à tout type à
++         partir duquel `lambda` peut produire cette ligne, en conservant le titre, l'alignement, le
++         dimensionnement et la décoration. C'est ainsi qu'une colonne définie une seule fois sert
++         pour tous les types capables de fournir sa valeur :
+
+=       value:
+=
+-       ```scala
++         ```scala
+
+=       value:
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+=       value:
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Person(name: Text, age: Int)
++         case class Person(name: Text, age: Int)
+
+-       val nameColumn: Column[Text, Text] = Column[Text, Text, Text](t"Name")(identity)
++         val nameColumn: Column[Text, Text] = Column[Text, Text, Text](t"Name")(identity)
+
+-       val personName: Column[Person, Text] = nameColumn.contramap[Person](_.name)
++         val personName: Column[Person, Text] = nameColumn.contramap[Person](_.name)
+
+=       val personName: Column[Person, Text] = nameColumn.contramap[Person](_.name)
+-       ```
++         ```
+
+-   entry #retitle   the same column with another title
++   entry #retitle
++     info
++         la même colonne avec un autre titre
+
+-       For a shared table definition where one caller wants a different heading. The derived
+-       `Tabulable` for a case class uses it to title each field's column.
++     detail
++         Pour une définition de tableau partagée dont un appelant veut un autre en-tête. Le
++         `Tabulable` dérivé pour une case class s'en sert pour intituler la colonne de chaque
++         champ.
+
+- entry .Columnar   a column-sizing strategy: how a column claims width, and how a cell is fitted to it
++ entry .Columnar
++   info
++       une stratégie de dimensionnement de colonne : la façon dont une colonne revendique de la
++       largeur, et dont une cellule y est ajustée
+
+-   detail
+-       A `Columnar` answers two questions. `#flex` describes the column's claim on the table's
+-       width — its minimum and natural widths, its appetite for spare space, and whether it may
+-       collapse entirely — from the aggregate `Metrics` of every line the column will display.
+-       `#fit` then arranges one cell's lines into the width the table settled on: wrapping,
+-       chopping, shortening with an ellipsis, or leaving them as they are.
++   detail
++       Un `Columnar` répond à deux questions. `#flex` décrit la revendication de la colonne sur la
++       largeur du tableau — ses largeurs minimale et naturelle, son appétit pour l'espace
++       disponible, et si elle peut disparaître entièrement — à partir des `Metrics` agrégées de
++       toutes les lignes que la colonne affichera. `#fit` dispose ensuite les lignes d'une cellule
++       dans la largeur retenue pour le tableau : en les enroulant, en les coupant, en les
++       raccourcissant avec des points de suspension, ou en les laissant telles quelles.
+
+-       The claim is a function of the aggregate metrics alone, which are the max-fold of each
+-       line's own, so a layout can carry the aggregate, admit a new row by folding its cells
+-       in, and know — through `#accommodates` — when a row cannot move the column at all. The
+-       strategies provided are in the `columnar` package: `Paragraph`, `ParagraphOrBreak`,
+-       `Fixed`, `Shortened` and `Collapsible`. The concept is open: a strategy of one's own is
+-       an object or class extending `Columnar` which implements `flex(metrics, maxWidth)` and
+-       `fit`.
++       La revendication est fonction des seules métriques agrégées, qui sont le maximum de celles
++       de chaque ligne ; une mise en page peut donc conserver l'agrégat, admettre une nouvelle
++       ligne en y intégrant ses cellules, et savoir — grâce à `#accommodates` — quand une ligne ne
++       peut en rien modifier la colonne. Les stratégies fournies se trouvent dans le package
++       `columnar` : `Paragraph`, `ParagraphOrBreak`, `Fixed`, `Shortened` et `Collapsible`. Le
++       concept est ouvert : une stratégie personnelle est un objet ou une classe étendant
++       `Columnar` qui implémente `flex(metrics, maxWidth)` et `fit`.
+
+-       The widths are solved by tessellate's `Flex.solve`: while the columns' minima cannot fit
+-       the width, the collapsible column of lowest rank is dropped; the survivors then share
+-       the width in proportion to their weight, within their bounds.
++       Les largeurs sont calculées par le `Flex.solve` de tessellate : tant que les minima des
++       colonnes ne tiennent pas dans la largeur, la colonne repliable de rang le plus bas est
++       supprimée ; les colonnes restantes se partagent ensuite la largeur au prorata de leur poids,
++       dans leurs limites.
+
+=       the width in proportion to their weight, within their bounds.
+-   refer escritoire.columnar
++   refer escritoire.columnar
+
+=   refer escritoire.columnar
+-   refer escritoire.Column
++   refer escritoire.Column
+
+-   entry .metrics   the aggregate intrinsic widths of some lines
++   entry .metrics
++     info
++         les largeurs intrinsèques agrégées de quelques lignes
+
+-       `Columnar.metrics(lines)` is the max-fold of each line's `Flow.metrics`: a `Metrics`
+-       whose `min` is the widest unbreakable word and whose `natural` is the widest line.
+-       Every strategy's claim derives from it. Needs a `Text is Measurable`.
++     detail
++         `Columnar.metrics(lines)` est le maximum des `Flow.metrics` de chaque ligne : une
++         `Metrics` dont le `min` est le mot insécable le plus large et dont le `natural` est la
++         ligne la plus large. La revendication de chaque stratégie en découle. Requiert un
++         `Text is Measurable`.
+
+-   entry #flex   the column's claim on the width, from its content's metrics
++   entry #flex
++     info
++         la revendication de la colonne sur la largeur, d'après les métriques de son contenu
+
+-       The abstract form, `flex(metrics, maxWidth)`, returns a tessellate `Flex`: the column's
+-       minimum and natural widths, its weight when spare space is shared, an optional maximum,
+-       and whether it collapses, with a rank saying how readily. The overload taking an array
+-       of lines measures them with `Columnar.metrics` first.
++     detail
++         La forme abstraite, `flex(metrics, maxWidth)`, renvoie un `Flex` de tessellate : les
++         largeurs minimale et naturelle de la colonne, son poids lors du partage de l'espace
++         disponible, un maximum optionnel, et si elle est repliable, avec un rang qui indique avec
++         quelle facilité. La surcharge qui prend un tableau de lignes les mesure d'abord avec
++         `Columnar.metrics`.
+
+-   entry #accommodates   whether a cell is already within the column's aggregate claim
++   entry #accommodates
++     info
++         si une cellule tient déjà dans la revendication agrégée de la colonne
+
+-       `accommodates(aggregate, cell)` is true when admitting a cell with intrinsic widths
+-       `cell` leaves the claim — and so the solved widths — unchanged: by default, when its
+-       minimum and natural widths are both within the aggregate's. A strategy whose claim
+-       ignores its content overrides it to `true`, as `columnar.Fixed` does.
++     detail
++         `accommodates(aggregate, cell)` est vrai quand l'admission d'une cellule de largeurs
++         intrinsèques `cell` laisse la revendication — et donc les largeurs calculées — inchangée :
++         par défaut, quand ses largeurs minimale et naturelle sont toutes deux dans celles de
++         l'agrégat. Une stratégie dont la revendication ignore son contenu le redéfinit à `true`,
++         comme le fait `columnar.Fixed`.
+
+-   entry #fit   one cell's lines arranged into the width the column settled on
++   entry #fit
++     info
++         les lignes d'une cellule disposées dans la largeur retenue pour la colonne
+
+-       `fit(lines, width, textAlign)` gives the lines a cell displays at `width`: wrapped,
+-       chopped, shortened or unchanged, according to the strategy. Needs a `Text is
+-       Measurable` and a `Hyphenation`, which the wrapping strategies use at soft breaks.
++     detail
++         `fit(lines, width, textAlign)` donne les lignes qu'une cellule affiche à la largeur
++         `width` : enroulées, coupées, raccourcies ou inchangées, selon la stratégie. Requiert un
++         `Text is Measurable` et une `Hyphenation`, que les stratégies d'enroulement utilisent aux
++         coupures conditionnelles.
+
+- entry .columnar   the sizing strategies, each a `Columnar` to name in a `Column`'s `sizing`
++ entry .columnar
++   info
++       les stratégies de dimensionnement, chacune un `Columnar` à nommer dans le `sizing` d'une
++       `Column`
+
+-   detail
+-       The strategies a column may be given, as `sizing = columnar.Paragraph`. They are
+-       objects and case classes, not givens, so `columnar.Paragraph` is named at the column;
+-       the package exists to keep the five names together. Every `Column` defaults to
+-       `Paragraph`.
++   detail
++       Les stratégies qu'on peut donner à une colonne, sous la forme `sizing = columnar.Paragraph`.
++       Ce sont des objets et des case classes, et non des givens, si bien que `columnar.Paragraph`
++       se nomme au niveau de la colonne ; le package sert à regrouper les cinq noms. Toute `Column`
++       utilise `Paragraph` par défaut.
+
+-       Which column goes first when the table is too narrow is decided by the strategies
+-       together: a `Collapsible` column is dropped before anything else is squeezed, highest
+-       threshold first; a `Paragraph` column shrinks to its longest word; a `Fixed` column never
+-       moves. Below the width at which the minima fit, the `Attenuation` in scope decides what
+-       happens.
++       Quelle colonne cède en premier quand le tableau est trop étroit, cela se décide entre les
++       stratégies : une colonne `Collapsible` est supprimée avant que quoi que ce soit d'autre ne
++       soit comprimé, en commençant par le seuil le plus élevé ; une colonne `Paragraph` rétrécit
++       jusqu'à son mot le plus long ; une colonne `Fixed` ne bouge jamais. En dessous de la largeur
++       à laquelle les minima tiennent, l'`Attenuation` dans la portée décide de ce qui se passe.
+
+=       happens.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label Four columns at a width which holds them all
++         label Four columns at a width which holds them all
+
+=         label Four columns at a width which holds them all
+-         code
++         code
+
+-             import soundness.*
++             import soundness.*
+
+-             import tableStyles.thinRoundedTableStyle
++             import tableStyles.thinRoundedTableStyle
+
+-             import textMetrics.uniformMetric
++             import textMetrics.uniformMetric
+
+-             import columnAttenuation.ignoreAttenuation
++             import columnAttenuation.ignoreAttenuation
+
+-             case class Codebase(name: Text, id: Text, lines: Int, description: Text)
++             case class Codebase(name: Text, id: Text, lines: Int, description: Text)
+
+-             val codebases = List
++             val codebases = List
+
+-               ( Codebase(t"Gossamer", t"gossamer", 4200, t"Statically-checked text operations"),
++               ( Codebase(t"Gossamer", t"gossamer", 4200, t"Statically-checked text operations"),
+
+-                 Codebase(t"Escritoire", t"escritoire", 1900, t"Tabular layout for the terminal") )
++                 Codebase(t"Escritoire", t"escritoire", 1900, t"Tabular layout for the terminal") )
+
+-             val scaffold = Scaffold[Codebase]
++             val scaffold = Scaffold[Codebase]
+
+-               ( Column(t"Name")(_.name),
++               ( Column(t"Name")(_.name),
+
+-                 Column(t"Identifier", sizing = columnar.Collapsible(0.9))(_.id),
++                 Column(t"Identifier", sizing = columnar.Collapsible(0.9))(_.id),
+
+-                 Column(t"Lines", sizing = columnar.Collapsible(0.3))(_.lines),
++                 Column(t"Lines", sizing = columnar.Collapsible(0.3))(_.lines),
+
+-                 Column(t"Description", sizing = columnar.Paragraph)(_.description) )
++                 Column(t"Description", sizing = columnar.Paragraph)(_.description) )
+
+-             scaffold.tabulate(codebases).grid(80).render.to[List]
++             scaffold.tabulate(codebases).grid(80).render.to[List]
+
+=             scaffold.tabulate(codebases).grid(80).render.to[List]
+-       frame
++       frame
+
+-         label Narrower: the identifier, the most collapsible column, is dropped first
++         label Narrower: the identifier, the most collapsible column, is dropped first
+
+=         label Narrower: the identifier, the most collapsible column, is dropped first
+-         code
++         code
+
+-             scaffold.tabulate(codebases).grid(60).render.to[List]
++             scaffold.tabulate(codebases).grid(60).render.to[List]
+
+=             scaffold.tabulate(codebases).grid(60).render.to[List]
+-       frame
++       frame
+
+-         label Narrower still: the description wraps, since a paragraph shrinks before a collapsible column with a low threshold goes
++         label Narrower still: the description wraps, since a paragraph shrinks before a collapsible column with a low threshold goes
+
+=         label Narrower still: the description wraps, since a paragraph shrinks before a collapsible column with a low threshold goes
+-         code
++         code
+
+-             scaffold.tabulate(codebases).grid(44).render.to[List]
++             scaffold.tabulate(codebases).grid(44).render.to[List]
+
+=             scaffold.tabulate(codebases).grid(44).render.to[List]
+-       frame
++       frame
+
+-         label At the narrowest, the line count goes too, and only the name and the wrapped description remain
++         label At the narrowest, the line count goes too, and only the name and the wrapped description remain
+
+=         label At the narrowest, the line count goes too, and only the name and the wrapped description remain
+-         code
++         code
+
+-             scaffold.tabulate(codebases).grid(30).render.to[List]
++             scaffold.tabulate(codebases).grid(30).render.to[List]
+
+=             scaffold.tabulate(codebases).grid(30).render.to[List]
+-       ##
++       ##
+
+=             scaffold.tabulate(codebases).grid(30).render.to[List]
+=       ##
+-       ```
++       ```
+
+=       ```
+-   refer escritoire.Columnar
++   refer escritoire.Columnar
+
+=   refer escritoire.Columnar
+-   refer escritoire.Column
++   refer escritoire.Column
+
+-   entry .Paragraph   wraps at word boundaries; may shrink to its longest word, never grows past its longest line
++   entry .Paragraph
++     info
++         s'enroule aux limites des mots ; peut rétrécir jusqu'à son mot le plus long, ne dépasse
++         jamais sa ligne la plus longue
+
+-       The default. Its claim is `Flex.content`: a minimum of the widest unbreakable word, a
+-       natural width of the widest line, and a weight equal to the difference, so a column with
+-       more to absorb takes more of the spare width. A cell is fitted with `Flow.wrap`, which
+-       breaks at spaces and at the `Hyphenation` in scope's soft breaks, and never below the
+-       minimum: a word longer than the width overflows rather than being cut.
++     detail
++         La valeur par défaut. Sa revendication est `Flex.content` : un minimum égal au mot
++         insécable le plus large, une largeur naturelle égale à la ligne la plus large, et un poids
++         égal à leur différence, de sorte qu'une colonne qui a plus à absorber prend une plus
++         grande part de la largeur disponible. Une cellule est ajustée avec `Flow.wrap`, qui coupe
++         aux espaces et aux coupures conditionnelles de la `Hyphenation` dans la portée, et jamais
++         en dessous du minimum : un mot plus long que la largeur déborde au lieu d'être coupé.
+
+-   entry .ParagraphOrBreak   wraps at word boundaries where it can, and chops mid-word rather than overflow
++   entry .ParagraphOrBreak
++     info
++         s'enroule aux limites des mots quand c'est possible, et coupe au milieu d'un mot plutôt
++         que de déborder
+
+-       Elastic between a single cell and its natural width, so it has no longest-word floor:
+-       under enough pressure a cell narrower than its widest word is fitted with `Flow.chop`,
+-       cutting lines at the width, where `Paragraph` would overflow. For columns of
+-       identifiers, URLs or hashes which wrap badly but must not spill. It is not mirrored in
+-       the umbrella's `columnar` package, so it is named in full as
+-       `escritoire.columnar.ParagraphOrBreak`.
++     detail
++         Élastique entre une seule cellule et sa largeur naturelle, elle n'a donc pas de plancher
++         fixé par le mot le plus long : sous une pression suffisante, une cellule plus étroite que
++         son mot le plus large est ajustée avec `Flow.chop`, qui coupe les lignes à la largeur, là
++         où `Paragraph` déborderait. Pour des colonnes d'identifiants, d'URL ou de hachages qui
++         s'enroulent mal mais ne doivent pas déborder. Elle n'est pas reprise dans le package
++         `columnar` du parapluie ; elle se nomme donc en entier
++         `escritoire.columnar.ParagraphOrBreak`.
+
+-   entry .Fixed   a column exactly `fixedWidth` wide, whatever its content, shortened with an ellipsis
++   entry .Fixed
++     info
++         une colonne de exactement `fixedWidth` de large, quel que soit son contenu, raccourcie
++         avec des points de suspension
+
+-     detail
+-         The column's claim is rigid at `fixedWidth` and it accommodates every cell, since its
+-         width owes nothing to its content; a cell longer than the width is shortened with
+-         `Flow.shorten` and ends in `ellipsis` (`…` unless another is given).
++     detail
++         La revendication de la colonne est rigide, à `fixedWidth`, et elle accepte toute cellule,
++         puisque sa largeur ne doit rien à son contenu ; une cellule plus longue que la largeur est
++         raccourcie avec `Flow.shorten` et se termine par `ellipsis` (`…` à moins qu'un autre ne
++         soit donné).
+
+=         `Flow.shorten` and ends in `ellipsis` (`…` unless another is given).
+=
+-         ```scala
++         ```scala
+
+=         `Flow.shorten` and ends in `ellipsis` (`…` unless another is given).
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         `Flow.shorten` and ends in `ellipsis` (`…` unless another is given).
+=
+=         ```scala
+=         import soundness.*
+-         import tableStyles.thinRoundedTableStyle
++         import tableStyles.thinRoundedTableStyle
+
+=         `Flow.shorten` and ends in `ellipsis` (`…` unless another is given).
+=
+=         ```scala
+=         import soundness.*
+=         import tableStyles.thinRoundedTableStyle
+-         import textMetrics.uniformMetric
++         import textMetrics.uniformMetric
+
+=         `Flow.shorten` and ends in `ellipsis` (`…` unless another is given).
+=
+=         ```scala
+=         import soundness.*
+=         import tableStyles.thinRoundedTableStyle
+=         import textMetrics.uniformMetric
+-         import columnAttenuation.ignoreAttenuation
++         import columnAttenuation.ignoreAttenuation
+
+-         val fixed = Scaffold[Text](Column[Text, Text, Text](t"Fixed", sizing = columnar.Fixed(6))(identity))
++         val fixed = Scaffold[Text](Column[Text, Text, Text](t"Fixed", sizing = columnar.Fixed(6))(identity))
+
+-         fixed.tabulate(List(t"abcdefghij")).grid(40).render.to[List]   // the cell shows as `abcde…`
++         fixed.tabulate(List(t"abcdefghij")).grid(40).render.to[List]   // the cell shows as `abcde…`
+
+=         fixed.tabulate(List(t"abcdefghij")).grid(40).render.to[List]   // the cell shows as `abcde…`
+-         ```
++         ```
+
+-     entry #fixedWidth   the width, in cells
++     entry #fixedWidth
++       info
++           la largeur, en cellules
+
+=     entry #fixedWidth   the width, in cells
+-     entry #ellipsis   the text which ends a shortened cell: `…` by default
++     entry #ellipsis
++       info
++           le texte qui termine une cellule raccourcie : `…` par défaut
+
+-   entry .Shortened   elastic between one cell and its natural width; whatever exceeds the settled width is cut with an ellipsis
++   entry .Shortened
++     info
++         élastique entre une cellule et sa largeur naturelle ; ce qui dépasse la largeur retenue
++         est coupé avec des points de suspension
+
+-     detail
+-         Like `Fixed`, a cell which does not fit is shortened with an ellipsis, but the width is
+-         negotiated rather than fixed: the column claims its natural width, may shrink to a
+-         single cell, and takes spare width in proportion to the difference. `fixedWidth` names
+-         the field but is not a bound on the claim.
++     detail
++         Comme avec `Fixed`, une cellule qui ne tient pas est raccourcie avec des points de
++         suspension, mais la largeur est négociée plutôt que fixée : la colonne revendique sa
++         largeur naturelle, peut rétrécir jusqu'à une seule cellule, et prend de la largeur
++         disponible au prorata de la différence. `fixedWidth` nomme le champ mais ne borne pas la
++         revendication.
+
+-     entry #fixedWidth   the field the strategy was constructed with
++     entry #fixedWidth
++       info
++           le champ avec lequel la stratégie a été construite
+
+=     entry #fixedWidth   the field the strategy was constructed with
+-     entry #ellipsis   the text which ends a shortened cell: `…` by default
++     entry #ellipsis
++       info
++           le texte qui termine une cellule raccourcie : `…` par défaut
+
+-   entry .Collapsible   rigid at its natural width, but dropped from the table entirely when space runs out
++   entry .Collapsible
++     info
++         rigide à sa largeur naturelle, mais supprimée entièrement du tableau quand la place manque
+
+-     detail
+-         The column claims exactly its natural width and never wraps; when the columns' minima
+-         cannot fit the table's width, collapsible columns are dropped one by one, those with
+-         the highest `threshold` first, until the rest fit. A dropped column costs no padding
+-         and no rule. The thresholds are meaningful only relative to one another, so a table's
+-         collapsible columns are ranked by them:
++     detail
++         La colonne revendique exactement sa largeur naturelle et ne s'enroule jamais ; quand les
++         minima des colonnes ne tiennent pas dans la largeur du tableau, les colonnes repliables
++         sont supprimées une à une, celles dont le `threshold` est le plus élevé en premier,
++         jusqu'à ce que les autres tiennent. Une colonne supprimée ne coûte ni remplissage ni
++         filet. Les seuils n'ont de sens que les uns par rapport aux autres ; ils servent donc à
++         classer les colonnes repliables d'un tableau :
+
+=         collapsible columns are ranked by them:
+=
+-         ```scala
++         ```scala
+
+=         collapsible columns are ranked by them:
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         collapsible columns are ranked by them:
+=
+=         ```scala
+=         import soundness.*
+-         import tableStyles.thinRoundedTableStyle
++         import tableStyles.thinRoundedTableStyle
+
+=         collapsible columns are ranked by them:
+=
+=         ```scala
+=         import soundness.*
+=         import tableStyles.thinRoundedTableStyle
+-         import textMetrics.uniformMetric
++         import textMetrics.uniformMetric
+
+=         collapsible columns are ranked by them:
+=
+=         ```scala
+=         import soundness.*
+=         import tableStyles.thinRoundedTableStyle
+=         import textMetrics.uniformMetric
+-         import columnAttenuation.ignoreAttenuation
++         import columnAttenuation.ignoreAttenuation
+
+=         collapsible columns are ranked by them:
+=
+=         ```scala
+=         import soundness.*
+=         import tableStyles.thinRoundedTableStyle
+=         import textMetrics.uniformMetric
+=         import columnAttenuation.ignoreAttenuation
+=
+-         case class Person(name: Text, age: Int)
++         case class Person(name: Text, age: Int)
+
+-         val collapsing = Scaffold[Person]
++         val collapsing = Scaffold[Person]
+
+=         val collapsing = Scaffold[Person]
+-           ( Column(t"Name")(_.name),
++           ( Column(t"Name")(_.name),
+
+-             Column(t"Note", sizing = columnar.Collapsible(0.5))(_ => t"annotation") )
++             Column(t"Note", sizing = columnar.Collapsible(0.5))(_ => t"annotation") )
+
+-         val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
++         val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
+
+-         collapsing.tabulate(people).grid(30).render.to[List]   // both columns
++         collapsing.tabulate(people).grid(30).render.to[List]   // both columns
+
+-         collapsing.tabulate(people).grid(14).render.to[List]   // the name alone
++         collapsing.tabulate(people).grid(14).render.to[List]   // the name alone
+
+=         collapsing.tabulate(people).grid(14).render.to[List]   // the name alone
+-         ```
++         ```
+
+-     entry #threshold   between `0` and `1`: how readily the column collapses, higher first
++     entry #threshold
++       info
++           entre `0` et `1` : avec quelle facilité la colonne se replie, les plus élevés d'abord
+
+- entry .Tabulation   data arranged by a scaffold: the cells' text, ready to be laid out at any width
++ entry .Tabulation
++   info
++       des données disposées par un scaffold : le texte des cellules, prêt à être mis en page à
++       n'importe quelle largeur
+
+-   detail
+-       A `Tabulation[text]` is what `Scaffold#tabulate` (or the `tabulation` extension) makes
+-       from a list of rows: every cell already read into text and cut into lines, the titles
+-       likewise, and each row's decorations, with the row type surviving only as the `#Row`
+-       type member. It is independent of any width: `#grid` fits it to one, and `#layout`
+-       solves the widths without rendering.
++   detail
++       Une `Tabulation[text]` est ce que `Scaffold#tabulate` (ou l'extension `tabulation`) produit
++       à partir d'une liste de lignes : chaque cellule déjà lue sous forme de texte et découpée en
++       lignes, les titres de même, et les décorations de chaque ligne, le type de ligne ne
++       subsistant que sous la forme du membre de type `#Row`. Elle est indépendante de toute
++       largeur : `#grid` l'ajuste à une largeur, et `#layout` calcule les largeurs sans rendre.
+
+=       solves the widths without rendering.
+=
+-       ```scala
++       ```scala
+
+=       solves the widths without rendering.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       solves the widths without rendering.
+=
+=       ```scala
+=       import soundness.*
+-       import tableStyles.thinRoundedTableStyle
++       import tableStyles.thinRoundedTableStyle
+
+=       solves the widths without rendering.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+=       solves the widths without rendering.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+-       import columnAttenuation.ignoreAttenuation
++       import columnAttenuation.ignoreAttenuation
+
+=       solves the widths without rendering.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+=       case class Person(name: Text, age: Int)
+-       val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
++       val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
+
+-       val tabulation: Tabulation[Text] = people.tabulation
++       val tabulation: Tabulation[Text] = people.tabulation
+
+-       tabulation.grid(40).render.to[List]
++       tabulation.grid(40).render.to[List]
+
+-       tabulation.grid(12).render.to[List]
++       tabulation.grid(12).render.to[List]
+
+=       tabulation.grid(12).render.to[List]
+-       ```
++       ```
+
+-       A tabulation is `Printable` through `.printable`, so `Out.println(tabulation)` lays it
+-       out at the terminal's width with the style, metric, attenuation and hyphenation in
+-       scope.
++       Une tabulation est `Printable` grâce à `.printable`, de sorte que `Out.println(tabulation)`
++       la met en page à la largeur du terminal avec le style, la métrique, l'atténuation et la
++       césure dans la portée.
+
+=       scope.
+-   refer escritoire.Scaffold
++   refer escritoire.Scaffold
+
+-   refer escritoire.Grid
++   refer escritoire.Grid
+
+=   refer escritoire.Grid
+-   refer escritoire.Layout
++   refer escritoire.Layout
+
+-   entry .printable   prints a tabulation at the terminal's width
++   entry .printable
++     info
++         affiche une tabulation à la largeur du terminal
+
+-       The `Printable` given, which lays the table out at `termcap.width` and prints each
+-       line through the text type's own `Printable`. It needs a `Table.Style`, a `Text is
+-       Measurable`, an `Attenuation` and a `Hyphenation` in scope, and the text type's
+-       `Printable`.
++     detail
++         Le given `Printable`, qui met le tableau en page à `termcap.width` et affiche chaque ligne
++         par le `Printable` propre au type de texte. Il requiert un `Table.Style`, un
++         `Text is Measurable`, une `Attenuation` et une `Hyphenation` dans la portée, ainsi que le
++         `Printable` du type de texte.
+
+-   entry #Row   the row type the tabulation was made from
++   entry #Row
++     info
++         le type de ligne à partir duquel la tabulation a été créée
+
+-   entry #columns   the scaffold's columns
++   entry #columns
++     info
++         les colonnes du scaffold
+
+-   entry #titles   the title row: each title's lines
++   entry #titles
++     info
++         la ligne de titres : les lignes de chaque titre
+
+-   entry #rows   every data row: each cell's lines
++   entry #rows
++     info
++         chaque ligne de données : les lignes de chaque cellule
+
+-   entry #dataLength   the number of rows, counted once when the tabulation was built
++   entry #dataLength
++     info
++         le nombre de lignes, compté une seule fois à la construction de la tabulation
+
+-   entry #decorations   each row's per-column decorations, aligned with `#rows`; empty for none
++   entry #decorations
++     info
++         les décorations par colonne de chaque ligne, alignées sur `#rows` ; vide s'il n'y en a
++         aucune
+
+-       Evaluated when the tabulation is built, the last point at which the row values exist.
++     detail
++         Évaluées à la construction de la tabulation, dernier moment où les valeurs des lignes
++         existent.
+
+-   entry #layout   the solved column widths at a width, from the titles' and every row's claims
++   entry #layout
++     info
++         les largeurs de colonnes calculées à une largeur donnée, d'après les revendications des
++         titres et de chaque ligne
+
+-       `tabulation.layout(width)` folds every row's cells into the columns' aggregate claims
+-       and solves the widths once, giving a `Layout`. Its `widths` are the widths `#grid`
+-       renders with. Needs a `Table.Style`, a `Text is Measurable` and an `Attenuation`.
++     detail
++         `tabulation.layout(width)` intègre les cellules de chaque ligne aux revendications
++         agrégées des colonnes et calcule les largeurs une seule fois, ce qui donne un `Layout`.
++         Ses `widths` sont les largeurs avec lesquelles `#grid` rend. Requiert un `Table.Style`, un
++         `Text is Measurable` et une `Attenuation`.
+
+-   entry #grid   the tabulation fitted to a width: a `Grid` whose `render` is the lines
++   entry #grid
++     info
++         la tabulation ajustée à une largeur : une `Grid` dont le `render` donne les lignes
+
+-       `tabulation.grid(width)` solves the layout as `#layout` does, fits every cell to its
+-       column's width, and builds a `Grid` of two sections — the titles and the rows — sharing
+-       the same widths. If the columns' minima exceed `width` even after every collapsible
+-       column has gone, the `Attenuation` in scope is told: `columnAttenuation.failAttenuation`
+-       raises `Table.Error` and `ignoreAttenuation` lets the table overflow. Needs a
+-       `Table.Style`, a `Text is Measurable`, an `Attenuation` and a `Hyphenation`.
++     detail
++         `tabulation.grid(width)` calcule la mise en page comme le fait `#layout`, ajuste chaque
++         cellule à la largeur de sa colonne, et construit une `Grid` de deux sections — les titres
++         et les lignes — qui partagent les mêmes largeurs. Si les minima des colonnes dépassent
++         `width` même après la suppression de toutes les colonnes repliables, l'`Attenuation` dans
++         la portée en est avertie : `columnAttenuation.failAttenuation` lève une `Table.Error` et
++         `ignoreAttenuation` laisse le tableau déborder. Requiert un `Table.Style`, un
++         `Text is Measurable`, une `Attenuation` et une `Hyphenation`.
+
+- entry .Grid   a table fitted to a width: sections of rows at settled column widths, in a style
++ entry .Grid
++   info
++       un tableau ajusté à une largeur : des sections de lignes à des largeurs de colonnes fixées,
++       dans un style
+
+-   detail
+-       The last stage before text. A `Grid[text]` is a list of `Table.Section`s — each a run of
+-       `Table.Row`s with the column widths they share — and the `Table.Style` to draw them in.
+-       `Tabulation#grid` makes one with two sections, the titles and the data; `#render` draws
+-       it as a `Chain` of lines, with a rule between sections and the style's top and bottom
+-       lines around them.
++   detail
++       La dernière étape avant le texte. Une `Grid[text]` est une liste de `Table.Section`s —
++       chacune une suite de `Table.Row`s avec les largeurs de colonnes qu'elles partagent — et le
++       `Table.Style` dans lequel les dessiner. `Tabulation#grid` en crée une avec deux sections,
++       les titres et les données ; `#render` la dessine sous forme d'une `Chain` de lignes, avec un
++       filet entre les sections et les lignes du haut et du bas du style autour d'elles.
+
+=       lines around them.
+=
+-       ```scala
++       ```scala
+
+=       lines around them.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       lines around them.
+=
+=       ```scala
+=       import soundness.*
+-       import tableStyles.thinRoundedTableStyle
++       import tableStyles.thinRoundedTableStyle
+
+=       lines around them.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+=       lines around them.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+-       import columnAttenuation.ignoreAttenuation
++       import columnAttenuation.ignoreAttenuation
+
+=       lines around them.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       val grid: Grid[Text] = List(Person(t"Poins", 30)).tabulation.grid(40)
++       val grid: Grid[Text] = List(Person(t"Poins", 30)).tabulation.grid(40)
+
+-       grid.render.to[List]
++       grid.render.to[List]
+
+-       grid.sections.head.let(_.widths.to[List])   // the settled widths
++       grid.sections.head.let(_.widths.to[List])   // the settled widths
+
+=       grid.sections.head.let(_.widths.to[List])   // the settled widths
+-       ```
++       ```
+
+-       A grid is `Printable` through `.printable`, so it can be printed directly.
++       Une grille est `Printable` grâce à `.printable`, et peut donc être affichée directement.
+
+=       A grid is `Printable` through `.printable`, so it can be printed directly.
+-   refer escritoire.Tabulation
++   refer escritoire.Tabulation
+
+=   refer escritoire.Tabulation
+-   refer escritoire.Table.Style
++   refer escritoire.Table.Style
+
+=   refer escritoire.Table.Style
+-   refer escritoire.Layout
++   refer escritoire.Layout
+
+-   entry .printable   prints a grid, one rendered line per terminal line
++   entry .printable
++     info
++         affiche une grille, une ligne rendue par ligne de terminal
+
+-       The `Printable` given: `render` joined with newlines, each line printed through the
+-       text type's own `Printable`. Needs a `Text is Measurable` and the text type's
+-       `Printable`.
++     detail
++         Le given `Printable` : `render` joint par des sauts de ligne, chaque ligne étant affichée
++         par le `Printable` propre au type de texte. Requiert un `Text is Measurable` et le
++         `Printable` du type de texte.
+
+-   entry .rowLines   one row's visual lines against its columns' widths
++   entry .rowLines
++     info
++         les lignes visuelles d'une ligne du tableau selon les largeurs de ses colonnes
+
+-       `Grid.rowLines(style, widths, row)` is `row.height` lines: each cell padded to its
+-       column's width and aligned vertically, wrapped in the style's padding, decorated if the
+-       cell has a decoration, and joined with the style's edge glyphs. The gutter padding
+-       belongs to the cell, so a decoration covers the cell edge to edge while the rules stay
+-       bare. Used by `Grid#render` and `Layout#lines`.
++     detail
++         `Grid.rowLines(style, widths, row)` donne `row.height` lignes : chaque cellule complétée à
++         la largeur de sa colonne et alignée verticalement, entourée du remplissage du style,
++         décorée si la cellule a une décoration, et jointe par les glyphes de bord du style. Le
++         remplissage de gouttière appartient à la cellule, de sorte qu'une décoration couvre la
++         cellule d'un bord à l'autre tandis que les filets restent nus. Utilisé par `Grid#render`
++         et `Layout#lines`.
+
+-   entry .rule   a horizontal rule across columns of the given widths
++   entry .rule
++     info
++         un filet horizontal à travers des colonnes des largeurs données
+
+-       `Grid.rule(style, widths, above, below)` draws a rule the width of the columns and their
+-       chrome, with a joint glyph wherever a column edge meets it; `above` and `below` say on
+-       which sides columns adjoin, so a top rule has only descenders, a bottom rule only
+-       ascenders, and the rule beneath the titles both. The line weight is the style's
+-       `topLine`, `bottomLine` or `titleLine` accordingly.
++     detail
++         `Grid.rule(style, widths, above, below)` dessine un filet de la largeur des colonnes et de
++         leur habillage, avec un glyphe de jonction partout où un bord de colonne le rencontre ;
++         `above` et `below` indiquent de quels côtés des colonnes sont adjacentes, de sorte qu'un
++         filet du haut n'a que des jambages descendants, un filet du bas que des jambages montants,
++         et le filet sous les titres les deux. L'épaisseur du trait est le `topLine`, le
++         `bottomLine` ou le `titleLine` du style, selon le cas.
+
+-   entry #sections   the sections, in order, each with its rows and their shared widths
++   entry #sections
++     info
++         les sections, dans l'ordre, chacune avec ses lignes et leurs largeurs communes
+
+-   entry #style   the style the grid is drawn in
++   entry #style
++     info
++         le style dans lequel la grille est dessinée
+
+-   entry #render   the grid as lines of text
++   entry #render
++     info
++         la grille sous forme de lignes de texte
+
+-       A `Chain[text]`: the style's top line (if it has one), each section's rows with a rule
+-       between sections, and the bottom line (if any). Needs a `Text is Measurable`.
++     detail
++         Une `Chain[text]` : la ligne du haut du style (s'il en a une), les lignes de chaque
++         section avec un filet entre les sections, et la ligne du bas (s'il y en a une). Requiert
++         un `Text is Measurable`.
+
+- entry .Layout   a table's settled column widths, and the claims they were solved from
++ entry .Layout
++   info
++       les largeurs de colonnes retenues pour un tableau, et les revendications à partir desquelles
++       elles ont été calculées
+
+-   detail
+-       A `Layout[row, text]` is the value between measuring a table and rendering it: which
+-       columns survived (`#survivors`, with their widths), the aggregate claims they were
+-       solved from, and the width and style they were solved at. It is immutable and
+-       incremental: a row phrased as `Cells` is tested with `#accommodates` — within every
+-       column's aggregate, it cannot move a column — and admitted with `#extend`, which gives
+-       the same layout when nothing moves and a re-solved one otherwise. Rows are then
+-       rendered one at a time with `#lines`, and a row's height is known from `#height`
+-       without rendering it when none of its cells wraps.
++   detail
++       Un `Layout[row, text]` est la valeur intermédiaire entre la mesure d'un tableau et son
++       rendu : quelles colonnes ont survécu (`#survivors`, avec leurs largeurs), les revendications
++       agrégées à partir desquelles elles ont été calculées, et la largeur et le style pour
++       lesquels elles l'ont été. Il est immuable et incrémental : une ligne exprimée sous forme de
++       `Cells` est testée avec `#accommodates` — si elle reste dans l'agrégat de chaque colonne,
++       elle ne peut déplacer aucune colonne — et admise avec `#extend`, qui donne la même mise en
++       page quand rien ne bouge et une mise en page recalculée sinon. Les lignes sont ensuite
++       rendues une à une avec `#lines`, et la hauteur d'une ligne se connaît grâce à `#height` sans
++       la rendre quand aucune de ses cellules ne s'enroule.
+
+-       This is the engine behind `Tabulation#grid`, exposed for a table which is built or
+-       displayed row by row — a log which grows, a screen which repaints — where re-laying the
+-       whole table for each row would be wasteful. `Scaffold#layout` makes the first layout
+-       from the titles alone. `Layout` is not exported to the `soundness` umbrella, so the type
+-       is named as `escritoire.Layout` where it must be written.
++       C'est le moteur qui se trouve derrière `Tabulation#grid`, exposé pour un tableau construit
++       ou affiché ligne par ligne — un journal qui s'allonge, un écran qui se redessine — où
++       remettre en page tout le tableau à chaque ligne serait du gaspillage. `Scaffold#layout` crée
++       la première mise en page à partir des seuls titres. `Layout` n'est pas exporté vers le
++       package parapluie `soundness` ; le type se nomme donc `escritoire.Layout` là où il faut
++       l'écrire.
+
+=       is named as `escritoire.Layout` where it must be written.
+=
+-       ```scala
++       ```scala
+
+=       is named as `escritoire.Layout` where it must be written.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       is named as `escritoire.Layout` where it must be written.
+=
+=       ```scala
+=       import soundness.*
+-       import tableStyles.thinRoundedTableStyle
++       import tableStyles.thinRoundedTableStyle
+
+=       is named as `escritoire.Layout` where it must be written.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+=       is named as `escritoire.Layout` where it must be written.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+-       import columnAttenuation.ignoreAttenuation
++       import columnAttenuation.ignoreAttenuation
+
+=       is named as `escritoire.Layout` where it must be written.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+=       is named as `escritoire.Layout` where it must be written.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+=       case class Person(name: Text, age: Int)
+-       val scaffold = Scaffold[Person](Column(t"Name")(_.name), Column(t"Age")(_.age))
++       val scaffold = Scaffold[Person](Column(t"Name")(_.name), Column(t"Age")(_.age))
+
+=       val scaffold = Scaffold[Person](Column(t"Name")(_.name), Column(t"Age")(_.age))
+-       val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
++       val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
+
+-       val cells = people.map(scaffold.cells(_))
++       val cells = people.map(scaffold.cells(_))
+
+-       val layout = cells.fold(scaffold.layout(40)) { (layout, cells) => layout.extend(cells) }
++       val layout = cells.fold(scaffold.layout(40)) { (layout, cells) => layout.extend(cells) }
+
+-       layout.widths.to[List]
++       layout.widths.to[List]
+
+-       layout.titleLines ++ cells.bind(layout.lines(_, Nil))
++       layout.titleLines ++ cells.bind(layout.lines(_, Nil))
+
+=       layout.titleLines ++ cells.bind(layout.lines(_, Nil))
+-       ```
++       ```
+
+=       ```
+-   refer escritoire.Scaffold
++   refer escritoire.Scaffold
+
+-   refer escritoire.Cells
++   refer escritoire.Cells
+
+=   refer escritoire.Cells
+-   refer escritoire.Tabulation
++   refer escritoire.Tabulation
+
+-   entry .nothing   empty aggregates, one per column, for a layout which has admitted nothing yet
++   entry .nothing
++     info
++         des agrégats vides, un par colonne, pour une mise en page qui n'a encore rien admis
+
+-   entry .aggregate   the aggregates widened by a row's cells, column by column
++   entry .aggregate
++     info
++         les agrégats élargis par les cellules d'une ligne, colonne par colonne
+
+-       `Layout.aggregate(aggregates, cells)` is the elementwise `Metrics.max` of the two,
+-       so the result claims at least what either did.
++     detail
++         `Layout.aggregate(aggregates, cells)` est le `Metrics.max` élément par élément des deux,
++         de sorte que le résultat revendique au moins autant que l'un ou l'autre.
+
+-   entry .solve   solves the column widths at a width from the aggregate claims
++   entry .solve
++     info
++         calcule les largeurs des colonnes à une largeur donnée d'après les revendications agrégées
+
+-       `Layout.solve(columns, titles, aggregates, width, style)` asks each column's `Columnar`
+-       for its `Flex` from its aggregate, drops any column which can occupy no width at all (a
+-       `Paragraph` column whose every cell is empty, say), deducts the style's chrome, and lets
+-       tessellate's `Flex.solve` collapse and distribute the rest. If the surviving columns'
+-       minima still exceed the width, the `Attenuation` in scope is called with the minimum
+-       the table needed and the width it had. Needs a `Text is Measurable` and an
+-       `Attenuation`.
++     detail
++         `Layout.solve(columns, titles, aggregates, width, style)` demande à chaque `Columnar` de
++         colonne son `Flex` d'après son agrégat, supprime toute colonne qui ne peut occuper aucune
++         largeur (une colonne `Paragraph` dont toutes les cellules sont vides, par exemple), déduit
++         l'habillage du style, et laisse le `Flex.solve` de tessellate replier et répartir le
++         reste. Si les minima des colonnes restantes dépassent encore la largeur, l'`Attenuation`
++         dans la portée est appelée avec le minimum dont le tableau avait besoin et la largeur dont
++         il disposait. Requiert un `Text is Measurable` et une `Attenuation`.
+
+-   entry #columns   the columns the layout was solved for
++   entry #columns
++     info
++         les colonnes pour lesquelles la mise en page a été calculée
+
+-   entry #titles   the title rows' cells
++   entry #titles
++     info
++         les cellules des lignes de titres
+
+-   entry #aggregates   the per-column aggregate claims the widths were solved from
++   entry #aggregates
++     info
++         les revendications agrégées par colonne à partir desquelles les largeurs ont été calculées
+
+-   entry #width   the width the layout was solved at
++   entry #width
++     info
++         la largeur à laquelle la mise en page a été calculée
+
+-   entry #survivors   the columns which survived, as `(index, width)` pairs in order
++   entry #survivors
++     info
++         les colonnes qui ont survécu, sous forme de paires `(index, width)` dans l'ordre
+
+-       A column dropped by collapse is absent; `#widths` is the second element of each pair.
++     detail
++         Une colonne supprimée par repli est absente ; `#widths` est le second élément de chaque
++         paire.
+
+-   entry #style   the style, whose padding and rules the chrome was costed from
++   entry #style
++     info
++         le style, d'après le remplissage et les filets duquel le coût de l'habillage a été calculé
+
+-   entry #widths   the surviving columns' widths, in order
++   entry #widths
++     info
++         les largeurs des colonnes restantes, dans l'ordre
+
+-   entry #cells   a row phrased through the layout's columns
++   entry #cells
++     info
++         une ligne exprimée à travers les colonnes de la mise en page
+
+-       The same as `Scaffold#cells`: each column's content for the row, cut into lines and
+-       measured.
++     detail
++         Identique à `Scaffold#cells` : le contenu de chaque colonne pour la ligne, découpé en
++         lignes et mesuré.
+
+-   entry #accommodates   whether a row's cells are within every column's aggregate claim
++   entry #accommodates
++     info
++         si les cellules d'une ligne sont dans la revendication agrégée de chaque colonne
+
+-       True when admitting the row cannot change any column's claim, by each column's
+-       `Columnar#accommodates`; `#extend` then returns this very layout.
++     detail
++         Vrai quand l'admission de la ligne ne peut modifier la revendication d'aucune colonne,
++         selon le `Columnar#accommodates` de chaque colonne ; `#extend` renvoie alors cette même
++         mise en page.
+
+-   entry #extend   this layout, or one re-solved with the row's cells folded in
++   entry #extend
++     info
++         cette mise en page, ou une mise en page recalculée en y intégrant les cellules de la ligne
+
+-       `layout.extend(cells)` is `layout` itself if `#accommodates` holds, and otherwise
+-       `Layout.solve` over the aggregates widened by the cells, at the same width. The
+-       re-solve may leave every width as it was — a wider claim on a column already pinned by
+-       the width changes nothing — which `#stable` detects. Needs a `Text is Measurable` and an
+-       `Attenuation`.
++     detail
++         `layout.extend(cells)` est `layout` lui-même si `#accommodates` est vérifié, et sinon
++         `Layout.solve` sur les agrégats élargis par les cellules, à la même largeur. Le nouveau
++         calcul peut laisser toutes les largeurs telles quelles — une revendication plus large sur
++         une colonne déjà bloquée par la largeur ne change rien — ce que `#stable` détecte.
++         Requiert un `Text is Measurable` et une `Attenuation`.
+
+-   entry #resize   the same claims solved at another width
++   entry #resize
++     info
++         les mêmes revendications calculées à une autre largeur
+
+-   entry #stable   whether two layouts show the same columns at the same widths
++   entry #stable
++     info
++         si deux mises en page montrent les mêmes colonnes aux mêmes largeurs
+
+-       Compares the `#survivors`: a repaint can skip the rows already drawn when a layout
+-       extended by a new row is stable against the one they were drawn with.
++     detail
++         Compare les `#survivors` : un redessin peut sauter les lignes déjà dessinées quand une
++         mise en page étendue par une nouvelle ligne est stable par rapport à celle avec laquelle
++         elles ont été dessinées.
+
+-   entry #tableRow   a row's cells fitted to the surviving columns' widths, as a `TableRow`
++   entry #tableRow
++     info
++         les cellules d'une ligne ajustées aux largeurs des colonnes restantes, sous forme de
++         `TableRow`
+
+-       `layout.tableRow(cells, decorations)` fits each surviving column's lines with its
+-       `Columnar#fit`, pairs each with its decoration (read from `decorations` by column
+-       position, `Unset` beyond its end), and measures the row's height. Needs a `Text is
+-       Measurable` and a `Hyphenation`.
++     detail
++         `layout.tableRow(cells, decorations)` ajuste les lignes de chaque colonne restante avec
++         son `Columnar#fit`, associe chacune à sa décoration (lue dans `decorations` selon la
++         position de la colonne, `Unset` au-delà de sa fin), et mesure la hauteur de la ligne.
++         Requiert un `Text is Measurable` et une `Hyphenation`.
+
+-   entry #lines   a row rendered against the layout: its lines of text
++   entry #lines
++     info
++         une ligne rendue selon la mise en page : ses lignes de texte
+
+-       `layout.lines(cells, decorations)` is `Grid.rowLines` over `#tableRow`: the row's
+-       visual lines, with the style's edges, as a `List`. Pass `Nil` for no decorations.
++     detail
++         `layout.lines(cells, decorations)` est `Grid.rowLines` appliqué à `#tableRow` : les lignes
++         visuelles de la ligne, avec les bords du style, sous forme de `List`. Passez `Nil` pour
++         aucune décoration.
+
+-   entry #height   a row's height in lines, without rendering it where that is possible
++   entry #height
++     info
++         la hauteur d'une ligne en lignes de texte, sans la rendre quand c'est possible
+
+-       A cell whose natural width fits its column is not wrapped, so it stands as many lines
+-       as it has; only a cell which must wrap is fitted to find out. The row's height is the
+-       tallest cell's.
++     detail
++         Une cellule dont la largeur naturelle tient dans sa colonne n'est pas enroulée ; elle
++         occupe donc autant de lignes qu'elle en a ; seule une cellule qui doit s'enrouler est
++         ajustée pour le savoir. La hauteur de la ligne est celle de la cellule la plus haute.
+
+-   entry #titleLines   the title rows rendered against the layout
++   entry #titleLines
++     info
++         les lignes de titres rendues selon la mise en page
+
+-   entry #topRule   the rule above the titles, or `Unset` if the style has no top line
++   entry #topRule
++     info
++         le filet au-dessus des titres, ou `Unset` si le style n'a pas de ligne du haut
+
+-   entry #titleRule   the rule between the titles and the rows
++   entry #titleRule
++     info
++         le filet entre les titres et les lignes
+
+-   entry #bottomRule   the rule beneath the last row, or `Unset` if the style has no bottom line
++   entry #bottomRule
++     info
++         le filet sous la dernière ligne, ou `Unset` si le style n'a pas de ligne du bas
+
+- entry .Cells   one row's cells as the lines each will display, with each cell's intrinsic widths
++ entry .Cells
++   info
++       les cellules d'une ligne sous forme des lignes que chacune affichera, avec les largeurs
++       intrinsèques de chaque cellule
+
+-   detail
+-       `Cells[text]` is a row phrased once from its row value — each column's content cut into
+-       lines, and each cell's `Metrics` (its longest word and its longest line) — and
+-       independent of any width, so a layout can test it with `Layout#accommodates`, admit it
+-       with `Layout#extend`, and render it at whatever widths it settles on. `Scaffold#cells`
+-       and `Layout#cells` make one from a row; `Cells.of` from lines already cut.
++   detail
++       `Cells[text]` est une ligne exprimée une fois pour toutes à partir de sa valeur — le contenu
++       de chaque colonne découpé en lignes, et les `Metrics` de chaque cellule (son mot le plus
++       long et sa ligne la plus longue) — et indépendante de toute largeur, de sorte qu'une mise en
++       page peut la tester avec `Layout#accommodates`, l'admettre avec `Layout#extend`, et la
++       rendre aux largeurs qu'elle retient. `Scaffold#cells` et `Layout#cells` en créent une à
++       partir d'une ligne ; `Cells.of` à partir de lignes déjà découpées.
+
+-       `Cells` is not exported to the `soundness` umbrella: it is the layout engine's own
+-       vocabulary, reached as `escritoire.Cells` where a program drives a `Layout` directly.
++       `Cells` n'est pas exporté vers le package parapluie `soundness` : c'est le vocabulaire
++       propre du moteur de mise en page, accessible sous le nom `escritoire.Cells` là où un
++       programme pilote directement un `Layout`.
+
+=       vocabulary, reached as `escritoire.Cells` where a program drives a `Layout` directly.
+-   refer escritoire.Layout
++   refer escritoire.Layout
+
+-   entry .of   cells from lines already cut, or from a row through its columns
++   entry .of
++     info
++         des cellules à partir de lignes déjà découpées, ou à partir d'une ligne via ses colonnes
+
+-       `Cells.of(lines)` measures each cell's lines; `Cells.of(columns, row)` reads each
+-       column's content from the row first. Both need a `Text is Measurable`.
++     detail
++         `Cells.of(lines)` mesure les lignes de chaque cellule ; `Cells.of(columns, row)` lit
++         d'abord le contenu de chaque colonne dans la ligne. Les deux requièrent un
++         `Text is Measurable`.
+
+-   entry #lines   each cell's lines, by column
++   entry #lines
++     info
++         les lignes de chaque cellule, par colonne
+
+-   entry #metrics   each cell's intrinsic widths, by column
++   entry #metrics
++     info
++         les largeurs intrinsèques de chaque cellule, par colonne
+
+- entry .Columnation   a flat list arranged in columns, as `ls` lists a directory
++ entry .Columnation
++   info
++       une liste plate disposée en colonnes, comme `ls` liste un répertoire
+
+-   detail
+-       Not every arrangement of text in columns is a table. A list of short items — file
+-       names, the entries of a legend — reads best as `ls` lays out a directory: as many
+-       columns as the width admits, each item in one cell, no rules and no titles.
+-       `Columnation.layout` does this for a list of textual values; the `columnate` extension
+-       is the same operation as a method on the list.
++   detail
++       Toute disposition de texte en colonnes n'est pas un tableau. Une liste d'éléments courts —
++       des noms de fichiers, les entrées d'une légende — se lit mieux disposée comme `ls` affiche
++       un répertoire : autant de colonnes que la largeur le permet, chaque élément dans une
++       cellule, sans filets ni titres. `Columnation.layout` fait cela pour une liste de valeurs
++       textuelles ; l'extension `columnate` est la même opération sous forme de méthode sur la
++       liste.
+
+=       is the same operation as a method on the list.
+=
+-       ```scala
++       ```scala
+
+=       is the same operation as a method on the list.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       is the same operation as a method on the list.
+=
+=       ```scala
+=       import soundness.*
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+-       Columnation.layout(List(t"apple", t"fig", t"kiwi", t"lime", t"pear", t"plum"), 24)
++       Columnation.layout(List(t"apple", t"fig", t"kiwi", t"lime", t"pear", t"plum"), 24)
+
+-       // List(t"apple  fig    kiwi  lime", t"pear   plum")
++       // List(t"apple  fig    kiwi  lime", t"pear   plum")
+
+=       // List(t"apple  fig    kiwi  lime", t"pear   plum")
+-       ```
++       ```
+
+-   refer escritoire.columnate
++   refer escritoire.columnate
+
+-   entry .layout   the items in as many columns as fit a width, one line per row
++   entry .layout
++     info
++         les éléments répartis en autant de colonnes que la largeur le permet, une ligne par rangée
+
+-       `Columnation.layout(items, width, gap, uniform, downward, align)` chooses the greatest
+-       column count at which every column's content fits alongside the others, with `gap`
+-       cells (two by default) between neighbours. Equal-width columns — each as wide as the
+-       widest item — are preferred, but a layout with one more column is admitted when the
+-       items which fall in some column happen to be narrower; spare width is then shared back
+-       out towards equality, no column growing beyond the widest item. `uniform = true`
+-       considers only equal-width layouts; `downward = true` reads the items down each column
+-       rather than across each row; `align` pads each cell within its column, and a
+-       left-aligned row carries no trailing padding after its last item. An item wider than
+-       the width still occupies a single column, and no items make no lines. Needs a `Text is
+-       Measurable`.
++     detail
++         `Columnation.layout(items, width, gap, uniform, downward, align)` choisit le plus grand
++         nombre de colonnes pour lequel le contenu de chaque colonne tient à côté des autres, avec
++         `gap` cellules (deux par défaut) entre voisines. Les colonnes de largeur égale — chacune
++         aussi large que l'élément le plus large — sont préférées, mais une disposition avec une
++         colonne de plus est admise quand les éléments qui tombent dans une colonne se trouvent
++         être plus étroits ; la largeur disponible est alors redistribuée vers l'égalité, aucune
++         colonne ne dépassant l'élément le plus large. `uniform = true` ne considère que les
++         dispositions à largeurs égales ; `downward = true` lit les éléments en descendant chaque
++         colonne plutôt qu'en parcourant chaque rangée ; `align` complète chaque cellule dans sa
++         colonne, et une rangée alignée à gauche ne porte aucun remplissage après son dernier
++         élément. Un élément plus large que la largeur occupe tout de même une seule colonne, et
++         l'absence d'éléments ne produit aucune ligne. Requiert un `Text is Measurable`.
+
+- entry .columnate   `items.columnate(width)`: a list of text in as many columns as fit, one line per row
++ entry .columnate
++   info
++       `items.columnate(width)` : une liste de texte en autant de colonnes que possible, une ligne
++       par rangée
+
+-     An extension on `List[text]` for any `Textual` text with `Char` elements, which calls
+-     `Columnation.layout` with the same parameters: `gap` (default 2), `uniform`, `downward`
+-     and `align` (default `TextAlignment.Left`). Needs a `Text is Measurable`.
++   detail
++       Une extension sur `List[text]` pour tout texte `Textual` aux éléments `Char`, qui appelle
++       `Columnation.layout` avec les mêmes paramètres : `gap` (2 par défaut), `uniform`, `downward`
++       et `align` (`TextAlignment.Left` par défaut). Requiert un `Text is Measurable`.
+
+=     and `align` (default `TextAlignment.Left`). Needs a `Text is Measurable`.
+=
+-     ```scala
++       ```scala
+
+=     and `align` (default `TextAlignment.Left`). Needs a `Text is Measurable`.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+=     and `align` (default `TextAlignment.Left`). Needs a `Text is Measurable`.
+=
+=     ```scala
+=     import soundness.*
+-     import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+-     List(t"a", t"bb", t"c", t"dd", t"e").columnate(11)                       // List(t"a   bb  c", t"dd  e")
++       List(t"a", t"bb", t"c", t"dd", t"e").columnate(11)                       // List(t"a   bb  c", t"dd  e")
+
+-     List(t"aaaa", t"b", t"c", t"d").columnate(12, uniform = true)           // List(t"aaaa  b", t"c     d")
++       List(t"aaaa", t"b", t"c", t"d").columnate(12, uniform = true)           // List(t"aaaa  b", t"c     d")
+
+-     List(t"a", t"b", t"c", t"d", t"e").columnate(7, downward = true)        // List(t"a  c  e", t"b  d")
++       List(t"a", t"b", t"c", t"d", t"e").columnate(7, downward = true)        // List(t"a  c  e", t"b  d")
+
+-     List(t"a", t"bb").columnate(10, align = TextAlignment.Right)            // List(t" a  bb")
++       List(t"a", t"bb").columnate(10, align = TextAlignment.Right)            // List(t" a  bb")
+
+=     List(t"a", t"bb").columnate(10, align = TextAlignment.Right)            // List(t" a  bb")
+-     ```
++       ```
+
+- entry .tabulation   `rows.tabulation`: a list tabulated by its element type's `Tabulable`, or a value by its `Tabular`
++ entry .tabulation
++   info
++       `rows.tabulation` : une liste tabulée par le `Tabulable` de son type d'élément, ou une
++       valeur par son `Tabular`
+
+-     Two extensions. On a `List[row]`, `rows.tabulation` needs a `row is Tabulable[text]` —
+-     derived for any case class, and given for `Int`, `Double` and `Text` — and gives the
+-     `Tabulation[text]` of the scaffold applied to the rows. On any value, `value.tabulation`
+-     needs a `value is Tabular[text]`, which supplies both the scaffold and the rows from the
+-     value itself. The text type is inferred from the instance, or given as
+-     `rows.tabulation[Text]`.
++   detail
++       Deux extensions. Sur une `List[row]`, `rows.tabulation` requiert un `row is Tabulable[text]`
++       — dérivé pour toute case class, et fourni pour `Int`, `Double` et `Text` — et donne la
++       `Tabulation[text]` du scaffold appliqué aux lignes. Sur n'importe quelle valeur,
++       `value.tabulation` requiert un `value is Tabular[text]`, qui fournit à la fois le scaffold
++       et les lignes à partir de la valeur elle-même. Le type de texte est inféré à partir de
++       l'instance, ou donné sous la forme `rows.tabulation[Text]`.
+
+=     `rows.tabulation[Text]`.
+=
+-     ```scala
++       ```scala
+
+=     `rows.tabulation[Text]`.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+=     `rows.tabulation[Text]`.
+=
+=     ```scala
+=     import soundness.*
+-     import tableStyles.thinRoundedTableStyle
++       import tableStyles.thinRoundedTableStyle
+
+=     `rows.tabulation[Text]`.
+=
+=     ```scala
+=     import soundness.*
+=     import tableStyles.thinRoundedTableStyle
+-     import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+=     `rows.tabulation[Text]`.
+=
+=     ```scala
+=     import soundness.*
+=     import tableStyles.thinRoundedTableStyle
+=     import textMetrics.uniformMetric
+-     import columnAttenuation.ignoreAttenuation
++       import columnAttenuation.ignoreAttenuation
+
+=     `rows.tabulation[Text]`.
+=
+=     ```scala
+=     import soundness.*
+=     import tableStyles.thinRoundedTableStyle
+=     import textMetrics.uniformMetric
+=     import columnAttenuation.ignoreAttenuation
+=
+-     case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-     List(Person(t"Poins", 30), Person(t"Hal", 16)).tabulation.grid(40).render.to[List]
++       List(Person(t"Poins", 30), Person(t"Hal", 16)).tabulation.grid(40).render.to[List]
+
+-     List(1, 22, 333).tabulation.grid(20).render.to[List]   // one untitled, right-aligned column
++       List(1, 22, 333).tabulation.grid(20).render.to[List]   // one untitled, right-aligned column
+
+=     List(1, 22, 333).tabulation.grid(20).render.to[List]   // one untitled, right-aligned column
+-     ```
++       ```
+
+- entry .Tabulable   a typeclass: how a type is put into columns, so a list of it tabulates
++ entry .Tabulable
++   info
++       une classe de types : la façon dont un type est réparti en colonnes, pour qu'une liste de ce
++       type se tabule
+
+-   detail
+-       `row is Tabulable[text]` is a function `#table()` returning the `Scaffold[row, text]`
+-       for the type; `#tabulate` applies it to a list. Its companion derives an instance for
+-       any case class — a column per field, each titled by its field name uncamelled and
+-       capitalised (`linesOfCode` becomes `Lines Of Code`), unless a `Table.Relabelling` for the
+-       type in scope says otherwise — and provides instances for `Int`, `Double` and `Text`,
+-       each a single untitled column. A field's column is the field type's own `Tabulable`
+-       scaffold, adapted to the record with `Column#contramap`, so a field of a case-class type
+-       contributes that type's columns in turn.
++   detail
++       `row is Tabulable[text]` est une fonction `#table()` qui renvoie le `Scaffold[row, text]` du
++       type ; `#tabulate` l'applique à une liste. Son objet compagnon dérive une instance pour
++       toute case class — une colonne par champ, chacune intitulée d'après le nom de son champ
++       décamélisé et capitalisé (`linesOfCode` devient `Lines Of Code`), à moins qu'une
++       `Table.Relabelling` pour le type dans la portée n'en décide autrement — et fournit des
++       instances pour `Int`, `Double` et `Text`, chacune une seule colonne sans titre. La colonne
++       d'un champ est le scaffold `Tabulable` propre au type du champ, adapté à l'enregistrement
++       avec `Column#contramap`, de sorte qu'un champ d'un type case class apporte à son tour les
++       colonnes de ce type.
+
+=       contributes that type's columns in turn.
+=
+-       ```scala
++       ```scala
+
+=       contributes that type's columns in turn.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       contributes that type's columns in turn.
+=
+=       ```scala
+=       import soundness.*
+-       import tableStyles.thinRoundedTableStyle
++       import tableStyles.thinRoundedTableStyle
+
+=       contributes that type's columns in turn.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+=       contributes that type's columns in turn.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+-       import columnAttenuation.ignoreAttenuation
++       import columnAttenuation.ignoreAttenuation
+
+=       contributes that type's columns in turn.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       summon[Person is Tabulable[Text]].tabulate(List(Person(t"Poins", 30))).grid(40).render.to[List]
++       summon[Person is Tabulable[Text]].tabulate(List(Person(t"Poins", 30))).grid(40).render.to[List]
+
+=       summon[Person is Tabulable[Text]].tabulate(List(Person(t"Poins", 30))).grid(40).render.to[List]
+-       ```
++       ```
+
+-       An instance of one's own is the seam for a type whose columns are not its fields:
++       Une instance personnelle est le point d'accroche pour un type dont les colonnes ne sont pas
++       ses champs :
+
+=       An instance of one's own is the seam for a type whose columns are not its fields:
+=
+-       ```scala
++       ```scala
+
+=       An instance of one's own is the seam for a type whose columns are not its fields:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       An instance of one's own is the seam for a type whose columns are not its fields:
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       given Person is Tabulable[Text] = () =>
++       given Person is Tabulable[Text] = () =>
+
+-         Scaffold[Person](Column(t"Who")(_.name), Column(t"Adult?")(person => if person.age >= 18 then t"yes" else t"no"))
++         Scaffold[Person](Column(t"Who")(_.name), Column(t"Adult?")(person => if person.age >= 18 then t"yes" else t"no"))
+
+=         Scaffold[Person](Column(t"Who")(_.name), Column(t"Adult?")(person => if person.age >= 18 then t"yes" else t"no"))
+-       ```
++       ```
+
+-       Only `Text`-celled instances are derived: a `Teletype` table is written as a `Scaffold`
+-       by hand.
++       Seules les instances à cellules `Text` sont dérivées : un tableau `Teletype` s'écrit à la
++       main sous forme de `Scaffold`.
+
+=       by hand.
+-   refer escritoire.Scaffold
++   refer escritoire.Scaffold
+
+-   refer escritoire.Table.Relabelling
++   refer escritoire.Table.Relabelling
+
+=   refer escritoire.Table.Relabelling
+-   refer escritoire.tabulation
++   refer escritoire.tabulation
+
+-   entry .JoinTabulable   the derived instance for a product type, over its fields' columns
++   entry .JoinTabulable
++     info
++         l'instance dérivée pour un type produit, à partir des colonnes de ses champs
+
+-     detail
+-         The class the derivation builds: a `Tabulable[Text]` whose scaffold is the given
+-         columns. Not normally named by a user; `conjunction` makes one.
++     detail
++         La classe que construit la dérivation : un `Tabulable[Text]` dont le scaffold est formé
++         des colonnes données. Un utilisateur n'a normalement pas à la nommer ; `conjunction` en
++         crée une.
+
+-     entry #table   the scaffold of the joined columns
++     entry #table
++       info
++           le scaffold des colonnes réunies
+
+-   entry .conjunction   derives the instance for a case class, one column per field
++   entry .conjunction
++     info
++         dérive l'instance pour une case class, une colonne par champ
+
+-       Each field's `Tabulable` gives its columns, which are adapted to the record and
+-       retitled from the field's label — through a `Table.Relabelling[derivation]` if one is
+-       in scope, and otherwise uncamelled and capitalised. This is what the `derived` given
+-       inherited from wisteria's `ProductDerivation` calls, so a case class needs no
+-       annotation to be tabulated.
++     detail
++         Le `Tabulable` de chaque champ donne ses colonnes, qui sont adaptées à l'enregistrement et
++         réintitulées d'après l'étiquette du champ — par une `Table.Relabelling[derivation]` s'il y
++         en a une dans la portée, et sinon décamélisées et capitalisées. C'est ce qu'appelle le
++         given `derived` hérité du `ProductDerivation` de wisteria, de sorte qu'une case class n'a
++         besoin d'aucune annotation pour être tabulée.
+
+-   entry .int   `Int` as one untitled, right-aligned, collapsible column
++   entry .int
++     info
++         `Int` sous forme d'une colonne sans titre, alignée à droite et repliable
+
+-       The column collapses at threshold `0.3`, so a lone number is the first thing to go when
+-       a record of several fields is squeezed.
++     detail
++         La colonne se replie au seuil `0.3`, de sorte qu'un nombre isolé est la première chose à
++         disparaître quand un enregistrement de plusieurs champs est comprimé.
+
+-   entry .double   `Double` as one untitled, right-aligned, collapsible column
++   entry .double
++     info
++         `Double` sous forme d'une colonne sans titre, alignée à droite et repliable
+
+-       Needs a `Decimalizer` in scope, which decides how many decimal places are shown.
++     detail
++         Requiert un `Decimalizer` dans la portée, qui décide du nombre de décimales affichées.
+
+-   entry .text   `Text` as one untitled, left-aligned paragraph column
++   entry .text
++     info
++         `Text` sous forme d'une colonne paragraphe sans titre, alignée à gauche
+
+-   entry #table   the scaffold for the type
++   entry #table
++     info
++         le scaffold du type
+
+-   entry #tabulate   the scaffold applied to a list of the type: a `Tabulation`
++   entry #tabulate
++     info
++         le scaffold appliqué à une liste du type : une `Tabulation`
+
+-       The scaffold is built once, lazily, and reused for every call.
++     detail
++         Le scaffold est construit une seule fois, paresseusement, et réutilisé à chaque appel.
+
+- entry .Tabular   a typeclass: a value which is itself a table, supplying both its columns and its rows
++ entry .Tabular
++   info
++       une classe de types : une valeur qui est elle-même un tableau, fournissant à la fois ses
++       colonnes et ses lignes
+
+-   detail
+-       Where `Tabulable` tabulates a *list* of a type, `value is Tabular[text]` tabulates a
+-       single value which contains its rows: `#table` gives the scaffold for its `#Element`
+-       type and `#rows` extracts the elements, and `#tabulate` applies one to the other. A
+-       report object, a query result or a matrix is tabulated by giving one, and then
+-       `value.tabulation` through the `tabulation` extension.
++   detail
++       Là où `Tabulable` tabule une *liste* d'un type, `value is Tabular[text]` tabule une seule
++       valeur qui contient ses lignes : `#table` donne le scaffold de son type `#Element` et
++       `#rows` en extrait les éléments, et `#tabulate` applique l'un à l'autre. Un objet de
++       rapport, un résultat de requête ou une matrice se tabule en en fournissant une instance,
++       puis avec `value.tabulation` grâce à l'extension `tabulation`.
+
+-   refer escritoire.Tabulable
++   refer escritoire.Tabulable
+
+=   refer escritoire.Tabulable
+-   refer escritoire.tabulation
++   refer escritoire.tabulation
+
+-   entry #Element   the row type the value's rows have
++   entry #Element
++     info
++         le type de ligne qu'ont les lignes de la valeur
+
+-   entry #table   the scaffold for the value's rows
++   entry #table
++     info
++         le scaffold des lignes de la valeur
+
+-   entry #rows   the value's rows, as a list of `Element`
++   entry #rows
++     info
++         les lignes de la valeur, sous forme de liste d'`Element`
+
+-   entry #tabulate   the value as a `Tabulation`: `table(value).tabulate(rows(value))`
++   entry #tabulate
++     info
++         la valeur sous forme de `Tabulation` : `table(value).tabulate(rows(value))`
+
+- entry .Table   the namespace of a rendered table: its cells, rows, sections and style, and `Table.Error`
++ entry .Table
++   info
++       l'espace de noms d'un tableau rendu : ses cellules, lignes, sections et style, et
++       `Table.Error`
+
+-   detail
+-       `Table` is a namespace, not a type: a table definition is a `Scaffold`, data arranged by
+-       one a `Tabulation`, and the fitted result a `Grid`. `Table` holds the pieces a grid is
+-       drawn from (`Cell`, `Row`, `Section`), the `Style` it is drawn in, the `Relabelling`
+-       which renames derived columns, and the `Error` raised when a table cannot fit.
++   detail
++       `Table` est un espace de noms, pas un type : une définition de tableau est un `Scaffold`,
++       des données disposées par un scaffold une `Tabulation`, et le résultat ajusté une `Grid`.
++       `Table` contient les éléments à partir desquels une grille est dessinée (`Cell`, `Row`,
++       `Section`), le `Style` dans lequel elle est dessinée, la `Relabelling` qui renomme les
++       colonnes dérivées, et l'`Error` levée quand un tableau ne peut pas tenir.
+
+=       which renames derived columns, and the `Error` raised when a table cannot fit.
+-   refer escritoire.Scaffold
++   refer escritoire.Scaffold
+
+=   refer escritoire.Scaffold
+-   refer escritoire.columnAttenuation
++   refer escritoire.columnAttenuation
+
+-   entry .Error   the table needed more width than it was given
++   entry .Error
++     info
++         le tableau avait besoin de plus de largeur qu'on ne lui en a donné
+
+-     detail
+-         _the table required a minimum width of `minimumWidth`, but only `availableWidth` was
+-         available_. Raised through `columnAttenuation.failAttenuation` when, after every
+-         collapsible column has been dropped, the surviving columns' minimum widths and the
+-         style's chrome still exceed the width a grid or layout was asked for. The limit is
+-         concrete: a `Paragraph` column can never be narrower than its longest word, so a table
+-         whose description column holds `Statically-checked` cannot fit below that word's width
+-         plus the rest. Under `ignoreAttenuation` the error is never raised and the table
+-         overflows instead.
++     detail
++         _the table required a minimum width of `minimumWidth`, but only `availableWidth` was
++         available_. Levée par `columnAttenuation.failAttenuation` quand, après la suppression de
++         toutes les colonnes repliables, les largeurs minimales des colonnes restantes et
++         l'habillage du style dépassent encore la largeur demandée pour une grille ou une mise en
++         page. La limite est concrète : une colonne `Paragraph` ne peut jamais être plus étroite
++         que son mot le plus long, de sorte qu'un tableau dont la colonne de description contient
++         `Statically-checked` ne peut pas tenir en dessous de la largeur de ce mot plus le reste.
++         Avec `ignoreAttenuation`, l'erreur n'est jamais levée et le tableau déborde à la place.
+
+=         overflows instead.
+=
+-         ```scala
++         ```scala
+
+=         overflows instead.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         overflows instead.
+=
+=         ```scala
+=         import soundness.*
+-         import tableStyles.thinRoundedTableStyle
++         import tableStyles.thinRoundedTableStyle
+
+=         overflows instead.
+=
+=         ```scala
+=         import soundness.*
+=         import tableStyles.thinRoundedTableStyle
+-         import textMetrics.uniformMetric
++         import textMetrics.uniformMetric
+
+-         import columnAttenuation.failAttenuation
++         import columnAttenuation.failAttenuation
+
+-         val wide = Scaffold[Text](Column[Text, Text, Text](t"Name", sizing = columnar.Fixed(20))(identity))
++         val wide = Scaffold[Text](Column[Text, Text, Text](t"Name", sizing = columnar.Fixed(20))(identity))
+
+-         recover:
++         recover:
+
+-           case Table.Error(minimum, available) => List(t"needs $minimum, had $available")
++           case Table.Error(minimum, available) => List(t"needs $minimum, had $available")
+
+-         . protect:
++         . protect:
+
+-             wide.tabulate(List(t"Poins")).grid(5).render.to[List]
++             wide.tabulate(List(t"Poins")).grid(5).render.to[List]
+
+=             wide.tabulate(List(t"Poins")).grid(5).render.to[List]
+-         ```
++         ```
+
+-     entry #minimumWidth   the narrowest width at which the table's columns could all fit
++     entry #minimumWidth
++       info
++           la largeur la plus étroite à laquelle toutes les colonnes du tableau pourraient tenir
+
+-     entry #availableWidth   the width the table was asked to fit
++     entry #availableWidth
++       info
++           la largeur dans laquelle le tableau devait tenir
+
+-   entry .Cell   one cell as rendered: its fitted lines, width, alignment and decoration
++   entry .Cell
++     info
++         une cellule telle que rendue : ses lignes ajustées, sa largeur, son alignement et sa
++         décoration
+
+-     detail
+-         The renderer's record of a cell after `Layout#tableRow` has fitted it: the lines it
+-         displays at its column's width, how many there are, how they align, and its decoration.
+-         A user of `Grid` or `Layout` sees these inside a `Row`; nothing else makes them.
++     detail
++         L'enregistrement que tient le moteur de rendu d'une cellule après que `Layout#tableRow`
++         l'a ajustée : les lignes qu'elle affiche à la largeur de sa colonne, leur nombre, leur
++         alignement, et sa décoration. Un utilisateur de `Grid` ou de `Layout` les voit à
++         l'intérieur d'une `Row` ; rien d'autre n'en crée.
+
+-     refer escritoire.Table.Row
++     refer escritoire.Table.Row
+
+-     entry #width   the column's settled width, in cells
++     entry #width
++       info
++           la largeur retenue pour la colonne, en cellules
+
+-     entry #span   how many columns the cell spans; always `1`
++     entry #span
++       info
++           le nombre de colonnes que couvre la cellule ; toujours `1`
+
+-     entry #lines   the fitted lines
++     entry #lines
++       info
++           les lignes ajustées
+
+-     entry #minHeight   the number of lines
++     entry #minHeight
++       info
++           le nombre de lignes
+
+-     entry #textAlign   how each line is padded to the width
++     entry #textAlign
++       info
++           la façon dont chaque ligne est complétée jusqu'à la largeur
+
+-     entry #verticalAlign   where the lines sit when the row is taller than `minHeight`
++     entry #verticalAlign
++       info
++           l'endroit où se placent les lignes quand la rangée est plus haute que `minHeight`
+
+-     entry #decorate   the transformation applied to each rendered line, or `Unset`
++     entry #decorate
++       info
++           la transformation appliquée à chaque ligne rendue, ou `Unset`
+
+-     entry #apply   the line at an index, which the caller has already checked against `minHeight`
++     entry #apply
++       info
++           la ligne à un indice, que l'appelant a déjà vérifié par rapport à `minHeight`
+
+-   entry .Row   one row of fitted cells, with its height in lines
++   entry .Row
++     info
++         une rangée de cellules ajustées, avec sa hauteur en lignes
+
+-     detail
+-         Made by `Layout#tableRow`, and rendered by `Grid.rowLines`. The row's height is its
+-         tallest cell's line count, and a shorter cell is placed within it by its vertical
+-         alignment.
++     detail
++         Créée par `Layout#tableRow`, et rendue par `Grid.rowLines`. La hauteur de la rangée est le
++         nombre de lignes de sa cellule la plus haute, et une cellule plus courte y est placée
++         selon son alignement vertical.
+
+-     refer escritoire.Table.Cell
++     refer escritoire.Table.Cell
+
+=     refer escritoire.Table.Cell
+-     refer escritoire.Grid
++     refer escritoire.Grid
+
+-     entry #cells   the fitted cells, one per surviving column
++     entry #cells
++       info
++           les cellules ajustées, une par colonne restante
+
+-     entry #title   whether this is a title row
++     entry #title
++       info
++           s'il s'agit d'une rangée de titres
+
+-     entry #height   the number of visual lines the row occupies
++     entry #height
++       info
++           le nombre de lignes visuelles qu'occupe la rangée
+
+-     entry #apply   the cell at a column index
++     entry #apply
++       info
++           la cellule à un indice de colonne
+
+-   entry .Section   a run of rows which share column widths
++   entry .Section
++     info
++         une suite de rangées qui partagent les mêmes largeurs de colonnes
+
+-     detail
+-         A `Grid` is a list of sections, drawn with a rule between each pair. `Tabulation#grid`
+-         makes two — the titles and the data — at the same widths; every section's rows are
+-         rendered against the section's own `widths`.
++     detail
++         Une `Grid` est une liste de sections, dessinées avec un filet entre chaque paire.
++         `Tabulation#grid` en crée deux — les titres et les données — aux mêmes largeurs ; les
++         rangées de chaque section sont rendues selon les `widths` propres à la section.
+
+=         rendered against the section's own `widths`.
+-     refer escritoire.Grid
++     refer escritoire.Grid
+
+-     entry #widths   the column widths the section's rows were fitted to
++     entry #widths
++       info
++           les largeurs de colonnes auxquelles les rangées de la section ont été ajustées
+
+-     entry #rows   the rows, lazily, as a `Chain`
++     entry #rows
++       info
++           les rangées, paresseusement, sous forme de `Chain`
+
+-   entry .Style   the rules, corners and padding a table is drawn with
++   entry .Style
++     info
++         les filets, les coins et le remplissage avec lesquels un tableau est dessiné
+
+-     detail
+-         A `Style` says how much padding each cell has on either side, which weight of line
+-         — `Blank`, `Thin`, `Thick` or `Double`, or `Unset` for no line at all — draws the top
+-         edge, the bottom edge, the rule beneath the titles, the outer sides and the inner column
+-         edges, and which `LineCharset` (`Default`, `Rounded` or `Ascii`) supplies the glyphs.
+-         The six styles in the `tableStyles` package cover the usual choices; a style of one's
+-         own is a `Style` value given locally.
++     detail
++         Un `Style` indique combien de remplissage chaque cellule a de chaque côté, quelle
++         épaisseur de trait — `Blank`, `Thin`, `Thick` ou `Double`, ou `Unset` pour aucun trait —
++         dessine le bord du haut, le bord du bas, le filet sous les titres, les côtés extérieurs et
++         les bords intérieurs des colonnes, et quel `LineCharset` (`Default`, `Rounded` ou `Ascii`)
++         fournit les glyphes. Les six styles du package `tableStyles` couvrent les choix
++         habituels ; un style personnel est une valeur `Style` fournie localement.
+
+-         A style is a contextual value: `Tabulation#grid`, `Scaffold#layout` and the `Printable`
+-         givens take one, and `import soundness.*` brings none in, so one of the `tableStyles`
+-         givens is imported by name.
++         Un style est une valeur contextuelle : `Tabulation#grid`, `Scaffold#layout` et les givens
++         `Printable` en prennent un, et `import soundness.*` n'en apporte aucun ; on importe donc
++         l'un des givens de `tableStyles` par son nom.
+
+=         givens is imported by name.
+=
+-         ```scala
++         ```scala
+
+=         givens is imported by name.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         given ascii: Table.Style =
++         given ascii: Table.Style =
+
+-           Table.Style(1, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, LineCharset.Ascii)
++           Table.Style(1, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, LineCharset.Ascii)
+
+=           Table.Style(1, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, LineCharset.Ascii)
+-         ```
++         ```
+
+-         `Blank` and `Unset` differ: a `Blank` top line is drawn as a blank line, keeping the
+-         table's vertical spacing, where `Unset` draws nothing. Styled `Teletype` content lays
+-         out by its visible width in every style.
++         `Blank` et `Unset` diffèrent : une ligne du haut `Blank` est dessinée comme une ligne
++         vide, ce qui préserve l'espacement vertical du tableau, alors que `Unset` ne dessine rien.
++         Le contenu `Teletype` stylé se met en page selon sa largeur visible dans tous les styles.
+
+-     refer escritoire.tableStyles
++     refer escritoire.tableStyles
+
+=     refer escritoire.tableStyles
+-     refer escritoire.Grid
++     refer escritoire.Grid
+
+-     entry #padding   the cells to the left and right of each cell's content
++     entry #padding
++       info
++           les cellules à gauche et à droite du contenu de chaque cellule
+
+-     entry #topLine   the weight of the top edge, or `Unset` for no top edge
++     entry #topLine
++       info
++           l'épaisseur du bord du haut, ou `Unset` pour aucun bord du haut
+
+-     entry #bottomLine   the weight of the bottom edge, or `Unset` for no bottom edge
++     entry #bottomLine
++       info
++           l'épaisseur du bord du bas, ou `Unset` pour aucun bord du bas
+
+-     entry #titleLine   the weight of the rule between the titles and the rows, or `Unset` for none
++     entry #titleLine
++       info
++           l'épaisseur du filet entre les titres et les rangées, ou `Unset` pour aucun
+
+-     entry #sideLines   the weight of the outer left and right edges; `Blank` for none
++     entry #sideLines
++       info
++           l'épaisseur des bords extérieurs gauche et droit ; `Blank` pour aucun
+
+-     entry #innerLines   the weight of the edges between columns; `Blank` for none
++     entry #innerLines
++       info
++           l'épaisseur des bords entre les colonnes ; `Blank` pour aucun
+
+-     entry #charset   which glyph set draws the lines: `Default`, `Rounded` or `Ascii`
++     entry #charset
++       info
++           quel jeu de glyphes dessine les traits : `Default`, `Rounded` ou `Ascii`
+
+-     entry #columnCost   the chrome one column adds: its padding on both sides and one edge
++     entry #columnCost
++       info
++           l'habillage qu'ajoute une colonne : son remplissage des deux côtés et un bord
+
+-     entry #cost   the chrome of a given number of columns: their costs and the closing edge
++     entry #cost
++       info
++           l'habillage d'un nombre donné de colonnes : leurs coûts et le bord de fermeture
+
+-   entry .Relabelling   overrides the column titles a derived table takes from its field names
++   entry .Relabelling
++     info
++         remplace les titres de colonnes qu'un tableau dérivé tire des noms de ses champs
+
+-     detail
+-         A `Relabelling[target]` is a function `#relabelling()` from field names to the
+-         titles wanted instead, consulted by the derived `Tabulable` for `target`: a field named
+-         in the map takes the mapped title, and any other its uncamelled, capitalised name. A
+-         given in scope at the point of derivation is enough; the trait is covariant in its
+-         target, so a relabelling for a supertype applies to its subtypes.
++     detail
++         Une `Relabelling[target]` est une fonction `#relabelling()` des noms de champs vers les
++         titres voulus à leur place, consultée par le `Tabulable` dérivé pour `target` : un champ
++         nommé dans la map prend le titre associé, et tout autre son nom décamélisé et capitalisé.
++         Un given dans la portée au point de dérivation suffit ; le trait est covariant dans sa
++         cible, de sorte qu'un réétiquetage pour un supertype s'applique à ses sous-types.
+
+=         target, so a relabelling for a supertype applies to its subtypes.
+=
+-         ```scala
++         ```scala
+
+=         target, so a relabelling for a supertype applies to its subtypes.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         target, so a relabelling for a supertype applies to its subtypes.
+=
+=         ```scala
+=         import soundness.*
+-         import tableStyles.thinRoundedTableStyle
++         import tableStyles.thinRoundedTableStyle
+
+=         target, so a relabelling for a supertype applies to its subtypes.
+=
+=         ```scala
+=         import soundness.*
+=         import tableStyles.thinRoundedTableStyle
+-         import textMetrics.uniformMetric
++         import textMetrics.uniformMetric
+
+=         target, so a relabelling for a supertype applies to its subtypes.
+=
+=         ```scala
+=         import soundness.*
+=         import tableStyles.thinRoundedTableStyle
+=         import textMetrics.uniformMetric
+-         import columnAttenuation.ignoreAttenuation
++         import columnAttenuation.ignoreAttenuation
+
+=         target, so a relabelling for a supertype applies to its subtypes.
+=
+=         ```scala
+=         import soundness.*
+=         import tableStyles.thinRoundedTableStyle
+=         import textMetrics.uniformMetric
+=         import columnAttenuation.ignoreAttenuation
+=
+-         case class Person(name: Text, age: Int)
++         case class Person(name: Text, age: Int)
+
+-         given Table.Relabelling[Person] = () => Map(t"name" -> t"Full Name")
++         given Table.Relabelling[Person] = () => Map(t"name" -> t"Full Name")
+
+-         List(Person(t"Poins", 30)).tabulation.grid(40).render.to[List].head   // the title is `Full Name`
++         List(Person(t"Poins", 30)).tabulation.grid(40).render.to[List].head   // the title is `Full Name`
+
+=         List(Person(t"Poins", 30)).tabulation.grid(40).render.to[List].head   // the title is `Full Name`
+-         ```
++         ```
+
+-     refer escritoire.Tabulable
++     refer escritoire.Tabulable
+
+-     entry #relabelling   the map from field names to titles
++     entry #relabelling
++       info
++           la map des noms de champs vers les titres
+
+-         Called once and cached; a field absent from the map keeps its derived title.
++       detail
++           Appelée une seule fois et mise en cache ; un champ absent de la map garde son titre
++           dérivé.
+
+-     entry #apply   the title for a field name, or `Unset` if the map does not name it
++     entry #apply
++       info
++           le titre d'un nom de champ, ou `Unset` si la map ne le nomme pas
+
+- entry .Attenuation   what happens when a table's columns cannot fit the width it was given
++ entry .Attenuation
++   info
++       ce qui se passe quand les colonnes d'un tableau ne peuvent pas tenir dans la largeur donnée
+
+-   detail
+-       An `Attenuation` is called by `Layout.solve` with the minimum width the table needed and
+-       the width it had, when the first exceeds the second even after every collapsible column
+-       has been dropped. It is a policy, not a behaviour the library fixes: a report written
+-       to a file, where nobody will see that the columns were mangled, wants a failure; an
+-       interactive display, where the user can widen the window, wants the rendering. The two
+-       policies are the givens of the `columnAttenuation` package, imported by name; every
+-       `grid`, `layout`, `extend` and `resize` needs one in scope.
++   detail
++       Une `Attenuation` est appelée par `Layout.solve` avec la largeur minimale dont le tableau
++       avait besoin et la largeur dont il disposait, quand la première dépasse la seconde même
++       après la suppression de toutes les colonnes repliables. C'est une politique, pas un
++       comportement que la bibliothèque impose : un rapport écrit dans un fichier, où personne ne
++       verra que les colonnes ont été abîmées, veut un échec ; un affichage interactif, où
++       l'utilisateur peut élargir la fenêtre, veut le rendu. Les deux politiques sont les givens du
++       package `columnAttenuation`, importés par leur nom ; chaque `grid`, `layout`, `extend` et
++       `resize` en requiert une dans la portée.
+
+=       `grid`, `layout`, `extend` and `resize` needs one in scope.
+-   refer escritoire.columnAttenuation
++   refer escritoire.columnAttenuation
+
+=   refer escritoire.columnAttenuation
+-   refer escritoire.Table
++   refer escritoire.Table
+
+-   entry #apply   called with the minimum width the table needed and the width available
++   entry #apply
++     info
++         appelée avec la largeur minimale dont le tableau avait besoin et la largeur disponible
+
+- entry .columnAttenuation   the two policies for a table which does not fit, each a given to import by name
++ entry .columnAttenuation
++   info
++       les deux politiques pour un tableau qui ne tient pas, chacune un given à importer par son
++       nom
+
+-   detail
+-       ```scala
++   detail
++       ```scala
+
+=   detail
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import columnAttenuation.ignoreAttenuation
++       import columnAttenuation.ignoreAttenuation
+
+=       import columnAttenuation.ignoreAttenuation
+-       ```
++       ```
+
+-       `ignoreAttenuation` renders the table anyway, as well as the width allows, and cannot
+-       fail, so choosing it needs no error handling; `failAttenuation` raises `Table.Error`
+-       rather than produce something misleading, and so needs a `Tactic[Table.Error]` — a
+-       `recover`, a `safely`, or `strategies.throwUnsafely` — in scope. Neither is in scope
+-       without an import, since `import soundness.*` imports no givens.
++       `ignoreAttenuation` rend le tableau quand même, au mieux de ce que permet la largeur, et ne
++       peut pas échouer ; la choisir ne demande donc aucun traitement d'erreur ; `failAttenuation`
++       lève une `Table.Error` plutôt que de produire quelque chose de trompeur, et requiert donc
++       une `Tactic[Table.Error]` — un `recover`, un `safely` ou `strategies.throwUnsafely` — dans
++       la portée. Aucune n'est dans la portée sans import, puisque `import soundness.*` n'importe
++       aucun given.
+
+-   refer escritoire.Attenuation
++   refer escritoire.Attenuation
+
+=   refer escritoire.Attenuation
+-   refer escritoire.Table
++   refer escritoire.Table
+
+-   entry .failAttenuation   raises `Table.Error` when the table cannot fit
++   entry .failAttenuation
++     info
++         lève une `Table.Error` quand le tableau ne peut pas tenir
+
+-       A context function from a `Tactic[Table.Error]` to an `Attenuation` which captures it,
+-       so importing the given also demands the tactic where the table is laid out. The error
+-       carries the minimum width needed and the width available.
++     detail
++         Une fonction contextuelle d'une `Tactic[Table.Error]` vers une `Attenuation` qui la
++         capture, de sorte qu'importer le given exige aussi la tactique là où le tableau est mis en
++         page. L'erreur porte la largeur minimale requise et la largeur disponible.
+
+-   entry .ignoreAttenuation   renders the table anyway, overflowing the width
++   entry .ignoreAttenuation
++     info
++         rend le tableau quand même, en dépassant la largeur
+
+-       Does nothing when told the table does not fit: the surviving columns keep their minimum
+-       widths and the lines run past the width asked for.
++     detail
++         Ne fait rien quand on l'avertit que le tableau ne tient pas : les colonnes restantes
++         gardent leurs largeurs minimales et les lignes dépassent la largeur demandée.
+
+- entry .tableStyles   six ready-made table styles, each a given to import by name
++ entry .tableStyles
++   info
++       six styles de tableau prêts à l'emploi, chacun un given à importer par son nom
+
+-   detail
+-       The box drawing is chosen by the `Table.Style` given in scope, and the choice is never
+-       implicit: `import soundness.*` brings none of these in, and one is imported by name. The
+-       same table under the six styles:
++   detail
++       Le dessin des boîtes est choisi par le given `Table.Style` dans la portée, et le choix n'est
++       jamais implicite : `import soundness.*` n'en apporte aucun, et l'on en importe un par son
++       nom. Le même tableau dans les six styles :
+
+=       same table under the six styles:
+=
+-       ```scala
++       ```scala
+
+=       same table under the six styles:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       same table under the six styles:
+=
+=       ```scala
+=       import soundness.*
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+=       import soundness.*
+=       import textMetrics.uniformMetric
+-       import columnAttenuation.ignoreAttenuation
++       import columnAttenuation.ignoreAttenuation
+
+=       import soundness.*
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+=       import soundness.*
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+=       case class Person(name: Text, age: Int)
+-       val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
++       val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
+
+=       val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
+-       ```
++       ```
+
+=       ```
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Thick
++       alternative Thick
+
+=       alternative Thick
+-         code
++         code
+
+=       alternative Thick
+=         code
+-             locally:
++             locally:
+
+-               import tableStyles.thickTableStyle
++               import tableStyles.thickTableStyle
+
+=               import tableStyles.thickTableStyle
+-               people.tabulation.grid(40).render.to[List]
++               people.tabulation.grid(40).render.to[List]
+
+-               // ┏━━━━━━━┯━━━━━┓
++               // ┏━━━━━━━┯━━━━━┓
+
+-               // ┃ Name  │ Age ┃
++               // ┃ Name  │ Age ┃
+
+-               // ┠───────┼─────┨
++               // ┠───────┼─────┨
+
+-               // ┃ Poins │  30 ┃
++               // ┃ Poins │  30 ┃
+
+-               // ┃ Hal   │  16 ┃
++               // ┃ Hal   │  16 ┃
+
+-               // ┗━━━━━━━┷━━━━━┛
++               // ┗━━━━━━━┷━━━━━┛
+
+-       alternative Thin rounded
++       alternative Thin rounded
+
+=       alternative Thin rounded
+-         code
++         code
+
+=       alternative Thin rounded
+=         code
+-             locally:
++             locally:
+
+-               import tableStyles.thinRoundedTableStyle
++               import tableStyles.thinRoundedTableStyle
+
+=               import tableStyles.thinRoundedTableStyle
+-               people.tabulation.grid(40).render.to[List]
++               people.tabulation.grid(40).render.to[List]
+
+-               // ╭───────┬─────╮
++               // ╭───────┬─────╮
+
+-               // │ Name  │ Age │
++               // │ Name  │ Age │
+
+-               // ├───────┼─────┤
++               // ├───────┼─────┤
+
+-               // │ Poins │  30 │
++               // │ Poins │  30 │
+
+-               // │ Hal   │  16 │
++               // │ Hal   │  16 │
+
+-               // ╰───────┴─────╯
++               // ╰───────┴─────╯
+
+-       alternative Horizontal
++       alternative Horizontal
+
+=       alternative Horizontal
+-         code
++         code
+
+=       alternative Horizontal
+=         code
+-             locally:
++             locally:
+
+-               import tableStyles.horizontalTableStyle
++               import tableStyles.horizontalTableStyle
+
+=               import tableStyles.horizontalTableStyle
+-               people.tabulation.grid(40).render.to[List]
++               people.tabulation.grid(40).render.to[List]
+
+=               people.tabulation.grid(40).render.to[List]
+-               // ╶─────────────╴
++               // ╶─────────────╴
+
+=               // ╶─────────────╴
+-               //   Name    Age
++               //   Name    Age
+
+=               // ╶─────────────╴
+=               //   Name    Age
+-               // ╶─────────────╴
++               // ╶─────────────╴
+
+=               // ╶─────────────╴
+=               //   Name    Age
+=               // ╶─────────────╴
+-               //   Poins    30
++               //   Poins    30
+
+=               // ╶─────────────╴
+=               //   Name    Age
+=               // ╶─────────────╴
+=               //   Poins    30
+-               //   Hal      16
++               //   Hal      16
+
+=               //   Hal      16
+-               // ╶─────────────╴
++               // ╶─────────────╴
+
+-       alternative Vertical
++       alternative Vertical
+
+=       alternative Vertical
+-         code
++         code
+
+=       alternative Vertical
+=         code
+-             locally:
++             locally:
+
+-               import tableStyles.verticalTableStyle
++               import tableStyles.verticalTableStyle
+
+=               import tableStyles.verticalTableStyle
+-               people.tabulation.grid(40).render.to[List]
++               people.tabulation.grid(40).render.to[List]
+
+-       alternative Mid only
++       alternative Mid only
+
+=       alternative Mid only
+-         code
++         code
+
+=       alternative Mid only
+=         code
+-             locally:
++             locally:
+
+-               import tableStyles.midOnlyTableStyle
++               import tableStyles.midOnlyTableStyle
+
+=               import tableStyles.midOnlyTableStyle
+-               people.tabulation.grid(40).render.to[List]
++               people.tabulation.grid(40).render.to[List]
+
+-       alternative Minimal
++       alternative Minimal
+
+=       alternative Minimal
+-         code
++         code
+
+=       alternative Minimal
+=         code
+-             locally:
++             locally:
+
+-               import tableStyles.minimalTableStyle
++               import tableStyles.minimalTableStyle
+
+=               import tableStyles.minimalTableStyle
+-               people.tabulation.grid(40).render.to[List]
++               people.tabulation.grid(40).render.to[List]
+
+=               people.tabulation.grid(40).render.to[List]
+-               //   Name    Age
++               //   Name    Age
+
+=               people.tabulation.grid(40).render.to[List]
+=               //   Name    Age
+-               // ╶─────────────╴
++               // ╶─────────────╴
+
+=               people.tabulation.grid(40).render.to[List]
+=               //   Name    Age
+=               // ╶─────────────╴
+-               //   Poins    30
++               //   Poins    30
+
+=               people.tabulation.grid(40).render.to[List]
+=               //   Name    Age
+=               // ╶─────────────╴
+=               //   Poins    30
+-               //   Hal      16
++               //   Hal      16
+
+=               //   Hal      16
+-       ##
++       ##
+
+=               //   Hal      16
+=       ##
+-       ```
++       ```
+
+-       A style of one's own is a `Table.Style` value bound as a local given instead.
++       Un style personnel est une valeur `Table.Style` liée à la place comme given local.
+
+=       A style of one's own is a `Table.Style` value bound as a local given instead.
+-   refer escritoire.Table.Style
++   refer escritoire.Table.Style
+
+-   entry .thickTableStyle   heavy top, bottom and sides; thin title rule and column edges; square corners
++   entry .thickTableStyle
++     info
++         haut, bas et côtés épais ; filet de titre et bords de colonnes fins ; coins carrés
+
+-   entry .thinRoundedTableStyle   thin rules throughout, with rounded corners
++   entry .thinRoundedTableStyle
++     info
++         des filets fins partout, avec des coins arrondis
+
+-   entry .horizontalTableStyle   thin top, bottom and title rules; no vertical lines
++   entry .horizontalTableStyle
++     info
++         filets du haut, du bas et de titre fins ; aucune ligne verticale
+
+-       The cells keep their padding, so columns are separated by two spaces where the edge
+-       would have been.
++     detail
++         Les cellules gardent leur remplissage, de sorte que les colonnes sont séparées par deux
++         espaces là où le bord se serait trouvé.
+
+-   entry .midOnlyTableStyle   a thin rule beneath the titles; blank lines above and below the table
++   entry .midOnlyTableStyle
++     info
++         un filet fin sous les titres ; des lignes vides au-dessus et au-dessous du tableau
+
+-       The top and bottom lines are `Blank`, not absent, so the table keeps the vertical
+-       spacing a bordered one would have without drawing the border.
++     detail
++         Les lignes du haut et du bas sont `Blank`, et non absentes, de sorte que le tableau garde
++         l'espacement vertical qu'aurait un tableau bordé sans dessiner la bordure.
+
+-   entry .verticalTableStyle   thin side and column edges; no horizontal rules
++   entry .verticalTableStyle
++     info
++         bords latéraux et de colonnes fins ; aucun filet horizontal
+
+-       The horizontal rules are `Blank`, so each is a line of edge stubs: `╷` above and `╵`
+-       below.
++     detail
++         Les filets horizontaux sont `Blank`, de sorte que chacun est une ligne d'amorces de bord :
++         `╷` au-dessus et `╵` en dessous.
+
+-   entry .minimalTableStyle   a thin rule beneath the titles and nothing else
++   entry .minimalTableStyle
++     info
++         un filet fin sous les titres et rien d'autre
+
+-       The top and bottom lines are `Unset`, so the table is its title line, one rule, and
+-       its rows.
++     detail
++         Les lignes du haut et du bas sont `Unset` ; le tableau se réduit donc à sa ligne de
++         titres, un filet et ses rangées.
+
+- entry .TextAlignment   how a cell's lines sit within a column's width: tessellate's `Alignment`
++ entry .TextAlignment
++   info
++       la façon dont les lignes d'une cellule se placent dans la largeur d'une colonne :
++       l'`Alignment` de tessellate
+
+-     `TextAlignment` is an alias for `tessellate.Alignment`, with `TextAlignment` the value
+-     `tessellate.Alignment` so that the cases are named as `TextAlignment.Left`. `Left` pads
+-     on the right; `Right` pads on the left; `Center` splits the padding, putting the odd cell
+-     on the right; `Justify` spreads the spaces between words so that every line but the last
+-     reaches the full width — the newspaper setting, which suits a prose column and nothing
+-     else. Each has a `pad(content, width, last)` which does the padding, `last` saying whether
+-     the line is a cell's last, which `Justify` leaves ragged.
++   detail
++       `TextAlignment` est un alias de `tessellate.Alignment`, avec `TextAlignment` comme valeur
++       `tessellate.Alignment`, de sorte que les cas se nomment `TextAlignment.Left`. `Left`
++       complète à droite ; `Right` complète à gauche ; `Center` partage le remplissage, en mettant
++       la cellule impaire à droite ; `Justify` répartit les espaces entre les mots de sorte que
++       chaque ligne sauf la dernière atteigne toute la largeur — la composition des journaux, qui
++       convient à une colonne de prose et à rien d'autre. Chacun a un `pad(content, width, last)`
++       qui effectue le remplissage, `last` indiquant si la ligne est la dernière d'une cellule, que
++       `Justify` laisse en drapeau.
+
+=     the line is a cell's last, which `Justify` leaves ragged.
+=
+-     ```scala
++       ```scala
+
+=     the line is a cell's last, which `Justify` leaves ragged.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+=     the line is a cell's last, which `Justify` leaves ragged.
+=
+=     ```scala
+=     import soundness.*
+-     import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+-     TextAlignment.Left.pad(t"hi", 6, true)        // t"hi    "
++       TextAlignment.Left.pad(t"hi", 6, true)        // t"hi    "
+
+-     TextAlignment.Right.pad(t"hi", 6, true)       // t"    hi"
++       TextAlignment.Right.pad(t"hi", 6, true)       // t"    hi"
+
+-     TextAlignment.Center.pad(t"hi", 7, true)      // t"  hi   "
++       TextAlignment.Center.pad(t"hi", 7, true)      // t"  hi   "
+
+-     TextAlignment.Justify.pad(t"a b c", 9, false) // t"a   b   c"
++       TextAlignment.Justify.pad(t"a b c", 9, false) // t"a   b   c"
+
+=     TextAlignment.Justify.pad(t"a b c", 9, false) // t"a   b   c"
+-     ```
++       ```
+
+- entry .VerticalAlignment   where a cell sits in a row that another cell has made taller: tessellate's `Alignment.Vertical`
++ entry .VerticalAlignment
++   info
++       l'endroit où se place une cellule dans une rangée qu'une autre cellule a rendue plus haute :
++       l'`Alignment.Vertical` de tessellate
+
+-     An alias for `tessellate.Alignment.Vertical`, with the cases `Top`, `Middle` and
+-     `Bottom`. A wrapped cell makes its whole row taller, and the other cells in that row sit
+-     at the top, middle or bottom of the extra height according to their column's
+-     `verticalAlign`; `Top` is the default for every type.
++   detail
++       Un alias de `tessellate.Alignment.Vertical`, avec les cas `Top`, `Middle` et `Bottom`. Une
++       cellule enroulée rend toute sa rangée plus haute, et les autres cellules de cette rangée se
++       placent en haut, au milieu ou en bas de la hauteur supplémentaire selon le `verticalAlign`
++       de leur colonne ; `Top` est la valeur par défaut pour tous les types.

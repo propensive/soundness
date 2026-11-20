@@ -1,0 +1,1064 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base tessellate
++ base tessellate
+
+- import soundness
++ import soundness
+
+- info   text layout in fixed-width cells: wrapping, fitting, alignment, track sizing and box-drawing characters
++ info
++     mise en page de texte en cellules de largeur fixe : retour à la ligne, ajustement, alignement,
++     taille des pistes et tracé de boîtes
+
+- detail
+-     _Tessellate_ is the layout layer shared by Soundness's terminal and table libraries. It
+-     arranges textual content — `Text`, `Teletype`, or any `Textual` whose elements are `Char`s —
+-     into a grid of fixed-width cells, measuring every line by its display width rather than its
+-     length, so East Asian wide characters, combining marks and joiner-glued emoji occupy the
+-     cells they really do.
++ detail
++     _Tessellate_ est la couche de mise en page que partagent les bibliothèques de terminal et de
++     tableaux de Soundness. Elle dispose un contenu textuel — `Text`, `Teletype`, ou tout
++     `Textual` dont les éléments sont des `Char` — dans une grille de cellules de largeur fixe, en
++     mesurant chaque ligne selon sa largeur d'affichage plutôt que sa longueur ; les caractères
++     larges d'Asie orientale, les marques combinantes et les emoji liés par un joiner occupent
++     ainsi les cellules qu'ils occupent réellement.
+
+-     Its pieces are small and independent:
++     Ses pièces sont petites et indépendantes :
+
+-     - `Flow` flows a paragraph into lines (`Flow.wrap`, breaking at hyphenation points, then at
+-       spaces), confines one line to a width (`Flow.fit`, truncating with an ellipsis or padding),
+-       and measures content's intrinsic widths (`Flow.metrics`);
+-     - `Alignment` pads a line to a width: `Left`, `Right`, `Center` or `Justify`;
+-     - `Metrics` and `Flex` describe tracks — columns, rows, panes — competing for space along
+-       an axis, and `Flex.solve` shares the space out among them;
+-     - `Reflowable` is the typeclass of content which negotiates with a rectangular layout;
+-     - `BoxLine`, `LineCharset` and `BoxDrawing` choose the box-drawing character for a junction
+-       of lines.
++     - `Flow` fait couler un paragraphe en lignes (`Flow.wrap`, en coupant aux points de césure,
++       puis aux espaces), confine une ligne à une largeur (`Flow.fit`, en tronquant par des points
++       de suspension ou en complétant), et mesure les largeurs intrinsèques d'un contenu
++       (`Flow.metrics`) ;
++     - `Alignment` complète une ligne jusqu'à une largeur : `Left`, `Right`, `Center` ou
++       `Justify` ;
++     - `Metrics` et `Flex` décrivent des pistes — colonnes, lignes, volets — qui se disputent
++       l'espace le long d'un axe, et `Flex.solve` répartit l'espace entre elles ;
++     - `Reflowable` est la classe de types des contenus qui négocient avec une mise en page
++       rectangulaire ;
++     - `BoxLine`, `LineCharset` et `BoxDrawing` choisissent le caractère de tracé de boîte pour
++       une jonction de lignes.
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     import hyphenations.englishHyphenation
++     import hyphenations.englishHyphenation
+
+-     import textMetrics.wideCharacterWidthMetric
++     import textMetrics.wideCharacterWidthMetric
+
+-     Flow.wrap(t"the quick brown fox", 10)          // the quick, brown fox
++     Flow.wrap(t"the quick brown fox", 10)          // the quick, brown fox
+
+-     Flow.fit(t"hello world", 8)                    // t"hello w…"
++     Flow.fit(t"hello world", 8)                    // t"hello w…"
+
+-     Flow.fit(t"abc", 6, Alignment.Right)           // t"   abc"
++     Flow.fit(t"abc", 6, Alignment.Right)           // t"   abc"
+
+-     Flow.metrics(t"the quick brown\nfox")          // Metrics(5, 15)
++     Flow.metrics(t"the quick brown\nfox")          // Metrics(5, 15)
+
+-     ```
++     ```
+
+-     Every measuring method needs a `Text is Measurable` in scope, which comes from a
+-     `Char is Measurable` chosen by name from the `textMetrics` package (`uniformMetric`,
+-     `eastAsianScriptsMetric` or `wideCharacterWidthMetric`). Wrapping needs a `Hyphenation` as
+-     well: with none imported, the companion's fallback hyphenates nothing, and importing
+-     `hyphenations.englishHyphenation` enables American-English hyphenation. Both are imported by
+-     name, since `import soundness.*` does not import givens.
++     Toute méthode de mesure a besoin d'un `Text is Measurable` dans la portée, qui provient d'un
++     `Char is Measurable` choisi par son nom dans le package `textMetrics` (`uniformMetric`,
++     `eastAsianScriptsMetric` ou `wideCharacterWidthMetric`). Le retour à la ligne a aussi besoin
++     d'une `Hyphenation` : si aucune n'est importée, le repli du compagnon ne coupe rien, et
++     importer `hyphenations.englishHyphenation` active la césure de l'anglais américain. Les deux
++     s'importent par leur nom, puisque `import soundness.*` n'importe pas les givens.
+
+-     Positions within content are char offsets into its plain text, so the content's own
+-     indexing must agree with its plain text's chars, which is true of `Text`, `Ascii` and
+-     `Teletype`.
++     Les positions dans un contenu sont des positions de caractères dans son texte brut ;
++     l'indexation propre au contenu doit donc concorder avec les caractères de son texte brut, ce
++     qui est le cas de `Text`, `Ascii` et `Teletype`.
+
+-     The library has one source set, `tessellate.core`, which compiles for every platform and
+-     is exported in full to the `soundness` umbrella. It is the layout engine beneath
+-     escritoire's tables and ultimatum's frames and borders.
++     La bibliothèque a un seul ensemble de sources, `tessellate.core`, qui compile pour toutes les
++     plateformes et est exporté en entier vers le package parapluie `soundness`. C'est le moteur
++     de mise en page sous les tableaux d'escritoire et les cadres et bordures d'ultimatum.
+
+- refer tessellate.Flow
++ refer tessellate.Flow
+
+- refer tessellate.Alignment
++ refer tessellate.Alignment
+
+- refer tessellate.Flex
++ refer tessellate.Flex
+
+- refer tessellate.Reflowable
++ refer tessellate.Reflowable
+
+- entry .Flow   wraps, fits, truncates, chops and measures textual content within a width of cells
++ entry .Flow
++   info
++       fait passer à la ligne, ajuste, tronque, découpe et mesure un contenu textuel dans une
++       largeur de cellules
+
+-   detail
+-       `Flow`'s methods work on any `textual` whose `Textual` instance has `Char` elements —
+-       `Text`, `Teletype` — and return the same type, so styled text keeps its styles across the
+-       lines it is broken into. Every width is measured by grapheme cluster under the
+-       `Text is Measurable` in scope: a cluster is as wide as its widest codepoint, so a
+-       combining mark rides on its base character, and a flag or a ZWJ emoji family counts
+-       once.
++   detail
++       Les méthodes de `Flow` fonctionnent sur tout `textual` dont l'instance `Textual` a des
++       éléments `Char` — `Text`, `Teletype` — et renvoient le même type ; un texte stylé conserve
++       donc ses styles dans les lignes en lesquelles il est coupé. Chaque largeur est mesurée par
++       grappe de graphèmes, selon le `Text is Measurable` dans la portée : une grappe est aussi
++       large que son point de code le plus large ; une marque combinante accompagne donc son
++       caractère de base, et un drapeau ou une famille d'emoji ZWJ compte une seule fois.
+
+=       once.
+=
+-       ```scala
++       ```scala
+
+=       once.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       once.
+=
+=       ```scala
+=       import soundness.*
+-       import hyphenations.englishHyphenation
++       import hyphenations.englishHyphenation
+
+=       import hyphenations.englishHyphenation
+-       import textMetrics.wideCharacterWidthMetric
++       import textMetrics.wideCharacterWidthMetric
+
+-       Flow.wrap(t"hyphenation", 7)         // t"hyphen-", t"ation"
++       Flow.wrap(t"hyphenation", 7)         // t"hyphen-", t"ation"
+
+-       Flow.wrap(t"日本語 テスト", 6)        // t"日本語", t"テスト"
++       Flow.wrap(t"日本語 テスト", 6)        // t"日本語", t"テスト"
+
+-       Flow.fit(t"日本語abc", 5)            // t"日本…"
++       Flow.fit(t"日本語abc", 5)            // t"日本…"
+
+-       Flow.chop(t"abcdefgh", 3)            // t"abc", t"def", t"gh"
++       Flow.chop(t"abcdefgh", 3)            // t"abc", t"def", t"gh"
+
+=       Flow.chop(t"abcdefgh", 3)            // t"abc", t"def", t"gh"
+-       ```
++       ```
+
+-   refer tessellate.Alignment
++   refer tessellate.Alignment
+
+=   refer tessellate.Alignment
+-   refer tessellate.Metrics
++   refer tessellate.Metrics
+
+-   entry .wrap   flows content into lines no wider than a width, hyphenating and breaking at spaces
++   entry .wrap
++     info
++         fait couler un contenu en lignes pas plus larges qu'une largeur donnée, avec césure et
++         coupure aux espaces
+
+-     detail
+-         `Flow.wrap(content, width)` returns a `Sequence` of lines. A hard break (`\n` or `\r\n`)
+-         always starts a new line, and consecutive hard breaks keep the empty line between them.
+-         Where a soft break is needed, the latest hyphenation point of the overflowing word which
+-         still fits with `hyphen` (by default `t"-"`) appended is preferred; failing that, the line
+-         breaks at its last space; failing that, the over-long word runs on beyond the width. A
+-         width below 1 returns the content as a single line. With no hyphenation in scope, the
+-         companion's fallback is used; English hyphenation is imported by name:
++     detail
++         `Flow.wrap(content, width)` renvoie une `Sequence` de lignes. Un saut forcé (`\n` ou
++         `\r\n`) commence toujours une nouvelle ligne, et des sauts forcés consécutifs conservent
++         la ligne vide qui les sépare. Lorsqu'une coupure souple est nécessaire, on préfère le
++         dernier point de césure du mot qui déborde qui tient encore avec `hyphen` (par défaut
++         `t"-"`) ajouté ; à défaut, la ligne est coupée à sa dernière espace ; à défaut encore, le
++         mot trop long déborde au-delà de la largeur. Une largeur inférieure à 1 renvoie le contenu
++         en une seule ligne. Sans césure dans la portée, le repli du compagnon est utilisé ; la
++         césure anglaise s'importe par son nom :
+
+-         ```scala fuel
++         ```scala fuel
+
+-         alternative No hyphenation
++         alternative No hyphenation
+
+=         alternative No hyphenation
+-           code
++           code
+
+=         alternative No hyphenation
+=           code
+-               import soundness.*
++               import soundness.*
+
+=               import soundness.*
+-               import textMetrics.uniformMetric
++               import textMetrics.uniformMetric
+
+-               Flow.wrap(t"a hyphenation", 9)   // t"a", t"hyphenation"
++               Flow.wrap(t"a hyphenation", 9)   // t"a", t"hyphenation"
+
+-         alternative English
++         alternative English
+
+=         alternative English
+-           code
++           code
+
+=         alternative English
+=           code
+-               import soundness.*
++               import soundness.*
+
+-               import hyphenations.englishHyphenation
++               import hyphenations.englishHyphenation
+
+=               import hyphenations.englishHyphenation
+-               import textMetrics.uniformMetric
++               import textMetrics.uniformMetric
+
+-               Flow.wrap(t"a hyphenation", 9)   // t"a hyphen-", t"ation"
++               Flow.wrap(t"a hyphenation", 9)   // t"a hyphen-", t"ation"
+
+-         ##
++         ##
+
+=         ##
+-         ```
++         ```
+
+-         The spaces a soft break consumes are dropped, but trailing spaces at a hard break or at
+-         the end of the content are content — a styled badge such as `e"$Bg(green)( ✓ )"` needs
+-         all three cells — and are clipped only as far as the width, since padding never
+-         truncates.
++         Les espaces que consomme une coupure souple sont supprimées, mais les espaces finales
++         avant un saut forcé ou à la fin du contenu font partie du contenu — un badge stylé comme
++         `e"$Bg(green)( ✓ )"` a besoin de ses trois cellules — et ne sont rognées qu'à concurrence
++         de la largeur, puisque le remplissage ne tronque jamais.
+
+-         `unbreakable` names spans of the content (as `Interval`s of char offsets into its plain
+-         text) which must survive intact, such as a verbatim code sample amid prose. A span's
+-         spaces are not break opportunities and its hyphenation points are ignored, so it wraps
+-         as one word, moving whole to the next line or running on beyond the width; a space at a
+-         span's edge is still a break opportunity, and a hard break inside one still ends the
+-         line.
++         `unbreakable` nomme des plages du contenu (sous forme d'`Interval` de positions de
++         caractères dans son texte brut) qui doivent rester intactes, comme un exemple de code
++         verbatim au milieu de la prose. Les espaces d'une plage ne sont pas des occasions de
++         coupure et ses points de césure sont ignorés ; elle passe donc à la ligne comme un seul
++         mot, en se déplaçant d'un bloc à la ligne suivante ou en débordant au-delà de la largeur ;
++         une espace au bord d'une plage reste une occasion de coupure, et un saut forcé à
++         l'intérieur termine toujours la ligne.
+
+=         line.
+=
+-         ```scala
++         ```scala
+
+=         line.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         import hyphenations.englishHyphenation
++         import hyphenations.englishHyphenation
+
+-         import textMetrics.uniformMetric
++         import textMetrics.uniformMetric
+
+-         Flow.wrap(t"see hal nym sly here", 12, unbreakable = List(4.z thru 14.u))
++         Flow.wrap(t"see hal nym sly here", 12, unbreakable = List(4.z thru 14.u))
+
+-         // t"see", t"hal nym sly", t"here"
++         // t"see", t"hal nym sly", t"here"
+
+=         // t"see", t"hal nym sly", t"here"
+-         ```
++         ```
+
+-         It needs a `Text is Measurable` and a `Hyphenation` in scope.
++         Elle a besoin d'un `Text is Measurable` et d'une `Hyphenation` dans la portée.
+
+-   entry .fit   confines one line to exactly a width: truncated with an ellipsis, or padded by alignment
++   entry .fit
++     info
++         confine une ligne à une largeur exacte : tronquée par des points de suspension, ou
++         complétée selon l'alignement
+
+-       `Flow.fit(content, width, alignment, ellipsis, last)` shortens content wider than the
+-       width with `.shorten`, and pads anything narrower with `alignment` (`Alignment.Left` by
+-       default). `last` is passed to the alignment, and tells `Alignment.Justify` whether the line
+-       ends its paragraph.
++     detail
++         `Flow.fit(content, width, alignment, ellipsis, last)` raccourcit un contenu plus large que
++         la largeur avec `.shorten`, et complète tout contenu plus étroit selon `alignment`
++         (`Alignment.Left` par défaut). `last` est transmis à l'alignement, et indique à
++         `Alignment.Justify` si la ligne termine son paragraphe.
+
+=       ends its paragraph.
+=
+-       ```scala
++         ```scala
+
+=       ends its paragraph.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+=       import soundness.*
+-       import textMetrics.uniformMetric
++         import textMetrics.uniformMetric
+
+-       Flow.fit(t"abc", 6)                       // t"abc   "
++         Flow.fit(t"abc", 6)                       // t"abc   "
+
+-       Flow.fit(t"ab", 6, Alignment.Center)      // t"  ab  "
++         Flow.fit(t"ab", 6, Alignment.Center)      // t"  ab  "
+
+-       Flow.fit(t"hello world", 8)               // t"hello w…"
++         Flow.fit(t"hello world", 8)               // t"hello w…"
+
+=       Flow.fit(t"hello world", 8)               // t"hello w…"
+-       ```
++         ```
+
+-   entry .shorten   truncates content wider than a width, marking the cut with an ellipsis
++   entry .shorten
++     info
++         tronque un contenu plus large qu'une largeur donnée, en marquant la coupure par des points
++         de suspension
+
+-       Content which already fits is returned unchanged. Otherwise as many whole grapheme
+-       clusters are kept as fit with `ellipsis` (by default `t"…"`) appended, so a wide
+-       character never straddles the cut. The result may be narrower than the width; `.fit`
+-       pads it.
++     detail
++         Un contenu qui tient déjà est renvoyé inchangé. Sinon, on conserve autant de grappes de
++         graphèmes entières que possible avec `ellipsis` (par défaut `t"…"`) ajouté ; un caractère
++         large ne chevauche donc jamais la coupure. Le résultat peut être plus étroit que la
++         largeur ; `.fit` le complète.
+
+-   entry .chop   cuts content into lines of at most a width, ignoring word boundaries
++   entry .chop
++     info
++         découpe un contenu en lignes d'au plus une largeur donnée, sans tenir compte des limites
++         de mots
+
+-       Character flow, by grapheme cluster, as a terminal itself wraps a long line. A width
+-       below 1, or empty content, gives the content as one line.
++     detail
++         Écoulement caractère par caractère, par grappe de graphèmes, comme un terminal fait
++         lui-même passer à la ligne une ligne longue. Une largeur inférieure à 1, ou un contenu
++         vide, donne le contenu en une seule ligne.
+
+-   entry .minContent   the narrowest width content can wrap into without overflow: its widest word
++   entry .minContent
++     info
++         la largeur la plus étroite dans laquelle un contenu peut passer à la ligne sans
++         débordement : son mot le plus large
+
+-       The display width of its widest word, where words are delimited by spaces and hard
+-       breaks.
++     detail
++         La largeur d'affichage de son mot le plus large, les mots étant délimités par des espaces
++         et des sauts forcés.
+
+-   entry .natural   the width content occupies unwrapped: its widest hard line
++   entry .natural
++     info
++         la largeur qu'occupe un contenu sans retour à la ligne : sa ligne forcée la plus large
+
+-   entry .metrics   both intrinsic widths of content, `.minContent` and `.natural`, as `Metrics`
++   entry .metrics
++     info
++         les deux largeurs intrinsèques d'un contenu, `.minContent` et `.natural`, sous forme de
++         `Metrics`
+
+=   entry .metrics   both intrinsic widths of content, `.minContent` and `.natural`, as `Metrics`
+-       ```scala
++     detail
++         ```scala
+
+=   entry .metrics   both intrinsic widths of content, `.minContent` and `.natural`, as `Metrics`
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+=       import soundness.*
+-       import textMetrics.wideCharacterWidthMetric
++         import textMetrics.wideCharacterWidthMetric
+
+-       Flow.metrics(t"the quick brown\nfox")   // Metrics(5, 15)
++         Flow.metrics(t"the quick brown\nfox")   // Metrics(5, 15)
+
+-       Flow.metrics(t"👨‍👩‍👧 ab")              // Metrics(2, 5)
++         Flow.metrics(t"👨‍👩‍👧 ab")              // Metrics(2, 5)
+
+=       Flow.metrics(t"👨‍👩‍👧 ab")              // Metrics(2, 5)
+-       ```
++         ```
+
+- entry .Alignment   horizontal placement of a line within a wider extent: left, right, centre or justified
++ entry .Alignment
++   info
++       le placement horizontal d'une ligne dans une étendue plus large : à gauche, à droite,
++       centrée ou justifiée
+
+-   detail
+-       An `Alignment` pads content to exactly a width with `#pad`; it never truncates, so content
+-       wider than the width is returned as it is (`Flow.fit` truncates first).
++   detail
++       Un `Alignment` complète un contenu jusqu'à une largeur exacte avec `#pad` ; il ne tronque
++       jamais, si bien qu'un contenu plus large que la largeur est renvoyé tel quel (`Flow.fit`
++       tronque d'abord).
+
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Left
++       alternative Left
+
+=       alternative Left
+-         code
++         code
+
+=       alternative Left
+=         code
+-             import soundness.*
++             import soundness.*
+
+=       alternative Left
+=         code
+=             import soundness.*
+-             import textMetrics.uniformMetric
++             import textMetrics.uniformMetric
+
+-             Alignment.Left.pad(t"a b c", 9)   // t"a b c    "
++             Alignment.Left.pad(t"a b c", 9)   // t"a b c    "
+
+-       alternative Right
++       alternative Right
+
+=       alternative Right
+-         code
++         code
+
+=       alternative Right
+=         code
+-             import soundness.*
++             import soundness.*
+
+=       alternative Right
+=         code
+=             import soundness.*
+-             import textMetrics.uniformMetric
++             import textMetrics.uniformMetric
+
+-             Alignment.Right.pad(t"a b c", 9)   // t"    a b c"
++             Alignment.Right.pad(t"a b c", 9)   // t"    a b c"
+
+-       alternative Center
++       alternative Center
+
+=       alternative Center
+-         code
++         code
+
+=       alternative Center
+=         code
+-             import soundness.*
++             import soundness.*
+
+=       alternative Center
+=         code
+=             import soundness.*
+-             import textMetrics.uniformMetric
++             import textMetrics.uniformMetric
+
+-             Alignment.Center.pad(t"a b c", 9)   // t"  a b c  "
++             Alignment.Center.pad(t"a b c", 9)   // t"  a b c  "
+
+-       alternative Justify
++       alternative Justify
+
+=       alternative Justify
+-         code
++         code
+
+=       alternative Justify
+=         code
+-             import soundness.*
++             import soundness.*
+
+=       alternative Justify
+=         code
+=             import soundness.*
+-             import textMetrics.uniformMetric
++             import textMetrics.uniformMetric
+
+-             Alignment.Justify.pad(t"a b c", 9, last = false)   // t"a   b   c"
++             Alignment.Justify.pad(t"a b c", 9, last = false)   // t"a   b   c"
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+=       ```
+-   refer tessellate.Flow
++   refer tessellate.Flow
+
+-   entry .Left   pads content on the right
++   entry .Left
++     info
++         complète le contenu à droite
+
+-   entry .Right   pads content on the left
++   entry .Right
++     info
++         complète le contenu à gauche
+
+-   entry .Center   centres content, putting an odd cell of spare space on the right
++   entry .Center
++     info
++         centre le contenu, en plaçant à droite une éventuelle cellule d'espace libre impaire
+
+-       Unlike gossamer's `center`, which puts the odd cell on the left.
++     detail
++         Contrairement au `center` de gossamer, qui place la cellule impaire à gauche.
+
+-   entry .Justify   stretches the gaps between words to fill the width, except on a paragraph's last line
++   entry .Justify
++     info
++         étire les espaces entre les mots pour remplir la largeur, sauf sur la dernière ligne d'un
++         paragraphe
+
+-       When `last` is true, the line is padded on the right, as `Left` pads it: a paragraph's
+-       final line is not stretched. Otherwise the spare space is shared among the word gaps,
+-       with any remainder going to the later gaps.
++     detail
++         Lorsque `last` est vrai, la ligne est complétée à droite, comme le fait `Left` : la
++         dernière ligne d'un paragraphe n'est pas étirée. Sinon, l'espace libre est réparti entre
++         les intervalles entre mots, le reste éventuel allant aux derniers intervalles.
+
+-   entry .Vertical   vertical placement of content within a taller extent: `Top`, `Middle` or `Bottom`
++   entry .Vertical
++     info
++         le placement vertical d'un contenu dans une étendue plus haute : `Top`, `Middle` ou
++         `Bottom`
+
+-       An enumeration of three cases, used where a cell is shorter than the row it sits in —
+-       when another cell of the row wraps onto more lines.
++     detail
++         Une énumération de trois cas, utilisée lorsqu'une cellule est moins haute que la rangée
++         dans laquelle elle se trouve — quand une autre cellule de la rangée passe à la ligne sur
++         davantage de lignes.
+
+-   entry #pad   pads content to exactly a width, given whether it is a paragraph's last line
++   entry #pad
++     info
++         complète un contenu jusqu'à une largeur exacte, selon qu'il s'agit ou non de la dernière
++         ligne d'un paragraphe
+
+-       `pad(content, width, last)`, with `last` true by default; only `Justify` heeds it. It
+-       needs a `Text is Measurable` in scope.
++     detail
++         `pad(content, width, last)`, avec `last` vrai par défaut ; seul `Justify` en tient compte.
++         Elle a besoin d'un `Text is Measurable` dans la portée.
+
+- entry .Metrics   the intrinsic widths of content along one axis: min-content and natural
++ entry .Metrics
++   info
++       les largeurs intrinsèques d'un contenu le long d'un axe : minimale et naturelle
+
+-   detail
+-       `Metrics(min, natural)`: `min` is the narrowest extent the content can be arranged into
+-       without overflowing (its widest word, for text), and `natural` the extent it takes given
+-       unlimited space (its widest line). `Flow.metrics` measures text, and `Reflowable#metrics`
+-       any reflowable content.
++   detail
++       `Metrics(min, natural)` : `min` est l'étendue la plus étroite dans laquelle le contenu peut
++       être disposé sans déborder (son mot le plus large, pour du texte), et `natural` l'étendue
++       qu'il occupe avec un espace illimité (sa ligne la plus large). `Flow.metrics` mesure du
++       texte, et `Reflowable#metrics` tout contenu réagençable.
+
+=       any reflowable content.
+=
+-       ```scala
++       ```scala
+
+=       any reflowable content.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Metrics(5, 15).max(Metrics(8, 10))   // Metrics(8, 15)
++       Metrics(5, 15).max(Metrics(8, 10))   // Metrics(8, 15)
+
+-       Metrics(4)                           // Metrics(4, 4)
++       Metrics(4)                           // Metrics(4, 4)
+
+=       Metrics(4)                           // Metrics(4, 4)
+-       ```
++       ```
+
+-   refer tessellate.Flex
++   refer tessellate.Flex
+
+-   entry .apply   metrics of a fixed width, whose minimum and natural widths are equal
++   entry .apply
++     info
++         les mesures d'une largeur fixe, dont les largeurs minimale et naturelle sont égales
+
+-   entry #min   the narrowest extent the content fits without overflow
++   entry #min
++     info
++         l'étendue la plus étroite dans laquelle le contenu tient sans déborder
+
+-   entry #natural   the extent the content occupies given unlimited space
++   entry #natural
++     info
++         l'étendue qu'occupe le contenu avec un espace illimité
+
+-   entry #max   the larger of two metrics, minimum by minimum and natural by natural
++   entry #max
++     info
++         la plus grande de deux mesures, minimum à minimum et naturelle à naturelle
+
+-       The metrics of a column holding both contents.
++     detail
++         Les mesures d'une colonne contenant les deux contenus.
+
+- entry .Flex   a track competing for space along an axis: its metrics, weight, bound and collapse behaviour
++ entry .Flex
++   info
++       une piste qui se dispute l'espace le long d'un axe : ses mesures, son poids, sa borne et son
++       comportement de repli
+
+-   detail
+-       A `Flex` describes one track — a column, a row, a pane — to `Flex.solve`: its content's
+-       `#metrics`, the `#weight` with which it claims spare space (`1.0` by default), an optional
+-       upper bound `#max`, and whether it is `#collapsible`: dropped entirely, lowest `#rank`
+-       first, when the axis cannot hold every track's minimum.
++   detail
++       Un `Flex` décrit une piste — une colonne, une rangée, un volet — à `Flex.solve` : les
++       `#metrics` de son contenu, le `#weight` avec lequel elle revendique l'espace libre (`1.0`
++       par défaut), une borne supérieure optionnelle `#max`, et si elle est `#collapsible` :
++       supprimée entièrement, le plus petit `#rank` d'abord, lorsque l'axe ne peut contenir le
++       minimum de chaque piste.
+
+=       first, when the axis cannot hold every track's minimum.
+=
+-       ```scala
++       ```scala
+
+=       first, when the axis cannot hold every track's minimum.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val tracks = Sequence(Flex(Metrics(5)), Flex(Metrics(5), collapsible = true))
++       val tracks = Sequence(Flex(Metrics(5)), Flex(Metrics(5), collapsible = true))
+
+-       Flex.solve(tracks, 6)   // 6, Unset
++       Flex.solve(tracks, 6)   // 6, Unset
+
+=       Flex.solve(tracks, 6)   // 6, Unset
+-       ```
++       ```
+
+=       ```
+-   refer tessellate.Metrics
++   refer tessellate.Metrics
+
+-   entry .content   a track whose bounds derive from its content alone
++   entry .content
++     info
++         une piste dont les bornes dérivent de son seul contenu
+
+-       It shrinks to its minimum, never grows beyond its natural width, and claims spare space
+-       in proportion to how much it can usefully absorb, the difference between the two.
++     detail
++         Elle rétrécit jusqu'à son minimum, ne dépasse jamais sa largeur naturelle, et revendique
++         l'espace libre en proportion de ce qu'elle peut utilement absorber, la différence entre
++         les deux.
+
+=       in proportion to how much it can usefully absorb, the difference between the two.
+=
+-       ```scala
++         ```scala
+
+=       in proportion to how much it can usefully absorb, the difference between the two.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+-       Flex.solve(Sequence(Flex.content(Metrics(3, 9)), Flex.content(Metrics(2, 4))), 20)   // 9, 4
++         Flex.solve(Sequence(Flex.content(Metrics(3, 9)), Flex.content(Metrics(2, 4))), 20)   // 9, 4
+
+=       Flex.solve(Sequence(Flex.content(Metrics(3, 9)), Flex.content(Metrics(2, 4))), 20)   // 9, 4
+-       ```
++         ```
+
+-   entry .solve   shares an axis's cells among tracks, giving each track's size or `Unset` if it collapsed
++   entry .solve
++     info
++         répartit les cellules d'un axe entre des pistes, en donnant la taille de chaque piste ou
++         `Unset` si elle a été repliée
+
+-     detail
+-         `Flex.solve(tracks, available, gap)` works in two stages.
++     detail
++         `Flex.solve(tracks, available, gap)` procède en deux étapes.
+
+-         **Collapse.** While the tracks' minima, plus a `gap` between each pair, do not fit in
+-         `available`, the collapsible track of lowest rank (the leftmost, on a tie) is dropped,
+-         and its size is `Unset`. If nothing more can collapse, the minima are kept and overflow
+-         the space, and the caller decides what to do.
++         **Repli.** Tant que les minima des pistes, plus un `gap` entre chaque paire, ne tiennent
++         pas dans `available`, la piste repliable de rang le plus bas (la plus à gauche, en cas
++         d'égalité) est supprimée, et sa taille vaut `Unset`. Si plus rien ne peut être replié, les
++         minima sont conservés et débordent de l'espace, et c'est à l'appelant de décider quoi
++         faire.
+
+-         **Distribute.** Each remaining track's fair share of the space left after the gaps is
+-         in proportion to its weight. A track whose share would fall below its minimum is pinned
+-         at the minimum, and one whose share would exceed its `max` is pinned at the maximum,
+-         with the rest redistributed among the others until nothing changes. The free tracks
+-         then take their shares with largest-remainder rounding, so the sizes sum to exactly the
+-         space available.
++         **Répartition.** La part équitable de chaque piste restante dans l'espace qui reste après
++         les intervalles est proportionnelle à son poids. Une piste dont la part tomberait sous son
++         minimum est fixée au minimum, et une piste dont la part dépasserait son `max` est fixée au
++         maximum, le reste étant redistribué entre les autres jusqu'à ce que plus rien ne change.
++         Les pistes libres prennent ensuite leurs parts avec un arrondi au plus fort reste, de
++         sorte que la somme des tailles soit exactement égale à l'espace disponible.
+
+=         space available.
+=
+-         ```scala
++         ```scala
+
+=         space available.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Flex.solve(Sequence(Flex(Metrics(0)), Flex(Metrics(0)), Flex(Metrics(0))), 10)
++         Flex.solve(Sequence(Flex(Metrics(0)), Flex(Metrics(0)), Flex(Metrics(0))), 10)
+
+-         // three sizes summing to 10
++         // three sizes summing to 10
+
+-         Flex.solve(Sequence(Flex(Metrics(6, 10)), Flex(Metrics(0, 10))), 8)   // 6, 2
++         Flex.solve(Sequence(Flex(Metrics(6, 10)), Flex(Metrics(0, 10))), 8)   // 6, 2
+
+-         Flex.solve(Sequence(Flex(Metrics(0), max = 2), Flex(Metrics(0))), 10)  // 2, 8
++         Flex.solve(Sequence(Flex(Metrics(0), max = 2), Flex(Metrics(0))), 10)  // 2, 8
+
+-         Flex.solve(Sequence(Flex(Metrics(0)), Flex(Metrics(0))), 10, gap = 2)  // 4, 4
++         Flex.solve(Sequence(Flex(Metrics(0)), Flex(Metrics(0))), 10, gap = 2)  // 4, 4
+
+=         Flex.solve(Sequence(Flex(Metrics(0)), Flex(Metrics(0))), 10, gap = 2)  // 4, 4
+-         ```
++         ```
+
+-   entry #metrics   the track content's intrinsic widths; its minimum is a lower bound
++   entry #metrics
++     info
++         les largeurs intrinsèques du contenu de la piste ; son minimum est une borne inférieure
+
+-   entry #weight   the proportion of spare space the track claims, relative to the others
++   entry #weight
++     info
++         la proportion de l'espace libre que revendique la piste, relativement aux autres
+
+-   entry #max   a hard upper bound on the track's size, or `Unset` for none
++   entry #max
++     info
++         une borne supérieure stricte de la taille de la piste, ou `Unset` s'il n'y en a pas
+
+-   entry #rank   the track's collapse order: among collapsible tracks, the lowest rank is dropped first
++   entry #rank
++     info
++         l'ordre de repli de la piste : parmi les pistes repliables, le rang le plus bas est
++         supprimé en premier
+
+-   entry #collapsible   whether the track may be dropped entirely when the minima cannot all fit
++   entry #collapsible
++     info
++         si la piste peut être supprimée entièrement lorsque tous les minima ne peuvent pas tenir
+
+- entry .Reflowable   content which negotiates with a rectangular layout: its widths, its height, its lines
++ entry .Reflowable
++   info
++       un contenu qui négocie avec une mise en page rectangulaire : ses largeurs, sa hauteur, ses
++       lignes
+
+-   detail
+-       A `Reflowable` reports the intrinsic widths its content wants (`#metrics`), how many lines
+-       it takes at a candidate width (`#height`), and finally arranges itself into lines of
+-       exactly the settled width (`#flow`). Its `#Line` is the type of a rendered line: for
+-       self-rendering content such as `Text` or `Teletype`, the content type itself.
++   detail
++       Un `Reflowable` indique les largeurs intrinsèques que souhaite son contenu (`#metrics`), le
++       nombre de lignes qu'il occupe à une largeur candidate (`#height`), et finalement se dispose
++       en lignes de la largeur exacte retenue (`#flow`). Son `#Line` est le type d'une ligne
++       rendue : pour un contenu qui se rend lui-même, comme `Text` ou `Teletype`, le type du
++       contenu lui-même.
+
+-       Every `Textual` with `Char` elements is reflowable through `.textual`, in implicit scope,
+-       by wrapping with `Flow.wrap` and padding each line with the alignment.
++       Tout `Textual` à éléments `Char` est réagençable au moyen de `.textual`, dans la portée
++       implicite, en passant à la ligne avec `Flow.wrap` et en complétant chaque ligne selon
++       l'alignement.
+
+=       by wrapping with `Flow.wrap` and padding each line with the alignment.
+=
+-       ```scala
++       ```scala
+
+=       by wrapping with `Flow.wrap` and padding each line with the alignment.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       by wrapping with `Flow.wrap` and padding each line with the alignment.
+=
+=       ```scala
+=       import soundness.*
+-       import hyphenations.englishHyphenation
++       import hyphenations.englishHyphenation
+
+=       import hyphenations.englishHyphenation
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+-       summon[Text is Reflowable].metrics(t"one two")   // Metrics(3, 7)
++       summon[Text is Reflowable].metrics(t"one two")   // Metrics(3, 7)
+
+-       summon[Text is Reflowable].flow(t"the quick brown fox", 10, Alignment.Left)
++       summon[Text is Reflowable].flow(t"the quick brown fox", 10, Alignment.Left)
+
+-       // t"the quick ", t"brown fox "
++       // t"the quick ", t"brown fox "
+
+=       // t"the quick ", t"brown fox "
+-       ```
++       ```
+
+-       escritoire's table cells and ultimatum's panes take their content through this
+-       typeclass.
++       Les cellules de tableau d'escritoire et les volets d'ultimatum reçoivent leur contenu au
++       moyen de cette classe de types.
+
+=       typeclass.
+-   refer tessellate.Flow
++   refer tessellate.Flow
+
+=   refer tessellate.Flow
+-   refer tessellate.Metrics
++   refer tessellate.Metrics
+
+-   entry .textual   makes any `Char`-element `Textual` reflowable, its lines of its own type
++   entry .textual
++     info
++         rend réagençable tout `Textual` à éléments `Char`, ses lignes étant de son propre type
+
+-       Metrics come from `Flow.metrics`; lines come from `Flow.wrap`, each padded to the width
+-       with the alignment, the final line being treated as its paragraph's last.
++     detail
++         Les mesures proviennent de `Flow.metrics` ; les lignes proviennent de `Flow.wrap`, chacune
++         complétée jusqu'à la largeur selon l'alignement, la dernière étant traitée comme la
++         dernière de son paragraphe.
+
+-   entry #Line   the type of one rendered line of the content
++   entry #Line
++     info
++         le type d'une ligne rendue du contenu
+
+-   entry #metrics   the content's intrinsic widths, under the `Text is Measurable` in scope
++   entry #metrics
++     info
++         les largeurs intrinsèques du contenu, selon le `Text is Measurable` dans la portée
+
+-   entry #height   how many lines the content takes at a width
++   entry #height
++     info
++         le nombre de lignes qu'occupe le contenu à une largeur donnée
+
+-       By default, the number of lines `#flow` produces at that width, aligned left.
++     detail
++         Par défaut, le nombre de lignes que produit `#flow` à cette largeur, aligné à gauche.
+
+-   entry #flow   the content arranged into lines of exactly a width, aligned as given
++   entry #flow
++     info
++         le contenu disposé en lignes d'une largeur exacte, aligné comme indiqué
+
+-       Needs a `Text is Measurable` and a `Hyphenation` in scope.
++     detail
++         A besoin d'un `Text is Measurable` et d'une `Hyphenation` dans la portée.
+
+- entry .BoxLine   the weight of one arm of a box-drawing junction: `Blank`, `Thin`, `Thick` or `Double`
++ entry .BoxLine
++   info
++       le poids d'une branche d'une jonction de tracé de boîte : `Blank`, `Thin`, `Thick` ou
++       `Double`
+
+-     An enumeration of four cases. A box-drawing character is chosen by the weights of its four
+-     arms — up, right, down and left — through `LineCharset#apply`, so `Blank` on every arm is
+-     a space, and `Thin` above and below with `Blank` either side is a vertical line.
++   detail
++       Une énumération de quatre cas. Un caractère de tracé de boîte est choisi selon les poids de
++       ses quatre branches — haut, droite, bas et gauche — au moyen de `LineCharset#apply` ;
++       `Blank` sur chaque branche donne donc une espace, et `Thin` en haut et en bas avec `Blank`
++       de chaque côté une ligne verticale.
+
+- entry .LineCharset   a family of box-drawing characters: `Default`, `Rounded` or `Ascii`
++ entry .LineCharset
++   info
++       une famille de caractères de tracé de boîte : `Default`, `Rounded` ou `Ascii`
+
+-   detail
+-       `Default` is the Unicode box-drawing set, with thin, thick and double lines and the
+-       junctions between them; `Rounded` is the same with rounded corners for the four thin
+-       corners; and `Ascii` approximates every character with `-`, `|` and `+`, for a terminal
+-       with no Unicode.
++   detail
++       `Default` est le jeu Unicode de tracé de boîtes, avec des lignes fines, épaisses et doubles
++       et les jonctions entre elles ; `Rounded` est le même avec des coins arrondis pour les quatre
++       coins fins ; et `Ascii` donne une approximation de chaque caractère avec `-`, `|` et `+`,
++       pour un terminal sans Unicode.
+
+=       with no Unicode.
+=
+-       ```scala
++       ```scala
+
+=       with no Unicode.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       LineCharset.Default(top = BoxLine.Thin, bottom = BoxLine.Thin)            // a vertical line
++       LineCharset.Default(top = BoxLine.Thin, bottom = BoxLine.Thin)            // a vertical line
+
+-       LineCharset.Rounded(right = BoxLine.Thin, bottom = BoxLine.Thin)          // a rounded corner
++       LineCharset.Rounded(right = BoxLine.Thin, bottom = BoxLine.Thin)          // a rounded corner
+
+-       LineCharset.Ascii(BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin) // '+'
++       LineCharset.Ascii(BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin) // '+'
+
+=       LineCharset.Ascii(BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin) // '+'
+-       ```
++       ```
+
+-   refer tessellate.BoxLine
++   refer tessellate.BoxLine
+
+-   refer tessellate.BoxDrawing
++   refer tessellate.BoxDrawing
+
+-   entry #apply   the junction character for four arms, or the whole table of characters
++   entry #apply
++     info
++         le caractère de jonction pour quatre branches, ou la table entière des caractères
+
+-       `charset(top, right, bottom, left)` gives the character whose arms have those
+-       `BoxLine` weights, each `Blank` by default. `charset()` gives the charset's whole table,
+-       as a frozen array of 256 characters indexed by the four weights.
++     detail
++         `charset(top, right, bottom, left)` donne le caractère dont les branches ont ces poids
++         `BoxLine`, chacun valant `Blank` par défaut. `charset()` donne la table entière du jeu,
++         sous forme de tableau gelé de 256 caractères indexé par les quatre poids.
+
+- entry .BoxDrawing   the tables of box-drawing characters behind `LineCharset`
++ entry .BoxDrawing
++   info
++       les tables de caractères de tracé de boîtes derrière `LineCharset`
+
+-   detail
+-       Each table is a frozen array of 256 characters, indexed by the weights of a junction's
+-       four arms: `left + 4*bottom + 16*right + 64*top`, each the `ordinal` of a `BoxLine`. A
+-       combination with no character of its own has the nearest one available.
++   detail
++       Chaque table est un tableau gelé de 256 caractères, indexé par les poids des quatre branches
++       d'une jonction : `left + 4*bottom + 16*right + 64*top`, chacun étant l'`ordinal` d'un
++       `BoxLine`. Une combinaison sans caractère propre reçoit le plus proche disponible.
+
+-   refer tessellate.LineCharset
++   refer tessellate.LineCharset
+
+-   entry .asciiChars   the table for `LineCharset.Ascii`: every junction as `-`, `|`, `+` or a space
++   entry .asciiChars
++     info
++         la table de `LineCharset.Ascii` : chaque jonction sous forme de `-`, `|`, `+` ou d'une
++         espace
+
+-   entry .defaultChars   the table for `LineCharset.Default`: the Unicode box-drawing characters
++   entry .defaultChars
++     info
++         la table de `LineCharset.Default` : les caractères Unicode de tracé de boîtes
+
+-   entry .roundedChars   the table for `LineCharset.Rounded`: as the default, with rounded thin corners
++   entry .roundedChars
++     info
++         la table de `LineCharset.Rounded` : comme celle par défaut, avec des coins fins arrondis
+
+-   entry .simple   the character for a straight line or a crossing, from one vertical and one horizontal weight
++   entry .simple
++     info
++         le caractère d'une ligne droite ou d'un croisement, à partir d'un poids vertical et d'un
++         poids horizontal
+
+-       `BoxDrawing.simple(vertical, horizontal, charset)` is
+-       `charset(vertical, horizontal, vertical, horizontal)`: the vertical weight above and
+-       below, and the horizontal weight on either side.
++     detail
++         `BoxDrawing.simple(vertical, horizontal, charset)` vaut
++         `charset(vertical, horizontal, vertical, horizontal)` : le poids vertical en haut et en
++         bas, et le poids horizontal de chaque côté.

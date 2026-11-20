@@ -1,0 +1,3962 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base cataclysm
++ base cataclysm
+
+- import soundness
++ import soundness
+
+- info   CSS as typed values: stylesheets, selectors and properties checked against their real grammars
++ info
++     le CSS sous forme de valeurs typées : feuilles de style, sélecteurs et propriétés vérifiés
++     selon leurs vraies grammaires
+
+- detail
+-     _Cataclysm_ represents CSS — stylesheets, their rules and selectors, and the values of
+-     their properties — as typed values, checked against the genuine grammar of each
+-     property rather than left for a browser to ignore. A browser never rejects CSS: a
+-     misspelled property or a malformed value fails by doing nothing. Here, the same mistake
+-     is a `Css.Error` when text is read at runtime, and a compile error when it is written
+-     in a `css"…"` literal or a `Css.Style(…)` constructor, both checked against the
+-     value-definition syntax of the MDN data for over six hundred properties.
++ detail
++     _Cataclysm_ représente le CSS — les feuilles de style, leurs règles et leurs sélecteurs,
++     et les valeurs de leurs propriétés — sous forme de valeurs typées, vérifiées selon la
++     grammaire réelle de chaque propriété plutôt que laissées à un navigateur qui les
++     ignorera. Un navigateur ne rejette jamais le CSS : une propriété mal orthographiée ou une
++     valeur mal formée échoue en ne faisant rien. Ici, la même erreur est une `Css.Error`
++     lorsque du texte est lu à l'exécution, et une erreur de compilation lorsqu'elle est
++     écrite dans un littéral `css"…"` ou un constructeur `Css.Style(…)`, tous deux vérifiés
++     selon la syntaxe de définition de valeurs des données MDN pour plus de six cents
++     propriétés.
+
+-     The central type is `Css`: a stylesheet as a list of `Css.Node`s — rules, declarations
+-     and at-rules — read from text with `read[Css]`, written with the `css"…"` interpolator,
+-     joined with `+`, and rendered with `show` under a `Css.Formatting` chosen by name from
+-     the `formatting` package. A rule's selector is a `SelectorList` of `Selector`s, each a
+-     `Selector.Compound` of `Selector.Simple` parts joined by `Selector.Combinator`s, covering the whole of Selectors
+-     Level 4. Property values are typed: lengths, angles, times and grid flex are quantities
+-     in CSS's own units (`4.0*Px`, `90.0*Deg`, `200.0*Ms`, `2.0*Fr`), a colour renders as a
+-     hex triplet, and the `Css.Convertible` typeclass says which native type is acceptable
+-     for which value-definition type.
++     Le type central est `Css` : une feuille de style sous forme de liste de `Css.Node` —
++     règles, déclarations et at-rules — lue à partir de texte avec `read[Css]`, écrite avec
++     l'interpolateur `css"…"`, jointe avec `+`, et rendue avec `show` sous un
++     `Css.Formatting` choisi par son nom dans le package `formatting`. Le sélecteur d'une
++     règle est une `SelectorList` de `Selector`, chacun étant un `Selector.Compound` de
++     parties `Selector.Simple` jointes par des `Selector.Combinator`, couvrant l'intégralité
++     de Selectors Level 4. Les valeurs des propriétés sont typées : les longueurs, les
++     angles, les durées et les fractions de grille sont des quantités dans les propres unités
++     du CSS (`4.0*Px`, `90.0*Deg`, `200.0*Ms`, `2.0*Fr`), une couleur se rend sous forme de
++     triplet hexadécimal, et la classe de types `Css.Convertible` indique quel type natif est
++     acceptable pour quel type de définition de valeur.
+
+=     for which value-definition type.
+=
+-     ```scala
++     ```scala
+
+=     for which value-definition type.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     for which value-definition type.
+=
+=     ```scala
+=     import soundness.*
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=     for which value-definition type.
+=
+=     ```scala
+=     import soundness.*
+=     import strategies.throwUnsafely
+-     import errorDiagnostics.stackTracesDiagnostics
++     import errorDiagnostics.stackTracesDiagnostics
+
+-     import formatting.indentedCssFormatting
++     import formatting.indentedCssFormatting
+
+-     val red = Srgb(1.0, 0.0, 0.0)
++     val red = Srgb(1.0, 0.0, 0.0)
+
+=     val red = Srgb(1.0, 0.0, 0.0)
+-     val width = 4.0*Px
++     val width = 4.0*Px
+
+-     val sheet: Css = css"a { color: $red; width: $width }"
++     val sheet: Css = css"a { color: $red; width: $width }"
+
+-     val inline: Css.Style = Css.Style(color = red, borderWidth = 2.0*Px)
++     val inline: Css.Style = Css.Style(color = red, borderWidth = 2.0*Px)
+
+-     sheet.show                                  // a {\n  color: #ff0000;\n  width: 4px;\n}\n
++     sheet.show                                  // a {\n  color: #ff0000;\n  width: 4px;\n}\n
+
+-     t"a { color: red }".read[Css] + sheet       // one stylesheet of both rules
++     t"a { color: red }".read[Css] + sheet       // one stylesheet of both rules
+
+-     inline.text                                 // color: #ff0000; border-width: 2px
++     inline.text                                 // color: #ff0000; border-width: 2px
+
+=     inline.text                                 // color: #ff0000; border-width: 2px
+-     ```
++     ```
+
+-     Reading accumulates every fault — unknown properties, bad values, unterminated
+-     comments — into one `Css.Errors`, rather than stopping at the first, so a stylesheet is
+-     corrected in one pass. Errors need a `Diagnostics` in scope, such as
+-     `errorDiagnostics.stackTracesDiagnostics`.
++     La lecture accumule chaque faute — propriétés inconnues, valeurs incorrectes,
++     commentaires non terminés — dans une seule `Css.Errors`, plutôt que de s'arrêter à la
++     première, si bien qu'une feuille de style se corrige en une seule passe. Les erreurs ont
++     besoin d'un `Diagnostics` dans la portée, comme
++     `errorDiagnostics.stackTracesDiagnostics`.
+
+-     The library is split into three source sets:
++     La bibliothèque est découpée en trois ensembles de sources :
+
+-     - `cataclysm.core` — `Css` and its nodes, errors, keywords and `Css.Convertible`; the
+-       selector model (`SelectorList`, `Selector`, `Selector.Compound`, `Selector.Simple`, …); the property
+-       dataset (`PropertyDef`, `Css.Syntax.Matcher`, `Css.Syntax`, `ValueToken`, `Css.Outcome`); the
+-       units (`Px`, `Rem`, `Vw`, `Pct`, `Deg`, `Fr`, …); the `css"…"` interpolator; the
+-       `classes` and `ids` extensions; and the `formatting` and `construables` packages.
+-       Compiles for the JVM, Scala.js and Scala Native.
+-     - `cataclysm.fonts` — the `Web` medium and its typeface provisions (`Web.linked`,
+-       `Web.imported`, `Web.local`, the generic families), `FontFace`, `Css.fontFace` and
+-       `Css.fontFaces`, and the `style` extension which turns a phoenicia `Face` or `Font`
+-       into the `Css.Style` that selects it.
+-     - `cataclysm.html` — the honeycomb bindings: `inlineStyle` lets a `Css.Style` be a
+-       `style` attribute, and `Styles` with `cssBindings.checkedBinding` checks every class
+-       and id name in a template against a stylesheet on the classpath as the code compiles.
++     - `cataclysm.core` — `Css` et ses nœuds, ses erreurs, ses mots-clés et
++       `Css.Convertible` ; le modèle des sélecteurs (`SelectorList`, `Selector`,
++       `Selector.Compound`, `Selector.Simple`, …) ; le jeu de données des propriétés
++       (`PropertyDef`, `Css.Syntax.Matcher`, `Css.Syntax`, `ValueToken`, `Css.Outcome`) ; les
++       unités (`Px`, `Rem`, `Vw`, `Pct`, `Deg`, `Fr`, …) ; l'interpolateur `css"…"` ; les
++       extensions `classes` et `ids` ; et les packages `formatting` et `construables`. Compile
++       pour la JVM, Scala.js et Scala Native.
++     - `cataclysm.fonts` — le support `Web` et ses fournitures de polices (`Web.linked`,
++       `Web.imported`, `Web.local`, les familles génériques), `FontFace`, `Css.fontFace` et
++       `Css.fontFaces`, et l'extension `style` qui transforme une `Face` ou une `Font` de
++       phoenicia en le `Css.Style` qui la sélectionne.
++     - `cataclysm.html` — les liaisons avec honeycomb : `inlineStyle` permet à un `Css.Style`
++       d'être un attribut `style`, et `Styles` avec `cssBindings.checkedBinding` vérifie chaque
++       nom de classe et d'identifiant d'un template par rapport à une feuille de style du
++       classpath, pendant la compilation du code.
+
+-     Everything is exported to the `soundness` umbrella. The `formatting`, `construables`
+-     and `cssBindings` packages merge with the umbrella's own, and their givens are imported
+-     by name, since `import soundness.*` does not import givens: a program writes
+-     `import formatting.indentedCssFormatting` (or `compactCssFormatting`) before rendering a
+-     stylesheet, and `import cssBindings.checkedBinding` to turn on checked class names.
++     Tout est exporté vers le package parapluie `soundness`. Les packages `formatting`,
++     `construables` et `cssBindings` fusionnent avec ceux du package parapluie, et leurs
++     givens sont importés par leur nom, puisque `import soundness.*` n'importe pas les
++     givens : un programme écrit `import formatting.indentedCssFormatting` (ou
++     `compactCssFormatting`) avant de rendre une feuille de style, et
++     `import cssBindings.checkedBinding` pour activer la vérification des noms de classes.
+
+- refer cataclysm.Css
++ refer cataclysm.Css
+
+- refer cataclysm.css
++ refer cataclysm.css
+
+- refer cataclysm.SelectorList
++ refer cataclysm.SelectorList
+
+- refer cataclysm.PropertyDef
++ refer cataclysm.PropertyDef
+
+- refer cataclysm.Web
++ refer cataclysm.Web
+
+- refer cataclysm.Styles
++ refer cataclysm.Styles
+
+- refer cataclysm.formatting
++ refer cataclysm.formatting
+
+- entry .Css   a stylesheet: a list of rules, declarations and at-rules, read, written, joined and rendered
++ entry .Css
++   info
++       une feuille de style : une liste de règles, de déclarations et d'at-rules, lue, écrite,
++       jointe et rendue
+
+-   detail
+-       A `Css` is a stylesheet as a value: its `#rules` are `Css.Node`s, each a rule with a
+-       parsed `SelectorList` and a body, a declaration of a property and its value, or an
+-       at-rule with its name, prelude and optional body. It is made by reading text
+-       (`.aggregable`), by the `css"…"` interpolator, by `Css.fontFace` from a font, or
+-       directly from nodes; two stylesheets join with `+` (`.addable`) into one of both rule
+-       lists.
++   detail
++       Un `Css` est une feuille de style sous forme de valeur : ses `#rules` sont des
++       `Css.Node`, chacun étant une règle avec une `SelectorList` analysée et un corps, une
++       déclaration d'une propriété et de sa valeur, ou une at-rule avec son nom, son prélude et
++       son corps optionnel. On le construit en lisant du texte (`.aggregable`), avec
++       l'interpolateur `css"…"`, avec `Css.fontFace` à partir d'une police, ou directement à
++       partir de nœuds ; deux feuilles de style se joignent avec `+` (`.addable`) en une seule
++       contenant les deux listes de règles.
+
+=       lists.
+=
+-       ```scala
++       ```scala
+
+=       lists.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       lists.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       lists.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import errorDiagnostics.stackTracesDiagnostics
++       import errorDiagnostics.stackTracesDiagnostics
+
+=       import errorDiagnostics.stackTracesDiagnostics
+-       import formatting.compactCssFormatting
++       import formatting.compactCssFormatting
+
+-       val css: Css = t"a { color: red } @media screen { a { width: 4px } }".read[Css]
++       val css: Css = t"a { color: red } @media screen { a { width: 4px } }".read[Css]
+
+-       css.rules.size              // 2
++       css.rules.size              // 2
+
+-       css.show                    // t"a{color:red;}@media screen{a{width:4px;}}"
++       css.show                    // t"a{color:red;}@media screen{a{width:4px;}}"
+
+-       css.classes                 // the class names its selectors mention
++       css.classes                 // the class names its selectors mention
+
+=       css.classes                 // the class names its selectors mention
+-       ```
++       ```
+
+-       Reading validates every declaration against the property's grammar and accumulates
+-       every problem into a `Css.Errors`, raised once at the end. Rendering goes through the
+-       `Css.Formatting` in scope — `formatting.indentedCssFormatting` puts each rule and
+-       declaration on its own indented line, `formatting.compactCssFormatting` strips every
+-       inessential character — as `show` (`.showable`), as a lazy `Stream[Text]`
+-       (`.streamable`), or as an HTTP `text/css` body (`.media`). In every style, a `;`
+-       follows each declaration, including the last.
++       La lecture valide chaque déclaration selon la grammaire de la propriété et accumule
++       chaque problème dans une `Css.Errors`, levée une seule fois à la fin. Le rendu passe par
++       le `Css.Formatting` dans la portée — `formatting.indentedCssFormatting` place chaque
++       règle et chaque déclaration sur sa propre ligne indentée,
++       `formatting.compactCssFormatting` supprime tout caractère non essentiel — sous forme de
++       `show` (`.showable`), de `Stream[Text]` paresseux (`.streamable`), ou de corps HTTP
++       `text/css` (`.media`). Dans tous les styles, un `;` suit chaque déclaration, y compris
++       la dernière.
+
+-       The companion also holds the CSS-wide keywords (`.inherit`, `.initial`, `.unset`,
+-       `.revert`, `.revertLayer`) and the colour keywords (`.transparent`, `.currentColor`)
+-       as typed values for substitution, the `.Style` constructor for inline styles, the
+-       `.Convertible` typeclass, the `.Syntax` grammar type and the `.Error`s.
++       Le compagnon contient aussi les mots-clés globaux du CSS (`.inherit`, `.initial`,
++       `.unset`, `.revert`, `.revertLayer`) et les mots-clés de couleur (`.transparent`,
++       `.currentColor`) sous forme de valeurs typées pour la substitution, le constructeur
++       `.Style` pour les styles en ligne, la classe de types `.Convertible`, le type de
++       grammaire `.Syntax` et les `.Error`.
+
+-   refer cataclysm.css
++   refer cataclysm.css
+
+=   refer cataclysm.css
+-   refer cataclysm.SelectorList
++   refer cataclysm.SelectorList
+
+-   refer cataclysm.PropertyDef
++   refer cataclysm.PropertyDef
+
+-   refer cataclysm.formatting
++   refer cataclysm.formatting
+
+-   entry .aggregable   reads a stylesheet from text, accumulating every `Css.Error` into one `Css.Errors`
++   entry .aggregable
++     info
++         lit une feuille de style à partir de texte, en accumulant chaque `Css.Error` dans une
++         seule `Css.Errors`
+
+-       The given which lets text be `read[Css]`. The parse validates every declaration —
+-       the property must be known, and its value must satisfy the property's grammar — and
+-       runs under a `track`, so each `Css.Error` is accrued rather than stopping the parse,
+-       and a single `Css.Errors` holding all of them is raised at the end. A fully valid
+-       stylesheet gives the `Css` with nothing raised. It needs a `Tactic[Css.Errors]` and a
+-       `Diagnostics` in scope.
++     detail
++         Le given qui permet de lire du texte avec `read[Css]`. L'analyse valide chaque
++         déclaration — la propriété doit être connue, et sa valeur doit satisfaire la grammaire
++         de la propriété — et s'exécute sous un `track`, si bien que chaque `Css.Error` est
++         accumulée plutôt que d'arrêter l'analyse, et qu'une seule `Css.Errors` les contenant
++         toutes est levée à la fin. Une feuille de style entièrement valide donne le `Css` sans
++         rien lever. Il a besoin d'une `Tactic[Css.Errors]` et d'un `Diagnostics` dans la portée.
+
+=       `Diagnostics` in scope.
+=
+-       ```scala
++         ```scala
+
+=       `Diagnostics` in scope.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+=       `Diagnostics` in scope.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=       `Diagnostics` in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import errorDiagnostics.stackTracesDiagnostics
++         import errorDiagnostics.stackTracesDiagnostics
+
+-       t"a { color: red }".read[Css]
++         t"a { color: red }".read[Css]
+
+-       capture[Css.Errors](t"a { colour: red; width: wide }".read[Css]).errors.map(_.reason)
++         capture[Css.Errors](t"a { colour: red; width: wide }".read[Css]).errors.map(_.reason)
+
+-       // List(Css.Error.Reason.UnknownProperty(t"colour"), Css.Error.Reason.BadValue(t"width", t"wide"))
++         // List(Css.Error.Reason.UnknownProperty(t"colour"), Css.Error.Reason.BadValue(t"width", t"wide"))
+
+=       // List(Css.Error.Reason.UnknownProperty(t"colour"), Css.Error.Reason.BadValue(t"width", t"wide"))
+-       ```
++         ```
+
+-       Custom properties (`--name`) are accepted without a definition. A value whose grammar
+-       uses a type the matcher does not implement is reported as `UnsupportedValue` rather
+-       than passed silently.
++         Les propriétés personnalisées (`--name`) sont acceptées sans définition. Une valeur
++         dont la grammaire utilise un type que le vérificateur n'implémente pas est signalée comme
++         `UnsupportedValue` plutôt que d'être acceptée en silence.
+
+-   entry .Formatting   how a stylesheet renders: with newlines and indentation, or compactly
++   entry .Formatting
++     info
++         la façon dont se rend une feuille de style : avec sauts de ligne et indentation, ou de
++         manière compacte
+
+-     detail
+-         A `Css.Formatting` says whether rendering puts each rule and declaration on its own
+-         indented line (`#newlines`) and whether it adds the cosmetic spaces after `:` and
+-         before `{` (`#spaces`). The `Showable`, `Streamable` and `Media` instances of `Css`
+-         each take one as a contextual value, so one must be in scope to render: the two
+-         standard ones are `formatting.indentedCssFormatting` (both on) and
+-         `formatting.compactCssFormatting` (both off), imported by name, and
+-         `Css.Formatting(newlines, spaces)` makes any other.
++     detail
++         Un `Css.Formatting` indique si le rendu place chaque règle et chaque déclaration sur sa
++         propre ligne indentée (`#newlines`) et s'il ajoute les espaces esthétiques après `:` et
++         avant `{` (`#spaces`). Les instances `Showable`, `Streamable` et `Media` de `Css` en
++         prennent chacune un comme valeur contextuelle ; il doit donc y en avoir un dans la
++         portée pour rendre : les deux standard sont `formatting.indentedCssFormatting` (les deux
++         activés) et `formatting.compactCssFormatting` (les deux désactivés), importés par leur
++         nom, et `Css.Formatting(newlines, spaces)` en construit n'importe quel autre.
+
+=         `Css.Formatting(newlines, spaces)` makes any other.
+=
+-         ```scala
++         ```scala
+
+=         `Css.Formatting(newlines, spaces)` makes any other.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         `Css.Formatting(newlines, spaces)` makes any other.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         `Css.Formatting(newlines, spaces)` makes any other.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+-         import errorDiagnostics.stackTracesDiagnostics
++         import errorDiagnostics.stackTracesDiagnostics
+
+-         val css = t"a { color: red }".read[Css]
++         val css = t"a { color: red }".read[Css]
+
+=         val css = t"a { color: red }".read[Css]
+=
+-         locally:
++         locally:
+
+-           import formatting.indentedCssFormatting
++           import formatting.indentedCssFormatting
+
+-           css.show                 // t"a {\n  color: red;\n}\n"
++           css.show                 // t"a {\n  color: red;\n}\n"
+
+=           css.show                 // t"a {\n  color: red;\n}\n"
+=
+-         locally:
++         locally:
+
+-           given Css.Formatting = Css.Formatting(newlines = true, spaces = false)
++           given Css.Formatting = Css.Formatting(newlines = true, spaces = false)
+
+-           css.show                 // t"a{\n  color:red;\n}\n"
++           css.show                 // t"a{\n  color:red;\n}\n"
+
+=           css.show                 // t"a{\n  color:red;\n}\n"
+-         ```
++         ```
+
+-     refer cataclysm.formatting
++     refer cataclysm.formatting
+
+-     entry .apply   a formatting with the given newline and spacing choices
++     entry .apply
++       info
++           une mise en forme avec les choix de sauts de ligne et d'espacement donnés
+
+-     entry #newlines   whether each rule and declaration goes on its own indented line
++     entry #newlines
++       info
++           indique si chaque règle et chaque déclaration va sur sa propre ligne indentée
+
+-     entry #spaces   whether a space follows each `:` and precedes each `{`
++     entry #spaces
++       info
++           indique si une espace suit chaque `:` et précède chaque `{`
+
+-   entry .Node   one node of a stylesheet: a rule, a declaration or an at-rule
++   entry .Node
++     info
++         un nœud d'une feuille de style : une règle, une déclaration ou une at-rule
+
+-       The three kinds of node a stylesheet holds, as an enum. `Rule(selector, body)` is a
+-       rule with a parsed `SelectorList` and a body of further nodes, so nested rules are
+-       represented directly. `Declaration(property, value)` is one property and its value,
+-       both as text, with comments stripped and whitespace normalized. `At(name, prelude,
+-       body)` is an at-rule by its name (without the `@`), its prelude text, and its body,
+-       which is `Unset` for a statement at-rule such as `@import url("x.css");` and a list of
+-       nodes for a block at-rule such as `@media screen { … }`.
++     detail
++         Les trois sortes de nœuds que contient une feuille de style, sous forme d'énumération.
++         `Rule(selector, body)` est une règle avec une `SelectorList` analysée et un corps
++         composé d'autres nœuds ; les règles imbriquées sont donc représentées directement.
++         `Declaration(property, value)` est une propriété et sa valeur, toutes deux sous forme de
++         texte, commentaires supprimés et espaces normalisés. `At(name, prelude,
++         body)` est une at-rule, avec son nom (sans le `@`), le texte de son prélude et son
++         corps, qui vaut `Unset` pour une at-rule d'instruction comme `@import url("x.css");` et
++         une liste de nœuds pour une at-rule de bloc comme `@media screen { … }`.
+
+=       nodes for a block at-rule such as `@media screen { … }`.
+=
+-       ```scala
++         ```scala
+
+=       nodes for a block at-rule such as `@media screen { … }`.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+-       val sheet = Css(List(
++         val sheet = Css(List(
+
+-         Css.Node.Rule(SelectorList(List(Selector(Unset, Selector.Compound(List(Selector.Simple.Type(Unset, t"a"))), Nil))),
++           Css.Node.Rule(SelectorList(List(Selector(Unset, Selector.Compound(List(Selector.Simple.Type(Unset, t"a"))), Nil))),
+
+-           List(Css.Node.Declaration(t"color", t"red"))),
++             List(Css.Node.Declaration(t"color", t"red"))),
+
+-         Css.Node.At(t"import", t"url(\"x.css\")", Unset)))
++           Css.Node.At(t"import", t"url(\"x.css\")", Unset)))
+
+=         Css.Node.At(t"import", t"url(\"x.css\")", Unset)))
+-       ```
++         ```
+
+-       Nodes built directly are not validated; `read[Css]` and `css"…"` are the checked
+-       routes.
++         Les nœuds construits directement ne sont pas validés ; `read[Css]` et `css"…"` sont les
++         voies vérifiées.
+
+-   entry .streamable   renders a stylesheet lazily as a `Stream[Text]`, for serving
++   entry .streamable
++     info
++         rend une feuille de style paresseusement sous forme de `Stream[Text]`, pour la servir
+
+-       The given which lets a `Css` be streamed chunk by chunk, so a large stylesheet is
+-       never held as one text: a producer writes the rendering from a task while the stream
+-       is consumed. It needs a `Monitor`, a `Probate` and a `Css.Formatting` in scope, and
+-       pairs with `.media` to serve a stylesheet as an HTTP response.
++     detail
++         Le given qui permet de diffuser un `Css` morceau par morceau, si bien qu'une grande
++         feuille de style n'est jamais détenue sous forme d'un seul texte : un producteur écrit le
++         rendu depuis une tâche pendant que le flux est consommé. Il a besoin d'un `Monitor`,
++         d'un `Probate` et d'un `Css.Formatting` dans la portée, et s'associe à `.media` pour
++         servir une feuille de style comme réponse HTTP.
+
+-   entry .showable   renders a stylesheet as text, under the `Css.Formatting` in scope
++   entry .showable
++     info
++         rend une feuille de style sous forme de texte, sous le `Css.Formatting` dans la portée
+
+-       `css.show` writes the whole stylesheet to one `Text`. The rule and declaration layout
+-       is the formatting's: `formatting.indentedCssFormatting` gives one rule per block with
+-       two-space indentation and a trailing newline, `formatting.compactCssFormatting` gives
+-       `a{color:red;}`. Rendering round-trips: a stylesheet read back from its own rendering
+-       is equal to the original.
++     detail
++         `css.show` écrit toute la feuille de style dans un seul `Text`. La disposition des
++         règles et des déclarations est celle de la mise en forme :
++         `formatting.indentedCssFormatting` donne une règle par bloc avec une indentation de deux
++         espaces et un saut de ligne final, `formatting.compactCssFormatting` donne
++         `a{color:red;}`. Le rendu est réversible : une feuille de style relue à partir de son
++         propre rendu est égale à l'originale.
+
+-   entry .interpolator   the `Interpolable` behind `css"…"`; see `cataclysm.css`
++   entry .interpolator
++     info
++         l'`Interpolable` derrière `css"…"` ; voir `cataclysm.css`
+
+-       The contextual-interpolator given which expands a `css"…"` literal. Its result type is
+-       transparent: a literal of bare declarations is a `Css.Style`, and one with selectors
+-       or at-rules is a `Css`. Not called directly; the `css` extension on `StringContext`
+-       is its surface.
++     detail
++         Le given d'interpolateur contextuel qui développe un littéral `css"…"`. Son type de
++         résultat est transparent : un littéral composé de simples déclarations est un
++         `Css.Style`, et un littéral contenant des sélecteurs ou des at-rules est un `Css`. Il
++         n'est pas appelé directement ; l'extension `css` sur `StringContext` en est la surface.
+
+-   entry .addable   `css + css`: one stylesheet of both rule lists, in order
++   entry .addable
++     info
++         `css + css` : une feuille de style contenant les deux listes de règles, dans l'ordre
+
+-       The `Addable` given: `css"a { … }" + css"b { … }"` is a stylesheet of both rules, and
+-       `stylesheet + Css.fontFace(font)` appends a font's at-rules to a page's own styles.
++     detail
++         Le given `Addable` : `css"a { … }" + css"b { … }"` est une feuille de style contenant
++         les deux règles, et `stylesheet + Css.fontFace(font)` ajoute les at-rules d'une police à
++         la suite des propres styles d'une page.
+
+-   entry .media   a stylesheet's media type for HTTP: `text/css; charset=UTF-8`
++   entry .media
++     info
++         le type de média d'une feuille de style pour HTTP : `text/css; charset=UTF-8`
+
+-       The `Media` given, so a `Css` serves as a response body with the right content type,
+-       streamed through `.streamable`.
++     detail
++         Le given `Media`, pour qu'un `Css` serve de corps de réponse avec le bon type de contenu,
++         diffusé au moyen de `.streamable`.
+
+-   entry .Style   a set of declarations for an inline `style="…"` attribute, checked as the code compiles
++   entry .Style
++     info
++         un ensemble de déclarations pour un attribut en ligne `style="…"`, vérifié pendant la
++         compilation du code
+
+-     detail
+-         A `Css.Style` is a list of property–value pairs with no selector, for an element's
+-         `style` attribute. It is built with named arguments, where each name is a camelCase
+-         property name (converted to kebab-case: `borderWidth` is `border-width`) and each
+-         value is any type with a `Css.Convertible` whose value-definition type the property
+-         accepts — a `4.0*Px` for a length, a colour for a colour, `Css.inherit` anywhere:
++     detail
++         Un `Css.Style` est une liste de paires propriété–valeur sans sélecteur, pour l'attribut
++         `style` d'un élément. On le construit avec des arguments nommés, où chaque nom est un
++         nom de propriété en camelCase (converti en kebab-case : `borderWidth` donne
++         `border-width`) et chaque valeur est de n'importe quel type doté d'un `Css.Convertible`
++         dont la propriété accepte le type de définition de valeur — un `4.0*Px` pour une
++         longueur, une couleur pour une couleur, `Css.inherit` partout :
+
+=         accepts — a `4.0*Px` for a length, a colour for a colour, `Css.inherit` anywhere:
+=
+-         ```scala
++         ```scala
+
+=         accepts — a `4.0*Px` for a length, a colour for a colour, `Css.inherit` anywhere:
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val red = Srgb(1.0, 0.0, 0.0)
++         val red = Srgb(1.0, 0.0, 0.0)
+
+-         Css.Style(color = red, width = 4.0*Px).text           // t"color: #ff0000; width: 4px"
++         Css.Style(color = red, width = 4.0*Px).text           // t"color: #ff0000; width: 4px"
+
+-         Css.Style(borderWidth = 2.0*Px).text                  // t"border-width: 2px"
++         Css.Style(borderWidth = 2.0*Px).text                  // t"border-width: 2px"
+
+-         Css.Style(color = Css.inherit, width = Css.unset).text
++         Css.Style(color = Css.inherit, width = Css.unset).text
+
+-         Css.Style(transitionDuration = 200.0*Ms).text         // t"transition-duration: 200ms"
++         Css.Style(transitionDuration = 200.0*Ms).text         // t"transition-duration: 200ms"
+
+-         Css.Style(color = 4.0*Px)                             // does not compile
++         Css.Style(color = 4.0*Px)                             // does not compile
+
+-         Css.Style(notARealProperty = 4.0*Px)                  // does not compile
++         Css.Style(notARealProperty = 4.0*Px)                  // does not compile
+
+=         Css.Style(notARealProperty = 4.0*Px)                  // does not compile
+-         ```
++         ```
+
+-         A property the dataset does not know is a compile error, _cataclysm: `name` is not
+-         a known CSS property_, and a value of the wrong kind is another, _cataclysm: a
+-         `length` value is not valid for the `color` property_. A `css"…"` literal of bare
+-         declarations (`css"color: red; width: 4px"`) is also a `Css.Style`, and two styles
+-         join with `+`. With `cataclysm.html`, a `Css.Style` is accepted directly as an
+-         honeycomb `style` attribute (`inlineStyle`); the `style` extension of
+-         `cataclysm.fonts` makes one which selects a phoenicia `Face`.
++         Une propriété que le jeu de données ne connaît pas est une erreur de compilation,
++         _cataclysm: `name` is not
++         a known CSS property_, et une valeur de la mauvaise sorte en est une autre, _cataclysm: a
++         `length` value is not valid for the `color` property_. Un littéral `css"…"` composé de
++         simples déclarations (`css"color: red; width: 4px"`) est aussi un `Css.Style`, et deux
++         styles se joignent avec `+`. Avec `cataclysm.html`, un `Css.Style` est accepté
++         directement comme attribut `style` de honeycomb (`inlineStyle`) ; l'extension `style` de
++         `cataclysm.fonts` en construit un qui sélectionne une `Face` de phoenicia.
+
+-     refer cataclysm.css
++     refer cataclysm.css
+
+-     refer cataclysm.inlineStyle
++     refer cataclysm.inlineStyle
+
+-     entry .of   a style from already-rendered property–value pairs, unchecked
++     entry .of
++       info
++           un style à partir de paires propriété–valeur déjà rendues, non vérifié
+
+-         `Css.Style.of(List(t"font-family" -> t"\"Inter\""))` builds a style from text pairs
+-         with no checking; it is the factory the `Css.Style(…)` macro and the font `style`
+-         extension emit, and the way to carry a declaration the dataset cannot check.
++       detail
++           `Css.Style.of(List(t"font-family" -> t"\"Inter\""))` construit un style à partir de
++           paires de texte sans vérification ; c'est la fabrique qu'émettent la macro
++           `Css.Style(…)` et l'extension `style` des polices, et le moyen de transporter une
++           déclaration que le jeu de données ne peut pas vérifier.
+
+-     entry .applyDynamic   `Css.Style()`: the empty style
++     entry .applyDynamic
++       info
++           `Css.Style()` : le style vide
+
+-     entry .applyDynamicNamed   `Css.Style(property = value, …)`: the checked named-argument constructor
++     entry .applyDynamicNamed
++       info
++           `Css.Style(property = value, …)` : le constructeur vérifié à arguments nommés
+
+-         The macro behind `Css.Style(borderWidth = 2.0*Px, color = red)`: each name is read
+-         as a literal, uncamelled to its CSS property, and the value's `Css.Convertible` is
+-         summoned; the property must exist in the dataset and must accept a value of the
+-         convertible's type, or the code does not compile.
++       detail
++           La macro derrière `Css.Style(borderWidth = 2.0*Px, color = red)` : chaque nom est lu
++           comme un littéral, reconverti du camelCase en sa propriété CSS, et le
++           `Css.Convertible` de la valeur est invoqué ; la propriété doit exister dans le jeu de
++           données et doit accepter une valeur du type du convertible, sinon le code ne compile
++           pas.
+
+-     entry .addable   `style + style`: one style of both property lists, in order
++     entry .addable
++       info
++           `style + style` : un style contenant les deux listes de propriétés, dans l'ordre
+
+-     entry #properties   the property–value pairs, each already rendered as text
++     entry #properties
++       info
++           les paires propriété–valeur, chacune déjà rendue sous forme de texte
+
+-     entry #text   the declarations as `style` attribute text: `color: #ff0000; width: 4px`
++     entry #text
++       info
++           les déclarations sous forme de texte d'attribut `style` : `color: #ff0000; width: 4px`
+
+-         Each pair rendered as `name: value`, joined with `; ` and no trailing semicolon.
++       detail
++           Chaque paire est rendue sous la forme `name: value`, jointe par `; ` et sans
++           point-virgule final.
+
+-   entry .Value   a rendered CSS value tagged with its value-definition type, `Css.Value of "length"`
++   entry .Value
++     info
++         une valeur CSS rendue, taguée par son type de définition de valeur,
++         `Css.Value of "length"`
+
+-     detail
+-         A `Css.Value` is text already rendered for CSS, whose `Topic` type member names the
+-         value-definition type it satisfies: `"length"`, `"color"`, `"time"`, `"angle"`,
+-         `"percentage"`, `"number"`, `"integer"`, `"flex"`, or `"*"` for the CSS-wide
+-         keywords. The trait is `into`, so a native value with a `Css.Convertible` — a
+-         quantity, a colour, an `Int` — is accepted wherever a `Css.Value of` its topic is
+-         expected, lifted by `.converter`. `Css.Value(text)` wraps text with no topic.
++     detail
++         Un `Css.Value` est du texte déjà rendu pour le CSS, dont le membre de type `Topic` nomme
++         le type de définition de valeur qu'il satisfait : `"length"`, `"color"`, `"time"`,
++         `"angle"`, `"percentage"`, `"number"`, `"integer"`, `"flex"`, ou `"*"` pour les
++         mots-clés globaux du CSS. Le trait est `into` ; une valeur native dotée d'un
++         `Css.Convertible` — une quantité, une couleur, un `Int` — est donc acceptée partout où un
++         `Css.Value of` son sujet est attendu, relevée par `.converter`. `Css.Value(text)`
++         enveloppe du texte sans sujet.
+
+-     refer cataclysm.Css.Convertible
++     refer cataclysm.Css.Convertible
+
+-     entry .apply   wraps already-rendered text as a value with no topic
++     entry .apply
++       info
++           enveloppe du texte déjà rendu sous forme de valeur sans sujet
+
+-     entry .converter   the `Conversion` which lifts any `Css.Convertible` type into a `Css.Value of` its topic
++     entry .converter
++       info
++           la `Conversion` qui élève tout type `Css.Convertible` en un `Css.Value of` son sujet
+
+-         One generic given, so that a new convertible type costs one `Css.Convertible`
+-         instance and no conversion of its own.
++       detail
++           Un seul given générique, de sorte qu'un nouveau type convertible coûte une instance
++           `Css.Convertible` et aucune conversion qui lui soit propre.
+
+-     entry #text   the value as CSS text
++     entry #text
++       info
++           la valeur sous forme de texte CSS
+
+-   entry .Keyword   the CSS-wide keywords `inherit`, `initial`, `unset`, `revert` and `revert-layer`
++   entry .Keyword
++     info
++         les mots-clés globaux du CSS `inherit`, `initial`, `unset`, `revert` et `revert-layer`
+
+-       An enum with the cases `Inherit`, `Initial`, `Unset`, `Revert` and `RevertLayer`,
+-       which are valid as the sole value of every property. They are reached through the
+-       lowercase values `Css.inherit`, `Css.initial`, `Css.unset`, `Css.revert` and
+-       `Css.revertLayer`, which avoid the clash a bare `Unset` would have with vacuous's
+-       `Unset`, and their `Css.Convertible` has the topic `"*"`, so one is accepted for any
+-       known property in `Css.Style(…)` or `css"…"`.
++     detail
++         Une énumération avec les cas `Inherit`, `Initial`, `Unset`, `Revert` et `RevertLayer`,
++         qui sont valides comme valeur unique de toute propriété. On les atteint par les valeurs
++         en minuscules `Css.inherit`, `Css.initial`, `Css.unset`, `Css.revert` et
++         `Css.revertLayer`, qui évitent le conflit qu'aurait un `Unset` nu avec l'`Unset` de
++         vacuous, et leur `Css.Convertible` a pour sujet `"*"` ; l'un d'eux est donc accepté pour
++         toute propriété connue dans `Css.Style(…)` ou `css"…"`.
+
+-   entry .ColorKeyword   the colour keywords `transparent` and `currentcolor`
++   entry .ColorKeyword
++     info
++         les mots-clés de couleur `transparent` et `currentcolor`
+
+-       An enum with the cases `Transparent` and `CurrentColor`, reached as `Css.transparent`
+-       and `Css.currentColor`, with a `Css.Convertible` of topic `"color"`.
++     detail
++         Une énumération avec les cas `Transparent` et `CurrentColor`, atteints par
++         `Css.transparent` et `Css.currentColor`, avec un `Css.Convertible` de sujet `"color"`.
+
+-   entry .inherit   the `inherit` keyword, as a value for any property
++   entry .inherit
++     info
++         le mot-clé `inherit`, comme valeur pour toute propriété
+
+-   entry .initial   the `initial` keyword, as a value for any property
++   entry .initial
++     info
++         le mot-clé `initial`, comme valeur pour toute propriété
+
+-   entry .unset   the `unset` keyword, as a value for any property
++   entry .unset
++     info
++         le mot-clé `unset`, comme valeur pour toute propriété
+
+-       Named in lowercase so that it does not shadow vacuous's `Unset`.
++     detail
++         Nommé en minuscules afin de ne pas masquer l'`Unset` de vacuous.
+
+-   entry .revert   the `revert` keyword, as a value for any property
++   entry .revert
++     info
++         le mot-clé `revert`, comme valeur pour toute propriété
+
+-   entry .revertLayer   the `revert-layer` keyword, as a value for any property
++   entry .revertLayer
++     info
++         le mot-clé `revert-layer`, comme valeur pour toute propriété
+
+-   entry .transparent   the `transparent` colour keyword
++   entry .transparent
++     info
++         le mot-clé de couleur `transparent`
+
+-   entry .currentColor   the `currentcolor` colour keyword
++   entry .currentColor
++     info
++         le mot-clé de couleur `currentcolor`
+
+-   entry .Error   one fault in CSS text, with its line, column and reason
++   entry .Error
++     info
++         une faute dans du texte CSS, avec sa ligne, sa colonne et sa raison
+
+-     detail
+-         Error `↯/s.90.1`: _invalid CSS at line `n` column `n`: `reason`_, with the reason's own
+-         number as the subcode. One is raised for each problem found while reading a
+-         stylesheet or parsing a selector, grammar or value; `read[Css]` collects them all
+-         into a `Css.Errors`, while `SelectorList.parse` and `Css.Syntax.Matcher.check` raise a
+-         single `Css.Error` through a `Tactic[Css.Error]`. Constructing one needs a
+-         `Diagnostics`.
++     detail
++         Erreur `↯/s.90.1` : _invalid CSS at line `n` column `n`: `reason`_, avec le propre numéro
++         de la raison comme sous-code. Une erreur est levée pour chaque problème trouvé lors de la
++         lecture d'une feuille de style ou de l'analyse d'un sélecteur, d'une grammaire ou d'une
++         valeur ; `read[Css]` les rassemble toutes dans une `Css.Errors`, tandis que
++         `SelectorList.parse` et `Css.Syntax.Matcher.check` lèvent une seule `Css.Error` au moyen
++         d'une `Tactic[Css.Error]`. En construire une nécessite un `Diagnostics`.
+
+=         `Diagnostics`.
+=
+-         ```scala
++         ```scala
+
+=         `Diagnostics`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         `Diagnostics`.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         `Diagnostics`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+-         import errorDiagnostics.stackTracesDiagnostics
++         import errorDiagnostics.stackTracesDiagnostics
+
+-         capture[Css.Error](SelectorList.parse(t"a!")).reason
++         capture[Css.Error](SelectorList.parse(t"a!")).reason
+
+-         // Css.Error.Reason.UnexpectedChar('!')
++         // Css.Error.Reason.UnexpectedChar('!')
+
+=         // Css.Error.Reason.UnexpectedChar('!')
+-         ```
++         ```
+
+-     refer cataclysm.Css.Errors
++     refer cataclysm.Css.Errors
+
+-     entry .Reason   why the CSS was invalid: the nine kinds of fault, each numbered
++     entry .Reason
++       info
++           la raison pour laquelle le CSS était invalide : les neuf sortes de fautes, chacune
++           numérotée
+
+-       detail
+-           A `Reason` is a `Clarification` with a `#number`, which becomes the error's subcode:
++       detail
++           Une `Reason` est une `Clarification` dotée d'un `#number`, qui devient le sous-code de
++           l'erreur :
+
+-           ```tabular
++           ```tabular
+
+-           column  Case
+-           column  Code
+-           column  Message
+-           column  Note
+-           row  `UnterminatedComment`  1  _a comment was not terminated_
+-           row  `UnterminatedString`  2  _a string literal was not terminated_
+-           row  `UnexpectedEnd`  3  _the input ended before a rule was closed_
+-           row  `UnexpectedChar(char)`  4  _the character `char` was not expected here_
+-           row  `EmptySelector`  5  _a selector was expected but none was found_  a rule with nothing before its `{`
+-           row  `UnknownProperty(name)`  6  _`name` is not a recognized CSS property_
+-           row  `BadValue(property, value)`  7  _`value` is not a valid value for the `property` property_
+-           row  `UnsupportedValue(property, types)`  8  _the value of `property` uses an unsupported type_  the property's grammar uses value types the matcher does not implement, listed in `types`
+-           row  `InvalidName(name)`  9  _`name` is not a valid CSS identifier_  a class or id
++           column  Cas
++           column  Code
++           column  Message
++           column  Remarque
++           row  `UnterminatedComment`  1  _a comment was not terminated_
++           row  `UnterminatedString`  2  _a string literal was not terminated_
++           row  `UnexpectedEnd`  3  _the input ended before a rule was closed_
++           row  `UnexpectedChar(char)`  4  _the character `char` was not expected here_
++           row  `EmptySelector`  5  _a selector was expected but none was found_  une règle sans rien avant son `{`
++           row  `UnknownProperty(name)`  6  _`name` is not a recognized CSS property_
++           row  `BadValue(property, value)`  7  _`value` is not a valid value for the `property` property_
++           row  `UnsupportedValue(property, types)`  8  _the value of `property` uses an unsupported type_  la grammaire de la propriété utilise des types de valeurs que le vérificateur n'implémente pas, listés dans `types`
++           row  `InvalidName(name)`  9  _`name` is not a valid CSS identifier_  une classe ou un identifiant
+
+=           row  `InvalidName(name)`  9  _`name` is not a valid CSS identifier_  a class or id
+-           ```
++           ```
+
+-       entry .communicable   renders each reason as its message
++       entry .communicable
++         info
++             rend chaque raison sous forme de son message
+
+-       entry #number   the reason's number, 1 to 9, which is the error's subcode
++       entry #number
++         info
++             le numéro de la raison, de 1 à 9, qui est le sous-code de l'erreur
+
+-     entry #reason   what was wrong
++     entry #reason
++       info
++           ce qui n'allait pas
+
+-     entry #line   the line of the fault, as an `Ordinal`
++     entry #line
++       info
++           la ligne de la faute, sous forme d'`Ordinal`
+
+-     entry #column   the column of the fault, as an `Ordinal`
++     entry #column
++       info
++           la colonne de la faute, sous forme d'`Ordinal`
+
+-   entry .Errors   every `Css.Error` found while reading a stylesheet, raised once
++   entry .Errors
++     info
++         chaque `Css.Error` trouvée lors de la lecture d'une feuille de style, levées en une fois
+
+-     detail
+-         _the CSS contained `n` errors_. Raised by `read[Css]` (`Css.aggregable`) after the
+-         whole stylesheet has been parsed, holding each fault in `#errors` in document
+-         order, so a stylesheet with several bad declarations reports all of them at once.
+-         The type is plural because reporting one fault at a time from a document which has
+-         several is the wrong shape for a linter or a build step.
++     detail
++         _the CSS contained `n` errors_. Levée par `read[Css]` (`Css.aggregable`) après l'analyse
++         de toute la feuille de style, avec chaque faute dans `#errors` dans l'ordre du document,
++         si bien qu'une feuille de style comportant plusieurs déclarations incorrectes les
++         signale toutes à la fois. Le type est au pluriel parce que signaler une faute à la fois
++         pour un document qui en comporte plusieurs n'est pas la forme qui convient à un linter
++         ou à une étape de build.
+
+=         several is the wrong shape for a linter or a build step.
+=
+-         ```scala
++         ```scala
+
+=         several is the wrong shape for a linter or a build step.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         several is the wrong shape for a linter or a build step.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         several is the wrong shape for a linter or a build step.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+-         import errorDiagnostics.stackTracesDiagnostics
++         import errorDiagnostics.stackTracesDiagnostics
+
+-         capture[Css.Errors](t"a { colour: red; bogus: 1px }".read[Css]).errors.size   // 2
++         capture[Css.Errors](t"a { colour: red; bogus: 1px }".read[Css]).errors.size   // 2
+
+=         capture[Css.Errors](t"a { colour: red; bogus: 1px }".read[Css]).errors.size   // 2
+-         ```
++         ```
+
+-     entry #errors   the faults, in document order
++     entry #errors
++       info
++           les fautes, dans l'ordre du document
+
+-     entry #+   this aggregate with one more error appended
++     entry #+
++       info
++           cet agrégat avec une erreur de plus ajoutée à la fin
+
+-   entry .Convertible   which native types render as CSS values, and of which value-definition type
++   entry .Convertible
++     info
++         les types natifs qui se rendent en valeurs CSS, et de quel type de définition de valeur
+
+-     detail
+-         `T is Css.Convertible of "length"` says that a `T` renders to CSS text (`#value`)
+-         satisfying the value-definition type `<length>`. It is the typeclass behind every
+-         substitution in `css"…"` and every argument to `Css.Style(…)`: the macro summons the
+-         instance for the value's own type, reads its `Topic`, and checks that the property
+-         accepts a value of that type, so `css"a { color: $length }"` does not compile. One
+-         generic `Conversion` (`Css.Value.converter`) lifts any convertible type into a
+-         `Css.Value of Topic`, so a new type costs one instance here.
++     detail
++         `T is Css.Convertible of "length"` indique qu'un `T` se rend en texte CSS (`#value`)
++         satisfaisant le type de définition de valeur `<length>`. C'est la classe de types
++         derrière chaque substitution dans `css"…"` et chaque argument de `Css.Style(…)` : la
++         macro invoque l'instance pour le propre type de la valeur, lit son `Topic`, et vérifie
++         que la propriété accepte une valeur de ce type ; `css"a { color: $length }"` ne compile
++         donc pas. Une seule `Conversion` générique (`Css.Value.converter`) élève tout type
++         convertible en un `Css.Value of Topic` ; un nouveau type coûte donc une instance ici.
+
+-         The instances in the companion cover the CSS units — every `Quantity` in the
+-         `Pixels`, `Rems`, `Exs`, `Chs`, viewport and percentage units, and quantitative's
+-         own `Ems`, `Metres`, `Inches`, `Points`, `Picas` and `Seconds` — the angle and flex
+-         units, `Int` and `Double`, the keywords, and any colour with a `Chromatic` instance.
+-         A number renders without a redundant `.0` (`12px`, not `12.0px`), rounded to six
+-         decimal places so a converted physical length does not leak floating-point noise.
++         Les instances du compagnon couvrent les unités CSS — toute `Quantity` dans les unités
++         `Pixels`, `Rems`, `Exs`, `Chs`, de zone d'affichage et de pourcentage, et les propres
++         `Ems`, `Metres`, `Inches`, `Points`, `Picas` et `Seconds` de quantitative — les unités
++         d'angle et de fraction, `Int` et `Double`, les mots-clés, et toute couleur dotée d'une
++         instance `Chromatic`. Un nombre se rend sans `.0` redondant (`12px`, et non `12.0px`),
++         arrondi à six décimales pour qu'une longueur physique convertie ne laisse pas fuir de
++         bruit de virgule flottante.
+
+=         decimal places so a converted physical length does not leak floating-point noise.
+=
+-         ```scala
++         ```scala
+
+=         decimal places so a converted physical length does not leak floating-point noise.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         case class Swatch(hue: Int, saturation: Int, lightness: Int)
++         case class Swatch(hue: Int, saturation: Int, lightness: Int)
+
+-         given Swatch is Css.Convertible of "color" = swatch =>
++         given Swatch is Css.Convertible of "color" = swatch =>
+
+-           t"hsl(${swatch.hue}deg ${swatch.saturation}% ${swatch.lightness}%)"
++           t"hsl(${swatch.hue}deg ${swatch.saturation}% ${swatch.lightness}%)"
+
+-         Css.Style(color = Swatch(200, 50, 50)).text    // t"color: hsl(200deg 50% 50%)"
++         Css.Style(color = Swatch(200, 50, 50)).text    // t"color: hsl(200deg 50% 50%)"
+
+=         Css.Style(color = Swatch(200, 50, 50)).text    // t"color: hsl(200deg 50% 50%)"
+-         ```
++         ```
+
+-         A user-defined instance's topic must be one the property's grammar names:
+-         `"length"`, `"color"`, `"percentage"`, `"number"`, `"integer"`, `"time"`,
+-         `"angle"` or `"flex"` are probed against the grammar; any other topic is accepted
+-         unchecked.
++         Le sujet d'une instance définie par l'utilisateur doit être un sujet que nomme la
++         grammaire de la propriété : `"length"`, `"color"`, `"percentage"`, `"number"`,
++         `"integer"`, `"time"`, `"angle"` ou `"flex"` sont confrontés à la grammaire ; tout
++         autre sujet est accepté sans vérification.
+
+-     refer cataclysm.Css.Value
++     refer cataclysm.Css.Value
+
+-     refer cataclysm.Px
++     refer cataclysm.Px
+
+-     entry .pixels   a `Pixels` quantity as `<length>`: `4px`
++     entry .pixels
++       info
++           une quantité `Pixels` comme `<length>` : `4px`
+
+-     entry .ems   an `Ems` quantity (quantitative's) as `<length>`: `2em`
++     entry .ems
++       info
++           une quantité `Ems` (de quantitative) comme `<length>` : `2em`
+
+-     entry .rems   a `Rems` quantity as `<length>`: `2rem`
++     entry .rems
++       info
++           une quantité `Rems` comme `<length>` : `2rem`
+
+-     entry .exs   an `Exs` quantity as `<length>`: `1ex`
++     entry .exs
++       info
++           une quantité `Exs` comme `<length>` : `1ex`
+
+-     entry .chs   a `Chs` quantity as `<length>`: `40ch`
++     entry .chs
++       info
++           une quantité `Chs` comme `<length>` : `40ch`
+
+-     entry .vws   a `ViewportWidths` quantity as `<length>`: `100vw`
++     entry .vws
++       info
++           une quantité `ViewportWidths` comme `<length>` : `100vw`
+
+-     entry .vhs   a `ViewportHeights` quantity as `<length>`: `100vh`
++     entry .vhs
++       info
++           une quantité `ViewportHeights` comme `<length>` : `100vh`
+
+-     entry .vmins   a `ViewportMins` quantity as `<length>`: `50vmin`
++     entry .vmins
++       info
++           une quantité `ViewportMins` comme `<length>` : `50vmin`
+
+-     entry .vmaxes   a `ViewportMaxes` quantity as `<length>`: `50vmax`
++     entry .vmaxes
++       info
++           une quantité `ViewportMaxes` comme `<length>` : `50vmax`
+
+-     entry .metres   any physical length (a `Metres` quantity) as `<length>`, in `mm`
++     entry .metres
++       info
++           toute longueur physique (une quantité `Metres`) comme `<length>`, en `mm`
+
+-         A `Distance` quantity — written as `3.0*Cm`, `10.0*Mm`, `1.0*Metre` or any
+-         quantitative length — renders in millimetres, since CSS reads `cm`, `mm` and `m`
+-         alike: `3.0*Cm` is `30mm`. Inches, points and picas keep their own units.
++       detail
++           Une quantité `Distance` — écrite `3.0*Cm`, `10.0*Mm`, `1.0*Metre` ou toute longueur de
++           quantitative — se rend en millimètres, puisque le CSS lit indifféremment `cm`, `mm` et
++           `m` : `3.0*Cm` donne `30mm`. Les pouces, les points et les picas gardent leurs propres
++           unités.
+
+-     entry .inches   an `Inches` quantity as `<length>`: `1in`
++     entry .inches
++       info
++           une quantité `Inches` comme `<length>` : `1in`
+
+-     entry .points   a `Points` quantity as `<length>`: `12pt`
++     entry .points
++       info
++           une quantité `Points` comme `<length>` : `12pt`
+
+-     entry .picas   a `Picas` quantity as `<length>`: `1pc`
++     entry .picas
++       info
++           une quantité `Picas` comme `<length>` : `1pc`
+
+-     entry .percents   a `Percents` quantity as `<percentage>`: `50%`
++     entry .percents
++       info
++           une quantité `Percents` comme `<percentage>` : `50%`
+
+-     entry .chromatic   any colour with a `Chromatic` instance as `<color>`, rendered as hex
++     entry .chromatic
++       info
++           toute couleur dotée d'une instance `Chromatic` comme `<color>`, rendue en hexadécimal
+
+-         Covers anticipation's `Chroma` and every iridescence colour form (`Srgb`, `Hsl`,
+-         `Cielab`, …, and the `rgb"#3344ff"` literal) through their `Color.chromatic`
+-         instance, each rendered as a six-digit hex triplet from its red, green and blue channels, clamped
+-         to 0–255. The instance is sought for any supertype of the colour, so a colour
+-         class which gets its `Chromatic` from its form is found when `Css.Style(…)` asks
+-         for the value's exact type.
++       detail
++           Couvre le `Chroma` d'anticipation et toutes les formes de couleur d'iridescence
++           (`Srgb`, `Hsl`, `Cielab`, …, et le littéral `rgb"#3344ff"`) au moyen de leur instance
++           `Color.chromatic`, chacune rendue sous forme de triplet hexadécimal à six chiffres à
++           partir de ses canaux rouge, vert et bleu, bornés à 0–255. L'instance est recherchée pour
++           tout supertype de la couleur, si bien qu'une classe de couleur qui tient son
++           `Chromatic` de sa forme est trouvée lorsque `Css.Style(…)` demande le type exact de la
++           valeur.
+
+-     entry .seconds   any time (a `Seconds` quantity) as `<time>`, in `ms`
++     entry .seconds
++       info
++           toute durée (une quantité `Seconds`) comme `<time>`, en `ms`
+
+-         `200.0*Ms` is `200ms`; `1.5*S` is `1500ms`.
++       detail
++           `200.0*Ms` donne `200ms` ; `1.5*S` donne `1500ms`.
+
+-     entry .degrees   a `Degrees` quantity as `<angle>`: `90deg`
++     entry .degrees
++       info
++           une quantité `Degrees` comme `<angle>` : `90deg`
+
+-     entry .radians   a `Radians` quantity as `<angle>`: `1rad`
++     entry .radians
++       info
++           une quantité `Radians` comme `<angle>` : `1rad`
+
+-     entry .turns   a `Turns` quantity as `<angle>`: `0.5turn`
++     entry .turns
++       info
++           une quantité `Turns` comme `<angle>` : `0.5turn`
+
+-     entry .flexes   a `Flexes` quantity as `<flex>`: `2fr`
++     entry .flexes
++       info
++           une quantité `Flexes` comme `<flex>` : `2fr`
+
+-     entry .integer   an `Int` as `<integer>`
++     entry .integer
++       info
++           un `Int` comme `<integer>`
+
+-     entry .decimal   a `Double` as `<number>`, without a redundant `.0`
++     entry .decimal
++       info
++           un `Double` comme `<number>`, sans `.0` redondant
+
+-     entry .keyword   a `Css.Keyword` as its CSS spelling, valid for every property
++     entry .keyword
++       info
++           un `Css.Keyword` sous sa forme CSS, valide pour toute propriété
+
+-         The topic is `"*"`, which the property check accepts for any known property.
++       detail
++           Le sujet est `"*"`, que la vérification des propriétés accepte pour toute propriété
++           connue.
+
+-     entry .colorKeyword   a `Css.ColorKeyword` as `transparent` or `currentcolor`
++     entry .colorKeyword
++       info
++           un `Css.ColorKeyword` sous la forme `transparent` ou `currentcolor`
+
+-     entry #value   renders a native value as CSS text
++     entry #value
++       info
++           rend une valeur native sous forme de texte CSS
+
+-   entry .Syntax   a property's value grammar, in CSS value-definition syntax, as a tree
++   entry .Syntax
++     info
++         la grammaire des valeurs d'une propriété, dans la syntaxe de définition de valeurs du CSS,
++         sous forme d'arbre
+
+-     detail
+-         The parsed form of a value-definition-syntax string such as `<line-width> ||
+-         <line-style> || <color>` — the notation in which every property's permitted values
+-         are described in the MDN dataset — which `Css.Syntax.Matcher` matches a concrete value
+-         against. `PropertyDef#grammar` is the `Css.Syntax` of a property.
++     detail
++         La forme analysée d'une chaîne en syntaxe de définition de valeurs comme `<line-width> ||
++         <line-style> || <color>` — la notation dans laquelle sont décrites les valeurs permises
++         de chaque propriété dans le jeu de données MDN — à laquelle `Css.Syntax.Matcher`
++         confronte une valeur concrète. `PropertyDef#grammar` est la `Css.Syntax` d'une
++         propriété.
+
+-         The cases follow the notation. `Keyword(name)` is a literal identifier such as
+-         `auto`; `Literal(token)` a literal token such as `/`, `,` or a quoted `'+'`;
+-         `Type(name, bounds)` a `<length>` or `<integer [1,4]>`, with the bounds kept raw;
+-         `Property(name)` a reference to another property's grammar, `<'border-width'>`;
+-         `Function(name, body)` a functional notation, `rgb( <number>#{3} )`;
+-         `Sequence(terms)` juxtaposition, in order; `OneOf(options)` the `|` combinator
+-         (exactly one); `AnyOf(terms)` the `||` combinator (one or more, in any order);
+-         `AllOf(terms)` the `&&` combinator (all, in any order); `Repeated(term, min, max,
+-         separated)` the multipliers `?`, `*`, `+`, `{m,n}` and `#` (comma-separated), with
+-         `max` `Unset` for unbounded; and `Mandatory(term)` the `!` multiplier.
++         Les cas suivent la notation. `Keyword(name)` est un identifiant littéral comme `auto` ;
++         `Literal(token)` un jeton littéral comme `/`, `,` ou un `'+'` entre guillemets ;
++         `Type(name, bounds)` un `<length>` ou un `<integer [1,4]>`, les bornes étant gardées
++         brutes ; `Property(name)` une référence à la grammaire d'une autre propriété,
++         `<'border-width'>` ; `Function(name, body)` une notation fonctionnelle,
++         `rgb( <number>#{3} )` ; `Sequence(terms)` la juxtaposition, dans l'ordre ;
++         `OneOf(options)` le combinateur `|` (exactement un) ; `AnyOf(terms)` le combinateur `||`
++         (un ou plusieurs, dans n'importe quel ordre) ; `AllOf(terms)` le combinateur `&&` (tous,
++         dans n'importe quel ordre) ; `Repeated(term, min, max,
++         separated)` les multiplicateurs `?`, `*`, `+`, `{m,n}` et `#` (séparés par des
++         virgules), `max` valant `Unset` en l'absence de limite ; et `Mandatory(term)` le
++         multiplicateur `!`.
+
+=         `max` `Unset` for unbounded; and `Mandatory(term)` the `!` multiplier.
+=
+-         ```scala
++         ```scala
+
+=         `max` `Unset` for unbounded; and `Mandatory(term)` the `!` multiplier.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val grammar = Css.Syntax.OneOf(List(Css.Syntax.Keyword(t"auto"), Css.Syntax.Type(t"length", Unset)))
++         val grammar = Css.Syntax.OneOf(List(Css.Syntax.Keyword(t"auto"), Css.Syntax.Type(t"length", Unset)))
+
+=         val grammar = Css.Syntax.OneOf(List(Css.Syntax.Keyword(t"auto"), Css.Syntax.Type(t"length", Unset)))
+-         ```
++         ```
+
+-         It lives under `Css` rather than at the top level so that it does not clash with
+-         stenography's `Syntax` in the umbrella.
++         Il se trouve sous `Css` plutôt qu'au niveau supérieur afin de ne pas entrer en conflit
++         avec le `Syntax` de stenography dans le package parapluie.
+
+-     refer cataclysm.Css.Syntax.Matcher
++     refer cataclysm.Css.Syntax.Matcher
+
+-     refer cataclysm.PropertyDef
++     refer cataclysm.PropertyDef
+
+-   entry #rules   the stylesheet's nodes, in order
++   entry #rules
++     info
++         les nœuds de la feuille de style, dans l'ordre
+
+-     entry .Matcher   checks a property value against its grammar: valid, invalid or unsupported
++     entry .Matcher
++       info
++           vérifie la valeur d'une propriété selon sa grammaire : valide, invalide ou non prise en
++           charge
+
+-       detail
+-           `Css.Syntax.Matcher.check(property, value)` tokenizes the value (`ValueToken`) and
+-           matches it, with backtracking, against the property's `Css.Syntax`, resolving
+-           composite `<type>`s from the MDN `syntaxes.json` dataset and matching the leaf
+-           primitives — `<length>`, `<percentage>`, `<number>`, `<integer>`, `<angle>`,
+-           `<time>`, `<resolution>`, `<frequency>`, `<flex>`, `<ratio>`, `<string>`, `<url>`,
+-           `<hex-color>`, the identifier types — at the token level. The result is an
+-           `Outcome`: `Valid`, `Invalid`, or `Unsupported(types)` when the grammar reaches a
+-           type the matcher implements neither as a composite nor as a primitive, so an
+-           unimplemented corner of the grammar is reported rather than passed or failed
+-           silently. This is the check `read[Css]`, `css"…"` and `Css.Style(…)` apply to every
+-           declaration.
++       detail
++           `Css.Syntax.Matcher.check(property, value)` découpe la valeur en jetons (`ValueToken`)
++           et la confronte, avec retour arrière, à la `Css.Syntax` de la propriété, en résolvant
++           les `<type>` composites à partir du jeu de données MDN `syntaxes.json` et en vérifiant
++           les primitives feuilles — `<length>`, `<percentage>`, `<number>`, `<integer>`,
++           `<angle>`, `<time>`, `<resolution>`, `<frequency>`, `<flex>`, `<ratio>`, `<string>`,
++           `<url>`, `<hex-color>`, les types d'identifiants — au niveau des jetons. Le résultat est
++           un `Outcome` : `Valid`, `Invalid`, ou `Unsupported(types)` lorsque la grammaire atteint
++           un type que le vérificateur n'implémente ni comme composite ni comme primitive, si bien
++           qu'un recoin non implémenté de la grammaire est signalé plutôt qu'accepté ou rejeté en
++           silence. C'est la vérification qu'appliquent `read[Css]`, `css"…"` et `Css.Style(…)` à
++           chaque déclaration.
+
+-           A value containing an arbitrary-substitution function, `var()` or `env()`, is always
+-           valid, as a pending-substitution value is; the CSS-wide keywords are valid as the
+-           sole value of every property; and `calc()`, `min()`, `max()`, `clamp()` and the
+-           other math functions are accepted wherever a numeric primitive is expected.
++           Une valeur contenant une fonction de substitution arbitraire, `var()` ou `env()`, est
++           toujours valide, comme l'est une valeur en attente de substitution ; les mots-clés
++           globaux du CSS sont valides comme valeur unique de toute propriété ; et `calc()`,
++           `min()`, `max()`, `clamp()` et les autres fonctions mathématiques sont acceptées partout
++           où une primitive numérique est attendue.
+
+-           ```scala
++           ```scala
+
+=           ```scala
+-           import soundness.*
++           import soundness.*
+
+-           import strategies.throwUnsafely
++           import strategies.throwUnsafely
+
+-           import errorDiagnostics.stackTracesDiagnostics
++           import errorDiagnostics.stackTracesDiagnostics
+
+-           val grammar = Css.Syntax.Repeated(Css.Syntax.Type(t"length", Unset), 1, Unset, true)
++           val grammar = Css.Syntax.Repeated(Css.Syntax.Type(t"length", Unset), 1, Unset, true)
+
+-           Css.Syntax.Matcher.check(grammar, t"1px, 2px, 3px")     // Css.Outcome.Valid
++           Css.Syntax.Matcher.check(grammar, t"1px, 2px, 3px")     // Css.Outcome.Valid
+
+-           Css.Syntax.Matcher.check(grammar, t"1px 2px")           // Css.Outcome.Invalid
++           Css.Syntax.Matcher.check(grammar, t"1px 2px")           // Css.Outcome.Invalid
+
+=           Css.Syntax.Matcher.check(grammar, t"1px 2px")           // Css.Outcome.Invalid
+-           ```
++           ```
+
+-       refer cataclysm.PropertyDef
++       refer cataclysm.PropertyDef
+
+-       refer cataclysm.Css.Outcome
++       refer cataclysm.Css.Outcome
+
+-       refer cataclysm.ValueToken
++       refer cataclysm.ValueToken
+
+-       entry .check   a value against a property's grammar, or against a `Css.Syntax` directly
++       entry .check
++         info
++             une valeur selon la grammaire d'une propriété, ou directement selon une `Css.Syntax`
+
+-           Two overloads: `check(property: PropertyDef, value)` uses the property's parsed
+-           grammar, and `check(grammar: Css.Syntax, value)` any grammar. Both need a
+-           `Tactic[Css.Error]`, raised only when the value's text cannot be tokenized (an
+-           unterminated string).
++         detail
++             Deux surcharges : `check(property: PropertyDef, value)` utilise la grammaire analysée
++             de la propriété, et `check(grammar: Css.Syntax, value)` n'importe quelle grammaire.
++             Toutes deux ont besoin d'une `Tactic[Css.Error]`, levée uniquement lorsque le texte de
++             la valeur ne peut pas être découpé en jetons (une chaîne non terminée).
+
+-   entry .Outcome   the result of checking a value against a grammar: `Valid`, `Invalid` or `Unsupported`
++   entry .Outcome
++     info
++         le résultat de la vérification d'une valeur selon une grammaire : `Valid`, `Invalid` ou
++         `Unsupported`
+
+-       An enum returned by `Css.Syntax.Matcher.check`. `Valid` and `Invalid` are a definite
+-       verdict; `Unsupported(types)` names the value-definition types the matcher could not
+-       verify against, which `read[Css]` reports as `Css.Error.Reason.UnsupportedValue`.
++     detail
++         Une énumération renvoyée par `Css.Syntax.Matcher.check`. `Valid` et `Invalid` sont un
++         verdict définitif ; `Unsupported(types)` nomme les types de définition de valeurs selon
++         lesquels le vérificateur n'a pas pu vérifier, que `read[Css]` signale sous la forme
++         `Css.Error.Reason.UnsupportedValue`.
+
+- entry .css   the `css"…"` interpolator: a stylesheet or inline style, checked as the code compiles
++ entry .css
++   info
++       l'interpolateur `css"…"` : une feuille de style ou un style en ligne, vérifié pendant la
++       compilation du code
+
+-     `css"a { color: red }"` is a `Css`, and `css"color: red; width: 4px"` — bare
+-     declarations with no selector — is a `Css.Style`; the result type is transparent, and
+-     decided by the content. The literal is parsed and validated while the code compiles,
+-     with the same checks as `read[Css]`: an unknown property, a value which does not
+-     satisfy the property's grammar, an unterminated comment or string, or a malformed
+-     selector is a compile error, reported at the line and column of the fault.
++   detail
++       `css"a { color: red }"` est un `Css`, et `css"color: red; width: 4px"` — de simples
++       déclarations sans sélecteur — est un `Css.Style` ; le type de résultat est transparent,
++       et déterminé par le contenu. Le littéral est analysé et validé pendant la compilation du
++       code, avec les mêmes vérifications que `read[Css]` : une propriété inconnue, une valeur
++       qui ne satisfait pas la grammaire de la propriété, un commentaire ou une chaîne non
++       terminés, ou un sélecteur mal formé sont des erreurs de compilation, signalées à la
++       ligne et à la colonne de la faute.
+
+-     Substitutions are typed. In a **value** position, `$value` must be the whole value of a
+-     declaration, and its type must have a `Css.Convertible` whose topic the property
+-     accepts: a colour for `color`, a length for `width`, a time for `transition-duration`,
+-     or a CSS-wide keyword for anything. In a **selector** position, `$name` must be a
+-     `Name[CssClass]` or a `Name[DomId]`, which render as a class selector (dot and name) or an id selector (hash and name) and may be
+-     compounded with literal text (`div$button`). Anywhere else — a property name, an
+-     at-rule prelude, or mixed with literal text inside a value (`margin: $width 0`) — is a
+-     compile error.
++       Les substitutions sont typées. En position de **valeur**, `$value` doit constituer toute
++       la valeur d'une déclaration, et son type doit avoir un `Css.Convertible` dont la
++       propriété accepte le sujet : une couleur pour `color`, une longueur pour `width`, une
++       durée pour `transition-duration`, ou un mot-clé global du CSS pour n'importe quoi. En
++       position de **sélecteur**, `$name` doit être un `Name[CssClass]` ou un `Name[DomId]`, qui
++       se rendent comme un sélecteur de classe (point et nom) ou un sélecteur d'identifiant
++       (dièse et nom) et peuvent être combinés avec du texte littéral (`div$button`). Partout
++       ailleurs — un nom de propriété, un prélude d'at-rule, ou un mélange avec du texte
++       littéral à l'intérieur d'une valeur (`margin: $width 0`) — c'est une erreur de
++       compilation.
+
+-     ```scala fuel
++       ```scala fuel
+
+=     ```scala fuel
+-     frame
++       frame
+
+-       label A literal stylesheet, checked as it compiles
++         label A literal stylesheet, checked as it compiles
+
+=       label A literal stylesheet, checked as it compiles
+-       code
++         code
+
+=       label A literal stylesheet, checked as it compiles
+=       code
+-           import soundness.*
++             import soundness.*
+
+-           css"a { color: red }"
++             css"a { color: red }"
+
+=           css"a { color: red }"
+-     frame
++       frame
+
+-       label A colour and a length substituted into values
++         label A colour and a length substituted into values
+
+=       label A colour and a length substituted into values
+-       code
++         code
+
+=       label A colour and a length substituted into values
+=       code
+-           import soundness.*
++             import soundness.*
+
+=       label A colour and a length substituted into values
+=       code
+=           import soundness.*
+=
+-           val red = Srgb(1.0, 0.0, 0.0)
++             val red = Srgb(1.0, 0.0, 0.0)
+
+=       label A colour and a length substituted into values
+=       code
+=           import soundness.*
+=
+=           val red = Srgb(1.0, 0.0, 0.0)
+-           val width = 4.0*Px
++             val width = 4.0*Px
+
+-           css"a { color: $red; width: $width }"       // a { color: #ff0000; width: 4px }
++             css"a { color: $red; width: $width }"       // a { color: #ff0000; width: 4px }
+
+=           css"a { color: $red; width: $width }"       // a { color: #ff0000; width: 4px }
+-     frame
++       frame
+
+-       label A class name substituted into the selector
++         label A class name substituted into the selector
+
+=       label A class name substituted into the selector
+-       code
++         code
+
+=       label A class name substituted into the selector
+=       code
+-           import soundness.*
++             import soundness.*
+
+=       label A class name substituted into the selector
+=       code
+=           import soundness.*
+=
+-           val red = Srgb(1.0, 0.0, 0.0)
++             val red = Srgb(1.0, 0.0, 0.0)
+
+=       label A class name substituted into the selector
+=       code
+=           import soundness.*
+=
+=           val red = Srgb(1.0, 0.0, 0.0)
+-           val width = 4.0*Px
++             val width = 4.0*Px
+
+=       label A class name substituted into the selector
+=       code
+=           import soundness.*
+=
+=           val red = Srgb(1.0, 0.0, 0.0)
+=           val width = 4.0*Px
+-           val button = Name[CssClass](t"button")
++             val button = Name[CssClass](t"button")
+
+-           css"div$button { color: $red; width: $width }"   // div.button { color: #ff0000; width: 4px }
++             css"div$button { color: $red; width: $width }"   // div.button { color: #ff0000; width: 4px }
+
+=           css"div$button { color: $red; width: $width }"   // div.button { color: #ff0000; width: 4px }
+-     frame
++       frame
+
+-       label A wrong-typed substitution does not compile
++         label A wrong-typed substitution does not compile
+
+=       label A wrong-typed substitution does not compile
+-       code
++         code
+
+=       label A wrong-typed substitution does not compile
+=       code
+-           import soundness.*
++             import soundness.*
+
+=       label A wrong-typed substitution does not compile
+=       code
+=           import soundness.*
+=
+-           val red = Srgb(1.0, 0.0, 0.0)
++             val red = Srgb(1.0, 0.0, 0.0)
+
+=       label A wrong-typed substitution does not compile
+=       code
+=           import soundness.*
+=
+=           val red = Srgb(1.0, 0.0, 0.0)
+-           val width = 4.0*Px
++             val width = 4.0*Px
+
+=       label A wrong-typed substitution does not compile
+=       code
+=           import soundness.*
+=
+=           val red = Srgb(1.0, 0.0, 0.0)
+=           val width = 4.0*Px
+-           val button = Name[CssClass](t"button")
++             val button = Name[CssClass](t"button")
+
+-           css"div$button { color: $red; width: $width }"
++             css"div$button { color: $red; width: $width }"
+
+-           css"a { color: $width }"                     // does not compile
++             css"a { color: $width }"                     // does not compile
+
+-     ##
++       ##
+
+=     ##
+-     ```
++       ```
+
+-     The result is a `Css` built from the parsed nodes, with each substitution rendered
+-     through its `Css.Convertible` at runtime, so `css"a { color: $red }"` is equal to
+-     `t"a { color: #ff0000 }".read[Css]`. Stylesheets join with `+`, as do inline styles.
++       Le résultat est un `Css` construit à partir des nœuds analysés, chaque substitution
++       étant rendue au moyen de son `Css.Convertible` à l'exécution ; `css"a { color: $red }"`
++       est donc égal à `t"a { color: #ff0000 }".read[Css]`. Les feuilles de style se joignent
++       avec `+`, tout comme les styles en ligne.
+
+- entry .classes   the class names a stylesheet's selectors mention, as a `Set[Name[CssClass]]`
++ entry .classes
++   info
++       les noms de classes que mentionnent les sélecteurs d'une feuille de style, sous forme de
++       `Set[Name[CssClass]]`
+
+-     An extension on `Css`. Walks every rule, including rules nested in other rules and in
+-     at-rule bodies, and the selector-list arguments of `:is()`, `:where()`, `:not()`,
+-     `:has()` and `:nth-child(… of …)`, collecting each `Selector.Simple.Class`. This is the set
+-     `Styles` and `cssBindings.checkedBinding` check an HTML template's class names
+-     against.
++   detail
++       Une extension sur `Css`. Parcourt chaque règle, y compris les règles imbriquées dans
++       d'autres règles et dans les corps d'at-rules, ainsi que les arguments de type liste de
++       sélecteurs de `:is()`, `:where()`, `:not()`, `:has()` et `:nth-child(… of …)`, en
++       recueillant chaque `Selector.Simple.Class`. C'est l'ensemble par rapport auquel `Styles`
++       et `cssBindings.checkedBinding` vérifient les noms de classes d'un template HTML.
+
+=     against.
+=
+-     ```scala
++       ```scala
+
+=     against.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+=     against.
+=
+=     ```scala
+=     import soundness.*
+-     import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=     against.
+=
+=     ```scala
+=     import soundness.*
+=     import strategies.throwUnsafely
+-     import errorDiagnostics.stackTracesDiagnostics
++       import errorDiagnostics.stackTracesDiagnostics
+
+-     t".a #b { color: red } @media screen { .c:not(.d) e#f { color: blue } }".read[Css].classes
++       t".a #b { color: red } @media screen { .c:not(.d) e#f { color: blue } }".read[Css].classes
+
+-     // the names a, c and d
++       // the names a, c and d
+
+=     // the names a, c and d
+-     ```
++       ```
+
+- entry .ids   the id names a stylesheet's selectors mention, as a `Set[Name[DomId]]`
++ entry .ids
++   info
++       les noms d'identifiants que mentionnent les sélecteurs d'une feuille de style, sous forme de
++       `Set[Name[DomId]]`
+
+-     An extension on `Css`, the counterpart of `classes` for `Selector.Simple.Id` parts: every
+-     id selector in every selector list, however deeply nested.
++   detail
++       Une extension sur `Css`, le pendant de `classes` pour les parties `Selector.Simple.Id` :
++       chaque sélecteur d'identifiant de chaque liste de sélecteurs, quelle que soit la
++       profondeur d'imbrication.
+
+- entry .formatting   the two standard renderings of a stylesheet, each a given to import by name
++ entry .formatting
++   info
++       les deux rendus standard d'une feuille de style, chacun un given à importer par son nom
+
+-   detail
+-       Rendering a `Css` needs a `Css.Formatting` in scope, and `import soundness.*` brings
+-       none in: a program imports one of these by name, or binds its own
+-       `Css.Formatting(newlines, spaces)` as a local given.
++   detail
++       Rendre un `Css` nécessite un `Css.Formatting` dans la portée, et `import soundness.*`
++       n'en apporte aucun : un programme importe l'un de ceux-ci par son nom, ou lie son propre
++       `Css.Formatting(newlines, spaces)` comme given local.
+
+=       `Css.Formatting(newlines, spaces)` as a local given.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Indented
++       alternative Indented
+
+=       alternative Indented
+-         code
++         code
+
+=       alternative Indented
+=         code
+-             import soundness.*
++             import soundness.*
+
+=       alternative Indented
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=       alternative Indented
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+-             import errorDiagnostics.stackTracesDiagnostics
++             import errorDiagnostics.stackTracesDiagnostics
+
+=       alternative Indented
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+-             val css = t"a { color: red; width: 4px }".read[Css]
++             val css = t"a { color: red; width: 4px }".read[Css]
+
+=       alternative Indented
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+=             val css = t"a { color: red; width: 4px }".read[Css]
+=
+-             locally:
++             locally:
+
+-               import formatting.indentedCssFormatting
++               import formatting.indentedCssFormatting
+
+-               css.show        // t"a {\n  color: red;\n  width: 4px;\n}\n"
++               css.show        // t"a {\n  color: red;\n  width: 4px;\n}\n"
+
+-       alternative Compact
++       alternative Compact
+
+=       alternative Compact
+-         code
++         code
+
+=       alternative Compact
+=         code
+-             import soundness.*
++             import soundness.*
+
+=       alternative Compact
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=       alternative Compact
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+-             import errorDiagnostics.stackTracesDiagnostics
++             import errorDiagnostics.stackTracesDiagnostics
+
+=       alternative Compact
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+-             val css = t"a { color: red; width: 4px }".read[Css]
++             val css = t"a { color: red; width: 4px }".read[Css]
+
+=       alternative Compact
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+=             val css = t"a { color: red; width: 4px }".read[Css]
+=
+-             locally:
++             locally:
+
+-               import formatting.compactCssFormatting
++               import formatting.compactCssFormatting
+
+-               css.show        // t"a{color:red;width:4px;}"
++               css.show        // t"a{color:red;width:4px;}"
+
+=               css.show        // t"a{color:red;width:4px;}"
+-       ##
++       ##
+
+=               css.show        // t"a{color:red;width:4px;}"
+=       ##
+-       ```
++       ```
+
+-   entry .indentedCssFormatting   one rule per block, declarations on indented lines, a trailing newline
++   entry .indentedCssFormatting
++     info
++         une règle par bloc, les déclarations sur des lignes indentées, un saut de ligne final
+
+-       `Css.Formatting(newlines = true, spaces = true)`: a space before each `{` and after
+-       each `:`, two-space indentation per level, a blank line between top-level rules, and
+-       a final newline.
++     detail
++         `Css.Formatting(newlines = true, spaces = true)` : une espace avant chaque `{` et après
++         chaque `:`, une indentation de deux espaces par niveau, une ligne vide entre les règles
++         de niveau supérieur, et un saut de ligne final.
+
+-   entry .compactCssFormatting   no newlines and no cosmetic spaces: `a{color:red;}`
++   entry .compactCssFormatting
++     info
++         ni sauts de ligne ni espaces esthétiques : `a{color:red;}`
+
+-       `Css.Formatting(newlines = false, spaces = false)`. A `;` still follows every
+-       declaration, including the last in a block.
++     detail
++         `Css.Formatting(newlines = false, spaces = false)`. Un `;` suit toujours chaque
++         déclaration, y compris la dernière d'un bloc.
+
+- entry .construables   the media-type construction for stylesheets, a given to import by name
++ entry .construables
++   info
++       la construction par type de média pour les feuilles de style, un given à importer par son
++       nom
+
+-   detail
+-       The `Construable` package, which other libraries also populate: a given here lets a
+-       body of a given media type be constructed as a value.
++   detail
++       Le package `Construable`, que d'autres bibliothèques alimentent aussi : un given ici
++       permet de construire sous forme de valeur un corps d'un type de média donné.
+
+-   entry .cssConstruable   constructs a `Css` from a `text/css` body
++   entry .cssConstruable
++     info
++         construit un `Css` à partir d'un corps `text/css`
+
+-       `"text/css" is Construable to Css`: an HTTP body or other media-typed source of CSS
+-       text is read as a `Css`, through `Css.aggregable`.
++     detail
++         `"text/css" is Construable to Css` : un corps HTTP ou une autre source de texte CSS
++         dotée d'un type de média est lu sous forme de `Css`, au moyen de `Css.aggregable`.
+
+- entry .SelectorList   a comma-separated list of selectors, the prelude of a rule
++ entry .SelectorList
++   info
++       une liste de sélecteurs séparés par des virgules, le prélude d'une règle
+
+-   detail
+-       The loosest of the three levels of a CSS selector: a `SelectorList` holds the
+-       alternatives separated by commas, each a `Selector` (a complex selector: compounds
+-       joined by combinators), each of whose `Selector.Compound`s is a run of `Selector.Simple` parts. It is
+-       what a `Css.Node.Rule` carries, and what `:is()`, `:not()`, `:has()` and `:where()`
+-       take as their argument.
++   detail
++       Le plus lâche des trois niveaux d'un sélecteur CSS : une `SelectorList` contient les
++       alternatives séparées par des virgules, chacune étant un `Selector` (un sélecteur
++       complexe : des composés joints par des combinateurs), dont chaque `Selector.Compound`
++       est une suite de parties `Selector.Simple`. C'est ce que porte un `Css.Node.Rule`, et ce
++       que `:is()`, `:not()`, `:has()` et `:where()` prennent comme argument.
+
+=       take as their argument.
+=
+-       ```scala
++       ```scala
+
+=       take as their argument.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       take as their argument.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       take as their argument.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import errorDiagnostics.stackTracesDiagnostics
++       import errorDiagnostics.stackTracesDiagnostics
+
+-       val list: SelectorList = SelectorList.parse(t"ul > li.item:nth-child(2n+1), a[href^=\"http\" i]")
++       val list: SelectorList = SelectorList.parse(t"ul > li.item:nth-child(2n+1), a[href^=\"http\" i]")
+
+-       list.selectors.size     // 2
++       list.selectors.size     // 2
+
+-       list.show               // t"ul > li.item:nth-child(2n+1), a[href^=http i]"
++       list.show               // t"ul > li.item:nth-child(2n+1), a[href^=http i]"
+
+=       list.show               // t"ul > li.item:nth-child(2n+1), a[href^=http i]"
+-       ```
++       ```
+
+-       The parser follows Selectors Level 4: all five combinators including the column
+-       `||`, namespaced type and attribute selectors, every attribute matcher and the `i`/`s`
+-       modifier, functional pseudo-classes with nested selector lists, `An+B` arguments with
+-       `odd`, `even` and an `of` clause, and the nesting selector `&`. A malformed selector
+-       raises a `Css.Error`.
++       L'analyseur suit Selectors Level 4 : les cinq combinateurs, y compris le combinateur de
++       colonne `||`, les sélecteurs de type et d'attribut avec espace de noms, tous les
++       comparateurs d'attributs et le modificateur `i`/`s`, les pseudo-classes fonctionnelles
++       avec des listes de sélecteurs imbriquées, les arguments `An+B` avec `odd`, `even` et une
++       clause `of`, et le sélecteur d'imbrication `&`. Un sélecteur mal formé lève une
++       `Css.Error`.
+
+-   refer cataclysm.Selector
++   refer cataclysm.Selector
+
+-   refer cataclysm.Selector.Compound
++   refer cataclysm.Selector.Compound
+
+-   refer cataclysm.Selector.Simple
++   refer cataclysm.Selector.Simple
+
+-   entry .showable   renders the list with `, ` between selectors
++   entry .showable
++     info
++         rend la liste avec `, ` entre les sélecteurs
+
+-   entry .focusable   lets a selector list be a tarantula focus, with the strategy `css selector`
++   entry .focusable
++     info
++         permet à une liste de sélecteurs d'être un focus de tarantula, avec la stratégie
++         `css selector`
+
+-       The `Focusable` given, so a browser-automation lookup can take a parsed selector
+-       rather than text.
++     detail
++         Le given `Focusable`, pour qu'une recherche d'automatisation de navigateur puisse
++         prendre un sélecteur analysé plutôt que du texte.
+
+-   entry .parse   parses selector text, raising a `Css.Error` if it is malformed
++   entry .parse
++     info
++         analyse un texte de sélecteur, en levant une `Css.Error` s'il est mal formé
+
+-       Needs a `Tactic[Css.Error]`. The text is taken as comment-free and
+-       whitespace-normalized, as a rule prelude is after `read[Css]` has stripped comments;
+-       trailing input after a complete selector list is `UnexpectedChar`, and an empty list
+-       is `EmptySelector`.
++     detail
++         Nécessite une `Tactic[Css.Error]`. Le texte est considéré comme dépourvu de
++         commentaires et aux espaces normalisés, comme l'est un prélude de règle une fois que
++         `read[Css]` a supprimé les commentaires ; une entrée restante après une liste de
++         sélecteurs complète donne `UnexpectedChar`, et une liste vide `EmptySelector`.
+
+-   entry .unsafeRead   the parse the `css"…"` expansion uses, gated by `Unsafe`
++   entry .unsafeRead
++     info
++         l'analyse qu'utilise l'expansion de `css"…"`, conditionnée par `Unsafe`
+
+-       Rebuilds a rule's selector at runtime from text the interpolator already parsed at
+-       expansion, so it cannot fail; the `Unsafe` token asserts that. Arbitrary text goes
+-       through `.parse`.
++     detail
++         Reconstruit le sélecteur d'une règle à l'exécution à partir d'un texte que
++         l'interpolateur a déjà analysé lors de l'expansion ; elle ne peut donc pas échouer ; le
++         jeton `Unsafe` l'affirme. Un texte arbitraire passe par `.parse`.
+
+-   entry #selectors   the alternatives, in order
++   entry #selectors
++     info
++         les alternatives, dans l'ordre
+
+- entry .Selector   a complex selector: a head compound and the combinator–compound steps after it
++ entry .Selector
++   info
++       un sélecteur complexe : un composé de tête et les étapes combinateur–composé qui le suivent
+
+-   detail
+-       `Selector(lead, head, rest)` is a selector such as `ul > li a`: its `#head` is the
+-       first `Compound` (`ul`), and `#rest` the steps which follow, each a `Combinator` and
+-       the `Compound` it reaches (`Child` to `li`, `Descendant` to `a`). `#lead` is set only
+-       for a relative selector, the `>` in `:has(> img)`, and is otherwise `Unset`.
++   detail
++       `Selector(lead, head, rest)` est un sélecteur comme `ul > li a` : son `#head` est le
++       premier `Compound` (`ul`), et `#rest` les étapes qui suivent, chacune un `Combinator` et
++       le `Compound` qu'il atteint (`Child` vers `li`, `Descendant` vers `a`). `#lead` n'est
++       défini que pour un sélecteur relatif, le `>` de `:has(> img)`, et vaut sinon `Unset`.
+
+=       for a relative selector, the `>` in `:has(> img)`, and is otherwise `Unset`.
+=
+-       ```scala
++       ```scala
+
+=       for a relative selector, the `>` in `:has(> img)`, and is otherwise `Unset`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val ul = Selector.Compound(List(Selector.Simple.Type(Unset, t"ul")))
++       val ul = Selector.Compound(List(Selector.Simple.Type(Unset, t"ul")))
+
+-       val li = Selector.Compound(List(Selector.Simple.Type(Unset, t"li"), Selector.Simple.Class(Name[CssClass](t"item"))))
++       val li = Selector.Compound(List(Selector.Simple.Type(Unset, t"li"), Selector.Simple.Class(Name[CssClass](t"item"))))
+
+-       val selector = Selector(Unset, ul, List((Selector.Combinator.Child, li)))
++       val selector = Selector(Unset, ul, List((Selector.Combinator.Child, li)))
+
+-       selector.show     // t"ul > li.item"
++       selector.show     // t"ul > li.item"
+
+=       selector.show     // t"ul > li.item"
+-       ```
++       ```
+
+=       ```
+-   refer cataclysm.SelectorList
++   refer cataclysm.SelectorList
+
+-   refer cataclysm.Selector.Combinator
++   refer cataclysm.Selector.Combinator
+
+-   entry .showable   renders the selector, with a space around every combinator but the descendant's
++   entry .showable
++     info
++         rend le sélecteur, avec une espace autour de chaque combinateur sauf celui de descendance
+
+-   entry #lead   the leading combinator of a relative selector, or `Unset`
++   entry #lead
++     info
++         le combinateur initial d'un sélecteur relatif, ou `Unset`
+
+-   entry #head   the first compound
++   entry #head
++     info
++         le premier composé
+
+-   entry #rest   the steps after the head, each a combinator and the compound it reaches
++   entry #rest
++     info
++         les étapes après la tête, chacune un combinateur et le composé qu'il atteint
+
+-   entry .Compound   a compound selector: simple selectors with nothing between them, `li.item:hover`
++   entry .Compound
++     info
++         un sélecteur composé : des sélecteurs simples sans rien entre eux, `li.item:hover`
+
+-     detail
+-         A run of `Simple` parts bound together with no combinator and no whitespace: a type
+-         or universal selector, if any, followed by ids, classes, attribute selectors,
+-         pseudo-classes and pseudo-elements. `Compound(List(Simple.Type(Unset, t"a"),
+-         Simple.PseudoClass(t"hover", Unset)))` is `a:hover`.
++     detail
++         Une suite de parties `Simple` liées sans combinateur ni espace : un sélecteur de type ou
++         universel, s'il y en a un, suivi d'identifiants, de classes, de sélecteurs d'attributs,
++         de pseudo-classes et de pseudo-éléments. `Compound(List(Simple.Type(Unset, t"a"),
++         Simple.PseudoClass(t"hover", Unset)))` donne `a:hover`.
+
+-     entry .showable   renders the parts concatenated
++     entry .showable
++       info
++           rend les parties concaténées
+
+-     entry #parts   the simple selectors, in order
++     entry #parts
++       info
++           les sélecteurs simples, dans l'ordre
+
+-   entry .Simple   one simple selector: a type, class, id, attribute, pseudo-class, pseudo-element, `*` or `&`
++   entry .Simple
++     info
++         un sélecteur simple : un type, une classe, un identifiant, un attribut, une pseudo-classe,
++         un pseudo-élément, `*` ou `&`
+
+-     detail
+-         The eight kinds of simple selector, as an enum. `Universal(namespace)` is `*`, with
+-         an optional namespace `Prefix`; `Type(namespace, name)` an element name such as `div`
+-         or `svg|rect`; `Id(name)` an id selector (hash and name), typed as a `Name[DomId]`; `Class(name)` a
+-         a class selector (dot and name), typed as a `Name[CssClass]`; `Nesting` the `&` of a nested rule;
+-         `Attribute(namespace, name, test)` a `[name]` with an optional `AttributeTest` such as
+-         `^="https" i`; `PseudoClass(name, argument)` a `:hover` or `:nth-child(2n+1)`, with an
+-         optional `PseudoArgument`; and `PseudoElement(name, argument)` a `::before`.
++     detail
++         Les huit sortes de sélecteurs simples, sous forme d'énumération. `Universal(namespace)`
++         est `*`, avec un `Prefix` d'espace de noms optionnel ; `Type(namespace, name)` un nom
++         d'élément comme `div` ou `svg|rect` ; `Id(name)` un sélecteur d'identifiant (dièse et
++         nom), typé `Name[DomId]` ; `Class(name)` un sélecteur de classe (point et nom), typé
++         `Name[CssClass]` ; `Nesting` le `&` d'une règle imbriquée ;
++         `Attribute(namespace, name, test)` un `[name]` avec un `AttributeTest` optionnel comme
++         `^="https" i` ; `PseudoClass(name, argument)` un `:hover` ou un `:nth-child(2n+1)`, avec
++         un `PseudoArgument` optionnel ; et `PseudoElement(name, argument)` un `::before`.
+
+=         optional `PseudoArgument`; and `PseudoElement(name, argument)` a `::before`.
+=
+-         ```scala
++         ```scala
+
+=         optional `PseudoArgument`; and `PseudoElement(name, argument)` a `::before`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Selector.Simple.Class(Name[CssClass](t"button")).show                         // t".button"
++         Selector.Simple.Class(Name[CssClass](t"button")).show                         // t".button"
+
+-         Selector.Simple.Attribute(Unset, t"href", Selector.AttributeTest(Selector.AttributeMatcher.Prefix, t"https", 'i')).show
++         Selector.Simple.Attribute(Unset, t"href", Selector.AttributeTest(Selector.AttributeMatcher.Prefix, t"https", 'i')).show
+
+-         // t"[href^=https i]"
++         // t"[href^=https i]"
+
+=         // t"[href^=https i]"
+-         ```
++         ```
+
+-         Class and id names are `Name`s, so a name which is not a valid CSS identifier is
+-         rejected when parsed (`Css.Error.Reason.InvalidName`), and `classes` and `ids` on a
+-         `Css` return them typed.
++         Les noms de classes et d'identifiants sont des `Name` ; un nom qui n'est pas un
++         identifiant CSS valide est donc rejeté lors de l'analyse
++         (`Css.Error.Reason.InvalidName`), et `classes` et `ids` sur un `Css` les renvoient
++         typés.
+
+-     refer cataclysm.Selector.PseudoArgument
++     refer cataclysm.Selector.PseudoArgument
+
+-     refer cataclysm.Selector.AttributeTest
++     refer cataclysm.Selector.AttributeTest
+
+-     refer cataclysm.Selector.Prefix
++     refer cataclysm.Selector.Prefix
+
+-     entry .showable   renders each kind as CSS: `*`, `div`, an id or class selector, `&`, `[a^=b i]`, `:is(…)`, `::before`
++     entry .showable
++       info
++           rend chaque sorte en CSS : `*`, `div`, un sélecteur d'identifiant ou de classe, `&`,
++           `[a^=b i]`, `:is(…)`, `::before`
+
+-         An `An+B` argument is canonicalized: `1n` renders as `n`, `-1n` as `-n`, and an `a`
+-         of zero as the bare `b`. Attribute values render unquoted.
++       detail
++           Un argument `An+B` est canonicalisé : `1n` se rend sous la forme `n`, `-1n` sous la
++           forme `-n`, et un `a` nul sous la forme du seul `b`. Les valeurs d'attributs se rendent
++           sans guillemets.
+
+-   entry .Combinator   how two compounds relate: descendant, child, next sibling, subsequent sibling or column
++   entry .Combinator
++     info
++         la relation entre deux composés : descendant, enfant, frère suivant, frère ultérieur ou
++         colonne
+
+-       An enum of the five combinators of Selectors Level 4: `Descendant` (whitespace),
+-       `Child` (`>`), `NextSibling` (`+`), `SubsequentSibling` (`~`) and `Column` (`||`). A
+-       `Selector#rest` pairs one with each compound after the head. The `showable` given in
+-       the companion renders each as its symbol, with the descendant as a single space.
++     detail
++         Une énumération des cinq combinateurs de Selectors Level 4 : `Descendant` (espace),
++         `Child` (`>`), `NextSibling` (`+`), `SubsequentSibling` (`~`) et `Column` (`||`). Un
++         `Selector#rest` en associe un à chaque composé après la tête. Le given `showable` du
++         compagnon rend chacun sous forme de son symbole, le descendant sous forme d'une seule
++         espace.
+
+-   entry .AttributeTest   the right-hand side of an attribute selector: matcher, value and modifier
++   entry .AttributeTest
++     info
++         le membre droit d'un sélecteur d'attribut : comparateur, valeur et modificateur
+
+-     detail
+-         `AttributeTest(matcher, value, modifier)` is the `^="https" i` of `[href^="https"
+-         i]`: the `AttributeMatcher`, the value compared (unquoted), and the optional
+-         case-sensitivity modifier `i` or `s`. A `Simple.Attribute` with no test, `[disabled]`,
+-         holds `Unset` instead.
++     detail
++         `AttributeTest(matcher, value, modifier)` est le `^="https" i` de `[href^="https"
++         i]` : l'`AttributeMatcher`, la valeur comparée (sans guillemets), et le modificateur de
++         sensibilité à la casse optionnel `i` ou `s`. Un `Simple.Attribute` sans test,
++         `[disabled]`, contient `Unset` à la place.
+
+-     entry #matcher   how the value is compared
++     entry #matcher
++       info
++           la façon dont la valeur est comparée
+
+-     entry #value   the value compared, without its quotes
++     entry #value
++       info
++           la valeur comparée, sans ses guillemets
+
+-     entry #modifier   the `i` or `s` case modifier, or `Unset`
++     entry #modifier
++       info
++           le modificateur de casse `i` ou `s`, ou `Unset`
+
+-   entry .AttributeMatcher   how an attribute selector compares its value: `=`, `~=`, `|=`, `^=`, `$=` or `*=`
++   entry .AttributeMatcher
++     info
++         la façon dont un sélecteur d'attribut compare sa valeur : `=`, `~=`, `|=`, `^=`, `$=` ou
++         `*=`
+
+-       An enum of the six matchers: `Exact` (`=`), `Includes` (`~=`, a whitespace-separated
+-       word), `DashMatch` (`|=`, the value or a `value-` prefix), `Prefix` (`^=`), `Suffix`
+-       (`$=`) and `Substring` (`*=`). An `AttributeTest` holds one with the value it compares.
++     detail
++         Une énumération des six comparateurs : `Exact` (`=`), `Includes` (`~=`, un mot parmi
++         des mots séparés par des espaces), `DashMatch` (`|=`, la valeur ou un préfixe
++         `value-`), `Prefix` (`^=`), `Suffix` (`$=`) et `Substring` (`*=`). Un `AttributeTest` en
++         contient un avec la valeur qu'il compare.
+
+-   entry .Prefix   the namespace prefix of a type, universal or attribute selector
++   entry .Prefix
++     info
++         le préfixe d'espace de noms d'un sélecteur de type, universel ou d'attribut
+
+-       An enum of the three forms, which mean different things and are kept distinct: `Any`
+-       is `*|` (any namespace), `Default` is a bare `|` (no namespace), and `Named(prefix)` is
+-       a declared namespace, `svg|`. A selector with no prefix at all holds `Unset`.
++     detail
++         Une énumération des trois formes, qui signifient des choses différentes et sont gardées
++         distinctes : `Any` est `*|` (n'importe quel espace de noms), `Default` est un simple `|`
++         (aucun espace de noms), et `Named(prefix)` est un espace de noms déclaré, `svg|`. Un
++         sélecteur sans aucun préfixe contient `Unset`.
+
+-   entry .PseudoArgument   the argument of a functional pseudo-class: a selector list, an `An+B`, or raw text
++   entry .PseudoArgument
++     info
++         l'argument d'une pseudo-classe fonctionnelle : une liste de sélecteurs, un `An+B`, ou du
++         texte brut
+
+-       An enum of the three shapes. `Selectors(list)` is the nested `SelectorList` of `:is()`,
+-       `:where()`, `:not()` and `:has()`, so their contents are themselves inspectable;
+-       `Nth(a, b, of)` is the `An+B` of `:nth-child()` and its siblings, with `odd` normalized
+-       to `2n+1` and `even` to `2n`, and the optional `of` selector list kept alongside; and
+-       `Raw(text)` is the argument of any other function, such as `:lang(en)`, kept as text.
++     detail
++         Une énumération des trois formes. `Selectors(list)` est la `SelectorList` imbriquée de
++         `:is()`, `:where()`, `:not()` et `:has()`, de sorte que leur contenu est lui-même
++         inspectable ; `Nth(a, b, of)` est l'`An+B` de `:nth-child()` et de ses semblables, avec
++         `odd` normalisé en `2n+1` et `even` en `2n`, et la liste de sélecteurs `of` optionnelle
++         conservée à côté ; et `Raw(text)` est l'argument de toute autre fonction, comme
++         `:lang(en)`, conservé sous forme de texte.
+
+- entry .PropertyDef   the definition of a CSS property from the MDN dataset: its name and value grammar
++ entry .PropertyDef
++   info
++       la définition d'une propriété CSS d'après le jeu de données MDN : son nom et sa grammaire de
++       valeurs
+
+-   detail
+-       Every known CSS property — over six hundred, from the MDN `css/properties.json`
+-       dataset (CC0), compiled into the library at build time — is a `PropertyDef` of its
+-       `#name` and its `#syntax`, the raw value-definition-syntax string, which `#grammar`
+-       parses on demand into a `Css.Syntax`. `PropertyDef.of(name)` looks one up; `.all` is
+-       the whole table and `.list` the same in dataset order.
++   detail
++       Chaque propriété CSS connue — plus de six cents, issues du jeu de données MDN
++       `css/properties.json` (CC0), compilées dans la bibliothèque lors du build — est une
++       `PropertyDef` de son `#name` et de sa `#syntax`, la chaîne brute en syntaxe de
++       définition de valeurs, que `#grammar` analyse à la demande en une `Css.Syntax`.
++       `PropertyDef.of(name)` en recherche une ; `.all` est la table entière et `.list` la même
++       dans l'ordre du jeu de données.
+
+=       the whole table and `.list` the same in dataset order.
+=
+-       ```scala
++       ```scala
+
+=       the whole table and `.list` the same in dataset order.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       the whole table and `.list` the same in dataset order.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       the whole table and `.list` the same in dataset order.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import errorDiagnostics.stackTracesDiagnostics
++       import errorDiagnostics.stackTracesDiagnostics
+
+-       val width: PropertyDef = PropertyDef.of(t"width").or(halt(t"unknown"))
++       val width: PropertyDef = PropertyDef.of(t"width").or(halt(t"unknown"))
+
+-       width.syntax                                      // the dataset's grammar text
++       width.syntax                                      // the dataset's grammar text
+
+-       Css.Syntax.Matcher.check(width, t"4px")                // Css.Outcome.Valid
++       Css.Syntax.Matcher.check(width, t"4px")                // Css.Outcome.Valid
+
+-       Css.Syntax.Matcher.check(width, t"wide")               // Css.Outcome.Invalid
++       Css.Syntax.Matcher.check(width, t"wide")               // Css.Outcome.Invalid
+
+-       PropertyDef.of(t"colour")                         // Unset
++       PropertyDef.of(t"colour")                         // Unset
+
+=       PropertyDef.of(t"colour")                         // Unset
+-       ```
++       ```
+
+-       Custom properties (`--name`) are valid without a definition and are the caller's
+-       responsibility: `of` returns `Unset` for them.
++       Les propriétés personnalisées (`--name`) sont valides sans définition et relèvent de la
++       responsabilité de l'appelant : `of` renvoie `Unset` pour elles.
+
+-   refer cataclysm.Css.Syntax.Matcher
++   refer cataclysm.Css.Syntax.Matcher
+
+-   refer cataclysm.Css.Syntax
++   refer cataclysm.Css.Syntax
+
+-   entry .list   every known property, in dataset order
++   entry .list
++     info
++         chaque propriété connue, dans l'ordre du jeu de données
+
+-   entry .all   every known property, keyed by name in a `Dictionary`
++   entry .all
++     info
++         chaque propriété connue, indexée par nom dans un `Dictionary`
+
+-   entry .of   the definition of a named property, or `Unset` if it is not a recognized property
++   entry .of
++     info
++         la définition d'une propriété nommée, ou `Unset` s'il ne s'agit pas d'une propriété
++         reconnue
+
+-   entry #name   the property's name, in kebab-case
++   entry #name
++     info
++         le nom de la propriété, en kebab-case
+
+-   entry #syntax   the value grammar as the dataset writes it, `<length> | auto`
++   entry #syntax
++     info
++         la grammaire de valeurs telle que l'écrit le jeu de données, `<length> | auto`
+
+-   entry #grammar   the value grammar parsed to a `Css.Syntax`, computed on first use
++   entry #grammar
++     info
++         la grammaire de valeurs analysée en une `Css.Syntax`, calculée à la première utilisation
+
+- entry .ValueToken   one token of a property value: identifier, number, dimension, string, function, …
++ entry .ValueToken
++   info
++       un jeton d'une valeur de propriété : identifiant, nombre, dimension, chaîne, fonction, …
+
+-     The unit a property value is broken into before matching, following the CSS Syntax
+-     Module Level 3 tokenizer for the tokens which appear in values. `Css.Syntax.Matcher` consumes
+-     them; they are exposed so that a tool can inspect a value's lexical shape. The cases:
++   detail
++       L'unité en laquelle une valeur de propriété est découpée avant la vérification, suivant
++       l'analyseur lexical de CSS Syntax Module Level 3 pour les jetons qui apparaissent dans
++       les valeurs. `Css.Syntax.Matcher` les consomme ; ils sont exposés pour qu'un outil
++       puisse inspecter la forme lexicale d'une valeur. Les cas :
+
+-     ```tabular
++       ```tabular
+
+-     column  Case
+-     column  Token
+-     row  `Whitespace`  whitespace
+-     row  `Ident(value)`  an identifier: `auto`, `solid` or `--my-var`
+-     row  `Function(name)`  an identifier directly followed by `(`
+-     row  `Hash(value)`  `#ff0000`, holding `ff0000`
+-     row  `Quoted(value)`  a string's contents, without its quotes
+-     row  `Url(value)`  an unquoted `url(…)`
+-     row  `Number(value, integer, raw)`  a number
+-     row  `Percentage(value, raw)`  a percentage
+-     row  `Dimension(value, unit, raw)`  a number with a unit: `10px`
+-     row  `Comma`  `,`
+-     row  `Open`, `Close`  `(` and `)`
+-     row  `Delim(char)`  any other single character, such as `/` or `+`
++       column  Cas
++       column  Jeton
++       row  `Whitespace`  espaces
++       row  `Ident(value)`  un identifiant : `auto`, `solid` ou `--my-var`
++       row  `Function(name)`  un identifiant directement suivi de `(`
++       row  `Hash(value)`  `#ff0000`, qui contient `ff0000`
++       row  `Quoted(value)`  le contenu d'une chaîne, sans ses guillemets
++       row  `Url(value)`  un `url(…)` sans guillemets
++       row  `Number(value, integer, raw)`  un nombre
++       row  `Percentage(value, raw)`  un pourcentage
++       row  `Dimension(value, unit, raw)`  un nombre avec une unité : `10px`
++       row  `Comma`  `,`
++       row  `Open`, `Close`  `(` et `)`
++       row  `Delim(char)`  tout autre caractère isolé, comme `/` ou `+`
+
+=     row  `Delim(char)`  any other single character, such as `/` or `+`
+-     ```
++       ```
+
+- entry .Px   one CSS pixel, `Quantity[Pixels[1]]`: a length is `4.0*Px`
++ entry .Px
++   info
++       un pixel CSS, `Quantity[Pixels[1]]` : une longueur s'écrit `4.0*Px`
+
+-     The unit value which a number multiplies to make a length in pixels, rendered as `4px`
+-     through `Css.Convertible.pixels`. `Px` is a fresh dimension with no ratio to any
+-     other, so `2.0*Px + 3.0*Cm` and `(1.0*Px).convert[Metres]` do not compile: a pixel's
+-     physical size is the browser's to decide. The same holds for every relative and
+-     viewport unit (`Rem`, `Ex`, `Ch`, `Vw`, `Vh`, `Vmin`, `Vmax`, `Pct`), the angles
+-     (`Deg`, `Rad`, `Turn`) and grid flex (`Fr`); the physical units `Cm`, `Mm`, `Pt`, `Pc`
+-     and quantitative's own `Inch` and `Metre` share the `Distance` dimension and
+-     interconvert as usual, and `S` and `Ms` are quantitative seconds.
++   detail
++       La valeur unitaire qu'un nombre multiplie pour former une longueur en pixels, rendue
++       sous la forme `4px` au moyen de `Css.Convertible.pixels`. `Px` est une dimension
++       nouvelle sans rapport avec aucune autre ; `2.0*Px + 3.0*Cm` et
++       `(1.0*Px).convert[Metres]` ne compilent donc pas : la taille physique d'un pixel est
++       laissée à l'appréciation du navigateur. Il en va de même pour toutes les unités
++       relatives et de zone d'affichage (`Rem`, `Ex`, `Ch`, `Vw`, `Vh`, `Vmin`, `Vmax`, `Pct`), les
++       angles (`Deg`, `Rad`, `Turn`) et les fractions de grille (`Fr`) ; les unités physiques
++       `Cm`, `Mm`, `Pt`, `Pc` et les propres `Inch` et `Metre` de quantitative partagent la
++       dimension `Distance` et se convertissent entre elles comme d'habitude, et `S` et `Ms`
++       sont des secondes de quantitative.
+
+=     interconvert as usual, and `S` and `Ms` are quantitative seconds.
+=
+-     ```scala
++       ```scala
+
+=     interconvert as usual, and `S` and `Ms` are quantitative seconds.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+=
+-     val width = 4.0*Px
++       val width = 4.0*Px
+
+-     val sum = 2.0*Px + 3.0*Px        // 5px
++       val sum = 2.0*Px + 3.0*Px        // 5px
+
+-     2.0*Px + 1.0*Vh                  // does not compile
++       2.0*Px + 1.0*Vh                  // does not compile
+
+=     2.0*Px + 1.0*Vh                  // does not compile
+-     ```
++       ```
+
+- entry .Rem   one root-element font size, `Quantity[Rems[1]]`: `2.0*Rem` renders as `2rem`
++ entry .Rem
++   info
++       une taille de police de l'élément racine, `Quantity[Rems[1]]` : `2.0*Rem` se rend sous la
++       forme `2rem`
+
+- entry .Ex   one x-height of the element's font, `Quantity[Exs[1]]`: renders as `ex`
++ entry .Ex
++   info
++       une hauteur d'x de la police de l'élément, `Quantity[Exs[1]]` : se rend sous la forme `ex`
+
+- entry .Ch   one advance of the element's font's `0`, `Quantity[Chs[1]]`: renders as `ch`
++ entry .Ch
++   info
++       une chasse du `0` de la police de l'élément, `Quantity[Chs[1]]` : se rend sous la forme `ch`
+
+- entry .Vw   one per cent of the viewport's width, `Quantity[ViewportWidths[1]]`: renders as `vw`
++ entry .Vw
++   info
++       un pour cent de la largeur de la zone d'affichage, `Quantity[ViewportWidths[1]]` : se rend
++       sous la forme `vw`
+
+- entry .Vh   one per cent of the viewport's height, `Quantity[ViewportHeights[1]]`: renders as `vh`
++ entry .Vh
++   info
++       un pour cent de la hauteur de la zone d'affichage, `Quantity[ViewportHeights[1]]` : se rend
++       sous la forme `vh`
+
+- entry .Vmin   one per cent of the viewport's smaller side, `Quantity[ViewportMins[1]]`: renders as `vmin`
++ entry .Vmin
++   info
++       un pour cent du plus petit côté de la zone d'affichage, `Quantity[ViewportMins[1]]` : se
++       rend sous la forme `vmin`
+
+- entry .Vmax   one per cent of the viewport's larger side, `Quantity[ViewportMaxes[1]]`: renders as `vmax`
++ entry .Vmax
++   info
++       un pour cent du plus grand côté de la zone d'affichage, `Quantity[ViewportMaxes[1]]` : se
++       rend sous la forme `vmax`
+
+- entry .Cm   one centimetre, as quantitative `Metres`: `3.0*Cm` renders as `30mm`
++ entry .Cm
++   info
++       un centimètre, en `Metres` de quantitative : `3.0*Cm` se rend sous la forme `30mm`
+
+-     A convenient magnitude of `Metres`, not a new type: `3.0*Cm == 0.03*Metre`, and every
+-     physical length renders in millimetres through `Css.Convertible.metres`.
++   detail
++       Une grandeur commode de `Metres`, et non un nouveau type : `3.0*Cm == 0.03*Metre`, et
++       toute longueur physique se rend en millimètres au moyen de `Css.Convertible.metres`.
+
+- entry .Mm   one millimetre, as quantitative `Metres`: `10.0*Mm` renders as `10mm`
++ entry .Mm
++   info
++       un millimètre, en `Metres` de quantitative : `10.0*Mm` se rend sous la forme `10mm`
+
+- entry .Pt   one typographic point, `Quantity[Points[1]]`: renders as `pt`
++ entry .Pt
++   info
++       un point typographique, `Quantity[Points[1]]` : se rend sous la forme `pt`
+
+-     Quantitative's `Points`, so it interconverts with inches, picas and metres.
++   detail
++       Les `Points` de quantitative ; il se convertit donc en pouces, en picas et en mètres.
+
+- entry .Pc   one pica, `Quantity[Picas[1]]`: renders as `pc`
++ entry .Pc
++   info
++       un pica, `Quantity[Picas[1]]` : se rend sous la forme `pc`
+
+- entry .Pct   one per cent, `Quantity[Percents[1]]`: `50.0*Pct` renders as `50%`
++ entry .Pct
++   info
++       un pour cent, `Quantity[Percents[1]]` : `50.0*Pct` se rend sous la forme `50%`
+
+-     A fresh dimension, not a number: a percentage cannot be added to a length or a
+-     `Double`, and `Css.Convertible.percents` renders it with the topic `"percentage"`.
++   detail
++       Une dimension nouvelle, et non un nombre : un pourcentage ne peut pas être ajouté à une
++       longueur ou à un `Double`, et `Css.Convertible.percents` le rend avec le sujet
++       `"percentage"`.
+
+- entry .S   one second, as quantitative `Seconds`: `1.5*S` renders as `1500ms`
++ entry .S
++   info
++       une seconde, en `Seconds` de quantitative : `1.5*S` se rend sous la forme `1500ms`
+
+-     Times render in milliseconds whatever the magnitude they were written in.
++   detail
++       Les durées se rendent en millisecondes, quelle que soit la grandeur dans laquelle elles
++       ont été écrites.
+
+- entry .Ms   one millisecond, as quantitative `Seconds`: `200.0*Ms` renders as `200ms`
++ entry .Ms
++   info
++       une milliseconde, en `Seconds` de quantitative : `200.0*Ms` se rend sous la forme `200ms`
+
+- entry .Deg   one degree, `Quantity[Degrees[1]]`: `90.0*Deg` renders as `90deg`
++ entry .Deg
++   info
++       un degré, `Quantity[Degrees[1]]` : `90.0*Deg` se rend sous la forme `90deg`
+
+-     Angles are fresh, mutually inconvertible dimensions: `1.0*Deg + 1.0*Rad` does not
+-     compile.
++   detail
++       Les angles sont des dimensions nouvelles, non convertibles entre elles :
++       `1.0*Deg + 1.0*Rad` ne compile pas.
+
+- entry .Rad   one radian, `Quantity[Radians[1]]`: renders as `rad`
++ entry .Rad
++   info
++       un radian, `Quantity[Radians[1]]` : se rend sous la forme `rad`
+
+- entry .Turn   one full turn, `Quantity[Turns[1]]`: `0.5*Turn` renders as `0.5turn`
++ entry .Turn
++   info
++       un tour complet, `Quantity[Turns[1]]` : `0.5*Turn` se rend sous la forme `0.5turn`
+
+- entry .Fr   one fraction of a grid track's free space, `Quantity[Flexes[1]]`: `2.0*Fr` renders as `2fr`
++ entry .Fr
++   info
++       une fraction de l'espace libre d'une piste de grille, `Quantity[Flexes[1]]` : `2.0*Fr` se
++       rend sous la forme `2fr`
+
+- entry .Pixels   the units of CSS pixels, `Pixels[1]`, over the `CssPixel` dimension
++ entry .Pixels
++   info
++       les unités de pixels CSS, `Pixels[1]`, sur la dimension `CssPixel`
+
+-     The units type of `Px`; `Quantity[Pixels[1]]` is a length in pixels. The `Power` type
+-     parameter is the exponent, as in every quantitative units type.
++   detail
++       Le type d'unités de `Px` ; `Quantity[Pixels[1]]` est une longueur en pixels. Le
++       paramètre de type `Power` est l'exposant, comme dans tout type d'unités de quantitative.
+
+- entry .Rems   the units of root-element font sizes, over `CssRootFontSize`
++ entry .Rems
++   info
++       les unités de tailles de police de l'élément racine, sur `CssRootFontSize`
+
+- entry .Exs   the units of x-heights, over `CssXHeight`
++ entry .Exs
++   info
++       les unités de hauteurs d'x, sur `CssXHeight`
+
+- entry .Chs   the units of character advances, over `CssCharacterWidth`
++ entry .Chs
++   info
++       les unités de chasses de caractère, sur `CssCharacterWidth`
+
+- entry .ViewportWidths   the units of viewport-width percentages, over `CssViewportWidth`
++ entry .ViewportWidths
++   info
++       les unités de pourcentages de la largeur du viewport, sur `CssViewportWidth`
+
+- entry .ViewportHeights   the units of viewport-height percentages, over `CssViewportHeight`
++ entry .ViewportHeights
++   info
++       les unités de pourcentages de la hauteur du viewport, sur `CssViewportHeight`
+
+- entry .ViewportMins   the units of viewport-minimum percentages, over `CssViewportMin`
++ entry .ViewportMins
++   info
++       les unités de pourcentages du minimum du viewport, sur `CssViewportMin`
+
+- entry .ViewportMaxes   the units of viewport-maximum percentages, over `CssViewportMax`
++ entry .ViewportMaxes
++   info
++       les unités de pourcentages du maximum du viewport, sur `CssViewportMax`
+
+- entry .Percents   the units of percentages, over `CssRatio`
++ entry .Percents
++   info
++       les unités de pourcentages, sur `CssRatio`
+
+- entry .Degrees   the units of degrees, over `CssDegree`
++ entry .Degrees
++   info
++       les unités de degrés, sur `CssDegree`
+
+- entry .Radians   the units of radians, over `CssRadian`
++ entry .Radians
++   info
++       les unités de radians, sur `CssRadian`
+
+- entry .Turns   the units of turns, over `CssTurn`
++ entry .Turns
++   info
++       les unités de tours, sur `CssTurn`
+
+- entry .Flexes   the units of grid flex fractions, over `CssFlex`
++ entry .Flexes
++   info
++       les unités de fractions de grille, sur `CssFlex`
+
+- entry .CssPixel   the dimension of CSS pixels, with no ratio to any other
++ entry .CssPixel
++   info
++       la dimension des pixels CSS, sans rapport avec aucune autre
+
+-     A sealed dimension of its own, so that a pixel length can neither be added to nor
+-     converted into any physical or relative length. Each of the CSS-specific dimensions —
+-     `CssPixel`, `CssRootFontSize`, `CssXHeight`, `CssCharacterWidth`, `CssViewportWidth`,
+-     `CssViewportHeight`, `CssViewportMin`, `CssViewportMax`, `CssRatio`, `CssDegree`,
+-     `CssRadian`, `CssTurn` and `CssFlex` — is deliberately inconvertible, since its
+-     physical size is decided by the browser, the font or the viewport, not the stylesheet.
++   detail
++       Une dimension scellée qui lui est propre, si bien qu'une longueur en pixels ne peut ni
++       être ajoutée à une longueur physique ou relative, ni convertie en une telle longueur.
++       Chacune des dimensions propres au CSS — `CssPixel`, `CssRootFontSize`, `CssXHeight`,
++       `CssCharacterWidth`, `CssViewportWidth`, `CssViewportHeight`, `CssViewportMin`,
++       `CssViewportMax`, `CssRatio`, `CssDegree`, `CssRadian`, `CssTurn` et `CssFlex` — est
++       délibérément non convertible, puisque sa taille physique est déterminée par le
++       navigateur, la police ou la zone d'affichage, et non par la feuille de style.
+
+- entry .CssRootFontSize   the dimension of `rem` lengths, inconvertible
++ entry .CssRootFontSize
++   info
++       la dimension des longueurs `rem`, non convertible
+
+- entry .CssXHeight   the dimension of `ex` lengths, inconvertible
++ entry .CssXHeight
++   info
++       la dimension des longueurs `ex`, non convertible
+
+- entry .CssCharacterWidth   the dimension of `ch` lengths, inconvertible
++ entry .CssCharacterWidth
++   info
++       la dimension des longueurs `ch`, non convertible
+
+- entry .CssViewportWidth   the dimension of `vw` lengths, inconvertible
++ entry .CssViewportWidth
++   info
++       la dimension des longueurs `vw`, non convertible
+
+- entry .CssViewportHeight   the dimension of `vh` lengths, inconvertible
++ entry .CssViewportHeight
++   info
++       la dimension des longueurs `vh`, non convertible
+
+- entry .CssViewportMin   the dimension of `vmin` lengths, inconvertible
++ entry .CssViewportMin
++   info
++       la dimension des longueurs `vmin`, non convertible
+
+- entry .CssViewportMax   the dimension of `vmax` lengths, inconvertible
++ entry .CssViewportMax
++   info
++       la dimension des longueurs `vmax`, non convertible
+
+- entry .CssRatio   the dimension of percentages, inconvertible to a plain number
++ entry .CssRatio
++   info
++       la dimension des pourcentages, non convertible en un simple nombre
+
+- entry .CssDegree   the dimension of degree angles, inconvertible to radians or turns
++ entry .CssDegree
++   info
++       la dimension des angles en degrés, non convertible en radians ou en tours
+
+- entry .CssRadian   the dimension of radian angles, inconvertible
++ entry .CssRadian
++   info
++       la dimension des angles en radians, non convertible
+
+- entry .CssTurn   the dimension of turn angles, inconvertible
++ entry .CssTurn
++   info
++       la dimension des angles en tours, non convertible
+
+- entry .CssFlex   the dimension of grid flex fractions, inconvertible
++ entry .CssFlex
++   info
++       la dimension des fractions de grille, non convertible
+
+- entry .internal   the macro implementations behind `css"…"` and `Css.Style(…)`
++ entry .internal
++   info
++       les implémentations des macros derrière `css"…"` et `Css.Style(…)`
+
+-   hidden
++   hidden
+
+-   detail
+-       Not for direct use: the object exists so that the macros have a stable home.
++   detail
++       Pas destiné à un usage direct : l'objet existe pour que les macros aient un foyer
++       stable.
+
+-   entry .expand   the macro behind `css"…"`: parses the literal at expansion and rebuilds it as a `Css` or `Css.Style`
++   entry .expand
++     info
++         la macro derrière `css"…"` : analyse le littéral lors de l'expansion et le reconstruit
++         sous forme de `Css` ou de `Css.Style`
+
+-       Joins the literal parts with a sentinel at each substitution, parses and validates
+-       the whole at compile time (a fault is reported at its line and column), and splices
+-       the nodes back as an expression: a declaration value which is a lone substitution
+-       becomes the typed value, checked against the property through `propertyIssue`; a
+-       substitution in a selector must be a `Name[CssClass]` or a `Name[DomId]`.
++     detail
++         Joint les parties littérales avec une sentinelle à chaque substitution, analyse et valide
++         le tout à la compilation (une faute est signalée à sa ligne et à sa colonne), et réinsère
++         les nœuds par splice sous forme d'expression : une valeur de déclaration constituée d'une
++         substitution seule devient la valeur typée, vérifiée par rapport à la propriété au moyen
++         de `propertyIssue` ; une substitution dans un sélecteur doit être un `Name[CssClass]` ou
++         un `Name[DomId]`.
+
+-   entry .style   the macro behind `Css.Style(property = value, …)`
++   entry .style
++     info
++         la macro derrière `Css.Style(property = value, …)`
+
+-       Uncamels each literal name to its property, summons the value's `Css.Convertible`,
+-       checks the property accepts the convertible's topic, and emits `Css.Style.of`.
++     detail
++         Reconvertit chaque nom littéral du camelCase en sa propriété, invoque le
++         `Css.Convertible` de la valeur, vérifie que la propriété accepte le sujet du
++         convertible, et émet `Css.Style.of`.
+
+-   entry .topicOf   the value-definition topic a `Css.Convertible` instance's type carries, or empty
++   entry .topicOf
++     info
++         le sujet de définition de valeur que porte le type d'une instance `Css.Convertible`, ou
++         vide
+
+-   entry .propertyIssue   `Unset` if a property accepts a value of a topic; otherwise the message saying why not
++   entry .propertyIssue
++     info
++         `Unset` si une propriété accepte une valeur d'un sujet donné ; sinon le message expliquant
++         pourquoi
+
+-       An unknown property, or a sample of the topic (`1px` for `"length"`, `#000000` for
+-       `"color"`, …) which the property's grammar rejects. The topic `"*"` is accepted for
+-       every known property, and a topic with no sample is not checked.
++     detail
++         Une propriété inconnue, ou un exemple du sujet (`1px` pour `"length"`, `#000000` pour
++         `"color"`, …) que la grammaire de la propriété rejette. Le sujet `"*"` est accepté pour
++         toute propriété connue, et un sujet sans exemple n'est pas vérifié.
+
+- entry .Web   the web as a typesetting medium: how a browser obtains a typeface, and the generic families
++ entry .Web
++   info
++       le web comme support de composition : la façon dont un navigateur obtient une police, et les
++       familles génériques
+
+-   detail
+-       `Web` is a phoenicia `Medium`: the medium of text set by a browser from CSS, where a
+-       typeface is available if the page carries a `@font-face` for it, imports a
+-       stylesheet which does, or names a generic family. A typeface is provided for the web
+-       by a given `(Typeface of "Inter") is Typesettable in Web`, declared once through one
+-       of the companion's factories — `.linked` for a font file at a URL, `.imported` for a
+-       font service's stylesheet, `.local` for a font the reader has installed — or `in
+-       Medium` through phoenicia's `Typesettable.embedded` for a file carried in the page.
+-       The six CSS generic families (`.sansSerif`, `.serif`, `.monospace`, `.cursive`,
+-       `.fantasy`, `.systemUi`) are provided here already, in the medium's companion, which
+-       is in the implicit scope of `(Typeface of "sans-serif") is Typesettable in Web`, so
+-       they need no declaration and no import.
++   detail
++       `Web` est un `Medium` de phoenicia : le support du texte composé par un navigateur à
++       partir de CSS, où une police est disponible si la page porte une `@font-face` pour
++       elle, importe une feuille de style qui en porte une, ou nomme une famille générique. Une
++       police est fournie pour le web par un given `(Typeface of "Inter") is Typesettable in
++       Web`, déclaré une seule fois au moyen de l'une des fabriques du compagnon — `.linked`
++       pour un fichier de police à une URL, `.imported` pour la feuille de style d'un service
++       de polices, `.local` pour une police que le lecteur a installée — ou `in
++       Medium` au moyen du `Typesettable.embedded` de phoenicia pour un fichier embarqué dans la
++       page. Les six familles génériques du CSS (`.sansSerif`, `.serif`, `.monospace`,
++       `.cursive`, `.fantasy`, `.systemUi`) sont déjà fournies ici, dans le compagnon du
++       support, qui fait partie de la portée implicite de
++       `(Typeface of "sans-serif") is Typesettable in Web` ; elles ne nécessitent donc ni
++       déclaration ni import.
+
+-       A `Font in Web` is a face paired with the provision in scope for its typeface, made
+-       with `.font` (or phoenicia's `Font.of[Web](face)`); a typeface with no provision in
+-       scope cannot be a web font, and a face the provision's coverage cannot set — an
+-       italic from a file declared upright-only — is a `Font.Error` at the pairing. The
+-       font's at-rules are then `Css.fontFace(font)`, and the declarations which select the
+-       face are `font.style`.
++       Une `Font in Web` est une fonte associée à la fourniture de sa police dans la portée,
++       construite avec `.font` (ou `Font.of[Web](face)` de phoenicia) ; une police sans
++       fourniture dans la portée ne peut pas être une police web, et une fonte que la
++       couverture de la fourniture ne peut pas composer — une italique tirée d'un fichier
++       déclaré uniquement en romain — est une `Font.Error` lors de l'association. Les
++       at-rules de la police sont alors `Css.fontFace(font)`, et les déclarations qui
++       sélectionnent la fonte sont `font.style`.
+
+=       face are `font.style`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label A typeface, provided for the web as a linked font file
++         label A typeface, provided for the web as a linked font file
+
+=         label A typeface, provided for the web as a linked font file
+-         code
++         code
+
+=         label A typeface, provided for the web as a linked font file
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A typeface, provided for the web as a linked font file
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label A typeface, provided for the web as a linked font file
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+-             import formatting.compactCssFormatting
++             import formatting.compactCssFormatting
+
+=         label A typeface, provided for the web as a linked font file
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+-             val inter = Typeface["Inter"]
++             val inter = Typeface["Inter"]
+
+=         label A typeface, provided for the web as a linked font file
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+-             given (Typeface of "Inter") is Typesettable in Web =
++             given (Typeface of "Inter") is Typesettable in Web =
+
+=         label A typeface, provided for the web as a linked font file
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+=             given (Typeface of "Inter") is Typesettable in Web =
+-               Web.linked(url"https://fonts.example/inter.woff2",
++               Web.linked(url"https://fonts.example/inter.woff2",
+
+=         label A typeface, provided for the web as a linked font file
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+=             given (Typeface of "Inter") is Typesettable in Web =
+=               Web.linked(url"https://fonts.example/inter.woff2",
+-                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
++                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+
+=         label A typeface, provided for the web as a linked font file
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+=             given (Typeface of "Inter") is Typesettable in Web =
+=               Web.linked(url"https://fonts.example/inter.woff2",
+=                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+-                 Typesettable.Source.Format.Woff2)
++                 Typesettable.Source.Format.Woff2)
+
+=                 Typesettable.Source.Format.Woff2)
+-       frame
++       frame
+
+-         label The face paired with its provision: a font for the web
++         label The face paired with its provision: a font for the web
+
+=         label The face paired with its provision: a font for the web
+-         code
++         code
+
+=         label The face paired with its provision: a font for the web
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label The face paired with its provision: a font for the web
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label The face paired with its provision: a font for the web
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+-             import formatting.compactCssFormatting
++             import formatting.compactCssFormatting
+
+=         label The face paired with its provision: a font for the web
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+-             val inter = Typeface["Inter"]
++             val inter = Typeface["Inter"]
+
+=         label The face paired with its provision: a font for the web
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+-             given (Typeface of "Inter") is Typesettable in Web =
++             given (Typeface of "Inter") is Typesettable in Web =
+
+=         label The face paired with its provision: a font for the web
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+=             given (Typeface of "Inter") is Typesettable in Web =
+-               Web.linked(url"https://fonts.example/inter.woff2",
++               Web.linked(url"https://fonts.example/inter.woff2",
+
+=         label The face paired with its provision: a font for the web
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+=             given (Typeface of "Inter") is Typesettable in Web =
+=               Web.linked(url"https://fonts.example/inter.woff2",
+-                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
++                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+
+=         label The face paired with its provision: a font for the web
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+=             given (Typeface of "Inter") is Typesettable in Web =
+=               Web.linked(url"https://fonts.example/inter.woff2",
+=                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+-                 Typesettable.Source.Format.Woff2)
++                 Typesettable.Source.Format.Woff2)
+
+=         label The face paired with its provision: a font for the web
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+=             given (Typeface of "Inter") is Typesettable in Web =
+=               Web.linked(url"https://fonts.example/inter.woff2",
+=                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+=                 Typesettable.Source.Format.Woff2)
+=
+-             val heading: Font in Web = Web.font(inter.bold.italic)
++             val heading: Font in Web = Web.font(inter.bold.italic)
+
+=             val heading: Font in Web = Web.font(inter.bold.italic)
+-       frame
++       frame
+
+-         label The at-rule the page needs, and the declarations which select the face
++         label The at-rule the page needs, and the declarations which select the face
+
+=         label The at-rule the page needs, and the declarations which select the face
+-         code
++         code
+
+=         label The at-rule the page needs, and the declarations which select the face
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label The at-rule the page needs, and the declarations which select the face
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label The at-rule the page needs, and the declarations which select the face
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+-             import formatting.compactCssFormatting
++             import formatting.compactCssFormatting
+
+=         label The at-rule the page needs, and the declarations which select the face
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+-             val inter = Typeface["Inter"]
++             val inter = Typeface["Inter"]
+
+=         label The at-rule the page needs, and the declarations which select the face
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+-             given (Typeface of "Inter") is Typesettable in Web =
++             given (Typeface of "Inter") is Typesettable in Web =
+
+=         label The at-rule the page needs, and the declarations which select the face
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+=             given (Typeface of "Inter") is Typesettable in Web =
+-               Web.linked(url"https://fonts.example/inter.woff2",
++               Web.linked(url"https://fonts.example/inter.woff2",
+
+=         label The at-rule the page needs, and the declarations which select the face
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+=             given (Typeface of "Inter") is Typesettable in Web =
+=               Web.linked(url"https://fonts.example/inter.woff2",
+-                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
++                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+
+=         label The at-rule the page needs, and the declarations which select the face
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+=             given (Typeface of "Inter") is Typesettable in Web =
+=               Web.linked(url"https://fonts.example/inter.woff2",
+=                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+-                 Typesettable.Source.Format.Woff2)
++                 Typesettable.Source.Format.Woff2)
+
+=         label The at-rule the page needs, and the declarations which select the face
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=             import formatting.compactCssFormatting
+=
+=             val inter = Typeface["Inter"]
+=
+=             given (Typeface of "Inter") is Typesettable in Web =
+=               Web.linked(url"https://fonts.example/inter.woff2",
+=                 Font.Coverage(weights = Weight.Thin to Weight.Black, italic = true),
+=                 Typesettable.Source.Format.Woff2)
+=
+-             val heading: Font in Web = Web.font(inter.bold.italic)
++             val heading: Font in Web = Web.font(inter.bold.italic)
+
+-             Css.fontFace(heading).show
++             Css.fontFace(heading).show
+
+-             // @font-face{font-family:"Inter";src:url("https://fonts.example/inter.woff2") format("woff2");font-weight:100 900;font-style:italic;}
++             // @font-face{font-family:"Inter";src:url("https://fonts.example/inter.woff2") format("woff2");font-weight:100 900;font-style:italic;}
+
+-             heading.style.text
++             heading.style.text
+
+-             // font-family: "Inter"; font-weight: 700; font-style: italic
++             // font-family: "Inter"; font-weight: 700; font-style: italic
+
+=             // font-family: "Inter"; font-weight: 700; font-style: italic
+-       ##
++       ##
+
+=             // font-family: "Inter"; font-weight: 700; font-style: italic
+=       ##
+-       ```
++       ```
+
+-       A named given's type is parsed with the restricted given-type grammar, in which an
+-       infix operand cannot be a literal type, so the typeface is parenthesised:
+-       `given inter: (Typeface of "Inter") is Typesettable in Web = …`. A provision which
+-       renderers other than the browser can also use — an SVG's `<style>`, a PDF — asks
+-       for `Typesettable in (? >: Web)`, which a `Web` provision and an embedded `Medium`
+-       provision both satisfy.
++       Le type d'un given nommé est analysé avec la grammaire restreinte des types de given,
++       dans laquelle un opérande infixe ne peut pas être un type littéral ; la police est donc
++       mise entre parenthèses :
++       `given inter: (Typeface of "Inter") is Typesettable in Web = …`. Une fourniture que
++       d'autres moteurs de rendu que le navigateur peuvent aussi utiliser — le `<style>` d'un
++       SVG, un PDF — demande `Typesettable in (? >: Web)`, que satisfont à la fois une
++       fourniture `Web` et une fourniture `Medium` embarquée.
+
+=       provision both satisfy.
+-   refer cataclysm.fontFace
++   refer cataclysm.fontFace
+
+-   refer cataclysm.FontFace
++   refer cataclysm.FontFace
+
+-   refer cataclysm.style
++   refer cataclysm.style
+
+-   entry .Provision   a web provision as a value: its sources and declared coverage
++   entry .Provision
++     info
++         une fourniture web sous forme de valeur : ses sources et sa couverture déclarée
+
+!     detail
+!         The class every factory in `Web` returns, so that a provision has a stable type:
+!         `Web.Provision[family](sources, coverage)` is a `(Typeface of family) is
+!         Typesettable in Web` whose `#sources` are the `Typesettable.Source`s the browser
+!         obtains the typeface from and whose `#coverage` is the `Coverage` it was declared
+!         with. `FontFace.rules` renders one source at a time.
+-     detail
+-         The class every factory in `Web` returns, so that a provision has a stable type:
+-         `Web.Provision[family](sources, coverage)` is a `(Typeface of family) is
+-         Typesettable in Web` whose `#sources` are the `Typesettable.Source`s the browser
+-         obtains the typeface from and whose `#coverage` is the `Font.Coverage` it was declared
+-         with. `FontFace.rules` renders one source at a time.
++     detail
++         La classe que renvoie chaque fabrique de `Web`, pour qu'une fourniture ait un type
++         stable : `Web.Provision[family](sources, coverage)` est un `(Typeface of family) is
++         Typesettable in Web` dont les `#sources` sont les `Typesettable.Source` à partir
++         desquelles le navigateur obtient la police et dont la `#coverage` est la `Coverage` avec
++         laquelle elle a été déclarée. `FontFace.rules` rend une source à la fois.
+
+-     entry #sources   where the browser gets the typeface: linked, imported, local or generic
++     entry #sources
++       info
++           l'endroit où le navigateur obtient la police : liée, importée, locale ou générique
+
+-     entry #coverage   the weights, slants, widths and axes the provision was declared to offer
++     entry #coverage
++       info
++           les graisses, inclinaisons, largeurs et axes que la fourniture a été déclarée offrir
+
+-     entry #Self   the typeface provided, `Typeface of family`
++     entry #Self
++       info
++           la police fournie, `Typeface of family`
+
+-     entry #Form   the medium, `Web`
++     entry #Form
++       info
++           le support, `Web`
+
+-   entry .sansSerif   the generic `sans-serif` family, provided on the web with no declaration
++   entry .sansSerif
++     info
++         la famille générique `sans-serif`, fournie sur le web sans déclaration
+
+!     detail
+!         A browser sets each generic family from whatever it has, so the provision has a
+!         single `Generic` source and `Coverage.Unknown`, which admits every face; it renders
+!         no at-rule, and `font-family: sans-serif` unquoted.
+-       A browser sets each generic family from whatever it has, so the provision has a
+-       single `Generic` source and `Font.Coverage.Unknown`, which admits every face; it renders
+-       no at-rule, and `font-family: sans-serif` unquoted.
++     detail
++         Un navigateur compose chaque famille générique à partir de ce dont il dispose ; la
++         fourniture a donc une seule source `Generic` et `Coverage.Unknown`, qui admet toutes les
++         fontes ; elle ne rend aucune at-rule, et `font-family: sans-serif` sans guillemets.
+
+-   entry .serif   the generic `serif` family, provided with no declaration
++   entry .serif
++     info
++         la famille générique `serif`, fournie sans déclaration
+
+-   entry .monospace   the generic `monospace` family, provided with no declaration
++   entry .monospace
++     info
++         la famille générique `monospace`, fournie sans déclaration
+
+-   entry .cursive   the generic `cursive` family, provided with no declaration
++   entry .cursive
++     info
++         la famille générique `cursive`, fournie sans déclaration
+
+-   entry .fantasy   the generic `fantasy` family, provided with no declaration
++   entry .fantasy
++     info
++         la famille générique `fantasy`, fournie sans déclaration
+
+-   entry .systemUi   the generic `system-ui` family, provided with no declaration
++   entry .systemUi
++     info
++         la famille générique `system-ui`, fournie sans déclaration
+
+-   entry .linked   a provision from a font file the browser fetches from a URL
++   entry .linked
++     info
++         une fourniture à partir d'un fichier de police que le navigateur récupère à une URL
+
+!     detail
+!         `Web.linked[family](url, coverage, format)` takes any URL type `Abstractable across
+!         Urls to Text` (an `HttpUrl` from `url"…"`, or text), the `Coverage` the file is
+!         declared to have — since the file is not to hand to be read, only what is declared
+!         is admitted, so a font declared at one weight refuses a request for another rather
+!         than letting the browser synthesize it — and an optional
+!         `Typesettable.Source.Format` (`Ttf`, `Otf`, `Woff` or `Woff2`) for the `format()`
+!         hint. The `family` type argument is normally inferred from the given's declared
+!         type. It renders as a `@font-face` whose `src` is `url("…") format("woff2")`.
+-       `Web.linked[family](url, coverage, format)` takes any URL type `Abstractable across
+-       Urls to Text` (an `HttpUrl` from `url"…"`, or text), the `Font.Coverage` the file is
+-       declared to have — since the file is not to hand to be read, only what is declared
+-       is admitted, so a font declared at one weight refuses a request for another rather
+-       than letting the browser synthesize it — and an optional
+-       `Typesettable.Source.Format` (`Ttf`, `Otf`, `Woff` or `Woff2`) for the `format()`
+-       hint. The `family` type argument is normally inferred from the given's declared
+-       type. It renders as a `@font-face` whose `src` is `url("…") format("woff2")`.
++     detail
++         `Web.linked[family](url, coverage, format)` prend n'importe quel type d'URL
++         `Abstractable across
++         Urls to Text` (un `HttpUrl` issu de `url"…"`, ou du texte), la `Coverage` que le fichier
++         est déclaré avoir — puisque le fichier n'est pas disponible pour être lu, seul ce qui
++         est déclaré est admis, si bien qu'une police déclarée dans une graisse refuse une
++         demande pour une autre plutôt que de laisser le navigateur la synthétiser — et un
++         `Typesettable.Source.Format` optionnel (`Ttf`, `Otf`, `Woff` ou `Woff2`) pour
++         l'indication `format()`. L'argument de type `family` est normalement inféré à partir du
++         type déclaré du given. Il se rend sous forme d'une `@font-face` dont la `src` est
++         `url("…") format("woff2")`.
+
+-   entry .local   a provision from a font the reader is expected to have installed
++   entry .local
++     info
++         une fourniture à partir d'une police que le lecteur est censé avoir installée
+
+!     detail
+!         `Web.local[family](coverage)` names the typeface in a `src: local("Name")`, the
+!         typeface's family name being the `family` literal. Nothing guarantees the reader has
+!         it, so this is the weakest provision, and its coverage — `Coverage.Unknown` unless
+!         given, which admits every face — says only what is declared.
+-       `Web.local[family](coverage)` names the typeface in a `src: local("Name")`, the
+-       typeface's family name being the `family` literal. Nothing guarantees the reader has
+-       it, so this is the weakest provision, and its coverage — `Font.Coverage.Unknown` unless
+-       given, which admits every face — says only what is declared.
++     detail
++         `Web.local[family](coverage)` nomme la police dans un `src: local("Name")`, le nom de
++         famille de la police étant le littéral `family`. Rien ne garantit que le lecteur en
++         dispose ; c'est donc la fourniture la plus faible, et sa couverture —
++         `Coverage.Unknown` si elle n'est pas fournie, qui admet toutes les fontes — ne dit que
++         ce qui est déclaré.
+
+=       given, which admits every face — says only what is declared.
+=
+-       ```scala
++         ```scala
+
+=       given, which admits every face — says only what is declared.
+=
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+=       given, which admits every face — says only what is declared.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=       import strategies.throwUnsafely
+-       import formatting.compactCssFormatting
++         import formatting.compactCssFormatting
+
+-       given (Typeface of "Menlo") is Typesettable in Web = Web.local()
++         given (Typeface of "Menlo") is Typesettable in Web = Web.local()
+
+-       Css.fontFace(Web.font(Typeface["Menlo"].face)).show
++         Css.fontFace(Web.font(Typeface["Menlo"].face)).show
+
+-       // @font-face{font-family:"Menlo";src:local("Menlo");}
++         // @font-face{font-family:"Menlo";src:local("Menlo");}
+
+=       // @font-face{font-family:"Menlo";src:local("Menlo");}
+-       ```
++         ```
+
+-   entry .imported   a provision from a stylesheet, such as a font service's, which declares the typeface itself
++   entry .imported
++     info
++         une fourniture à partir d'une feuille de style, comme celle d'un service de polices, qui
++         déclare elle-même la police
+
+-       `Web.imported[family](url, coverage)` takes the stylesheet's URL (any type
+-       `Abstractable across Urls to Text`) and the coverage it is declared to offer; the
+-       page then carries `@import url("…");`, which `Css.fontFaces` places before every
+-       other rule, as CSS requires.
++     detail
++         `Web.imported[family](url, coverage)` prend l'URL de la feuille de style (de n'importe
++         quel type `Abstractable across Urls to Text`) et la couverture qu'elle est déclarée
++         offrir ; la page porte alors `@import url("…");`, que `Css.fontFaces` place avant toute
++         autre règle, comme l'exige le CSS.
+
+-   entry .sansSerifFont   the generic sans-serif as a `Font in Web`: a default which cannot fail
++   entry .sansSerifFont
++     info
++         la famille sans-serif générique sous forme de `Font in Web` : une valeur par défaut qui ne
++         peut pas échouer
+
+-       `Typeface.SansSerif.face` paired with `.sansSerif`; since a generic family admits
+-       every face, the pairing never raises, and `Css.fontFace` of it is empty.
++     detail
++         `Typeface.SansSerif.face` associé à `.sansSerif` ; puisqu'une famille générique admet
++         toutes les fontes, l'association ne lève jamais d'erreur, et son `Css.fontFace` est
++         vide.
+
+-   entry .font   a face paired with its provision in scope, as a `Font in Web`
++   entry .font
++     info
++         une fonte associée à sa fourniture dans la portée, sous forme de `Font in Web`
+
+-       `Web.font(face)` needs a `(Typeface of family) is Typesettable in (? >: Web)` given
+-       for the face's typeface — a web provision or an embedded one — and a
+-       `Tactic[Font.Error]`, raised when the provision's coverage cannot set the face. A
+-       typeface with no provision in scope is a compile error. The face is an inline
+-       parameter, so a face whose request is in its type (`inter.bold.italic`) and a
+-       provision whose font file is on the classpath are checked as the code compiles,
+-       with the same refusal reported as a compile error. Where the expected type already
+-       names the medium, phoenicia's `Font(face)` suffices.
++     detail
++         `Web.font(face)` a besoin d'un given `(Typeface of family) is Typesettable in (? >: Web)`
++         pour la police de la fonte — une fourniture web ou une fourniture embarquée — et d'une
++         `Tactic[Font.Error]`, levée lorsque la couverture de la fourniture ne peut pas composer
++         la fonte. Une police sans fourniture dans la portée est une erreur de compilation. La
++         fonte est un paramètre inline ; une fonte dont la demande figure dans son type
++         (`inter.bold.italic`) et une fourniture dont le fichier de police est sur le classpath
++         sont donc vérifiées pendant la compilation du code, le même refus étant signalé comme
++         erreur de compilation. Là où le type attendu nomme déjà le support, le `Font(face)` de
++         phoenicia suffit.
+
+- entry .FontFace   the `@font-face` and `@import` rules a font's provision needs, as `Css.Node`s
++ entry .FontFace
++   info
++       les règles `@font-face` et `@import` dont a besoin la fourniture d'une police, sous forme de
++       `Css.Node`
+
+-   detail
+-       Renders a provision's sources as at-rules: an embedded font becomes a `@font-face`
+-       whose `src` is a base-64 `data:` URI (`font/otf` with `format("opentype")` for an
+-       `Opentype`, `font/ttf` with `format("truetype")` otherwise), so the stylesheet — or
+-       the SVG carrying it — is self-contained; a linked font a `@font-face` with its URL
+-       and format hint; a local font a `@font-face` with `src: local("Name")`; an imported
+-       stylesheet an `@import url("…");`; and a generic family nothing. Each `@font-face`
+-       carries `font-weight` (a single weight or a `100 900` range), and `font-style` and
+-       `font-stretch` where the coverage's faces differ from the defaults, spanning every
+-       entry of the coverage so that a browser's face matching finds what the file has.
+-       `Css.fontFace` and `Css.fontFaces` are the usual surface.
++   detail
++       Rend les sources d'une fourniture sous forme d'at-rules : une police embarquée devient
++       une `@font-face` dont la `src` est un URI `data:` en base 64 (`font/otf` avec
++       `format("opentype")` pour un `Opentype`, `font/ttf` avec `format("truetype")` sinon),
++       si bien que la feuille de style — ou le SVG qui la porte — est autonome ; une police
++       liée devient une `@font-face` avec son URL et son indication de format ; une police
++       locale une `@font-face` avec `src: local("Name")` ; une feuille de style importée un
++       `@import url("…");` ; et une famille générique rien. Chaque `@font-face` porte
++       `font-weight` (une graisse unique ou une plage `100 900`), ainsi que `font-style` et
++       `font-stretch` là où les fontes de la couverture diffèrent des valeurs par défaut,
++       couvrant chaque entrée de la couverture afin que la sélection de fonte d'un navigateur
++       trouve ce que contient le fichier. `Css.fontFace` et `Css.fontFaces` en sont la surface
++       habituelle.
+
+=       `Css.fontFace` and `Css.fontFaces` are the usual surface.
+-   refer cataclysm.fontFace
++   refer cataclysm.fontFace
+
+-   refer cataclysm.Web
++   refer cataclysm.Web
+
+-   entry .rules   the at-rules for one font's typeface, as nodes
++   entry .rules
++     info
++         les at-rules de la police d'une fonte, sous forme de nœuds
+
+-   entry .stylesheet   a stylesheet of the rules for several fonts, each typeface once, `@import`s first
++   entry .stylesheet
++     info
++         une feuille de style des règles de plusieurs polices, chaque police une seule fois, les
++         `@import` en premier
+
+-       Takes a `List` of fonts; a typeface which appears more than once gets its rules once,
+-       and every `@import` is moved before the `@font-face`s, as CSS requires.
++     detail
++         Prend une `List` de polices ; une police qui apparaît plus d'une fois n'obtient ses
++         règles qu'une seule fois, et chaque `@import` est placé avant les `@font-face`, comme
++         l'exige le CSS.
+
+- entry .fontFace   `Css.fontFace(font)`: the at-rules a page needs for a font's typeface, as a `Css`
++ entry .fontFace
++   info
++       `Css.fontFace(font)` : les at-rules dont une page a besoin pour la police d'une fonte, sous
++       forme de `Css`
+
+-     An extension on the `Css` companion, in `cataclysm.fonts`, taking a `Font in (? >:
+-     Web)` — a web font, or one whose provision is an embedded `Medium` one — and
+-     returning the stylesheet of `FontFace.rules` for it. Joined to a stylesheet's own
+-     rules with `+`, so a page carries the fonts its styles name; a generic family gives
+-     an empty stylesheet.
++   detail
++       Une extension sur le compagnon de `Css`, dans `cataclysm.fonts`, qui prend une
++       `Font in (? >:
++       Web)` — une police web, ou une police dont la fourniture est une fourniture `Medium`
++       embarquée — et renvoie la feuille de style de `FontFace.rules` correspondante. Jointe
++       aux propres règles d'une feuille de style avec `+`, si bien qu'une page porte les
++       polices que nomment ses styles ; une famille générique donne une feuille de style vide.
+
+=     an empty stylesheet.
+=
+-     ```scala
++       ```scala
+
+=     an empty stylesheet.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+=     an empty stylesheet.
+=
+=     ```scala
+=     import soundness.*
+-     import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=     an empty stylesheet.
+=
+=     ```scala
+=     import soundness.*
+=     import strategies.throwUnsafely
+-     import formatting.compactCssFormatting
++       import formatting.compactCssFormatting
+
+=     an empty stylesheet.
+=
+=     ```scala
+=     import soundness.*
+=     import strategies.throwUnsafely
+=     import formatting.compactCssFormatting
+=
+-     given (Typeface of "Menlo") is Typesettable in Web = Web.local()
++       given (Typeface of "Menlo") is Typesettable in Web = Web.local()
+
+-     val code: Font in Web = Web.font(Typeface["Menlo"].face)
++       val code: Font in Web = Web.font(Typeface["Menlo"].face)
+
+-     Css.fontFace(code) + css"pre { white-space: pre }"
++       Css.fontFace(code) + css"pre { white-space: pre }"
+
+=     Css.fontFace(code) + css"pre { white-space: pre }"
+-     ```
++       ```
+
+-     The declarations which select the face, `code.style`, are a `Css.Style` for an
+-     element's `style` attribute rather than a rule of the stylesheet.
++       Les déclarations qui sélectionnent la fonte, `code.style`, sont un `Css.Style` pour
++       l'attribut `style` d'un élément plutôt qu'une règle de la feuille de style.
+
+- entry .fontFaces   `Css.fontFaces(fonts*)`: the rules for several fonts, each typeface once, `@import`s first
++ entry .fontFaces
++   info
++       `Css.fontFaces(fonts*)` : les règles de plusieurs polices, chaque police une seule fois, les
++       `@import` en premier
+
+-     An extension on the `Css` companion, in `cataclysm.fonts`: `FontFace.stylesheet` over
+-     the fonts given, so a page which uses two faces of one typeface declares it once.
++   detail
++       Une extension sur le compagnon de `Css`, dans `cataclysm.fonts` : `FontFace.stylesheet`
++       sur les polices données, si bien qu'une page qui utilise deux fontes d'une même police
++       ne la déclare qu'une fois.
+
+=     the fonts given, so a page which uses two faces of one typeface declares it once.
+=
+-     ```scala
++       ```scala
+
+=     the fonts given, so a page which uses two faces of one typeface declares it once.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+=     the fonts given, so a page which uses two faces of one typeface declares it once.
+=
+=     ```scala
+=     import soundness.*
+-     import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=     the fonts given, so a page which uses two faces of one typeface declares it once.
+=
+=     ```scala
+=     import soundness.*
+=     import strategies.throwUnsafely
+-     import formatting.compactCssFormatting
++       import formatting.compactCssFormatting
+
+=     the fonts given, so a page which uses two faces of one typeface declares it once.
+=
+=     ```scala
+=     import soundness.*
+=     import strategies.throwUnsafely
+=     import formatting.compactCssFormatting
+=
+-     given (Typeface of "Menlo") is Typesettable in Web = Web.local()
++       given (Typeface of "Menlo") is Typesettable in Web = Web.local()
+
+-     val menlo = Typeface["Menlo"]
++       val menlo = Typeface["Menlo"]
+
+-     Css.fontFaces(Web.font(menlo.face), Web.font(menlo.bold)).show
++       Css.fontFaces(Web.font(menlo.face), Web.font(menlo.bold)).show
+
+-     // @font-face{font-family:"Menlo";src:local("Menlo");}
++       // @font-face{font-family:"Menlo";src:local("Menlo");}
+
+=     // @font-face{font-family:"Menlo";src:local("Menlo");}
+-     ```
++       ```
+
+- entry .style   the declarations which select a phoenicia `Face` or `Font`, as a `Css.Style`
++ entry .style
++   info
++       les déclarations qui sélectionnent une `Face` ou une `Font` de phoenicia, sous forme de
++       `Css.Style`
+
+-     An extension on `Face`, and on `Font` (through its face), in `cataclysm.fonts`. The
+-     style always has `font-family` — a generic family unquoted, any other name quoted —
+-     and `font-weight`, and adds only what differs from the defaults: `font-style: italic`
+-     or `oblique 12deg` for a slant, `font-stretch` for a width, `font-variation-settings`
+-     for positions on the font's own axes, and `font-feature-settings` for the layout
+-     features enabled or disabled. The registered weight, width and italic axes go through
+-     the high-level properties, so a static and a variable font are asked for alike.
++   detail
++       Une extension sur `Face`, et sur `Font` (au moyen de sa fonte), dans `cataclysm.fonts`.
++       Le style a toujours `font-family` — une famille générique sans guillemets, tout autre
++       nom entre guillemets — et `font-weight`, et n'ajoute que ce qui diffère des valeurs par
++       défaut : `font-style: italic` ou `oblique 12deg` pour une inclinaison, `font-stretch`
++       pour une largeur, `font-variation-settings` pour des positions sur les propres axes de
++       la police, et `font-feature-settings` pour les fonctionnalités de mise en page activées
++       ou désactivées. Les axes enregistrés de graisse, de largeur et d'italique passent par
++       les propriétés de haut niveau ; une police statique et une police variable sont donc
++       demandées de la même façon.
+
+=     the high-level properties, so a static and a variable font are asked for alike.
+=
+-     ```scala
++       ```scala
+
+=     the high-level properties, so a static and a variable font are asked for alike.
+=
+=     ```scala
+-     import soundness.*
++       import soundness.*
+
+-     val inter = Typeface["Inter"]
++       val inter = Typeface["Inter"]
+
+-     inter.bold.italic.style.text
++       inter.bold.italic.style.text
+
+-     // font-family: "Inter"; font-weight: 700; font-style: italic
++       // font-family: "Inter"; font-weight: 700; font-style: italic
+
+-     Typeface.SansSerif.face.style.text
++       Typeface.SansSerif.face.style.text
+
+-     // font-family: sans-serif; font-weight: 400
++       // font-family: sans-serif; font-weight: 400
+
+-     inter.face.varying(Variation.Axis.OpticalSize, 14.0).disabling(Face.Feature.Ligatures).style.text
++       inter.face.varying(Variation.Axis.OpticalSize, 14.0).disabling(Face.Feature.Ligatures).style.text
+
+-     // font-family: "Inter"; font-weight: 400; font-variation-settings: "opsz" 14.0; font-feature-settings: "liga" 0
++       // font-family: "Inter"; font-weight: 400; font-variation-settings: "opsz" 14.0; font-feature-settings: "liga" 0
+
+=     // font-family: "Inter"; font-weight: 400; font-variation-settings: "opsz" 14.0; font-feature-settings: "liga" 0
+-     ```
++       ```
+
+-     The result is a `Css.Style`, so it joins with another by `+` and serves as an
+-     honeycomb `style` attribute through `inlineStyle`.
++       Le résultat est un `Css.Style` ; il se joint donc à un autre par `+` et sert d'attribut
++       `style` de honeycomb au moyen d'`inlineStyle`.
+
+- entry .Styles   a stylesheet on the classpath, bound so that HTML class and id names are checked against it
++ entry .Styles
++   info
++       une feuille de style du classpath, liée de sorte que les noms de classes et d'identifiants
++       HTML soient vérifiés par rapport à elle
+
+-   detail
+-       A `Styles` is a marker carrying a stylesheet's classpath path as its `Locus` type:
+-       `Styles(cp"/site.css")` is a `Styles at "/site.css"`. Brought into scope as a given,
+-       with `cssBindings.checkedBinding` imported, it makes every honeycomb attribution
+-       `Tag.name(…)` resolve `name` against the stylesheet's `classes` and `ids` as the code
+-       compiles: a class name attaches `class="name"`, an id `id="name"`, a name the
+-       stylesheet does not mention is a compile error, and a name which is both a class and
+-       an id is one too, so a misspelled class in a template cannot reach the browser.
++   detail
++       Un `Styles` est un marqueur qui porte le chemin d'une feuille de style dans le classpath
++       comme son type `Locus` : `Styles(cp"/site.css")` est un `Styles at "/site.css"`. Placé
++       dans la portée comme given, avec `cssBindings.checkedBinding` importé, il fait que
++       chaque attribution honeycomb `Tag.name(…)` résout `name` par rapport aux `classes` et
++       aux `ids` de la feuille de style pendant la compilation du code : un nom de classe
++       attache `class="name"`, un identifiant `id="name"`, un nom que la feuille de style ne
++       mentionne pas est une erreur de compilation, et un nom qui est à la fois une classe et un
++       identifiant en est une aussi ; une classe mal orthographiée dans un template ne peut
++       donc pas atteindre le navigateur.
+
+=       an id is one too, so a misspelled class in a template cannot reach the browser.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       an id is one too, so a misspelled class in a template cannot reach the browser.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       an id is one too, so a misspelled class in a template cannot reach the browser.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       an id is one too, so a misspelled class in a template cannot reach the browser.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       an id is one too, so a misspelled class in a template cannot reach the browser.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       an id is one too, so a misspelled class in a template cannot reach the browser.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=
+-       given (Styles at "/site.css") = Styles(cp"/site.css")
++       given (Styles at "/site.css") = Styles(cp"/site.css")
+
+=       an id is one too, so a misspelled class in a template cannot reach the browser.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=
+=       given (Styles at "/site.css") = Styles(cp"/site.css")
+-       import cssBindings.checkedBinding
++       import cssBindings.checkedBinding
+
+-       Div.button(t"Save")        // class="button", if .button is in the stylesheet
++       Div.button(t"Save")        // class="button", if .button is in the stylesheet
+
+-       Section.main(Div.button)   // id="main", if #main is
++       Section.main(Div.button)   // id="main", if #main is
+
+=       Section.main(Div.button)   // id="main", if #main is
+-       ```
++       ```
+
+-       The resource is read and parsed during macro expansion (once per path), so the
+-       stylesheet must be on the compiler's classpath, and the named given's type is
+-       parenthesised, as a given type with a literal must be. A stylesheet which cannot be
+-       read or parsed is a compile error naming the path. Only `cataclysm.html` has this;
+-       it depends on hellenism and honeycomb.
++       La ressource est lue et analysée pendant l'expansion de la macro (une fois par chemin) ;
++       la feuille de style doit donc se trouver sur le classpath du compilateur, et le type du
++       given nommé est mis entre parenthèses, comme doit l'être un type de given contenant un
++       littéral. Une feuille de style qui ne peut pas être lue ou analysée est une erreur de
++       compilation qui nomme le chemin. Seul `cataclysm.html` offre ceci ; il dépend de
++       hellenism et de honeycomb.
+
+-   refer cataclysm.cssBindings
++   refer cataclysm.cssBindings
+
+-   refer cataclysm.attributeFor
++   refer cataclysm.attributeFor
+
+-   refer cataclysm.classes
++   refer cataclysm.classes
+
+-   entry .apply   `Styles(cp"/path.css")`: a marker whose `Locus` is the resource's path
++   entry .apply
++     info
++         `Styles(cp"/path.css")` : un marqueur dont le `Locus` est le chemin de la ressource
+
+-       A macro which lifts the `cp"…"` resource's `Locus` into the result type, so
+-       `Styles(cp"/site.css")` is typed `Styles at "/site.css"`; a resource with no `Locus`
+-       is a compile error.
++     detail
++         Une macro qui élève le `Locus` de la ressource `cp"…"` dans le type de résultat ;
++         `Styles(cp"/site.css")` est donc typé `Styles at "/site.css"` ; une ressource sans
++         `Locus` est une erreur de compilation.
+
+- entry .attributeFor   the attribute, `class` or `id`, a name denotes in the `Styles` stylesheet in scope
++ entry .attributeFor
++   info
++       l'attribut, `class` ou `id`, que dénote un nom dans la feuille de style `Styles` dans la
++       portée
+
+-     `attributeFor["button"]` expands to `t"class"` or `t"id"` according to which the
+-     in-scope `Styles` stylesheet declares, and fails to compile if the name is neither
+-     (_cataclysm: `name` is not a class or id in the stylesheet_), both (_… is both a class
+-     and an id in the stylesheet; rename one_), or no `Styles` given is in scope
+-     (_cataclysm: no stylesheet is in scope; add a `given Styles at "/path"`_). The name
+-     must be a string literal. `cssBindings.checkedBinding` is built on it.
++   detail
++       `attributeFor["button"]` se développe en `t"class"` ou `t"id"` selon ce que déclare la
++       feuille de style `Styles` dans la portée, et ne compile pas si le nom n'est ni l'un ni
++       l'autre (_cataclysm: `name` is not a class or id in the stylesheet_), s'il est les deux
++       (_… is both a class
++       and an id in the stylesheet; rename one_), ou si aucun given `Styles` n'est dans la
++       portée (_cataclysm: no stylesheet is in scope; add a `given Styles at "/path"`_). Le nom
++       doit être un littéral de chaîne. `cssBindings.checkedBinding` est construit dessus.
+
+- entry .inlineStyle   lets a `Css.Style` be the value of a honeycomb `style` attribute
++ entry .inlineStyle
++   info
++       permet à un `Css.Style` d'être la valeur d'un attribut `style` de honeycomb
+
+-     The given `Css.Style is Attributive to Whatwg.Css`, in `cataclysm.html`, so
+-     `Div(style = Css.Style(color = red, width = 4.0*Px))` renders `style="color: #ff0000;
+-     width: 4px"`. It is a top-level given, named uniquely, and is in scope with
+-     `import soundness.*` only if imported by name (`import soundness.inlineStyle`) or
+-     through `import cataclysm.inlineStyle`.
++   detail
++       Le given `Css.Style is Attributive to Whatwg.Css`, dans `cataclysm.html`, si bien que
++       `Div(style = Css.Style(color = red, width = 4.0*Px))` rend `style="color: #ff0000;
++       width: 4px"`. C'est un given de niveau supérieur, au nom unique, qui n'est dans la
++       portée avec `import soundness.*` que s'il est importé par son nom
++       (`import soundness.inlineStyle`) ou par `import cataclysm.inlineStyle`.
+
+- entry .cssBindings   checked class and id names for HTML, a given to import by name
++ entry .cssBindings
++   info
++       des noms de classes et d'identifiants vérifiés pour le HTML, un given à importer par son nom
+
+-   detail
+-       The package holding `checkedBinding`, which turns honeycomb's `Tag.name(…)`
+-       attributions into names checked against the `Styles` stylesheet in scope. It is
+-       imported by name, after the `Styles` given is declared:
++   detail
++       Le package qui contient `checkedBinding`, qui transforme les attributions
++       `Tag.name(…)` de honeycomb en noms vérifiés par rapport à la feuille de style `Styles`
++       dans la portée. Il est importé par son nom, après la déclaration du given `Styles` :
+
+=       imported by name, after the `Styles` given is declared:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       imported by name, after the `Styles` given is declared:
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       imported by name, after the `Styles` given is declared:
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       imported by name, after the `Styles` given is declared:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       imported by name, after the `Styles` given is declared:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       imported by name, after the `Styles` given is declared:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=
+-       given (Styles at "/site.css") = Styles(cp"/site.css")
++       given (Styles at "/site.css") = Styles(cp"/site.css")
+
+=       imported by name, after the `Styles` given is declared:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=
+=       given (Styles at "/site.css") = Styles(cp"/site.css")
+-       import cssBindings.checkedBinding
++       import cssBindings.checkedBinding
+
+=       import cssBindings.checkedBinding
+-       ```
++       ```
+
+-   entry .checkedBinding   makes `Tag.name(…)` attach `class="name"` or `id="name"` as the stylesheet in scope says
++   entry .checkedBinding
++     info
++         fait que `Tag.name(…)` attache `class="name"` ou `id="name"` selon ce que dit la feuille
++         de style dans la portée
+
+-       An inline given `Attribution of name` for every literal name but `apply`, which
+-       expands through `attributeFor` to the right attribute, or to a compile error for a
+-       name the in-scope `Styles` stylesheet does not declare. Its unchecked counterpart is
+-       honeycomb's `stylesheets.uncheckedClasses`, which attaches `class="name"` for any
+-       name; the two are alternatives, each imported by name, and not both at once.
++     detail
++         Un given inline `Attribution of name` pour chaque nom littéral sauf `apply`, qui se
++         développe au moyen d'`attributeFor` en l'attribut correct, ou en une erreur de
++         compilation pour un nom que la feuille de style `Styles` dans la portée ne déclare pas.
++         Son équivalent non vérifié est `stylesheets.uncheckedClasses` de honeycomb, qui attache
++         `class="name"` pour n'importe quel nom ; les deux sont des alternatives, chacune importée
++         par son nom, et pas les deux à la fois.

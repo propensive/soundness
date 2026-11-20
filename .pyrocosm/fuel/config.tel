@@ -1,30 +1,28 @@
 tel 1.0
 
 # The documentation fuel compiles and serves (`fuel compile`, then `fuel serve` at
-# http://localhost:8060/), one section each. The section `soundness` is written in English in
-# `doc/en` — the tutorials in `modules`, the API overlays in `api`, the glossary, and the
-# section's title in `section.tel` — and translated into French in `doc/fr`, which mirrors it
-# (`fuel translate` writes what is untranslated there, and checks what is).
-section soundness doc
-  original en en section.tel
-    overlay api
-    glossary glossary.tel
-  translation fr fr
+# http://localhost:8060/), one section each. Every document is read from the Orthant store in
+# `.orthant` (doc/readme.md), whose working tree is `doc`, and never from the working tree: an edit
+# is compiled once it is checked in (`orthant checkin`). The store's `language` axis has the
+# English, `en`, and the French beneath it, `fr`; with no `at`, the `release` axis is read at its
+# last value, `main`, what is not yet released. The section `soundness` is the tutorials in
+# `modules`, the API overlays in `api`, the glossary, and the section's title in `section.tel`.
+store .
+
+section soundness doc/soundness
+  metadata section.tel
+  overlay api
+  glossary glossary.tel
 
 section philosophy doc/philosophy
-  original en .
 
 section standards doc/standards
-  original en .
 
 section migration doc/migration
-  original en .
 
 section roadmap doc/roadmap
-  original en .
 
 section errors doc/errors
-  original en .
 
 # The classpath the fences are compiled against: the test assembly (`./mill test.assembly`,
 # which `make test` builds), carrying every JVM component and the fork's standard library.
@@ -82,11 +80,11 @@ scalac-option -Yimports:java.lang,proscenium,soundness
 # The tutorials are written as a REPL session (etc/doccheck.py feeds each file's fences to
 # flame in order): a fence continues the ones before it, may be a bare expression, and says
 # `// does not compile` where it is meant to fail. Fuel compiles each document the same way,
-# as one session, with the document's fixture from doc/fixtures compiled first.
+# as one session, with the document's fixture from etc/fixtures compiled first.
 session
-fixtures doc/fixtures
+fixtures etc/fixtures
 
-# The API documentation is one overlay per package beneath doc/en/api (the `overlay` of the
+# The API documentation is one overlay per package beneath doc/soundness/api (the `overlay` of the
 # section `soundness`), merged onto the model fuel reads from the classpath above (every
 # library is in the test assembly); `imports` is the package a document's or an overlay's
 # references resolve through. No `source` directories: Soundness's
@@ -96,4 +94,4 @@ imports soundness
 
 # The words the documents use with a precise meaning, which a term in brackets in prose shows
 # the definition of when pointed at (doc/standards/style.md, "Glossary"), are
-# doc/en/glossary.tel: the `glossary` of the section `soundness`, translated with it.
+# doc/soundness/glossary.tel: the `glossary` of the section `soundness`, translated with it.

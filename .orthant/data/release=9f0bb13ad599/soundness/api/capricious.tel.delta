@@ -1,0 +1,22 @@
+orthant 1 release
+
+-     `toss()` needs a `Random` in scope, as a mark that the code is stochastic, but draws from
+-     `scala.math.random`, the JDK's shared generator, rather than from that `Random`: a toss is
+-     therefore not reproducible from a `Seed`. For a reproducible coin, use `arbitrary[Boolean]()`.
++     `toss()` draws from the `Random` in scope, by the same rule as `arbitrary[Boolean]()`
++     (the sign of a `Long`), so a toss is reproducible from a `Seed`.
+
+-   entry .apply   a new `Random` from the `Randomization` in scope
+-       `Random(seed)` initializes a generator from the contextual `Randomization`. The `seed`
+-       argument is not passed to it: a seeded generator takes its seed from the `Seed` given
+-       which `seededRandomization` itself requires, so `Seed#stochastic` is the reliable way to
+-       seed a scope.
++   entry .apply   a new `Random` from the `Randomization` in scope, seeded with the given `Seed`
++       `Random(seed)` initializes a generator from the contextual `Randomization`, which is
++       resolved with `seed` in scope: under `seededRandomization` the generator starts from
++       `seed`, as it does in `Seed#stochastic`, and an unseeded randomization ignores it.
+
+-   entry .conjunction   the derived instance of a product: each field drawn in turn
+-   entry .disjunction   the derived instance of a sum: a variant chosen uniformly, then drawn
++   entry .conjunction   the derived instance of a product: each field drawn in turn from the same `Random`
++   entry .disjunction   the derived instance of a sum: a variant chosen uniformly, then drawn from the same `Random`

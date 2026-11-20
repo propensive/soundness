@@ -1,0 +1,206 @@
+tel 1.0
+
+base imperial
+import soundness
+
+info   the standard directories of a Unix system and a user's home, as typed, nested names
+detail
+    _Imperial_ names the conventional directories of a Unix system as a tree of nested
+    objects, so that a standard location is written as a value rather than as text, and a
+    mistyped directory is a compile error. `Home` is the tree beneath the user's home
+    directory, and `Base` the tree beneath the filesystem root. Each object is named for the
+    directory it stands for, capitalized, with any leading `.` dropped — `$HOME/.local/bin`
+    is `Home.Local.Bin` and `/var/lib` is `Base.Var.Lib`.
+
+    Every node is a `BaseLayout`. Applying one, with a path type as its type argument,
+    resolves it to that type against the `Environment` and `System` in scope, so the same
+    names serve a `Path on Linux`, plain `Text` or any other representation which is
+    `Instantiable across Paths from Text`:
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+    import environments.javaBaseEnvironment
+    import systems.javaBaseSystem
+
+    Home.Config[Path on Linux]()        // ~/.config
+    Home.Local.Share[Path on Linux]()   // ~/.local/share
+    Base.Var.Log[Path on Linux]()       // /var/log
+
+    Base.Usr.Bin.readOnly               // true
+    Base.Etc.readOnly                   // false
+    ```
+
+    A layout also says whether it is meant to be written to: `readOnly` is `true` for
+    `/boot`, `/efi`, `/sys`, `/usr` and everything beneath it, and the per-process
+    directories under `/proc`. The layouts are fixed paths: `Home.Config` is always
+    `$HOME/.config`, whatever `XDG_CONFIG_HOME` says; for the XDG-aware locations, use
+    ambience's `Xdg` values.
+
+    The library has a single source set, `imperial.core`, and everything is exported to the
+    `soundness` umbrella.
+
+refer imperial.BaseLayout
+refer imperial.Home
+refer imperial.Base
+
+entry .BaseLayout   a directory in a standard layout, resolved to any path type against the environment
+  detail
+      A `BaseLayout` is one node of the `Home` or `Base` tree: the name of a directory, the
+      layout it sits in (carried as the contextual `BaseLayout.Dir` of its enclosing
+      object), and whether it is `#readOnly`. Its `#Topic` type member is a tuple of the
+      directory names from the node up to its root, so `Base.Var.Log` has the topic `("log",
+      "var")` and the type of each node is distinct.
+
+      Applying a layout, `layout[Path on Linux]()`, renders its absolute path and constructs
+      a value of the requested path type from it. A layout under `Home` reads the `HOME`
+      environment variable, raising `Environment.Error` if it is not set; one under `Base`
+      needs no environment variable at all, though both signatures ask for an `Environment`
+      and a `System` in scope.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import environments.javaBaseEnvironment
+      import systems.javaBaseSystem
+
+      Base.Usr.Share.Doc[Path on Linux]()   // /usr/share/doc
+      Base.Proc(Pid(1)).absolutePath        // t"/proc/1"
+      ```
+
+      A new layout nested in an existing one is an object extending `BaseLayout` inside it,
+      which picks up its parent's `#dir` as its own base.
+  refer imperial.Home
+  refer imperial.Base
+  entry .Dir   a layout's position: whether it is under the home directory, and its path segments
+    detail
+        A layout's `BaseLayout.Dir` is passed to its nested layouts as a contextual value,
+        which is how a nested object knows the directory it sits in. Segments are held
+        innermost first.
+    entry #home   whether the path is relative to the user's home directory
+    entry #path   the path's segments, innermost first
+    entry #/   the directory of a child, by its name
+    entry #render   the absolute path as text, given the home directory's path
+        A `Dir` which is not home-relative and has no segments renders as `/`.
+  entry #readOnly   whether the directory is conventionally not written to by programs
+      `true` for `/boot`, `/efi`, `/sys`, `/usr` and everything beneath it, and the
+      directories of `/proc`; `false` for every layout under `Home`.
+  entry #Topic   the directory names from this node up to its root, as a tuple type
+  entry #absolutePath   the layout's absolute path, as text
+      Needs an `Environment` and a `System`. A layout under `Home` reads the `HOME`
+      environment variable, without a trailing `/`, and raises `Environment.Error` if it
+      is unset.
+  entry #dir   the `BaseLayout.Dir` of this layout, given to the layouts nested in it
+  entry #apply   the layout's absolute path, as a path type of the caller's choosing
+      `layout[Path on Linux]()` makes a value of any type which is `Instantiable across
+      Paths from Text` from `#absolutePath`. Needs an `Environment` and a `System`, and
+      raises `Environment.Error` (for a `Home` layout whose `HOME` is unset) and
+      `Property.Error`.
+
+entry .Home   the user's home directory, `$HOME`, and the standard directories beneath it
+  detail
+      A `BaseLayout` resolved against the `HOME` environment variable. `Home[Path on
+      Linux]()` is the home directory itself; its nested objects name the conventional
+      directories beneath it.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import environments.javaBaseEnvironment
+      import systems.javaBaseSystem
+
+      Home.Cache[Path on Linux]()       // ~/.cache
+      Home.Local.Bin[Path on Linux]()   // ~/.local/bin
+      ```
+
+      The paths are fixed: `Home.Config` is `$HOME/.config` even where `XDG_CONFIG_HOME`
+      names another directory, so a program which should honour the XDG variables should
+      use ambience's `Xdg` instead.
+  refer imperial.BaseLayout
+  refer imperial.Base
+  entry .Cache   the user's cache directory, `~/.cache`
+  entry .Config   the user's configuration directory, `~/.config`
+  entry .Local   the user's local installation prefix, `~/.local`
+    detail
+        The per-user counterpart of `/usr`, holding a user's own programs, libraries, data
+        and state.
+    entry .Bin   the user's own executables, `~/.local/bin`
+    entry .Lib   the user's own libraries, `~/.local/lib`
+    entry .Share   the user's own application data, `~/.local/share`
+    entry .State   the user's application state, `~/.local/state`
+
+entry .Base   the filesystem root, `/`, and the standard system directories beneath it
+  detail
+      A `BaseLayout` for the root directory, with nested objects for the directories of the
+      Filesystem Hierarchy Standard. `Base[Path on Linux]()` is `/`. None of its layouts
+      reads the environment, so none raises `Environment.Error` in practice.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import environments.javaBaseEnvironment
+      import systems.javaBaseSystem
+
+      Base.Usr.Share[Path on Linux]()   // /usr/share
+      Base.Var.Lib[Path on Linux]()     // /var/lib
+      Base.Usr.readOnly                 // true
+      ```
+  refer imperial.BaseLayout
+  refer imperial.Home
+  entry .Boot   the boot loader's files, `/boot`, read-only
+  entry .Efi   the EFI system partition, `/efi`, read-only
+  entry .Etc   the system's configuration files, `/etc`
+  entry .Home   the directory holding users' home directories, `/home`
+      Not to be confused with the top-level `Home`, which is the current user's own home
+      directory.
+  entry .Root   the root user's home directory, `/root`
+  entry .Srv   data served by the system, `/srv`
+  entry .Tmp   temporary files, `/tmp`, which may not survive a reboot
+  entry .Run   runtime data since the last boot, `/run`
+    detail
+        Volatile state such as sockets and process identifier files, cleared at boot.
+    entry .Log   runtime logs, `/run/log`
+    entry .User   per-user runtime directories, `/run/user`
+  entry .Usr   shareable, read-only system data, `/usr`
+    detail
+        Every layout beneath `/usr` is `readOnly`: programs installed by the system's
+        package manager live here, and an application should not write to it.
+    entry .Bin   system executables, `/usr/bin`, read-only
+    entry .Include   C header files, `/usr/include`, read-only
+    entry .Lib   system libraries, `/usr/lib`, read-only
+    entry .Share   architecture-independent data, `/usr/share`, read-only
+      detail
+          Documentation, and the factory defaults from which `/etc` and `/var` can be
+          rebuilt.
+      entry .Doc   package documentation, `/usr/share/doc`, read-only
+      entry .Factory   pristine copies of system configuration, `/usr/share/factory`, read-only
+        detail
+            The defaults from which a system's `/etc` and `/var` can be restored.
+        entry .Etc   the factory copy of `/etc`, `/usr/share/factory/etc`, read-only
+        entry .Var   the factory copy of `/var`, `/usr/share/factory/var`, read-only
+  entry .Var   variable data which persists across reboots, `/var`
+    detail
+        Data which the system's programs write while running: caches, state, logs, queues
+        and temporary files which must survive a reboot.
+    entry .Cache   application caches, `/var/cache`
+    entry .Lib   application state, `/var/lib`
+    entry .Log   log files, `/var/log`
+    entry .Spool   queues of pending work, such as mail and print jobs, `/var/spool`
+    entry .Tmp   temporary files preserved across reboots, `/var/tmp`
+  entry .Dev   device files, `/dev`
+    detail
+        The kernel's device nodes.
+    entry .Shm   shared memory, `/dev/shm`
+  entry .Proc   the process information filesystem, `/proc`
+    detail
+        The kernel's view of running processes. `Base.Proc(pid)` is the directory of one
+        process, `/proc/<pid>`, and is read-only.
+
+        ```scala
+        import soundness.*
+
+        Base.Proc(Pid(1)).readOnly   // true
+        ```
+    entry .apply   the directory of one process, `/proc/<pid>`, by its `Pid`
+    entry .Sys   kernel parameters, `/proc/sys`, read-only
+  entry .Sys   the kernel's device and driver tree, `/sys`, read-only

@@ -1,0 +1,8 @@
+orthant 1 release
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLocal
++ import systems.javaBaseSystem
+
+- val archive = temporaryDirectory[Path on Linux] / "compression" / Uuid().show / "fox.txt.gz"
++ val archive = temporaryDirectory[Path on Local] / "compression" / Uuid().show / "fox.txt.gz"

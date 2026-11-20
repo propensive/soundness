@@ -1,0 +1,1527 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base charisma
++ base charisma
+
+- import soundness
++ import soundness
+
+- info   the periodic table, molecules, formulas and chemical equations as typed values
++ info
++     le tableau périodique, les molécules, les formules et les équations chimiques sous forme de
++     valeurs typées
+
+- detail
+-     _Charisma_ models chemical notation as structure rather than text. The 118 elements are
+-     values on `PeriodicTable`; elements bond into a `Molecule` with `*`, which can carry a
+-     charge and a physical state; molecules with coefficients sum into a
+-     `Chemical.Formula` with `+`; and two formulas join, with one of five typed reaction
+-     arrows, into a `Chemical.Equation` which can say whether it balances.
++ detail
++     _Charisma_ modélise la notation chimique comme une structure plutôt que comme du texte. Les
++     118 éléments sont des valeurs de `PeriodicTable` ; les éléments se lient en une `Molecule`
++     avec `*`, qui peut porter une charge et un état physique ; les molécules affectées de
++     coefficients s'additionnent en une `Chemical.Formula` avec `+` ; et deux formules se
++     joignent, par l'une de cinq flèches de réaction typées, en une `Chemical.Equation` qui sait
++     dire si elle est équilibrée.
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     import PeriodicTable.{H, O}
++     import PeriodicTable.{H, O}
+
+-     val water = H[2]*O
++     val water = H[2]*O
+
+-     water.show                                  // t"H₂O"
++     water.show                                  // t"H₂O"
+
+-     val synthesis = H[2]*2 + O[2] --> water*2
++     val synthesis = H[2]*2 + O[2] --> water*2
+
+-     synthesis.show                              // t"2H₂ + O₂ → 2H₂O"
++     synthesis.show                              // t"2H₂ + O₂ → 2H₂O"
+
+-     synthesis.balanced                          // true
++     synthesis.balanced                          // true
+
+-     ```
++     ```
+
+-     The operators are defined on two traits: `Molecular`, which an element and a molecule
+-     extend, has the bond `*`, the coefficient `*` and the charge operators; `Formulable`,
+-     which every molecular value and every formula extends, has `+` and the reaction arrows.
+-     So an element, a molecule and a formula can all stand on either side of an equation.
++     Les opérateurs sont définis sur deux traits : `Molecular`, qu'étendent un élément et une
++     molécule, porte la liaison `*`, le coefficient `*` et les opérateurs de charge ;
++     `Formulable`, qu'étendent toute valeur moléculaire et toute formule, porte `+` et les flèches
++     de réaction. Un élément, une molécule et une formule peuvent donc tous figurer de l'un ou
++     l'autre côté d'une équation.
+
+-     Each value renders with `show` in conventional notation — subscript counts,
+-     superscript charges, the Hill order with carbon and hydrogen first — and inspects
+-     distinctly, so that an element, a molecule and a one-term formula are never confused in
+-     a test failure.
++     Chaque valeur se rend avec `show` dans la notation conventionnelle — nombres en indice,
++     charges en exposant, ordre de Hill avec le carbone et l'hydrogène en tête — et s'inspecte de
++     façon distincte, afin qu'un élément, une molécule et une formule à un seul terme ne soient
++     jamais confondus dans l'échec d'un test.
+
+-     The library is a single source set, `charisma.core`, which is platform-neutral, and
+-     everything is exported to the `soundness` umbrella. It has no givens to import.
++     La bibliothèque est un seul ensemble de sources, `charisma.core`, indépendant de la
++     plateforme, et tout est exporté vers le package parapluie `soundness`. Elle n'a aucun given à
++     importer.
+
+- refer charisma.PeriodicTable
++ refer charisma.PeriodicTable
+
+- refer charisma.Molecule
++ refer charisma.Molecule
+
+- refer charisma.Chemical
++ refer charisma.Chemical
+
+- refer charisma.Molecular
++ refer charisma.Molecular
+
+- refer charisma.Formulable
++ refer charisma.Formulable
+
+- entry .Chemical   a namespace for the chemistry vocabulary: elements, formulas and equations
++ entry .Chemical
++   info
++       un espace de noms pour le vocabulaire de la chimie : éléments, formules et équations
+
+-   detail
+-       There is no `Chemical` type: the object holds `Element`, `Formula` and `Equation`, the
+-       three kinds of chemical thing whose names would otherwise be too general for the
+-       umbrella. Molecules are `Molecule`, at the package's top level.
++   detail
++       Il n'y a pas de type `Chemical` : l'objet contient `Element`, `Formula` et `Equation`, les
++       trois sortes d'entités chimiques dont les noms seraient sinon trop généraux pour le package
++       parapluie. Les molécules sont des `Molecule`, au niveau supérieur du package.
+
+=       umbrella. Molecules are `Molecule`, at the package's top level.
+-   refer charisma.PeriodicTable
++   refer charisma.PeriodicTable
+
+=   refer charisma.PeriodicTable
+-   refer charisma.Molecule
++   refer charisma.Molecule
+
+-   entry .Element   a chemical element: its atomic number, symbol and name
++   entry .Element
++     info
++         un élément chimique : son numéro atomique, son symbole et son nom
+
+-     detail
+-         An element is a value, usually taken from `PeriodicTable`, and is `Molecular`: on its
+-         own it is a molecule of one atom, it bonds with `*`, and a type argument repeats it.
++     detail
++         Un élément est une valeur, généralement tirée de `PeriodicTable`, et il est `Molecular` :
++         à lui seul, c'est une molécule d'un atome ; il se lie avec `*`, et un argument de type le
++         répète.
+
+=         own it is a molecule of one atom, it bonds with `*`, and a type argument repeats it.
+=
+-         ```scala
++         ```scala
+
+=         own it is a molecule of one atom, it bonds with `*`, and a type argument repeats it.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         import PeriodicTable.{O, Fe}
++         import PeriodicTable.{O, Fe}
+
+-         Fe.number      // 26
++         Fe.number      // 26
+
+-         Fe.show        // t"Fe"
++         Fe.show        // t"Fe"
+
+-         O[2].show      // t"O₂"
++         O[2].show      // t"O₂"
+
+-         Fe.inspect     // t"⚛Fe(26)"
++         Fe.inspect     // t"⚛Fe(26)"
+
+=         Fe.inspect     // t"⚛Fe(26)"
+-         ```
++         ```
+
+-         An element shows as its bare symbol, and inspects with an atom sign and its atomic
+-         number, which tells it apart from any other short text.
++         Un élément s'affiche sous la forme de son symbole nu, et s'inspecte avec un signe d'atome
++         et son numéro atomique, ce qui le distingue de tout autre texte court.
+
+-     entry .showable   shows an element as its symbol, `Fe`
++     entry .showable
++       info
++           affiche un élément sous la forme de son symbole, `Fe`
+
+-     entry .inspectable   inspects an element with an atom sign and its number, `⚛Fe(26)`
++     entry .inspectable
++       info
++           inspecte un élément avec un signe d'atome et son numéro, `⚛Fe(26)`
+
+-     entry #number   the atomic number
++     entry #number
++       info
++           le numéro atomique
+
+-     entry #symbol   the chemical symbol, `Fe`
++     entry #symbol
++       info
++           le symbole chimique, `Fe`
+
+-     entry #name   the English name, `Iron`
++     entry #name
++       info
++           le nom anglais, `Iron`
+
+-     entry #apply   a molecule of this element repeated, with the count as a type argument, `O[2]`
++     entry #apply
++       info
++           une molécule de cet élément répété, le nombre étant un argument de type, `O[2]`
+
+-         `O[2]` is the molecule of two oxygen atoms: the count is a literal natural-number type,
+-         so it must be known as the code compiles. For a count known only at runtime, use
+-         `O ** n`.
++       detail
++           `O[2]` est la molécule de deux atomes d'oxygène : le nombre est un type littéral
++           d'entier naturel, et doit donc être connu lors de la compilation du code. Pour un nombre
++           connu seulement à l'exécution, utilisez `O ** n`.
+
+-     entry #molecule   this element as a molecule of one atom
++     entry #molecule
++       info
++           cet élément sous forme de molécule d'un atome
+
+-   entry .Formula   a sum of molecules, each with a coefficient: `2H₂ + O₂`
++   entry .Formula
++     info
++         une somme de molécules, chacune affectée d'un coefficient : `2H₂ + O₂`
+
+-     detail
+-         A formula is a `Ledger` from each `Molecule` to its coefficient. It is made from a
+-         molecular value with a coefficient (`H[2]*2`) or with `.apply`, and grows with `+`,
+-         which adds the coefficients of a molecule that appears in both terms.
++     detail
++         Une formule est un `Ledger` associant à chaque `Molecule` son coefficient. Elle se crée à
++         partir d'une valeur moléculaire avec un coefficient (`H[2]*2`) ou avec `.apply`, et
++         grandit avec `+`, qui additionne les coefficients d'une molécule présente dans les deux
++         termes.
+
+=         which adds the coefficients of a molecule that appears in both terms.
+=
+-         ```scala
++         ```scala
+
+=         which adds the coefficients of a molecule that appears in both terms.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         which adds the coefficients of a molecule that appears in both terms.
+=
+=         ```scala
+=         import soundness.*
+-         import PeriodicTable.{H, O}
++         import PeriodicTable.{H, O}
+
+-         val reactants = H[2]*2 + O[2]
++         val reactants = H[2]*2 + O[2]
+
+-         reactants.show       // t"2H₂ + O₂"
++         reactants.show       // t"2H₂ + O₂"
+
+-         reactants.atoms      // Map(H -> 4, O -> 2)
++         reactants.atoms      // Map(H -> 4, O -> 2)
+
+-         reactants.inspect    // t"2H₂ + 1O₂"
++         reactants.inspect    // t"2H₂ + 1O₂"
+
+=         reactants.inspect    // t"2H₂ + 1O₂"
+-         ```
++         ```
+
+-         A coefficient of 1 is left implicit by `show` but written out by `inspect`, so a
+-         one-term formula never inspects the same as the molecule it holds.
++         Un coefficient de 1 reste implicite avec `show` mais est écrit par `inspect` ; une formule
++         à un seul terme ne s'inspecte donc jamais comme la molécule qu'elle contient.
+
+-     entry .apply   a formula of a single molecule with a coefficient of 1
++     entry .apply
++       info
++           une formule d'une seule molécule de coefficient 1
+
+-     entry .showable   shows a formula as its terms joined by ` + `, omitting coefficients of 1
++     entry .showable
++       info
++           affiche une formule sous la forme de ses termes joints par ` + `, en omettant les
++           coefficients de 1
+
+-     entry .inspectable   inspects a formula with every coefficient written, or `∅` if it is empty
++     entry .inspectable
++       info
++           inspecte une formule en écrivant chaque coefficient, ou `∅` si elle est vide
+
+-     entry #molecules   each molecule of the formula, with its coefficient
++     entry #molecules
++       info
++           chaque molécule de la formule, avec son coefficient
+
+-     entry #formula   the formula itself, as `Formulable` requires
++     entry #formula
++       info
++           la formule elle-même, comme l'exige `Formulable`
+
+-     entry #atoms   the number of atoms of each element across every term, counting coefficients
++     entry #atoms
++       info
++           le nombre d'atomes de chaque élément sur l'ensemble des termes, coefficients compris
+
+-         The multiset of atoms on one side of an equation: each molecule's atoms multiplied by
+-         its coefficient, summed. Two sides balance when their `atoms` are equal.
++       detail
++           Le multiensemble des atomes d'un côté d'une équation : les atomes de chaque molécule
++           multipliés par son coefficient, puis additionnés. Deux côtés sont équilibrés lorsque
++           leurs `atoms` sont égaux.
+
+-   entry .Equation   two formulas joined by a reaction arrow: `2H₂ + O₂ → 2H₂O`
++   entry .Equation
++     info
++         deux formules jointes par une flèche de réaction : `2H₂ + O₂ → 2H₂O`
+
+-     detail
+-         An equation is made from two formulable values with one of `Formulable`'s arrows,
+-         `-->`, `<->`, `<=>`, `<~>` or `===`, each giving a different `Reaction`.
++     detail
++         Une équation se crée à partir de deux valeurs formulables avec l'une des flèches de
++         `Formulable`, `-->`, `<->`, `<=>`, `<~>` ou `===`, chacune donnant une `Reaction`
++         différente.
+
+-         ```scala fuel
++         ```scala fuel
+
+-         alternative Forward
++         alternative Forward
+
+=         alternative Forward
+-           code
++           code
+
+=         alternative Forward
+=           code
+-               import soundness.*
++               import soundness.*
+
+=         alternative Forward
+=           code
+=               import soundness.*
+-               import PeriodicTable.{H, O}
++               import PeriodicTable.{H, O}
+
+-               (H[2]*2 + O[2] --> (H[2]*O)*2).show   // t"2H₂ + O₂ → 2H₂O"
++               (H[2]*2 + O[2] --> (H[2]*O)*2).show   // t"2H₂ + O₂ → 2H₂O"
+
+-         alternative Both directions
++         alternative Both directions
+
+=         alternative Both directions
+-           code
++           code
+
+=         alternative Both directions
+=           code
+-               import soundness.*
++               import soundness.*
+
+=         alternative Both directions
+=           code
+=               import soundness.*
+-               import PeriodicTable.{H, O}
++               import PeriodicTable.{H, O}
+
+-               (H[2]*2 + O[2] <=> (H[2]*O)*2).show   // t"2H₂ + O₂ ⇄ 2H₂O"
++               (H[2]*2 + O[2] <=> (H[2]*O)*2).show   // t"2H₂ + O₂ ⇄ 2H₂O"
+
+-         alternative Equilibrium
++         alternative Equilibrium
+
+=         alternative Equilibrium
+-           code
++           code
+
+=         alternative Equilibrium
+=           code
+-               import soundness.*
++               import soundness.*
+
+=         alternative Equilibrium
+=           code
+=               import soundness.*
+-               import PeriodicTable.{H, O}
++               import PeriodicTable.{H, O}
+
+-               (H[2]*2 + O[2] <~> (H[2]*O)*2).show   // t"2H₂ + O₂ ⇋ 2H₂O"
++               (H[2]*2 + O[2] <~> (H[2]*O)*2).show   // t"2H₂ + O₂ ⇋ 2H₂O"
+
+-         ##
++         ##
+
+=         ##
+-         ```
++         ```
+
+-         `#balanced` compares the atoms of the two sides; nothing else is checked, so an
+-         unbalanced equation is a valid value.
++         `#balanced` compare les atomes des deux côtés ; rien d'autre n'est vérifié, si bien qu'une
++         équation non équilibrée est une valeur valide.
+
+-     entry .showable   shows an equation as its two sides with the reaction's arrow between them
++     entry .showable
++       info
++           affiche une équation sous la forme de ses deux côtés, séparés par la flèche de la
++           réaction
+
+-     entry .inspectable   inspects an equation with its parts and the reaction named, not drawn
++     entry .inspectable
++       info
++           inspecte une équation avec ses parties et la réaction nommée, et non dessinée
+
+-         `Equation(2H₂ + 1O₂ ╱ NetForward ╱ 2H₂O)`, so that its inspection is never the
+-         notation `show` produces.
++       detail
++           `Equation(2H₂ + 1O₂ ╱ NetForward ╱ 2H₂O)`, afin que son inspection ne soit jamais la
++           notation que produit `show`.
+
+-     entry #lhs   the formula on the left of the arrow
++     entry #lhs
++       info
++           la formule à gauche de la flèche
+
+-     entry #reaction   the kind of reaction the arrow denotes
++     entry #reaction
++       info
++           la sorte de réaction que dénote la flèche
+
+-     entry #rhs   the formula on the right of the arrow
++     entry #rhs
++       info
++           la formule à droite de la flèche
+
+-     entry #balanced   whether both sides have the same number of atoms of each element
++     entry #balanced
++       info
++           indique si les deux côtés ont le même nombre d'atomes de chaque élément
+
+-         Compares `lhs.atoms` with `rhs.atoms`. Charge is not compared, so an equation whose
+-         sides differ only in their charge counts as balanced.
++       detail
++           Compare `lhs.atoms` à `rhs.atoms`. La charge n'est pas comparée ; une équation dont les
++           côtés ne diffèrent que par leur charge est donc considérée comme équilibrée.
+
+=         sides differ only in their charge counts as balanced.
+=
+-         ```scala
++           ```scala
+
+=         sides differ only in their charge counts as balanced.
+=
+=         ```scala
+-         import soundness.*
++           import soundness.*
+
+=         sides differ only in their charge counts as balanced.
+=
+=         ```scala
+=         import soundness.*
+-         import PeriodicTable.{H, O}
++           import PeriodicTable.{H, O}
+
+-         (H[2]*2 + O[2] --> (H[2]*O)*2).balanced   // true
++           (H[2]*2 + O[2] --> (H[2]*O)*2).balanced   // true
+
+-         (H[2] + O[2] --> H[2]*O).balanced         // false
++           (H[2] + O[2] --> H[2]*O).balanced         // false
+
+=         (H[2] + O[2] --> H[2]*O).balanced         // false
+-         ```
++           ```
+
+- entry .Molecule   atoms bonded together, with an electric charge and an optional physical state
++ entry .Molecule
++   info
++       des atomes liés entre eux, avec une charge électrique et un état physique optionnel
+
+-   detail
+-       A molecule is a `Map` from each element to its count, a charge, and an optional
+-       `PhysicalState`. It is usually built from elements with `Molecular`'s operators rather
+-       than constructed directly.
++   detail
++       Une molécule est une `Map` associant à chaque élément son nombre d'atomes, une charge, et un
++       `PhysicalState` optionnel. Elle se construit généralement à partir d'éléments avec les
++       opérateurs de `Molecular` plutôt que directement.
+
+=       than constructed directly.
+=
+-       ```scala
++       ```scala
+
+=       than constructed directly.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import PeriodicTable.{C, Cl, H, O, S}
++       import PeriodicTable.{C, Cl, H, O, S}
+
+-       (C[6]*H[12]*O[6]).show                          // t"C₆H₁₂O₆"
++       (C[6]*H[12]*O[6]).show                          // t"C₆H₁₂O₆"
+
+-       (S*O[4]).ion(-2).show                           // t"O₄S²⁻"
++       (S*O[4]).ion(-2).show                           // t"O₄S²⁻"
+
+-       (-Cl.molecule).inState(PhysicalState.Aqueous).show  // t"Cl⁻(aq)"
++       (-Cl.molecule).inState(PhysicalState.Aqueous).show  // t"Cl⁻(aq)"
+
+=       (-Cl.molecule).inState(PhysicalState.Aqueous).show  // t"Cl⁻(aq)"
+-       ```
++       ```
+
+-       It shows in Hill order: carbon first and then hydrogen when the molecule has carbon,
+-       and every other element (hydrogen included, in a molecule without carbon)
+-       alphabetically by symbol. Counts are subscripts, a charge is a superscript magnitude
+-       (omitted for ±1) followed by `⁺` or `⁻`, and the state follows in parentheses.
+-       Bonding two molecules sums their atoms and charges and leaves the state unset, so a
+-       state must be applied to the finished molecule.
++       Elle s'affiche dans l'ordre de Hill : le carbone d'abord, puis l'hydrogène lorsque la
++       molécule contient du carbone, et tous les autres éléments (hydrogène compris, dans une
++       molécule sans carbone) par ordre alphabétique de symbole. Les nombres sont en indice, une
++       charge est une valeur absolue en exposant (omise pour ±1) suivie de `⁺` ou `⁻`, et l'état
++       suit entre parenthèses. Lier deux molécules additionne leurs atomes et leurs charges et
++       laisse l'état non défini ; un état doit donc être appliqué à la molécule terminée.
+
+-   refer charisma.Molecular
++   refer charisma.Molecular
+
+=   refer charisma.Molecular
+-   refer charisma.PeriodicTable
++   refer charisma.PeriodicTable
+
+-   entry .apply   an empty, uncharged molecule, or one of a single atom of an element
++   entry .apply
++     info
++         une molécule vide et non chargée, ou une molécule d'un seul atome d'un élément
+
+-   entry .showable   shows a molecule in Hill order, with subscript counts, charge and state: `O₄S²⁻(aq)`
++   entry .showable
++     info
++         affiche une molécule dans l'ordre de Hill, avec nombres en indice, charge et état :
++         `O₄S²⁻(aq)`
+
+-   entry .inspectable   inspects a molecule as the formula `show` gives, `H₂O`
++   entry .inspectable
++     info
++         inspecte une molécule sous la forme de la formule que donne `show`, `H₂O`
+
+-   entry #elements   each element of the molecule, with its number of atoms
++   entry #elements
++     info
++         chaque élément de la molécule, avec son nombre d'atomes
+
+-   entry #charge   the electric charge, in units of the elementary charge
++   entry #charge
++     info
++         la charge électrique, en unités de charge élémentaire
+
+-   entry #state   the physical state, or `Unset` if none was given
++   entry #state
++     info
++         l'état physique, ou `Unset` si aucun n'a été donné
+
+-   entry #molecule   the molecule itself, as `Molecular` requires
++   entry #molecule
++     info
++         la molécule elle-même, comme l'exige `Molecular`
+
+- entry .Molecular   anything which is a molecule: bonds with `*`, scales, and carries a charge and state
++ entry .Molecular
++   info
++       tout ce qui est une molécule : se lie avec `*`, se met à l'échelle, et porte une charge et
++       un état
+
+-   detail
+-       A trait extended by `Chemical.Element` and `Molecule`. Each operator works on the
+-       value's `#molecule`.
++   detail
++       Un trait qu'étendent `Chemical.Element` et `Molecule`. Chaque opérateur agit sur la
++       `#molecule` de la valeur.
+
+=       value's `#molecule`.
+=
+-       ```scala
++       ```scala
+
+=       value's `#molecule`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import PeriodicTable.{Cl, H, N, Na, O}
++       import PeriodicTable.{Cl, H, N, Na, O}
+
+-       (H[2]*O).show          // t"H₂O": a bond
++       (H[2]*O).show          // t"H₂O": a bond
+
+-       (H[2]*O ** 3).show     // t"H₆O₃": every atom tripled, one molecule
++       (H[2]*O ** 3).show     // t"H₆O₃": every atom tripled, one molecule
+
+-       (H[2]*O*2).show        // t"2H₂O": a coefficient, a formula
++       (H[2]*O*2).show        // t"2H₂O": a coefficient, a formula
+
+-       (+(N*H[4])).show       // t"H₄N⁺"
++       (+(N*H[4])).show       // t"H₄N⁺"
+
+-       (+Na*(-Cl)).charge     // 0
++       (+Na*(-Cl)).charge     // 0
+
+=       (+Na*(-Cl)).charge     // 0
+-       ```
++       ```
+
+-       There are two multiplications, both spelt `*`: by another molecular value it bonds
+-       them into one `Molecule`, and by an `Int` it gives a `Chemical.Formula` with that
+-       coefficient. `**` multiplies the atoms within the molecule instead.
++       Il y a deux multiplications, toutes deux écrites `*` : par une autre valeur moléculaire,
++       elle les lie en une seule `Molecule`, et par un `Int`, elle donne une `Chemical.Formula`
++       avec ce coefficient. `**` multiplie plutôt les atomes au sein de la molécule.
+
+=       coefficient. `**` multiplies the atoms within the molecule instead.
+-   refer charisma.Molecule
++   refer charisma.Molecule
+
+-   refer charisma.Formulable
++   refer charisma.Formulable
+
+-   entry #molecule   this value as a `Molecule`
++   entry #molecule
++     info
++         cette valeur sous forme de `Molecule`
+
+-   entry #formula   this value as a formula of one molecule with a coefficient of 1
++   entry #formula
++     info
++         cette valeur sous forme de formule d'une seule molécule de coefficient 1
+
+-   entry #*   bonds with another molecule, or gives a formula with an `Int` coefficient
++   entry #*
++     info
++         se lie à une autre molécule, ou donne une formule avec un coefficient `Int`
+
+-       `H[2]*O` is one molecule with the atoms and charges of both; `water*2` is the formula
+-       `2H₂O`. The bond leaves the physical state unset.
++     detail
++         `H[2]*O` est une seule molécule avec les atomes et les charges des deux ; `water*2` est la
++         formule `2H₂O`. La liaison laisse l'état physique non défini.
+
+-   entry #**   the molecule with every atom count and its charge multiplied
++   entry #**
++     info
++         la molécule avec chaque nombre d'atomes et sa charge multipliés
+
+-       `(H[2]*O) ** 3` is `H₆O₃`, a single molecule; compare `*` with an `Int`, which gives a
+-       coefficient.
++     detail
++         `(H[2]*O) ** 3` donne `H₆O₃`, une seule molécule ; comparez avec `*` suivi d'un `Int`, qui
++         donne un coefficient.
+
+-   entry #unary_-   the molecule with its charge lowered by one: `-Cl` is the chloride ion
++   entry #unary_-
++     info
++         la molécule avec sa charge diminuée de un : `-Cl` est l'ion chlorure
+
+-   entry #unary_+   the molecule with its charge raised by one: `+Na` is the sodium ion
++   entry #unary_+
++     info
++         la molécule avec sa charge augmentée de un : `+Na` est l'ion sodium
+
+-   entry #ion   the molecule with its charge replaced: `Fe.ion(3)`
++   entry #ion
++     info
++         la molécule avec sa charge remplacée : `Fe.ion(3)`
+
+-   entry #inState   the molecule with its physical state replaced, or removed with `Unset`
++   entry #inState
++     info
++         la molécule avec son état physique remplacé, ou retiré avec `Unset`
+
+=   entry #inState   the molecule with its physical state replaced, or removed with `Unset`
+-       ```scala
++     detail
++         ```scala
+
+=   entry #inState   the molecule with its physical state replaced, or removed with `Unset`
+=       ```scala
+-       import soundness.*
++         import soundness.*
+
+-       import PeriodicTable.{Cl, Na}
++         import PeriodicTable.{Cl, Na}
+
+-       (Na*Cl).inState(PhysicalState.Aqueous).show   // t"ClNa(aq)"
++         (Na*Cl).inState(PhysicalState.Aqueous).show   // t"ClNa(aq)"
+
+=       (Na*Cl).inState(PhysicalState.Aqueous).show   // t"ClNa(aq)"
+-       ```
++         ```
+
+-       Mind the precedence: `Na*Cl.inState(…)` sets the state on the chlorine alone, and the
+-       bond then discards it.
++         Attention à la précédence : `Na*Cl.inState(…)` fixe l'état du seul chlore, et la liaison
++         l'écarte ensuite.
+
+- entry .Formulable   anything which can be one side of an equation: adds with `+` and takes a reaction arrow
++ entry .Formulable
++   info
++       tout ce qui peut former un côté d'une équation : s'additionne avec `+` et accepte une flèche
++       de réaction
+
+-   detail
+-       A trait extended by `Molecular` values and by `Chemical.Formula`. Its operators work on
+-       the value's `#formula`, so elements, molecules and formulas mix freely.
++   detail
++       Un trait qu'étendent les valeurs `Molecular` et `Chemical.Formula`. Ses opérateurs agissent
++       sur la `#formula` de la valeur ; éléments, molécules et formules se mélangent donc
++       librement.
+
+=       the value's `#formula`, so elements, molecules and formulas mix freely.
+=
+-       ```scala
++       ```scala
+
+=       the value's `#formula`, so elements, molecules and formulas mix freely.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import PeriodicTable.{C, H, O}
++       import PeriodicTable.{C, H, O}
+
+-       val glucose = C[6]*H[12]*O[6]
++       val glucose = C[6]*H[12]*O[6]
+
+-       val combustion = glucose + O[2]*6 --> (C*O[2]*6 + H[2]*O*6)
++       val combustion = glucose + O[2]*6 --> (C*O[2]*6 + H[2]*O*6)
+
+-       combustion.balanced   // true
++       combustion.balanced   // true
+
+=       combustion.balanced   // true
+-       ```
++       ```
+
+-       `-->` begins with `-`, so it binds exactly as tightly as `+` and associates to the
+-       left: a sum on its right must be parenthesised, or the `+` applies to the equation
+-       and the line does not compile. The other arrows bind more loosely than `+`.
++       `-->` commence par `-` ; il lie donc exactement aussi fort que `+` et s'associe à gauche :
++       une somme à sa droite doit être parenthésée, sinon le `+` s'applique à l'équation et la
++       ligne ne compile pas. Les autres flèches lient moins fort que `+`.
+
+-       Each arrow makes a `Chemical.Equation` with a different `Reaction`: `-->` a net forward
+-       reaction, `<=>` one proceeding in both directions, `<~>` one at equilibrium, `<->` a
+-       resonance, and `===` a stoichiometric relation.
++       Chaque flèche crée une `Chemical.Equation` avec une `Reaction` différente : `-->` une
++       réaction nette dans le sens direct, `<=>` une réaction qui se produit dans les deux sens,
++       `<~>` une réaction à l'équilibre, `<->` une résonance, et `===` une relation
++       stœchiométrique.
+
+-   refer charisma.Chemical.Equation
++   refer charisma.Chemical.Equation
+
+-   refer charisma.Reaction
++   refer charisma.Reaction
+
+-   entry #formula   this value as a `Chemical.Formula`
++   entry #formula
++     info
++         cette valeur sous forme de `Chemical.Formula`
+
+-   entry #+   the sum of two formulas, adding the coefficients of a molecule in both
++   entry #+
++     info
++         la somme de deux formules, qui additionne les coefficients d'une molécule présente dans
++         les deux
+
+-   entry #-->   an equation with a net forward reaction, `→`
++   entry #-->
++     info
++         une équation avec une réaction nette dans le sens direct, `→`
+
+-       `lhs --> rhs`. It binds as tightly as `+` and associates left, so a sum on the right
+-       needs parentheses: `CH₄ + 2O₂ → CO₂ + 2H₂O` is
+-       `C*H[4] + O[2]*2 --> (C*O[2] + H[2]*O*2)`.
++     detail
++         `lhs --> rhs`. Elle lie aussi fort que `+` et s'associe à gauche ; une somme à droite
++         nécessite donc des parenthèses : `CH₄ + 2O₂ → CO₂ + 2H₂O` s'écrit
++         `C*H[4] + O[2]*2 --> (C*O[2] + H[2]*O*2)`.
+
+-   entry #<->   an equation with a resonance, `Reaction.Resonance`
++   entry #<->
++     info
++         une équation avec une résonance, `Reaction.Resonance`
+
+-   entry #<=>   an equation proceeding in both directions, `⇄`
++   entry #<=>
++     info
++         une équation qui se produit dans les deux sens, `⇄`
+
+-   entry #<~>   an equation at equilibrium, `⇋`
++   entry #<~>
++     info
++         une équation à l'équilibre, `⇋`
+
+-   entry #===   an equation with a stoichiometric relation, `Reaction.Stoichiometric`
++   entry #===
++     info
++         une équation avec une relation stœchiométrique, `Reaction.Stoichiometric`
+
+- entry .PhysicalState   the state of matter of a molecule: solid, liquid, gas or aqueous
++ entry .PhysicalState
++   info
++       l'état de la matière d'une molécule : solide, liquide, gazeux ou aqueux
+
+-   detail
+-       An enumeration of `Solid`, `Liquid`, `Gas` and `Aqueous`, shown as `(s)`, `(l)`, `(g)`
+-       and `(aq)` after a molecule. A state is applied with `Molecular#inState` and is an
+-       annotation, not part of the substance's identity for bonding: bonding two molecules
+-       leaves the result's state unset.
++   detail
++       Une énumération de `Solid`, `Liquid`, `Gas` et `Aqueous`, affichés `(s)`, `(l)`, `(g)` et
++       `(aq)` après une molécule. Un état s'applique avec `Molecular#inState` et constitue une
++       annotation, qui ne fait pas partie de l'identité de la substance pour la liaison : lier deux
++       molécules laisse l'état du résultat non défini.
+
+-   entry .showable   shows a state as `(s)`, `(l)`, `(g)` or `(aq)`
++   entry .showable
++     info
++         affiche un état sous la forme `(s)`, `(l)`, `(g)` ou `(aq)`
+
+- entry .Reaction   the relation a chemical equation asserts between its two sides
++ entry .Reaction
++   info
++       la relation qu'affirme une équation chimique entre ses deux côtés
+
+-   detail
+-       An enumeration of `NetForward` (shown `→`, from `-->`), `BothDirections` (`⇄`, from
+-       `<=>`), `Equilibrium` (`⇋`, from `<~>`), `Stoichiometric` (`↔`, from `===`) and
+-       `Resonance` (`=`, from `<->`). Which arrow a chemist writes carries meaning, and an
+-       equation keeps it.
++   detail
++       Une énumération de `NetForward` (affiché `→`, issu de `-->`), `BothDirections` (`⇄`, issu de
++       `<=>`), `Equilibrium` (`⇋`, issu de `<~>`), `Stoichiometric` (`↔`, issu de `===`) et
++       `Resonance` (`=`, issu de `<->`). La flèche qu'écrit un chimiste a un sens, et une équation
++       la conserve.
+
+-   entry .showable   shows a reaction as its arrow
++   entry .showable
++     info
++         affiche une réaction sous la forme de sa flèche
+
+- entry .PeriodicTable   the 118 chemical elements, by symbol, atomic number or name
++ entry .PeriodicTable
++   info
++       les 118 éléments chimiques, par symbole, numéro atomique ou nom
+
+-   detail
+-       Every element is a `val` named by its symbol, so they are imported individually or all
+-       at once; and an element can be found at runtime by its number or its symbol.
++   detail
++       Chaque élément est une `val` nommée d'après son symbole ; on les importe donc
++       individuellement ou tous à la fois ; et un élément peut être trouvé à l'exécution par son
++       numéro ou son symbole.
+
+=       at once; and an element can be found at runtime by its number or its symbol.
+=
+-       ```scala
++       ```scala
+
+=       at once; and an element can be found at runtime by its number or its symbol.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import PeriodicTable.{Fe, H}
++       import PeriodicTable.{Fe, H}
+
+-       PeriodicTable(26)         // Fe
++       PeriodicTable(26)         // Fe
+
+-       PeriodicTable(t"Cu")      // Cu
++       PeriodicTable(t"Cu")      // Cu
+
+-       PeriodicTable(t"cu")      // Unset: symbols are case-sensitive
++       PeriodicTable(t"cu")      // Unset: symbols are case-sensitive
+
+-       PeriodicTable(119)        // Unset
++       PeriodicTable(119)        // Unset
+
+-       PeriodicTable.element(119).name   // t"Ununennium"
++       PeriodicTable.element(119).name   // t"Ununennium"
+
+=       PeriodicTable.element(119).name   // t"Ununennium"
+-       ```
++       ```
+
+-       Beyond oganesson, `.element` gives the IUPAC systematic element for any atomic number.
++       Au-delà de l'oganesson, `.element` donne l'élément systématique de l'UICPA pour n'importe
++       quel numéro atomique.
+
+-   refer charisma.Chemical.Element
++   refer charisma.Chemical.Element
+
+-   entry .apply   the element with an atomic number or a symbol, or `Unset` if there is none
++   entry .apply
++     info
++         l'élément de numéro atomique ou de symbole donné, ou `Unset` s'il n'y en a pas
+
+-       `PeriodicTable(26)` and `PeriodicTable(t"Fe")` are both iron; a number outside 1 to 118
+-       or an unknown symbol is `Unset`. Symbol lookup is case-sensitive.
++     detail
++         `PeriodicTable(26)` et `PeriodicTable(t"Fe")` sont tous deux le fer ; un numéro hors de
++         l'intervalle 1 à 118 ou un symbole inconnu donne `Unset`. La recherche par symbole est
++         sensible à la casse.
+
+-   entry .elements   every element, in order of atomic number
++   entry .elements
++     info
++         chaque élément, dans l'ordre des numéros atomiques
+
+-   entry .symbols   every element, keyed by its symbol
++   entry .symbols
++     info
++         chaque élément, indexé par son symbole
+
+-   entry .element   the element with an atomic number, with its IUPAC systematic name and symbol
++   entry .element
++     info
++         l'élément de numéro atomique donné, avec son nom et son symbole systématiques de l'UICPA
+
+-       Builds the placeholder name from the digits of the number — `nil`, `un`, `bi`, `tri`,
+-       `quad`, `pent`, `hex`, `sept`, `oct`, `enn` — and `ium`, with a doubled `i` elided:
+-       119 is `Ununennium` (`Uue`), 120 `Unbinilium` (`Ubn`), and 122 `Unbibium` (`Ubb`). It
+-       gives a systematic element for every number, including those which have a real name
+-       in the table.
++     detail
++         Construit le nom provisoire à partir des chiffres du numéro — `nil`, `un`, `bi`, `tri`,
++         `quad`, `pent`, `hex`, `sept`, `oct`, `enn` — et `ium`, un `i` doublé étant élidé : 119
++         est `Ununennium` (`Uue`), 120 `Unbinilium` (`Ubn`), et 122 `Unbibium` (`Ubb`). Elle donne
++         un élément systématique pour chaque numéro, y compris ceux qui ont un vrai nom dans le
++         tableau.
+
+-   entry .H   hydrogen, element 1
++   entry .H
++     info
++         hydrogène, élément 1
+
+-   entry .He   helium, element 2
++   entry .He
++     info
++         hélium, élément 2
+
+-   entry .Li   lithium, element 3
++   entry .Li
++     info
++         lithium, élément 3
+
+-   entry .Be   beryllium, element 4
++   entry .Be
++     info
++         béryllium, élément 4
+
+-   entry .B   boron, element 5
++   entry .B
++     info
++         bore, élément 5
+
+-   entry .C   carbon, element 6
++   entry .C
++     info
++         carbone, élément 6
+
+-   entry .N   nitrogen, element 7
++   entry .N
++     info
++         azote, élément 7
+
+-   entry .O   oxygen, element 8
++   entry .O
++     info
++         oxygène, élément 8
+
+-   entry .F   fluorine, element 9
++   entry .F
++     info
++         fluor, élément 9
+
+-   entry .Ne   neon, element 10
++   entry .Ne
++     info
++         néon, élément 10
+
+-   entry .Na   sodium, element 11
++   entry .Na
++     info
++         sodium, élément 11
+
+-   entry .Mg   magnesium, element 12
++   entry .Mg
++     info
++         magnésium, élément 12
+
+-   entry .Al   aluminium, element 13
++   entry .Al
++     info
++         aluminium, élément 13
+
+-   entry .Si   silicon, element 14
++   entry .Si
++     info
++         silicium, élément 14
+
+-   entry .P   phosphorus, element 15
++   entry .P
++     info
++         phosphore, élément 15
+
+-   entry .S   sulphur, element 16
++   entry .S
++     info
++         soufre, élément 16
+
+-   entry .Cl   chlorine, element 17
++   entry .Cl
++     info
++         chlore, élément 17
+
+-   entry .Ar   argon, element 18
++   entry .Ar
++     info
++         argon, élément 18
+
+-   entry .K   potassium, element 19
++   entry .K
++     info
++         potassium, élément 19
+
+-   entry .Ca   calcium, element 20
++   entry .Ca
++     info
++         calcium, élément 20
+
+-   entry .Sc   scandium, element 21
++   entry .Sc
++     info
++         scandium, élément 21
+
+-   entry .Ti   titanium, element 22
++   entry .Ti
++     info
++         titane, élément 22
+
+-   entry .V   vanadium, element 23
++   entry .V
++     info
++         vanadium, élément 23
+
+-   entry .Cr   chromium, element 24
++   entry .Cr
++     info
++         chrome, élément 24
+
+-   entry .Mn   manganese, element 25
++   entry .Mn
++     info
++         manganèse, élément 25
+
+-   entry .Fe   iron, element 26
++   entry .Fe
++     info
++         fer, élément 26
+
+-   entry .Co   cobalt, element 27
++   entry .Co
++     info
++         cobalt, élément 27
+
+-   entry .Ni   nickel, element 28
++   entry .Ni
++     info
++         nickel, élément 28
+
+-   entry .Cu   copper, element 29
++   entry .Cu
++     info
++         cuivre, élément 29
+
+-   entry .Zn   zinc, element 30
++   entry .Zn
++     info
++         zinc, élément 30
+
+-   entry .Ga   gallium, element 31
++   entry .Ga
++     info
++         gallium, élément 31
+
+-   entry .Ge   germanium, element 32
++   entry .Ge
++     info
++         germanium, élément 32
+
+-   entry .As   arsenic, element 33
++   entry .As
++     info
++         arsenic, élément 33
+
+-   entry .Se   selenium, element 34
++   entry .Se
++     info
++         sélénium, élément 34
+
+-   entry .Br   bromine, element 35
++   entry .Br
++     info
++         brome, élément 35
+
+-   entry .Kr   krypton, element 36
++   entry .Kr
++     info
++         krypton, élément 36
+
+-   entry .Rb   rubidium, element 37
++   entry .Rb
++     info
++         rubidium, élément 37
+
+-   entry .Sr   strontium, element 38
++   entry .Sr
++     info
++         strontium, élément 38
+
+-   entry .Y   yttrium, element 39
++   entry .Y
++     info
++         yttrium, élément 39
+
+-   entry .Zr   zirconium, element 40
++   entry .Zr
++     info
++         zirconium, élément 40
+
+-   entry .Nb   niobium, element 41
++   entry .Nb
++     info
++         niobium, élément 41
+
+-   entry .Mo   molybdenum, element 42
++   entry .Mo
++     info
++         molybdène, élément 42
+
+-   entry .Tc   technetium, element 43
++   entry .Tc
++     info
++         technétium, élément 43
+
+-   entry .Ru   ruthenium, element 44
++   entry .Ru
++     info
++         ruthénium, élément 44
+
+-   entry .Rh   rhodium, element 45
++   entry .Rh
++     info
++         rhodium, élément 45
+
+-   entry .Pd   palladium, element 46
++   entry .Pd
++     info
++         palladium, élément 46
+
+-   entry .Ag   silver, element 47
++   entry .Ag
++     info
++         argent, élément 47
+
+-   entry .Cd   cadmium, element 48
++   entry .Cd
++     info
++         cadmium, élément 48
+
+-   entry .In   indium, element 49
++   entry .In
++     info
++         indium, élément 49
+
+-   entry .Sn   tin, element 50
++   entry .Sn
++     info
++         étain, élément 50
+
+-   entry .Sb   antimony, element 51
++   entry .Sb
++     info
++         antimoine, élément 51
+
+-   entry .Te   tellurium, element 52
++   entry .Te
++     info
++         tellure, élément 52
+
+-   entry .I   iodine, element 53
++   entry .I
++     info
++         iode, élément 53
+
+-   entry .Xe   xenon, element 54
++   entry .Xe
++     info
++         xénon, élément 54
+
+-   entry .Cs   cesium, element 55
++   entry .Cs
++     info
++         césium, élément 55
+
+-   entry .Ba   barium, element 56
++   entry .Ba
++     info
++         baryum, élément 56
+
+-   entry .La   lanthanum, element 57
++   entry .La
++     info
++         lanthane, élément 57
+
+-   entry .Ce   cerium, element 58
++   entry .Ce
++     info
++         cérium, élément 58
+
+-   entry .Pr   praseodymium, element 59
++   entry .Pr
++     info
++         praséodyme, élément 59
+
+-   entry .Nd   neodymium, element 60
++   entry .Nd
++     info
++         néodyme, élément 60
+
+-   entry .Pm   promethium, element 61
++   entry .Pm
++     info
++         prométhium, élément 61
+
+-   entry .Sm   samarium, element 62
++   entry .Sm
++     info
++         samarium, élément 62
+
+-   entry .Eu   europium, element 63
++   entry .Eu
++     info
++         europium, élément 63
+
+-   entry .Gd   gadolinium, element 64
++   entry .Gd
++     info
++         gadolinium, élément 64
+
+-   entry .Tb   terbium, element 65
++   entry .Tb
++     info
++         terbium, élément 65
+
+-   entry .Dy   dysprosium, element 66
++   entry .Dy
++     info
++         dysprosium, élément 66
+
+-   entry .Ho   holmium, element 67
++   entry .Ho
++     info
++         holmium, élément 67
+
+-   entry .Er   erbium, element 68
++   entry .Er
++     info
++         erbium, élément 68
+
+-   entry .Tm   thulium, element 69
++   entry .Tm
++     info
++         thulium, élément 69
+
+-   entry .Yb   ytterbium, element 70
++   entry .Yb
++     info
++         ytterbium, élément 70
+
+-   entry .Lu   lutetium, element 71
++   entry .Lu
++     info
++         lutécium, élément 71
+
+-   entry .Hf   hafnium, element 72
++   entry .Hf
++     info
++         hafnium, élément 72
+
+-   entry .Ta   tantalum, element 73
++   entry .Ta
++     info
++         tantale, élément 73
+
+-   entry .W   tungsten, element 74
++   entry .W
++     info
++         tungstène, élément 74
+
+-   entry .Re   rhenium, element 75
++   entry .Re
++     info
++         rhénium, élément 75
+
+-   entry .Os   osmium, element 76
++   entry .Os
++     info
++         osmium, élément 76
+
+-   entry .Ir   iridium, element 77
++   entry .Ir
++     info
++         iridium, élément 77
+
+-   entry .Pt   platinum, element 78
++   entry .Pt
++     info
++         platine, élément 78
+
+-   entry .Au   gold, element 79
++   entry .Au
++     info
++         or, élément 79
+
+-   entry .Hg   mercury, element 80
++   entry .Hg
++     info
++         mercure, élément 80
+
+-   entry .Tl   thallium, element 81
++   entry .Tl
++     info
++         thallium, élément 81
+
+-   entry .Pb   lead, element 82
++   entry .Pb
++     info
++         plomb, élément 82
+
+-   entry .Bi   bismuth, element 83
++   entry .Bi
++     info
++         bismuth, élément 83
+
+-   entry .Po   polonium, element 84
++   entry .Po
++     info
++         polonium, élément 84
+
+-   entry .At   astatine, element 85
++   entry .At
++     info
++         astate, élément 85
+
+-   entry .Rn   radon, element 86
++   entry .Rn
++     info
++         radon, élément 86
+
+-   entry .Fr   francium, element 87
++   entry .Fr
++     info
++         francium, élément 87
+
+-   entry .Ra   radium, element 88
++   entry .Ra
++     info
++         radium, élément 88
+
+-   entry .Ac   actinium, element 89
++   entry .Ac
++     info
++         actinium, élément 89
+
+-   entry .Th   thorium, element 90
++   entry .Th
++     info
++         thorium, élément 90
+
+-   entry .Pa   protactinium, element 91
++   entry .Pa
++     info
++         protactinium, élément 91
+
+-   entry .U   uranium, element 92
++   entry .U
++     info
++         uranium, élément 92
+
+-   entry .Np   neptunium, element 93
++   entry .Np
++     info
++         neptunium, élément 93
+
+-   entry .Pu   plutonium, element 94
++   entry .Pu
++     info
++         plutonium, élément 94
+
+-   entry .Am   americium, element 95
++   entry .Am
++     info
++         américium, élément 95
+
+-   entry .Cm   curium, element 96
++   entry .Cm
++     info
++         curium, élément 96
+
+-   entry .Bk   berkelium, element 97
++   entry .Bk
++     info
++         berkélium, élément 97
+
+-   entry .Cf   californium, element 98
++   entry .Cf
++     info
++         californium, élément 98
+
+-   entry .Es   einsteinium, element 99
++   entry .Es
++     info
++         einsteinium, élément 99
+
+-   entry .Fm   fermium, element 100
++   entry .Fm
++     info
++         fermium, élément 100
+
+-   entry .Md   mendelevium, element 101
++   entry .Md
++     info
++         mendélévium, élément 101
+
+-   entry .No   nobelium, element 102
++   entry .No
++     info
++         nobélium, élément 102
+
+-   entry .Lr   lawrencium, element 103
++   entry .Lr
++     info
++         lawrencium, élément 103
+
+-   entry .Rf   rutherfordium, element 104
++   entry .Rf
++     info
++         rutherfordium, élément 104
+
+-   entry .Db   dubnium, element 105
++   entry .Db
++     info
++         dubnium, élément 105
+
+-   entry .Sg   seaborgium, element 106
++   entry .Sg
++     info
++         seaborgium, élément 106
+
+-   entry .Bh   bohrium, element 107
++   entry .Bh
++     info
++         bohrium, élément 107
+
+-   entry .Hs   hassium, element 108
++   entry .Hs
++     info
++         hassium, élément 108
+
+-   entry .Mt   meitnerium, element 109
++   entry .Mt
++     info
++         meitnérium, élément 109
+
+-   entry .Ds   darmstadtium, element 110
++   entry .Ds
++     info
++         darmstadtium, élément 110
+
+-   entry .Rg   roentgenium, element 111
++   entry .Rg
++     info
++         roentgenium, élément 111
+
+-   entry .Cn   copernicium, element 112
++   entry .Cn
++     info
++         copernicium, élément 112
+
+-   entry .Nh   nihonium, element 113
++   entry .Nh
++     info
++         nihonium, élément 113
+
+-   entry .Fl   flerovium, element 114
++   entry .Fl
++     info
++         flérovium, élément 114
+
+-   entry .Mc   moscovium, element 115
++   entry .Mc
++     info
++         moscovium, élément 115
+
+-   entry .Lv   livermorium, element 116
++   entry .Lv
++     info
++         livermorium, élément 116
+
+-   entry .Ts   tennessine, element 117
++   entry .Ts
++     info
++         tennesse, élément 117
+
+-   entry .Og   oganesson, element 118
++   entry .Og
++     info
++         oganesson, élément 118

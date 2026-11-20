@@ -1,0 +1,42 @@
+orthant 1 language
+
+!     detail
+!         Needs a `Tactic[Number.Error]`. Parses with `Integer.parseInt`, so the text must be an
+!         optionally-signed decimal integer with no surrounding space; any failure, including
+!         overflow, is `Number.Error.Reason.Unparseable`.
+-       Needs a `Tactic[Number.Error]`. Parses with `Integer.parseInt`, so the text must be an
+-       optionally-signed decimal integer with no surrounding space. Text which is not an
++     detail
++         Nécessite une `Tactic[Number.Error]`. Analyse avec `Integer.parseInt`, de sorte que le
++         texte doit être un entier décimal éventuellement signé, sans espace autour ; tout échec, y
++         compris un dépassement, donne `Number.Error.Reason.Unparseable`.
+
+-       integer raises `Number.Error` with `Reason.Unparseable`; an integer outside the range
+-       of an `Int` raises it with `Reason.OutOfRange`.
+
+!   entry .long
+!     info
+!         decodes a `Long` from decimal text, raising `Number.Error` if it is unparseable
+-   entry .long   decodes a `Long` from decimal text, distinguishing unparseable from out-of-range
++   entry .long
++     info
++         décode un `Long` depuis un texte décimal, en levant `Number.Error` s'il ne peut être
++         analysé
+
+!     detail
+!         Needs a `Tactic[Number.Error]`; parses with `java.lang.Long.parseLong`.
+-       Needs a `Tactic[Number.Error]`; parses with `java.lang.Long.parseLong`. Text which is
++     detail
++         Nécessite une `Tactic[Number.Error]` ; analyse avec `java.lang.Long.parseLong`.
+
+-       not an integer raises `Number.Error` with `Reason.Unparseable`; an integer outside the
+-       range of a `Long` raises it with `Reason.OutOfRange`.
+
+=   entry .intLong   widens an `Int` to a `Long`
++   entry .intDouble
+
+!     info
+!         widens an `Int` to a `Double` (the name is misspelt in the source)
+-   entry .intDouble   widens an `Int` to a `Double`
++     info
++         élargit un `Int` en `Double` (le nom est mal orthographié dans le code source)

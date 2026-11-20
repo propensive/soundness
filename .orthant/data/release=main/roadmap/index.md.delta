@@ -1,0 +1,7 @@
+orthant 1 release
+
+- row  `doc/api-reduction-candidates.md` no longer exists  `api-5`
++ row  `etc/api-reduction-candidates.md` no longer exists  `api-5`
+
+- row  Every published module is covered by a `doc/en/modules/` topic  `doc-4`
++ row  Every published module is covered by a `doc/soundness/modules/` topic  `doc-4`

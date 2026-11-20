@@ -1,0 +1,135 @@
+orthant 1 release
+
+=   entry #write   replaces the bytes at `offset` with `data`
+=
++ entry .Terrain   an `Expanse` whose bytes are in memory, and are read where they lie: a mapped file, or bytes on the heap
++   detail
++       Integers are loaded at any offset, little-endian, with no copy, and a `slice` is a
++       narrower view of the same memory. A terrain belongs to a scope -- a file is mapped for
++       the length of a block -- so it is lent as a tracked `Terrain^`, and nothing loads from
++       memory which is no longer mapped. `Terrain(data)` is one over bytes which are already on
++       the heap.
++   entry #u8   the unsigned byte at an offset, as an `Int`
++   entry #u16   the unsigned 16-bit integer at an offset, as an `Int`
++   entry #u32   the unsigned 32-bit integer at an offset, as a `Long`
++   entry #u64   the 64-bit integer at an offset, as a `Long`
++   entry #i32   the 32 bits at an offset as a signed `Int`
++   entry #slice   a view of part of the memory, sharing it and its lifetime
++   entry #same   whether the bytes at an offset are those of some `Data`, compared in place
++   entry #compare   the order of some bytes relative to some `Data`, compared in place, a proper prefix sorting first
++
++ entry .Structural   the typeclass of a type with a fixed layout in bytes: a record of sized integers, read by `unpack` and written by `pack`
++   detail
++       A case class whose fields are sized integers (`B32`, `U16`, `S64`, …, or the plain `Byte`,
++       `Short`, `Int` and `Long`) *is* a binary layout: each field's type states its width and
++       its interpretation, and `Structural.derived` composes them in declaration order, computing
++       every offset where the layout is declared. The order of the bytes within a field belongs
++       to the format, so one of the `byteOrders` givens must be in scope at the derivation, and
++       is fixed there.
++
++       ```scala
++       import soundness.*
++       import strategies.throwUnsafely
++       import byteOrders.bigEndianByteOrder
++
++       case class Header(magic: B32, version: U16, flags: B16, length: U32)
++
++       object Header:
++         given Header is Structural = Structural.derived
++
++       val data = hex"cafebabe0001000000000010"
++
++       Structural.width[Header]               // 12
++       data.unpack[Header](0).length          // 16
++       data.unpack[Header](0).pack            // the same twelve bytes
++       ```
++
++       Derivation expands to one load (and one store) per field at its offset, so reading a
++       record is one bounds check and as many loads as there are fields. A field of any other
++       type needs a `Structural` instance of its own: that is how records nest, each keeping the
++       byte order it was declared with, and how a field is given a representation the sized
++       integers do not offer.
++
++       It is in the component `zephyrine.layout`, which adds a dependency on hypotenuse for the
++       sized integers, and compiles for every platform.
++   refer zephyrine.unpack
++   refer zephyrine.pack
++   refer zephyrine.ByteOrder
++   entry .derived   the layout of a case class, in the byte order in scope; it does not compile without one, or for a field with no fixed layout
++   entry .width   the number of bytes a value of a type occupies, without a value in hand
++   entry .Error   a record was asked for at an offset where its whole width is not there
++       Carries the `offset`, the record's `width`, and the `size` of the data or expanse.
++       `↯/s.60.3`.
++   entry #width   the number of bytes the layout occupies
++   entry #load   the value laid out at an offset, unchecked: `unpack` is the checked entry point
++   entry #store   lays a value out in a byte array at an offset, unchecked: `pack` is the checked entry point
++
++ entry .unpack   reads a record of fixed layout from `Data`, or from an `Expanse`, at an offset
++     `data.unpack[T](offset)` checks once that the whole record is there, raising
++     `Structural.Error` if it is not, and then loads it. `data.unpack[T](offset, count)` reads a
++     repeated section of `count` records as an array. On an `Expanse`, such as a `Terrain` of
++     mapped memory, the offset is a `Long`, and only the record's own bytes are read.
++
++ entry .pack   the bytes of a value of fixed layout: exactly as many as its layout is wide
++
++ entry .ByteOrder   the order of the bytes of a multi-byte field: `BigEndian` or `LittleEndian`
++     Consulted by `Structural.derived` where a layout is declared, through a given imported from
++     `byteOrders`.
++
++ entry .byteOrders   the byte orders, each a given to import by name where a layout is derived
++   entry .bigEndianByteOrder   most significant byte first, as network formats and font files are
++   entry .littleEndianByteOrder   least significant byte first
++
++ entry .layoutInternal   the macro behind `Structural.derived`, and the stores it expands to
++   hidden
++
++ entry .Holding   a `Terrain` which can be changed where it lies: stored to at an offset, and expanded
++   detail
++       What a format which is kept and altered in place is altered through: a file mapped for
++       writing by the one process which owns it (galilei's `hold`), or bytes on the heap
++       (`Holding(size)`, `Holding(data)`). Every store is at an offset, and no address into its
++       memory is handed out, since `expand` may move it; a `slice` reads through the holding it
++       came from, and stays good across an expansion.
++   entry #set8   stores a byte at an offset
++   entry #set16   stores a 16-bit integer at an offset, little-endian
++   entry #set32   stores a 32-bit integer at an offset, little-endian
++   entry #set64   stores a 64-bit integer at an offset, little-endian
++   entry #write   stores the bytes of some `Data` from an offset
++   entry #zero   stores zero bytes over a range
++   entry #move   copies a range to another offset, which it may overlap
++   entry #expand   makes the holding at least a given size, the new bytes zero; it never shrinks
++   entry #flush   makes what has been stored durable, where there is a file for it to be durable in
++
++ entry .Viewable   the typeclass of a value whose bytes can be lent as a `Terrain` for the length of a block
++   detail
++       A path is `Viewable`, its file being mapped for the block; so are an image which is
++       already on the heap, and a terrain which is already in hand. A format which is read in
++       place is opened from any of them alike.
++   entry #view   lends the value's bytes as a `Terrain`
++   entry #hold   lends the value's bytes for changing, as a `Holding`, or answers `otherwise` if they cannot be changed
++       A file is mapped for writing under an exclusive lock, and a holding in hand is lent as it
++       is; bytes which are immutable, like anything which does not say otherwise, answer
++       `otherwise`.
++
++ entry .Surveyable   the typeclass of a form which is read in place from a view of its bytes: `Form is Surveyable by Flag to Handle`
++   detail
++       It is an instance for the form, and not for what lends the view, which is what lets a
++       lender which is itself a capability -- an `Observer` of a published name -- open the
++       view as a form.
++   entry #survey   opens a view as the form, with flags, and provides the handle contextually for the length of a block
++
+
+-       `Tactic[Truncation.Error]` (the pull is where a source cut short is reported), it is not
+-       a single abstract method, so a spring is written as an anonymous class.
++       `Tactic[Truncation.Error]` (the pull is where a source cut short is reported), a lambda
++       does not convert to one. `Spring(expression)` makes a spring which evaluates the
++       expression anew at each `apply()`; give the type argument, as `Spring[Data](…)`, where
++       the expected type alone does not fix it. An anonymous class also works.
+
+-       val spring: Spring[Data] = new Spring[Data]:
+-         def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ = payload.stream
++       val spring: Spring[Data] = Spring[Data](payload.stream)
+
+=         def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ = payload.stream
+=       ```
++   entry .apply   `Spring(expression)`: a spring whose every pull evaluates the expression for a fresh stream

@@ -1,0 +1,8 @@
+orthant 1 release
+
+-     The library has two source sets:
++     The library has three source sets:
+
+=       session's state.
++     - `orthodoxy.oidc` — OpenID Connect: `Oidc.discover` for a provider's metadata, and
++       `Oidc.identify`, which verifies the ID token an `Authorization` carries with sigillate.

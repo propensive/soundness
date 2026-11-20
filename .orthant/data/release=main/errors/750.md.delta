@@ -1,0 +1,4 @@
+orthant 1 release
+
+- removed. Its role is filled by [TEL](../en/modules/tel.md), whose binary encoding is BinTEL.
++ removed. Its role is filled by [TEL](/doc/soundness/modules/tel.md), whose binary encoding is BinTEL.

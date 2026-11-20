@@ -1,0 +1,16 @@
+orthant 1 release
+
+- parse
++ typecheck
+
+-   val group: Multicast = Multicast(ip"224.0.0.251", udp"mdns")
++   val group = Multicast(ip"224.0.0.251", udp"mdns")
+
+- A nameserver is an `Endpoint` of a UDP port. `query` sends a
++ A nameserver is an `Endpoint` of a UDP port. `ask` sends a
+
+- import coaxial.query
+-
+
+- val addresses = resolver.query(dns"example.com").map(_.rdata)
++ val addresses = resolver.ask(dns"example.com").map(_.rdata)

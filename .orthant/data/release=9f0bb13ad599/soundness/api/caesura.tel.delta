@@ -1,0 +1,10 @@
+orthant 1 release
+
+-               Sheet(Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick,\"Bottom, weaver\""
++               Sheet(proscenium.Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick,\"Bottom, weaver\""
+
+-               Sheet(Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick\tBottom, weaver"
++               Sheet(proscenium.Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick\tBottom, weaver"
+
+-               Sheet(Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick \"Bottom, weaver\""
++               Sheet(proscenium.Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick \"Bottom, weaver\""

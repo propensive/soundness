@@ -1,0 +1,161 @@
+orthant 1 release
+
+- describe them. A `Path on Linux` has the operations which touch the disk: opening it to read
++ describe them. A `Path on Local` has the operations which touch the disk: opening it to read
+
+- import filesystemOptions.createNonexistentParents
++ import filesystemOptions.createParents
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLocal
+
+- row  `pathInterfaces.pathOnLinux`  the type of path which the standard directories are given as
++ row  `pathInterfaces.pathOnLocal`  the type of path which the standard directories are given as
+
+- val directory = temporaryDirectory[Path on Linux] / "soundness-filesystem-tutorial"
++ val directory = temporaryDirectory[Path on Local] / "soundness-filesystem-tutorial"
+
+- By default, creating refuses to destroy anything. Creating over something which exists, or
+- under a parent which does not, is an `Io.Error`. Where either is the intent, a flag says so,
+- at the place where it happens, instead of an import saying it for the whole file:
++ By default, creating refuses to destroy anything. Creating over something which exists is an
++ `Io.Error`, and so is creating under a parent which does not exist, unless
++ `filesystemOptions.createParents` is imported, as it is here. A flag states either
++ intent at the place where it happens, whatever is imported:
+
+= block.
+=
++ `hold` maps a whole file for changing where it lies, and lends a `Holding`: a `Terrain` which
++ is stored to as well as loaded from. `set8`, `set16`, `set32` and `set64` store an integer at
++ an offset, `write` stores some `Data`, `zero` clears a range and `move` copies one within the
++ file, and `expand` makes the holding longer, and the file with it. A file which is not there is
++ created, at the size which `hold` is given. An exclusive lock is held on the file for the
++ length of the block, so a second `hold` of the same file, in this program or another, is
++ refused with `Busy`:
++
++ ```scala fuel
++ run
++ ##
++ val ledger = directory / "ledger"
++
++ ledger.hold(16L): holding =>
++   holding.set32(0L, 1599L)
++   holding.expand(32L)
++   holding.set64(24L, 1616L)
++
++ val first = ledger.mapped(_.u32(0L))
++ val last = ledger.mapped(_.u64(24L))
++ Out.println(t"${first.show}, then ${last.show}")
++ ```
++
++ A holding hands out no address into its memory, since `expand` may move it: every load and store
++ is at an offset, and a `slice` of a holding reads through it, so it stays good afterwards. What
++ was stored is in the file when the block ends. It is what a format which is altered in place
++ is altered through, as an image of [RaTEL](tel.md#ratel) is by the program which owns it.
++ `Holding(size)` is one on the heap, for an image which is not yet a file. A file is mapped for
++ changing on the JVM and on Scala Native; WASI, which can neither map nor lock a file, reports
++ `Unsupported`.
++
+
+- `published` gives a reader, a `Published`. Its `map` lends a `Terrain` view of the version it
+- holds, and its `refresh` moves it to the version which the name now leads to, and says whether
+- there was one:
++ `observe` gives an `Observer`, which reads what the owner publishes. Its `map` lends a
++ `Terrain` view of the version it holds, and its `refresh` moves it to the version which the
++ name now leads to, and says whether there was one:
+
+- file.published[Text]: reader =>
++ file.observe[Text]: observer =>
+
+-   val before = reader.map(_.u8(0L))
+-   val moved = reader.refresh()
+-   val after = reader.map(_.u8(0L))
++   val before = observer.map(_.u8(0L))
++   val moved = observer.refresh()
++   val after = observer.map(_.u8(0L))
+
+- A reader takes no lock, so it never delays the owner, and the owner never delays it. A view
++ An observer takes no lock, so it never delays the owner, and the owner never delays it. A view
+
+- A reader keeps the version it has mapped in existence, even after a newer one has replaced it
+- under the name, so a long-lived reader should `refresh` when it learns that there is something
+- new, whether from a message or from [watching](#watching-for-changes) the name. The lock is
+- advisory, and is dependable between cooperating programs on one machine's own filesystems,
+- but not over a network filesystem.
++ The type which `claim` and `observe` are given is what is published under the name. For a
++ form which is read in place, an observer's `open` maps the current version and opens it as
++ that type, in one block: an observer of a `Ratel of Playbill` opens an image of a `Playbill`,
++ and refuses one of anything else, as [RaTEL](tel.md#ratel) shows.
+
+= but not over a network filesystem.
+=
++ An observer keeps the version it has mapped in existence, even after a newer one has replaced
++ it under the name, so a long-lived observer should `refresh` when it learns that there is
++ something new, whether from a message or from [watching](#watching-for-changes) the name. The
++ lock is advisory, and is dependable between cooperating programs on one machine's own
++ filesystems, but not over a network filesystem.
++
+
+- row  Create missing parent directories?  `createNonexistentParents`  `requireParents`
++ row  Create missing parent directories?  `createParents`  `requireParents`
+
+- val store: Cas in Sha2[256] on (Path on Linux) = Cas[Sha2[256]](directory, t".blob")
++ val store: Cas in Sha2[256] on (Path on Local) = Cas[Sha2[256]](directory, t".blob")
+
+- val home = Home[Path on Linux]()
+- val cache = Home.Cache[Path on Linux]()
+- val bin = Home.Local.Bin[Path on Linux]()
+- val share = Base.Usr.Share[Path on Linux]()
++ val home = Home[Path on Local]()
++ val cache = Home.Cache[Path on Local]()
++ val bin = Home.Local.Bin[Path on Local]()
++ val share = Base.Usr.Share[Path on Local]()
+
+- Home.Cashe[Path on Linux]()
++ Home.Cashe[Path on Local]()
+
+- row  `Home.Cache`  `~/.cache`  no
+- row  `Home.Config`  `~/.config`  no
++ row  `Home.Cache`  `~/.cache`, or `$XDG_CACHE_HOME`  no
++ row  `Home.Config`  `~/.config`, or `$XDG_CONFIG_HOME`  no
+
+- row  `Home.Local.Bin`  `~/.local/bin`  no
++ row  `Home.Local.Bin`  `~/.local/bin`, or `$XDG_BIN_HOME`  no
+
+- row  `Home.Local.Share`  `~/.local/share`  no
+- row  `Home.Local.State`  `~/.local/state`  no
++ row  `Home.Local.Share`  `~/.local/share`, or `$XDG_DATA_HOME`  no
++ row  `Home.Local.State`  `~/.local/state`, or `$XDG_STATE_HOME`  no
+
+- A layout is a fixed place. `Home.Config` is always `$HOME/.config`, and only `$HOME` is read
+- from the environment. The locations which the
+- [XDG specification](environment.md#standard-directories) lets the user move, such as
+- `$XDG_CONFIG_HOME`, are given by `Xdg` instead. Applying a layout constructs a value of
+- whichever directory type is asked for, so the same names serve a `Path on Linux` and any
++ Most layouts are fixed places. The five which the
++ [XDG specification](environment.md#standard-directories) lets the user move are not:
++ `Home.Config` is normally `$HOME/.config`, but is `$XDG_CONFIG_HOME` where the user has set
++ that to an absolute path. Applying a layout constructs a value of
++ whichever directory type is asked for, so the same names serve a `Path on Local` and any
+
+- corresponding plane is resolved with `search` to the first of them which holds it, or to
++ corresponding plane is resolved with `discover` to the first of them which holds it, or to
+
+- import galilei.search
+-
+- given stems: (Searchpaths.Stems on Xdg.Data onto Linux) = new Searchpaths.Stems:
++ given stems: (Searchpaths.Stems on Xdg.Data onto Local) = new Searchpaths.Stems:
+
+-   type Target = Linux
+-   val stems: List[Path on Linux] = List(directory, directory / "inner")
++   type Target = Local
++   val stems: List[Path on Local] = List(directory, directory / "inner")
+
+- val found = (% / "inner.txt").on[Xdg.Data].search()
++ val found = (% / "inner.txt").on[Xdg.Data].discover()
+
+- def rebuild(changed: List[Path on Linux]): Unit = ()
++ def rebuild(changed: List[Path on Local]): Unit = ()
+
+-       rebuild(batch.paths[Path on Linux])
++       rebuild(batch.paths[Path on Local])

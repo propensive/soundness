@@ -51,6 +51,27 @@ attestation.
 5. Keep each PR's own diff reviewable: the PR base is the branch beneath it, so the diff shows
    only that PR's changes.
 
+## The documentation is an Orthant store
+
+Everything under `doc/` — the tutorials and API overlays of `doc/soundness/`, their French
+translation, and the philosophy, standards, migration, roadmap and errors sections — is held in
+the [Orthant](https://github.com/propensive/orthant) store in `.orthant/`, not as files in git.
+`doc/` is the store's working tree, and git ignores it but for `doc/readme.md`. The store has a
+`language` axis (`en`, with `fr` beneath it) and a `release` axis that follows the release tags
+(from 0.76.0), whose last value, `main`, holds what is not yet released.
+
+- To read or change a document, check a point out (`orthant checkout en main`, or `orthant
+  checkout fr main --indirect` to translate), edit it in `doc/`, and `orthant checkin`. Name the
+  release: without `main`, it is the one last checked out, or the oldest. A PR that changes the
+  documentation changes files under `.orthant/data/`.
+- Fuel compiles only what is checked in, never the working tree: the loop is edit, `orthant
+  checkin`, `fuel compile`.
+- The scripts in `etc/` and the Makefile targets that read the documentation read `out/doc`, the
+  English at `main` that `make docs` exports from the store (`build`, `doccheck` and `plumbing`
+  run it first).
+- `orthant status` shows what is not checked in; `orthant todo fr main` shows what has yet to be
+  translated, and the translations of text that has since changed.
+
 ## Record every material change in the next release's migration notes
 
 Downstream code is upgraded across Soundness releases by an LLM agent that reads one file per
@@ -112,11 +133,12 @@ A representative entry:
 
 ### Rules
 
-1. Write only to the unreleased `doc/migration/<version>.md`. Never edit a released one
+1. Write only to the unreleased `doc/migration/<version>.md` (check `en` out at `main`, edit,
+   and `orthant checkin`). Never edit a released one
    except to correct an error in it. If every file there has been released, create the next,
    for the next minor version (`0.71.0.md` after 0.70.0), headed `# Changes since <previous>`.
 2. Add the entry in the same PR as the change, in the same commit as the change or a later one.
-   `doc/migration/**` is outside the CI input set, so adding or amending an entry does not
+   `.orthant/` is outside the CI input set, so adding or amending an entry does not
    invalidate the PR's attestation.
 3. A release needs no preparatory PR: tagging `X.Y.Z` releases `doc/migration/X.Y.Z.md` as it
    stands. The release refuses to run if `X.Y.Z.md` is missing or another version's notes are
@@ -176,6 +198,10 @@ named `doc/migration/<version>.md` (above), so any green commit on `main` can be
 version its notes name. The tag fires
 `.github/workflows/release.yml`, which runs the shared `release.sh` in propensive/.github.
 Never publish by hand, and never create a release or upload an asset with `gh`.
+
+After the release is published, run `orthant sync` and commit the change to
+`.orthant/config.tel`: it adds the tag as a value of the `release` axis, makes everything
+checked in at `main` that release's, and starts `main` again beneath it.
 
 It gates before anything is published: the tag must be signed and verified by GitHub; CI must
 *already* be green on that exact commit — which is what verifies the attestation note, so the

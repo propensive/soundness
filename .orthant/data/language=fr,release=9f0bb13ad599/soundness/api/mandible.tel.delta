@@ -1,0 +1,63 @@
+orthant 1 language
+
+!     detail
+!         Error `↯/s.88.2`: _there was an error reading the classfile_. Declared for readers of class
+!         files to raise; the `Classfile` constructor itself defers parsing until a member is
+!         first used, and `Classfile.apply` gives `Unset` for a class the classloader does not
+!         have rather than raising.
+-       Error `↯/s.88.2`: _there was an error reading the classfile_. Raised by `Classfile(data)`,
+-       `Classfile(name)`, `Classfile[type]` and `read[Classfile]` when the header, constant
+-       pool, attributes or method table do not parse. A class the classloader does not have
++     detail
++         Erreur `↯/s.88.2` : _there was an error reading the classfile_. Déclarée pour que les
++         lecteurs de fichiers de classe la lèvent ; le constructeur de `Classfile` lui-même diffère
++         l'analyse jusqu'à la première utilisation d'un membre, et `Classfile.apply` donne `Unset`
++         pour une classe que le chargeur de classes n'a pas plutôt que de lever une erreur.
+
+-       is still `Unset`, not an error. A method's code is decoded only by `Method#bytecode`,
+-       which raises the same error if the code does not decode.
+
+!     detail
+!         The `Aggregable by Data` given which lets a file, a classpath resource or any other
+!         `Readable` source be read as a class file: the whole stream is collected into one `Data`
+!         and wrapped. The bytes are not parsed until a member of the result is used.
+-       The `Aggregable by Data` given which lets a file, a classpath resource or any other
+-       `Readable` source be read as a class file: the whole stream is collected into one `Data`
++     detail
++         Le given `Aggregable by Data` qui permet de lire comme fichier de classe un fichier, une
++         ressource du classpath ou toute autre source `Readable` : tout le flux est rassemblé en un
++         seul `Data` et enveloppé. Les octets ne sont analysés qu'à l'utilisation d'un membre du
++         résultat.
+
+-       and parsed, raising `Classfile.Error` if it is not a class file.
+
+!   entry .apply
+!     info
+!         the class file of a resource name, or of a type, through the `Classloader` in scope
+-   entry .apply   the class file of some bytes, or of a resource name or a type through the `Classloader` in scope
++   entry .apply
++     info
++         le fichier de classe d'un nom de ressource, ou d'un type, par le `Classloader` dans la
++         portée
+
+!     detail
+!         `Classfile(name)` reads the classpath resource at `name` — a JVM internal name with its
+!         extension, `scala/Option.class` — through the `Classloader` given in scope, and
+!         `Classfile[T]` finds the class of `T` by its `ClassTag` and reads the resource its
+!         binary name denotes, so a nested class resolves to `Outer$Nested.class`. Both give
+!         `Unset` when the classloader has no such resource.
+-       `Classfile(data)` parses the bytes of a class file. `Classfile(name)` reads the classpath resource at `name` — a JVM internal name with its
+-       extension, `scala/Option.class` — through the `Classloader` given in scope, and
+-       `Classfile[T]` finds the class of `T` by its `ClassTag` and reads the resource its
+-       binary name denotes, so a nested class resolves to `Outer$Nested.class`. Both give
+-       `Unset` when the classloader has no such resource. All three raise `Classfile.Error`
++     detail
++         `Classfile(name)` lit la ressource du classpath située à `name` — un nom interne JVM avec
++         son extension, `scala/Option.class` — par le given `Classloader` dans la portée, et
++         `Classfile[T]` trouve la classe de `T` par son `ClassTag` et lit la ressource que désigne
++         son nom binaire ; une classe imbriquée se résout donc en `Outer$Nested.class`. Tous deux
++         donnent `Unset` lorsque le chargeur de classes n'a pas une telle ressource.
+
+-       for bytes which do not parse.
+
+-         Needs a `Tactic[Classfile.Error]`, raised if the code attribute is malformed.
