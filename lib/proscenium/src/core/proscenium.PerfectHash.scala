@@ -119,7 +119,11 @@ object PerfectHash extends caps.Pure:
   // holds the keys. Failing those, a displaced program fills exactly as many slots as there
   // are keys, at the price of a table half as long again; and failing that, the cheap programs
   // are tried again for tables of twice and four times the size.
-  def search(keys: scala.Array[Long]^{caps.any.rd}, width: Int, effort: Int = Effort)
+  //
+  // A displaced program reads a table, which the code it is spliced into must hold somewhere;
+  // a search with `tabled` false never gives one, for a macro with nowhere to put it.
+  def search
+    ( keys: scala.Array[Long]^{caps.any.rd}, width: Int, effort: Int = Effort, tabled: Boolean = true )
   :   PerfectHash | Null =
 
     val count = if width == 0 then 0 else keys.length/width
@@ -129,10 +133,111 @@ object PerfectHash extends caps.Pure:
     else
       val bits = 32 - Integer.numberOfLeadingZeros(count - 1)
       var found: PerfectHash | Null = direct(keys, width, count, bits, effort)
-      if found == null then found = displaced(keys, width, count, effort)
+      if found == null && tabled then found = displaced(keys, width, count, effort)
       if found == null then found = direct(keys, width, count, bits + 1, effort)
       if found == null then found = direct(keys, width, count, bits + 2, effort)
       found
+
+  // The whole of a lookup among keys a macro knows, as code: a perfect hash of the key's
+  // words selects the one key they could be, a comparison with that key's own words confirms
+  // it, and the result is that key's entry of `results`, or `miss`. The keys lie end to end
+  // in `keys`, as for `search`; `inputs` are the words of the key being looked up, and are
+  // spliced more than once, so they should be references to values and not computations.
+  // `null` if no program without a table separates the keys.
+  def dispatch
+    ( keys:    scala.Array[Long]^{caps.any.rd},
+      width:   Int,
+      results: scala.Array[Int]^{caps.any.rd},
+      inputs:  List[Expr[Long]],
+      miss:    Expr[Int] )
+    ( using quotes: Quotes )
+  :   Expr[Int] | Null =
+
+    import quotes.reflect.*
+
+    val hash = search(keys, width, tabled = false)
+
+    if hash == null then null else
+      // Bounded by the number of keys, and within by the width.
+      var cases: sci.List[(Int, CaseDef)] = sci.Nil
+      var index = 0
+
+      while index < results.length do
+        var confirmed: Expr[Boolean] = '{true}
+        var word = width - 1
+
+        while word >= 0 do
+          val input = List.at(inputs, word)
+          val expected = Expr(keys(index*width + word))
+          val rest = confirmed
+          confirmed = if word == width - 1 then '{$input == $expected} else '{$input == $expected && $rest}
+          word -= 1
+
+        val result = Expr(results(index))
+        val slot = hash.slot(keys, index*width)
+        val body = '{if $confirmed then $result else $miss}.asTerm
+        cases = (slot, CaseDef(Literal(IntConstant(slot)), None, body)) :: cases
+        index += 1
+
+      val ordered = cases.sortBy(_(0)).map(_(1)) :+ CaseDef(Wildcard(), None, miss.asTerm)
+      val slot = hash.quoted(inputs)(report.errorAndAbort("the program reads no table"))
+      Match(slot.asTerm, ordered).asExprOf[Int]
+
+  // The fewest keys for which `dispatch` replaces a chain of comparisons: below it the chain
+  // is as quick, and its branches predict well.
+  inline val Arity = 6
+
+  // `dispatch` for the commonest keys, names packed into two words: each entry is a result
+  // and the two words of the name which gives it. `null` if there are fewer than `Arity`
+  // entries, when comparing with each in turn is no slower, or if no program separates them.
+  def dispatch
+    ( entries: IterableOnce[(Int, Long, Long)]^, low: Expr[Long], high: Expr[Long], miss: Expr[Int] )
+    ( using Quotes )
+  :   Expr[Int] | Null =
+
+    val named = sci.List.from(entries)
+    val count = named.length
+
+    if count < Arity then null else
+      val words: scala.Array[Long]^ = new scala.Array[Long](count*2)
+      val results: scala.Array[Int]^ = new scala.Array[Int](count)
+      var rest = named
+      var position = 0
+
+      // Bounded by the entries.
+      while !rest.isEmpty do
+        val entry = rest.head
+        results(position) = entry(0)
+        words(position*2) = entry(1)
+        words(position*2 + 1) = entry(2)
+        position += 1
+        rest = rest.tail
+
+      dispatch(words, 2, results, List.of(sci.List(low, high)), miss)
+
+  // The same for names packed into one word.
+  def dispatch(entries: IterableOnce[(Int, Long)]^, word: Expr[Long], miss: Expr[Int])
+    ( using Quotes )
+  :   Expr[Int] | Null =
+
+    val named = sci.List.from(entries)
+    val count = named.length
+
+    if count < Arity then null else
+      val words: scala.Array[Long]^ = new scala.Array[Long](count)
+      val results: scala.Array[Int]^ = new scala.Array[Int](count)
+      var rest = named
+      var position = 0
+
+      // Bounded by the entries.
+      while !rest.isEmpty do
+        val entry = rest.head
+        results(position) = entry(0)
+        words(position) = entry(1)
+        position += 1
+        rest = rest.tail
+
+      dispatch(words, 1, results, List.of(sci.List(word)), miss)
 
   // Whether a program sends the keys to distinct slots below its capacity.
   private def injective

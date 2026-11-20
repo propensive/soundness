@@ -87,6 +87,11 @@ case class Court(lords: List[Person], king: Person, heir: Option[Person])
 case class CueOption(act: Int, scene: Option[Int])
 case class CueOptional(act: Int, scene: Optional[Int])
 
+// Wide enough that a staged parser finds its fields by a perfect hash of their names rather
+// than by comparing with each in turn.
+case class Tally
+  ( acts: Int, scenes: Int, lines: Int, songs: Int, deaths: Int, duels: Int, ghosts: Int, fools: Int )
+
 enum Rank:
   case Lord(person: Person)
   case King(person: Person)
@@ -1313,6 +1318,7 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
       given CueOptional is Json.Parsable = Json.Parsable.staged
       given Tree is Json.Parsable = Json.Parsable.staged
       given Boxed[Int] is Json.Parsable = Json.Parsable.staged
+      given Tally is Json.Parsable = Json.Parsable.staged
 
       inline def agree[record](json: Text)(using record is Json.Parsable, record is Json.Decodable)
       :   Boolean =
@@ -1343,6 +1349,23 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
           t"""{"act": 1, "scene": null}""".read[CueOptional in Json],
           t"""{"act": 1, "scene": 2}""".read[CueOptional in Json] )
       . assert(_ == (CueOptional(1, Unset), CueOptional(1, Unset), CueOptional(1, 2)))
+
+      test(m"A staged parser reads a wide record in any order"):
+        t"""{"fools": 8, "ghosts": 7, "duels": 6, "deaths": 5, "songs": 4, "lines": 3,
+            "scenes": 2, "acts": 1}""".read[Tally in Json]
+      . assert(_ == Tally(1, 2, 3, 4, 5, 6, 7, 8))
+
+      test(m"A staged parser of a wide record skips keys that are nearly its fields"):
+        t"""{"act": 0, "acts": 1, "actss": 0, "scenes": 2, "Scenes": 0, "lines": 3, "line": 0,
+            "songs": 4, "": 0, "deaths": 5, "deathsdeathsdeaths": 0, "duels": 6, "ghosts": 7,
+            "ghost": {"fools": 9}, "fools": 8, "sloof": 0}""".read[Tally in Json]
+      . assert(_ == Tally(1, 2, 3, 4, 5, 6, 7, 8))
+
+      test(m"A staged parser of a wide record agrees with the AST path"):
+        agree[Tally]
+          ( t"""{"songs": 4, "acts": 1, "fools": 8, "extra": true, "lines": 3, "scenes": 2,
+                "deaths": 5, "ghosts": 7, "duels": 6}""" )
+      . assert(identity)
 
       test(m"A staged parser raises Absent for an absent Optional field under strict absence"):
         import optionalityOptions.strictJsonAbsence

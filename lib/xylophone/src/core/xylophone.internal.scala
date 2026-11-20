@@ -2067,6 +2067,14 @@ object internal:
                 Literal(IntConstant(index)),
                 chain(index + 1) )
 
+      // With enough child fields, a perfect hash of their packed names in place of the chain.
+      def dispatch: Term =
+        val entries = scala.collection.Iterator.range(0, arity).filter(!attrFlags(_)).flatMap: index =>
+          packedNames(index).iterator.map { case (low, highWord) => (index, low, highWord) }
+
+        val hashed = PerfectHash.dispatch(entries, wordRef, highRef, Expr(-1))
+        if hashed == null then chain(0) else hashed.asTerm
+
       val textStep: Term =
         '{Xml.Parsable.childIndex($keys, $attrs, $reader.childLabel)}.asTerm
 
@@ -2075,7 +2083,7 @@ object internal:
           If
             ( '{$wordRef == Xml.Reader.NameOpaque}.asTerm,
               textStep,
-              Block(List(ValDef(high, Some('{$reader.childWordHigh}.asTerm))), chain(0)) )
+              Block(List(ValDef(high, Some('{$reader.childWordHigh}.asTerm))), dispatch) )
         else
           textStep
 
