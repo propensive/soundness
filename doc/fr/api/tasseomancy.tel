@@ -4,7 +4,7 @@ base tasseomancy
 import soundness
 
 info
-    - SVG charts from typed data: bars, lines, scatter, pie, histogram, box plots and doughnuts
+    - SVG charts from typed data: bars, lines, scatter, pie, histogram, box plots and annuli
     + des graphiques SVG à partir de données typées : barres, lignes, nuages de points, secteurs,
     + histogrammes, boîtes à moustaches et anneaux
 detail
@@ -22,7 +22,7 @@ detail
     -   measurements, `Chart.Estimate` a value with its interval, `Noted` a value with a note, and a
     -   `Dag` of `Weighted`, `Progressive` nodes is a dependency graph.
     - - A kind is a value — `Bars()`, `StackedBars()`, `Lines()`, `Scatter()`, `Pie()`,
-    -   `Histogram()`, `Boxes()` or `Doughnut()` — and `data.chart(kind)` compiles only where a
+    -   `Histogram()`, `Boxes()` or `Annulus()` — and `data.chart(kind)` compiles only where a
     -   `Plottable` instance says the kind can draw the data's shape: a pie of three series or a
     -   line through category labels is a compile error.
     - - The fit — each axis's range, transform and gradations — is chosen by a `Calibration`
@@ -39,7 +39,7 @@ detail
     +   avec son intervalle, `Noted` une valeur avec une note, et un `Dag` de nœuds `Weighted`,
     +   `Progressive` est un graphe de dépendances.
     + - Un genre est une valeur — `Bars()`, `StackedBars()`, `Lines()`, `Scatter()`, `Pie()`,
-    +   `Histogram()`, `Boxes()` ou `Doughnut()` — et `data.chart(kind)` ne compile que là où une
+    +   `Histogram()`, `Boxes()` ou `Annulus()` — et `data.chart(kind)` ne compile que là où une
     +   instance `Plottable` dit que le genre peut dessiner la forme des données : un diagramme
     +   en secteurs de trois séries ou une ligne passant par des étiquettes de catégories est une
     +   erreur de compilation.
@@ -139,11 +139,11 @@ entry .chart
 
       - An incompatible pairing does not compile: a categorical series cannot be `Lines()`, a
       - collection of series cannot be `Pie()`, `Samples` cannot be `Bars()`, and a `Dag` whose
-      - nodes lack `Weighted` or `Progressive` cannot be `Doughnut()`.
+      - nodes lack `Weighted` or `Progressive` cannot be `Annulus()`.
       + Une association incompatible ne compile pas : une série catégorielle ne peut pas être
       + `Lines()`, une collection de séries ne peut pas être `Pie()`, des `Samples` ne peuvent pas
       + être `Bars()`, et un `Dag` dont les nœuds ne sont pas `Weighted` ou `Progressive` ne peut
-      + pas être `Doughnut()`.
+      + pas être `Annulus()`.
 
       ```scala
       import soundness.*
@@ -160,14 +160,14 @@ entry .Chart
       - A `Chart[data, form, fit, style]` holds its `#data`, its kind (`#form`), the `#fit` the
       - kind computed from the data, and the `Plottable` instance that pairs them. It is made by
       - the `chart` extension rather than directly. The fit's type is the kind's own — `Bars.Fit`
-      - with `bands` and `ordinate`, `Lines.Fit` with two scales, `Doughnut.Fit[node]` with its
+      - with `bands` and `ordinate`, `Lines.Fit` with two scales, `Annulus.Fit[node]` with its
       - bands — and the style type is the kind's style trait, so a bar chart renders against a
       - `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
       + Un `Chart[data, form, fit, style]` contient ses données `#data`, son genre (`#form`),
       + l'ajustement `#fit` que le genre a calculé à partir des données, et l'instance `Plottable`
       + qui les associe. Il est créé par l'extension `chart` plutôt que directement. Le type de
       + l'ajustement est celui du genre — `Bars.Fit` avec `bands` et `ordinate`, `Lines.Fit` avec
-      + deux échelles, `Doughnut.Fit[node]` avec ses bandes — et le type de style est le trait de
+      + deux échelles, `Annulus.Fit[node]` avec ses bandes — et le type de style est le trait de
       + style du genre, de sorte qu'un graphique en barres se rend avec un `Bars.Style` et un
       + diagramme en secteurs avec un `Pie.Style` ; `Chart.Standard` les implémente tous.
 
@@ -237,7 +237,7 @@ entry .Chart
     detail
         - `Chart.Style#legend` chooses one. `Right` stacks a swatch and name per series beside the
         - plot, `Bottom` flows them along the bottom in one row, and `Hidden` draws no legend and
-        - reserves no room for one. A doughnut has no legend whatever the setting.
+        - reserves no room for one. An annulus has no legend whatever the setting.
         + `Chart.Style#legend` en choisit un. `Right` empile une pastille et un nom par série à
         + côté du tracé, `Bottom` les dispose le long du bas sur une seule ligne, et `Hidden` ne
         + dessine aucune légende et ne lui réserve aucune place. Un anneau n'a pas de légende, quel
@@ -449,12 +449,12 @@ entry .Chart
         - Positions are given in the drawing's coordinates; the style decides the shape, the
         - stroke and where a label sits relative to its tick. `Bars.Style`, `Lines.Style`,
         - `Scatter.Style`, `Boxes.Style` and (through `Bars.Style`) `StackedBars.Style` and
-        - `Histogram.Style` extend it; `Pie.Style` and `Doughnut.Style` do not, having no axes.
+        - `Histogram.Style` extend it; `Pie.Style` and `Annulus.Style` do not, having no axes.
         + Étend `Chart.Style` avec les composants des axes et les paramètres de leur mise en page.
         + Les positions sont données dans les coordonnées du dessin ; le style décide de la forme,
         + du trait et de l'emplacement d'une étiquette par rapport à sa graduation. `Bars.Style`,
         + `Lines.Style`, `Scatter.Style`, `Boxes.Style` et (via `Bars.Style`) `StackedBars.Style`
-        + et `Histogram.Style` l'étendent ; `Pie.Style` et `Doughnut.Style` non, puisqu'ils n'ont
+        + et `Histogram.Style` l'étendent ; `Pie.Style` et `Annulus.Style` non, puisqu'ils n'ont
         + pas d'axes.
 
         ```scala
@@ -610,7 +610,7 @@ entry .Chart
         + paramètres nommés
     detail
         - Implements `Bars.Style`, `StackedBars.Style`, `Histogram.Style`, `Lines.Style`,
-        - `Scatter.Style`, `Boxes.Style`, `Pie.Style` and `Doughnut.Style` at once, so one value
+        - `Scatter.Style`, `Boxes.Style`, `Pie.Style` and `Annulus.Style` at once, so one value
         - in scope styles any chart. Every parameter has a default: `width = 640.0`, `height =
         - 400.0`, `inset = 12.0`, `font = Web.sansSerifFont`, `fontSize = 12.0`, `legend =
         - Legend.Right`, `pitch = 60.0`, `tickLength = 5.0`, `grid = true`, `abscissaTitle` and
@@ -618,7 +618,7 @@ entry .Chart
         - `smoothing = 0.0`, `barGap = 0.25`, `boxGap = 0.25`, `hole = 0.0`, `sectorGap = 2.0`
         - and `bandGap = 2.0`. Any component's rendering is an override on an anonymous subclass:
         + Implémente à la fois `Bars.Style`, `StackedBars.Style`, `Histogram.Style`, `Lines.Style`,
-        + `Scatter.Style`, `Boxes.Style`, `Pie.Style` et `Doughnut.Style`, de sorte qu'une seule
+        + `Scatter.Style`, `Boxes.Style`, `Pie.Style` et `Annulus.Style`, de sorte qu'une seule
         + valeur dans la portée stylise n'importe quel graphique. Chaque paramètre a une valeur par
         + défaut : `width = 640.0`, `height = 400.0`, `inset = 12.0`, `font = Web.sansSerifFont`,
         + `fontSize = 12.0`, `legend = Legend.Right`, `pitch = 60.0`, `tickLength = 5.0`,
@@ -653,7 +653,7 @@ entry .Chart
         - The result of `Chart#drawing`: the canvas size, any SVG definitions, and a `Ledger`
         - from `Svg.Id` to `Figure` holding `backdrop`, then (for a cartesian chart) `grid`,
         - `abscissa`, `ordinate`, `series-0`, `series-1`, … and `legend`; a pie has `wedges` and
-        - `legend`; a doughnut `rank-0`, `rank-1`, …. The identifiers are what a
+        - `legend`; an annulus `rank-0`, `rank-1`, …. The identifiers are what a
         - `Chart.Revision.Replace` names, and each becomes the `id` of a `<g>` in the SVG.
         + Le résultat de `Chart#drawing` : la taille du canevas, d'éventuelles définitions SVG, et
         + un `Ledger` de `Svg.Id` vers `Figure` contenant `backdrop`, puis (pour un graphique
@@ -823,11 +823,11 @@ entry .Plottable
       + dessiner
   detail
       - `data is Plottable in form to fit by style` exists only where the kind can draw the
-      - data: a pie needs one categorical series, a line needs numeric axes, a doughnut a `Dag`
+      - data: a pie needs one categorical series, a line needs numeric axes, an annulus a `Dag`
       - of weighted, progressive nodes. The kind is the `Form`, the fit the `Result` (so a
       - chart's fit is the kind's own, with its axes visible), and the style the `Operand`,
       - bounded by `Chart.Style`. The standard instances live in each kind's companion —
-      - `Bars.series`, `Bars.traversable`, `Lines.series`, `Histogram.samples`, `Doughnut.dag`,
+      - `Bars.series`, `Bars.traversable`, `Lines.series`, `Histogram.samples`, `Annulus.dag`,
       - … — so they are found with no import; a `traversable` instance covers any collection
       - of series or samples (a `List`, `Set` or `Sequence`), its traversal evidence resolved
       - before the element types' typeclasses.
@@ -837,7 +837,7 @@ entry .Plottable
       + l'ajustement le `Result` (de sorte que l'ajustement d'un graphique est celui du genre,
       + avec ses axes visibles), et le style l'`Operand`, borné par `Chart.Style`. Les instances
       + standard résident dans le compagnon de chaque genre — `Bars.series`, `Bars.traversable`,
-      + `Lines.series`, `Histogram.samples`, `Doughnut.dag`, … — de sorte qu'elles sont trouvées
+      + `Lines.series`, `Histogram.samples`, `Annulus.dag`, … — de sorte qu'elles sont trouvées
       + sans import ; une instance `traversable` couvre toute collection de séries ou
       + d'échantillons (une `List`, un `Set` ou une `Sequence`), sa preuve de parcours étant
       + résolue avant les classes de types des types d'éléments.
@@ -861,7 +861,7 @@ entry .Plottable
         + remplacer une partie
     detail
         - For a cartesian kind, every position and interval lies within the scales and every
-        - category is a known band; for a pie, the categories are unchanged; for a doughnut, the
+        - category is a known band; for a pie, the categories are unchanged; for an annulus, the
         - graph's shape and weights are unchanged.
         + Pour un genre cartésien, chaque position et chaque intervalle se trouve dans les échelles
         + et chaque catégorie est une bande connue ; pour un diagramme en secteurs, les catégories
@@ -1189,13 +1189,13 @@ entry .Continuous
 
 entry .Weighted
   info
-      - the extent of a doughnut's node: its share of its rank's angle and of the band's thickness
+      - the extent of an annulus's node: its share of its rank's angle and of the band's thickness
       + l'étendue d'un nœud d'anneau : sa part de l'angle de son rang et de l'épaisseur de la bande
   detail
-      - `node is Weighted` gives `weight(node): Double`. In a `Doughnut`, a node's sector sweeps
+      - `node is Weighted` gives `weight(node): Double`. In an `Annulus`, a node's sector sweeps
       - the share of its band's turn that its weight is of the rank's total, and a band is as
       - thick as its rank's share of the whole graph's weight. A negative weight counts as zero.
-      + `node is Weighted` donne `weight(node): Double`. Dans un `Doughnut`, le secteur d'un nœud
+      + `node is Weighted` donne `weight(node): Double`. Dans un `Annulus`, le secteur d'un nœud
       + balaie la part du tour de sa bande que représente son poids dans le total du rang, et une
       + bande est aussi épaisse que la part de son rang dans le poids du graphe entier. Un poids
       + négatif compte pour zéro.
@@ -1213,11 +1213,11 @@ entry .Weighted
 
 entry .Progressive
   info
-      - how far a doughnut's node has come, from 0 (not started) to 1 (done)
+      - how far an annulus's node has come, from 0 (not started) to 1 (done)
       + l'avancement d'un nœud d'anneau, de 0 (non commencé) à 1 (terminé)
   detail
       - `node is Progressive` gives `completion(node): Double`, clipped to `[0, 1]` when drawn.
-      - A node carries its own progress, so a doughnut is revised like any chart, with a new
+      - A node carries its own progress, so an annulus is revised like any chart, with a new
       - `Dag` of the same shape whose nodes have come further, and only the bands whose sectors
       - filled further are replaced.
       + `node is Progressive` donne `completion(node): Double`, ramené à `[0, 1]` au dessin. Un
@@ -1799,7 +1799,7 @@ entry .Pie
       + dessin sont `backdrop`, `wedges` et `legend`. Un diagramme en secteurs n'a pas d'axes à
       + maintenir fixes, donc une révision conserve l'ajustement — et ne remplace que `wedges` —
       + tant que les catégories sont les mêmes, et redessine sinon.
-  refer tasseomancy.Doughnut
+  refer tasseomancy.Annulus
   entry .Fit
     info
         - a pie's fit: the category `#labels` in order and the `#total` they share
@@ -1858,7 +1858,7 @@ entry .Pie
         - one categorical series is plottable as a pie
         + une série catégorielle peut être tracée en secteurs
 
-entry .Doughnut
+entry .Annulus
   info
       - a dependency graph as concentric bands: one per rank, each node a sector filled as far as it is complete
       + un graphe de dépendances sous forme de bandes concentriques : une par rang, chaque nœud
@@ -1873,7 +1873,7 @@ entry .Doughnut
       - dependencies it was drawn to, and a band is as thick as its rank's share of the total
       - weight. The sector fills clockwise as far as the node is complete, with the remainder in
       - a subdued tint; the colour is the palette's first colour shaded by where the sector
-      - lies. A doughnut has no labels, no axes and no legend.
+      - lies. An annulus has no labels, no axes and no legend.
       + Un genre de graphique pour un `Dag[node]` d'acyclicity dont les nœuds sont `Weighted` et
       + `Progressive`, avec un `Ranking` dans la portée (la valeur par défaut du compagnon
       + d'acyclicity ; `import rankings.balancedRanking` dessine chaque nœud aussi près que
@@ -1897,11 +1897,11 @@ entry .Doughnut
       val parse = Step(t"parse", 2.0, 1.0)
       val typecheck = Step(t"typecheck", 3.0, 0.5)
       val emit = Step(t"emit", 1.0, 0.0)
-      val doughnut = Dag(typecheck -> parse, emit -> typecheck).chart(Doughnut())
-      doughnut.fit.bands.size   // 3: one band per rank
+      val annulus = Dag(typecheck -> parse, emit -> typecheck).chart(Annulus())
+      annulus.fit.bands.size   // 3: one band per rank
 
       val typechecked = typecheck.copy(done = 1.0)
-      doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size   // 1: a Replace of rank-1
+      annulus.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size   // 1: a Replace of rank-1
       ```
 
       - The drawing's parts are `backdrop` and `rank-0`, `rank-1`, …, each a group of
@@ -1977,7 +1977,7 @@ entry .Doughnut
           + les bandes, de la plus intérieure à la plus extérieure
   entry .Style
     info
-        - the components of a doughnut: each sector's completed part and remainder, and the grout
+        - the components of an annulus: each sector's completed part and remainder, and the grout
         + les composants d'un anneau : la partie terminée et le reste de chaque secteur, et les
         + joints
     detail
@@ -2000,7 +2000,7 @@ entry .Doughnut
           - a sector's colour from its position, from the palette's first colour
           + la couleur d'un secteur selon sa position, à partir de la première couleur de la palette
       detail
-          - `x` and `y` run from -1 at the left or bottom of the doughnut to 1 at the right or
+          - `x` and `y` run from -1 at the left or bottom of the annulus to 1 at the right or
           - top: the hue turns through thirty degrees from left to right, and from bottom to top
           - the colour passes from a fifth darker, through the pure hue, to a fifth lighter.
           + `x` et `y` vont de -1 à gauche ou en bas de l'anneau à 1 à droite ou en haut : la teinte
@@ -2017,7 +2017,7 @@ entry .Doughnut
           + la partie inachevée, dans une teinte atténuée : `sector-N-rest`
   entry .dag
     info
-        - a `Dag` of weighted, progressive nodes is plottable as a doughnut, given a `Ranking`
+        - a `Dag` of weighted, progressive nodes is plottable as an annulus, given a `Ranking`
         + un `Dag` de nœuds pondérés et progressifs peut être tracé en anneau, étant donné un
         + `Ranking`
 

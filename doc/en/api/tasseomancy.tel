@@ -3,7 +3,7 @@ tel 1.0
 base tasseomancy
 import soundness
 
-info   SVG charts from typed data: bars, lines, scatter, pie, histogram, box plots and doughnuts
+info   SVG charts from typed data: bars, lines, scatter, pie, histogram, box plots and annuli
 detail
     _Tasseomancy_ draws charts as savagery `Svg` values from typed data, keeping four decisions
     apart which charting libraries usually tangle into one call: the **shape** of the data,
@@ -15,7 +15,7 @@ detail
       measurements, `Chart.Estimate` a value with its interval, `Noted` a value with a note, and a
       `Dag` of `Weighted`, `Progressive` nodes is a dependency graph.
     - A kind is a value — `Bars()`, `StackedBars()`, `Lines()`, `Scatter()`, `Pie()`,
-      `Histogram()`, `Boxes()` or `Doughnut()` — and `data.chart(kind)` compiles only where a
+      `Histogram()`, `Boxes()` or `Annulus()` — and `data.chart(kind)` compiles only where a
       `Plottable` instance says the kind can draw the data's shape: a pie of three series or a
       line through category labels is a compile error.
     - The fit — each axis's range, transform and gradations — is chosen by a `Calibration`
@@ -82,7 +82,7 @@ entry .chart   pairs data with a chart kind, checked for compatibility as the co
 
     An incompatible pairing does not compile: a categorical series cannot be `Lines()`, a
     collection of series cannot be `Pie()`, `Samples` cannot be `Bars()`, and a `Dag` whose
-    nodes lack `Weighted` or `Progressive` cannot be `Doughnut()`.
+    nodes lack `Weighted` or `Progressive` cannot be `Annulus()`.
 
     ```scala
     import soundness.*
@@ -95,7 +95,7 @@ entry .Chart   data, a chart kind, and the fit of one to the other, revisable as
       A `Chart[data, form, fit, style]` holds its `#data`, its kind (`#form`), the `#fit` the
       kind computed from the data, and the `Plottable` instance that pairs them. It is made by
       the `chart` extension rather than directly. The fit's type is the kind's own — `Bars.Fit`
-      with `bands` and `ordinate`, `Lines.Fit` with two scales, `Doughnut.Fit[node]` with its
+      with `bands` and `ordinate`, `Lines.Fit` with two scales, `Annulus.Fit[node]` with its
       bands — and the style type is the kind's style trait, so a bar chart renders against a
       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
 
@@ -152,7 +152,7 @@ entry .Chart   data, a chart kind, and the fit of one to the other, revisable as
   entry .Legend   where the legend goes: `Hidden`, `Right` or `Bottom`
       `Chart.Style#legend` chooses one. `Right` stacks a swatch and name per series beside the
       plot, `Bottom` flows them along the bottom in one row, and `Hidden` draws no legend and
-      reserves no room for one. A doughnut has no legend whatever the setting.
+      reserves no room for one. An annulus has no legend whatever the setting.
   entry .Axis   which axis a cartesian style hook is drawing: `Abscissa` or `Ordinate`
       Passed to `Chart.Cartesian`'s `axisLine`, `tick`, `tickLabel`, `gridLine`, `axisTitle`,
       `arrowhead`, `axisBreak` and `labelRoom`, so that one override may treat the horizontal
@@ -233,7 +233,7 @@ entry .Chart   data, a chart kind, and the fit of one to the other, revisable as
         Positions are given in the drawing's coordinates; the style decides the shape, the
         stroke and where a label sits relative to its tick. `Bars.Style`, `Lines.Style`,
         `Scatter.Style`, `Boxes.Style` and (through `Bars.Style`) `StackedBars.Style` and
-        `Histogram.Style` extend it; `Pie.Style` and `Doughnut.Style` do not, having no axes.
+        `Histogram.Style` extend it; `Pie.Style` and `Annulus.Style` do not, having no axes.
 
         ```scala
         import soundness.*
@@ -285,7 +285,7 @@ entry .Chart   data, a chart kind, and the fit of one to the other, revisable as
   entry .Standard   the default style of every chart kind, as a case class of named parameters
     detail
         Implements `Bars.Style`, `StackedBars.Style`, `Histogram.Style`, `Lines.Style`,
-        `Scatter.Style`, `Boxes.Style`, `Pie.Style` and `Doughnut.Style` at once, so one value
+        `Scatter.Style`, `Boxes.Style`, `Pie.Style` and `Annulus.Style` at once, so one value
         in scope styles any chart. Every parameter has a default: `width = 640.0`, `height =
         400.0`, `inset = 12.0`, `font = Web.sansSerifFont`, `fontSize = 12.0`, `legend =
         Legend.Right`, `pitch = 60.0`, `tickLength = 5.0`, `grid = true`, `abscissaTitle` and
@@ -312,7 +312,7 @@ entry .Chart   data, a chart kind, and the fit of one to the other, revisable as
         The result of `Chart#drawing`: the canvas size, any SVG definitions, and a `Ledger`
         from `Svg.Id` to `Figure` holding `backdrop`, then (for a cartesian chart) `grid`,
         `abscissa`, `ordinate`, `series-0`, `series-1`, … and `legend`; a pie has `wedges` and
-        `legend`; a doughnut `rank-0`, `rank-1`, …. The identifiers are what a
+        `legend`; an annulus `rank-0`, `rank-1`, …. The identifiers are what a
         `Chart.Revision.Replace` names, and each becomes the `id` of a `<g>` in the SVG.
     entry .encodable   the whole drawing as one `Svg`, as `drawing.in[Svg]`
     entry #width   the canvas width, from the style
@@ -381,11 +381,11 @@ entry .Chart   data, a chart kind, and the fit of one to the other, revisable as
 entry .Plottable   the compatibility of a shape of data with a kind of chart, and what it takes to draw it
   detail
       `data is Plottable in form to fit by style` exists only where the kind can draw the
-      data: a pie needs one categorical series, a line needs numeric axes, a doughnut a `Dag`
+      data: a pie needs one categorical series, a line needs numeric axes, an annulus a `Dag`
       of weighted, progressive nodes. The kind is the `Form`, the fit the `Result` (so a
       chart's fit is the kind's own, with its axes visible), and the style the `Operand`,
       bounded by `Chart.Style`. The standard instances live in each kind's companion —
-      `Bars.series`, `Bars.traversable`, `Lines.series`, `Histogram.samples`, `Doughnut.dag`,
+      `Bars.series`, `Bars.traversable`, `Lines.series`, `Histogram.samples`, `Annulus.dag`,
       … — so they are found with no import; a `traversable` instance covers any collection
       of series or samples (a `List`, `Set` or `Sequence`), its traversal evidence resolved
       before the element types' typeclasses.
@@ -398,7 +398,7 @@ entry .Plottable   the compatibility of a shape of data with a kind of chart, an
   entry #fit   chooses the axes from the data: the `Result`, such as `Lines.Fit`
   entry #accommodates   whether a fit still holds new data, so that a revision can replace one part
       For a cartesian kind, every position and interval lies within the scales and every
-      category is a known band; for a pie, the categories are unchanged; for a doughnut, the
+      category is a known band; for a pie, the categories are unchanged; for an annulus, the
       graph's shape and weights are unchanged.
   entry #draw   renders the data against a fit as a `Chart.Drawing`
       Takes the style (the `Operand`), a `ChartPalette`, a `FontMetric` and an `Arranger` as
@@ -540,8 +540,8 @@ entry .Continuous   a value with a position on a numeric axis, and optionally an
   entry #notation   how an axis of this type is spaced, labelled, named and united: a `Scale.Notation`
       Decimal spacing with bare numbers and no name or unit, unless overridden.
 
-entry .Weighted   the extent of a doughnut's node: its share of its rank's angle and of the band's thickness
-    `node is Weighted` gives `weight(node): Double`. In a `Doughnut`, a node's sector sweeps
+entry .Weighted   the extent of an annulus's node: its share of its rank's angle and of the band's thickness
+    `node is Weighted` gives `weight(node): Double`. In an `Annulus`, a node's sector sweeps
     the share of its band's turn that its weight is of the rank's total, and a band is as
     thick as its rank's share of the whole graph's weight. A negative weight counts as zero.
 
@@ -554,9 +554,9 @@ entry .Weighted   the extent of a doughnut's node: its share of its rank's angle
 
     The name was `Sized` until 0.74.0, when that name went to proscenium's length proof.
 
-entry .Progressive   how far a doughnut's node has come, from 0 (not started) to 1 (done)
+entry .Progressive   how far an annulus's node has come, from 0 (not started) to 1 (done)
     `node is Progressive` gives `completion(node): Double`, clipped to `[0, 1]` when drawn.
-    A node carries its own progress, so a doughnut is revised like any chart, with a new
+    A node carries its own progress, so an annulus is revised like any chart, with a new
     `Dag` of the same shape whose nodes have come further, and only the bands whose sectors
     filled further are replaced.
 
@@ -815,7 +815,7 @@ entry .Pie   parts of a whole: one series, each category a wedge proportional to
       drawing's parts are `backdrop`, `wedges` and `legend`. A pie has no axes to hold still,
       so a revision keeps the fit — and replaces only `wedges` — while the categories are the
       same, and redraws otherwise.
-  refer tasseomancy.Doughnut
+  refer tasseomancy.Annulus
   entry .Fit   a pie's fit: the category `#labels` in order and the `#total` they share
     entry #labels   the categories, in the series' order
     entry #total   the sum of the non-negative values
@@ -833,7 +833,7 @@ entry .Pie   parts of a whole: one series, each category a wedge proportional to
         leader when it is not.
   entry .series   one categorical series is plottable as a pie
 
-entry .Doughnut   a dependency graph as concentric bands: one per rank, each node a sector filled as far as it is complete
+entry .Annulus   a dependency graph as concentric bands: one per rank, each node a sector filled as far as it is complete
   detail
       A chart kind for an acyclicity `Dag[node]` whose nodes are `Weighted` and
       `Progressive`, with a `Ranking` in scope (acyclicity's companion default; `import
@@ -844,7 +844,7 @@ entry .Doughnut   a dependency graph as concentric bands: one per rank, each nod
       dependencies it was drawn to, and a band is as thick as its rank's share of the total
       weight. The sector fills clockwise as far as the node is complete, with the remainder in
       a subdued tint; the colour is the palette's first colour shaded by where the sector
-      lies. A doughnut has no labels, no axes and no legend.
+      lies. An annulus has no labels, no axes and no legend.
 
       ```scala
       import soundness.*
@@ -856,11 +856,11 @@ entry .Doughnut   a dependency graph as concentric bands: one per rank, each nod
       val parse = Step(t"parse", 2.0, 1.0)
       val typecheck = Step(t"typecheck", 3.0, 0.5)
       val emit = Step(t"emit", 1.0, 0.0)
-      val doughnut = Dag(typecheck -> parse, emit -> typecheck).chart(Doughnut())
-      doughnut.fit.bands.size   // 3: one band per rank
+      val annulus = Dag(typecheck -> parse, emit -> typecheck).chart(Annulus())
+      annulus.fit.bands.size   // 3: one band per rank
 
       val typechecked = typecheck.copy(done = 1.0)
-      doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size   // 1: a Replace of rank-1
+      annulus.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size   // 1: a Replace of rank-1
       ```
 
       The drawing's parts are `backdrop` and `rank-0`, `rank-1`, …, each a group of
@@ -888,19 +888,19 @@ entry .Doughnut   a dependency graph as concentric bands: one per rank, each nod
     detail
         Completion is not here; it is read from the nodes on every draw.
     entry #bands   the bands, innermost first
-  entry .Style   the components of a doughnut: each sector's completed part and remainder, and the grout
+  entry .Style   the components of an annulus: each sector's completed part and remainder, and the grout
     detail
         Extends `Chart.Style`. `Chart.Standard` supplies `hole`, `sectorGap` and `bandGap`.
     entry #hole   the fraction of the radius hollowed from the centre, shared with `Pie.Style`
     entry #sectorGap   the width in pixels of the grout between neighbouring sectors
     entry #bandGap   the width in pixels of the grout between neighbouring bands
     entry #shade   a sector's colour from its position, from the palette's first colour
-        `x` and `y` run from -1 at the left or bottom of the doughnut to 1 at the right or
+        `x` and `y` run from -1 at the left or bottom of the annulus to 1 at the right or
         top: the hue turns through thirty degrees from left to right, and from bottom to top
         the colour passes from a fifth darker, through the pure hue, to a fifth lighter.
     entry #sector   the completed part of a node's sector, from its path operations: `sector-N`
     entry #remainder   the unfinished part, in a subdued tint: `sector-N-rest`
-  entry .dag   a `Dag` of weighted, progressive nodes is plottable as a doughnut, given a `Ranking`
+  entry .dag   a `Dag` of weighted, progressive nodes is plottable as an annulus, given a `Ranking`
 
 entry .Ruler   the mapping of an axis: a `Scale` over a numeric range, or the `Bands` of a categorical one
   detail

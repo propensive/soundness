@@ -81,7 +81,7 @@ row  `Scatter()`  a series, or a collection of series  continuous  continuous  `
 row  `Pie()`  exactly one series  categorical  continuous  `Pie.Style`
 row  `Histogram()`  `Samples`, or a collection of them  continuous  counts  `Histogram.Style`
 row  `Boxes()`  `Samples`, or a collection of them  one box per set  continuous  `Boxes.Style`
-row  `Doughnut()`  a `Dag` of `Weighted`, `Progressive` nodes  none  none  `Doughnut.Style`
+row  `Annulus()`  a `Dag` of `Weighted`, `Progressive` nodes  none  none  `Annulus.Style`
 ```
 
 The `chart` method pairs data with a kind, and compiles only where the kind can draw the shape
@@ -208,7 +208,7 @@ row  `bar`  a bar  `Bars.Style`
 row  `line`, `band`  a series line and an estimate's band  `Lines.Style`
 row  `box`, `whisker`, `median`  a box plot's parts  `Boxes.Style`
 row  `wedge`, `wedgeLabel`  a wedge and its percentage  `Pie.Style`
-row  `shade`, `sector`, `remainder`  a sector's colour and its two parts  `Doughnut.Style`
+row  `shade`, `sector`, `remainder`  a sector's colour and its two parts  `Annulus.Style`
 ```
 
 `labelRoom` tells the layout how much space the tick labels take, so a style which rotates them
@@ -308,7 +308,7 @@ row  `abscissa`, `ordinate`  each axis, its gradations and its title  cartesian 
 row  `legend`  the legend  charts with a legend
 row  `series-0`, `series-1`, …  each series  cartesian charts
 row  `wedges`  every wedge and its label  `Pie`
-row  `rank-0`, `rank-1`, …  each band  `Doughnut`
+row  `rank-0`, `rank-1`, …  each band  `Annulus`
 ```
 
 ### Revision
@@ -354,9 +354,9 @@ Out.println(runs.chart(Boxes()).fit.summaries.size.show)
 
 Both accept any collection of sample sets, as the other kinds accept collections of series.
 
-### Doughnuts
+### Annuli
 
-A `Doughnut` draws a dependency graph, a [`Dag`](graphs.md), as concentric bands. The nodes
+An `Annulus` draws a dependency graph, a [`Dag`](graphs.md), as concentric bands. The nodes
 which depend on nothing are in the innermost band, and each further band holds the nodes one
 rank further out, so a build fills in from the center outwards. Each node is a sector of its
 band, which sweeps an angle proportional to its size within the rank, and a band is as thick as
@@ -366,11 +366,11 @@ The size of a node and its progress, from `0.0` to `1.0`, come from two typeclas
 type, `Weighted` and `Progressive`. The sector fills clockwise as far as the node is complete,
 with the remainder in a subdued tint of the sector's color. That color is the first color of the
 palette, shaded by where the sector lies: its hue turns through thirty degrees from left to
-right, and it is darker below the middle and lighter above. A doughnut has no labels and no
+right, and it is darker below the middle and lighter above. An annulus has no labels and no
 legend. Each band is a `rank-0`, `rank-1`, … group, each sector a `sector-0`, `sector-1`, …
 path, and the unfinished part of a sector is `sector-0-rest`.
 
-A node carries its progress, so a doughnut is revised like any chart, with new data. The fit
+A node carries its progress, so an annulus is revised like any chart, with new data. The fit
 survives any graph of the same shape and sizes, and only the bands whose sectors have filled
 further are replaced:
 
@@ -382,7 +382,7 @@ given stepProgressive: (Step is Progressive) = _.done
 val parse = Step(t"parse", 2.0, 1.0)
 val typecheck = Step(t"typecheck", 3.0, 0.5)
 val emit = Step(t"emit", 1.0, 0.0)
-val doughnut = Dag(typecheck -> parse, emit -> typecheck).chart(Doughnut())
+val annulus = Dag(typecheck -> parse, emit -> typecheck).chart(Annulus())
 ```
 
 ```scala fuel
@@ -390,16 +390,16 @@ run
 ##
 import dysasymptotics.linearSize
 
-Out.println(doughnut.fit.bands.size.show)
+Out.println(annulus.fit.bands.size.show)
 
 val typechecked = typecheck.copy(done = 1.0)
-Out.println(doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size.show)
+Out.println(annulus.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size.show)
 ```
 
 There are three bands, one for each rank. Finishing `typecheck` replaces only `rank-1`.
 
 `Chart.Standard(hole = 0.3)` hollows the center. `sectorGap` and `bandGap` are the widths of the
-grout between sectors and between bands. `Doughnut.Style` has `shade` for the color of a sector
+grout between sectors and between bands. `Annulus.Style` has `shade` for the color of a sector
 from its position, and `sector` and `remainder` for its two parts. The ranking is the one
 [graphs](graphs.md#layering) describes: `import rankings.balancedRanking` draws each node as
 close to its dependents as it can be, rather than as close to the center.
@@ -410,7 +410,7 @@ close to its dependents as it can be, rather than as close to the center.
 - [Label placement](label-placement.md) describes how the labels of a chart avoid each other.
 - [Fonts](fonts.md) describes the typefaces a chart may be set in.
 - [Quantities](quantities.md) describes the units which title an axis.
-- [Graphs](graphs.md) describes the `Dag` which a doughnut draws.
+- [Graphs](graphs.md) describes the `Dag` which an annulus draws.
 - [Colors](colors.md) describes the palette's colors.
 - [Time](time.md) describes the durations and instants which a continuous axis may hold.
 - [Gauges](gauges.md) and [tables](tables.md) present values in the terminal, and [testing](testing.md) charts benchmark results.
