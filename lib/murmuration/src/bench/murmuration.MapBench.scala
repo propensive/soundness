@@ -50,8 +50,10 @@ object MapBench:
   // `define` at a time, and on one made by `Map.build`. The two `Once` rows are the same maps
   // read with a bare `getOrElse` against a sentinel: what `at` does beneath its typeclass, and
   // so the floor for it. `JavaHashMap` is the JDK's table read directly: the bound.
+  // `Optimized` is the built map rebuilt by `optimize` around a perfect hash of its keys,
+  // compiled when the fixture is made, and `OptimizedOnce` its floor.
   enum Lookup:
-    case Tree, Built, TreeOnce, BuiltOnce, JavaHashMap
+    case Tree, Built, TreeOnce, BuiltOnce, Optimized, OptimizedOnce, JavaHashMap
 
   // The contenders for making a map of n entries from nothing, with no size hint.
   enum Build:
@@ -92,6 +94,9 @@ object MapBench:
     // builds in place, and would give a second table.
     val tree: Map[AnyRef, AnyRef] = defineLoop(keys)
     val built: Map[AnyRef, AnyRef] = mapBuild(keys)
+
+    // Lazy, so that only the rows which read it pay for the compiler.
+    lazy val optimized: Map[AnyRef, AnyRef] = built.optimize
 
     val java: ju.HashMap[AnyRef, AnyRef] =
       val table = new ju.HashMap[AnyRef, AnyRef]()
@@ -164,6 +169,32 @@ object MapBench:
   def lookupBuiltOnce(kind: Int, size: Int, hit: Boolean): Int =
     val data = fixture(kind, size)
     val map = data.built.stdlib
+    val keys = probes(data, hit)
+    var found = 0
+    var index = 0
+
+    while index < keys.length do
+      if map.getOrElse(keys(index), Absent) ne Absent then found += 1
+      index += 1
+
+    found
+
+  def lookupOptimized(kind: Int, size: Int, hit: Boolean): Int =
+    val data = fixture(kind, size)
+    val map = data.optimized
+    val keys = probes(data, hit)
+    var found = 0
+    var index = 0
+
+    while index < keys.length do
+      if map.at(keys(index)).present then found += 1
+      index += 1
+
+    found
+
+  def lookupOptimizedOnce(kind: Int, size: Int, hit: Boolean): Int =
+    val data = fixture(kind, size)
+    val map = data.optimized.stdlib
     val keys = probes(data, hit)
     var found = 0
     var index = 0
