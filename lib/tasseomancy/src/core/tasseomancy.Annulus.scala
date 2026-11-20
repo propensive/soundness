@@ -49,7 +49,7 @@ import symbolism.*
 import vacuous.*
 import savagery.Svg.{Figure, Group, Outline}
 
-object Doughnut:
+object Annulus:
   // A node's place in its band: the angles its sector starts and ends at, clockwise from north in
   // radians, and the size it was laid out with.
   case class Sector[node](node: node, start: Double, end: Double, size: Double)
@@ -64,18 +64,18 @@ object Doughnut:
 
   private val evenOdd: Css.Style = Css.Style.of(List(t"fill-rule" -> t"evenodd"))
 
-  // The components of a doughnut: each node's sector, given as the path operations of the part
+  // The components of an annulus: each node's sector, given as the path operations of the part
   // completed and of the remainder, in a colour shaded by where the sector lies and a subdued
   // tint of it. `hole` hollows the centre to that fraction of the radius, and `sectorGap` and
   // `bandGap` are the widths in pixels of the grout between neighbouring sectors and between
-  // neighbouring bands. A doughnut has no labels and no legend.
+  // neighbouring bands. An annulus has no labels and no legend.
   trait Style extends Chart.Style:
     def hole: Double
     def sectorGap: Double
     def bandGap: Double
 
     // The colour of the sector whose midpoint lies at (`x`, `y`), each from -1 at the left or
-    // the bottom of the doughnut to 1 at the right or the top, from the palette's first colour:
+    // the bottom of the annulus to 1 at the right or the top, from the palette's first colour:
     // its hue turns through thirty degrees from left to right, and from bottom to top it passes
     // from a fifth darker, through the pure hue at the middle, to a fifth lighter.
     def shade(x: Double, y: Double, base: Color in Srgb): Color in Srgb =
@@ -89,21 +89,21 @@ object Doughnut:
       List(Outline(ops, style = filled(color) + evenOdd, id = Svg.Id(t"sector-$index-rest")))
 
   given dag: [node: {Weighted as weighted, Progressive as progressive}] => (ranking: Ranking)
-  =>  Dag[node] is Plottable in Doughnut to Doughnut.Fit[node] by Doughnut.Style =
+  =>  Dag[node] is Plottable in Annulus to Annulus.Fit[node] by Annulus.Style =
 
     new Plottable:
       type Self = Dag[node]
-      type Form = Doughnut
-      type Result = Doughnut.Fit[node]
-      type Operand = Doughnut.Style
+      type Form = Annulus
+      type Result = Annulus.Fit[node]
+      type Operand = Annulus.Style
 
       // Ranks come from the layering, which puts every node one rank outside its deepest
       // dependency; within a rank, the layering's crossing-minimised order is refined by one
       // pass outward, so that a node sits over the dependencies it was drawn to.
-      def fit(form: Doughnut, data: Dag[node]): Doughnut.Fit[node] =
+      def fit(form: Annulus, data: Dag[node]): Annulus.Fit[node] =
         val nodes = data.linearized
 
-        if countOf(nodes) == 0 then Doughnut.Fit(Nil) else
+        if countOf(nodes) == 0 then Annulus.Fit(Nil) else
           val layering = data.layered
 
           // Every node asked about below comes from the graph the layering was made of.
@@ -163,19 +163,19 @@ object Doughnut:
             inner += thickness
             placed :: acc
 
-          Doughnut.Fit(stacked.reverse)
+          Annulus.Fit(stacked.reverse)
 
       // The layout depends on the graph's shape and the sizes alone, so a fit survives a graph
       // of the same shape whose nodes have only progressed, and then only the bands whose
       // sectors filled further are replaced.
-      def accommodates(form: Doughnut, fit: Doughnut.Fit[node], data: Dag[node]): Boolean =
-        def geometry(fit: Doughnut.Fit[node]) = fit.bands.map: band =>
+      def accommodates(form: Annulus, fit: Annulus.Fit[node], data: Dag[node]): Boolean =
+        def geometry(fit: Annulus.Fit[node]) = fit.bands.map: band =>
           (band.rank, band.inner, band.outer, band.sectors.map { s => (s.start, s.end, s.size) })
 
         geometry(this.fit(form, data)) == geometry(fit)
 
-      def draw(form: Doughnut, data: Dag[node], fit: Doughnut.Fit[node])
-        ( using style:    Doughnut.Style,
+      def draw(form: Annulus, data: Dag[node], fit: Annulus.Fit[node])
+        ( using style:    Annulus.Style,
                 palette:  ChartPalette,
                 metric:   FontMetric,
                 arranger: Arranger )
@@ -227,7 +227,7 @@ object Doughnut:
         // The path operations of a sector between two radii, listed last to first as an
         // `Outline` holds them, with the grout taken from whichever edges `gapStart` and
         // `gapEnd` ask for. Where the edges cross before they reach the inner circle — always,
-        // for the innermost band of a doughnut without a hole — the sector is a wedge to their
+        // for the innermost band of an annulus without a hole — the sector is a wedge to their
         // crossing; where they cross beyond the outer circle, there is nothing left to draw.
         def annular
           ( start: Double, end: Double, inner: Double, outer: Double, gapStart: Boolean,
@@ -331,4 +331,4 @@ object Doughnut:
 // A dependency graph as concentric bands, one per rank from the nodes depending on nothing at
 // the centre outward, each node a sector of its band proportional to its size, filled clockwise
 // as far as it is complete.
-case class Doughnut()
+case class Annulus()

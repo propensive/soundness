@@ -243,7 +243,7 @@ object Chart:
       sectorGap:     Double         = 2.0,
       bandGap:       Double         = 2.0 )
   extends Bars.Style, StackedBars.Style, Histogram.Style, Lines.Style, Scatter.Style, Boxes.Style,
-    Pie.Style, Doughnut.Style
+    Pie.Style, Annulus.Style
 
   object Drawing:
     // The whole drawing as one SVG, as `drawing.in[Svg]`.

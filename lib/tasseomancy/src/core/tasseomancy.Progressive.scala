@@ -35,7 +35,7 @@ package tasseomancy
 import prepositional.*
 
 // How far a node has come, from 0 (not started) to 1 (done). A node carries its progress, so
-// a doughnut is revised, like any chart, with new data: a graph of the same shape whose nodes
+// an annulus is revised, like any chart, with new data: a graph of the same shape whose nodes
 // have come further.
 trait Progressive extends Typeclass.Pure:
   def completion(value: Self): Double
