@@ -414,6 +414,26 @@ Every collection is [immutable]. `define` and `omit` give new maps, and `ages` i
 after both, as [immutability](../../philosophy/immutability.md) asks everywhere else.
 [Bit flags](flags.md) holds a set of an enumeration's cases in a single word.
 
+A map with many entries is quicker to fill in place than to grow one `define` at a time.
+`Map.build` lends a block a builder to write to, and gives back an ordinary `Map` when the
+block ends:
+
+```scala fuel
+run
+##
+val court = Map.build[Text, Int]: map =>
+  map(t"Lear") = 80
+  map(t"Kent") = 48
+  map(t"Gloucester") = 60
+
+Out.println(court.at(t"Kent").inspect)
+Out.println((court == ages.define(t"Gloucester", 60)).inspect)
+```
+
+Only the builder can write to the map, and the builder cannot leave its block: keeping a
+reference to it for later is a compile error. So the map is immutable from the moment `build`
+returns, and equal to any other map with the same entries, however that one was made.
+
 ### Lazy chains
 
 A `Chain` computes its elements on demand, and remembers them. It can therefore describe an

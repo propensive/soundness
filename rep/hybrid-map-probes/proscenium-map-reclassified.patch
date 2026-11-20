@@ -1,0 +1,86 @@
+diff --git a/lib/proscenium/src/core/proscenium.Map.scala b/lib/proscenium/src/core/proscenium.Map.scala
+index 42bec35175..fc7c2a87aa 100644
+--- a/lib/proscenium/src/core/proscenium.Map.scala
++++ b/lib/proscenium/src/core/proscenium.Map.scala
+@@ -42,11 +42,22 @@ import scala.collection.immutable as sci
+ // The companion is `Pure`: the umbrella forwards it as a `val`, and under capture checking a
+ // value of a non-pure object type is a tracked capability, so `xs.to(Map)` — which passes the
+ // companion as a factory — would otherwise capture the forwarder and freshen its result.
++// SPIKE (collections/hybrid-map-spike, NOT FOR MERGE): `Map` reclassified as a mutable type, to
++// count what breaks. The carrier wraps the standard-library map so that the alias's right-hand
++// side is a `caps.Mutable` class; nothing here is actually written to.
++final class MapCarrier[key, +value](val map: sci.Map[key, value]) extends scala.caps.Mutable:
++  override def equals(that: Any): Boolean = that.asInstanceOf[Matchable] match
++    case carrier: MapCarrier[?, ?] => map == carrier.map
++    case _                         => false
++
++  override def hashCode: Int = map.hashCode
++  override def toString: String = map.toString
++
+ object Map extends scala.caps.Pure:
+   // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing
+   // lambdas crashes the capture checker's boxer (boxDeeply assertion).
+   private[proscenium] def of[key, value](map: sci.Map[key, value]): Map[key, value] =
+-    map.asInstanceOf[Map[key, value]]
++    scala.caps.unsafe.unsafeAssumePure(new MapCarrier(map))
+ 
+   def apply[key, value](pairs: (key, value)*): Map[key, value] = of(sci.Map(pairs*))
+   def empty[key, value]: Map[key, value] = of(sci.Map.empty[key, value])
+@@ -66,7 +77,7 @@ object Map extends scala.caps.Pure:
+           sci.Map.newBuilder[key, value].mapResult(of(_))
+ 
+   extension [key, value](map: Map[key, value])
+-    inline def stdlib: sci.Map[key, value] = map.asInstanceOf[sci.Map[key, value]]
++    inline def stdlib: sci.Map[key, value] = map.asInstanceOf[MapCarrier[key, value]].map
+ 
+   // Lifting and unlifting for macros; see `List`'s companion for the full rationale
+   // (public `from` splice, backticked pattern types, unlift limited to produced shapes).
+@@ -75,7 +86,7 @@ object Map extends scala.caps.Pure:
+   =>  scala.quoted.ToExpr[Map[key, value]]:
+     def apply(map: Map[key, value])(using scala.quoted.Quotes)
+     :   scala.quoted.Expr[Map[key, value]] =
+-      '{Map.from(${scala.quoted.Expr.ofList(map.toList.map(scala.quoted.Expr(_)))})}
++      '{Map.from(${scala.quoted.Expr.ofList(map.map.toList.map(scala.quoted.Expr(_)))})}
+ 
+   given fromExpr: [key: {scala.quoted.Type, scala.quoted.FromExpr},
+                    value: {scala.quoted.Type, scala.quoted.FromExpr}]
+@@ -92,26 +103,26 @@ object Map extends scala.caps.Pure:
+   // see `List` for the rationale. Within this file the opaque alias is transparent. `read`
+   // mirrors the stdlib's `Option`-returning `get`: the ergonomic `Optional` form is layered
+   // above, in `vacuous`-aware libraries.
+-  def size[key, value](map: Map[key, value]): Int = map.size
+-  def nil[key, value](map: Map[key, value]): Boolean = map.isEmpty
+-  def defines[key, value](map: Map[key, value], index: key): Boolean = map.contains(index)
+-  def at[key, value](map: Map[key, value], index: key): value = map(index)
+-  def read[key, value](map: Map[key, value], index: key): Option[value] = map.get(index)
++  def size[key, value](map: Map[key, value]): Int = map.map.size
++  def nil[key, value](map: Map[key, value]): Boolean = map.map.isEmpty
++  def defines[key, value](map: Map[key, value], index: key): Boolean = map.map.contains(index)
++  def at[key, value](map: Map[key, value], index: key): value = map.map(index)
++  def read[key, value](map: Map[key, value], index: key): Option[value] = map.map.get(index)
+ 
+   def define[key, value](map: Map[key, value], index: key, value0: value): Map[key, value] =
+-    map.updated(index, value0)
++    of(map.map.updated(index, value0))
+ 
+-  def omit[key, value](map: Map[key, value], index: key): Map[key, value] = map.removed(index)
+-  def keys[key, value](map: Map[key, value]): Set[key] = Set.of(map.keySet)
+-  def values[key, value](map: Map[key, value]): List[value] = List.of(map.values.toList)
++  def omit[key, value](map: Map[key, value], index: key): Map[key, value] = of(map.map.removed(index))
++  def keys[key, value](map: Map[key, value]): Set[key] = Set.of(map.map.keySet)
++  def values[key, value](map: Map[key, value]): List[value] = List.of(map.map.values.toList)
+ 
+   def concat[key, value](left: Map[key, value], right: Map[key, value]): Map[key, value] =
+-    left ++ right
++    of(left.map ++ right.map)
+ 
+   // `map` transforms the *values*, keys structural — the shape `Mappable` gives a `Map`.
+   def map[key, value, value2](map: Map[key, value], lambda: value => value2): Map[key, value2] =
+-    map.view.mapValues(lambda).toMap
++    of(map.map.view.mapValues(lambda).toMap)
+ 
+-  def iterator[key, value](map: Map[key, value]): Iterator[(key, value)] = map.iterator
++  def iterator[key, value](map: Map[key, value]): Iterator[(key, value)] = map.map.iterator
+ 
+-opaque type Map[key, +value] = sci.Map[key, value]
++opaque type Map[key, +value] = MapCarrier[key, value]^{}

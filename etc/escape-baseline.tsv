@@ -453,12 +453,13 @@ lib/profanity/src/test/profanity_test.scala	0	0	0	0	4	0	0	0	0	0	1	0	0	0	0	0	0
 lib/prophesy/src/core/prophesy.Elaboration.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0	0
 lib/proscenium/src/core/proscenium.Array.scala	3	0	0	0	0	0	0	0	0	3	3	0	0	0	0	0	0
 lib/proscenium/src/core/proscenium.Chain.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	0	1	0	0
+lib/proscenium/src/core/proscenium.Hashtable.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.Ledger.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.List.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	0	1	0	0
-lib/proscenium/src/core/proscenium.Map.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+lib/proscenium/src/core/proscenium.Map.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.Sequence.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.Set.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
-lib/proscenium/src/test/prosceniumtest.Tests.scala	0	0	0	0	0	0	0	0	0	0	6	0	0	0	0	0	0
+lib/proscenium/src/test/prosceniumtest.Tests.scala	0	0	0	0	0	0	0	0	0	0	8	0	0	0	0	0	0
 lib/punctuation/src/core/punctuation.BlockBuilder.scala	0	0	7	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/punctuation/src/core/punctuation.BlockParser.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/punctuation/src/core/punctuation.EmphasisProcessor.scala	0	0	6	0	0	0	0	0	0	0	0	0	0	0	1	0	0

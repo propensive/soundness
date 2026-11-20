@@ -416,17 +416,15 @@ trait Json2 extends Json3:
       val root = json.root
       val n = root.objectSize
 
-      // Built immutably: `build`'s per-field lambda is polymorphic (`[field] => …`) and must be
-      // pure, so it may only close over pure values — a mutable map would be a capability.
-      val values: Map[String, Json.Ast] =
-        val builder = scala.collection.immutable.Map.newBuilder[String, Json.Ast]
+      // Filled in place, and immutable once filled: `build`'s per-field lambda is polymorphic
+      // (`[field] => …`) and must be pure, so it may only close over pure values — a map still
+      // being written would be a capability, and `Map.build` hands back one that is not.
+      val values: Map[String, Json.Ast] = Map.build[String, Json.Ast]: map =>
         var i = 0
 
         while i < n do
-          builder += root.objectKey(i) -> root.objectValue(i)
+          map(root.objectKey(i)) = root.objectValue(i)
           i += 1
-
-        builder.result().to(Map)
 
       // A SINGLE field traversal serving both modes, branching on `foci.active` per field.
       // One traversal is load-bearing: every wisteria traversal re-summons each field's decoder

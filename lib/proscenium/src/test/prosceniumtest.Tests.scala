@@ -166,3 +166,169 @@ object Tests extends Suite("prelude-consumer", m"Proscenium consumer-view tests"
         demilitarize:
           val map: Map[Int, Int] = Ledger(1 -> 1)
       . assert(!_.nil)
+
+    // `Map.build` lends a mutable builder to a block and hands back an ordinary `Map`. Six
+    // entries or so matter here: a build of five or more is a flat hash table, and four or
+    // fewer the standard library's small maps, and the two must be indistinguishable.
+    suite(m"Building a map in place"):
+      def cast: Map[Text, Int] = Map.build[Text, Int]: map =>
+        map(t"Hamlet") = 30
+        map(t"Ophelia") = 18
+        map(t"Laertes") = 25
+        map(t"Gertrude") = 50
+        map(t"Claudius") = 55
+        map(t"Horatio") = 30
+
+      val literal: Map[Text, Int] =
+        Map
+          ( t"Hamlet" -> 30, t"Ophelia" -> 18, t"Laertes" -> 25, t"Gertrude" -> 50,
+            t"Claudius" -> 55, t"Horatio" -> 30 )
+
+      test(m"a built map equals the literal with the same entries"):
+        cast == literal
+      . assert(_ == true)
+
+      test(m"the literal equals the built map too"):
+        literal == cast
+      . assert(_ == true)
+
+      test(m"a built map hashes as the literal does"):
+        cast.hashCode
+      . assert(_ == literal.hashCode)
+
+      test(m"a built map reads a key that was written"):
+        cast.at(t"Laertes")
+      . assert(_ == 25)
+
+      test(m"a built map has no value for a key that was not written"):
+        cast.at(t"Yorick")
+      . assert(_ == Unset)
+
+      test(m"a built map counts its entries"):
+        cast.size
+      . assert(_ == 6)
+
+      test(m"a built map yields every key"):
+        cast.keys
+      . assert(_ == literal.keys)
+
+      test(m"a later write to the same key replaces the earlier one"):
+        Map.build[Text, Int]: map =>
+          map(t"Hamlet") = 29
+          map(t"Ophelia") = 18
+          map(t"Laertes") = 25
+          map(t"Gertrude") = 50
+          map(t"Claudius") = 55
+          map(t"Hamlet") = 30
+      . assert(_ == Map(t"Hamlet" -> 30, t"Ophelia" -> 18, t"Laertes" -> 25, t"Gertrude" -> 50,
+          t"Claudius" -> 55))
+
+      test(m"the builder answers what it holds while it is being filled"):
+        var seen: (Boolean, Boolean, Int) = (false, false, 0)
+
+        Map.build[Text, Int]: map =>
+          map(t"Hamlet") = 30
+          seen = (map.defines(t"Hamlet"), map.defines(t"Ophelia"), map.size)
+
+        seen
+      . assert(_ == (true, false, 1))
+
+      test(m"an empty build is the empty map"):
+        Map.build[Text, Int] { map => () }
+      . assert(_ == Map.empty[Text, Int])
+
+      test(m"a build of one entry equals the literal"):
+        Map.build[Text, Int] { map => map(t"Hamlet") = 30 }
+      . assert(_ == Map(t"Hamlet" -> 30))
+
+      test(m"a build of four entries equals the literal"):
+        Map.build[Int, Int] { map => List(1, 2, 3, 4).each { index => map(index) = index*index } }
+      . assert(_ == Map(1 -> 1, 2 -> 4, 3 -> 9, 4 -> 16))
+
+      test(m"a build of five entries equals the literal"):
+        Map.build[Int, Int]: map =>
+          List(1, 2, 3, 4, 5).each { index => map(index) = index*index }
+      . assert(_ == Map(1 -> 1, 2 -> 4, 3 -> 9, 4 -> 16, 5 -> 25))
+
+      test(m"a large build keeps every entry through its growth"):
+        val squares = Map.build[Int, Int]: map =>
+          var index = 0
+
+          while index < 10000 do
+            map(index) = index*index
+            index += 1
+
+        var found = 0
+        var index = 0
+
+        while index < 10000 do
+          if squares.at(index) == index*index then found += 1
+          index += 1
+
+        (squares.size, found, squares.at(10000))
+      . assert(_ == (10000, 10000, Unset))
+
+      test(m"defining a key on a built map leaves the original as it was"):
+        val original = cast
+        val extended = original.define(t"Yorick", 7)
+        (original.size, original.at(t"Yorick"), extended.size, extended.at(t"Yorick"))
+      . assert(_ == (6, Unset, 7, 7))
+
+      test(m"a built map that has been defined on still equals the literal"):
+        val original = cast
+        original.define(t"Yorick", 7)
+        original == literal
+      . assert(_ == true)
+
+      test(m"omitting a key from a built map removes only that key"):
+        cast.omit(t"Claudius")
+      . assert(_ == Map(t"Hamlet" -> 30, t"Ophelia" -> 18, t"Laertes" -> 25, t"Gertrude" -> 50,
+          t"Horatio" -> 30))
+
+      test(m"omitting a key that is not there gives an equal map"):
+        cast.omit(t"Yorick")
+      . assert(_ == literal)
+
+      // A test of the primitive beneath `.to(Map)` and the companion's `Factory`, not a way to
+      // convert: the standard library's own `from` would copy a built map into a tree.
+      test(m"the from primitive hands a built map back uncopied"):
+        val raw = cast.stdlib
+        Map.from(raw).stdlib eq raw
+      . assert(_ == true)
+
+      // Keys are compared as the standard library compares them, so that a map answers the
+      // same before and after it has grown its persistent tree: a `Long` one is an `Int` one.
+      test(m"numeric keys of different types are the same key"):
+        val numbers = Map.build[Any, Text]: map =>
+          map(1) = t"one"
+          map(2) = t"two"
+          map(3) = t"three"
+          map(4) = t"four"
+          map(5) = t"five"
+          map(1L) = t"uno"
+
+        (numbers.size, numbers.at(1), numbers.at(2.0), numbers.define(6, t"six").at(1L))
+      . assert(_ == (5, t"uno", t"two", t"uno"))
+
+      test(m"a map may be keyed by null"):
+        val keyed = Map.build[Text | Null, Int]: map =>
+          map(null) = 0
+          map(t"Hamlet") = 30
+          map(t"Ophelia") = 18
+          map(t"Laertes") = 25
+          map(t"Gertrude") = 50
+
+        (keyed.size, keyed.at(null), keyed.defines(null), keyed.define(t"Horatio", 30).at(null))
+      . assert(_ == (5, 0, true, 0))
+
+      test(m"a block that only writes to its builder compiles"):
+        demilitarize:
+          Map.build[Int, Int] { map => map(1) = 2 }
+      . assert(_ == Nil)
+
+      test(m"the builder cannot outlive its block"):
+        demilitarize:
+          var later: () => Unit = () => ()
+          Map.build[Int, Int] { map => later = () => map(1) = 2 }
+          later()
+      . assert(!_.nil)

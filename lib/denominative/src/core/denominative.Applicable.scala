@@ -38,6 +38,7 @@ import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import prepositional.*
+import vacuous.*
 
 object Applicable:
   // The frozen array, `Array[element]^{}`, likewise: the bounds-partial `readUnchecked` is
@@ -109,13 +110,14 @@ object Applicable:
     def contains(text: Text, index: Ordinal): Boolean = index.n0 >= 0 && index.n0 < text.s.length
     def access(text: Text, index: Ordinal): Result = text.s.charAt(index.n0)
 
-  given map: [key, value] => Map[key, value] is Applicable:
+  given map: [key, value] => Map[key, value] is Probing:
     type Self = Map[key, value]
     type Operand = key
     type Result = value
 
     def contains(value: Self, index: key): Boolean = Map.defines(value, index)
     def access(value: Self, index: key): value = Map.at(value, index)
+    override def probe(value: Self, index: key): Optional[value] = Map.probe(value, index, Unset)
 
   given ledger: [key, value] => Ledger[key, value] is Applicable:
     type Self = Ledger[key, value]
@@ -125,14 +127,26 @@ object Applicable:
     def contains(value: Self, index: key): Boolean = Ledger.defines(value, index)
     def access(value: Self, index: key): value = Ledger.at(value, index)
 
-  given hashMap: [key, value] => scm.HashMap[key, value] is Applicable:
+  given hashMap: [key, value] => scm.HashMap[key, value] is Probing:
     type Self = scm.HashMap[key, value]
     type Operand = key
     type Result = value
 
     def contains(value: Self, index: key): Boolean = value.contains(index)
     def access(value: Self, index: key): value = value(index)
+    override def probe(value: Self, index: key): Optional[value] = value.getOrElse(index, Unset)
+
+  // An `Applicable` whose structure answers the check and the read together, and so overrides
+  // `probe`: a hash map finds a key's slot once, where `contains` followed by `access` would
+  // find it twice. The checked `at` and `apply` call `probe` wherever the receiver's instance
+  // is statically one of these, and are unchanged for every other receiver.
+  trait Probing extends Applicable
 
 trait Applicable extends Typeclass.Pure, Operable, Resultant:
   def contains(value: Self, index: Operand): Boolean
   def access(value: Self, index: Operand): Result
+
+  // The checked read as one call: the result at `index`, or `Unset`. Here it is the check and
+  // then the access; a `Probing` instance overrides it with one step.
+  def probe(value: Self, index: Operand): Optional[Result] =
+    if contains(value, index) then access(value, index) else Unset
