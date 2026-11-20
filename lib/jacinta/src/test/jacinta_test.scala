@@ -1318,6 +1318,22 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
       :   Boolean =
         json.read[record in Json] == json.read[Json].as[record]
 
+      test(m"An array evaluates its element parser once, not per element"):
+        // The element parser arrives by name; were it re-evaluated per element, an inline
+        // derivation in that position would rebuild a whole parser for every element.
+        val evaluations = java.util.concurrent.atomic.AtomicInteger(0)
+
+        given scala.collection.immutable.List[Person] is Json.Parsable =
+          Json.Parsable.iterable[scala.collection.immutable.List, Person]:
+            evaluations.incrementAndGet()
+            summon[Person is Json.Parsable]
+
+        t"""[{"name":"Nym","age":50},{"name":"Pistol","age":30},{"name":"Bardolph","age":40}]"""
+        . read[scala.collection.immutable.List[Person] in Json]
+
+        evaluations.get
+      . assert(_ == 1)
+
       test(m"A staged parser reads a simple record"):
         t"""{"name": "Nym", "age": 50}""".read[Person in Json]
       . assert(_ == Person(t"Nym", 50))
