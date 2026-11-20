@@ -482,6 +482,79 @@ object Benchmarks extends Suite("collections-bench", m"Murmuration benchmarks"):
                 murmuration.Benchmarks.data($kind, $size).sort
             }
 
+    // What `Map.build` is worth. Read each suite down a column — one size — against its
+    // baseline; the contenders are described on the enumerations in `MapBench`. A read cell is
+    // 1,024 lookups; a build cell is one map of that many entries; a derive cell is one
+    // persistent update.
+    val mapSizes = scala.Seq(1, 4, 5, 16, 256, 4096, 100000)
+    val missSizes = scala.Seq(0, 1, 4, 5, 16, 256, 4096, 100000)
+
+    val mapsAgree =
+      missSizes.forall { size => MapBench.agree(0, size) && MapBench.agree(1, size) }
+
+    turbulence.Out.println(s"built maps agree with the standard library's: $mapsAgree".tt)
+
+    def lookups(name: Message, kind: Int, flag: Int, sizes: scala.Seq[Int]): Unit =
+      bench(name)(target = 250*Milli(Second), baseline = MapBench.Lookup.Tree)
+      . over(Axis(MapBench.Lookup), Axis(t"size")(sizes*)):
+          case (MapBench.Lookup.Tree, size) =>
+            '{ murmuration.MapBench.lookupTree($kind, $size, $flag == 1) }
+
+          case (MapBench.Lookup.Built, size) =>
+            '{ murmuration.MapBench.lookupBuilt($kind, $size, $flag == 1) }
+
+          case (MapBench.Lookup.TreeOnce, size) =>
+            '{ murmuration.MapBench.lookupTreeOnce($kind, $size, $flag == 1) }
+
+          case (MapBench.Lookup.BuiltOnce, size) =>
+            '{ murmuration.MapBench.lookupBuiltOnce($kind, $size, $flag == 1) }
+
+          case (MapBench.Lookup.JavaHashMap, size) =>
+            '{ murmuration.MapBench.lookupJavaHashMap($kind, $size, $flag == 1) }
+
+    def builds(name: Message, kind: Int): Unit =
+      bench(name)(target = 250*Milli(Second), baseline = MapBench.Build.StdlibBuilder)
+      . over(Axis(MapBench.Build), Axis(t"size")(mapSizes*)):
+          case (MapBench.Build.DefineLoop, size) =>
+            '{ murmuration.MapBench.buildDefineLoop($kind, $size) }
+
+          case (MapBench.Build.StdlibBuilder, size) =>
+            '{ murmuration.MapBench.buildStdlibBuilder($kind, $size) }
+
+          case (MapBench.Build.MapBuild, size) =>
+            '{ murmuration.MapBench.buildMapBuild($kind, $size) }
+
+          case (MapBench.Build.JavaHashMap, size) =>
+            '{ murmuration.MapBench.buildJavaHashMap($kind, $size) }
+
+    def derivations(name: Message, kind: Int): Unit =
+      bench(name)(target = 250*Milli(Second), baseline = MapBench.Derive.Tree)
+      . over(Axis(MapBench.Derive), Axis(t"size")(mapSizes*)):
+          case (MapBench.Derive.Tree, size) =>
+            '{ murmuration.MapBench.deriveTree($kind, $size) }
+
+          case (MapBench.Derive.Built, size) =>
+            '{ murmuration.MapBench.deriveBuilt($kind, $size) }
+
+          case (MapBench.Derive.FreshTree, size) =>
+            '{ murmuration.MapBench.deriveFreshTree($kind, $size) }
+
+          case (MapBench.Derive.FreshBuilt, size) =>
+            '{ murmuration.MapBench.deriveFreshBuilt($kind, $size) }
+
+    suite(m"Map lookup"):
+      lookups(m"Map lookup: text keys, found", 0, 1, mapSizes)
+      lookups(m"Map lookup: text keys, absent", 0, 0, missSizes)
+      lookups(m"Map lookup: integer keys, found", 1, 1, mapSizes)
+      lookups(m"Map lookup: integer keys, absent", 1, 0, missSizes)
+
+    suite(m"Map build"):
+      builds(m"Map build: text keys", 0)
+      builds(m"Map build: integer keys", 1)
+
+    suite(m"Map derive"):
+      derivations(m"Map derive: text keys", 0)
+
     suite(m"Sorting by input shape"):
       sweep(Shape.Shuffled, m"shuffled")
       sweep(Shape.Ascending, m"already in order")

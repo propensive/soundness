@@ -51,8 +51,108 @@ object Map extends scala.caps.Pure:
   def apply[key, value](pairs: (key, value)*): Map[key, value] = of(sci.Map(pairs*))
   def empty[key, value]: Map[key, value] = of(sci.Map.empty[key, value])
 
+  // The standard library's `from` hands back only its own maps unchanged, and would copy a
+  // built one into a tree, so a table is recognised here first.
   def from[key, value](pairs: IterableOnce[(key, value)]^): Map[key, value] =
-    of(sci.Map.from(pairs))
+    if pairs.isInstanceOf[FlatMap[?, ?]] then of(pairs.asInstanceOf[FlatMap[key, value]])
+    else of(sci.Map.from(pairs))
+
+  // Allocate → mutate → freeze, for a map: the block is lent an exclusive `Builder` to fill in
+  // place, and what it has filled comes back as an ordinary immutable `Map` without being
+  // copied —
+  //     Map.build[Int, Text]: map =>
+  //       map(8) = t"eight"
+  // The builder is a capability the block cannot let escape, so nothing can write to the table
+  // once it is a `Map`. Five entries or more are a flat hash table (see `Hashtable`), which
+  // builds and reads several times faster than the persistent tree, and grows one only if the
+  // map is later updated; fewer are the standard library's compact small maps.
+  def build[key, value](lambda: Builder[key, value]^ => Unit): Map[key, value] =
+    val builder: Builder[key, value]^ = new Builder[key, value]()
+    lambda(builder)
+    of(builder.result())
+
+  // The map while it is being filled. Only an exclusive reference can write to it, and the
+  // only one there is belongs to the block `build` runs. Up to `Hashtable.Compact` entries are
+  // kept packed at the front of `slots` and scanned; `hashes` stays empty until one more
+  // arrives, when the table is allocated and they are spread into it.
+  final class Builder[key, value] private[proscenium] () extends scala.caps.Mutable:
+    private var slots: scala.Array[Any]^ = new scala.Array[Any](Hashtable.Compact << 1)
+    private var hashes: scala.Array[Int]^ = new scala.Array[Int](0)
+    private var shift: Int = Hashtable.Shift
+    private var count: Int = 0
+
+    def size: Int = count
+
+    def defines(key: key): Boolean =
+      val marked = Hashtable.marked(key)
+
+      if hashes.length == 0 then Hashtable.scan(slots, count, marked) >= 0
+      else Hashtable.find(slots, hashes, shift, marked) >= 0
+
+    update def update(key: key, value: value): Unit =
+      val marked = Hashtable.marked(key)
+
+      if hashes.length > 0 then insert(marked, value) else
+        val index = Hashtable.scan(slots, count, marked)
+
+        if index >= 0 then slots((index << 1) + 1) = value
+        else if count < Hashtable.Compact then
+          slots(count << 1) = marked
+          slots((count << 1) + 1) = value
+          count += 1
+        else
+          val slots2 = new scala.Array[Any](Hashtable.Capacity << 1)
+          val hashes2 = new scala.Array[Int](Hashtable.Capacity)
+          Hashtable.spread(slots, count, slots2, hashes2, shift)
+          slots = slots2
+          hashes = hashes2
+          insert(marked, value)
+
+    // The probe is written here rather than in `Hashtable`: both arrays belong to this
+    // builder, and two exclusive arguments may not share an owner.
+    private update def insert(marked: Any, value: value): Unit =
+      val wanted = Hashtable.hash(marked)
+      val universal = Hashtable.numeric(marked)
+      val mask = hashes.length - 1
+      var index = (wanted*0x9E3779B9) >>> shift
+      var done = false
+
+      // Bounded by the load: at most half the slots are occupied, so the probe reaches an
+      // empty one.
+      while !done do
+        val found = slots(index << 1)
+
+        if found == null then
+          slots(index << 1) = marked
+          slots((index << 1) + 1) = value
+          hashes(index) = wanted
+          count += 1
+          if (count << 1) > hashes.length then grow()
+          done = true
+        else if hashes(index) == wanted && Hashtable.same(universal, marked, found) then
+          slots((index << 1) + 1) = value
+          done = true
+        else
+          index = (index + 1) & mask
+
+    private update def grow(): Unit =
+      val capacity = hashes.length << 1
+      val slots2 = new scala.Array[Any](capacity << 1)
+      val hashes2 = new scala.Array[Int](capacity)
+      Hashtable.rehash(slots, hashes, slots2, hashes2, shift - 1)
+      slots = slots2
+      hashes = hashes2
+      shift -= 1
+
+    private[proscenium] def result(): sci.Map[key, value] =
+      if hashes.length == 0 then Hashtable.compact[key, value](slots, count) else
+        // The block that held the only exclusive reference has returned, so the table's
+        // writers are gone, and its arrays can be handed over frozen and uncopied.
+        // [transfer] freeze: the builder's block has returned, retiring every writer
+        val table = scala.caps.unsafe.unsafeAssumePure(slots)
+        // [transfer] freeze: as for the slots
+        val stored = scala.caps.unsafe.unsafeAssumePure(hashes)
+        new FlatMap[key, value](table, stored, shift, count)
 
   // `.to[Map]` support (see `List`): the conversion is on `Map.type` only, so it cannot
   // expose members of `Map` values.

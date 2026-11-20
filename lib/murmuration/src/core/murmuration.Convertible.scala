@@ -64,9 +64,14 @@ object Convertible:
   =>  self is Convertible in Chain to Chain[traversable.Operand] =
     self => traversable.traverse(self).chain
 
+  // Filled in place through `Map.build`, so five entries or more become a flat hash table
+  // rather than a persistent tree; a later pair with the same key replaces an earlier one.
   given map: [self, key, value] => (traversable: self is Traversable by (key, value))
   =>  self is Convertible in Map to Map[key, value] =
-    self => Map.from(Reshapable.build(traversable.traverse(self), sci.Map.newBuilder))
+    self =>
+      Map.build[key, value]: map =>
+        traversable.traverse(self).each: pair =>
+          map(pair(0)) = pair(1)
 
   given ledger: [self, key, value] => (traversable: self is Traversable by (key, value))
   =>  self is Convertible in Ledger to Ledger[key, value] =

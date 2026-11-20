@@ -1,0 +1,74 @@
+diff --git a/lib/jacinta/src/core/jacinta.Json.scala b/lib/jacinta/src/core/jacinta.Json.scala
+index 849ab6be11..b2ddede501 100644
+--- a/lib/jacinta/src/core/jacinta.Json.scala
++++ b/lib/jacinta/src/core/jacinta.Json.scala
+@@ -418,15 +418,18 @@ trait Json2 extends Json3:
+ 
+       // Built immutably: `build`'s per-field lambda is polymorphic (`[field] => …`) and must be
+       // pure, so it may only close over pure values — a mutable map would be a capability.
++      // SPIKE (collections/hybrid-map-spike, NOT FOR MERGE): the flat-table prototype.
+       val values: Map[String, Json.Ast] =
+-        val builder = scala.collection.immutable.Map.newBuilder[String, Json.Ast]
++        val table = new java.util.HashMap[String, Json.Ast]()
+         var i = 0
+ 
+         while i < n do
+-          builder += root.objectKey(i) -> root.objectValue(i)
++          table.put(root.objectKey(i), root.objectValue(i))
+           i += 1
+ 
+-        builder.result().to(Map)
++        // A cast, not `Map.from`: the standard library's `from` passes only its own
++        // implementations through and would copy this one into a tree.
++        new SpikeFlatMap[String, Json.Ast](table).asInstanceOf[Map[String, Json.Ast]]
+ 
+       // A SINGLE field traversal serving both modes, branching on `foci.active` per field.
+       // One traversal is load-bearing: every wisteria traversal re-summons each field's decoder
+
+# plus the new file lib/jacinta/src/core/jacinta.SpikeFlatMap.scala (below, after the licence header):
+# package jacinta
+# 
+# import scala.annotation.unchecked.uncheckedVariance
+# import scala.collection.immutable as sci
+# 
+# // SPIKE (collections/hybrid-map-spike, NOT FOR MERGE): the flat-table prototype measured in
+# // murmuration's benchmarks, copied here so that `decodeObject` can be pointed at it for one
+# // end-to-end measurement. See `murmuration.JavaFlatMap`.
+# final class SpikeFlatMap[key, +value]
+#   ( table: java.util.HashMap[key, value @uncheckedVariance] )
+# extends sci.AbstractMap[key, value]:
+# 
+#   @scala.caps.unsafe.untrackedCaptures private var tree: sci.Map[key, value] | Null = null
+# 
+#   private def persistent: sci.Map[key, value] =
+#     val cached = tree
+# 
+#     if cached != null then cached else
+#       val builder = sci.HashMap.newBuilder[key, value]
+#       table.forEach((key, value) => builder.addOne((key.asInstanceOf[key], value.asInstanceOf[value])))
+#       val built = builder.result()
+#       tree = built
+#       built
+# 
+#   override def size: Int = table.size
+#   override def knownSize: Int = table.size
+#   override def isEmpty: Boolean = table.isEmpty
+#   override def contains(key: key): Boolean = table.containsKey(key)
+# 
+#   override def apply(key: key): value =
+#     val found = table.get(key)
+#     if found == null then throw new java.util.NoSuchElementException() else found
+# 
+#   override def getOrElse[value2 >: value](key: key, default: => value2): value2 =
+#     val found = table.get(key)
+#     if found == null then default else found
+# 
+#   def get(key: key): scala.Option[value] =
+#     val found = table.get(key)
+#     if found == null then scala.None else scala.Some(found)
+# 
+#   def iterator: scala.collection.Iterator[(key, value)] = persistent.iterator
+#   def removed(key: key): sci.Map[key, value] = persistent.removed(key)
+# 
+#   def updated[value2 >: value](key: key, value: value2): sci.Map[key, value2] =
+#     persistent.updated(key, value)
