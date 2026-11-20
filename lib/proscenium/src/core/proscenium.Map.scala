@@ -58,6 +58,7 @@ object Map extends scala.caps.Pure:
   // a tree. Anything else is filled in place.
   def from[key, value](pairs: IterableOnce[(key, value)]^): Map[key, value] =
     if pairs.isInstanceOf[FlatMap[?, ?]] then of(pairs.asInstanceOf[FlatMap[key, value]])
+    else if pairs.isInstanceOf[PerfectMap[?, ?]] then of(pairs.asInstanceOf[PerfectMap[key, value]])
     else if pairs.isInstanceOf[sci.Map[?, ?]] then of(sci.Map.from(pairs))
     else filled(pairs)
 
@@ -168,6 +169,38 @@ object Map extends scala.caps.Pure:
         // [transfer] freeze: as for the slots
         val stored = scala.caps.unsafe.unsafeAssumePure(hashes)
         new FlatMap[key, value](table, stored, shift, count)
+
+  // The entries of `map` laid out for a perfect hash of its keys, which `make` supplies as a
+  // `PerfectMap` over whatever slots it is given: it is made once over none, to ask where each
+  // key belongs, and once more over the table that answers. Nothing is taken on trust: if any
+  // key is sent outside `capacity` slots, or two to the same one, or there is a `null` key,
+  // `map` is handed back as it was.
+  def perfect[key, value](map: Map[key, value], capacity: Int)
+    ( make: (scala.Array[Any]^{}, Int) => PerfectMap[key, value] )
+  :   Map[key, value] =
+
+    val count = map.size
+    // [construction-fresh] an empty array, which nothing could write to
+    val none: scala.Array[Any]^{} = scala.caps.unsafe.unsafeAssumePure(new scala.Array[Any](0))
+    val probe = make(none, count)
+    val slots: scala.Array[Any]^ = new scala.Array[Any](capacity << 1)
+    val iterator = map.iterator
+    var sound = count <= capacity
+
+    // Terminated by the source's own state.
+    while sound && iterator.hasNext do
+      val pair = iterator.next()
+      val key: Any = pair._1
+      val at = if key == null then -1 else probe.index(key)
+
+      if at < 0 || at >= capacity || slots(at << 1) != null then sound = false else
+        slots(at << 1) = key
+        slots((at << 1) + 1) = pair._2
+
+    if !sound then map else
+      // [transfer] freeze: the table is written only above, and never after this
+      val table: scala.Array[Any]^{} = scala.caps.unsafe.unsafeAssumePure(slots)
+      of(make(table, count))
 
   // `.to[Map]` support (see `List`): the conversion is on `Map.type` only, so it cannot
   // expose members of `Map` values.

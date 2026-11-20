@@ -914,3 +914,82 @@ object Tests extends Suite("collections", m"Murmuration tests"):
 
         byQuicksort == expected && byHeapsort == expected
       . assert(_ == true)
+
+    suite(m"Maps optimized by a perfect hash"):
+      val court: Map[Text, Int] =
+        Map
+          ( t"Lear" -> 80, t"Cordelia" -> 25, t"Goneril" -> 40, t"Regan" -> 38, t"Kent" -> 48,
+            t"Gloucester" -> 60, t"Edgar" -> 28, t"Edmund" -> 27, t"Albany" -> 42,
+            t"Cornwall" -> 44, t"Oswald" -> 33 )
+
+      val optimized: Map[Text, Int] = court.optimize
+
+      // Whether a map is read through a perfect hash: the one thing here that only its
+      // runtime class can say.
+      def perfect[key, value](map: Map[key, value]): Boolean =
+        map.stdlib.isInstanceOf[proscenium.PerfectMap[?, ?]]
+
+      test(m"an optimized map of texts is read through a perfect hash"):
+        perfect(optimized)
+      . assert(_ == true)
+
+      test(m"an optimized map finds every key it was made with"):
+        court.all { entry => optimized.at(entry(0)) == entry(1) }
+      . assert(_ == true)
+
+      test(m"an optimized map does not find a key it was not made with"):
+        (optimized.at(t"Fool"), optimized.at(t""), optimized.defines(t"France"))
+      . assert(_ == (Unset, Unset, false))
+
+      test(m"an optimized map equals the map it was made from"):
+        optimized == court && court == optimized && optimized.hashCode == court.hashCode
+      . assert(_ == true)
+
+      test(m"an optimized map has every entry of the map it was made from"):
+        optimized.all { entry => court.at(entry(0)) == entry(1) }
+      . assert(_ == true)
+
+      test(m"defining a key on an optimized map gives a map with them all"):
+        val more = optimized.define(t"Fool", 30)
+        (more == court.define(t"Fool", 30), more.at(t"Fool"), optimized.at(t"Fool"))
+      . assert(_ == (true, 30, Unset))
+
+      test(m"omitting a key from an optimized map leaves the rest"):
+        val fewer = optimized.omit(t"Lear")
+        (fewer == court.omit(t"Lear"), fewer.at(t"Lear"), fewer.at(t"Kent"))
+      . assert(_ == (true, Unset, 48))
+
+      test(m"a map of integers is optimized"):
+        val squares: Map[Int, Int] = Map.build[Int, Int]: map =>
+          var number = 0
+
+          while number < 300 do
+            map(number*7919 + 13) = number*number
+            number += 1
+
+        val fast = squares.optimize
+
+        ( perfect(fast),
+          squares.all { entry => fast.at(entry(0)) == entry(1) },
+          fast.at(14),
+          fast == squares )
+      . assert(_ == (true, true, Unset, true))
+
+      test(m"an integer key of an optimized map is found by an equal long"):
+        val ages: Map[Any, Int] =
+          Map[Any, Int](1 -> 10, 2 -> 20, 3 -> 30, 4 -> 40, 5 -> 50, 6 -> 60).optimize
+
+        (perfect(ages), ages.at(3L), ages.at(7L), ages.at(t"3"))
+      . assert(_ == (true, 30, Unset, Unset))
+
+      test(m"a map of four entries is left as it was"):
+        perfect(Map(t"Lear" -> 80, t"Kent" -> 48, t"Edgar" -> 28, t"Oswald" -> 33).optimize)
+      . assert(_ == false)
+
+      test(m"a map whose keys are of no hashable kind is left as it was"):
+        val pairs: Map[(Int, Int), Int] =
+          Map((1, 1) -> 1, (1, 2) -> 2, (2, 1) -> 3, (2, 2) -> 4, (3, 1) -> 5, (3, 2) -> 6)
+
+        val same = pairs.optimize
+        (perfect(same), same == pairs)
+      . assert(_ == (false, true))
