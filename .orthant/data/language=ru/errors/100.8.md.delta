@@ -1,0 +1,76 @@
+orthant 1 language
+
+- # `↯/s.100.8` — `Url.Error`
++ # `↯/s.100.8` — `Url.Error`
+
+- Raised when a value cannot be parsed as a valid URL.
++ Порождается, когда значение не удаётся разобрать как корректный URL.
+
+- ## Cause
++ ## Причина
+
+- Urticose validates URL syntax against the components it expects: a
+- scheme, optional authority (with hostname and port), path, query and
+- fragment. Each variant pinpoints where parsing failed. The message
+- includes the bad input and the offset of the failure: `the URL $text
+- is not valid: $reason at $offset`.
++ Urticose проверяет синтаксис URL по ожидаемым компонентам: схема,
++ необязательная authority (с именем хоста и портом), путь, строка запроса
++ и фрагмент. Каждый вариант точно указывает, где разбор завершился
++ неудачей. Сообщение включает некорректный ввод и смещение сбоя:
++ `the URL $text is not valid: $reason at $offset`.
+
+- ## Variants
++ ## Варианты
+
+- ### `↯/s.100.8.1` — `Expected`
++ ### `↯/s.100.8.1` — `Expected`
+
+- A specific token was expected at the offset, but a different one
+- appeared. The expectation is one of `Colon`, `More`, `LowerCaseLetter`,
+- `PortRange`, or `Number`.
++ В данном смещении ожидался определённый токен, но появился другой.
++ Ожидание — одно из `Colon`, `More`, `LowerCaseLetter`, `PortRange` или
++ `Number`.
+
+- **Example.** `[↯/s.100.8.1] the URL https://example is not valid: a colon was expected at 14`
++ **Пример.** `[↯/s.100.8.1] the URL https://example is not valid: a colon was expected at 14`
+
+- **Resolution.** Adjust the URL to provide the expected token at the
+- indicated offset.
++ **Решение.** Исправьте URL так, чтобы в указанном смещении стоял
++ ожидаемый токен.
+
+- ### `↯/s.100.8.2` — `BadHostname`
++ ### `↯/s.100.8.2` — `BadHostname`
+
+- The hostname component of the URL is not a valid DNS hostname.
++ Компонент имени хоста в URL не является корректным именем хоста DNS.
+
+- **Example.** `[↯/s.100.8.2] the URL http://exa_mple/ is not valid: exa_mple was not valid because the character _ is not allowed in a hostname at 7`
++ **Пример.** `[↯/s.100.8.2] the URL http://exa_mple/ is not valid: exa_mple was not valid because the character _ is not allowed in a hostname at 7`
+
+- **Resolution.** Replace the hostname with a syntactically valid one;
+- see `↯/s.100.10` for hostname rules.
++ **Решение.** Замените имя хоста синтаксически корректным; правила для
++ имён хостов см. в `↯/s.100.10`.
+
+- ### `↯/s.100.8.3` — `BadIpv6`
++ ### `↯/s.100.8.3` — `BadIpv6`
+
+- The bracketed IPv6 literal in the host component is not valid.
++ Литерал IPv6 в квадратных скобках в компоненте хоста некорректен.
+
+- **Example.** `[↯/s.100.8.3] the URL http://[::1::]/ is not valid: the IPv6 address is not valid because :: appears more than once at 7`
++ **Пример.** `[↯/s.100.8.3] the URL http://[::1::]/ is not valid: the IPv6 address is not valid because :: appears more than once at 7`
+
+- **Resolution.** Provide a valid IPv6 literal; see `↯/s.100.2` for
+- IPv6 rules.
++ **Решение.** Укажите корректный литерал IPv6; правила для IPv6 см. в
++ `↯/s.100.2`.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/urticose/src/url/urticose.Url.scala`
++ - Исходный код: `lib/urticose/src/url/urticose.Url.scala`

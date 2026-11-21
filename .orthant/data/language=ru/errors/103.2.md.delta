@@ -1,0 +1,62 @@
+orthant 1 language
+
+- # `↯/s.103.2` — `Http.Request.Error`
++ # `↯/s.103.2` — `Http.Request.Error`
+
+- Raised when an HTTP request cannot be constructed or sent.
++ Порождается, когда HTTP-запрос невозможно сконструировать или отправить.
+
+- ## Cause
++ ## Причина
+
+- This covers faults in the request itself — a URL that cannot be expressed, an invalid
+- header, a body that cannot be framed — as distinct from a failing response, which is an
+- `HttpError`, or a failing connection, which is a `ConnectError`.
++ Сюда относятся дефекты самого запроса — URL, который невозможно выразить, недопустимый
++ заголовок, тело, которое невозможно кадрировать, — в отличие от неудачного ответа, который
++ является `HttpError`, или неудачного соединения, которое является `ConnectError`.
+
+- ## Variants
++ ## Варианты
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Код
++ column  Причина
++ column  Сообщение
+
+- row  `↯/s.103.2.1`  `Expectation`  `[↯/s.103.2.1] <found> was found when <expected> was expected`
++ row  `↯/s.103.2.1`  `Expectation`  `[↯/s.103.2.1] <found> was found when <expected> was expected`
+
+- row  `↯/s.103.2.2`  `Version`  `[↯/s.103.2.2] the HTTP version <value> was invalid`
++ row  `↯/s.103.2.2`  `Version`  `[↯/s.103.2.2] the HTTP version <value> was invalid`
+
+- row  `↯/s.103.2.3`  `Host`  `[↯/s.103.2.3] the host <value> was missing or invalid`
++ row  `↯/s.103.2.3`  `Host`  `[↯/s.103.2.3] the host <value> was missing or invalid`
+
+- row  `↯/s.103.2.4`  `UriTooLong`  `[↯/s.103.2.4] the request line exceeded the maximum length`
++ row  `↯/s.103.2.4`  `UriTooLong`  `[↯/s.103.2.4] the request line exceeded the maximum length`
+
+- row  `↯/s.103.2.5`  `HeadersTooLarge`  `[↯/s.103.2.5] the request headers exceeded the maximum size`
++ row  `↯/s.103.2.5`  `HeadersTooLarge`  `[↯/s.103.2.5] the request headers exceeded the maximum size`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- The reason names the part of the request at fault. A header value containing a line break,
+- or a method the transport does not support, are the common cases.
++ Причина называет дефектную часть запроса. Типичные случаи — значение заголовка, содержащее
++ перевод строки, или метод, который транспорт не поддерживает.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/telekinesis/src/core/telekinesis.Http.scala`
++ - Исходник: `lib/telekinesis/src/core/telekinesis.Http.scala`

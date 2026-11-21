@@ -1,0 +1,1179 @@
+orthant 1 language
+
+- # Changes in 0.65.0
++ # Изменения в 0.65.0
+
+- This file is read by an LLM agent to upgrade code that consumes Soundness libraries from
+- 0.64.0 to 0.65.0. Each entry states precisely what changed; see `AGENTS.md` for the format.
+- Entries are grouped by module, most-recently-added last within a module.
++ Этот файл читает LLM-агент, чтобы обновить код, использующий библиотеки Soundness, с 0.64.0 до
++ 0.65.0. Каждая запись точно описывает изменение; формат описан в `AGENTS.md`. Записи
++ сгруппированы по модулям, и внутри модуля последними идут добавленные позже всего.
+
+- ## ambience
++ ## ambience
+
+- - `ambience.systems.javaSystem` renamed to `javaBaseSystem`. (#1939)
+- - `ambience.environments.javaEnvironment` renamed to `javaBaseEnvironment`. (#1939)
+- - `ambience.workingDirectories.javaWorkingDirectory` renamed to `javaBaseWorkingDirectory`. (#1939)
+- - `ambience.workingDirectories.defaultWorkingDirectory` removed; use `javaBaseWorkingDirectory`,
+-   which reads the `user.dir` property (the removed given read `java.nio.file.Paths.get("")`,
+-   which resolves to the same directory). (#1939)
+- - `ambience.temporaryDirectories.javaTemporaryDirectory` renamed to `javaBaseTemporaryDirectory`. (#1939)
++ - `ambience.systems.javaSystem` переименован в `javaBaseSystem`. (#1939)
++ - `ambience.environments.javaEnvironment` переименован в `javaBaseEnvironment`. (#1939)
++ - `ambience.workingDirectories.javaWorkingDirectory` переименован в `javaBaseWorkingDirectory`. (#1939)
++ - `ambience.workingDirectories.defaultWorkingDirectory` удалён; используйте
++   `javaBaseWorkingDirectory`, который читает свойство `user.dir` (удалённый given читал
++   `java.nio.file.Paths.get("")`, что разрешается в тот же каталог). (#1939)
++ - `ambience.temporaryDirectories.javaTemporaryDirectory` переименован в `javaBaseTemporaryDirectory`. (#1939)
+
+- ## turbulence
++ ## turbulence
+
+- - `turbulence.stdios.virtualMachineStdio` (wrapping `java.io.FileDescriptor.{in,out,err}`) renamed
+-   to `fileDescriptorStdio`. (#1939)
+- - `turbulence.stdios.systemStdio` (wrapping `java.lang.System.{in,out,err}`) renamed to
++ - `turbulence.stdios.virtualMachineStdio` (обёртка над `java.io.FileDescriptor.{in,out,err}`)
++   переименован в `fileDescriptorStdio`. (#1939)
++ - `turbulence.stdios.systemStdio` (обёртка над `java.lang.System.{in,out,err}`) переименован в
+
+-   `javaLangSystemStdio`. (#1939)
++   `javaLangSystemStdio`. (#1939)
+
+- - `turbulence.lineSeparation.virtualMachineLineSeparation` renamed to `javaBaseLineSeparation`. (#1939)
++ - `turbulence.lineSeparation.virtualMachineLineSeparation` переименован в `javaBaseLineSeparation`. (#1939)
+
+- ## coaxial
++ ## coaxial
+
+- - `coaxial.socketBackends.virtualMachineSockets` renamed to `javaBaseSockets`. (#1939)
+- - `coaxial.socketBackends.native` (Scala Native module) renamed to `scalaNativeSockets`, and now
+-   re-exported as `soundness.socketBackends.scalaNativeSockets`. (#1939)
++ - `coaxial.socketBackends.virtualMachineSockets` переименован в `javaBaseSockets`. (#1939)
++ - `coaxial.socketBackends.native` (модуль Scala Native) переименован в `scalaNativeSockets` и
++   теперь реэкспортируется как `soundness.socketBackends.scalaNativeSockets`. (#1939)
+
+- ## galilei
++ ## galilei
+
+- - `galilei.filesystemBackends.virtualMachineFilesystem` renamed to `javaBaseFilesystem`. (#1939)
+- - `galilei.filesystemBackends.native` (Scala Native module) renamed to `scalaNativeFilesystem`,
+-   and now re-exported as `soundness.filesystemBackends.scalaNativeFilesystem`. (#1939)
+- - The nested objects under `galilei.filesystemOptions` are flattened into givens of the same
+-   types: `dereferenceSymlinks.enabled` → `dereferenceSymlinks`, `dereferenceSymlinks.disabled` →
++ - `galilei.filesystemBackends.virtualMachineFilesystem` переименован в `javaBaseFilesystem`. (#1939)
++ - `galilei.filesystemBackends.native` (модуль Scala Native) переименован в
++   `scalaNativeFilesystem` и теперь реэкспортируется как
++   `soundness.filesystemBackends.scalaNativeFilesystem`. (#1939)
++ - Вложенные объекты в `galilei.filesystemOptions` развёрнуты в given тех же типов:
++   `dereferenceSymlinks.enabled` → `dereferenceSymlinks`, `dereferenceSymlinks.disabled` →
+
+-   `preserveSymlinks`, `moveAtomically.enabled` → `moveAtomically`, `moveAtomically.disabled` →
++   `preserveSymlinks`, `moveAtomically.enabled` → `moveAtomically`, `moveAtomically.disabled` →
+
+-   `moveNonAtomically`, `copyAttributes.enabled` → `copyAttributes`, `copyAttributes.disabled` →
++   `moveNonAtomically`, `copyAttributes.enabled` → `copyAttributes`, `copyAttributes.disabled` →
+
+-   `discardAttributes`, `deleteRecursively.enabled` → `deleteRecursively`,
++   `discardAttributes`, `deleteRecursively.enabled` → `deleteRecursively`,
+
+-   `deleteRecursively.disabled` → `deleteOnlyEmpty`, `overwritePreexisting.enabled` →
++   `deleteRecursively.disabled` → `deleteOnlyEmpty`, `overwritePreexisting.enabled` →
+
+-   `overwritePreexisting`, `overwritePreexisting.disabled` → `failOnPreexisting`,
++   `overwritePreexisting`, `overwritePreexisting.disabled` → `failOnPreexisting`,
+
+-   `createNonexistentParents.enabled` → `createNonexistentParents`,
++   `createNonexistentParents.enabled` → `createNonexistentParents`,
+
+-   `createNonexistentParents.disabled` → `requireParents`. The objects no longer exist. (#1939)
++   `createNonexistentParents.disabled` → `requireParents`. Самих объектов больше нет. (#1939)
+
+- ## telekinesis
++ ## telekinesis
+
+- - `telekinesis.httpBackends.virtualMachineHttp` renamed to `javaNetHttp`. (#1939)
+- - `telekinesis.httpBackends.nativeHttp` renamed to `soundnessHttp`. (#1939)
++ - `telekinesis.httpBackends.virtualMachineHttp` переименован в `javaNetHttp`. (#1939)
++ - `telekinesis.httpBackends.nativeHttp` переименован в `soundnessHttp`. (#1939)
+
+- ## scintillate
++ ## scintillate
+
+- - `scintillate.httpServers.stdlibHttpd` renamed to `jdkHttpserver`; `stdlibPublicHttpd` renamed
+-   to `jdkHttpserverPublic`. (#1939)
+- - `scintillate.httpServers.nativeHttpServer` renamed to `soundnessHttpd`; `nativePublicHttpServer`
+-   renamed to `soundnessHttpdPublic`; both are now also re-exported as
+-   `soundness.httpServers.{soundnessHttpd, soundnessHttpdPublic}`. (#1939)
+- - `scintillate.frontends.threadPerConnection` renamed to `threadPerConnectionFrontend`;
+-   `frontends.reactive` renamed to `reactiveFrontend`. (#1939)
+- - `scintillate.webserverErrorPages.standardErrorPage` renamed to `styledErrorPage`. (#1939)
++ - `scintillate.httpServers.stdlibHttpd` переименован в `jdkHttpserver`; `stdlibPublicHttpd`
++   переименован в `jdkHttpserverPublic`. (#1939)
++ - `scintillate.httpServers.nativeHttpServer` переименован в `soundnessHttpd`;
++   `nativePublicHttpServer` переименован в `soundnessHttpdPublic`; оба теперь также
++   реэкспортируются как `soundness.httpServers.{soundnessHttpd, soundnessHttpdPublic}`. (#1939)
++ - `scintillate.frontends.threadPerConnection` переименован в `threadPerConnectionFrontend`;
++   `frontends.reactive` переименован в `reactiveFrontend`. (#1939)
++ - `scintillate.webserverErrorPages.standardErrorPage` переименован в `styledErrorPage`. (#1939)
+
+- ## surveillance
++ ## surveillance
+
+- - `surveillance.watchers.nativeWatcher` renamed to `javaBaseWatcher`; `surveillance.NativeWatcher`
+-   (object) renamed to `JavaBaseWatcher`. (#1939)
++ - `surveillance.watchers.nativeWatcher` переименован в `javaBaseWatcher`;
++   `surveillance.NativeWatcher` (объект) переименован в `JavaBaseWatcher`. (#1939)
+
+- ## gastronomy
++ ## gastronomy
+
+- - `gastronomy.Provider.JavaStdlib` renamed to `Provider.JavaBase`; `gastronomy.JavaStdlibHashing`
+-   renamed to `JavaBaseHashing`; `gastronomy.Hashing.javaStdlibHashing` renamed to
+-   `javaBaseHashing`; `gastronomy.providers.javaStdlibProvider` renamed to `javaBaseProvider`. (#1939)
+- - Choice package `gastronomy.crypto` renamed to `gastronomy.cryptoPermits` (members
++ - `gastronomy.Provider.JavaStdlib` переименован в `Provider.JavaBase`;
++   `gastronomy.JavaStdlibHashing` переименован в `JavaBaseHashing`;
++   `gastronomy.Hashing.javaStdlibHashing` переименован в `javaBaseHashing`;
++   `gastronomy.providers.javaStdlibProvider` переименован в `javaBaseProvider`. (#1939)
++ - Пакет выбора `gastronomy.crypto` переименован в `gastronomy.cryptoPermits` (члены
+
+-   `permitUnauthenticatedCrypto`, `permitDeprecatedCrypto`, `permitLegacyCrypto`,
++   `permitUnauthenticatedCrypto`, `permitDeprecatedCrypto`, `permitLegacyCrypto`,
+
+-   `permitDisallowedCrypto`, `permitCryptoThrough2014`, `permitCryptoThrough2024`,
++   `permitDisallowedCrypto`, `permitCryptoThrough2014`, `permitCryptoThrough2024`,
+
+-   `permitCryptoThrough2030`, `permitLegacyTls`, `permitUntrustedCertificates`,
++   `permitCryptoThrough2030`, `permitLegacyTls`, `permitUntrustedCertificates`,
+
+-   `permitUncheckedRevocation`, `permitNonCryptographicHashes` unchanged). (#1939)
++   `permitUncheckedRevocation`, `permitNonCryptographicHashes` не изменились). (#1939)
+
+- ## enigmatic
++ ## enigmatic
+
+- - `enigmatic.JavaStdlibCrypto` renamed to `JavaBaseCrypto`; `enigmatic.Crypto.javaStdlibCrypto`
+-   renamed to `javaBaseCrypto`. (#1939)
+- - `enigmatic.cloaks.{cloakHeap, cloakOffHeap, cloakVeiledHeap, cloakVeiledOffHeap}` renamed to
+-   `{heapCloak, offHeapCloak, veiledHeapCloak, veiledOffHeapCloak}`. (#1939)
+- - Choice packages `enigmatic.blockCipherMode` and `enigmatic.blockCipherPadding` renamed to
+-   `blockCipherModes` and `blockCipherPaddings` (members `cbc`, `ctr`, `cfb`, `ofb`, `pkcs7`,
+-   `iso10126` unchanged). (#1939)
++ - `enigmatic.JavaStdlibCrypto` переименован в `JavaBaseCrypto`;
++   `enigmatic.Crypto.javaStdlibCrypto` переименован в `javaBaseCrypto`. (#1939)
++ - `enigmatic.cloaks.{cloakHeap, cloakOffHeap, cloakVeiledHeap, cloakVeiledOffHeap}`
++   переименованы в `{heapCloak, offHeapCloak, veiledHeapCloak, veiledOffHeapCloak}`. (#1939)
++ - Пакеты выбора `enigmatic.blockCipherMode` и `enigmatic.blockCipherPadding` переименованы в
++   `blockCipherModes` и `blockCipherPaddings` (члены `cbc`, `ctr`, `cfb`, `ofb`, `pkcs7`,
++   `iso10126` не изменились). (#1939)
+
+- ## kaleidoscope
++ ## kaleidoscope
+
+- - `kaleidoscope.Jur` (type and companion) renamed to `JavaBaseRegex`;
+-   `kaleidoscope.regexBackends.jur` renamed to `javaBaseRegex`. (#1939)
++ - `kaleidoscope.Jur` (тип и компаньон) переименован в `JavaBaseRegex`;
++   `kaleidoscope.regexBackends.jur` переименован в `javaBaseRegex`. (#1939)
+
+- ## diuretic
++ ## diuretic
+
+- - Top-level `diuretic.javaNioFilePath` renamed to `javaNioPathRepresentative` and top-level
+-   `diuretic.javaIoFile` renamed to `javaIoFileRepresentative` (the `Representative of Paths`
+-   markers; `anticipation.pathInterfaces.{javaNioPath, javaIoFile}` are unchanged). (#1939)
++ - `diuretic.javaNioFilePath` верхнего уровня переименован в `javaNioPathRepresentative`, а
++   `diuretic.javaIoFile` верхнего уровня — в `javaIoFileRepresentative` (маркеры
++   `Representative of Paths`; `anticipation.pathInterfaces.{javaNioPath, javaIoFile}` не
++   изменились). (#1939)
+
+- ## harlequin
++ ## harlequin
+
+- - `punctuation.formattables.{scala, java}` (the `CommonFormattable` givens in `harlequin.md`)
+-   renamed to `{scalaFormattable, javaFormattable}`. (#1939)
++ - `punctuation.formattables.{scala, java}` (given `CommonFormattable` в `harlequin.md`)
++   переименованы в `{scalaFormattable, javaFormattable}`. (#1939)
+
+- ## aviation
++ ## aviation
+
+- - `aviation.chronometries.unix` renamed to `unixChronometry`; `chronometries.atomic` renamed to
+-   `taiChronometry`. (#1939)
+- - `aviation.leapModes.exact` renamed to `exactLeapMode`. (#1939)
+- - `aviation.gapPolicies.pushBackward` renamed to `pushBackwardGapPolicy`; `gapPolicies.rejectGap`
+-   renamed to `rejectGapPolicy`. (#1939)
++ - `aviation.chronometries.unix` переименован в `unixChronometry`; `chronometries.atomic`
++   переименован в `taiChronometry`. (#1939)
++ - `aviation.leapModes.exact` переименован в `exactLeapMode`. (#1939)
++ - `aviation.gapPolicies.pushBackward` переименован в `pushBackwardGapPolicy`;
++   `gapPolicies.rejectGap` переименован в `rejectGapPolicy`. (#1939)
+
+- - `aviation.timespanFormats.{englishRelative, frenchRelative, germanRelative, spanishRelative}`
++ - `aviation.timespanFormats.{englishRelative, frenchRelative, germanRelative, spanishRelative}`
+
+-   renamed to `{englishRelativeTimespan, frenchRelativeTimespan, germanRelativeTimespan,
++   переименованы в `{englishRelativeTimespan, frenchRelativeTimespan, germanRelativeTimespan,
+
+-   spanishRelativeTimespan}`. (#1939)
++   spanishRelativeTimespan}`. (#1939)
+
+- - Newly re-exported into `soundness`: `hourFormats.{twelveHourSecondsClock,
+-   twentyFourHourSecondsClock}`, new family `timeSpecificities.{minutesSpecificity,
+-   secondsSpecificity}` (library package `aviation.timeSpecificities`), and
++ - Впервые реэкспортируются в `soundness`: `hourFormats.{twelveHourSecondsClock,
++   twentyFourHourSecondsClock}`, новое семейство `timeSpecificities.{minutesSpecificity,
++   secondsSpecificity}` (пакет библиотеки `aviation.timeSpecificities`), а также
+
+-   `instantInterfaces.aviationInstant` / `durationInterfaces.aviationDuration`. (#1939)
++   `instantInterfaces.aviationInstant` / `durationInterfaces.aviationDuration`. (#1939)
+
+- ## probably
++ ## probably
+
+- - `probably.harnesses.threadLocal` renamed to `threadLocalHarness`. (#1939)
+- - `probably.autopsies.none` renamed to `noAutopsy`; `autopsies.contrastExpectations` renamed to
+-   `contrastAutopsy`. (#1939)
+- - New `probably.Tag` (`into case class Tag(name: Name[Tagging])`, with `def text: Text`) and
+-   naming plane `probably.Tagging` (`Tagging is Nominative under
+-   MustMatch["[A-Za-z_][A-Za-z0-9_-]*"]`), whose given is exported at package level as
+-   `probably.taggingNominative` (and `soundness.taggingNominative`) alongside the existing
+-   `probably.nominative`. `Tag.conversion: Conversion[Name[Tagging], Tag]` lets an `n"…"` literal
+-   stand as a `Tag`. `Tag` itself is not re-exported by `soundness` (`soundness.Tag` remains
+-   `honeycomb.Tag`); name it as `probably.Tag`. `Tagging` is re-exported. Neither `nominative` given is brought into scope by `import probably.*` or
+-   `import soundness.*`; a suite using `n"…"` literals must import them by name. (#1966)
+- - `probably.Test.Id` gained a fifth field `tags: List[Tag] = Nil` after `moniker`; case-class
+-   equality, `unapply` and `copy` include it. (#1966)
+- - `probably.test(name: Message)(using Testable, Codepoint): Test.Id` is now
+-   `test(name: Message, tags: Tag*)(using Testable, Codepoint): Test.Id`, and
+-   `test(name: Name[Probing], description: Message)(using Testable, Codepoint): Test.Id` is now
++ - `probably.harnesses.threadLocal` переименован в `threadLocalHarness`. (#1939)
++ - `probably.autopsies.none` переименован в `noAutopsy`; `autopsies.contrastExpectations`
++   переименован в `contrastAutopsy`. (#1939)
++ - Новые `probably.Tag` (`into case class Tag(name: Name[Tagging])`, с `def text: Text`) и
++   плоскость именования `probably.Tagging` (`Tagging is Nominative under
++   MustMatch["[A-Za-z_][A-Za-z0-9_-]*"]`), given которой экспортируется на уровне пакета как
++   `probably.taggingNominative` (и `soundness.taggingNominative`) наряду с существующим
++   `probably.nominative`. `Tag.conversion: Conversion[Name[Tagging], Tag]` позволяет литералу
++   `n"…"` выступать в роли `Tag`. Сам `Tag` не реэкспортируется из `soundness`
++   (`soundness.Tag` остаётся `honeycomb.Tag`); называйте его `probably.Tag`. `Tagging`
++   реэкспортируется. Ни один из given `nominative` не попадает в область видимости через
++   `import probably.*` или `import soundness.*`; набор тестов, использующий литералы `n"…"`,
++   должен импортировать их по имени. (#1966)
++ - `probably.Test.Id` получил пятое поле `tags: List[Tag] = Nil` после `moniker`; равенство
++   case-класса, `unapply` и `copy` его учитывают. (#1966)
++ - `probably.test(name: Message)(using Testable, Codepoint): Test.Id` теперь
++   `test(name: Message, tags: Tag*)(using Testable, Codepoint): Test.Id`, а
++   `test(name: Name[Probing], description: Message)(using Testable, Codepoint): Test.Id` теперь
+
+-   `test(name: Name[Probing], description: Message, tags: Tag*)(using Testable, Codepoint): Test.Id`.
++   `test(name: Name[Probing], description: Message, tags: Tag*)(using Testable, Codepoint): Test.Id`.
+
+-   Calls without tags are unchanged; a `test(name)(body)` application still resolves. (#1966)
+- - `probably.Selection` gained fields, in order after `constraints`: `tags: List[Set[Text]]`,
+-   `exclusions: List[Selection]`. The full constructor is now
+-   `Selection(terms, kinds, constraints, tags, exclusions, listOnly, scale)`; positional
+-   construction and `unapply` must change. `Selection.trivial` is true only when `tags` and
+-   `exclusions` are also empty. (#1966)
++   Вызовы без тегов не изменились; применение `test(name)(body)` по-прежнему разрешается. (#1966)
++ - `probably.Selection` получил поля, по порядку после `constraints`: `tags: List[Set[Text]]`,
++   `exclusions: List[Selection]`. Полный конструктор теперь
++   `Selection(terms, kinds, constraints, tags, exclusions, listOnly, scale)`; позиционное
++   создание и `unapply` нужно изменить. `Selection.trivial` истинно, только если `tags` и
++   `exclusions` тоже пусты. (#1966)
+
+- - `probably.Selection#admits(id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)]): Boolean`
++ - `probably.Selection#admits(id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)]): Boolean`
+
+-   is now `admits(id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)], tags: List[Tag]): Boolean`. (#1966)
+- - `probably.Selection.parse` now recognises four more term forms: `tag:<t1>,<t2>` (admits a test
+-   carrying any listed tag; repeated `tag:` terms intersect), `not:<term>` (parsed as a one-term
+-   `Selection` appended to `exclusions`; a cell any exclusion would admit is rejected, where a
+-   constraint on an axis the cell lacks matches nothing rather than everything), `<axis>=<lo>..`
+-   (parsed as `Constraint.Least(axis, lo, inclusive = true)`) and `<axis>=..<hi>` (parsed as
+-   `Constraint.Most(axis, hi, inclusive = true)`); an empty argument is ignored. Previously
+-   `tag:x` and `not:x` parsed as name globs, `N=4..` as `Membership(N, {"4.."})`, and `""` as
+-   a glob. (#1966)
+- - `probably.Runner#listed: List[(Test.Id, Entry.Kind, Optional[Long])]` is now
+-   `listed: List[Runner.Scheduled]`, where new
++   теперь `admits(id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)], tags: List[Tag]): Boolean`. (#1966)
++ - `probably.Selection.parse` теперь распознаёт ещё четыре формы терма: `tag:<t1>,<t2>`
++   (допускает тест, несущий любой из перечисленных тегов; повторённые термы `tag:`
++   пересекаются), `not:<term>` (разбирается как однотермовая `Selection`, добавляемая в
++   `exclusions`; ячейка, которую допустило бы любое исключение, отвергается, причём ограничение
++   на ось, которой у ячейки нет, не совпадает ни с чем, а не со всем), `<axis>=<lo>..`
++   (разбирается как `Constraint.Least(axis, lo, inclusive = true)`) и `<axis>=..<hi>`
++   (разбирается как `Constraint.Most(axis, hi, inclusive = true)`); пустой аргумент
++   игнорируется. Раньше `tag:x` и `not:x` разбирались как glob-шаблоны имён, `N=4..` — как
++   `Membership(N, {"4.."})`, а `""` — как glob-шаблон. (#1966)
++ - `probably.Runner#listed: List[(Test.Id, Entry.Kind, Optional[Long])]` теперь
++   `listed: List[Runner.Scheduled]`, где новый
+
+-   `Runner.Scheduled(id: Test.Id, kind: Entry.Kind, expected: Optional[Long], axes: List[Axis.Schedule])`
++   `Runner.Scheduled(id: Test.Id, kind: Entry.Kind, expected: Optional[Long], axes: List[Axis.Schedule])`
+
+-   has `def tags: List[Tag] = id.tags`. (#1966)
+- - New `probably.Axis.Schedule(spec: Axis.Spec, values: List[Value], least: Optional[Double] = Unset, most: Optional[Double] = Unset)`
+-   and new `probably.Runner#declare(id: Test.Id, kind: Entry.Kind, axis: Axis.Spec, least: Optional[Double], most: Optional[Double]): Unit`
+-   (a listing-mode announcement of an emergent axis's bounds; a no-op otherwise). (#1966)
+- - `probably.TestEvent.TestScheduled(test: Ref, kind: Text, expected: Optional[Long])` is now
++   имеет `def tags: List[Tag] = id.tags`. (#1966)
++ - Новые `probably.Axis.Schedule(spec: Axis.Spec, values: List[Value], least: Optional[Double] = Unset, most: Optional[Double] = Unset)`
++   и `probably.Runner#declare(id: Test.Id, kind: Entry.Kind, axis: Axis.Spec, least: Optional[Double], most: Optional[Double]): Unit`
++   (объявление границ возникающей оси в режиме перечисления; в остальных случаях ничего не
++   делает). (#1966)
++ - `probably.TestEvent.TestScheduled(test: Ref, kind: Text, expected: Optional[Long])` теперь
+
+-   `TestScheduled(test: Ref, kind: Text, expected: Optional[Long], tags: List[Text], axes: List[TestEvent.AxisSchedule])`,
++   `TestScheduled(test: Ref, kind: Text, expected: Optional[Long], tags: List[Text], axes: List[TestEvent.AxisSchedule])`,
+
+-   with new `TestEvent.AxisSchedule(axis: Text, domain: Text, emergent: Boolean, values: List[Text], least: Optional[Double], most: Optional[Double])`
+-   and `AxisSchedule.of(schedule: Axis.Schedule): AxisSchedule`. The derived BinTEL schema of
+-   `TestEvent`, and so `probably.Streamer.fingerprint`, changes: a consumer built against the
+-   previous layout reports the stream incompatible. (#1966)
++   с новыми `TestEvent.AxisSchedule(axis: Text, domain: Text, emergent: Boolean, values: List[Text], least: Optional[Double], most: Optional[Double])`
++   и `AxisSchedule.of(schedule: Axis.Schedule): AxisSchedule`. Выведенная схема BinTEL для
++   `TestEvent`, а значит, и `probably.Streamer.fingerprint`, меняется: потребитель, собранный
++   под прежнюю раскладку, сообщает, что поток данных несовместим. (#1966)
+
+=   previous layout reports the stream incompatible. (#1966)
+=
+- ## sedentary
++ ## sedentary
+
+- - `sedentary.Bench#apply(name: Message)(target, operationSize, iterations, warmups, confidence, baseline, comparison): Bench.Plan`
++ - `sedentary.Bench#apply(name: Message)(target, operationSize, iterations, warmups, confidence, baseline, comparison): Bench.Plan`
+
+-   is now `apply(name: Message, tags: Tag*)(…same second list…): Bench.Plan`, and
+-   `sedentary.Bench.Plan` gained a third field `tags: List[Tag]` between `name` and `target`
+-   (positional construction and `unapply` must change). (#1966)
++   теперь `apply(name: Message, tags: Tag*)(…same second list…): Bench.Plan`, а
++   `sedentary.Bench.Plan` получил третье поле `tags: List[Tag]` между `name` и `target`
++   (позиционное создание и `unapply` нужно изменить). (#1966)
+
+- - `sedentary.Stress#apply(name: Message)(target, concurrency, sweep, threshold, compliance)(body)`
++ - `sedentary.Stress#apply(name: Message)(target, concurrency, sweep, threshold, compliance)(body)`
+
+-   is now `apply(name: Message, tags: Tag*)(…)(body)`, and
+-   `sedentary.Profile#apply(name: Message)(target, frames)(body)` is now
+-   `apply(name: Message, tags: Tag*)(target, frames)(body)`. Each threads the tags into the
+-   `Test.Id` it builds. (#1966)
+- - `sedentary.Stress#apply` now calls `Runner#declare` with an emergent integral `N` axis bounded
+-   by `concurrency` (default 1) and the sweep limit before calling `Runner#skip`, so a `--list`
+-   of a stress test reports an `N` axis with bounds. (#1966)
++   теперь `apply(name: Message, tags: Tag*)(…)(body)`, а
++   `sedentary.Profile#apply(name: Message)(target, frames)(body)` теперь
++   `apply(name: Message, tags: Tag*)(target, frames)(body)`. Каждый передаёт теги в `Test.Id`,
++   который строит. (#1966)
++ - `sedentary.Stress#apply` теперь, прежде чем вызвать `Runner#skip`, вызывает `Runner#declare`
++   с возникающей целочисленной осью `N`, ограниченной значением `concurrency` (по умолчанию 1)
++   и пределом перебора, так что `--list` для стресс-теста сообщает ось `N` с границами. (#1966)
+
+- ## iridescence
++ ## iridescence
+
+- - Every member of `iridescence.mixing` gains the suffix `Mixing`: `proportional` →
++ - Каждый член `iridescence.mixing` получает суффикс `Mixing`: `proportional` →
+
+-   `proportionalMixing`, `multiply` → `multiplyMixing`, `screen` → `screenMixing`, `darken` →
++   `proportionalMixing`, `multiply` → `multiplyMixing`, `screen` → `screenMixing`, `darken` →
+
+-   `darkenMixing`, `lighten` → `lightenMixing`, `difference` → `differenceMixing`, `exclusion` →
++   `darkenMixing`, `lighten` → `lightenMixing`, `difference` → `differenceMixing`, `exclusion` →
+
+-   `exclusionMixing`, `linearDodge` → `linearDodgeMixing`, `linearBurn` → `linearBurnMixing`,
++   `exclusionMixing`, `linearDodge` → `linearDodgeMixing`, `linearBurn` → `linearBurnMixing`,
+
+-   `hardLight` → `hardLightMixing`, `overlay` → `overlayMixing`, `softLight` → `softLightMixing`,
++   `hardLight` → `hardLightMixing`, `overlay` → `overlayMixing`, `softLight` → `softLightMixing`,
+
+-   `colorDodge` → `colorDodgeMixing`, `colorBurn` → `colorBurnMixing`. (#1939)
++   `colorDodge` → `colorDodgeMixing`, `colorBurn` → `colorBurnMixing`. (#1939)
+
+- - Every member of `iridescence.colorimetry` gains the suffix `Colorimetry`: `incandescentTungsten`,
++ - Каждый член `iridescence.colorimetry` получает суффикс `Colorimetry`: `incandescentTungsten`,
+
+-   `oldDirectSunlightAtNoon`, `oldDaylight`, `iccProfilePcs`, `midMorningDaylight`, `daylight`,
++   `oldDirectSunlightAtNoon`, `oldDaylight`, `iccProfilePcs`, `midMorningDaylight`, `daylight`,
+
+-   `srgb`, `adobeRgb`, `northSkyDaylight`, `equalEnergy`, `daylightFluorescentF1`,
++   `srgb`, `adobeRgb`, `northSkyDaylight`, `equalEnergy`, `daylightFluorescentF1`,
+
+-   `coolFluorescent`, `whiteFluorescent`, `warmWhiteFluorescent`, `daylightFluorescentF5`,
++   `coolFluorescent`, `whiteFluorescent`, `warmWhiteFluorescent`, `daylightFluorescentF5`,
+
+-   `liteWhiteFluorescent`, `daylightFluorescentF7`, `d65Simulator`, `sylvaniaF40`, `d50Simulator`,
++   `liteWhiteFluorescent`, `daylightFluorescentF7`, `d65Simulator`, `sylvaniaF40`, `d50Simulator`,
+
+-   `coolWhiteFluorescent`, `philipsTl85`, `ultralume50`, `philipsTl84`, `ultralume40`,
++   `coolWhiteFluorescent`, `philipsTl85`, `ultralume50`, `philipsTl84`, `ultralume40`,
+
+-   `philipsTl83`, `ultralume30` become `incandescentTungstenColorimetry`, …,
++   `philipsTl83`, `ultralume30` становятся `incandescentTungstenColorimetry`, …,
+
+-   `ultralume30Colorimetry`. (#1939)
++   `ultralume30Colorimetry`. (#1939)
+
+- ## gossamer
++ ## gossamer
+
+- - `gossamer.collations.unicode` renamed to `unicodeCollation`; `collations.codepoints` renamed to
+-   `codepointCollation`. (#1939)
++ - `gossamer.collations.unicode` переименован в `unicodeCollation`; `collations.codepoints`
++   переименован в `codepointCollation`. (#1939)
+
+- ## rudiments
++ ## rudiments
+
+- - New `rudiments.Atomic`, exported as `soundness.Atomic`: opaque, zero-cost wrappers over
+-   `java.util.concurrent.atomic`, each named for the type it holds. `Atomic.Int` wraps
+-   `AtomicInteger`, `Atomic.Long` wraps `AtomicLong`, `Atomic.Bool` wraps `AtomicBoolean`,
+-   `Atomic.Ref[value]` wraps `AtomicReference[value]`, `Atomic.Ints` wraps `AtomicIntegerArray`,
+-   `Atomic.Longs` wraps `AtomicLongArray`, and `Atomic.Refs[value]` wraps
+-   `AtomicReferenceArray[vacuous.Optional[value]]`. `LongAdder`, `DoubleAdder`, `LongAccumulator`,
+-   `DoubleAccumulator`, `AtomicMarkableReference`, `AtomicStampedReference` and the three
+-   `*FieldUpdater` classes are not wrapped. `Atomic.Int` and `Atomic.Long` shadow `scala.Int` and
+-   `scala.Long` under `import Atomic.*`, which is not an intended usage. (#1957)
+- - A match type `Atomic[value]` reduces to `Atomic.Int` for `Int`, `Atomic.Long` for `Long`,
+-   `Atomic.Bool` for `Boolean`, and `Atomic.Ref[value]` otherwise. It does not reduce for an
+-   abstract type parameter, nor for an opaque type whose representation is not visible at the use
+-   site — `Atomic[Text]`, `Atomic[Optional[Text]]` and `Atomic[SomeClass]` reduce, but
+-   `Atomic[List[x]]` does not, because the prelude's `List` is opaque. In those cases the concrete
+-   type is named: `Atomic.Ref[List[x]]`. `Atomic(0)`, `Atomic(0L)`,
+-   `Atomic(false)` and `Atomic(reference)` construct the corresponding cell; an explicit type
+-   argument (`Atomic[Int](0)`) applies the generic arm and does not conform. Every operation is
+-   `inline` and compiles to the same bytecode as the `java.util.concurrent.atomic` call it
+-   replaces. (#1957)
+- - Reads are `atomic()` (`get`), stores are `atomic() = value` (`set`) and `atomic.publish(value)`
+-   (`lazySet`); `atomic.swap(value)` is `getAndSet` and `atomic.replace(expected, updated)` is
+-   `compareAndSet`. `Atomic.Ref#apply()` returns `value` rather than `value | Null`, so no call
+-   site needs `.nn`; a cell declared `Atomic.Ref[Optional[x]]` reads as `Unset` when absent, where
+-   `.nn` on the underlying `AtomicReference` would have thrown. The three array types are indexed
+-   by `denominative.Ordinal`; `Atomic.Refs#apply` returns `vacuous.Optional[value]` because a fresh
+-   reference array is null-filled, while `Atomic.Ints#apply` and `Atomic.Longs#apply` return the
+-   primitive, because a fresh primitive array holds zeros. (#1957)
+- - Transitions are `atomic.ere(transition)`, yielding the value the transition displaced, and
+-   `atomic.since(transition)`, yielding the value it installed — replacing `getAndUpdate` and
+-   `updateAndGet` respectively. They are defined on `Atomic.Int`, `Atomic.Long`, `Atomic.Bool` and
+-   `Atomic.Ref`, and not on the array types. The transition must be written as a lambda literal:
+-   its shape is read at compiletime and replaced by the corresponding JDK intrinsic where one
+-   exists (`_ + 1` becomes `getAndIncrement`/`incrementAndGet`, `_ + n` becomes
+-   `getAndAdd`/`addAndGet`, `_ - 1` becomes `getAndDecrement`/`decrementAndGet`, a constant becomes
+-   `getAndSet`, and the identity becomes `get`), and otherwise by a compare-and-set retry loop with
+-   the transition beta-reduced into it. No `java.util.function.UnaryOperator` and no closure is
+-   allocated in either case. A transition may be re-run under contention and so must be pure; a
+-   transition which applies a function value obtained from outside is rejected at compiletime.
+-   (#1957)
+- - `ere` is overloaded to take a value directly, so `bool.ere(true)` is `getAndSet(true)` without a
+-   lambda. There is no `since` counterpart, which would return its own argument. The value overload
+-   is unreachable on an `Atomic.Ref[value]` whose `value` is a function type, where `ere` resolves
+-   to the transition overload and fails to compile; use `ref() = supplied`. (#1957)
+- - `Atomic.Ref#revise(transition)` takes a function value rather than a literal, for a transition
+-   whose shape cannot be read, and yields the value it installed. It is `inline`, so no closure is
+-   allocated, but the purity obligation is unchecked: the transition may be re-run under
+-   contention. (#1957)
+- - `rudiments.test` now depends on `mandible.core`, which asserts the bytecode `Atomic`'s
+-   operations compile to. No effect on `rudiments` itself. (#1960)
++ - Новый `rudiments.Atomic`, экспортируемый как `soundness.Atomic`: непрозрачные обёртки
++   нулевой стоимости над `java.util.concurrent.atomic`, каждая названа по типу, который она
++   хранит. `Atomic.Int` оборачивает `AtomicInteger`, `Atomic.Long` — `AtomicLong`,
++   `Atomic.Bool` — `AtomicBoolean`, `Atomic.Ref[value]` — `AtomicReference[value]`,
++   `Atomic.Ints` — `AtomicIntegerArray`, `Atomic.Longs` — `AtomicLongArray`, а
++   `Atomic.Refs[value]` — `AtomicReferenceArray[vacuous.Optional[value]]`. `LongAdder`,
++   `DoubleAdder`, `LongAccumulator`, `DoubleAccumulator`, `AtomicMarkableReference`,
++   `AtomicStampedReference` и три класса `*FieldUpdater` не обёрнуты. `Atomic.Int` и
++   `Atomic.Long` затеняют `scala.Int` и `scala.Long` при `import Atomic.*`, и такое
++   использование не предполагается. (#1957)
++ - Тип-сопоставление `Atomic[value]` сводится к `Atomic.Int` для `Int`, к `Atomic.Long` для
++   `Long`, к `Atomic.Bool` для `Boolean` и к `Atomic.Ref[value]` в остальных случаях. Он не
++   сводится для абстрактного параметра типа, а также для непрозрачного типа, представление
++   которого не видно в месте использования: `Atomic[Text]`, `Atomic[Optional[Text]]` и
++   `Atomic[SomeClass]` сводятся, а `Atomic[List[x]]` — нет, поскольку `List` из прелюдии
++   непрозрачен. В таких случаях конкретный тип называется явно: `Atomic.Ref[List[x]]`.
++   `Atomic(0)`, `Atomic(0L)`, `Atomic(false)` и `Atomic(reference)` создают соответствующую
++   ячейку; явный аргумент типа (`Atomic[Int](0)`) применяет обобщённую ветвь и не
++   согласуется. Каждая операция `inline` и компилируется в тот же байт-код, что и вызов
++   `java.util.concurrent.atomic`, который она заменяет. (#1957)
++ - Чтение — это `atomic()` (`get`), запись — `atomic() = value` (`set`) и
++   `atomic.publish(value)` (`lazySet`); `atomic.swap(value)` — это `getAndSet`, а
++   `atomic.replace(expected, updated)` — `compareAndSet`. `Atomic.Ref#apply()` возвращает
++   `value`, а не `value | Null`, поэтому ни одному месту вызова не нужен `.nn`; ячейка,
++   объявленная как `Atomic.Ref[Optional[x]]`, читается как `Unset` при отсутствии значения,
++   тогда как `.nn` на исходном `AtomicReference` бросил бы исключение. Три типа массивов
++   индексируются `denominative.Ordinal`; `Atomic.Refs#apply` возвращает
++   `vacuous.Optional[value]`, поскольку свежий массив ссылок заполнен null, а
++   `Atomic.Ints#apply` и `Atomic.Longs#apply` возвращают примитив, поскольку свежий массив
++   примитивов содержит нули. (#1957)
++ - Переходы — это `atomic.ere(transition)`, возвращающий значение, вытесненное переходом, и
++   `atomic.since(transition)`, возвращающий установленное им значение; они заменяют
++   `getAndUpdate` и `updateAndGet` соответственно. Они определены на `Atomic.Int`,
++   `Atomic.Long`, `Atomic.Bool` и `Atomic.Ref`, но не на типах массивов. Переход должен быть
++   записан лямбда-литералом: его форма читается во время компиляции и заменяется
++   соответствующим интринсиком JDK, где он есть (`_ + 1` становится
++   `getAndIncrement`/`incrementAndGet`, `_ + n` — `getAndAdd`/`addAndGet`, `_ - 1` —
++   `getAndDecrement`/`decrementAndGet`, константа — `getAndSet`, а тождество — `get`), а
++   иначе — циклом повторных попыток со сравнением с установкой, в который переход
++   встраивается бета-редукцией. Ни в одном из случаев не выделяется ни
++   `java.util.function.UnaryOperator`, ни замыкание. Переход может быть выполнен повторно при
++   конкуренции и поэтому должен быть чистым; переход, применяющий функциональное значение,
++   полученное извне, отвергается во время компиляции. (#1957)
++ - `ere` перегружен так, чтобы принимать значение напрямую, поэтому `bool.ere(true)` — это
++   `getAndSet(true)` без лямбды. Аналога для `since` нет: он возвращал бы собственный аргумент.
++   Перегрузка со значением недостижима для `Atomic.Ref[value]`, у которого `value` —
++   функциональный тип: там `ere` разрешается в перегрузку с переходом и не компилируется;
++   используйте `ref() = supplied`. (#1957)
++ - `Atomic.Ref#revise(transition)` принимает функциональное значение, а не литерал, для
++   перехода, форму которого прочитать нельзя, и возвращает установленное значение. Он
++   `inline`, поэтому замыкание не выделяется, но обязательство чистоты не проверяется: переход
++   может быть выполнен повторно при конкуренции. (#1957)
++ - `rudiments.test` теперь зависит от `mandible.core`, который проверяет байт-код, в который
++   компилируются операции `Atomic`. На сам `rudiments` это не влияет. (#1960)
+
+- ## proscenium
++ ## proscenium
+
+- - `proscenium.Array#copyFrom(source, sourceStart, targetStart, count)` renamed to `place`, with
+-   two further overloads: `place(source)` copies the whole source to the start, and
+-   `place(source, at)` copies it to `at`. Behaviour unchanged. The name matches
+-   `rudiments.place` and `concordance.Scribe#place`, which already meant copying a source into
+-   the receiver; `snapshot` remains its counterpart, copying out into a fresh array. Indices stay
+-   `Int` rather than `Ordinal`, as `Array`'s `apply`/`update`/`readUnchecked` do, because
+-   `denominative` sits above `proscenium`. (#1960)
++ - `proscenium.Array#copyFrom(source, sourceStart, targetStart, count)` переименован в `place`,
++   с двумя дополнительными перегрузками: `place(source)` копирует весь источник в начало, а
++   `place(source, at)` — в позицию `at`. Поведение не изменилось. Имя соответствует
++   `rudiments.place` и `concordance.Scribe#place`, которые уже означали копирование источника
++   в получатель; `snapshot` остаётся их противоположностью и копирует в свежий массив.
++   Индексы остаются `Int`, а не `Ordinal`, как и в `apply`/`update`/`readUnchecked` у
++   `Array`, поскольку `denominative` находится выше `proscenium`. (#1960)
+
+- ## concordance
++ ## concordance
+
+- - `rudiments.Scribe` can now grow. `Array.collect[element](hint)(lambda)` lends an unsized
+-   scribe which extends as it is written and yields exactly what was written, where
+-   `Array.scribe[element](size)(lambda)` continues to lend a fixed-size scribe, to return an array
+-   of exactly `size`, and to clamp rather than grow. Existing `Array.scribe` behaviour is
+-   unchanged. (#1960)
+- - `rudiments.Scribe#append` gains two bulk overloads at the cursor: `append(source)` and
+-   `append(source, from, count)`, both taking `Array[element]^{}`. `place` still requires an
+-   `Ordinal in scribe.type` and so remains available only to a sized scribe. (#1960)
++ - `rudiments.Scribe` теперь может расти. `Array.collect[element](hint)(lambda)` одалживает
++   писца без размера, который расширяется по мере записи и возвращает ровно то, что было
++   записано, тогда как `Array.scribe[element](size)(lambda)` по-прежнему одалживает писца
++   фиксированного размера, возвращает массив ровно из `size` элементов и ограничивает, а не
++   растёт. Существующее поведение `Array.scribe` не изменилось. (#1960)
++ - `rudiments.Scribe#append` получает две пакетные перегрузки в позиции курсора:
++   `append(source)` и `append(source, from, count)`, обе принимают `Array[element]^{}`.
++   `place` по-прежнему требует `Ordinal in scribe.type` и поэтому остаётся доступным только
++   писцу с размером. (#1960)
+
+- ## frontier
++ ## frontier
+
+- - `frontier.context.explainMissingContext` and `soundness.explainMissingContext` no longer
+-   succeed as an implicit candidate when the search resolves without them; the candidate now
+-   always fails (its diagnostic is used only if the whole search fails), leaving the compiler to
+-   select the instance itself. Effect: an implicit search made while type parameters are still
+-   undetermined (e.g. `join`'s `element`/`textual`) is no longer resolved with those parameters
+-   instantiated to `Any`. Inferred types of code that already compiled are unchanged. (#1944)
++ - `frontier.context.explainMissingContext` и `soundness.explainMissingContext` больше не
++   срабатывают как кандидат неявного поиска, когда поиск разрешается без них; теперь кандидат
++   всегда завершается неудачей (его диагностика используется, только если не удался весь
++   поиск), предоставляя компилятору самому выбрать экземпляр. Следствие: неявный поиск,
++   выполняемый, пока параметры типа ещё не определены (например, `element`/`textual` у
++   `join`), больше не разрешается с этими параметрами, инстанцированными как `Any`. Выведенные
++   типы кода, который уже компилировался, не изменились. (#1944)
+
+- ## stenography
++ ## stenography
+
+- - `stenography.Imports` gains `Imports.exports(scope: Designator)(using
+-   dotty.tools.dotc.core.Contexts.Context): Set[Designator]`, the targets (type and companion) of
+-   the `export` aliases declared in `scope`, and `Imports.resolve(designators: Set[Designator],
+-   direct: Set[Designator])(using Context): Imports`, which is `Imports(designators, direct)` with
+-   `direct` extended by `exports` of each of `designators`. `delicious.Reifier` gains
+-   `imports(designators: Set[Designator], direct: Set[Designator]): Imports`, `Imports.resolve`
+-   under the reifier's own context. Code which builds an `Imports` by hand from a set of wildcard
+-   imports for `Syntax#text` or `Designator#text` (a REPL abbreviating types against its session's
+-   imports) should build it through `Reifier#imports` or `Imports.resolve` instead: only then does
+-   a type reached through an `export` in a wildcard-imported scope (`jacinta.Json` under `import
+-   soundness.*`) render by its leaf name (`Json`) rather than qualified (`jacinta.Json`). The
+-   macro path (`Syntax.name`, `Syntax.designator`) already did this and is unchanged. (#1959)
++ - `stenography.Imports` получает `Imports.exports(scope: Designator)(using
++   dotty.tools.dotc.core.Contexts.Context): Set[Designator]` — цели (тип и компаньон)
++   псевдонимов `export`, объявленных в `scope`, — и `Imports.resolve(designators: Set[Designator],
++   direct: Set[Designator])(using Context): Imports`, то есть `Imports(designators, direct)`,
++   где `direct` дополнен `exports` каждого из `designators`. `delicious.Reifier` получает
++   `imports(designators: Set[Designator], direct: Set[Designator]): Imports` — это
++   `Imports.resolve` в собственном контексте реификатора. Код, который вручную строит `Imports`
++   из набора wildcard-импортов для `Syntax#text` или `Designator#text` (REPL, сокращающий
++   типы с учётом импортов своей сессии), должен строить его через `Reifier#imports` или
++   `Imports.resolve`: только тогда тип, достижимый через `export` в области видимости,
++   импортированной wildcard-импортом (`jacinta.Json` при `import
++   soundness.*`), отображается по своему конечному имени (`Json`), а не полным (`jacinta.Json`).
++   Путь макросов (`Syntax.name`, `Syntax.designator`) уже так делал и не изменился. (#1959)
+
+- ## stratiform
++ ## stratiform
+
+- - BinTEL framing changed (TEL upstream 8380ef7): `Bintel.frame` and `Bintel.frameSelfContained`
+-   now write a document-length varint immediately after the magic number, counting every byte
+-   that follows it. Frames written before this change fail to decode with
+-   `Bintel.Error.Reason.BadSignatureLength` (B03). Re-encode stored BinTEL documents. (#1961)
++ - Изменилось кадрирование BinTEL (TEL upstream 8380ef7): `Bintel.frame` и
++   `Bintel.frameSelfContained` теперь записывают varint длины документа сразу после
++   магического числа, считая каждый следующий за ним байт. Кадры, записанные до этого
++   изменения, не декодируются и дают `Bintel.Error.Reason.BadSignatureLength` (B03).
++   Перекодируйте хранимые документы BinTEL. (#1961)
+
+- - `Bintel.Framed(signature, body)` gained a third field, `continuation: Int`, the offset at
+-   which the bytes after the document begin; `Bintel.Document(signature, root)` likewise gained
+-   `continuation: Int`. Pattern matches on either must bind three fields. (#1961)
++ - `Bintel.Framed(signature, body)` получил третье поле, `continuation: Int`, — смещение, с
++   которого начинаются байты после документа; `Bintel.Document(signature, root)` так же
++   получил `continuation: Int`. Сопоставление с образцом для любого из них должно связывать
++   три поля. (#1961)
+
+- - `Bintel.decodeDocument` and `Bintel.decodeDocumentSelfContained` are now single-document
+-   readers: bytes after the document are neither decoded nor rejected, and the result's
+-   `continuation` reports where they begin. To reject trailing bytes as before (B08), use the
+-   new `Bintel.decodeWholeDocument(data, schema)` / `Bintel.decodeWholeDocumentSelfContained(data)`
+-   (each also with `(…, codecs: Tel.Codec.Bindings, checkCanonical: Boolean = false)`). Both
+-   single-document readers gained overloads taking an `offset: Int` (as the last parameter).
+-   `Bintel.unframe` likewise no longer rejects trailing bytes and gained `unframe(data, offset)`. (#1961)
++ - `Bintel.decodeDocument` и `Bintel.decodeDocumentSelfContained` теперь читают один документ:
++   байты после документа не декодируются и не отвергаются, а `continuation` результата
++   сообщает, где они начинаются. Чтобы отвергать завершающие байты, как раньше (B08),
++   используйте новые `Bintel.decodeWholeDocument(data, schema)` /
++   `Bintel.decodeWholeDocumentSelfContained(data)` (каждый также с
++   `(…, codecs: Tel.Codec.Bindings, checkCanonical: Boolean = false)`). Оба читателя одного
++   документа получили перегрузки, принимающие `offset: Int` (последним параметром).
++   `Bintel.unframe` так же больше не отвергает завершающие байты и получил
++   `unframe(data, offset)`. (#1961)
+
+- - New: `Bintel.decodeStream(data, schema): List[Bintel.Document]` (and a codec-aware overload)
+-   decodes every document of a byte stream in order, dispatching self-contained documents to
+-   their embedded schema; `Bintel.documentExtent(data)` / `documentExtent(data, offset)` returns
+-   a document's continuation offset from its header alone, without a schema. (#1961)
++ - Новое: `Bintel.decodeStream(data, schema): List[Bintel.Document]` (и перегрузка с учётом
++   кодеков) по порядку декодирует каждый документ байтового потока данных, направляя
++   самодостаточные документы к их встроенной схеме; `Bintel.documentExtent(data)` /
++   `documentExtent(data, offset)` возвращает смещение продолжения документа по одному лишь его
++   заголовку, без схемы. (#1961)
+
+- - `Bintel.Error.Reason` gained `DeclaredLengthMismatch` (`SN-609.16`, B16: declared length
+-   disagrees with the structural extent) and `NestingLimitExceeded` (`SN-609.17`: more than 256
+-   nested Structs; a decoder resource limit, not a B-code). The `TrailingBytes` message now
+-   reads "a whole-document reader found bytes after the document". (#1961)
++ - `Bintel.Error.Reason` получил `DeclaredLengthMismatch` (`SN-609.16`, B16: объявленная длина
++   расходится со структурной протяжённостью) и `NestingLimitExceeded` (`SN-609.17`: более 256
++   вложенных структур Struct; это ограничение ресурсов декодера, а не B-код). Сообщение
++   `TrailingBytes` теперь гласит "a whole-document reader found bytes after the document". (#1961)
+
+- - BinTEL varint decoding (`Varint.decode`, `Bintel.decode`, `Bintel.parse`) now rejects
+-   non-minimal encodings such as `80 00` (new `Varint.Error.Reason.Overlong`, `SN-608.3`;
+-   reported as `Bintel.Error.Reason.VarintError`, B02). A varint with no bytes available is now
+-   `VarintError` (B02) rather than `UnexpectedEoi` (B09). (#1961)
++ - Декодирование varint в BinTEL (`Varint.decode`, `Bintel.decode`, `Bintel.parse`) теперь
++   отвергает неминимальные кодировки, такие как `80 00` (новый
++   `Varint.Error.Reason.Overlong`, `SN-608.3`; сообщается как
++   `Bintel.Error.Reason.VarintError`, B02). Varint без доступных байтов теперь даёт
++   `VarintError` (B02), а не `UnexpectedEoi` (B09). (#1961)
+
+- - `Bintel.decode`/`Bintel.encode` now raise `Bintel.Error.Reason.ReferenceUnresolved` (B10) for
+-   a `Tels.SelectRef` whose name is not a `SelectDefinition` of the schema; previously such a
+-   member silently contributed no keyword slots. (#1961)
++ - `Bintel.decode`/`Bintel.encode` теперь порождают `Bintel.Error.Reason.ReferenceUnresolved`
++   (B10) для `Tels.SelectRef`, имя которого не является `SelectDefinition` схемы; раньше такой
++   член молча не добавлял ни одного слота ключевых слов. (#1961)
+
+- - `Tel.Type.assign` now orders a Node's children by member order (TEL §18.3): every element
+-   filling `members[0]`, then `members[1]`, …, atoms before compounds within a member, source
+-   order otherwise. Previously all atom-derived elements preceded all compound-derived elements,
+-   each group in document order. Code that relied on document order of `Tel.Element.Node.children`
+-   must sort by source position itself. (#1961)
++ - `Tel.Type.assign` теперь упорядочивает дочерние элементы узла Node по порядку членов
++   (TEL §18.3): все элементы, заполняющие `members[0]`, затем `members[1]`, …, внутри члена
++   атомы перед составными узлами, в остальном — в порядке исходника. Раньше все элементы,
++   полученные из атомов, шли перед всеми элементами, полученными из составных узлов, каждая
++   группа — в порядке документа. Код, полагавшийся на порядок документа в
++   `Tel.Element.Node.children`, должен сам сортировать по позиции в исходнике. (#1961)
+
+- - `Tel.Document` gained `margin: Int` (fourth positional field, before `children`) and
+-   `continuation: Optional[Int] = Unset` (last field: the 1-indexed line on which the content
+-   after the document separator begins, or `Unset` when the document ended at end of input or
+-   was constructed rather than parsed). Constructor calls and pattern matches must be updated. (#1961)
++ - `Tel.Document` получил `margin: Int` (четвёртое позиционное поле, перед `children`) и
++   `continuation: Optional[Int] = Unset` (последнее поле: строка, нумеруемая с 1, с которой
++   начинается содержимое после разделителя документа, или `Unset`, если документ закончился в
++   конце ввода или был создан, а не разобран). Вызовы конструктора и сопоставления с образцом
++   нужно обновить. (#1961)
+
+- - Layer composition (`Tels.Layers.compose`) now raises `Tel.Error.Reason.LayerKeywordCollision`
+-   (E205) when a layer field's keyword matches a variant keyword contributed by an existing
+-   `SelectRef`, or when a layer `SelectRef` brings a variant keyword already present; previously
+-   the former surfaced later as E201 (`DuplicateKeywordInStruct`) and the latter was not
+-   detected. `Tels.Validation.validate` now raises `EmptySelectVariants` (E202) for a select
+-   declared in a layer with neither variants nor excludes. (#1961)
++ - Составление слоёв (`Tels.Layers.compose`) теперь порождает
++   `Tel.Error.Reason.LayerKeywordCollision` (E205), когда ключевое слово поля слоя совпадает с
++   ключевым словом варианта, внесённым существующим `SelectRef`, или когда `SelectRef` слоя
++   приносит уже имеющееся ключевое слово варианта; раньше первое проявлялось позже как E201
++   (`DuplicateKeywordInStruct`), а второе не обнаруживалось. `Tels.Validation.validate` теперь
++   порождает `EmptySelectVariants` (E202) для выбора, объявленного в слое без вариантов и без
++   исключений. (#1961)
+
+- - Parser diagnostics reassigned: a line indented under a comments-only block is now E111
+-   (`OverIndentation`) rather than E112 (`ChildOfNonCompound`), which is reserved for a line
+-   indented below a tabulated row; a tabulated row whose keyword-and-pre-column-atom portion, or
+-   any column value, occupies a column separator position (`M_i − 2` or `M_i − 1`) is now E118
+-   (`ColumnValueTooWide`). A literal atom's closing delimiter line is now the opening line with
+-   trailing spaces removed. (#1961)
++ - Диагностика парсера переназначена: строка с отступом под блоком, состоящим только из
++   комментариев, теперь даёт E111 (`OverIndentation`), а не E112 (`ChildOfNonCompound`),
++   который зарезервирован для строки с отступом под табулированной строкой; табулированная
++   строка, у которой часть из ключевого слова и атома перед столбцами или любое значение
++   столбца занимает позицию разделителя столбцов (`M_i − 2` или `M_i − 1`), теперь даёт E118
++   (`ColumnValueTooWide`). Строка закрывающего разделителя литерального атома теперь — это
++   открывающая строка с удалёнными завершающими пробелами. (#1961)
+
+- - `Tels.Validation.validate` now raises `DuplicateDefinition` (E210) when two definitions of a
+-   base schema, or of one layer, share a name across its records, scalars and selects;
+-   previously only a layer definition duplicating a base one was detected. (#1961)
++ - `Tels.Validation.validate` теперь порождает `DuplicateDefinition` (E210), когда два
++   определения базовой схемы или одного слоя имеют одинаковое имя среди её записей, скаляров
++   и выборов; раньше обнаруживалось только определение слоя, дублирующее определение основы.
++   (#1961)
+
+- - Pragma diagnostics: `BadPragmaPhrase` (E121) and `MisplacedPragmaPhrase` (E122) are each
+-   accrued at most once per pragma line, at the first offending phrase, rather than once per
+-   phrase; and a single-character phrase that is not the final phrase is now E121 rather than
+-   E122 (the sigil form is final by definition). (#1961)
++ - Диагностика прагм: `BadPragmaPhrase` (E121) и `MisplacedPragmaPhrase` (E122) накапливаются
++   не более одного раза на строку прагмы, на первой ошибочной фразе, а не по разу на фразу; а
++   односимвольная фраза, не являющаяся последней, теперь даёт E121, а не E122 (форма сигила по
++   определению последняя). (#1961)
+
+- - A comment line inside a tabulated block (E109, `CommentNotPreceded`) now joins that block's
+-   `comments` and the following rows remain rows of the same block; previously it began a new
+-   block and later rows were parsed as ordinary compounds. (#1961)
++ - Строка комментария внутри табулированного блока (E109, `CommentNotPreceded`) теперь
++   присоединяется к `comments` этого блока, а следующие строки остаются строками того же
++   блока; раньше она начинала новый блок, а последующие строки разбирались как обычные
++   составные узлы. (#1961)
+
+- - `Telp.delimiters` gained `+` (now twenty-two characters, `!"#$%&*+,./:;=?@\^_`|~`), so
+-   `Telp.parse(t"+a+b")` succeeds where it previously raised `Telp.Error.Reason.Syntax`. (#1961)
++ - `Telp.delimiters` получил `+` (теперь двадцать два символа, `!"#$%&*+,./:;=?@\^_`|~`), так
++   что `Telp.parse(t"+a+b")` выполняется успешно там, где раньше порождал
++   `Telp.Error.Reason.Syntax`. (#1961)
+
+- - `Base256.decodeStrict` reports every offending character, not only the first, as
+-   `Base256.Error.Reason.NotInAlphabet(offenders: scala.collection.immutable.List[Base256.Offender])`
+-   where `Base256.Offender(position: Int, codepoint: Int)` gives a zero-based *code-point* index
+-   (previously `NotInAlphabet(position: Int, character: Char)` with a UTF-16 unit index).
+-   `Base256.decode` and `decodeStrict` now treat a supplementary character as one character
+-   yielding one byte (previously two).
++ - `Base256.decodeStrict` сообщает о каждом ошибочном символе, а не только о первом, как
++   `Base256.Error.Reason.NotInAlphabet(offenders: scala.collection.immutable.List[Base256.Offender])`,
++   где `Base256.Offender(position: Int, codepoint: Int)` даёт индекс *кодовой точки*, отсчитываемый
++   с нуля (раньше `NotInAlphabet(position: Int, character: Char)` с индексом единицы UTF-16).
++   `Base256.decode` и `decodeStrict` теперь считают дополнительный символ одним символом,
++   дающим один байт (раньше два).
+
+- ## ulysses (#1961)
++ ## ulysses (#1961)
+
+- - `Palimpsest.resolve` now bounds its backtracking search to `Palimpsest.searchLimit` (100,000)
+-   candidate trials and returns `Unset` on exhaustion; a new overload `resolve(limit: Int)(using
+-   Bibliography)` takes an explicit bound. (#1961)
++ - `Palimpsest.resolve` теперь ограничивает свой поиск с возвратом значением
++   `Palimpsest.searchLimit` (100 000) пробных кандидатов и при исчерпании возвращает `Unset`;
++   новая перегрузка `resolve(limit: Int)(using
++   Bibliography)` принимает явную границу. (#1961)
+
+- ## ethereal
++ ## ethereal
+
+- - The launcher-to-daemon protocol is now BinTEL documents of the `ethereal-launcher` TEL
+-   schema (`ethereal.Launcher.schemaText`), replacing the line-oriented `i`/`e`/`m`/`s`/`x`/`v`
+-   messages and single-byte replies. A daemon built from this version only accepts launchers
+-   built from the Rust runner source at this version: rebuild runner stubs (`make
+-   runners-build`) or use a published `runners-<version>` release at or after the one carrying
+-   this protocol. Applications packaged with older stubs must be repackaged.
+- - `ethereal.DaemonEvent` removed. The daemon dispatches on `ethereal.Launcher.Message`
+-   (`Init`, `Stderr`, `Control`, `Signal`, `Exit`, `Verify`, `SignalAck`, `Verdict`, `Mode`,
+-   `ExitStatus`); `Launcher.encode`, `Launcher.decode` and `Launcher.readDocument` are the
+-   codec. `ethereal.Tty#byte` removed: a terminal-mode change is a `Launcher.Message.Mode`
+-   document on the control channel.
+- - `ethereal.Runners.version` is `0.4` (the first runner release speaking the BinTEL protocol),
+-   with `etc/runners/0.4.tsv` recording the stub hashes; `-Dbuild.executable` packaging without
+-   a local `dist/runners` downloads from the `runners-0.4` GitHub release.
+- - `ethereal.DaemonLogEvent` gained `ProtocolMismatch` (a document of another schema's
+-   signature).
+- - `ethereal.core` now depends on `stratiform.binary` (and so on `stratiform.core`,
+-   `stratiform.base256` and `ulysses.core`).
+- - The launcher's startup deadline is now an *idle* limit: the daemon must bind its socket
+-   within 10 s of the last change to the `progress` file in its state directory, rather than
+-   within 10 s of being spawned. The launcher passes `-Dburdock.progress=<state dir>/progress`
+-   to the JVM; a Burdock bootstrap fetching a cold cache writes its position there, the
+-   launcher shows `Fetching dependencies n/N (size)…` while it waits, and the failure report
+-   names the download in flight (`it was still fetching dependency 35 of 128 … after 10s
+-   without progress`). A second launcher waiting on another launcher's startup follows the
+-   same rule (previously a fixed 4 s). This is a change to the Rust runner: rebuild stubs
+-   (`make runners-build`) or use a `runners-<version>` release carrying it. (#1938)
+- - `ethereal.Runners.version` is `0.5`: `-Dbuild.executable` downloads its runner stub from the
+-   `runners-0.5` GitHub release and verifies it against `etc/runners/0.5.tsv`. The `runners-0.4`
+-   manifest did not match the assets that release served (its macOS-arm64 digest named a stub
+-   that was never published), so building an executable on a machine without a cached stub
+-   failed; a stub already cached under `~/.cache/ethereal/runners/0.4` is no longer consulted.
++ - Протокол между лаунчером и демоном теперь состоит из документов BinTEL по TEL-схеме
++   `ethereal-launcher` (`ethereal.Launcher.schemaText`) и заменяет построчные сообщения
++   `i`/`e`/`m`/`s`/`x`/`v` и однобайтовые ответы. Демон, собранный из этой версии, принимает
++   только лаунчеры, собранные из исходного кода раннера на Rust этой же версии: пересоберите
++   заглушки раннера (`make
++   runners-build`) или используйте опубликованный релиз `runners-<version>`, начиная с того,
++   который несёт этот протокол. Приложения, упакованные со старыми заглушками, нужно
++   переупаковать.
++ - `ethereal.DaemonEvent` удалён. Демон выполняет диспетчеризацию по
++   `ethereal.Launcher.Message` (`Init`, `Stderr`, `Control`, `Signal`, `Exit`, `Verify`,
++   `SignalAck`, `Verdict`, `Mode`, `ExitStatus`); кодеком служат `Launcher.encode`,
++   `Launcher.decode` и `Launcher.readDocument`. `ethereal.Tty#byte` удалён: смена режима
++   терминала — это документ `Launcher.Message.Mode` в управляющем канале.
++ - `ethereal.Runners.version` равен `0.4` (первый релиз раннера, говорящий на протоколе
++   BinTEL), а `etc/runners/0.4.tsv` содержит хеши заглушек; упаковка с `-Dbuild.executable`
++   без локального `dist/runners` загружает их из релиза GitHub `runners-0.4`.
++ - `ethereal.DaemonLogEvent` получил `ProtocolMismatch` (документ с сигнатурой другой схемы).
++ - `ethereal.core` теперь зависит от `stratiform.binary` (а значит, и от `stratiform.core`,
++   `stratiform.base256` и `ulysses.core`).
++ - Срок запуска у лаунчера теперь — это предел *бездействия*: демон должен привязать свой
++   сокет в течение 10 с после последнего изменения файла `progress` в своём каталоге
++   состояния, а не в течение 10 с после порождения. Лаунчер передаёт JVM
++   `-Dburdock.progress=<state dir>/progress`; начальный загрузчик Burdock, заполняющий
++   холодный кеш, записывает туда свою позицию, лаунчер во время ожидания показывает
++   `Fetching dependencies n/N (size)…`, а отчёт о неудаче называет текущую загрузку
++   (`it was still fetching dependency 35 of 128 … after 10s
++   without progress`). Второй лаунчер, ожидающий запуска, начатого другим лаунчером,
++   следует тому же правилу (раньше — фиксированные 4 с). Это изменение раннера на Rust:
++   пересоберите заглушки (`make runners-build`) или используйте релиз `runners-<version>`,
++   который его содержит. (#1938)
++ - `ethereal.Runners.version` равен `0.5`: `-Dbuild.executable` загружает заглушку раннера
++   из релиза GitHub `runners-0.5` и проверяет её по `etc/runners/0.5.tsv`. Манифест
++   `runners-0.4` не соответствовал файлам, которые раздавал этот релиз (его дайджест для
++   macOS-arm64 указывал на заглушку, которая так и не была опубликована), поэтому сборка
++   исполняемого файла на машине без закешированной заглушки завершалась неудачей; заглушка,
++   уже закешированная в `~/.cache/ethereal/runners/0.4`, больше не используется.
+
+- ## probably (fume takes over running and reporting)
++ ## probably (запуск и отчёты берёт на себя fume)
+
+- - `probably.Suite#main(arguments: Array[Text]): Unit` removed. A `Suite` is no longer a main
+-   class: it is run only by a host through
++ - `probably.Suite#main(arguments: Array[Text]): Unit` удалён. `Suite` больше не является
++   главным классом: его запускает только хост через
+
+-   `probably.Streamer.stream(suite: Text, arguments: Text, output: java.io.OutputStream): Int`
++   `probably.Streamer.stream(suite: Text, arguments: Text, output: java.io.OutputStream): Int`
+
+-   (module `probably.events`) or `probably.Suite#invoke(arguments: Text, sink: TestEvent -> Unit): Int`.
+-   Build scripts that ran `java -cp … <package>.Tests …` must run the `fume` tool over the built
+-   classpath instead (`fume run -c <jar>`, or `fume run` with a `.fume/config.tel` naming it). (#1963)
++   (модуль `probably.events`) или `probably.Suite#invoke(arguments: Text, sink: TestEvent -> Unit): Int`.
++   Сборочные скрипты, запускавшие `java -cp … <package>.Tests …`, должны вместо этого запускать
++   инструмент `fume` над собранным путём классов (`fume run -c <jar>` или `fume run` с
++   `.fume/config.tel`, который его указывает). (#1963)
+
+- - `probably.Suite#invoke(arguments: Array[Text]): Int`, `probably.Suite#invoke(arguments: Text): Int`
++ - `probably.Suite#invoke(arguments: Array[Text]): Int`, `probably.Suite#invoke(arguments: Text): Int`
+
+-   and `probably.Suite#invoke(arguments: List[Text]): Int` removed; they rendered a report to the
+-   suite's stdio, which no longer exists. `invoke(arguments: Text, sink: TestEvent -> Unit): Int`
+-   remains as the only entry point. (#1963)
+- - `probably.Suite#invoke(arguments: Text, sink: TestEvent -> Unit): Int` no longer returns 3
+-   (environment error during reporting); results are 0 (passed), 1 (failures) or 2 (the suite
+-   threw). (#1963)
+- - `probably.Suite#suiteIo: turbulence.Stdio` removed. (#1963)
+- - `probably.Report` constructor changed from `Report()(using ambience.Environment)(using probably.TestPalette)`
+-   to `Report()`; no givens are required. (#1963)
++   и `probably.Suite#invoke(arguments: List[Text]): Int` удалены; они выводили отчёт в stdio
++   набора тестов, которого больше нет. Единственной точкой входа остаётся
++   `invoke(arguments: Text, sink: TestEvent -> Unit): Int`. (#1963)
++ - `probably.Suite#invoke(arguments: Text, sink: TestEvent -> Unit): Int` больше не возвращает
++   3 (ошибка окружения при составлении отчёта); результаты — 0 (пройдено), 1 (есть неудачи)
++   или 2 (набор тестов бросил исключение). (#1963)
++ - `probably.Suite#suiteIo: turbulence.Stdio` удалён. (#1963)
++ - Конструктор `probably.Report` изменён с `Report()(using ambience.Environment)(using probably.TestPalette)`
++   на `Report()`; given не требуются. (#1963)
+
+- - `probably.Report#complete(coverage: Option[probably.Coverage])(using turbulence.Stdio): Unit`
++ - `probably.Report#complete(coverage: Option[probably.Coverage])(using turbulence.Stdio): Unit`
+
+-   changed to `complete(): Unit`. It renders nothing; it settles `passed` and emits
+-   `TestEvent.RunCompleted` to the installed sink (a no-op without one). (#1963)
+- - `probably.Report.Status` (enum `Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench, Stress,
+-   Profile, AspirePass, AspireFail`, with `symbol(using TestPalette): Teletype` and
+-   `describe: Teletype`) removed. `TestEvent.Outcome#outcome: Text` carries the per-verdict
+-   vocabulary on the event stream. (#1963)
+- - `probably.Reporter.report` given changed from
+-   `(turbulence.Stdio, ambience.Environment, probably.TestPalette) => Reporter[Report]` to
++   изменён на `complete(): Unit`. Он ничего не отображает; он устанавливает `passed` и
++   отправляет `TestEvent.RunCompleted` в установленный приёмник (без приёмника ничего не
++   делает). (#1963)
++ - `probably.Report.Status` (перечисление `Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench, Stress,
++   Profile, AspirePass, AspireFail`, с `symbol(using TestPalette): Teletype` и
++   `describe: Teletype`) удалён. Словарь вердиктов в потоке событий несёт
++   `TestEvent.Outcome#outcome: Text`. (#1963)
++ - Given `probably.Reporter.report` изменён с
++   `(turbulence.Stdio, ambience.Environment, probably.TestPalette) => Reporter[Report]` на
+
+-   `Reporter[Report]`. (#1963)
++   `Reporter[Report]`. (#1963)
+
+- - `probably.Reporter[report]#live(report: report): Boolean` removed. (#1963)
+- - `probably.Runner[report]#redraw(size: Int): Unit` removed; `Runner` no longer writes progress
+-   to stdout under any condition. (#1963)
+- - `probably.TestPalette` (trait extending `chiaroscuro.JuxtapositionPalette`; members `warning,
++ - `probably.Reporter[report]#live(report: report): Boolean` удалён. (#1963)
++ - `probably.Runner[report]#redraw(size: Int): Unit` удалён; `Runner` ни при каких условиях
++   больше не пишет ход выполнения в stdout. (#1963)
++ - `probably.TestPalette` (трейт, расширяющий `chiaroscuro.JuxtapositionPalette`; члены `warning,
+
+-   critical, benchmark, mixed, informative, cold, warm, hot, accented, highlight, detail, pass,
++   critical, benchmark, mixed, informative, cold, warm, hot, accented, highlight, detail, pass,
+
+-   fail, aspirePass, aspireFail, subdued, unaccented, positive, negative: Color in Srgb`) removed,
+-   together with `soundness.TestPalette`. (#1963)
+- - `probably.Ci` (object; members `apply(), githubActions, gitlabCi, circleCi, travisCi, jenkins,
++   fail, aspirePass, aspireFail, subdued, unaccented, positive, negative: Color in Srgb`) удалён
++   вместе с `soundness.TestPalette`. (#1963)
++ - `probably.Ci` (объект; члены `apply(), githubActions, gitlabCi, circleCi, travisCi, jenkins,
+
+-   azurePipelines, teamCity, bitbucketPipelines, buildkite, appVeyor, drone, semaphore, buddy,
++   azurePipelines, teamCity, bitbucketPipelines, buildkite, appVeyor, drone, semaphore, buddy,
+
+-   claudeCode: Boolean`) removed, together with `soundness.Ci`. No replacement. (#1963)
+- - `probably.GithubActions` (object; members `workspaceRelative(path: Text): Text`,
++   claudeCode: Boolean`) удалён вместе с `soundness.Ci`. Замены нет. (#1963)
++ - `probably.GithubActions` (объект; члены `workspaceRelative(path: Text): Text`,
+
+-   `error/warning/notice(message: Text, file: Optional[Text], line: Optional[Int], title: Optional[Text])(using Stdio): Unit`,
++   `error/warning/notice(message: Text, file: Optional[Text], line: Optional[Int], title: Optional[Text])(using Stdio): Unit`,
+
+-   `debug(message: Text)(using Stdio): Unit`, `group(title: Text)(using Stdio): Unit`,
++   `debug(message: Text)(using Stdio): Unit`, `group(title: Text)(using Stdio): Unit`,
+
+-   `endGroup()(using Stdio): Unit`, `grouped[result](title: Text)(block: => result)(using Stdio): result`)
++   `endGroup()(using Stdio): Unit`, `grouped[result](title: Text)(block: => result)(using Stdio): result`)
+
+-   removed, together with `soundness.GithubActions`. No replacement: a host renders annotations
+-   from the `TestEvent` stream. (#1963)
+- - `probably.AnsiRenderer` and `probably.TerseRenderer` removed; `probably` no longer renders
+-   reports. `probably.Documenting`, `probably.Doc` and `probably.Format` (all `private[probably]`)
+-   removed. The `CLAUDECODE` and `COLUMNS` environment variables and the `-Dscalac.coverage`
+-   system property no longer affect a suite. (#1963)
+- - Module `probably.coverage` (artifact `probably-coverage`) removed, with `probably.Coverage`
+-   (object and `case class Coverage(path: Text, spec: Array[Juncture], oldHits: Set[Int], hits: Set[Int])`),
+-   `probably.Juncture`, `probably.Surface` and the `soundness.{Coverage, Juncture, Surface}`
+-   exports. The `soundness-test` bundle no longer contains it. No replacement. (#1963)
+- - `probably.core` no longer depends on `chiaroscuro.render`, `ambience.core`, `digression.ansi`
+-   or `escapade.io` (and so, transitively, on `escritoire.core`, `dendrology.tree`,
+-   `iridescence.core` or `turbulence.core`); it depends on `digression.core` directly. A
+-   downstream module that obtained any of those through `probably` must declare them. (#1963)
++   удалён вместе с `soundness.GithubActions`. Замены нет: хост отображает аннотации по потоку
++   `TestEvent`. (#1963)
++ - `probably.AnsiRenderer` и `probably.TerseRenderer` удалены; `probably` больше не отображает
++   отчёты. `probably.Documenting`, `probably.Doc` и `probably.Format` (все
++   `private[probably]`) удалены. Переменные окружения `CLAUDECODE` и `COLUMNS` и системное
++   свойство `-Dscalac.coverage` больше не влияют на набор тестов. (#1963)
++ - Модуль `probably.coverage` (артефакт `probably-coverage`) удалён вместе с
++   `probably.Coverage` (объект и `case class Coverage(path: Text, spec: Array[Juncture], oldHits: Set[Int], hits: Set[Int])`),
++   `probably.Juncture`, `probably.Surface` и экспортами `soundness.{Coverage, Juncture, Surface}`.
++   Набор `soundness-test` его больше не содержит. Замены нет. (#1963)
++ - `probably.core` больше не зависит от `chiaroscuro.render`, `ambience.core`,
++   `digression.ansi` или `escapade.io` (а значит, транзитивно, от `escritoire.core`,
++   `dendrology.tree`, `iridescence.core` или `turbulence.core`); он напрямую зависит от
++   `digression.core`. Нижестоящий модуль, получавший что-либо из этого через `probably`, должен
++   объявить эти зависимости сам. (#1963)
+
+- ## hellenism
++ ## hellenism
+
+- - New: `hellenism.LocalClasspath.of(classloader: Classloader)(using ambience.System): LocalClasspath`
+-   — the classpath a `URLClassLoader` loads from, or else the `java.class.path` property. Code that
+-   launches a JVM to run its own classes (`sh"java -classpath …"`) should derive the classpath from
+-   this, with the classloader of one of its own classes (`Classloader[MyObject.type]`), rather than
+-   read the property: under a test-running host such as fume the property names the host's jars.
+-   `anthology.Bundler.applicationClasspath` and `superlunary.Rig#classpath` now go through it
+-   (same result as before). (#1963)
++ - Новое: `hellenism.LocalClasspath.of(classloader: Classloader)(using ambience.System): LocalClasspath`
++   — путь классов, из которого загружает `URLClassLoader`, или иначе свойство
++   `java.class.path`. Код, запускающий JVM для выполнения собственных классов
++   (`sh"java -classpath …"`), должен выводить путь классов отсюда, с загрузчиком классов
++   одного из своих классов (`Classloader[MyObject.type]`), а не читать свойство: под хостом,
++   запускающим тесты, таким как fume, свойство называет JAR-файлы хоста.
++   `anthology.Bundler.applicationClasspath` и `superlunary.Rig#classpath` теперь проходят через
++   него (с тем же результатом, что и раньше). (#1963)
+
+- ## superlunary
++ ## superlunary
+
+- - `superlunary.Jvm` and `superlunary.Isolation` now pass `Rig` the classloader that loaded them
+-   (`Classloader[Jvm.type]` / `Classloader[Isolation.type]`) instead of
+-   `hellenism.classloaders.systemClassloader`, and `superlunary.Rig#classpath` derives its entries
+-   from `Classloader[Rig]` rather than the thread-context classloader. Identical in a plain
+-   `java -cp` process; differs only when the rig is loaded by a non-system classloader. (#1963)
++ - `superlunary.Jvm` и `superlunary.Isolation` теперь передают `Rig` загрузчик классов,
++   который загрузил их самих (`Classloader[Jvm.type]` / `Classloader[Isolation.type]`), вместо
++   `hellenism.classloaders.systemClassloader`, а `superlunary.Rig#classpath` выводит свои
++   элементы из `Classloader[Rig]`, а не из загрузчика классов контекста потока выполнения. В
++   обычном процессе `java -cp` результат тот же; различие есть, только когда стенд загружен
++   не системным загрузчиком классов. (#1963)
+
+- ## burdock
++ ## burdock
+
+- - `burdock.Bootstrap` (the runtime class a repackaged JAR starts with) downloads its
+-   `Burdock-Require` dependencies concurrently (up to eight at a time) instead of one after
+-   another, applies connect/read timeouts to each download, and cleans up its temporary file
+-   on failure; classpath order is unchanged. A malformed `Burdock-Require` item exits with
+-   status 2 and a message instead of a stack trace. (#1938)
+- - `burdock.Bootstrap` now honours `XDG_CACHE_HOME`: the cache is `$XDG_CACHE_HOME/burdock`
+-   when the variable is set and non-empty, else `~/.cache/burdock`. Previously a set variable
+-   made it use a `burdock` directory relative to the working directory. (#1938)
+- - `burdock.Bootstrap` reads the optional `burdock.progress` system property: when set, it is
+-   the path of a file the bootstrap keeps updated with one line, `<completed> <total> <bytes>`,
+-   while fetching, and deletes when done. Ethereal's launcher sets it; a plain `java -jar` run
+-   writes nothing. (#1938)
+- ## probably (allocation per operation)
++ - `burdock.Bootstrap` (класс времени выполнения, с которого начинается переупакованный JAR)
++   загружает свои зависимости `Burdock-Require` параллельно (до восьми одновременно), а не
++   одну за другой, применяет к каждой загрузке тайм-ауты соединения и чтения и при неудаче
++   удаляет свой временный файл; порядок пути классов не изменился. Некорректный элемент
++   `Burdock-Require` приводит к выходу с кодом завершения 2 и сообщением вместо трассировки
++   стека. (#1938)
++ - `burdock.Bootstrap` теперь учитывает `XDG_CACHE_HOME`: кеш находится в
++   `$XDG_CACHE_HOME/burdock`, когда переменная задана и не пуста, иначе в `~/.cache/burdock`.
++   Раньше заданная переменная приводила к использованию каталога `burdock` относительно
++   рабочего каталога. (#1938)
++ - `burdock.Bootstrap` читает необязательное системное свойство `burdock.progress`: если оно
++   задано, это путь к файлу, в котором начальный загрузчик во время загрузки поддерживает одну
++   актуальную строку `<completed> <total> <bytes>` и который удаляет по завершении. Лаунчер
++   Ethereal задаёт это свойство; обычный запуск `java -jar` ничего не пишет. (#1938)
++ ## probably (выделение памяти на операцию)
+
+- - `probably.TestEvent.BenchmarkRecorded` gains a field `allocation: Optional[Long]` (bytes
+-   allocated per operation over the timed batches; `Unset` when the producer did not measure it)
+-   between `operationRate` and `timestamp`. Its arity is now 14. The BinTEL schema fingerprint
+-   `probably.Streamer.fingerprint` changes accordingly, so a host built against an earlier
+-   `probably` reports the suite as incompatible: fume must be rebuilt against this version. (#1969)
+- - `probably.Benchmark` gains a trailing parameter `allocation: Optional[Long] = Unset`, and
+-   `Benchmark.inclusion` records `Metric.Allocation` (bytes per operation) in the `Run` metrics
+-   when it is present. (#1969)
++ - `probably.TestEvent.BenchmarkRecorded` получает поле `allocation: Optional[Long]` (байты,
++   выделенные на операцию за хронометрируемые пакеты; `Unset`, если производитель это не
++   измерял) между `operationRate` и `timestamp`. Его арность теперь 14. Отпечаток схемы BinTEL
++   `probably.Streamer.fingerprint` соответственно меняется, поэтому хост, собранный под более
++   ранний `probably`, сообщает, что набор тестов несовместим: fume нужно пересобрать под эту
++   версию. (#1969)
++ - `probably.Benchmark` получает завершающий параметр `allocation: Optional[Long] = Unset`, а
++   `Benchmark.inclusion` записывает `Metric.Allocation` (байты на операцию) в метрики `Run`,
++   когда он присутствует. (#1969)
+
+=   when it is present. (#1969)
+=
+- ## sedentary
++ ## sedentary
+
+- - `sedentary.Bench` constructor changed from `Bench()(using Classloader, Environment)(using BenchmarkDevice)`
+-   to `Bench(heap: Optional[Text] = Unset, cpus: Optional[Int] = Unset, gc: Optional[Text] = Unset)(using Classloader, Environment)(using BenchmarkDevice)`,
+-   with the same meaning as `Stress`'s parameters: the measurement JVM's fixed heap (`-Xms`/`-Xmx`,
+-   default `1g`), its processor count, and its collector (`-XX:+Use<gc>GC`, default `Serial`).
+-   `Bench()` is unchanged in behaviour. (#1969)
+- - `sedentary.Bench` now measures the bytes allocated across a cell's timed batches (via
+-   `com.sun.management.ThreadMXBean#getTotalThreadAllocatedBytes`, so worker and virtual-thread
+-   allocation is included) and reports it as `allocation` on `probably.Benchmark` and
+-   `TestEvent.BenchmarkRecorded`. The harness's own boxing of each body result into its sink
+-   (one box per operation for a primitive result) is included, not subtracted. The staged
+-   measurement list returned by a cell has one more trailing element. (#1969)
++ - Конструктор `sedentary.Bench` изменён с `Bench()(using Classloader, Environment)(using BenchmarkDevice)`
++   на `Bench(heap: Optional[Text] = Unset, cpus: Optional[Int] = Unset, gc: Optional[Text] = Unset)(using Classloader, Environment)(using BenchmarkDevice)`,
++   с тем же смыслом, что и параметры `Stress`: фиксированная куча измерительной JVM
++   (`-Xms`/`-Xmx`, по умолчанию `1g`), число её процессоров и её сборщик мусора
++   (`-XX:+Use<gc>GC`, по умолчанию `Serial`). Поведение `Bench()` не изменилось. (#1969)
++ - `sedentary.Bench` теперь измеряет байты, выделенные за хронометрируемые пакеты ячейки
++   (через `com.sun.management.ThreadMXBean#getTotalThreadAllocatedBytes`, так что выделение в
++   рабочих и виртуальных потоках выполнения учитывается), и сообщает их как `allocation` в
++   `probably.Benchmark` и `TestEvent.BenchmarkRecorded`. Собственная упаковка обвязкой
++   результата каждого тела в её приёмник (по одной упаковке на операцию для примитивного
++   результата) учитывается, а не вычитается. Список стадированных измерений, возвращаемый
++   ячейкой, содержит на один завершающий элемент больше. (#1969)
+
+- ## zephyrine
++ ## zephyrine
+
+- - New: `zephyrine.Addressable#assemble(pieces: scala.collection.immutable.Seq[Self], total: Int): Self`,
+-   joining exact-size pieces into one value of length `total`. The trait supplies a default
+-   through `allocate`/`copyChunk`/`materialize`; the `Data` and `Text` instances override it to
+-   copy the pieces once. A custom `Addressable` needs no change. (#1969)
+- - `zephyrine.Stream#memoize` now copies each region once at its exact size and joins the pieces
+-   with `assemble` (returning a single region's copy directly), instead of appending to a growing
+-   builder: for a 4 MB result, about 8 MB allocated rather than 12 MB. The value returned is
+-   unchanged. (#1969)
+- - `zephyrine.Handoff#take()` and `Handoff#drain(into)` no longer report the ring drained (`null` /
+-   `0`) when the producer's `finish()` was observed between the consumer's read of the tail index
+-   and its check of the finished flag: the tail is re-read after `done` is seen, so the final item
+-   offered before `finish()` is always delivered. Previously a consumer racing the producer's last
+-   `offer`/`finish` pair could lose that item (about one hand-off in 10⁵ with both sides on virtual
+-   threads). Behaviour in every other interleaving is unchanged. (#1969)
++ - Новое: `zephyrine.Addressable#assemble(pieces: scala.collection.immutable.Seq[Self], total: Int): Self`
++   соединяет куски точного размера в одно значение длины `total`. Трейт предоставляет
++   реализацию по умолчанию через `allocate`/`copyChunk`/`materialize`; экземпляры для `Data`
++   и `Text` переопределяют её, чтобы копировать куски один раз. Собственному `Addressable`
++   изменения не нужны. (#1969)
++ - `zephyrine.Stream#memoize` теперь копирует каждую область один раз в её точном размере и
++   соединяет куски с помощью `assemble` (возвращая копию единственной области напрямую), а не
++   дописывает в растущий построитель: для результата в 4 МБ выделяется около 8 МБ, а не 12 МБ.
++   Возвращаемое значение не изменилось. (#1969)
++ - `zephyrine.Handoff#take()` и `Handoff#drain(into)` больше не сообщают, что кольцо
++   вычерпано (`null` / `0`), когда `finish()` производителя наблюдается между чтением
++   потребителем индекса хвоста и проверкой им флага завершения: после того как замечен
++   `done`, хвост перечитывается, так что последний элемент, предложенный до `finish()`, всегда
++   доставляется. Раньше потребитель, соревнующийся с последней парой `offer`/`finish`
++   производителя, мог потерять этот элемент (примерно одна передача из 10⁵, когда обе стороны
++   работают в виртуальных потоках выполнения). Поведение при любом другом чередовании не
++   изменилось. (#1969)
+
+- ## parasite
++ ## parasite
+
+- - New: `parasite.concurrently[result: ClassTag](count: Int, parallelism: Int)(job: Int => result)(using Monitor^, Probate^, Codepoint): IArray[result] raises Async.Error`
+-   (also exported as `soundness.concurrently`): runs `job(0)` to `job(count - 1)` across at most
+-   `parallelism` tasks pulling indices from a shared counter, and returns the results in index
+-   order once all have joined. Prefer it over one `async` per element for a batch of cheap jobs:
+-   a task is a virtual thread, so the spawn cost is paid `parallelism` times instead of `count`.
+-   A job's exception fails its task and is rethrown at the join. (#1969)
+- - New: `parasite.PoolingSupervisor` (abstract; `protected def spawn(runnable: Runnable): Thread`,
+-   `protected def idleLimit: Int = 256`), a `ThreadSupervisor` that runs tasks on reusable carrier
+-   threads, and `parasite.PooledSupervisor`, its instance over virtual threads on the JVM and
+-   platform threads on Scala Native, selected by the new `parasite.threading.pooledThreading`
+-   given (all three re-exported from `soundness`). Under it a task's `Thread.currentThread` is a
+-   carrier reused across tasks, so thread-locals and thread names are not per-task; cancellation,
+-   probates, `Promise` waiting and every other observable behaviour match `virtualThreading`. (#1969)
++ - Новое: `parasite.concurrently[result: ClassTag](count: Int, parallelism: Int)(job: Int => result)(using Monitor^, Probate^, Codepoint): IArray[result] raises Async.Error`
++   (экспортируется также как `soundness.concurrently`): выполняет `job(0)` … `job(count - 1)`
++   не более чем в `parallelism` задачах, берущих индексы из общего счётчика, и после того как
++   все они присоединились, возвращает результаты в порядке индексов. Для пакета дешёвых задач
++   предпочитайте его одному `async` на элемент: задача — это виртуальный поток выполнения,
++   поэтому стоимость порождения платится `parallelism` раз, а не `count`. Исключение задания
++   приводит к неудаче его задачи и повторно бросается при присоединении. (#1969)
++ - Новое: `parasite.PoolingSupervisor` (абстрактный; `protected def spawn(runnable: Runnable): Thread`,
++   `protected def idleLimit: Int = 256`), `ThreadSupervisor`, который выполняет задачи на
++   повторно используемых потоках-носителях, и `parasite.PooledSupervisor`, его экземпляр над
++   виртуальными потоками выполнения на JVM и над платформенными потоками выполнения в Scala
++   Native, выбираемый новым given `parasite.threading.pooledThreading` (все три
++   реэкспортируются из `soundness`). При нём `Thread.currentThread` задачи — это носитель,
++   повторно используемый разными задачами, поэтому thread-local-переменные и имена потоков
++   выполнения не привязаны к задаче; отмена, завещания, ожидание `Promise` и всё остальное
++   наблюдаемое поведение совпадают с `virtualThreading`. (#1969)

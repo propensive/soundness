@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.27.1` — `S16` value below `Short.MinValue`
++ # `↯/s.27.1` — значение `S16` меньше `Short.MinValue`
+
+- Raised at compile time by Hypotenuse's `s16` macro when the value
+- is below `-32768`.
++ Порождается во время компиляции макросом `s16` из Hypotenuse, когда
++ значение меньше `-32768`.
+
+- ## Cause
++ ## Причина
+
+- An `S16` (signed 16-bit) cannot represent values below `Short.MinValue`.
++ `S16` (знаковое 16-битное) не может представлять значения меньше `Short.MinValue`.
+
+- ## Example message
++ ## Пример сообщения
+
+=
+- ```
++ ```
+
+- [↯/s.27.1] an S16 may not be less than -32768
++ [↯/s.27.1] an S16 may not be less than -32768
+
+= [↯/s.27.1] an S16 may not be less than -32768
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- Provide a value in the range `-32768`–`32767`.
++ Укажите значение в диапазоне `-32768`–`32767`.
+
+- ## See also
++ ## См. также
+
+- - The other integer literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - Другие ошибки целочисленных литералов: [Семейства](README.md#families)
++ - Исходник: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

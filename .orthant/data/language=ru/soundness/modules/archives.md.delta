@@ -1,0 +1,826 @@
+orthant 1 language
+
+- ## Archives
++ ## Архивы
+
+- ### About
++ ### Обзор
+
+- The two archive formats of everyday computing,
+- [ZIP](https://en.wikipedia.org/wiki/ZIP_(file_format)) and
+- [tar](https://en.wikipedia.org/wiki/Tar_(computing)), are read and written as typed values. A
+- `Zipfile` or a `Tarfile` is a sequence of entries, each with a validated archive-relative path
+- and streamed content. An archive of any size is read entry by entry, and written without being
+- assembled in memory. A ZIP entry inflates as it is read, and a tar entry parses straight off the
+- underlying source. Tar entries carry the Unix metadata which the format exists to preserve,
+- which is modes, owners and modification times, as typed values.
++ Два архивных формата повседневной работы с компьютером,
++ [ZIP](https://en.wikipedia.org/wiki/ZIP_(file_format)) и
++ [tar](https://en.wikipedia.org/wiki/Tar_(computing)), читаются и записываются как типизированные
++ значения. `Zipfile` или `Tarfile` — это последовательность записей, каждая из которых имеет
++ проверенный путь относительно архива и потоковое содержимое. Архив любого размера читается запись
++ за записью и записывается без сборки в памяти. Запись ZIP распаковывается по мере чтения, а запись
++ tar разбирается прямо из нижележащего источника. Записи tar несут метаданные Unix, ради сохранения
++ которых этот формат и существует, — режимы, владельцев и время изменения — в виде типизированных
++ значений.
+
+- ### On archives
++ ### Об архивах
+
+- Archives are streams which pretend to be filesystems, and APIs for them tend to expose one
+- pretense or the other badly: either a mutable random-access object which must be opened,
+- mutated and remembered to close, or a raw stream of headers and bytes. Entry names are plain
+- strings, so nothing prevents the classic mistakes, which are absolute paths and `..` traversal,
+- and metadata is an afterthought of integers.
++ Архивы — это потоки данных, которые притворяются файловыми системами, и API для них обычно плохо
++ передают либо одно, либо другое притворство: это или изменяемый объект с произвольным доступом,
++ который нужно открыть, изменить и не забыть закрыть, или сырой поток заголовков и байтов. Имена
++ записей — простые строки, поэтому ничто не предотвращает классические ошибки, то есть абсолютные
++ пути и обход через `..`, а метаданные — это запоздалая мысль в виде целых чисел.
+
+- Here an archive is data. Entries are [immutable] values. Their paths are typed archive-relative
+- [paths](paths.md). Reading, writing
+- and compressing are the same streaming operations used everywhere else. Reading an archive
+- lazily, through a scope which owns the file, is the shape described under
+- [delimited scopes](../../philosophy/delimited-scopes.md).
++ Здесь архив — это данные. Записи — [неизменяемые][неизменяемый] значения. Их пути — типизированные
++ [пути](paths.md) относительно архива. Чтение, запись
++ и сжатие — это те же потоковые операции, что используются повсюду. Ленивое чтение архива через
++ область видимости, которая владеет файлом, имеет форму, описанную в разделе
++ [ограниченные области видимости](../../philosophy/delimited-scopes.md).
+
+- Everything comes from the `soundness` package. Reading an archive from disk logs an event, and
+- reading or writing one can fail, so an error [strategy] and a logging choice are in scope. The
+- last import lets the samples print their results, and the samples work in a directory of their
+- own:
++ Всё необходимое находится в пакете `soundness`. Чтение архива с диска записывает событие в журнал,
++ а чтение или запись архива могут завершиться неудачей, поэтому в области видимости находятся
++ [стратегия] обработки ошибок и выбор журналирования. Последний импорт позволяет примерам выводить
++ результаты, а примеры работают в собственном каталоге:
+
+= own:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import filesystemOptions.overwritePreexisting
++ import filesystemOptions.overwritePreexisting
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import charsets.utf8Charset
++ import charsets.utf8Charset
+
+- import textSanitizers.skipSanitizer
++ import textSanitizers.skipSanitizer
+
+- import filesystemBackends.javaBaseFilesystem
++ import filesystemBackends.javaBaseFilesystem
+
+- import filesystemOptions.createNonexistentParents
++ import filesystemOptions.createNonexistentParents
+
+- import filesystemOptions.deleteRecursively
++ import filesystemOptions.deleteRecursively
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLinux
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import temporaryDirectories.javaBaseTemporaryDirectory
++ import temporaryDirectories.javaBaseTemporaryDirectory
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+- val work = temporaryDirectory[Path on Linux] / "archives" / Uuid().show
++ val work = temporaryDirectory[Path on Linux] / "archives" / Uuid().show
+
+- work.create[Directory](CreateFlag.Parents)
++ work.create[Directory](CreateFlag.Parents)
+
+= work.create[Directory](CreateFlag.Parents)
+- ```
++ ```
+
+- Each format has its own archive and entry types, its own handle when opened, and its own error:
++ У каждого формата свои типы архива и записи, свой дескриптор при открытии и своя ошибка:
+
+= Each format has its own archive and entry types, its own handle when opened, and its own error:
+=
+- ```tabular
++ ```tabular
+
+- column  Format
+- column  Archive
+- column  Entry
+- column  Open as
+- column  Handle
+- column  Open flags
+- column  Error
+- row  ZIP  `Zipfile`  `Zip.Entry`  `Zip`  `zipfile`  none  `Zip.Error`
+- row  JAR  `Zipfile`  `Zip.Entry`  `Jar`  `zipfile`, with `manifest`  none  `Zip.Error`
++ column  Формат
++ column  Архив
++ column  Запись
++ column  Открыть как
++ column  Дескриптор
++ column  Флаги открытия
++ column  Ошибка
++ row  ZIP  `Zipfile`  `Zip.Entry`  `Zip`  `zipfile`  нет  `Zip.Error`
++ row  JAR  `Zipfile`  `Zip.Entry`  `Jar`  `zipfile`, с `manifest`  нет  `Zip.Error`
+
+- row  tar  `Tarfile`  `Tar.Entry`  `Tar`  `tar`  `Tar.Flag.Gzip`, `Zlib`, `Deflate`  `Tar.Error`
++ row  tar  `Tarfile`  `Tar.Entry`  `Tar`  `tar`  `Tar.Flag.Gzip`, `Zlib`, `Deflate`  `Tar.Error`
+
+- row  ar  `Arfile`  `Ar.Entry`  `Ar`  `ar`  none  `Ar.Error`
++ row  ar  `Arfile`  `Ar.Entry`  `Ar`  `ar`  нет  `Ar.Error`
+
+= row  ar  `Arfile`  `Ar.Entry`  `Ar`  `ar`  none  `Ar.Error`
+- ```
++ ```
+
+- ### ZIP
++ ### ZIP
+
+- A ZIP archive is a `Zipfile` of entries. Each entry is an archive-relative path and a source of
+- content. The archive streams as bytes, so writing one to disk is writing any other value.
+- Compression is a policy in scope, which deflates by default, and stores where deflation would
+- not help:
++ Архив ZIP — это `Zipfile`, состоящий из записей. Каждая запись — это путь относительно архива
++ и источник содержимого. Архив передаётся потоком байтов, поэтому записать его на диск — то же
++ самое, что записать любое другое значение. Сжатие — это политика в области видимости, которая по
++ умолчанию применяет deflate, а там, где deflate не поможет, сохраняет данные без сжатия:
+
+= not help:
+=
+- ```scala
++ ```scala
+
+- val zipPath = work / "hello.zip"
++ val zipPath = work / "hello.zip"
+
+- val entry = Zip.Entry(t"hello.txt".as[Path on Zip], t"Hello world".in[Data])
++ val entry = Zip.Entry(t"hello.txt".as[Path on Zip], t"Hello world".in[Data])
+
+- zipPath.write(Zipfile(List(entry)))
++ zipPath.write(Zipfile(List(entry)))
+
+= zipPath.write(Zipfile(List(entry)))
+- ```
++ ```
+
+- The path of an entry is a `Path on Zip`, which is relative to the root of the archive.
++ Путь записи — это `Path on Zip`, который отсчитывается от корня архива.
+
+- An archive reads from a path or from bytes. An entry is looked up by its path, and its content
+- reads as any type:
++ Архив читается из пути или из байтов. Запись находится по своему пути, а её содержимое читается
++ как любой тип:
+
+= reads as any type:
+=
+- ```scala fuel
++ ```scala fuel
+
+= reads as any type:
+=
+= ```scala fuel
+- run
++ run
+
+= reads as any type:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val hello = Zipfile.read(zipPath)
++ val hello = Zipfile.read(zipPath)
+
+- hello.entries.each(entry => Out.println(entry.ref.encode))
++ hello.entries.each(entry => Out.println(entry.ref.encode))
+
+- Out.println(hello.entry(t"hello.txt".as[Path on Zip]).read[Text])
++ Out.println(hello.entry(t"hello.txt".as[Path on Zip]).read[Text])
+
+= Out.println(hello.entry(t"hello.txt".as[Path on Zip]).read[Text])
+- ```
++ ```
+
+- An entry read from an archive carries the metadata of its header around its content as well.
+- Writing it back reproduces the original archive byte for byte, except for the ZIP64 records,
+- which are rebuilt:
++ Запись, прочитанная из архива, несёт вокруг своего содержимого ещё и метаданные своего заголовка.
++ Запись её обратно воспроизводит исходный архив байт в байт, за исключением записей ZIP64, которые
++ строятся заново:
+
+= which are rebuilt:
+=
+- ```tabular
++ ```tabular
+
+- column  Field
+- column  Holds
+- row  `flags`  the general-purpose flags
+- row  `versionMadeBy`  the "version made by"
+- row  `localVersion`  the "version needed" of the local header
+- row  `centralVersion`  the "version needed" of the central directory
+- row  `internalAttributes`  the internal attributes
+- row  `externalAttributes`  the external attributes, where a Unix mode lives
+- row  `localExtra`  the local header's extra field
+- row  `centralExtra`  the central directory's extra field
++ column  Поле
++ column  Содержит
++ row  `flags`  флаги общего назначения
++ row  `versionMadeBy`  поле «version made by»
++ row  `localVersion`  поле «version needed» локального заголовка
++ row  `centralVersion`  поле «version needed» центрального каталога
++ row  `internalAttributes`  внутренние атрибуты
++ row  `externalAttributes`  внешние атрибуты, где хранится режим Unix
++ row  `localExtra`  дополнительное поле локального заголовка
++ row  `centralExtra`  дополнительное поле центрального каталога
+
+= row  `centralExtra`  the central directory's extra field
+- ```
++ ```
+
+- Every one of those fields defaults to `Unset` on a new entry, which means the value the library
+- would choose itself. Bit 3 of `flags` marks an entry as *streamed*. Its CRC and sizes are
+- repeated in a data descriptor after the payload, which is how an archive is written to a sink
+- which cannot seek.
++ У новой записи каждое из этих полей по умолчанию равно `Unset`, что означает значение, которое
++ библиотека выбрала бы сама. Бит 3 поля `flags` помечает запись как *потоковую*. Её CRC и размеры
++ повторяются в дескрипторе данных после полезной нагрузки — так архив записывается в приёмник,
++ который не поддерживает перемещение позиции.
+
+- `Zipfile` also takes an optional `prefix` of raw bytes to place before the archive proper. The
+- ZIP format locates its own directory from the end of the file, not the start, so an archive
+- concatenated onto arbitrary leading bytes still reads correctly. That is how a self-extracting
+- or directly-executable archive is made, and how the [packaged](packaging.md) launchers carry
+- their own JAR. `Zipfile.rebase` corrects the one field of a very large (ZIP64) archive which a
+- prefix does invalidate.
++ `Zipfile` также принимает необязательный `prefix` из сырых байтов, помещаемых перед собственно
++ архивом. Формат ZIP находит свой каталог с конца файла, а не с начала, поэтому архив, дописанный
++ после произвольных начальных байтов, по-прежнему читается правильно. Так создаётся
++ самораспаковывающийся или непосредственно исполняемый архив, и так [упакованные](packaging.md)
++ лаунчеры несут собственный JAR. `Zipfile.rebase` исправляет то единственное поле очень большого
++ архива (ZIP64), которое префикс всё-таки делает недействительным.
+
+- An archive can also be *opened*, which makes its entries available for the duration of a scope,
+- and closes the underlying source at the end of it, as with a
+- [file](filesystem.md#reading-and-writing). Inside the scope, `zipfile` is the open handle:
++ Архив можно также *открыть*: тогда его записи доступны на время действия области видимости,
++ а нижележащий источник закрывается в её конце, как и у
++ [файла](filesystem.md#reading-and-writing). Внутри области видимости `zipfile` — это открытый
++ дескриптор:
+
+= [file](filesystem.md#reading-and-writing). Inside the scope, `zipfile` is the open handle:
+=
+- ```scala fuel
++ ```scala fuel
+
+= [file](filesystem.md#reading-and-writing). Inside the scope, `zipfile` is the open handle:
+=
+= ```scala fuel
+- run
++ run
+
+= [file](filesystem.md#reading-and-writing). Inside the scope, `zipfile` is the open handle:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- import dysasymptotics.linearSize
++ import dysasymptotics.linearSize
+
+- zipPath.open[Zip]():
++ zipPath.open[Zip]():
+
+-   Out.println(zipfile.entries.size.show)
++   Out.println(zipfile.entries.size.show)
+
+=   Out.println(zipfile.entries.size.show)
+- ```
++ ```
+
+- A JAR is a ZIP with a manifest. Opening one as `Jar` gives the same handle, refined with the main
+- attributes parsed from `META-INF/MANIFEST.MF`, with continuation lines rejoined as the
+- specification requires. An archive without a manifest simply has no attributes:
++ JAR — это ZIP с манифестом. Открытие его как `Jar` даёт тот же дескриптор, уточнённый главными
++ атрибутами, разобранными из `META-INF/MANIFEST.MF`, причём строки продолжения склеиваются, как
++ того требует спецификация. У архива без манифеста просто нет атрибутов:
+
+= specification requires. An archive without a manifest simply has no attributes:
+=
+- ```scala fuel
++ ```scala fuel
+
+= specification requires. An archive without a manifest simply has no attributes:
+=
+= ```scala fuel
+- run
++ run
+
+= specification requires. An archive without a manifest simply has no attributes:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val manifest = Jar.manifest(t"Manifest-Version" -> t"1.0")
++ val manifest = Jar.manifest(t"Manifest-Version" -> t"1.0")
+
+- val jarPath = work / "hello.jar"
++ val jarPath = work / "hello.jar"
+
+- jarPath.write(Zipfile(List(manifest, entry)))
++ jarPath.write(Zipfile(List(manifest, entry)))
+
+- jarPath.open[Jar]():
++ jarPath.open[Jar]():
+
+-   Out.println(zipfile.manifest.inspect)
++   Out.println(zipfile.manifest.inspect)
+
+=   Out.println(zipfile.manifest.inspect)
+- ```
++ ```
+
+- Errors are `Zip.Error`s whose reason says what was wrong: `NotFound` for an entry which is not
+- there, `DuplicateEntry` when two entries share a path, and `MissingEocd` when the bytes are not a
+- ZIP archive at all:
++ Ошибки — это `Zip.Error`, причина которых говорит, что было не так: `NotFound` для отсутствующей
++ записи, `DuplicateEntry`, когда у двух записей один и тот же путь, и `MissingEocd`, когда байты
++ вообще не являются архивом ZIP:
+
+= ZIP archive at all:
+=
+- ```scala fuel
++ ```scala fuel
+
+= ZIP archive at all:
+=
+= ```scala fuel
+- run
++ run
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- hello.entry(t"missing.txt".as[Path on Zip])
++ hello.entry(t"missing.txt".as[Path on Zip])
+
+= hello.entry(t"missing.txt".as[Path on Zip])
+- ```
++ ```
+
+- ### Tar
++ ### Tar
+
+- A tar entry is one of the typed cases of the format: a file, a directory, a hard or symbolic
+- link, a character or block device, or a FIFO, with its Unix metadata spelled out. `Tar.Entry`
+- builds the common case, a file, with a default mode and owner, stamped with the current time.
+- `Tar.Entry.at` takes the timestamp as any instant type. The case classes take everything
+- explicitly:
++ Запись tar — один из типизированных кейсов формата: файл, каталог, жёсткая или символическая
++ ссылка, символьное или блочное устройство либо FIFO, с явно указанными метаданными Unix.
++ `Tar.Entry` строит самый распространённый случай — файл — с режимом и владельцем по умолчанию
++ и с отметкой текущего времени. `Tar.Entry.at` принимает временную метку в виде любого типа
++ мгновения. Case-классы принимают всё явно:
+
+= explicitly:
+=
+- ```scala
++ ```scala
+
+- val readme = Tar.Entry(t"README".as[Relative on Tar], t"Read me first".in[Data])
++ val readme = Tar.Entry(t"README".as[Relative on Tar], t"Read me first".in[Data])
+
+- val script = Tar.Entry.File
++ val script = Tar.Entry.File
+
+-   ( path  = t"bin/run".as[Relative on Tar],
++   ( path  = t"bin/run".as[Relative on Tar],
+
+-     mode  = UnixMode(ownerExec = true, groupExec = true, otherExec = true),
++     mode  = UnixMode(ownerExec = true, groupExec = true, otherExec = true),
+
+-     user  = UnixUser(1000, t"hamlet"),
++     user  = UnixUser(1000, t"hamlet"),
+
+-     group = UnixGroup(1000, t"hamlet"),
++     group = UnixGroup(1000, t"hamlet"),
+
+-     mtime = 0.bits.u32,
++     mtime = 0.bits.u32,
+
+-     data  = Archive.Body(t"#!/bin/sh\necho hello\n".in[Data]) )
++     data  = Archive.Body(t"#!/bin/sh\necho hello\n".in[Data]) )
+
+=     data  = Archive.Body(t"#!/bin/sh\necho hello\n".in[Data]) )
+- ```
++ ```
+
+- A `Tarfile` of entries streams as tar blocks, or as the compressed forms in which the format
+- usually travels:
++ `Tarfile` из записей передаётся потоком в виде блоков tar или в тех сжатых формах, в которых этот
++ формат обычно путешествует:
+
+= usually travels:
+=
+- ```scala
++ ```scala
+
+- val tarball = Tarfile(List(readme, script))
++ val tarball = Tarfile(List(readme, script))
+
+- val gzipped = tarball.gzip
++ val gzipped = tarball.gzip
+
+- val zlibbed = tarball.zlib
++ val zlibbed = tarball.zlib
+
+- val deflated = tarball.deflate
++ val deflated = tarball.deflate
+
+= val deflated = tarball.deflate
+- ```
++ ```
+
+- Reading runs the other way. `Tarfile.read` parses entries lazily, straight off a stream of
+- bytes. Consuming one entry advances the source past it, so an archive is never materialized. A
+- compressed archive is simply a decompressed stream, read the same way:
++ Чтение идёт в обратном направлении. `Tarfile.read` лениво разбирает записи прямо из потока байтов.
++ Расходование одной записи продвигает источник за неё, поэтому архив никогда не материализуется.
++ Сжатый архив — это просто распакованный поток данных, который читается так же:
+
+= compressed archive is simply a decompressed stream, read the same way:
+=
+- ```scala fuel
++ ```scala fuel
+
+= compressed archive is simply a decompressed stream, read the same way:
+=
+= ```scala fuel
+- run
++ run
+
+= compressed archive is simply a decompressed stream, read the same way:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Tarfile.read(tarball.source[Data]).each(entry => Out.println(entry.entryName))
++ Tarfile.read(tarball.source[Data]).each(entry => Out.println(entry.entryName))
+
+- Tarfile.read(tarball.gzip.decompress[Gzip]).each(entry => Out.println(entry.entryName))
++ Tarfile.read(tarball.gzip.decompress[Gzip]).each(entry => Out.println(entry.entryName))
+
+= Tarfile.read(tarball.gzip.decompress[Gzip]).each(entry => Out.println(entry.entryName))
+- ```
++ ```
+
+- Reading an archive this way is single-pass and single-owner. Consume the entries in order, on
+- one thread. An entry which is passed over remains readable, because its body is memoized when
+- the sequence advances, but the sequence itself cannot be replayed.
++ Такое чтение архива однопроходное и с единственным владельцем. Расходуйте записи по порядку,
++ в одном потоке выполнения. Пропущенная запись остаётся доступной для чтения, потому что её тело
++ запоминается при продвижении последовательности, но саму последовательность воспроизвести заново
++ нельзя.
+
+- Opening the archive as `Tar` scopes the underlying source, as a ZIP archive is scoped, and takes
+- the compression as a flag. `tar` is the open handle:
++ Открытие архива как `Tar` ограничивает нижележащий источник областью видимости, так же как
++ у архива ZIP, и принимает сжатие в виде флага. `tar` — это открытый дескриптор:
+
+= the compression as a flag. `tar` is the open handle:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the compression as a flag. `tar` is the open handle:
+=
+= ```scala fuel
+- run
++ run
+
+= the compression as a flag. `tar` is the open handle:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val tarPath = work / "hello.tar.gz"
++ val tarPath = work / "hello.tar.gz"
+
+- tarPath.create[File](): handle ?=>
++ tarPath.create[File](): handle ?=>
+
+-   handle.write(tarball.gzip.memoize)
++   handle.write(tarball.gzip.memoize)
+
+- tarPath.open[Tar](Tar.Flag.Gzip):
++ tarPath.open[Tar](Tar.Flag.Gzip):
+
+-   tar.entries.each(entry => Out.println(entry.entryName))
++   tar.entries.each(entry => Out.println(entry.entryName))
+
+=   tar.entries.each(entry => Out.println(entry.entryName))
+- ```
++ ```
+
+- A tarball unpacks onto the [filesystem](filesystem.md) with `extractTo`:
++ Архив tar распаковывается в [файловую систему](filesystem.md) с помощью `extractTo`:
+
+= A tarball unpacks onto the [filesystem](filesystem.md) with `extractTo`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A tarball unpacks onto the [filesystem](filesystem.md) with `extractTo`:
+=
+= ```scala fuel
+- run
++ run
+
+= A tarball unpacks onto the [filesystem](filesystem.md) with `extractTo`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val unpacked: Path on Linux = work / "unpacked"
++ val unpacked: Path on Linux = work / "unpacked"
+
+- tarball.extractTo(unpacked)
++ tarball.extractTo(unpacked)
+
+- Out.println((unpacked / "README").open[File]()(file.read[Text]))
++ Out.println((unpacked / "README").open[File]()(file.read[Text]))
+
+= Out.println((unpacked / "README").open[File]()(file.read[Text]))
+- ```
++ ```
+
+- Long names are handled in POSIX's pax form by default, or in GNU's, chosen when the archive is
+- built, as `Tarfile(entries, LongNameFormat.Gnu)`. Sparse files and pax extended headers
+- round-trip faithfully. A malformed archive raises a `Tar.Error` which names the fault: a bad
+- checksum, a header field which cannot be parsed, or a truncated body.
++ Длинные имена по умолчанию обрабатываются в форме pax из POSIX либо в форме GNU — это выбирается
++ при построении архива как `Tarfile(entries, LongNameFormat.Gnu)`. Разреженные файлы и расширенные
++ заголовки pax точно проходят круговой путь. Некорректный архив порождает `Tar.Error`, где назван
++ дефект: неверная контрольная сумма, поле заголовка, которое нельзя разобрать, или усечённое тело.
+
+- ### Archiving a directory
++ ### Архивирование каталога
+
+- A directory tree archives in any of the formats with `archive`, with the format chosen as a
+- type:
++ Дерево каталогов архивируется в любой из форматов с помощью `archive`, а формат выбирается
++ в виде типа:
+
+= type:
+=
+- ```scala
++ ```scala
+
+- import filesystemOptions.preserveSymlinks
++ import filesystemOptions.preserveSymlinks
+
+= import filesystemOptions.preserveSymlinks
+- ```
++ ```
+
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- unpacked.archive[Tar]().entries.each(entry => Out.println(entry.entryName))
++ unpacked.archive[Tar]().entries.each(entry => Out.println(entry.entryName))
+
+- unpacked.archive[Zip]().entries.each(entry => Out.println(entry.ref.encode))
++ unpacked.archive[Zip]().entries.each(entry => Out.println(entry.ref.encode))
+
+- unpacked.archive[Ar]().entries.each(entry => Out.println(entry.name))
++ unpacked.archive[Ar]().entries.each(entry => Out.println(entry.name))
+
+= unpacked.archive[Ar]().entries.each(entry => Out.println(entry.name))
+- ```
++ ```
+
+- The result is the in-memory archive, a `Tarfile`, `Zipfile` or `Arfile`, to stream, compress or
+- write wherever it is wanted. Every descendant is visited in a fixed order, with the children of
+- each directory sorted, so the same tree always produces the same bytes. Tar records each entry
+- as its own kind, with the mode, owner and timestamp which the filesystem reports. The formats
+- differ in what they can store:
++ Результат — архив в памяти, `Tarfile`, `Zipfile` или `Arfile`, который можно передать потоком,
++ сжать или записать куда угодно. Каждый потомок посещается в фиксированном порядке, причём дети
++ каждого каталога сортируются, поэтому одно и то же дерево всегда даёт одни и те же байты. Tar
++ записывает каждую запись как её собственный вид, с режимом, владельцем и временной меткой,
++ которые сообщает файловая система. Форматы различаются тем, что они могут хранить:
+
+= differ in what they can store:
+=
+- ```tabular
++ ```tabular
+
+- column  Format
+- column  Result
+- column  Symbolic links
+- column  Directories
+- column  Flags
+- row  `Tar`  `Tarfile`  stored or followed, by the `filesystemOptions` symlink policy  stored as entries  `Archive.Flag`, `LongNameFormat`
+- row  `Zip`  `Zipfile`  followed  stored as entries  `Zip.Compression`
+- row  `Ar`  `Arfile`  followed  flattened, each file named by its slash-joined relative path  `Archive.Flag`
++ column  Формат
++ column  Результат
++ column  Символические ссылки
++ column  Каталоги
++ column  Флаги
++ row  `Tar`  `Tarfile`  сохраняются или разыменовываются согласно политике символических ссылок `filesystemOptions`  сохраняются как записи  `Archive.Flag`, `LongNameFormat`
++ row  `Zip`  `Zipfile`  разыменовываются  сохраняются как записи  `Zip.Compression`
++ row  `Ar`  `Arfile`  разыменовываются  уплощаются, каждый файл называется своим относительным путём через косую черту  `Archive.Flag`
+
+= row  `Ar`  `Arfile`  followed  flattened, each file named by its slash-joined relative path  `Archive.Flag`
+- ```
++ ```
+
+- Flags tune the archiving. `Archive.Flag.Owner` and `Archive.Flag.Mtime` replace the owner and
+- timestamp of every entry. They are `tar --owner`, `--group` and `--mtime`, the knobs of a
+- reproducible build. A `LongNameFormat` chooses tar's convention for long names. A ZIP takes a
+- `Zip.Compression` instead:
++ Флаги настраивают архивирование. `Archive.Flag.Owner` и `Archive.Flag.Mtime` заменяют владельца
++ и временную метку каждой записи. Это `tar --owner`, `--group` и `--mtime` — регуляторы
++ воспроизводимой сборки. `LongNameFormat` выбирает соглашение tar для длинных имён. ZIP вместо
++ этого принимает `Zip.Compression`:
+
+= `Zip.Compression` instead:
+=
+- ```scala
++ ```scala
+
+- val reproducible = unpacked.archive[Tar](LongNameFormat.Gnu, Archive.Flag.Owner(UnixUser(0), UnixGroup(0)))
++ val reproducible = unpacked.archive[Tar](LongNameFormat.Gnu, Archive.Flag.Owner(UnixUser(0), UnixGroup(0)))
+
+- val stored = unpacked.archive[Zip](Zip.Compression.Stored)
++ val stored = unpacked.archive[Zip](Zip.Compression.Stored)
+
+= val stored = unpacked.archive[Zip](Zip.Compression.Stored)
+- ```
++ ```
+
+- ### Ar
++ ### Ar
+
+- `ar` is the container of every `*.deb` package and every `*.a` static library: an eight-byte
+- magic, then a flat run of members, each a sixty-byte header followed inline by its payload. It
+- carries no entry types, no checksum and no end-of-archive marker, so a member is just a name,
+- its Unix metadata and a body. `Ar.Entry` builds one. The `mode` is the raw octal field, such as
+- `100644`, since `ar` stores the file-type bits beside the permissions:
++ `ar` — контейнер каждого пакета `*.deb` и каждой статической библиотеки `*.a`: восьмибайтовая
++ сигнатура, за которой следует плоская серия членов, каждый из которых — шестидесятибайтовый
++ заголовок, сразу за которым идёт его полезная нагрузка. Он не содержит ни типов записей, ни
++ контрольной суммы, ни маркера конца архива, поэтому член — это просто имя, его метаданные Unix
++ и тело. `Ar.Entry` строит такой член. `mode` — это сырое восьмеричное поле, например `100644`,
++ поскольку `ar` хранит биты типа файла рядом с правами доступа:
+
+= `100644`, since `ar` stores the file-type bits beside the permissions:
+=
+- ```scala
++ ```scala
+
+- val control =
++ val control =
+
+-   Ar.Entry(t"control.tar.xz", Archive.Body(t"...".in[Data]), 0L, UnixUser(0), UnixGroup(0), 33188)
++   Ar.Entry(t"control.tar.xz", Archive.Body(t"...".in[Data]), 0L, UnixUser(0), UnixGroup(0), 33188)
+
+- val deb = Arfile(List(control))
++ val deb = Arfile(List(control))
+
+= val deb = Arfile(List(control))
+- ```
++ ```
+
+- Reading mirrors `Tarfile.read`. Entries parse lazily off a stream of bytes, single-pass and in
+- order, with the body of each member streamed in bounded chunks, and memoized if the sequence
+- advances past it. Opening as `Ar` scopes the source as `Tar` does, with `ar` as the handle.
+- There are no flags, because a `*.deb` is plain `ar`, and only its members are compressed:
++ Чтение повторяет `Tarfile.read`. Записи лениво разбираются из потока байтов, за один проход и по
++ порядку, причём тело каждого члена передаётся ограниченными чанками и запоминается, если
++ последовательность продвигается дальше него. Открытие как `Ar` ограничивает источник областью
++ видимости так же, как `Tar`, а дескриптором служит `ar`. Флагов нет, потому что `*.deb` — это
++ обычный `ar`, и сжаты только его члены:
+
+= There are no flags, because a `*.deb` is plain `ar`, and only its members are compressed:
+=
+- ```scala fuel
++ ```scala fuel
+
+= There are no flags, because a `*.deb` is plain `ar`, and only its members are compressed:
+=
+= ```scala fuel
+- run
++ run
+
+= There are no flags, because a `*.deb` is plain `ar`, and only its members are compressed:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Arfile.read(deb.source[Data]).each(entry => Out.println(entry.name))
++ Arfile.read(deb.source[Data]).each(entry => Out.println(entry.name))
+
+- val debPath = work / "hello.deb"
++ val debPath = work / "hello.deb"
+
+- debPath.create[File](): handle ?=>
++ debPath.create[File](): handle ?=>
+
+-   handle.write(deb)
++   handle.write(deb)
+
+- debPath.open[Ar]():
++ debPath.open[Ar]():
+
+-   ar.entries.each(entry => Out.println(entry.name))
++   ar.entries.each(entry => Out.println(entry.name))
+
+=   ar.entries.each(entry => Out.println(entry.name))
+- ```
++ ```
+
+- A GNU archive stores names longer than fifteen characters in a `//` name-table member, and
+- refers to them by offset. The reader resolves those, and strips the SysV terminating `/`, into
+- `name`. `rawName` keeps the literal field, so a parsed archive serializes again byte for byte,
+- as `Arfile.from(stream).source[Data]`. The `role` of each entry says whether it is a `Regular`
+- member, the `NameTable`, or a `SymbolTable`, which is `/` or `/SYM64/`. A malformed archive
+- raises an `Ar.Error`: a missing magic, a corrupt header terminator, a non-numeric field, a
+- truncated stream, or a long-name reference which does not resolve.
++ Архив GNU хранит имена длиннее пятнадцати символов в члене-таблице имён `//` и ссылается на них
++ по смещению. Читающий разрешает эти ссылки и отбрасывает завершающий `/` SysV, помещая результат
++ в `name`. `rawName` хранит буквальное поле, поэтому разобранный архив снова сериализуется байт
++ в байт как `Arfile.from(stream).source[Data]`. `role` каждой записи говорит, является ли она
++ обычным членом `Regular`, таблицей имён `NameTable` или таблицей символов `SymbolTable`, то есть
++ `/` или `/SYM64/`. Некорректный архив порождает `Ar.Error`: отсутствующая сигнатура, повреждённый
++ терминатор заголовка, нечисловое поле, усечённый поток данных или ссылка на длинное имя, которая
++ не разрешается.
+
+- ### Related
++ ### Связанное
+
+- - [Compression](compression.md) describes the gzip, zlib and deflate which a tarball travels
+-   in.
+- - [Filesystem](filesystem.md) describes the files, directories and handles which archives are
+-   read from, written to and extracted onto.
+- - [Paths](paths.md) describes the archive-relative paths of entries.
+- - [Packaging](packaging.md) builds the JAR files and launchers which are ZIP archives.
+- - [Containers](docker.md) builds image layers from tar archives.
+- - [Streams](streams.md) describes the lazy streams which entries are read from.
+- - [Versioning](versioning.md) describes the manifests which a JAR carries.
++ - [Сжатие](compression.md) описывает gzip, zlib и deflate, в которых путешествует архив tar.
++ - [Файловая система](filesystem.md) описывает файлы, каталоги и дескрипторы, из которых архивы
++   читаются, в которые записываются и в которые распаковываются.
++ - [Пути](paths.md) описывает пути записей относительно архива.
++ - [Упаковка](packaging.md) строит JAR-файлы и лаунчеры, являющиеся архивами ZIP.
++ - [Контейнеры](docker.md) строит слои образов из архивов tar.
++ - [Потоки данных](streams.md) описывает ленивые потоки данных, из которых читаются записи.
++ - [Версионирование](versioning.md) описывает манифесты, которые несёт JAR.

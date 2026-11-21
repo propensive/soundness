@@ -1,0 +1,455 @@
+orthant 1 language
+
+- ## MCP
++ ## MCP
+
+- ### About
++ ### Обзор
+
+- The [Model Context Protocol](https://modelcontextprotocol.io/) is how an AI assistant reaches
+- outside itself, by calling tools, reading resources and using prompts which a server provides.
++ [Model Context Protocol](https://modelcontextprotocol.io/) — это способ, которым ИИ-ассистент
++ выходит за свои пределы: вызывает инструменты, читает ресурсы и использует промпты, которые
++ предоставляет сервер.
+
+- An MCP server here is an object with annotated methods. A method marked `@tool` becomes a
+- callable tool, and its parameters and result are described to the client by
+- [JSON schemas](json.md#schemas) derived from their types. `@resource` exposes content at a URI.
+- `@prompt` supplies a conversation template. The protocol itself, which is JSON-RPC over
+- streamable HTTP, with sessions and listings, is generated from those definitions.
++ Сервер MCP здесь — это объект с аннотированными методами. Метод, помеченный `@tool`, становится
++ вызываемым инструментом, а его параметры и результат описываются клиенту
++ [JSON-схемами](json.md#schemas), выведенными из их типов. `@resource` открывает содержимое по URI.
++ `@prompt` предоставляет шаблон разговора. Сам протокол — JSON-RPC поверх потокового HTTP, с
++ сессиями и списками — генерируется из этих определений.
+
+- ### On MCP
++ ### Об MCP
+
+- An MCP server describes itself. Tools are advertised with their names, descriptions and input
+- schemas, and the client, which is the harness of a language model, decides what to call from
+- those descriptions. Writing that self-description by hand duplicates the code it describes, and
+- the two drift. The schema says one thing and the implementation another, and the model's tool
+- calls fail in ways it cannot see.
++ Сервер MCP описывает сам себя. Инструменты объявляются со своими именами, описаниями и входными
++ схемами, а клиент — обвязка языковой модели — решает по этим описаниям, что вызывать. Писать это
++ самоописание вручную — значит дублировать код, который оно описывает, и они расходятся. Схема
++ говорит одно, реализация — другое, и вызовы инструментов моделью завершаются неудачей так, что
++ она этого не видит.
+
+- Deriving the description from the implementation removes the gap. The method *is* the tool. Its
+- name, its parameter types and its result type generate the listing, and dispatch goes straight to
+- it. The schema cannot disagree with the code, which is
+- [correctness](../../philosophy/correctness.md) by construction.
++ Вывод описания из реализации устраняет этот разрыв. Метод *и есть* инструмент. Его имя, типы его
++ параметров и тип результата порождают список, а диспетчеризация идёт прямо к нему. Схема не может
++ расходиться с кодом — это [корректность](../../philosophy/correctness.md) по построению.
+
+- Everything comes from the `soundness` package:
++ Всё берётся из пакета `soundness`:
+
+= Everything comes from the `soundness` package:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import classloaders.threadContextClassloader
++ import classloaders.threadContextClassloader
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import internetAccess.online
++ import internetAccess.online
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import webserverErrorPages.minimalErrorPage
++ import webserverErrorPages.minimalErrorPage
+
+= import webserverErrorPages.minimalErrorPage
+- ```
++ ```
+
+- The samples on this page serve a protocol over HTTP, so they are compiled but not run.
++ Примеры на этой странице обслуживают протокол по HTTP, поэтому они компилируются, но не
++ запускаются.
+
+- ### A server
++ ### Сервер
+
+- A server extends `Mcp.Server`, names itself, and defines its capabilities as annotated methods.
+- Each connected client gets a `Session`, created by `initialize`, in which the server may keep
+- state for that client:
++ Сервер расширяет `Mcp.Server`, называет себя и определяет свои функции как аннотированные методы.
++ Каждый подключённый клиент получает `Session`, создаваемую `initialize`, в которой сервер может
++ хранить состояние для этого клиента:
+
+= state for that client:
+=
+- ```scala
++ ```scala
+
+- val colors = Map(t"sky" -> t"blue", t"grass" -> t"green")
++ val colors = Map(t"sky" -> t"blue", t"grass" -> t"green")
+
+- object AssistantTools extends Mcp.Server():
++ object AssistantTools extends Mcp.Server():
+
+= object AssistantTools extends Mcp.Server():
+-   class Session() extends Mcp.Session
++   class Session() extends Mcp.Session
+
+= object AssistantTools extends Mcp.Server():
+=   class Session() extends Mcp.Session
+-   def initialize(): Session = new Session()
++   def initialize(): Session = new Session()
+
+-   def name: Text = t"assistant-tools"
++   def name: Text = t"assistant-tools"
+
+-   def description: Text = t"Utilities for the assistant"
++   def description: Text = t"Utilities for the assistant"
+
+=   def description: Text = t"Utilities for the assistant"
+-   def version: Semver = v"1.0.0"
++   def version: Semver = v"1.0.0"
+
+=   def description: Text = t"Utilities for the assistant"
+=   def version: Semver = v"1.0.0"
+-   def prompts: List[Mcp.Prompt] = Nil
++   def prompts: List[Mcp.Prompt] = Nil
+
+=   def description: Text = t"Utilities for the assistant"
+=   def version: Semver = v"1.0.0"
+=   def prompts: List[Mcp.Prompt] = Nil
+=
+-   @tool
++   @tool
+
+-   @about("Look up the color of a named thing")
++   @about("Look up the color of a named thing")
+
+-   def color(name: Text): Text = colors.at(name).or(t"unknown")
++   def color(name: Text): Text = colors.at(name).or(t"unknown")
+
+=   def color(name: Text): Text = colors.at(name).or(t"unknown")
+- ```
++ ```
+
+- The input schema of the tool, a `name` of type string, and its result schema are derived from
+- the signature. `@about` supplies the description which the model reads when it decides whether
+- to call the tool. These are the annotations which the methods of a server may carry:
++ Входная схема инструмента — `name` строкового типа — и его схема результата выводятся из
++ сигнатуры. `@about` предоставляет описание, которое модель читает, решая, вызывать ли инструмент.
++ Вот аннотации, которые могут нести методы сервера:
+
+= to call the tool. These are the annotations which the methods of a server may carry:
+=
+- ```tabular
++ ```tabular
+
+- column  Annotation
+- column  On
+- column  Makes it
+- row  `@tool`  a method  a callable tool
+- row  `@resource(uri)`  a method  content served at the URI
+- row  `@prompt`  a method  a conversation template
+- row  `@about(text)`  a method or a parameter  described, for the model
+- row  `@title(text)`  a method  titled, for display
+- row  `@ui(uri)`  a tool  a tool whose user interface is the resource at the URI
++ column  Аннотация
++ column  На
++ column  Делает его
++ row  `@tool`  методе  вызываемым инструментом
++ row  `@resource(uri)`  методе  содержимым, отдаваемым по URI
++ row  `@prompt`  методе  шаблоном разговора
++ row  `@about(text)`  методе или параметре  описанным для модели
++ row  `@title(text)`  методе  озаглавленным для отображения
++ row  `@ui(uri)`  инструменте  инструментом, пользовательский интерфейс которого — ресурс по URI
+
+= row  `@ui(uri)`  a tool  a tool whose user interface is the resource at the URI
+- ```
++ ```
+
+- ### Talking back to the client
++ ### Ответная связь с клиентом
+
+- A tool which takes a `using Mcp.Client` can speak to the client while it runs. `log` streams
+- progress notifications. `elicit` asks the user for structured input in the middle of a call,
+- with its form described by a derived schema:
++ Инструмент, принимающий `using Mcp.Client`, может обращаться к клиенту во время работы. `log`
++ передаёт потоком уведомления о ходе выполнения. `elicit` посреди вызова запрашивает у пользователя
++ структурированный ввод, форма которого описывается выведенной схемой:
+
+= with its form described by a derived schema:
+=
+- ```scala
++ ```scala
+
+- object Deployer extends Mcp.Server():
++ object Deployer extends Mcp.Server():
+
+= object Deployer extends Mcp.Server():
+-   class Session() extends Mcp.Session
++   class Session() extends Mcp.Session
+
+= object Deployer extends Mcp.Server():
+=   class Session() extends Mcp.Session
+-   def initialize(): Session = new Session()
++   def initialize(): Session = new Session()
+
+-   def name: Text = t"deployer"
++   def name: Text = t"deployer"
+
+-   def description: Text = t"Deploys the application"
++   def description: Text = t"Deploys the application"
+
+=   def description: Text = t"Deploys the application"
+-   def version: Semver = v"1.0.0"
++   def version: Semver = v"1.0.0"
+
+=   def description: Text = t"Deploys the application"
+=   def version: Semver = v"1.0.0"
+-   def prompts: List[Mcp.Prompt] = Nil
++   def prompts: List[Mcp.Prompt] = Nil
+
+=   def description: Text = t"Deploys the application"
+=   def version: Semver = v"1.0.0"
+=   def prompts: List[Mcp.Prompt] = Nil
+=
+-   @tool
++   @tool
+
+-   def deploy(target: Text)(using client: Mcp.Client): Text =
++   def deploy(target: Text)(using client: Mcp.Client): Text =
+
+-     client.log(t"Preparing deployment to $target")
++     client.log(t"Preparing deployment to $target")
+
+-     case class Confirmation(proceed: Boolean)
++     case class Confirmation(proceed: Boolean)
+
+-     client.elicit[Confirmation](t"Deploy to production?")
++     client.elicit[Confirmation](t"Deploy to production?")
+
+-     t"deployed to $target"
++     t"deployed to $target"
+
+=     t"deployed to $target"
+- ```
++ ```
+
+- A parameter is required unless its type is an [`Optional`](optional-values.md), or it has a
+- default argument. A client may omit those, and the tool sees `Unset` or the default. An `@about`
+- on a parameter describes it in the input schema of the tool:
++ Параметр обязателен, если его тип не [`Optional`](optional-values.md) и у него нет аргумента по
++ умолчанию. Такие параметры клиент может опустить, и инструмент увидит `Unset` или значение по
++ умолчанию. `@about` на параметре описывает его во входной схеме инструмента:
+
+= on a parameter describes it in the input schema of the tool:
+=
+- ```scala
++ ```scala
+
+- @tool
++ @tool
+
+- @about(t"Lists recent runs")
++ @about(t"Lists recent runs")
+
+- def runs(@about(t"only runs in this workspace") workspace: Optional[Text], limit: Int = 20)
++ def runs(@about(t"only runs in this workspace") workspace: Optional[Text], limit: Int = 20)
+
+- :   List[Text] =
++ :   List[Text] =
+
+-   Nil
++   Nil
+
+=   Nil
+- ```
++ ```
+
+- A failure inside a tool is something the model can read and act on. A malformed call is not:
++ Сбой внутри инструмента — это то, что модель может прочитать и на что может отреагировать.
++ Некорректный вызов — нет:
+
+= A failure inside a tool is something the model can read and act on. A malformed call is not:
+=
+- ```tabular
++ ```tabular
+
+- column  When
+- column  The client receives
+- row  a tool throws  a result marked `isError`, carrying the exception's message
+- row  an unknown tool is called  a JSON-RPC error
+- row  a required parameter is omitted  a JSON-RPC error
++ column  Когда
++ column  Клиент получает
++ row  инструмент бросает исключение  результат с пометкой `isError`, несущий сообщение исключения
++ row  вызван неизвестный инструмент  ошибку JSON-RPC
++ row  опущен обязательный параметр  ошибку JSON-RPC
+
+= row  a required parameter is omitted  a JSON-RPC error
+- ```
++ ```
+
+- ### Resources and prompts
++ ### Ресурсы и промпты
+
+- `@resource` serves content at a URI. The content is anything which is streamable as text or
+- bytes. `@prompt` returns a conversation, written with the `human` and `agent` interpolators which
+- [LLM](llm.md) describes. The MIME type of a resource may be given with the annotation's
+- `mimeType`, and is otherwise chosen for it:
++ `@resource` отдаёт содержимое по URI. Содержимым может быть всё, что передаётся потоком как текст
++ или байты. `@prompt` возвращает разговор, записанный интерполяторами `human` и `agent`, которые
++ описаны в [LLM](llm.md). MIME-тип ресурса можно указать параметром аннотации `mimeType`, иначе он
++ выбирается автоматически:
+
+= `mimeType`, and is otherwise chosen for it:
+=
+- ```tabular
++ ```tabular
+
+- column  A resource
+- column  Has the MIME type
+- row  named by a tool's `@ui`  `text/html;profile=mcp-app`
+- row  streamable as text  `text/plain`
+- row  streamable only as bytes  `application/octet-stream`
++ column  Ресурс
++ column  Имеет MIME-тип
++ row  названный в `@ui` инструмента  `text/html;profile=mcp-app`
++ row  передаваемый потоком как текст  `text/plain`
++ row  передаваемый потоком только как байты  `application/octet-stream`
+
+= row  streamable only as bytes  `application/octet-stream`
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- object Documentation extends Mcp.Server():
++ object Documentation extends Mcp.Server():
+
+= object Documentation extends Mcp.Server():
+-   class Session() extends Mcp.Session
++   class Session() extends Mcp.Session
+
+= object Documentation extends Mcp.Server():
+=   class Session() extends Mcp.Session
+-   def initialize(): Session = new Session()
++   def initialize(): Session = new Session()
+
+-   def name: Text = t"documentation"
++   def name: Text = t"documentation"
+
+-   def description: Text = t"The project's documentation"
++   def description: Text = t"The project's documentation"
+
+=   def description: Text = t"The project's documentation"
+-   def version: Semver = v"1.0.0"
++   def version: Semver = v"1.0.0"
+
+=   def description: Text = t"The project's documentation"
+=   def version: Semver = v"1.0.0"
+-   def prompts: List[Mcp.Prompt] = Nil
++   def prompts: List[Mcp.Prompt] = Nil
+
+-   @resource("docs://readme", mimeType = t"text/markdown")
++   @resource("docs://readme", mimeType = t"text/markdown")
+
+-   @about("The project readme")
++   @about("The project readme")
+
+-   def readme: Text = t"# Readme\n\nStart with `make build`."
++   def readme: Text = t"# Readme\n\nStart with `make build`."
+
+-   @prompt
++   @prompt
+
+-   def review(topic: Text): List[Discourse] =
++   def review(topic: Text): List[Discourse] =
+
+-     List(human"Please review the $topic and summarize any problems.")
++     List(human"Please review the $topic and summarize any problems.")
+
+=     List(human"Please review the $topic and summarize any problems.")
+- ```
++ ```
+
+- ### Serving
++ ### Обслуживание
+
+- The server speaks the streamable HTTP transport of MCP: JSON-RPC requests by POST, an event
+- stream by GET, and sessions tracked by a header. It mounts inside an ordinary
+- [HTTP server](http-server.md) handler:
++ Сервер говорит на потоковом HTTP-транспорте MCP: запросы JSON-RPC методом POST, поток событий
++ методом GET и сессии, отслеживаемые по заголовку. Он монтируется внутри обычного
++ обработчика [HTTP-сервера](http-server.md):
+
+= [HTTP server](http-server.md) handler:
+=
+- ```scala
++ ```scala
+
+- def serve(): Unit = supervise:
++ def serve(): Unit = supervise:
+
+-   SocketServer(8080).handle:
++   SocketServer(8080).handle:
+
+-     request.path match
++     request.path match
+
+-       case % /: t"mcp" => AssistantTools.serve
++       case % /: t"mcp" => AssistantTools.serve
+
+-       case _           => Http.Response(Http.NotFound)(t"Not found")
++       case _           => Http.Response(Http.NotFound)(t"Not found")
+
+=       case _           => Http.Response(Http.NotFound)(t"Not found")
+- ```
++ ```
+
+- A client configured with that endpoint discovers the tools, resources and prompts. Everything it
+- sees was derived from the methods it will call.
++ Клиент, настроенный на эту конечную точку, обнаруживает инструменты, ресурсы и
++ промпты. Всё, что он видит, выведено из методов, которые он будет вызывать.
+
+- ### Related
++ ### Связанное
+
+- - [ACP](acp.md) is the sibling protocol, for an editor to drive an agent.
+- - [LLM](llm.md) describes the `human` and `agent` interpolators, and the models which call
+-   these tools.
+- - [RPC](rpc.md) describes the JSON-RPC and server-sent events which the transport uses.
+- - [HTTP server](http-server.md) hosts the endpoint.
+- - [JSON](json.md#schemas) describes the schemas which describe each tool.
+- - [Annotations](annotations.md) describes how annotations are read at compiletime.
++ - [ACP](acp.md) — родственный протокол, с помощью которого редактор управляет агентом.
++ - [LLM](llm.md) описывает интерполяторы `human` и `agent`, а также модели, которые вызывают эти
++   инструменты.
++ - [RPC](rpc.md) описывает JSON-RPC и события, отправляемые сервером, которые использует транспорт.
++ - [HTTP-сервер](http-server.md) размещает конечную точку.
++ - [JSON](json.md#schemas) описывает схемы, которые описывают каждый инструмент.
++ - [Аннотации](annotations.md) описывают, как аннотации читаются во время компиляции.

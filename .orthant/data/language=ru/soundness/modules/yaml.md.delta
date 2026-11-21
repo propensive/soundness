@@ -1,0 +1,934 @@
+orthant 1 language
+
+- ## YAML
++ ## YAML
+
+- ### About
++ ### Обзор
+
+- [YAML](https://en.wikipedia.org/wiki/YAML) is handled in the same way as [JSON](json.md). Text
+- parses into a `Yaml` value. A `Yaml` value converts to and from case classes with
+- [derived][derivation] codecs. The `y"…"` [interpolator] writes YAML which is checked at
+- [compiletime].
++ С [YAML](https://en.wikipedia.org/wiki/YAML) работают так же, как с [JSON](json.md). Текст
++ разбирается в значение `Yaml`. Значение `Yaml` преобразуется в case-классы и обратно кодеками,
++ полученными [деривацией][деривация]. [Интерполятор][интерполятор] `y"…"` записывает YAML,
++ проверяемый во [время компиляции][время компиляции].
+
+- The parser covers the language as it is really used: block and flow styles, quoting, block
+- scalars, tags, anchors and aliases, and streams of several documents. A `Yaml` value is written
+- back out as clean block-style text.
++ Парсер охватывает язык таким, каким им пользуются на самом деле: блочный и потоковый стили,
++ кавычки, блочные скаляры, теги, якоря и псевдонимы, а также потоки из нескольких документов.
++ Значение `Yaml` записывается обратно в виде чистого текста в блочном стиле.
+
+- Navigation, updating through lenses, tracking of source positions, and collecting several
+- decoding errors at once all have the same shape as they do for JSON. Knowing one format is
+- knowing the other.
++ Навигация, обновление через линзы, отслеживание позиций в исходнике и сбор сразу нескольких
++ ошибок декодирования устроены так же, как для JSON. Знать один формат — значит знать и другой.
+
+- ### On YAML
++ ### О YAML
+
+- YAML is the configuration language of half the modern toolchain, and it is notoriously easy to
+- consume badly. Its indentation is structure. Its scalars are typed by guesswork. Its extras,
+- such as anchors, tags and multi-document files, defeat casual parsers. A consumer typically
+- reads it into an untyped tree and picks values out by string key, discovering any mismatch at
+- [runtime].
++ YAML — язык конфигурации половины современного тулчейна, и его печально известно легко
++ потреблять плохо. Его отступы — это структура. Его скаляры типизируются наугад. Его
++ дополнительные возможности, такие как якоря, теги и многодокументные файлы, ставят в тупик
++ небрежные парсеры. Потребитель обычно читает его в нетипизированное дерево и выбирает значения
++ по строковому ключу, обнаруживая любое несоответствие во
++ [время выполнения][время выполнения].
+
+- Here the language is parsed properly, and the untyped tree is then left behind. A document
+- decodes into the case class it should be. If it cannot, a typed error names what was missing or
+- of the wrong type and, with tracking on, the line and column where it sat. Decoding straight to
+- a typed value, through the same derivation as every other format, is
+- [correctness](../../philosophy/correctness.md) with one definition of the data.
++ Здесь язык разбирается как следует, а нетипизированное дерево затем остаётся позади. Документ
++ декодируется в тот case-класс, которым он должен быть. Если это невозможно, типизированная
++ ошибка называет, чего не хватало или что имело неверный тип, а при включённом отслеживании — и
++ строку и столбец, где это находилось. Декодирование сразу в типизированное значение, через ту же
++ деривацию, что и для любого другого формата, — это [корректность](../../philosophy/correctness.md)
++ при одном определении данных.
+
+- Everything comes from the `soundness` package. The samples throw any error as an exception, and
+- the last import lets them print their results:
++ Всё берётся из пакета `soundness`. Примеры выбрасывают любую ошибку как исключение, а последний
++ импорт позволяет им печатать свои результаты:
+
+= the last import lets them print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Parsing and decoding
++ ### Разбор и декодирование
+
+- `read[Yaml]` parses text into a `Yaml` value, and `as` decodes it to a Scala type. Reading
+- straight to a type, with `read[Person in Yaml]`, combines the two steps. Flow style and block
+- style give the same result:
++ `read[Yaml]` разбирает текст в значение `Yaml`, а `as` декодирует его в тип Scala. Чтение сразу
++ в тип, через `read[Person in Yaml]`, объединяет оба шага. Потоковый и блочный стили дают один и
++ тот же результат:
+
+= style give the same result:
+=
+- ```scala
++ ```scala
+
+- case class Person(name: Text, age: Int)
++ case class Person(name: Text, age: Int)
+
+- val hamlet = t"{name: Hamlet, age: 30}".read[Yaml].as[Person]
++ val hamlet = t"{name: Hamlet, age: 30}".read[Yaml].as[Person]
+
+- val horatio = t"name: Horatio\nage: 32".read[Person in Yaml]
++ val horatio = t"name: Horatio\nage: 32".read[Person in Yaml]
+
+= val horatio = t"name: Horatio\nage: 32".read[Person in Yaml]
+- ```
++ ```
+
+= val horatio = t"name: Horatio\nage: 32".read[Person in Yaml]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val horatio = t"name: Horatio\nage: 32".read[Person in Yaml]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val horatio = t"name: Horatio\nage: 32".read[Person in Yaml]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(hamlet.inspect)
++ Out.println(hamlet.inspect)
+
+- Out.println(horatio.inspect)
++ Out.println(horatio.inspect)
+
+= Out.println(horatio.inspect)
+- ```
++ ```
+
+- A document which lacks a required field, or holds a value of the wrong type, does not decode,
+- and the error says why:
++ Документ, в котором нет обязательного поля или есть значение неверного типа, не декодируется, и
++ ошибка говорит почему:
+
+= and the error says why:
+=
+- ```scala fuel
++ ```scala fuel
+
+= and the error says why:
+=
+= ```scala fuel
+- run
++ run
+
+= and the error says why:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= and the error says why:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"name: Ophelia".read[Person in Yaml]
++ t"name: Ophelia".read[Person in Yaml]
+
+= t"name: Ophelia".read[Person in Yaml]
+- ```
++ ```
+
+= t"name: Ophelia".read[Person in Yaml]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= t"name: Ophelia".read[Person in Yaml]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= ```
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= ```
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"{name: Yorick, age: unknown}".read[Person in Yaml]
++ t"{name: Yorick, age: unknown}".read[Person in Yaml]
+
+= t"{name: Yorick, age: unknown}".read[Person in Yaml]
+- ```
++ ```
+
+- A stream of several documents, separated by `---`, reads as a list:
++ Поток из нескольких документов, разделённых `---`, читается как список:
+
+= A stream of several documents, separated by `---`, reads as a list:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A stream of several documents, separated by `---`, reads as a list:
+=
+= ```scala fuel
+- run
++ run
+
+= A stream of several documents, separated by `---`, reads as a list:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"---\n1\n---\n2\n---\n3".read[List[Yaml]].map(_.as[Int]).inspect)
++ Out.println(t"---\n1\n---\n2\n---\n3".read[List[Yaml]].map(_.as[Int]).inspect)
+
+= Out.println(t"---\n1\n---\n2\n---\n3".read[List[Yaml]].map(_.as[Int]).inspect)
+- ```
++ ```
+
+- A source need not be text held in memory. The parser reads straight from a
+- [stream](streams.md) of bytes or characters, refilling as it goes, without first joining the
+- input together. A large document is therefore parsed without ever being held whole, and a `---`
+- marker which is split across two chunks is still a document boundary.
++ Источник не обязан быть текстом в памяти. Парсер читает прямо из [потока данных](streams.md)
++ байтов или символов, пополняя буфер по ходу, не объединяя сначала входные данные. Поэтому
++ большой документ разбирается, ни разу не находясь в памяти целиком, а маркер `---`, разрезанный
++ между двумя чанками, всё равно остаётся границей документа.
+
+- ### Encoding
++ ### Кодирование
+
+- `in[Yaml]` encodes a value as `Yaml`, and `show` writes it as block-style text, in the
+- formatting in scope:
++ `in[Yaml]` кодирует значение как `Yaml`, а `show` записывает его как текст в блочном стиле с
++ форматированием из области видимости:
+
+= formatting in scope:
+=
+- ```scala
++ ```scala
+
+- import formatting.blockYamlFormatting
++ import formatting.blockYamlFormatting
+
+= import formatting.blockYamlFormatting
+- ```
++ ```
+
+= import formatting.blockYamlFormatting
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import formatting.blockYamlFormatting
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import formatting.blockYamlFormatting
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Person(t"Hamlet", 30).in[Yaml].show)
++ Out.println(Person(t"Hamlet", 30).in[Yaml].show)
+
+= Out.println(Person(t"Hamlet", 30).in[Yaml].show)
+- ```
++ ```
+
+- `in[Text over Yaml]` encodes a value straight to YAML text, in the `Yaml.Formatting` in scope,
+- and `in[Data over Yaml]` writes the same text as bytes, in the `Codepage` in scope.
++ `in[Text over Yaml]` кодирует значение сразу в текст YAML с `Yaml.Formatting` из области
++ видимости, а `in[Data over Yaml]` записывает тот же текст в виде байтов в `Codepage` из области
++ видимости.
+
+- The `@name` annotation renames a field in the document, exactly as it does for
+- [JSON](json.md#renaming-fields). An enumeration encodes with a discriminator field, chosen by
+- importing `yamlByTypeDiscriminable` or `yamlByKindDiscriminable`, as a
+- [tagged union](json.md#tagged-unions) does.
++ Аннотация `@name` переименовывает поле в документе точно так же, как для
++ [JSON](json.md#renaming-fields). Перечисление кодируется с полем-дискриминатором, выбираемым
++ импортом `yamlByTypeDiscriminable` или `yamlByKindDiscriminable`, как и
++ [размеченное объединение](json.md#tagged-unions).
+
+- ### Optional fields
++ ### Опциональные поля
+
+- An `Optional` field has three policies, from the package `optionalityOptions`, as
+- [Decoding](decoding.md#policies-for-optional-fields) describes:
++ У поля `Optional` три политики из пакета `optionalityOptions`, как описано в
++ [Декодировании](decoding.md#policies-for-optional-fields):
+
+= [Decoding](decoding.md#policies-for-optional-fields) describes:
+=
+- ```tabular
++ ```tabular
+
+- column  A key which is
+- column  Reads as
+- column  Unless
+- row  omitted from the mapping  `Unset`  `strictYamlAbsence` makes it an error
+- row  given an explicit `null`  `Unset`  `strictYamlNulls` hands it to the inner decoder
+- row  present but rejected by the inner decoder  an error  `lenientYamlFaults` reads it as `Unset`
++ column  Ключ, который
++ column  Читается как
++ column  Если только
++ row  опущен в отображении  `Unset`  `strictYamlAbsence` не делает это ошибкой
++ row  задан явным `null`  `Unset`  `strictYamlNulls` не передаёт его внутреннему декодировщику
++ row  присутствует, но отвергнут внутренним декодировщиком  ошибка  `lenientYamlFaults` не читает его как `Unset`
+
+= row  present but rejected by the inner decoder  an error  `lenientYamlFaults` reads it as `Unset`
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- case class Member(name: Text, age: Optional[Int])
++ case class Member(name: Text, age: Optional[Int])
+
+- val fool = t"name: Fool\nage: null".read[Yaml].as[Member]
++ val fool = t"name: Fool\nage: null".read[Yaml].as[Member]
+
+- val strict =
++ val strict =
+
+-   import optionalityOptions.strictYamlNulls
++   import optionalityOptions.strictYamlNulls
+
+-   capture[Yaml.Error](t"name: Fool\nage: null".read[Yaml].as[Member]).reason
++   capture[Yaml.Error](t"name: Fool\nage: null".read[Yaml].as[Member]).reason
+
+=   capture[Yaml.Error](t"name: Fool\nage: null".read[Yaml].as[Member]).reason
+- ```
++ ```
+
+=   capture[Yaml.Error](t"name: Fool\nage: null".read[Yaml].as[Member]).reason
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   capture[Yaml.Error](t"name: Fool\nage: null".read[Yaml].as[Member]).reason
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   capture[Yaml.Error](t"name: Fool\nage: null".read[Yaml].as[Member]).reason
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(fool.inspect)
++ Out.println(fool.inspect)
+
+- Out.println(strict.inspect)
++ Out.println(strict.inspect)
+
+= Out.println(strict.inspect)
+- ```
++ ```
+
+- ### Scalars, quoting and block styles
++ ### Скаляры, кавычки и блочные стили
+
+- Most of YAML's surprises live in its scalars. Each style is handled as the specification says:
++ Большинство сюрпризов YAML живёт в его скалярах. Каждый стиль обрабатывается так, как говорит
++ спецификация:
+
+= Most of YAML's surprises live in its scalars. Each style is handled as the specification says:
+=
+- ```tabular
++ ```tabular
+
+- column  Scalar
+- column  Resolves as
+- row  plain `true`  a boolean
+- row  plain `42`  an integer
+- row  plain `~` or `null`  a null
+- row  `'…'`, single-quoted  text, taking no escapes; a quote is doubled to include one
+- row  `"…"`, double-quoted  text, taking the full escape set
++ column  Скаляр
++ column  Разрешается как
++ row  простой `true`  логическое значение
++ row  простой `42`  целое число
++ row  простой `~` или `null`  null
++ row  `'…'`, в одинарных кавычках  текст без экранирования; чтобы включить кавычку, её удваивают
++ row  `"…"`, в двойных кавычках  текст с полным набором экранирований
+
+= row  `"…"`, double-quoted  text, taking the full escape set
+- ```
++ ```
+
+- A quoted scalar is always text, so `"42"` stays a string:
++ Скаляр в кавычках — всегда текст, поэтому `"42"` остаётся строкой:
+
+= A quoted scalar is always text, so `"42"` stays a string:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A quoted scalar is always text, so `"42"` stays a string:
+=
+= ```scala fuel
+- run
++ run
+
+= A quoted scalar is always text, so `"42"` stays a string:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= A quoted scalar is always text, so `"42"` stays a string:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"""age: "42"""".read[Yaml].as[Map[Text, Int]]
++ t"""age: "42"""".read[Yaml].as[Map[Text, Int]]
+
+= t"""age: "42"""".read[Yaml].as[Map[Text, Int]]
+- ```
++ ```
+
+- A block scalar carries its own handling of newlines. It has a style indicator, and an optional
+- *chomping* indicator for the trailing newline:
++ Блочный скаляр сам обрабатывает переводы строк. У него есть индикатор стиля и необязательный
++ индикатор *обрезки* для завершающего перевода строки:
+
+= *chomping* indicator for the trailing newline:
+=
+- ```tabular
++ ```tabular
+
+- column  Indicator
+- column  Effect
+- row  `|`  keeps line breaks
+- row  `>`  folds line breaks into spaces
+- row  no chomping indicator  keeps one trailing newline
+- row  `-`  strips the trailing newline
+- row  `+`  keeps every trailing newline
++ column  Индикатор
++ column  Действие
++ row  `|`  сохраняет переводы строк
++ row  `>`  сворачивает переводы строк в пробелы
++ row  без индикатора обрезки  сохраняет один завершающий перевод строки
++ row  `-`  удаляет завершающий перевод строки
++ row  `+`  сохраняет все завершающие переводы строк
+
+= row  `+`  keeps every trailing newline
+- ```
++ ```
+
+= row  `+`  keeps every trailing newline
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= row  `+`  keeps every trailing newline
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= row  `+`  keeps every trailing newline
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"text: |\n  line1\n  line2".read[Yaml].as[Map[Text, Text]].inspect)
++ Out.println(t"text: |\n  line1\n  line2".read[Yaml].as[Map[Text, Text]].inspect)
+
+- Out.println(t"text: >\n  line1\n  line2".read[Yaml].as[Map[Text, Text]].inspect)
++ Out.println(t"text: >\n  line1\n  line2".read[Yaml].as[Map[Text, Text]].inspect)
+
+- Out.println(t"text: |-\n  line1\n  line2".read[Yaml].as[Map[Text, Text]].inspect)
++ Out.println(t"text: |-\n  line1\n  line2".read[Yaml].as[Map[Text, Text]].inspect)
+
+= Out.println(t"text: |-\n  line1\n  line2".read[Yaml].as[Map[Text, Text]].inspect)
+- ```
++ ```
+
+- Comments are ignored wherever they may appear, whether after a scalar or on a line of their
+- own. Leading whitespace, trailing whitespace and whitespace at the end of a line are all
+- treated as the specification requires.
++ Комментарии игнорируются везде, где они могут встретиться, — после скаляра или на отдельной
++ строке. Начальные пробелы, завершающие пробелы и пробелы в конце строки обрабатываются так, как
++ требует спецификация.
+
+- ### Tags
++ ### Теги
+
+- A tag overrides the type which a scalar's content would otherwise be given. It is how YAML says
+- "this number is a string", and the reverse:
++ Тег переопределяет тип, который иначе получило бы содержимое скаляра. Так YAML говорит «это
++ число — строка», и наоборот:
+
+= "this number is a string", and the reverse:
+=
+- ```tabular
++ ```tabular
+
+- column  Tag
+- column  Resolves a scalar as
+- row  `!!str`, `!`, `!!`  text
+- row  `!!int`  an integer
+- row  `!!float`  a decimal
+- row  `!!bool`  a boolean, from `true`, `True` or `TRUE`, and likewise `false`
+- row  `!!null`  a null
++ column  Тег
++ column  Разрешает скаляр как
++ row  `!!str`, `!`, `!!`  текст
++ row  `!!int`  целое число
++ row  `!!float`  десятичное число
++ row  `!!bool`  логическое значение из `true`, `True` или `TRUE`, и так же для `false`
++ row  `!!null`  null
+
+= row  `!!null`  a null
+- ```
++ ```
+
+= row  `!!null`  a null
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= row  `!!null`  a null
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= row  `!!null`  a null
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"!!str 42".read[Yaml].as[Text])
++ Out.println(t"!!str 42".read[Yaml].as[Text])
+
+- Out.println(t"!!int \"42\"".read[Yaml].as[Int].show)
++ Out.println(t"!!int \"42\"".read[Yaml].as[Int].show)
+
+- Out.println(t"!!float 7".read[Yaml].as[Double].inspect)
++ Out.println(t"!!float 7".read[Yaml].as[Double].inspect)
+
+= Out.println(t"!!float 7".read[Yaml].as[Double].inspect)
+- ```
++ ```
+
+- ### Anchors and aliases
++ ### Якоря и псевдонимы
+
+- An anchor names a node, and an alias refers back to it, so a document need not repeat itself.
+- Aliases are resolved as the document is read, whatever the anchored node was: a scalar, a flow
+- sequence or mapping, or a whole block.
++ Якорь называет узел, а псевдоним ссылается на него обратно, так что документу не нужно
++ повторяться. Псевдонимы разрешаются при чтении документа, каким бы ни был узел с якорем:
++ скаляром, потоковой последовательностью или отображением или целым блоком.
+
+= sequence or mapping, or a whole block.
+=
+- ```scala
++ ```scala
+
+- case class Inner(n: Int)
++ case class Inner(n: Int)
+
+= case class Inner(n: Int)
+- ```
++ ```
+
+= case class Inner(n: Int)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Inner(n: Int)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Inner(n: Int)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"a: &x 1\nb: *x".read[Yaml].as[Map[Text, Int]].inspect)
++ Out.println(t"a: &x 1\nb: *x".read[Yaml].as[Map[Text, Int]].inspect)
+
+- Out.println(t"defaults: &d\n  n: 7\nuse: *d".read[Yaml].as[Map[Text, Inner]].inspect)
++ Out.println(t"defaults: &d\n  n: 7\nuse: *d".read[Yaml].as[Map[Text, Inner]].inspect)
+
+= Out.println(t"defaults: &d\n  n: 7\nuse: *d".read[Yaml].as[Map[Text, Inner]].inspect)
+- ```
++ ```
+
+- This is what makes YAML configuration files terse, and what makes a naive parser get them
+- wrong.
++ Именно это делает конфигурационные файлы YAML краткими, и именно из-за этого наивный парсер
++ читает их неправильно.
+
+- ### Writing YAML literally
++ ### Запись YAML литералом
+
+- The `y"…"` interpolator writes YAML directly. It is checked at compiletime, and values are
+- substituted into it. The same literal takes a document apart in a pattern, as
+- [`j"…"`](json.md#matching-json) does:
++ Интерполятор `y"…"` записывает YAML напрямую. Он проверяется во время компиляции, и в него
++ подставляются значения. Тот же литерал разбирает документ на части в образце, как и
++ [`j"…"`](json.md#matching-json):
+
+= [`j"…"`](json.md#matching-json) does:
+=
+- ```scala
++ ```scala
+
+- val name = t"Hamlet"
++ val name = t"Hamlet"
+
+- val person = y"""
++ val person = y"""
+
+-   name: $name
++   name: $name
+
+-   age: 30
++   age: 30
+
+- """.as[Person]
++ """.as[Person]
+
+= """.as[Person]
+- ```
++ ```
+
+= """.as[Person]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= """.as[Person]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= """.as[Person]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(person.inspect)
++ Out.println(person.inspect)
+
+= Out.println(person.inspect)
+- ```
++ ```
+
+- ### Navigating and updating
++ ### Навигация и обновление
+
+- With dynamic access enabled, a field is read as a member, and assigning to a field gives a new
+- document. Assigning `Unset` removes a field:
++ При включённом динамическом доступе поле читается как член, а присваивание полю даёт новый
++ документ. Присваивание `Unset` удаляет поле:
+
+= document. Assigning `Unset` removes a field:
+=
+- ```scala
++ ```scala
+
+- import dynamicAccess.dynamicYaml
++ import dynamicAccess.dynamicYaml
+
+- val doc = t"{name: Hamlet, age: 30}".read[Yaml]
++ val doc = t"{name: Hamlet, age: 30}".read[Yaml]
+
+= val doc = t"{name: Hamlet, age: 30}".read[Yaml]
+- ```
++ ```
+
+= val doc = t"{name: Hamlet, age: 30}".read[Yaml]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val doc = t"{name: Hamlet, age: 30}".read[Yaml]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val doc = t"{name: Hamlet, age: 30}".read[Yaml]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(doc.name.as[Text])
++ Out.println(doc.name.as[Text])
+
+- Out.println((doc.age = 31).show)
++ Out.println((doc.age = 31).show)
+
+= Out.println((doc.age = 31).show)
+- ```
++ ```
+
+- The import grants the permission `Yaml is Dynamical` to the rest of its scope.
+- `dynamically[Yaml]:` grants it to a single block instead, as
+- [JSON](json.md#fields-as-members) describes.
++ Импорт даёт разрешение `Yaml is Dynamical` остальной части своей области видимости.
++ `dynamically[Yaml]:` вместо этого даёт его одному блоку, как описано в
++ [JSON](json.md#fields-as-members).
+
+- A deeper change goes through a [lens](optics.md), with optics such as `Each` and `Filter` to
+- reach many elements at once:
++ Более глубокое изменение проходит через [линзу](optics.md) с оптиками вроде `Each` и `Filter`,
++ позволяющими достать сразу много элементов:
+
+= reach many elements at once:
+=
+- ```scala
++ ```scala
+
+- val older = doc.lens(_.age = 31.in[Yaml])
++ val older = doc.lens(_.age = 31.in[Yaml])
+
+= val older = doc.lens(_.age = 31.in[Yaml])
+- ```
++ ```
+
+- ### Positions and accumulated errors
++ ### Позиции и накопленные ошибки
+
+- Bringing `parsing.trackPositions` into scope switches on tracking, as it does for
+- [JSON](json.md#source-positions). Every value then remembers its line and column, so a decoding
+- failure can point into the source file. That is the difference between "field missing" and
+- "field missing at line 12".
++ Внесение `parsing.trackPositions` в область видимости включает отслеживание, как и для
++ [JSON](json.md#source-positions). Тогда каждое значение помнит свою строку и столбец, так что
++ неудача декодирования может указать на место в исходном файле. В этом разница между «поле
++ отсутствует» и «поле отсутствует в строке 12».
+
+= "field missing at line 12".
+=
+- ```scala
++ ```scala
+
+- import parsing.trackPositions
++ import parsing.trackPositions
+
+- val tracked = t"{a: 1, b: 2}".read[Yaml]
++ val tracked = t"{a: 1, b: 2}".read[Yaml]
+
+- val position = tracked.locate(YamlPath()(t"a"))
++ val position = tracked.locate(YamlPath()(t"a"))
+
+= val position = tracked.locate(YamlPath()(t"a"))
+- ```
++ ```
+
+- Under a strategy which [accumulates failures](errors.md#accumulating-failures), decoding
+- collects every fault in a document instead of stopping at the first. Each is tagged with its
+- path, such as `#/age` or `#/email`, so the problems of a whole configuration file are reported
+- together.
++ Под стратегией, которая [накапливает неудачи](errors.md#accumulating-failures), декодирование
++ собирает все сбои в документе, а не останавливается на первом. Каждый помечается своим путём,
++ например `#/age` или `#/email`, поэтому о проблемах всего конфигурационного файла сообщается
++ вместе.
+
+- ### Numbers
++ ### Числа
+
+- A YAML number, like a JSON one, has no limit on its precision. A number beyond the range of a
+- `Long` or a `Double` is kept exactly, as a binary-coded decimal. A long identifier or a precise
+- decimal read from a configuration file is therefore never silently rounded on the way through.
++ Число YAML, как и число JSON, не ограничено в точности. Число за пределами диапазона `Long` или
++ `Double` хранится точно, в двоично-десятичном виде. Поэтому длинный идентификатор или точное
++ десятичное число, прочитанное из конфигурационного файла, никогда не округляется по дороге
++ молча.
+
+- ### Skipping the tree
++ ### В обход дерева
+
+- The conversions above all go through the tree. Text is parsed to a `Yaml` and decoded, or a
+- value is encoded to a `Yaml` and written out. A record can instead carry a *direct* parser and
+- printer, derived once into its companion with `derives Yaml.Direct`. A single import then
+- selects the route for every record in scope, as it does for
++ Все преобразования выше проходят через дерево. Текст разбирается в `Yaml` и декодируется, или
++ значение кодируется в `Yaml` и записывается. Вместо этого запись может нести *прямой* парсер и
++ принтер, выведенные один раз в её компаньон через `derives Yaml.Direct`. Тогда один импорт
++ выбирает путь для каждой записи в области видимости, как и для
+
+- [JSON](json.md#skipping-the-tree):
++ [JSON](json.md#skipping-the-tree):
+
+= [JSON](json.md#skipping-the-tree):
+=
+- ```tabular
++ ```tabular
+
+- column  Import
+- column  For a record
+- column  For any other type
+- row  `codecs.direct`  a direct parser and printer  the tree codecs, unless it has a direct instance of its own
+- row  `codecs.derived`  the tree codecs, even where a direct instance is in scope  the tree codecs
+- row  `codecs.strict`  a direct parser and printer  a compile error naming the type, unless it has a direct instance of its own
++ column  Импорт
++ column  Для записи
++ column  Для любого другого типа
++ row  `codecs.direct`  прямой парсер и принтер  кодеки дерева, если у типа нет собственного прямого экземпляра
++ row  `codecs.derived`  кодеки дерева, даже если прямой экземпляр есть в области видимости  кодеки дерева
++ row  `codecs.strict`  прямой парсер и принтер  ошибка компиляции с именем типа, если у него нет собственного прямого экземпляра
+
+= row  `codecs.strict`  a direct parser and printer  a compile error naming the type, unless it has a direct instance of its own
+- ```
++ ```
+
+- A type which is not a record is an enumeration or a sealed hierarchy. The modes are
+- alternatives, so import one at a time.
++ Тип, который не является записью, — это перечисление или запечатанная иерархия. Эти режимы —
++ альтернативы, поэтому импортируйте по одному.
+
+- A direct printer writes a record's text straight from its fields, with no tree built. The text
+- is the same as `show` writes.
++ Прямой принтер пишет текст записи прямо из её полей, не строя дерево. Текст тот же, что
++ записывает `show`.
+
+- A direct parser reads the fields straight from the nodes of the parsed document. No `Yaml` is
+- built around any of them, and no codec is looked up for each field. The document is still
+- parsed whole first, though. Anchors and aliases mean that a node may refer back to any earlier
+- one, so a record cannot be read before the whole document is held.
++ Прямой парсер читает поля прямо из узлов разобранного документа. Вокруг них не строится ни
++ одного `Yaml`, и ни для одного поля не ищется кодек. Однако документ всё равно сначала
++ разбирается целиком. Якоря и псевдонимы означают, что узел может ссылаться на любой более
++ ранний, поэтому запись нельзя прочитать, пока весь документ не находится в памяти.
+
+- ### Conformance
++ ### Соответствие стандарту
+
+- The parser is checked against the [YAML test suite](https://github.com/yaml/yaml-test-suite),
+- the community's shared collection of cases, including those designed to break parsers. Cases
+- outside the supported subset are recorded as known gaps, not quietly skipped, so the coverage
+- is stated and not merely claimed.
++ Парсер проверяется на [наборе тестов YAML](https://github.com/yaml/yaml-test-suite) — общей
++ коллекции случаев сообщества, включая специально придуманные, чтобы ломать парсеры. Случаи вне
++ поддерживаемого подмножества записываются как известные пробелы, а не тихо пропускаются, так
++ что покрытие заявлено явно, а не просто утверждается.
+
+- ### YAML over HTTP
++ ### YAML через HTTP
+
+- A `Yaml` value is a request body or a response body, with the media type `application/yaml`,
+- and a body is parsed back to `Yaml` on arrival. A YAML API is therefore consumed and offered
+- with the same code as a [JSON one](json.md#json-over-http). Only the format's type differs.
++ Значение `Yaml` — это тело запроса или тело ответа с медиатипом `application/yaml`, а тело при
++ получении разбирается обратно в `Yaml`. Поэтому API на YAML потребляется и предоставляется тем
++ же кодом, что и [API на JSON](json.md#json-over-http). Отличается только тип формата.
+
+- ### Related
++ ### Связанное
+
+- - [Annotations](annotations.md), [CBOR](cbor.md), [CSV](csv.md), [XML](xml.md), [network addresses](network-addresses.md) and [OpenAPI](openapi.md) share YAML's codecs and carry its documents.
++ - [Аннотации](annotations.md), [CBOR](cbor.md), [CSV](csv.md), [XML](xml.md), [сетевые адреса](network-addresses.md) и [OpenAPI](openapi.md) разделяют кодеки YAML и переносят его документы.

@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.17.2` — Type has multiple `map` methods
++ # `↯/s.17.2` — У типа несколько методов `map`
+
+- Raised at compile time by Mercator's `functor` macro when the
+- target type has more than one `map` overload, and the macro cannot
+- choose between them.
++ Порождается во время компиляции макросом `functor` из Mercator, когда у
++ целевого типа больше одной перегрузки `map` и макрос не может
++ выбрать между ними.
+
+- ## Cause
++ ## Причина
+
+- Multiple `map` overloads are ambiguous for derivation purposes.
++ Несколько перегрузок `map` неоднозначны для целей деривации.
+
+- ## Example message
++ ## Пример сообщения
+
+=
+- ```
++ ```
+
+- [↯/s.17.2] the type Play has more than one possible map method
++ [↯/s.17.2] the type Play has more than one possible map method
+
+= [↯/s.17.2] the type Play has more than one possible map method
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- Remove or rename overloads, or supply a `Functor` instance manually.
++ Удалите или переименуйте перегрузки либо предоставьте экземпляр `Functor` вручную.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/mercator/src/core/mercator.internal.scala`
++ - Исходный код: `lib/mercator/src/core/mercator.internal.scala`

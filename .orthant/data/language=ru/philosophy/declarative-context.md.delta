@@ -1,0 +1,175 @@
+orthant 1 language
+
+- # Declarative Context
++ # Декларативный контекст
+
+- Soundness configures behaviour declaratively, through contextual values in scope rather
+- than through arguments threaded by hand or flags consulted at runtime. Choosing an
+- output format, an error strategy, a character encoding, or a particular implementation
+- is a matter of bringing the right `given` into scope, after which the choice applies
+- automatically to everything within that scope. Because the configuration is
+- declarative, it is independent of control flow and easy to reason about: what is in
+- scope determines what happens, wherever the affected code runs.
++ Soundness настраивает поведение декларативно, через контекстные значения в области видимости, а
++ не через аргументы, протаскиваемые вручную, или флаги, проверяемые во время выполнения. Выбор
++ формата вывода, стратегии обработки ошибок, кодировки символов или конкретной реализации
++ сводится к тому, чтобы ввести в область видимости нужный `given`, после чего выбор
++ автоматически применяется ко всему в этой области видимости. Поскольку конфигурация
++ декларативна, она не зависит от потока управления и о ней легко рассуждать: что находится в
++ области видимости, то и определяет происходящее, где бы ни выполнялся затронутый код.
+
+- The power of the approach is that scope is a precise instrument. A given imported at the
+- top of a file configures the file; one declared inside a block configures only that
+- block, overriding any wider choice; and a `locally` block confines an exception to a few
+- lines. [Delimited scopes](delimited-scopes.md#scope-is-a-precise-instrument) shows all three in one
+- example.
++ Сила подхода в том, что область видимости — точный инструмент. Given, импортированный в начале
++ файла, настраивает файл; объявленный внутри блока настраивает только этот блок, перекрывая
++ любой более широкий выбор; а блок `locally` ограничивает исключение несколькими строками.
++ [Ограниченные области видимости](delimited-scopes.md#scope-is-a-precise-instrument) показывают
++ все три случая в одном примере.
+
+- Configuration composes like the code it configures. A project defines its house choices
+- once and shares them with `export`, so `import myproject.conventions.*` equips any file
+- with the team's error strategy, encodings and formats — configuration as a library,
+- versioned and reviewed like one.
++ Конфигурация компонуется, как и код, который она настраивает. Проект один раз определяет свои
++ фирменные выборы и разделяет их через `export`, так что `import myproject.conventions.*`
++ снабжает любой файл стратегией обработки ошибок, кодировками и форматами команды —
++ конфигурация как библиотека, версионируемая и проверяемая на ревью, как библиотека.
+
+- Two pieces of tooling keep the approach honest. Contextual values that represent
+- capabilities or configuration extend the `Findable` marker, which the Soundness compiler
+- plugin uses to distinguish *findable* context — things a user is expected to supply or
+- import — from internal machinery. And when a required given is missing, importing
+- `explainMissingContext` turns the compiler's bare "no implicit found" into a diagnosis:
+- it searches the classpath for the instances that *would* satisfy the search and names
+- the imports that provide them, so the response to a missing context is a one-line
+- import, not an archaeology session.
++ Два инструмента сохраняют подход честным. Контекстные значения, представляющие возможности или
++ конфигурацию, расширяют маркер `Findable`, по которому плагин компилятора Soundness отличает
++ *находимый* контекст — то, что пользователь должен предоставить или импортировать, — от
++ внутренних механизмов. А когда требуемый given отсутствует, импорт `explainMissingContext`
++ превращает голое «no implicit found» компилятора в диагноз: он ищет в пути классов экземпляры,
++ которые *удовлетворили бы* поиск, и называет импорты, которые их предоставляют, так что ответом
++ на отсутствующий контекст становится импорт в одну строку, а не археологические раскопки.
+
+- ## What goes into scope
++ ## Что попадает в область видимости
+
+- The range is worth seeing at once, because the uniformity is the point. A single
+- mechanism carries choices that other designs would spread across constructor arguments,
+- global settings, builder methods and runtime flags:
++ Диапазон стоит увидеть целиком, потому что смысл именно в единообразии. Один механизм несёт
++ выборы, которые другие дизайны разнесли бы по аргументам конструкторов, глобальным настройкам,
++ методам построителей и флагам времени выполнения:
+
+- ```tabular
++ ```tabular
+
+- column  Choice
+- column  Import
+- row  what a failure does  `strategies.throwUnsafely`
+- row  how text becomes bytes  `codepages.utf8Codepage`
+- row  how JSON is rendered  `formatting.compactJsonFormatting`
+- row  how dates are shown  `dateFormats.iso8601DateFormat`
+- row  how a boolean is shown  `affirmations.yesNoAffirmation`
+- row  what a task runs on  `threads.virtualThreads`
+- row  what happens to unfinished tasks  `probates.cancelProbate`
+- row  which HTTP transport is used  `httpBackends.soundnessHttp`
+- row  which filesystem implementation  `filesystemBackends.javaBaseFilesystem`
+- row  which calendar a date literal means  `calendars.gregorianCalendar`
++ column  Выбор
++ column  Импорт
++ row  что делает сбой  `strategies.throwUnsafely`
++ row  как текст становится байтами  `codepages.utf8Codepage`
++ row  как отображается JSON  `formatting.compactJsonFormatting`
++ row  как показываются даты  `dateFormats.iso8601DateFormat`
++ row  как показывается булево значение  `affirmations.yesNoAffirmation`
++ row  на чём выполняется задача  `threads.virtualThreads`
++ row  что происходит с незавершёнными задачами  `probates.cancelProbate`
++ row  какой транспорт HTTP используется  `httpBackends.soundnessHttp`
++ row  какая реализация файловой системы  `filesystemBackends.javaBaseFilesystem`
++ row  какой календарь означает литерал даты  `calendars.gregorianCalendar`
+
+- ```
++ ```
+
+- One idiom to learn, and the same reasoning — "what is in scope determines what happens" —
+- applies to all of them.
++ Одна идиома, которую нужно выучить, и одно и то же рассуждение — «что в области видимости, то и
++ определяет происходящее» — применимо ко всем ним.
+
+- ## Naming makes the choice legible
++ ## Именование делает выбор читаемым
+
+- A given is named for what it *selects*, not for its type, because the import line is what
+- a reader sees. `import strategies.throwUnsafely` says something about the code below it;
+- `import strategies.given` would not.
++ Given называется по тому, что он *выбирает*, а не по своему типу, потому что читатель видит
++ строку импорта. `import strategies.throwUnsafely` что-то говорит о коде под ним;
++ `import strategies.given` — нет.
+
+- This is why the convention matters more here than elsewhere: a contextual value is
+- invoked without being written at the call site, so the import is the only place its
+- choice is visible. A poorly-named given makes contextual configuration exactly as opaque
+- as its critics claim it is.
++ Вот почему соглашение здесь важнее, чем где-либо ещё: контекстное значение задействуется, не
++ будучи написанным в месте вызова, поэтому импорт — единственное место, где виден его выбор.
++ Плохо названный given делает контекстную конфигурацию ровно настолько непрозрачной, насколько
++ её такой считают критики.
+
+- ## What it costs
++ ## Чего это стоит
+
+- The honest objection to contextual configuration is action at a distance, and it is not
+- wrong.
++ Честное возражение против контекстной конфигурации — действие на расстоянии, и оно не лишено
++ оснований.
+
+- **The effect is not local to the call site.** A `json.show` renders differently depending
+- on an import possibly a hundred lines above, and nothing at the call site says so. A
+- reader must know to look. The mitigation is scope precision — the narrower the scope, the
+- closer the given is to what it affects — but the tension is real, and a given imported
+- file-wide genuinely is action at a distance.
++ **Эффект не локален для места вызова.** `json.show` отображает по-разному в зависимости от
++ импорта, возможно, на сотню строк выше, и ничто в месте вызова об этом не говорит. Читатель
++ должен знать, что туда надо посмотреть. Смягчение — точность области видимости: чем уже область,
++ тем ближе given к тому, на что он влияет, — но напряжение реально, и given, импортированный на
++ весь файл, действительно является действием на расстоянии.
+
+- **Ambiguity is a compile error, and a confusing one.** Two givens of the same type in
+- scope make the code ambiguous, which is safe but reported in terms of implicit
+- resolution rather than "you have chosen two JSON formats". Importing two convention
+- bundles that disagree produces exactly this.
++ **Неоднозначность — ошибка компиляции, и запутанная.** Два given одного типа в области
++ видимости делают код неоднозначным, что безопасно, но сообщается в терминах разрешения неявных
++ значений, а не как «вы выбрали два формата JSON». Именно это и получается при импорте двух
++ наборов соглашений, которые расходятся.
+
+- **Refactoring can silently change behaviour.** Moving a function to another file moves it
+- out of one set of imports and into another. The types still check; the behaviour may
+- differ. This is the sharpest edge of the approach, and the reason a project's conventions
+- are better collected into one shared object than assembled ad hoc per file.
++ **Рефакторинг может молча изменить поведение.** Перенос функции в другой файл выводит её из
++ одного набора импортов в другой. Типы по-прежнему сходятся; поведение может отличаться. Это
++ самая острая грань подхода и причина, по которой соглашения проекта лучше собирать в один общий
++ объект, чем составлять наспех для каждого файла.
+
+- **There is no runtime override.** Because the configuration is resolved as the code
+- compiles, it cannot be changed by a command-line flag or a configuration file without
+- threading the decision explicitly. Where runtime configurability is genuinely wanted, the
+- value must be an ordinary parameter — and recognising which of the two a given choice
+- needs is a design decision, not an automatic one.
++ **Переопределения во время выполнения нет.** Поскольку конфигурация разрешается при компиляции
++ кода, её нельзя изменить флагом командной строки или файлом конфигурации, не протаскивая
++ решение явно. Где действительно нужна настраиваемость во время выполнения, значение должно быть
++ обычным параметром, — и распознать, что из двух нужно конкретному выбору, — это проектное
++ решение, а не автоматическое.
+
+- See [delimited scopes](delimited-scopes.md) for how the scope is established, and
+- [honest signatures](honest-signatures.md) for why the requirements being in the signature
+- is what makes this legible at all.
++ О том, как устанавливается область видимости, см.
++ [ограниченные области видимости](delimited-scopes.md), а о том, почему именно присутствие
++ требований в сигнатуре вообще делает это читаемым, — [честные сигнатуры](honest-signatures.md).

@@ -1,0 +1,46 @@
+orthant 1 language
+
+- # `↯/s.31.1` — `Reference.Error`
++ # `↯/s.31.1` — `Reference.Error`
+
+- Raised by Gnossienne when a reference cannot be resolved.
++ Порождается Gnossienne, когда ссылку невозможно разрешить.
+
+- ## Cause
++ ## Причина
+
+- A reference token (typically embedded in markdown or another
+- structured document) could not be resolved to a target. The
+- constructor takes the offending `reference` text along with a
+- `reason: Reason`; the rendered message is `the reference $reference
++ Токен ссылки (обычно встроенный в markdown или другой
++ структурированный документ) не удалось разрешить в цель.
++ Конструктор принимает ошибочный текст `reference` вместе с
++ `reason: Reason`; отображаемое сообщение — `the reference $reference
+
+- could not be resolved because $reason`.
++ could not be resolved because $reason`.
+
+- ## Variants
++ ## Варианты
+
+- ### `↯/s.31.1.1` — `NotFound`
++ ### `↯/s.31.1.1` — `NotFound`
+
+- No target with the given reference was present in the resolver's
+- store.
++ Цели с данной ссылкой не оказалось в хранилище резолвера.
+
+- **Example.** `[↯/s.31.1.1] the reference hamlet.md could not be resolved because no target with that reference was found in the store`
++ **Пример.** `[↯/s.31.1.1] the reference hamlet.md could not be resolved because no target with that reference was found in the store`
+
+- **Resolution.** Confirm the target exists and the reference text
+- matches it exactly (case sensitivity, anchors, etc.).
++ **Решение.** Убедитесь, что цель существует и что текст ссылки
++ точно ей соответствует (с учётом регистра, якорей и т. п.).
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/gnossienne/src/core/gnossienne.Reference.scala`
++ - Исходник: `lib/gnossienne/src/core/gnossienne.Reference.scala`

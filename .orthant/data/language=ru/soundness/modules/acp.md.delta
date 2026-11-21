@@ -1,0 +1,526 @@
+orthant 1 language
+
+- ## ACP
++ ## ACP
+
+- ### About
++ ### Обзор
+
+- The [Agent Client Protocol](https://agentclientprotocol.com/) is how an editor, or any program,
+- drives a coding agent. Claude Code, Gemini CLI and a growing set of others speak it over the
+- agent's standard input and output.
++ [Agent Client Protocol](https://agentclientprotocol.com/) — это способ, которым редактор или
++ любая программа управляет агентом для написания кода. Claude Code, Gemini CLI и растущий ряд
++ других говорят на нём через стандартный ввод и вывод агента.
+
+- The client half of the protocol, version 1, is implemented here for use from a program. It
+- spawns an agent, opens a session, sends a prompt, and watches the agent's work stream back as
+- messages, thoughts, tool calls and plans. Meanwhile it answers the requests which the agent
+- makes of it: permission to act, access to files, and terminals.
++ Здесь реализована клиентская половина протокола, версии 1, для использования из программы.
++ Она запускает агента, открывает сессию, отправляет промпт и следит за тем, как работа агента
++ возвращается потоком сообщений, размышлений, вызовов инструментов и планов. Тем временем она
++ отвечает на запросы, которые агент делает к ней: разрешение на действие, доступ к файлам и
++ терминалы.
+
+- ### On ACP
++ ### Об ACP
+
+- The protocol is JSON-RPC in both directions at once. The client calls the agent, with
+- `initialize`, `session/new` and `session/prompt`. The agent calls back in the middle of a turn,
+- with a `session/update` notification for every chunk of progress, and with requests which block
+- its work until the client answers. A prompt is therefore not a function call but a *turn*: one
+- long-lived request whose response arrives only after everything the agent did inside it.
++ Протокол — это JSON-RPC сразу в обоих направлениях. Клиент вызывает агента с помощью
++ `initialize`, `session/new` и `session/prompt`. Агент вызывает клиента обратно посреди хода:
++ уведомлением `session/update` для каждой порции прогресса и запросами, которые блокируют его
++ работу, пока клиент не ответит. Поэтому промпт — это не вызов функции, а *ход*: один
++ долгоживущий запрос, ответ на который приходит только после всего, что агент сделал внутри
++ него.
+
+- The turn is modeled directly. `prompt` blocks until the agent reports why the turn ended, while
+- the updates stream concurrently to handlers which were registered before connecting. The
+- capabilities which the client advertises are derived from those registrations, so the
+- declaration can never disagree with the implementation. Every request and notification is a
+- typed value, not a JSON document, in the spirit of
+- [honest signatures](../../philosophy/honest-signatures.md).
++ Ход моделируется напрямую. `prompt` блокируется, пока агент не сообщит, почему ход
++ завершился, а обновления тем временем поступают потоком к обработчикам, зарегистрированным до
++ подключения. Функции, которые объявляет клиент, выводятся из этих регистраций, поэтому
++ объявление никогда не может разойтись с реализацией. Каждый запрос и каждое уведомление — это
++ типизированное значение, а не документ JSON, в духе
++ [честных сигнатур](../../philosophy/honest-signatures.md).
+
+- A connection needs a few [capabilities][capability] of its own: a way to run the reader and
+- writer tasks, an error [strategy], a working directory for the agent, and somewhere to print:
++ Подключению нужно несколько собственных [возможностей][возможность]: способ запускать задачи
++ читателя и писателя, [стратегия] обработки ошибок, рабочий каталог для агента и место для
++ вывода:
+
+- ```scala fuel
++ ```scala fuel
+
+- feature experimental.captureChecking
++ feature experimental.captureChecking
+
+- ##
++ ##
+
+- import soundness.*
++ import soundness.*
+
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import stdios.javaLangSystemStdio
++ import stdios.javaLangSystemStdio
+
+- import termcapDefinitions.basicTermcap
++ import termcapDefinitions.basicTermcap
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import workingDirectories.javaBaseWorkingDirectory
++ import workingDirectories.javaBaseWorkingDirectory
+
+= import workingDirectories.javaBaseWorkingDirectory
+- ```
++ ```
+
+- The samples on this page drive an agent in another process, so they are compiled but not run.
++ Примеры на этой странице управляют агентом в другом процессе, поэтому они компилируются, но
++ не запускаются.
+
+- ### Connecting
++ ### Подключение
+
+- `Acp.connect` spawns the agent, exchanges `initialize`, and lends a connection for the duration
+- of a block. The first block registers handlers. The second holds the live connection, which is
+- reached through `Acp.connection`. The exchange runs as concurrent tasks, so the whole thing sits
+- inside a `supervise` block:
++ `Acp.connect` запускает агента, обменивается `initialize` и одалживает подключение на время
++ выполнения блока. Первый блок регистрирует обработчики. Второй держит живое подключение,
++ доступное через `Acp.connection`. Обмен выполняется параллельными задачами, поэтому всё целиком
++ находится внутри блока `supervise`:
+
+= inside a `supervise` block:
+=
+- ```scala
++ ```scala
+
+- supervise:
++ supervise:
+
+-   Acp.connect(Acp.Endpoint(sh"claude-code-acp")):
++   Acp.connect(Acp.Endpoint(sh"claude-code-acp")):
+
+-     Acp.updated:
++     Acp.updated:
+
+-       Acp.update match
++       Acp.update match
+
+-         case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
++         case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
+
+-         case other                                           => ()
++         case other                                           => ()
+
+-     Acp.permission:
++     Acp.permission:
+
+-       Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowOnce).head
++       Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowOnce).head
+
+-       . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
++       . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
+
+-   . apply:
++   . apply:
+
+-       val session = Acp.connection.newSession(summon[WorkingDirectory].directory())
++       val session = Acp.connection.newSession(summon[WorkingDirectory].directory())
+
+-       Acp.connection.prompt(session.sessionId, t"Fix the failing test")
++       Acp.connection.prompt(session.sessionId, t"Fix the failing test")
+
+=       Acp.connection.prompt(session.sessionId, t"Fix the failing test")
+- ```
++ ```
+
+- The value of the second block is the value of `connect`. Here it is the stop reason of the turn.
+- When the block returns, the exchange is torn down, and a subprocess agent is killed, so nothing
+- outlives the agent it speaks to. An agent which is already running, behind a socket or as a
+- fixture in a test, connects through `Acp.Endpoint.streams(input, output)` instead of a command.
++ Значение второго блока — это значение `connect`. Здесь это причина остановки хода. Когда блок
++ возвращает управление, обмен сворачивается, а агент-подпроцесс завершается, так что ничто не
++ переживает агента, с которым ведётся общение. Уже запущенный агент — за сокетом или как
++ фикстура в тесте — подключается через `Acp.Endpoint.streams(input, output)` вместо команды.
+
+- A capability which is not registered is never advertised. A client which registers no
+- `readFile` handler reports no filesystem support, and a conformant agent will not ask.
+- `Acp.capabilities` adjusts the derived declaration as a last resort, and is applied at
+- initialization.
++ Функция, которая не зарегистрирована, никогда не объявляется. Клиент, не зарегистрировавший
++ обработчик `readFile`, сообщает, что не поддерживает файловую систему, и агент, соблюдающий
++ протокол, не будет его об этом просить. `Acp.capabilities` в крайнем случае корректирует
++ выведенное объявление и применяется при инициализации.
+
+- ### Updates
++ ### Обновления
+
+- Every handler reads its payload through contextual accessors, and every one is lent the
+- `Acp.sessionId` it concerns:
++ Каждый обработчик читает свою полезную нагрузку через контекстные аксессоры, и каждому на время
++ предоставляется `Acp.sessionId`, к которому он относится:
+
+= `Acp.sessionId` it concerns:
+=
+- ```tabular
++ ```tabular
+
+- column  Handler
+- column  Payload accessors
+- column  Answer
+- row  `Acp.updated`  `Acp.update`  nothing
+- row  `Acp.permission`  `Acp.toolCall`, `Acp.options`  `Acp.Selected` or `Acp.Cancelled`
+- row  `Acp.readFile`  `Acp.path`, `Acp.line`, `Acp.limit`  the file's `Text`
+- row  `Acp.writeFile`  `Acp.path`, `Acp.content`  nothing
+- row  `Acp.terminals`  the arguments of each operation  one `Acp.Terminals` bundle
++ column  Обработчик
++ column  Аксессоры полезной нагрузки
++ column  Ответ
++ row  `Acp.updated`  `Acp.update`  ничего
++ row  `Acp.permission`  `Acp.toolCall`, `Acp.options`  `Acp.Selected` или `Acp.Cancelled`
++ row  `Acp.readFile`  `Acp.path`, `Acp.line`, `Acp.limit`  `Text` файла
++ row  `Acp.writeFile`  `Acp.path`, `Acp.content`  ничего
++ row  `Acp.terminals`  аргументы каждой операции  один набор `Acp.Terminals`
+
+= row  `Acp.terminals`  the arguments of each operation  one `Acp.Terminals` bundle
+- ```
++ ```
+
+- An update is one of the `SessionUpdate` cases of the protocol:
++ Обновление — это один из кейсов `SessionUpdate` протокола:
+
+= An update is one of the `SessionUpdate` cases of the protocol:
+=
+- ```scala
++ ```scala
+
+- def register(using Acp.Registry): Unit = Acp.updated:
++ def register(using Acp.Registry): Unit = Acp.updated:
+
+-   Acp.update match
++   Acp.update match
+
+-     case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
++     case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
+
+-     case Acp.AgentThoughtChunk(Acp.TextContent(text, _)) => Out.print(t"(thinking) $text")
++     case Acp.AgentThoughtChunk(Acp.TextContent(text, _)) => Out.print(t"(thinking) $text")
+
+-     case Acp.UserMessageChunk(content)   => ()
++     case Acp.UserMessageChunk(content)   => ()
+
+-     case call: Acp.ToolCall              => Out.println(t"${call.title} (${call.kind.let(_.show).or(t"unknown")})")
++     case call: Acp.ToolCall              => Out.println(t"${call.title} (${call.kind.let(_.show).or(t"unknown")})")
+
+-     case update: Acp.ToolCallUpdate      => Out.println(t"${update.toolCallId}: ${update.status.let(_.show).or(t"unknown")}")
++     case update: Acp.ToolCallUpdate      => Out.println(t"${update.toolCallId}: ${update.status.let(_.show).or(t"unknown")}")
+
+-     case Acp.Plan(entries)               => entries.each { entry => Out.println(entry.content) }
++     case Acp.Plan(entries)               => entries.each { entry => Out.println(entry.content) }
+
+-     case Acp.AvailableCommandsUpdate(commands) => ()
++     case Acp.AvailableCommandsUpdate(commands) => ()
+
+-     case Acp.CurrentModeUpdate(modeId)   => ()
++     case Acp.CurrentModeUpdate(modeId)   => ()
+
+=     case Acp.CurrentModeUpdate(modeId)   => ()
+- ```
++ ```
+
+- ### Permissions
++ ### Разрешения
+
+- An agent which is about to act asks for permission, and offers a list of options. The handler
+- chooses one with `Acp.Selected`, or answers `Acp.Cancelled`. Each option has one of four kinds of
+- `Acp.PermissionOptionKind`:
++ Агент, собирающийся выполнить действие, запрашивает разрешение и предлагает список вариантов.
++ Обработчик выбирает один из них с помощью `Acp.Selected` или отвечает `Acp.Cancelled`. У
++ каждого варианта один из четырёх видов `Acp.PermissionOptionKind`:
+
+= `Acp.PermissionOptionKind`:
+=
+- ```tabular
++ ```tabular
+
+- column  Decision
+- column  Once
+- column  Always
+- row  Allow  `AllowOnce`  `AllowAlways`
+- row  Reject  `RejectOnce`  `RejectAlways`
++ column  Решение
++ column  Один раз
++ column  Всегда
++ row  Разрешить  `AllowOnce`  `AllowAlways`
++ row  Отклонить  `RejectOnce`  `RejectAlways`
+
+= row  Reject  `RejectOnce`  `RejectAlways`
+- ```
++ ```
+
+- A policy is therefore a filter over them:
++ Поэтому политика — это фильтр по ним:
+
+= A policy is therefore a filter over them:
+=
+- ```scala
++ ```scala
+
+- def allowAlways(using Acp.Registry): Unit = Acp.permission:
++ def allowAlways(using Acp.Registry): Unit = Acp.permission:
+
+-   Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowAlways).head
++   Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowAlways).head
+
+-   . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
++   . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
+
+=   . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
+- ```
++ ```
+
+- ### Filesystem and terminals
++ ### Файловая система и терминалы
+
+- The agent works with *your* view of the world, if you offer one. `Acp.readFile` serves the
+- agent's requests to read a file, which can include the unsaved state of an editor. `Acp.writeFile`
+- serves its requests to write one. A read handler sees the `path`, and optionally a starting
+- `line` and a `limit` on the number of lines. A write handler sees the `path` and the `content`:
++ Агент работает с *вашим* представлением мира, если вы его предлагаете. `Acp.readFile`
++ обслуживает запросы агента на чтение файла, которые могут включать несохранённое состояние
++ редактора. `Acp.writeFile` обслуживает его запросы на запись файла. Обработчик чтения видит
++ `path` и, необязательно, начальную строку `line` и ограничение `limit` на число строк.
++ Обработчик записи видит `path` и `content`:
+
+= `line` and a `limit` on the number of lines. A write handler sees the `path` and the `content`:
+=
+- ```scala
++ ```scala
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import charsets.utf8Charset
++ import charsets.utf8Charset
+
+- import textSanitizers.skipSanitizer
++ import textSanitizers.skipSanitizer
+
+- import filesystemBackends.javaBaseFilesystem
++ import filesystemBackends.javaBaseFilesystem
+
+- import filesystemOptions.createNonexistentParents
++ import filesystemOptions.createNonexistentParents
+
+- def files(using Acp.Registry): Unit =
++ def files(using Acp.Registry): Unit =
+
+-   Acp.readFile:
++   Acp.readFile:
+
+-     Acp.path.as[Path on Linux].open[File]()(file.read[Text])
++     Acp.path.as[Path on Linux].open[File]()(file.read[Text])
+
+-   Acp.writeFile:
++   Acp.writeFile:
+
+-     Acp.path.as[Path on Linux].create[File](): handle ?=>
++     Acp.path.as[Path on Linux].create[File](): handle ?=>
+
+-       handle.write(Acp.content)
++       handle.write(Acp.content)
+
+=       handle.write(Acp.content)
+- ```
++ ```
+
+- Terminals are advertised as a single capability. The five operations, which create a terminal,
+- read its output, wait for it to exit, kill it and release it, are supplied together as one
+- `Acp.Terminals` bundle to `Acp.terminals`.
++ Терминалы объявляются как одна функция. Пять операций — создать терминал, прочитать его вывод,
++ дождаться его завершения, завершить его принудительно и освободить его — передаются вместе
++ одним набором `Acp.Terminals` в `Acp.terminals`.
+
+- ### Sessions
++ ### Сессии
+
+- A connection manages sessions with four methods:
++ Подключение управляет сессиями с помощью четырёх методов:
+
+= A connection manages sessions with four methods:
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Takes
+- column  Does
+- row  `newSession`  a working directory, and optionally `Acp.McpServer`s  opens a session
+- row  `loadSession`  a session id, a working directory, and optionally `Acp.McpServer`s  resumes the session, replaying its history through the update handler
+- row  `setMode`  a session id and a mode id  switches between the modes reported in the session's `modes`
+- row  `authenticate`  the id of a method advertised at `initialize`  authenticates with the agent
++ column  Метод
++ column  Принимает
++ column  Делает
++ row  `newSession`  рабочий каталог и, необязательно, `Acp.McpServer`  открывает сессию
++ row  `loadSession`  идентификатор сессии, рабочий каталог и, необязательно, `Acp.McpServer`  возобновляет сессию, воспроизводя её историю через обработчик обновлений
++ row  `setMode`  идентификатор сессии и идентификатор режима  переключает между режимами, указанными в `modes` сессии
++ row  `authenticate`  идентификатор метода, объявленного при `initialize`  выполняет аутентификацию у агента
+
+= row  `authenticate`  the id of a method advertised at `initialize`  authenticates with the agent
+- ```
++ ```
+
+- An agent which requires authentication says so with an `Acp.Error` whose reason is
+- `AuthRequired`, and `authenticate` answers it.
++ Агент, требующий аутентификации, сообщает об этом через `Acp.Error` с причиной
++ `AuthRequired`, и `authenticate` отвечает на это.
+
+- ### Stop reasons
++ ### Причины остановки
+
+- `prompt` returns an `Acp.StopReason`:
++ `prompt` возвращает `Acp.StopReason`:
+
+= `prompt` returns an `Acp.StopReason`:
+=
+- ```tabular
++ ```tabular
+
+- column  Stop reason
+- column  Meaning
+- row  `EndTurn`  the agent finished
+- row  `MaxTokens`  the agent ran out of tokens
+- row  `MaxTurnRequests`  the agent ran out of requests for the turn
+- row  `Refusal`  the agent declined
+- row  `Cancelled`  the client canceled the turn
++ column  Причина остановки
++ column  Значение
++ row  `EndTurn`  агент закончил
++ row  `MaxTokens`  у агента закончились токены
++ row  `MaxTurnRequests`  у агента закончились запросы на этот ход
++ row  `Refusal`  агент отказался
++ row  `Cancelled`  клиент отменил ход
+
+= row  `Cancelled`  the client canceled the turn
+- ```
++ ```
+
+- ### Cancellation
++ ### Отмена
+
+- `Acp.connection.cancel(sessionId)` notifies the agent, and the turn completes with the
+- `Cancelled` stop reason. A permission request which is pending at that moment, or which arrives
+- before the next turn, is answered `Cancelled` automatically, as the protocol requires. Opening a
+- new turn resets the session.
++ `Acp.connection.cancel(sessionId)` уведомляет агента, и ход завершается с причиной остановки
++ `Cancelled`. Запрос разрешения, ожидающий ответа в этот момент или пришедший до следующего
++ хода, автоматически получает ответ `Cancelled`, как того требует протокол. Начало нового хода
++ сбрасывает сессию.
+
+- ### Errors
++ ### Ошибки
+
+- Every fault which the agent reports, and every fault in the exchange, is an `Acp.Error`, whose
+- reason is one of these:
++ Каждый сбой, о котором сообщает агент, и каждый сбой в обмене — это `Acp.Error`, причина
++ которого — одна из следующих:
+
+= reason is one of these:
+=
+- ```tabular
++ ```tabular
+
+- column  Reason
+- column  Wire code
+- column  Raised when
+- row  `Parse`  -32700  a message could not be parsed as JSON
+- row  `InvalidRequest`  -32600  a message was not a valid JSON-RPC request
+- row  `MethodNotFound`  -32601  a method name was not recognized
+- row  `InvalidParams`  -32602  the parameters were not valid for the method
+- row  `Internal`  -32603  an internal error occurred
+- row  `AuthRequired`  -32000  the agent requires authentication
++ column  Причина
++ column  Код передачи
++ column  Порождается, когда
++ row  `Parse`  -32700  сообщение не удалось разобрать как JSON
++ row  `InvalidRequest`  -32600  сообщение не было корректным запросом JSON-RPC
++ row  `MethodNotFound`  -32601  имя метода не распознано
++ row  `InvalidParams`  -32602  параметры некорректны для метода
++ row  `Internal`  -32603  произошла внутренняя ошибка
++ row  `AuthRequired`  -32000  агент требует аутентификации
+
+- row
++ row
+
+-   cell  `Incompatible`
++   cell  `Incompatible`
+
+-   cell
++   cell
+
+-   cell  the agent answers `initialize` with a protocol version other than 1
++   cell  агент отвечает на `initialize` версией протокола, отличной от 1
+
+=   cell  the agent answers `initialize` with a protocol version other than 1
+- ```
++ ```
+
+- A fault raised inside a handler is converted into an error response which carries the wire code
+- of the reason, so a bug in the client is reported to the agent, and does not hang the turn.
+- `connect` takes an optional `Acp.Observer`, which sees every message in both directions as it
+- crosses the transport, for logging or a protocol trace.
++ Сбой, порождённый внутри обработчика, преобразуется в ответ с ошибкой, несущий код передачи
++ причины, поэтому об ошибке в клиенте сообщается агенту, и ход не зависает. `connect`
++ принимает необязательный `Acp.Observer`, который видит каждое сообщение в обоих направлениях,
++ когда оно проходит через транспорт, — для журналирования или трассировки протокола.
+
+- ### Content
++ ### Содержимое
+
+- ACP adopts the content vocabulary of MCP: `TextContent`, `ImageContent`, `AudioContent`,
+- `ResourceLink` and `EmbeddedResource`. The types are shared with [MCP](mcp.md), so content
+- crosses between the two protocols without translation.
++ ACP перенимает словарь содержимого MCP: `TextContent`, `ImageContent`, `AudioContent`,
++ `ResourceLink` и `EmbeddedResource`. Эти типы общие с [MCP](mcp.md), поэтому содержимое
++ переходит между двумя протоколами без преобразования.
+
+- ### Related
++ ### Связанное
+
+- - [MCP](mcp.md) is the sibling protocol, through which an agent reaches tools.
+- - [LLM](llm.md) speaks to language models directly, without an agent in between.
+- - [Processes](processes.md) describes the `sh"…"` command which spawns an agent.
+- - [Concurrency](concurrency.md) describes `supervise`, which the exchange runs inside.
+- - [Filesystem](filesystem.md) describes the file operations which the handlers use.
+- - [RPC](rpc.md) describes the JSON-RPC which the protocol is built on.
++ - [MCP](mcp.md) — родственный протокол, через который агент обращается к инструментам.
++ - [LLM](llm.md) общается с языковыми моделями напрямую, без агента посередине.
++ - [Процессы](processes.md) описывает команду `sh"…"`, которая запускает агента.
++ - [Параллелизм](concurrency.md) описывает `supervise`, внутри которого выполняется обмен.
++ - [Файловая система](filesystem.md) описывает файловые операции, которые используют обработчики.
++ - [RPC](rpc.md) описывает JSON-RPC, на котором построен протокол.

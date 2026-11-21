@@ -1,0 +1,485 @@
+orthant 1 language
+
+- ## Staging
++ ## Стадирование
+
+- ### About
++ ### Обзор
+
+- Scala's quoted code, `'{…}`, normally runs in the next stage of the *same* program. Here the
+- idea is generalized, so that quoted code runs in a different *environment*: a fresh JVM, an
+- isolated classloader, or in principle any machine which can receive compiled code.
++ Цитированный код Scala, `'{…}`, обычно выполняется на следующей стадии *той же* программы. Здесь
++ эта идея обобщена, так что цитированный код выполняется в другом *окружении*: в свежей JVM, в
++ изолированном загрузчике классов или, в принципе, на любой машине, способной принять
++ скомпилированный код.
+
+- A `dispatch` block quotes ordinary Scala, splices in values from the enclosing scope, and
+- returns the result. The code is compiled, shipped and executed elsewhere, and its answer is
+- carried back. Values cross the boundary as [classloader-neutral data](generic-data.md) or as
+- [JSON](json.md).
++ Блок `dispatch` цитирует обычный Scala, вставляет сплайсом значения из объемлющей области
++ видимости и возвращает результат. Код компилируется, отправляется и выполняется в другом месте,
++ а его ответ доставляется обратно. Значения пересекают границу в виде
++ [данных, нейтральных к загрузчику классов](generic-data.md), или в виде [JSON](json.md).
+
+- ### On multi-stage programs
++ ### О многостадийных программах
+
+- Code which is compiled together is normally run together, in one environment: a single JVM, or
+- a browser under Scala.js. A distributed application breaks that assumption by its nature. The
+- code for each environment is compiled separately, and stays separate all the way from source to
+- execution, in different JVMs, in a browser, or on different machines. Between any two of those
+- environments there is a contract.
++ Код, который компилируется вместе, обычно и выполняется вместе, в одном окружении: в одной JVM
++ или в браузере под Scala.js. Распределённое приложение по своей природе нарушает это
++ предположение. Код для каждого окружения компилируется отдельно и остаётся отдельным на всём
++ пути от исходников до выполнения — в разных JVM, в браузере или на разных машинах. Между любыми
++ двумя такими окружениями есть контракт.
+
+- The compiler does not enforce that contract. Other tools can check it, but they check it from
+- outside, and rarely with the guarantees which Scala gives within one compilation. So the
+- contract can be broken, and the breakage appears at [runtime].
++ Компилятор этот контракт не обеспечивает. Другие инструменты могут его проверять, но проверяют
++ снаружи и редко с теми гарантиями, которые Scala даёт в пределах одной компиляции. Поэтому
++ контракт можно нарушить, и нарушение проявится во [время выполнения][время выполнения].
+
+- Running code somewhere else usually means building an artifact, arranging its execution, and
+- inventing a serialization boundary: a project's worth of infrastructure for what is, in
+- concept, one expression. Scala's staging machinery already knows how to compile a quoted
+- expression at runtime, and how to splice values into it. What it fixes is *where* the result
+- runs. Compiling both sides *together*, and delimiting them with quotes and splices, puts the
+- contract back under the compiler's control. Remote code is written beside the local code which
+- calls it, checked with it, marshaled for it, and maintained in step with it. This is
+- [safety by construction](../../philosophy/safety-by-construction.md), extended across a process
+- boundary.
++ Выполнение кода где-то ещё обычно означает сборку артефакта, организацию его выполнения и
++ изобретение границы сериализации: инфраструктуру размером с целый проект ради того, что по сути
++ является одним выражением. Механизм стадирования Scala уже умеет компилировать цитированное
++ выражение во время выполнения и вставлять в него значения сплайсом. Фиксировано в нём то, *где*
++ выполняется результат. Компиляция обеих сторон *вместе* и разграничение их цитатами и сплайсами
++ возвращает контракт под контроль компилятора. Удалённый код пишется рядом с вызывающим его
++ локальным кодом, проверяется вместе с ним, маршализуется для него и поддерживается в согласии с
++ ним. Это [безопасность по построению](../../philosophy/safety-by-construction.md), продлённая
++ через границу процесса.
+
+- ### Quotes, splices and phases
++ ### Цитаты, сплайсы и фазы
+
+- The syntax is Scala's own, and it is worth restating what it means. In a macro:
++ Синтаксис — собственный синтаксис Scala, и стоит повторить, что он означает. В макросе:
+
+= The syntax is Scala's own, and it is worth restating what it means. In a macro:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The syntax is Scala's own, and it is worth restating what it means. In a macro:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= The syntax is Scala's own, and it is worth restating what it means. In a macro:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+= ##
+- import scala.quoted.*
++ import scala.quoted.*
+
+- def say(user: String)(using Quotes): Expr[Unit] =
++ def say(user: String)(using Quotes): Expr[Unit] =
+
+-   val name: Expr[String] = Expr(user)
++   val name: Expr[String] = Expr(user)
+
+-   '{ Out.println("Hello "+${name}) }
++   '{ Out.println("Hello "+${name}) }
+
+=   '{ Out.println("Hello "+${name}) }
+- ```
++ ```
+
+- `'{…}` and `${…}` mark *phase shifts*. Code inside quotes runs one phase later than the code
+- around it, and code inside a splice runs one phase earlier. Above, the definition and the use of
+- `name` are in the same phase, which the *phase consistency principle* requires. `Out.println`
+- and the string literal belong to the next phase. An `Expr[String]` is the abstract notion of an
+- expression which will be a `String` in that next phase.
++ `'{…}` и `${…}` отмечают *сдвиги фаз*. Код внутри цитаты выполняется на одну фазу позже
++ окружающего кода, а код внутри сплайса — на одну фазу раньше. Выше определение и использование
++ `name` находятся в одной фазе, чего требует *принцип согласованности фаз*. `Out.println` и
++ строковый литерал относятся к следующей фазе. `Expr[String]` — абстрактное понятие выражения,
++ которое на следующей фазе будет `String`.
+
+- For a macro, "the next phase" is a later compilation. Nothing about quotes requires that
+- reading. The next phase can be any place where code runs *elsewhere*: another JVM, a cloud
+- machine, a browser. Quotes and splices nest and interleave at the granularity of an expression,
+- and the compiler checks consistency *across* the phases. Putting the remote code in another file
+- gives neither.
++ Для макроса «следующая фаза» — это более поздняя компиляция. Но ничто в цитатах не требует
++ такого прочтения. Следующей фазой может быть любое место, где код выполняется *в другом
++ месте*: другая JVM, облачная машина, браузер. Цитаты и сплайсы вкладываются друг в друга и
++ чередуются с точностью до выражения, а компилятор проверяет согласованность *между* фазами.
++ Вынос удалённого кода в другой файл не даёт ни того, ни другого.
+
+- Here the "where" is a value. A `Rig` says how code is deployed and invoked, and `dispatch` does
+- the rest: compilation, caching for each call site, and marshaling of captured values in and
+- results out. Everything comes from the `soundness` package:
++ Здесь «где» — это значение. `Rig` говорит, как код развёртывается и вызывается, а `dispatch`
++ делает остальное: компиляцию, кеширование для каждого места вызова и маршализацию захваченных
++ значений туда и результатов обратно. Всё берётся из пакета `soundness`:
+
+= results out. Everything comes from the `soundness` package:
+=
+- ```scala
++ ```scala
+
+= ```scala
+- import scala.quoted.*
++ import scala.quoted.*
+
+- import soundness.*
++ import soundness.*
+
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+- import workingDirectories.javaBaseWorkingDirectory
++ import workingDirectories.javaBaseWorkingDirectory
+
+- import classloaders.threadContextClassloader
++ import classloaders.threadContextClassloader
+
+- import embeddings.automaticEmbedding
++ import embeddings.automaticEmbedding
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import systems.javaBaseSystem
++ import systems.javaBaseSystem
+
+- import temporaryDirectories.systemTemporaryDirectory
++ import temporaryDirectories.systemTemporaryDirectory
+
+= import temporaryDirectories.systemTemporaryDirectory
+- ```
++ ```
+
+- The samples on this page compile and run code in other processes, so they are compiled but not
+- run.
++ Примеры на этой странице компилируют и выполняют код в других процессах, поэтому они
++ компилируются, но не запускаются.
+
+- ### Dispatching code
++ ### Отправка кода
+
+- `dispatch` on a rig takes a quoted block. Values from the enclosing scope are spliced in with
+- `${…}`, and carried across the boundary automatically:
++ `dispatch` на риге принимает цитированный блок. Значения из объемлющей области видимости
++ вставляются сплайсом через `${…}` и автоматически переносятся через границу:
+
+= `${…}`, and carried across the boundary automatically:
+=
+- ```scala
++ ```scala
+
+- case class Job(name: Text, size: Long)
++ case class Job(name: Text, size: Long)
+
+- def runElsewhere(job: Job): Job = Jvm.dispatch:
++ def runElsewhere(job: Job): Job = Jvm.dispatch:
+
+-   '{
++   '{
+
+-      val name = ${job.name}
++      val name = ${job.name}
+
+-      Job(t"Processed: $name", ${job.size}*2)
++      Job(t"Processed: $name", ${job.size}*2)
+
+-    }
++    }
+
+=    }
+- ```
++ ```
+
+- The block compiles once for each call site, and is cached. Each call marshals its spliced values
+- in and its result out. To the caller, `runElsewhere` is an ordinary function. Its body happens
+- to execute in another JVM.
++ Блок компилируется один раз для каждого места вызова и кешируется. Каждый вызов маршализует свои
++ вставленные значения туда, а результат — обратно. Для вызывающего кода `runElsewhere` — обычная
++ функция. Просто её тело выполняется в другой JVM.
+
+- Names used inside a quote resolve against the imports outside it, but only *static prefixes* do:
+- names which the compiler can resolve without a value. That restriction is not an inconvenience
+- to work around. It is the safety property. A reference to an object on the heap of the local
+- JVM has no meaning on the remote one, and phase consistency is exactly what stops such a
+- reference being written at all. Everything which crosses does so through a splice, deliberately
+- and visibly.
++ Имена, используемые внутри цитаты, разрешаются по импортам снаружи неё, но это касается только
++ *статических префиксов*: имён, которые компилятор может разрешить без значения. Это ограничение —
++ не неудобство, которое нужно обходить. Это и есть свойство безопасности. Ссылка на объект в куче
++ локальной JVM не имеет смысла в удалённой, и согласованность фаз как раз и не даёт вообще
++ написать такую ссылку. Всё, что пересекает границу, делает это через сплайс, намеренно и
++ заметно.
+
+- Three roles use this machinery, and they are usually three different people. Whoever implements
+- a `Rig` knows how to package, deploy and run code in some environment, such as a browser, a
+- container or a cloud VM, and knows nothing about what will be run. Whoever writes a `dispatch`
+- block knows what should run remotely, writes it in quotes and splices, and presents it to their
+- own callers as an ordinary method. Those callers never know that any of this is involved. Only
+- the first two roles ever see a quote.
++ Этим механизмом пользуются три роли, и обычно это три разных человека. Тот, кто реализует
++ `Rig`, знает, как упаковать, развернуть и выполнить код в некотором окружении, например в
++ браузере, контейнере или облачной ВМ, и ничего не знает о том, что будет выполняться. Тот, кто
++ пишет блок `dispatch`, знает, что должно выполняться удалённо, пишет это цитатами и сплайсами и
++ представляет своим вызывающим как обычный метод. Эти вызывающие никогда не узнают, что во всём
++ этом что-то участвует. Цитату видят только первые две роли.
+
+- ### Rigs
++ ### Риги
+
+- Two rigs are provided. `Jvm` compiles the block and runs it in a fresh JVM subprocess, with full
+- isolation, at the cost of starting a process. `Isolation` runs it in the same process under an
+- isolated classloader, which is cheap and contained:
++ Предоставляются два рига. `Jvm` компилирует блок и выполняет его в свежем подпроцессе JVM с
++ полной изоляцией ценой запуска процесса. `Isolation` выполняет его в том же процессе под
++ изолированным загрузчиком классов, что дёшево и надёжно ограничено:
+
+= isolated classloader, which is cheap and contained:
+=
+- ```scala fuel
++ ```scala fuel
+
+= isolated classloader, which is cheap and contained:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= isolated classloader, which is cheap and contained:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- Isolation.dispatch:
++ Isolation.dispatch:
+
+-   '{ t"computed in an isolated classloader" }
++   '{ t"computed in an isolated classloader" }
+
+=   '{ t"computed in an isolated classloader" }
+- ```
++ ```
+
+- A new environment plugs in by implementing `Rig`, which says how the compiled code is *staged*
+- to its destination and how it is *invoked* there. The tooling of these libraries supplies more
+- examples:
++ Новое окружение подключается реализацией `Rig`, которая говорит, как скомпилированный код
++ *размещается* в месте назначения и как он там *вызывается*. Инструментарий этих библиотек даёт
++ больше примеров:
+
+= examples:
+=
+- ```tabular
++ ```tabular
+
+- column  Rig
+- column  Runs the block
+- column  A dispatch returns
+- row  `Jvm`  in a fresh JVM subprocess  the output
+- row  `Isolation`  in the same process, under an isolated classloader  the output
+- row  `Enclave`  packaged as a standalone executable, for tests  an `Enclave.Launcher`
+- row  `Bench`, `Stress`, `Profile`  in a controlled JVM, measured as a [benchmark](../../standards/benchmarking.md)  the output
++ column  Риг
++ column  Выполняет блок
++ column  Отправка возвращает
++ row  `Jvm`  в свежем подпроцессе JVM  вывод
++ row  `Isolation`  в том же процессе, под изолированным загрузчиком классов  вывод
++ row  `Enclave`  упакованным как самостоятельный исполняемый файл, для тестов  `Enclave.Launcher`
++ row  `Bench`, `Stress`, `Profile`  в контролируемой JVM, с измерением как [бенчмарк](../../standards/benchmarking.md)  вывод
+
+= row  `Bench`, `Stress`, `Profile`  in a controlled JVM, measured as a [benchmark](../../standards/benchmarking.md)  the output
+- ```
++ ```
+
+- ### Writing a rig
++ ### Написание рига
+
+- `dispatch` does the hard parts before a rig sees anything. It extracts the classpath from the
+- running classloader, compiles the quoted code if it is not already compiled, captures the
+- spliced inputs, and encodes them into a single transportable value. One narrow job is left for
+- the rig: run some code somewhere, given that value, and bring back the value it produced.
++ `dispatch` делает трудную часть ещё до того, как риг что-либо увидит. Он извлекает путь классов
++ из работающего загрузчика классов, компилирует цитированный код, если тот ещё не скомпилирован,
++ захватывает вставленные входные значения и кодирует их в одно переносимое значение. Ригу
++ остаётся одна узкая задача: выполнить некоторый код где-то, получив это значение, и вернуть
++ значение, которое тот произвёл.
+
+- A rig therefore declares a handful of members:
++ Поэтому риг объявляет несколько членов:
+
+= A rig therefore declares a handful of members:
+=
+- ```tabular
++ ```tabular
+
+- column  Member
+- column  Declares
+- column  In `Jvm`
+- row  `Result[output]`  what a dispatch returns: the bare output, an `Optional`, a `Task`…  `output`
+- row  `Form`  the encoded form of the input and output  `Text`
+- row  `Target`  what staging produces  `LocalClasspath`
+- row  `Transport`  the form spliced values travel in  `Json`
+- row  `scalac`  the compiler to stage with  `Scalac[3.6]`
+- row  `stage`  how compiled output is *staged* to its destination  the classpath of the output
+- row  `invoke`  how it is *invoked* there  a `java` subprocess
++ column  Член
++ column  Объявляет
++ column  В `Jvm`
++ row  `Result[output]`  что возвращает отправка: голый вывод, `Optional`, `Task`…  `output`
++ row  `Form`  закодированную форму входа и выхода  `Text`
++ row  `Target`  что производит размещение  `LocalClasspath`
++ row  `Transport`  форму, в которой путешествуют вставленные значения  `Json`
++ row  `scalac`  компилятор для размещения  `Scalac[3.6]`
++ row  `stage`  как скомпилированный вывод *размещается* в месте назначения  путь классов вывода
++ row  `invoke`  как он там *вызывается*  подпроцесс `java`
+
+= row  `invoke`  how it is *invoked* there  a `java` subprocess
+- ```
++ ```
+
+- The `Jvm` rig is the whole of it:
++ Риг `Jvm` целиком:
+
+= The `Jvm` rig is the whole of it:
+=
+- ```scala
++ ```scala
+
+- object Jvm extends Rig:
++ object Jvm extends Rig:
+
+-   type Result[output] = output
++   type Result[output] = output
+
+-   type Form = Text
++   type Form = Text
+
+-   type Target = LocalClasspath
++   type Target = LocalClasspath
+
+-   type Transport = Json
++   type Transport = Json
+
+-   def stage(out: Path on Linux): LocalClasspath = classpath(out)
++   def stage(out: Path on Linux): LocalClasspath = classpath(out)
+
+-   val scalac: Scalac[3.6, Universe.Classfile] = Scalac[3.6](List(scalacOptions.experimental))
++   val scalac: Scalac[3.6, Universe.Classfile] = Scalac[3.6](List(scalacOptions.experimental))
+
+-   protected def invoke[output](stage: Stage[output, Form, Target]): output =
++   protected def invoke[output](stage: Stage[output, Form, Target]): output =
+
+-     stage.remote: input =>
++     stage.remote: input =>
+
+-       val cmd = sh"java -classpath ${stage.target()} superlunary.Executor $input"
++       val cmd = sh"java -classpath ${stage.target()} superlunary.Executor $input"
+
+-       unsafely(cmd.exec[Text]())
++       unsafely(cmd.exec[Text]())
+
+=       unsafely(cmd.exec[Text]())
+- ```
++ ```
+
+- `stage.remote` is the crux. It is handed a function from the encoded input to the encoded
+- output, and it takes care of everything on either side. Here that function shells out with a
+- [process](processes.md) to start a JVM, and captures its standard output. A rig for a browser or
+- a container differs only in that function, and in `stage`, which for a truly remote environment
+- must make the compiled classes *available* there, and not merely name their local paths.
++ `stage.remote` — суть дела. Ему передаётся функция из закодированного входа в закодированный
++ выход, а он берёт на себя всё по обе стороны. Здесь эта функция через [процесс](processes.md)
++ запускает JVM и захватывает её стандартный вывод. Риг для браузера или контейнера отличается
++ только этой функцией и `stage`, который для по-настоящему удалённого окружения должен сделать
++ скомпилированные классы там *доступными*, а не просто назвать их локальные пути.
+
+- ### The boundary
++ ### Граница
+
+- What crosses the boundary must be serializable, and the transport is a `Stageable`. The provided
+- instances carry values as [Pojo](generic-data.md) trees or as JSON. A captured value with no
+- transportable form is rejected when the block compiles. The boundary is in the types, and is
+- not discovered at a distance.
++ То, что пересекает границу, должно быть сериализуемым, а транспорт — это `Stageable`.
++ Предоставленные экземпляры переносят значения в виде деревьев [Pojo](generic-data.md) или в
++ виде JSON. Захваченное значение без переносимой формы отвергается при компиляции блока. Граница
++ находится в типах и не обнаруживается на расстоянии.
+
+- ### What is cached, and when it is not
++ ### Что кешируется и когда нет
+
+- Compiling a block is expensive, so the result is cached. The key of the cache matters. It is the
+- *fingerprint of the staged tree* together with the call site, and not the call site alone.
++ Компиляция блока дорога, поэтому результат кешируется. Ключ кеша важен. Это *отпечаток
++ размещённого дерева* вместе с местом вызова, а не одно лишь место вызова.
+
+- That distinction carries weight. One call site inside an inline method may expand to a different
+- tree at each use. Keying on the call site alone would silently rerun the first expansion for
+- every later one. Keying on the tree means that several distinct expansions from one site each
+- compile once, while calls which differ only in the data they transport share a single
+- compilation. That is what makes dispatching from a generic or inline context safe.
++ Это различие весомо. Одно место вызова внутри inline-метода при каждом использовании может
++ раскрываться в другое дерево. Ключ только по месту вызова молча повторно выполнял бы первое
++ раскрытие для каждого последующего. Ключ по дереву означает, что несколько различных раскрытий
++ из одного места компилируются по одному разу каждое, а вызовы, отличающиеся только переносимыми
++ данными, разделяют одну компиляцию. Именно это делает отправку из обобщённого или inline
++ контекста безопасной.
+
+- A spliced value is evaluated once for each dispatch, not once for each occurrence. `${job.name}`
+- used twice in a block refers to the same marshaled value, and `job.name` is not evaluated twice.
++ Вставленное значение вычисляется один раз на каждую отправку, а не на каждое вхождение.
++ `${job.name}`, использованный в блоке дважды, ссылается на одно и то же маршализованное значение,
++ и `job.name` не вычисляется дважды.
+
+- ### Errors across the boundary
++ ### Ошибки через границу
+
+- Code which runs elsewhere can fail, and the failure has to come back. An error raised in the
+- staged block is carried across and raised again at the call site. So `dispatch` reports the
+- failure of the remote computation, and not that the remote computation could not be reached. A
+- failure of the rig itself, such as a subprocess which would not start or a classloader which
+- could not be built, is distinct, since the two call for different responses.
++ Код, выполняющийся в другом месте, может завершиться неудачей, и неудача должна вернуться.
++ Ошибка, порождённая в размещённом блоке, переносится через границу и порождается снова в месте
++ вызова. Поэтому `dispatch` сообщает о неудаче удалённого вычисления, а не о том, что удалённое
++ вычисление не удалось достичь. Неудача самого рига, например подпроцесс, который не запустился,
++ или загрузчик классов, который не удалось построить, — это отдельный случай, поскольку два этих
++ случая требуют разной реакции.
+
+- ### Related
++ ### Связанное
+
+- - [Metaprogramming](metaprogramming.md) describes the compiletime tools which quotes rest on.
+- - [Compiler](compiler.md) describes the `Scalac` which a rig stages code with.
+- - [Processes](processes.md) describes the `sh"…"` command which the `Jvm` rig launches.
+- - [Generic data](generic-data.md) and [JSON](json.md) describe the forms in which values cross
+-   the boundary.
+- - [Testing](testing.md) uses the `Enclave` rig to package a program under test.
++ - [Метапрограммирование](metaprogramming.md) описывает инструменты времени компиляции, на которых
++   основаны цитаты.
++ - [Компилятор](compiler.md) описывает `Scalac`, которым риг размещает код.
++ - [Процессы](processes.md) описывают команду `sh"…"`, которую запускает риг `Jvm`.
++ - [Обобщённые данные](generic-data.md) и [JSON](json.md) описывают формы, в которых значения
++   пересекают границу.
++ - [Тестирование](testing.md) использует риг `Enclave`, чтобы упаковать тестируемую программу.

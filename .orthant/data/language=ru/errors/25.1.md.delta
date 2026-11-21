@@ -1,0 +1,74 @@
+orthant 1 language
+
+- # `↯/s.25.1` — `Number.Error`
++ # `↯/s.25.1` — `Number.Error`
+
+- Raised when Distillate cannot decode a text value into a numeric
+- type.
++ Порождается, когда Distillate не может декодировать текстовое значение в
++ числовой тип.
+
+- ## Cause
++ ## Причина
+
+- Distillate's `Decodable in Text` instances for numeric primitives
+- parse the input via the JDK's number parsers, then range-check
+- against the target type's bounds. The constructor records the
+- offending `text`, the `specializable` (target type), and a
+- `reason: Reason`; the rendered message is `$text is not a valid
++ Экземпляры `Decodable in Text` из Distillate для числовых примитивов
++ разбирают входные данные парсерами чисел из JDK, а затем проверяют,
++ укладывается ли значение в границы целевого типа. Конструктор
++ записывает ошибочный `text`, `specializable` (целевой тип) и
++ `reason: Reason`; отображаемое сообщение — `$text is not a valid
+
+- $specializable because $reason`.
++ $specializable because $reason`.
+
+- ## Variants
++ ## Варианты
+
+- ### `↯/s.25.1.1` — `Unparseable`
++ ### `↯/s.25.1.1` — `Unparseable`
+
+- The input was not a syntactically valid number for the target
+- type — `Integer.parseInt` (or sibling) threw a
++ Входные данные не являются синтаксически корректным числом для целевого
++ типа: `Integer.parseInt` (или родственный метод) выбросил
+
+- `NumberFormatException`.
++ `NumberFormatException`.
+
+- **Example.** `[↯/s.25.1.1] abc is not a valid Int because the input could not be parsed as a number`
++ **Пример.** `[↯/s.25.1.1] abc is not a valid Int because the input could not be parsed as a number`
+
+- **Resolution.** Sanitise the input before decoding, or guard
+- against non-numeric values.
++ **Решение.** Очистите входные данные перед декодированием или
++ отсекайте нечисловые значения.
+
+- ### `↯/s.25.1.2` — `OutOfRange`
++ ### `↯/s.25.1.2` — `OutOfRange`
+
+- The input was a syntactically valid number but fell outside the
+- target type's representable range — currently raised by the
+- `Byte` and `Short` decoders when the integer is outside their
+- bounds.
++ Входные данные — синтаксически корректное число, но оно выходит за
++ диапазон, представимый целевым типом; сейчас эта ошибка порождается
++ декодерами `Byte` и `Short`, когда целое число выходит за их
++ границы.
+
+- **Example.** `[↯/s.25.1.2]300 is not a valid Byte because the input was outside the target type's representable range`
++ **Пример.** `[↯/s.25.1.2]300 is not a valid Byte because the input was outside the target type's representable range`
+
+- **Resolution.** Decode into a wider type (e.g. `Int`), or
+- clamp the value before decoding.
++ **Решение.** Декодируйте в более широкий тип (например, `Int`) или
++ ограничьте значение перед декодированием.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/distillate/src/core/distillate.Number.scala`
++ - Исходный код: `lib/distillate/src/core/distillate.Number.scala`

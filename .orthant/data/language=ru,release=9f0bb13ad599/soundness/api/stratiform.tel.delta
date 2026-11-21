@@ -1,0 +1,287 @@
+orthant 1 language
+
+-       RaTEL is TEL's random-access encoding. Where BinTEL is read front to back, a RaTEL image
+-       is read in place: every struct type has a fixed-width *row* with a *slot* for each member
+-       at an offset the schema determines, the instances of a record type form a *table*,
+-       variable-width values lie in regions addressed by offset, and *indexes* over keyed and
+-       `index`-declared members, each a B+tree, make a lookup a descent through a few pages. A
+-       `Ratel` is the image as a value — its bytes, `data` — and is `Encodable in Data`, so
+-       galilei's `claim` publishes it. The object `Ratel` writes one (`encode`); one is read by
+-       opening whatever holds it as `Ratel`, with aperture's `open`, and changed in place by
+-       opening it for writing.
++       RaTEL — кодирование TEL с произвольным доступом. Если BinTEL читается от начала до конца,
++       то образ RaTEL читается на месте: у каждого типа структуры есть *строка* фиксированной
++       ширины со *слотом* для каждого члена по смещению, которое определяет схема, экземпляры
++       типа записи образуют *таблицу*, значения переменной ширины лежат в областях, адресуемых
++       смещением, а *индексы* по ключевым членам и членам, объявленным через `index`, — каждый
++       из них B+-дерево — превращают поиск в спуск через несколько страниц. `Ratel` — это образ
++       как значение: его байты, `data`; он `Encodable in Data`, поэтому `claim` из galilei
++       публикует его. Объект `Ratel` записывает образ (`encode`); читается образ открытием того,
++       что его содержит, как `Ratel` с помощью `open` из aperture, а изменяется на месте
++       открытием на запись.
+
+-       An image is in one of the states of the specification. What is written, and what is
+-       published, is *sealed*: compact, never changed, and shared by any number of readers. The
+-       one process which owns a document keeps an *unsealed* working image, which it changes
+-       where it lies, and seals to publish. An image which is being changed is *dirty*, and no
+-       reader opens it.
++       Образ находится в одном из состояний, которые определяет спецификация. То, что
++       записывается и публикуется, *запечатано*: оно компактно, никогда не изменяется и
++       разделяется любым числом читающих. Единственный процесс, который владеет документом,
++       держит *распечатанный* рабочий образ: он изменяет его там, где тот лежит, и запечатывает,
++       чтобы опубликовать. Образ, который в этот момент изменяется, *грязный*, и ни один
++       читающий его не открывает.
+
+-       `Ratel of T` is an image of a value of the type `T`, written under the schema derived
+-       from `T`: what `value.ratel` gives. It is published under a name claimed for it, and
+-       opened as it, so that a case class is the one declaration a publisher and its readers
+-       share.
++       `Ratel of T` — это образ значения типа `T`, записанный по схеме, выведенной из `T`: то,
++       что даёт `value.ratel`. Он публикуется под именем, занятым для него, и открывается как
++       таковой, так что case-класс — единственное объявление, общее для публикующего и его
++       читающих.
+
+-       An image always carries its composed schema, with its signature, and a sealed one
+-       carries the document's value hash, and may carry digests of its body and its header. A
+-       working image is not byte-deterministic, but a sealed one is: its bytes are a function of
+-       the document alone.
+-   entry #Topic   the type whose value the image is of, if that is known: `Ratel of Cast`
+-   entry .encode   a type-assigned `Tel.Element` root as a RaTEL image, by the specification's canonical writer
+-       `Ratel.encode(element, schema, codecs, digests)` lays the document out under `schema`,
+-       which is given as it is declared — with its layers — and is embedded as BinTEL beside
+-       its signature. `codecs` defaults to `Tel.Codec.Bindings.all`; `digests` (by default
+-       `true`) adds the digests section. What it writes is sealed. It raises `Ratel.Error`:
+-       `SchemaUnlayoutable` (`↯/t.5.11`), `CodecUnresolved` (`↯/t.5.19`), `WidthMismatch`
+-       (`↯/t.5.22`) for a value whose bytes are not the width
+-       its scalar declares, `Unencodable` for a model the schema does not describe, and
+-       `Oversized` for an image of 2 GiB or more; and `Tel.Error(EncodingRejected)` for a value
+-       its codec rejects. The extensions `tel.ratel(schema)`, `element.ratel(schema)` and
+-       `value.ratel` call this.
+-   entry .openable   opens anything `Viewable` — a path, an image, a `Terrain` in hand — as `Ratel`, for reading in place
+-       `source.open[Ratel]()` lends a `Terrain` view of the source through its `zephyrine.Viewable`
+-       instance, copies and checks the header, decodes the embedded schema, recomputes its
+-       signature, derives the layout and checks the table and index directories against it
+-       (`↯/t.5.1`–`↯/t.5.13`, `↯/t.5.19`, `↯/t.5.28`, `↯/t.5.29`), and gives the block a
+-       `Ratel.Reader`, which the accessor `ratel` names. It reads nothing else until it is
+-       asked. The reader captures the view, and cannot outlive the block. The flags are
+-       `Ratel.Flag`s.
+-
+-       With a mode which includes `Write`, the source lends its bytes for changing, through
+-       `Viewable#hold` -- a file is mapped under an exclusive lock, a `Holding` is taken as it
+-       is -- and the image is opened by its owner: a sealed one is unsealed, it is marked dirty
+-       for the length of the block, and the reader accepts the changes of `Ratel.Row` and
+-       `Ratel.Rows`. A source which cannot be changed, such as a `Ratel` value, is refused with
+-       `Unwritable`.
+-   entry .typedOpenable   opens anything `Viewable` as `Ratel of topic`: an image of a value of the type `topic`, and of nothing else
+-       As `openable`, but an image whose schema signature is not that of the schema derived
+-       from `topic` is refused with `Mismatched`, before the block runs.
+-   entry .surveyable   reads an image in place from a view which something else lends: what an `Observer` of a published name opens it through
+-   entry .typedSurveyable   as `surveyable`, for an image of a value of the type `topic`, refusing any other with `Mismatched`
+-   entry .State   the state an image is read in: `Sealed`, or `Unsealed`
+-       A sealed image is compact and unchanging, and may be shared; an unsealed one is a
+-       working image which its owner has closed. One which is being changed is dirty, and is
+-       not read at all.
+-   entry .Flag   what may be asked of `open[Ratel]`: `Verify`, and `Codecs(bindings)`
+-       `Verify` runs the reader's `verify` before the block, making it a verifying reader in
+-       the specification's sense. `Codecs(bindings)` binds codecs for encodings this module does
+-       not define, ahead of `Tel.Codec.Bindings.all`.
+-   entry .viewable   an image as a view of its bytes where they lie on the heap, so that it is opened as a file is
+-   entry .Reader   an open image: its schema, its root row, and whole-document operations
+-     entry #Topic   this reader's brand: a type of its own, which every row it gives carries
+-     entry #root   the document's root, as a `Ratel.Row of reader.Topic`
+-     entry #schema   the composed schema the image carries
+-     entry #signature   the schema signature the image carries, which a reader requiring a trusted schema compares
+-     entry #valueHash   the document's value hash, if the header carries it
+-     entry #materialise   the semantic model the image encodes, as `Bintel.decode` would give it
+-     entry #verify   checks the digests, the whole document, each row's header, every index as a tree and against its rows, and the value hash
+-     entry #state   whether the image was opened sealed, or as a working image
+-     entry #seal   the document of this image, written afresh as a sealed image: the same bytes whatever its history
+-     entry #sealAs   as `seal`, for an image of a value of a type: a `Ratel of topic`, or `Mismatched`
+-     entry #repack   the document of this image, written afresh as a working image, with room to grow and no garbage
+-   entry .Row   one record, read in place: `text`, `data`, `texts`, `flag`, `count`, `record`, `/`, `has`, `holds`, `as`
++       Образ всегда несёт свою составленную схему вместе с её сигнатурой, а запечатанный образ
++       несёт ещё и хеш значения документа и может нести дайджесты своего тела и своего
++       заголовка. Рабочий образ не детерминирован побайтово, а запечатанный детерминирован: его
++       байты — функция одного лишь документа.
++   entry #Topic   тип, значением которого является образ, если он известен: `Ratel of Cast`
++   entry .encode   элемент `Tel.Element` с присвоенными типами в виде образа RaTEL, через канонический записывающий из спецификации
++       `Ratel.encode(element, schema, codecs, digests)` размещает документ по схеме `schema`,
++       которая передаётся такой, какой объявлена, — со своими слоями — и встраивается как BinTEL
++       рядом со своей сигнатурой. `codecs` по умолчанию — `Tel.Codec.Bindings.all`; `digests`
++       (по умолчанию `true`) добавляет раздел дайджестов. То, что он записывает, запечатано.
++       Порождает `Ratel.Error`: `SchemaUnlayoutable` (`↯/t.5.11`), `CodecUnresolved`
++       (`↯/t.5.19`), `WidthMismatch` (`↯/t.5.22`) для значения, байты которого не совпадают по
++       ширине с объявленной его скаляром, `Unencodable` для модели, которую схема не описывает,
++       и `Oversized` для образа в 2 ГиБ или больше; а также `Tel.Error(EncodingRejected)` для
++       значения, которое отвергает его кодек. Его вызывают расширения `tel.ratel(schema)`,
++       `element.ratel(schema)` и `value.ratel`.
++   entry .openable   открывает всё, что `Viewable`, — путь, образ, имеющийся `Terrain` — как `Ratel` для чтения на месте
++       `source.open[Ratel]()` предоставляет на время представление `Terrain` источника через его
++       экземпляр `zephyrine.Viewable`, копирует и проверяет заголовок, декодирует встроенную
++       схему, заново вычисляет её сигнатуру, выводит раскладку и сверяет с ней каталоги таблиц
++       и индексов (`↯/t.5.1`–`↯/t.5.13`, `↯/t.5.19`, `↯/t.5.28`, `↯/t.5.29`), а затем передаёт
++       блоку `Ratel.Reader`, который называет аксессор `ratel`. Больше ничего не читается, пока
++       об этом не попросят. Читающий захватывает представление и не может пережить блок. Флаги —
++       это `Ratel.Flag`.
++
++       В режиме, который включает `Write`, источник предоставляет на время свои байты для
++       изменения через `Viewable#hold` -- файл отображается под исключительной блокировкой,
++       `Holding` берётся как есть -- и образ открывает его владелец: запечатанный образ
++       распечатывается, на всё время блока помечается как грязный, а читающий принимает
++       изменения `Ratel.Row` и `Ratel.Rows`. Источник, который нельзя изменить, например
++       значение `Ratel`, отклоняется с `Unwritable`.
++   entry .typedOpenable   открывает всё, что `Viewable`, как `Ratel of topic`: образ значения типа `topic`, и ничего другого
++       Как `openable`, но образ, сигнатура схемы которого не совпадает с сигнатурой схемы,
++       выведенной из `topic`, отклоняется с `Mismatched` до того, как выполнится блок.
++   entry .surveyable   читает образ на месте из представления, которое предоставляет на время что-то другое: то, через что его открывает `Observer` опубликованного имени
++   entry .typedSurveyable   как `surveyable`, для образа значения типа `topic`; любой другой отклоняется с `Mismatched`
++   entry .State   состояние, в котором читается образ: `Sealed` или `Unsealed`
++       Запечатанный образ компактен и неизменен, и его можно разделять; распечатанный — это
++       рабочий образ, который его владелец закрыл. Образ, который в этот момент изменяется,
++       грязный и не читается вовсе.
++   entry .Flag   что можно запросить у `open[Ratel]`: `Verify` и `Codecs(bindings)`
++       `Verify` запускает `verify` читающего перед блоком, делая его проверяющим читающим в
++       смысле спецификации. `Codecs(bindings)` связывает кодеки для кодировок, которые этот
++       модуль не определяет, с приоритетом над `Tel.Codec.Bindings.all`.
++   entry .viewable   образ как представление его байтов там, где они лежат в куче, чтобы он открывался так же, как файл
++   entry .Reader   открытый образ: его схема, его корневая строка и операции над всем документом
++     entry #Topic   бренд этого читающего: собственный тип, который несёт каждая выданная им строка
++     entry #root   корень документа как `Ratel.Row of reader.Topic`
++     entry #schema   составленная схема, которую несёт образ
++     entry #signature   сигнатура схемы, которую несёт образ; с ней сверяется читающий, требующий доверенной схемы
++     entry #valueHash   хеш значения документа, если его несёт заголовок
++     entry #materialise   семантическая модель, которую кодирует образ, в том виде, в каком её дал бы `Bintel.decode`
++     entry #verify   проверяет дайджесты, весь документ, заголовок каждой строки, каждый индекс как дерево и по его строкам, а также хеш значения
++     entry #state   был ли образ открыт запечатанным или как рабочий образ
++     entry #seal   документ этого образа, записанный заново как запечатанный образ: одни и те же байты, какой бы ни была его история
++     entry #sealAs   как `seal`, для образа значения некоторого типа: `Ratel of topic` или `Mismatched`
++     entry #repack   документ этого образа, записанный заново как рабочий образ, с запасом места для роста и без мусора
++   entry .Row   одна запись, читаемая на месте: `text`, `data`, `texts`, `flag`, `count`, `record`, `/`, `has`, `holds`, `as`
+
+-         A plain value — a table and a record index — which says where a record lies. Every
+-         accessor takes the `Ratel.Reader` contextually, as the block of `open[Ratel]` gives it,
+-         so a row may be kept, collected or returned, but is read only where a reader is given.
+-         Its type is `Ratel.Row of brand`, where the brand is the `Topic` of the reader it came
+-         from, and each accessor asks for a `Ratel.Reader of brand`: where several images are
+-         open a row is read through the reader of its own, and it cannot be read through the
+-         reader of another image, nor once its block has ended.
+-
+-         In an image which was opened for writing, `set`, `unset`, `delete` and `replace`
+-         change the record. Each is checked before anything is written -- a value against its
+-         scalar, a key against those of the record's siblings, a member which may not be absent
+-         -- and one which is refused, with a `Tel.Error`, leaves the image as it was. Through a
+-         reader which was not opened for writing each raises `Ratel.Error` with the reason
+-         `Unwritable`.
+-     entry #Topic   the brand of the reader this row came from
+-     entry #set   gives a scalar member a value, a repeatable scalar its values, or makes a flag present
+-     entry #updateDynamic   `set`, as an assignment to the member's name: `row.firstLine = value` sets `first-line`
+-     entry #unset   leaves a scalar member which may be absent without a value, or makes a flag absent
+-     entry #delete   takes the record, which must be one of a collection, out of it, with every record within it
+-     entry #replace   puts a value in the record's place in its collection, and answers the record which is there now
+-   entry .Rows   the records of a repeatable member: `size`, `apply`, `each`, `find`, `where`, `sorted`, and `insert` and `move`
+-     entry #count   how many records there are now, which for an image that is being changed may not be `size`
+-     entry #insert   puts a value into the collection as a new record, after the others or before a position, and answers the record
+-         The image must have been opened for writing. The value is checked as a document of
+-         the record's type is, and its key against those of the other records, before anything
+-         is written.
+-     entry #move   moves the record at one position to another
+-   entry .Cell   what a record of a `Ratel.Provider` is made over, and what its members are read from
++         Простое значение — таблица и индекс записи, — которое говорит, где лежит запись. Каждый
++         аксессор принимает `Ratel.Reader` контекстно, так, как его даёт блок `open[Ratel]`,
++         поэтому строку можно хранить, собирать в коллекцию или возвращать, но читается она
++         только там, где дан читающий. Её тип — `Ratel.Row of brand`, где бренд — это `Topic`
++         читающего, от которого она получена, и каждый аксессор требует `Ratel.Reader of brand`:
++         если открыто несколько образов, строка читается через свой собственный читающий, и её
++         нельзя прочитать ни через читающий другого образа, ни после окончания её блока.
++
++         В образе, открытом на запись, `set`, `unset`, `delete` и `replace` изменяют запись.
++         Каждый из них проверяется до того, как что-либо записано, -- значение по его скаляру,
++         ключ по ключам записей того же уровня, член, который не может отсутствовать, -- и
++         отклонённое изменение, с `Tel.Error`, оставляет образ таким, каким он был. Через
++         читающий, который не был открыт на запись, каждый из них порождает `Ratel.Error` с
++         причиной `Unwritable`.
++     entry #Topic   бренд читающего, от которого получена эта строка
++     entry #set   даёт значение скалярному члену, значения повторяемому скаляру или делает флаг присутствующим
++     entry #updateDynamic   `set` в виде присваивания имени члена: `row.firstLine = value` устанавливает `first-line`
++     entry #unset   оставляет без значения скалярный член, который может отсутствовать, или делает флаг отсутствующим
++     entry #delete   изымает запись, которая должна входить в коллекцию, из этой коллекции вместе со всеми записями внутри неё
++     entry #replace   помещает значение на место записи в её коллекции и отвечает записью, которая теперь там
++   entry .Rows   записи повторяемого члена: `size`, `apply`, `each`, `find`, `where`, `sorted`, а также `insert` и `move`
++     entry #count   сколько записей сейчас, что для изменяемого в этот момент образа может не совпадать с `size`
++     entry #insert   помещает значение в коллекцию как новую запись, после остальных или перед позицией, и отвечает этой записью
++         Образ должен быть открыт на запись. Значение проверяется так же, как документ типа
++         записи, а его ключ — по ключам других записей, до того как что-либо записано.
++     entry #move   перемещает запись из одной позиции в другую
++   entry .Cell   то, над чем построена запись `Ratel.Provider` и из чего читаются её члены
+
+-         Error `↯/s.118.11`: _the RaTEL image cannot be used because `reason`_. `Ratel.Error.Reason`
+-         numbers its cases 1 to 30 by the `↯/t.5` code of the RaTEL specification, which the
+-         error's bolt code carries — `BadMagic`, `UnsupportedVersion`, `ReservedSet`,
+-         `BadLength`, `BadDirectory`, `ExtentsOverlap`, `DigestMismatch`, `BadSignature`,
+-         `SchemaUndecodable`, `SignatureMismatch`, `SchemaUnlayoutable`, `BadTableDirectory`,
+-         `BadRootTable`, `BadRef`, `BadRecordIndex`, `RowRevisited`, `BadTag`, `BadUtf8`,
+-         `CodecUnresolved`, `CodecDecodeFailed`, `CodecNoncanonical`, `WidthMismatch`,
+-         `BadIndex`, `BadTree`, `IndexDisagrees`, `NonzeroPadding`, `ValueHashMismatch`,
+-         `InvalidState`, `Dirty`, `BadRowHeader` — and continues with those outside that
+-         taxonomy: `NestingLimitExceeded` (31), `Unencodable` (32), `Oversized` (33),
+-         `Unindexed` (34) for a lookup no index answers, and `Unknown` (35), `Inapplicable` (36)
+-         and `Absent` (37) for a member which a row does not have, has in another kind, or has
+-         not got a value for, `Unwritable` (38) for an image which cannot be changed, or a
+-         change through a reader which was not opened for writing, and `Mismatched` (39) for an
+-         image which was written with another schema than the one it is read by. `↯/t.5.1` to
+-         `↯/t.5.13`, `↯/t.5.19`, `↯/t.5.28` and `↯/t.5.29` are raised as an image is opened; the
+-         others by the access which meets them, or by `verify`. `CodecNoncanonical` and
+-         `NonzeroPadding`, the specification's optional checks, are not yet raised.
++         Ошибка `↯/s.118.11`: _the RaTEL image cannot be used because `reason`_.
++         `Ratel.Error.Reason` нумерует свои кейсы от 1 до 30 по коду `↯/t.5` спецификации
++         RaTEL, который несёт bolt-код ошибки, — `BadMagic`, `UnsupportedVersion`, `ReservedSet`,
++         `BadLength`, `BadDirectory`, `ExtentsOverlap`, `DigestMismatch`, `BadSignature`,
++         `SchemaUndecodable`, `SignatureMismatch`, `SchemaUnlayoutable`, `BadTableDirectory`,
++         `BadRootTable`, `BadRef`, `BadRecordIndex`, `RowRevisited`, `BadTag`, `BadUtf8`,
++         `CodecUnresolved`, `CodecDecodeFailed`, `CodecNoncanonical`, `WidthMismatch`,
++         `BadIndex`, `BadTree`, `IndexDisagrees`, `NonzeroPadding`, `ValueHashMismatch`,
++         `InvalidState`, `Dirty`, `BadRowHeader` — и продолжает кейсами вне этой таксономии:
++         `NestingLimitExceeded` (31), `Unencodable` (32), `Oversized` (33), `Unindexed` (34) для
++         поиска, на который не отвечает ни один индекс, а также `Unknown` (35), `Inapplicable`
++         (36) и `Absent` (37) для члена, которого у строки нет, который у неё другого вида или
++         для которого у неё нет значения, `Unwritable` (38) для образа, который нельзя изменить,
++         или для изменения через читающий, который не был открыт на запись, и `Mismatched` (39)
++         для образа, записанного с другой схемой, чем та, по которой его читают. `↯/t.5.1`–
++         `↯/t.5.13`, `↯/t.5.19`, `↯/t.5.28` и `↯/t.5.29` порождаются при открытии образа;
++         остальные — обращением, которое на них наталкивается, или `verify`.
++         `CodecNoncanonical` и `NonzeroPadding`, необязательные проверки спецификации, пока не
++         порождаются.
+
+- entry .key   `@key`: marks a case-class field as the key of its record, in the schema derived from it
+-     The field is declared `key`, so no two records of one collection may share its value, and
+-     a RaTEL image of the type has a primary index, by which `find` looks a record up.
++ entry .key   `@key`: помечает поле case-класса как ключ его записи в схеме, выведенной из него
++     Поле объявляется как `key`, поэтому никакие две записи одной коллекции не могут иметь
++     одинаковое его значение, а у образа RaTEL этого типа есть первичный индекс, по которому
++     `find` ищет запись.
+
+- entry .index   `@index(paths)`: declares a secondary index over a case-class field which is a collection
+-     Each path is a TELP, such as `/play` or `/stage/city`, from an element of the collection
+-     to a scalar member of it; the root path, `/`, indexes the values of a collection of
+-     scalars themselves. A field may carry several, each one index.
++ entry .index   `@index(paths)`: объявляет вторичный индекс над полем case-класса, которое является коллекцией
++     Каждый путь — это TELP, например `/play` или `/stage/city`, от элемента коллекции к его
++     скалярному члену; корневой путь, `/`, индексирует сами значения коллекции скаляров. Поле
++     может нести несколько путей, каждый — отдельный индекс.
+
+- entry .encoding   `@encoding(name)`: names the binary encoding of a case-class field which is a scalar
+-     BinTEL and RaTEL store its values as the bytes of the codec bound to the name -- `u32`,
+-     `uuid` and the other standard codecs, or one the application binds -- instead of as text.
++ entry .encoding   `@encoding(name)`: называет двоичное кодирование поля case-класса, которое является скаляром
++     BinTEL и RaTEL хранят его значения как байты кодека, связанного с этим именем, -- `u32`,
++     `uuid` и других стандартных кодеков или того, который связывает приложение, -- а не как текст.
+
+- entry .width   `@width(bytes)`: promises that every value of an encoded scalar field is that many bytes, so that RaTEL stores it within its record
+-     A value of another length is refused when it is written. A width with no encoding, or
+-     with `@intern`, does not compile.
++ entry .width   `@width(bytes)`: обещает, что каждое значение закодированного скалярного поля имеет ровно столько байтов, чтобы RaTEL хранил его внутри записи
++     Значение другой длины отклоняется при записи. Ширина без кодирования или вместе с
++     `@intern` не компилируется.
+
+- entry .intern   `@intern`: has RaTEL store each distinct value of a scalar field once, in the string table of the image
++ entry .intern   `@intern`: заставляет RaTEL хранить каждое различное значение скалярного поля один раз, в таблице строк образа

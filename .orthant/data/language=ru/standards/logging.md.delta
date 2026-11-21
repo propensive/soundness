@@ -1,0 +1,444 @@
+orthant 1 language
+
+- # Soundness Logging Standards
++ # Стандарты журналирования Soundness
+
+- This document defines when, what, and how to log in the Soundness libraries. It
+- complements `syntax.md` (whitespace and formatting) and `naming.md` (factory
+- names). Examples are drawn from `lib/*/src/core/*.scala`.
++ Этот документ определяет, когда, что и как журналировать в библиотеках Soundness. Он
++ дополняет `syntax.md` (пробелы и форматирование) и `naming.md` (имена фабрик). Примеры взяты
++ из `lib/*/src/core/*.scala`.
+
+- Logging is type-safe: a method that logs declares the requirement in its return
+- type with the `logs` infix type, and emits values of a module-specific `Event`
+- type — never raw strings. A `Logger` (a `Sink`) defined in the caller's scope
+- receives the events; with no logger in scope, logging is silent and free, so a
+- `logs` declaration imposes nothing on callers.
++ Журналирование типобезопасно: метод, который пишет в журнал, объявляет это требование в своём
++ возвращаемом типе с помощью инфиксного типа `logs` и порождает значения типа `Event`,
++ специфичного для модуля, — никогда не сырые строки. `Logger` (`Sink`), определённый в области
++ видимости вызывающего, получает события; если логгера в области видимости нет, журналирование
++ молчит и ничего не стоит, поэтому объявление `logs` ничего не навязывает вызывающим.
+
+- ## 1. When to log
++ ## 1. Когда журналировать
+
+- A method should log if, and only if, it performs an **observable side effect with
+- latency or a failure mode**:
++ Метод должен журналировать тогда и только тогда, когда он выполняет **наблюдаемый побочный
++ эффект с задержкой или возможностью сбоя**:
+
+= latency or a failure mode**:
+=
+- ```tabular
++ ```tabular
+
+- column  Category
+- column  Operations
+- row  Network  connect, bind, listen, accept, send, receive, close, upgrade
+- row  Filesystem  open, read, write, create, delete, move, symlink, watch
+- row  Process  spawn, kill, wait, signal
+- row  External services  HTTP requests, daemon protocols, Docker, package registries, downloads and uploads
++ column  Категория
++ column  Операции
++ row  Сеть  connect, bind, listen, accept, send, receive, close, upgrade
++ row  Файловая система  open, read, write, create, delete, move, symlink, watch
++ row  Процессы  spawn, kill, wait, signal
++ row  Внешние сервисы  HTTP-запросы, протоколы демонов, Docker, реестры пакетов, загрузки и выгрузки
+
+= row  External services  HTTP requests, daemon protocols, Docker, package registries, downloads and uploads
+- ```
++ ```
+
+- Pure, CPU-bound, or in-memory work **must not** log: hashing, encryption, parsing,
+- codecs, serialization, arithmetic, and data-structure manipulation produce no
+- log output, however expensive.
++ Чистая, ограниченная процессором или работающая в памяти работа **не должна** журналировать:
++ хеширование, шифрование, разбор, кодеки, сериализация, арифметика и работа со структурами
++ данных не порождают вывода в журнал, сколь бы дорогими они ни были.
+
+- A method opts in by naming its event type in the return type:
++ Метод включает журналирование, называя тип своего события в возвращаемом типе:
+
+= A method opts in by naming its event type in the return type:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A method opts in by naming its event type in the return type:
+=
+= ```scala fuel
+- substitute ???  ...
++ substitute ???  ...
+
+= A method opts in by naming its event type in the return type:
+=
+= ```scala fuel
+= substitute ???  ...
+- ##
++ ##
+
+- def fetch(url: HttpUrl): Http.Response logs Http.Event = ???
++ def fetch(url: HttpUrl): Http.Response logs Http.Event = ???
+
+= def fetch(url: HttpUrl): Http.Response logs Http.Event = ???
+- ```
++ ```
+
+- A method may log more than one event type by chaining:
++ Метод может журналировать события нескольких типов, выстраивая их в цепочку:
+
+= A method may log more than one event type by chaining:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A method may log more than one event type by chaining:
+=
+= ```scala fuel
+- substitute ???  ...
++ substitute ???  ...
+
+= A method may log more than one event type by chaining:
+=
+= ```scala fuel
+= substitute ???  ...
+- ##
++ ##
+
+- def shutdown(server: Pid): Unit logs Http.Event logs Exec.Event = ???
++ def shutdown(server: Pid): Unit logs Http.Event logs Exec.Event = ???
+
+= def shutdown(server: Pid): Unit logs Http.Event logs Exec.Event = ???
+- ```
++ ```
+
+- Do **not** add a `logs` requirement (or a `Log` call) inside a method that
+- implements a typeclass's abstract method — the extra context parameter changes
+- the signature and breaks the override. Log in the public extension method that
+- *calls* the typeclass instead; that is also the right granularity (one entry per
+- user-level operation, not per internal dispatch).
++ **Не** добавляйте требование `logs` (или вызов `Log`) внутрь метода, который реализует
++ абстрактный метод класса типов: лишний контекстный параметр меняет сигнатуру и ломает
++ переопределение. Журналируйте в публичном методе-расширении, который *вызывает* класс типов;
++ это к тому же правильная гранулярность (одна запись на операцию уровня пользователя, а не на
++ внутреннюю диспетчеризацию).
+
+- ## 2. Levels
++ ## 2. Уровни
+
+- `Level` has four values, chosen by **frequency and severity** together:
++ У `Level` четыре значения, выбираемых по **частоте и серьёзности** вместе:
+
+= `Level` has four values, chosen by **frequency and severity** together:
+=
+- ```tabular
++ ```tabular
+
+- column  Level
+- column  For
+- column  Examples
+- row  `Fine`  high-frequency, per-unit detail useful only while debugging  each frame, packet, file open, request received, cache hit
+- row  `Info`  one line per significant logical operation or lifecycle milestone  a connection established, a server now listening, a request sent, a process started, an archive opened, a download finished
+- row  `Warn`  a recoverable or unexpected-but-handled condition  a forced kill, a connection reset or retry, a broken stream, an idle timeout, a gracefully handled protocol violation, a fallback taken
++ column  Уровень
++ column  Для
++ column  Примеры
++ row  `Fine`  частые подробности на уровне отдельных единиц, полезные только при отладке  каждый кадр, пакет, открытие файла, полученный запрос, попадание в кеш
++ row  `Info`  одна строка на каждую значимую логическую операцию или веху жизненного цикла  установлено соединение, сервер начал слушать, запрос отправлен, процесс запущен, архив открыт, загрузка завершена
++ row  `Warn`  восстановимое или неожиданное, но обработанное состояние  принудительное завершение, сброс соединения или повтор, оборванный поток данных, тайм-аут простоя, корректно обработанное нарушение протокола, переход на запасной вариант
+
+- row  `Fail`
++ row  `Fail`
+
+-   cell  an operation that failed unrecoverably, emitted alongside the `Error` being raised; used sparingly
++   cell  операция, которая завершилась невосстановимым сбоем; порождается вместе с порождаемой `Error`; используется скупо
+
+-   cell
++   cell
+
+=   cell
+- ```
++ ```
+
+- Assume `Fine` is normally switched off, and be verbose at it: a per-packet send
+- is `Fine` even though it is "normal", while a one-per-connection bind is `Info`.
++ Исходите из того, что `Fine` обычно отключён, и будьте на нём многословны: отправка каждого
++ пакета — это `Fine`, хотя она «нормальна», а bind, выполняемый один раз на соединение, — это
++ `Info`.
+
+- ## 3. What to log
++ ## 3. Что журналировать
+
+- - **Identify the resource**: address and port, path, PID, URL, stream id, archive
+-   or entry name, container id.
+- - **Quantify when cheap**: byte counts, entry counts, elapsed milliseconds,
+-   status codes, exit codes.
+- - **Never log secrets**: credentials, tokens, cookies, key material, authorization
+-   headers, or whole request and response bodies. Log a redaction, a size, or a
+-   short preview instead.
+- - **Bound the size**: log lengths and previews, not entire payloads.
+- - **Carry typed fields**, not pre-formatted strings. The event case holds the
+-   values; the `Communicable` instance does the formatting (§4). This keeps the
+-   event type-safe and lets the rendering vary by sink.
++ - **Идентифицируйте ресурс**: адрес и порт, путь, PID, URL, идентификатор потока данных, имя
++   архива или записи, идентификатор контейнера.
++ - **Указывайте количества, когда это дёшево**: число байтов, число записей, прошедшие
++   миллисекунды, коды статуса, коды завершения.
++ - **Никогда не журналируйте секреты**: учётные данные, токены, cookie, ключевой материал,
++   заголовки авторизации или целые тела запросов и ответов. Вместо этого журналируйте
++   отредактированную версию, размер или короткий фрагмент.
++ - **Ограничивайте размер**: журналируйте длины и фрагменты, а не полезные нагрузки целиком.
++ - **Передавайте типизированные поля**, а не заранее отформатированные строки. Кейс события
++   хранит значения; форматированием занимается экземпляр `Communicable` (§4). Это сохраняет
++   типобезопасность события и позволяет отображению меняться в зависимости от приёмника.
+
+- ### Cost when disabled
++ ### Стоимость при отключении
+
+- `Log.fine`/`info`/`warn`/`fail` take their argument **by name**, and
+- `Loggable.fanOut` consults each sink's `accepts(level)` *before* forcing it. So
+- when no sink is in scope, or none accepts the level, the event value is never
+- constructed and its fields are never evaluated — a disabled log statement costs
+- nothing. Write log calls freely; do not guard them.
++ `Log.fine`/`info`/`warn`/`fail` принимают аргумент **по имени**, а `Loggable.fanOut`
++ запрашивает `accepts(level)` каждого приёмника *до* его вычисления. Поэтому, когда в области
++ видимости нет приёмника или ни один не принимает уровень, значение события никогда не
++ создаётся, а его поля никогда не вычисляются: отключённая инструкция журналирования ничего не
++ стоит. Пишите вызовы журналирования свободно; не защищайте их проверками.
+
+- Because of this, prefer passing the **original typed values** into the event and
+- letting the `Communicable` render them, rather than converting at the call site:
++ Поэтому предпочитайте передавать в событие **исходные типизированные значения** и оставлять их
++ отображение `Communicable`, а не преобразовывать их в месте вызова:
+
+= letting the `Communicable` render them, rather than converting at the call site:
+=
+- ```scala
++ ```scala
+
+- def send(method: Http.Method, url: HttpUrl, headers: List[Http.Header]): Unit logs Http.Event =
++ def send(method: Http.Method, url: HttpUrl, headers: List[Http.Header]): Unit logs Http.Event =
+
+-   Log.info(Http.Event.Send(method, url, headers))   // typed fields; rendering deferred
++   Log.info(Http.Event.Send(method, url, headers))   // typed fields; rendering deferred
+
+=   Log.info(Http.Event.Send(method, url, headers))   // typed fields; rendering deferred
+- ```
++ ```
+
+- Both forms are free when disabled (the argument is by-name), but typed fields
+- keep the event type-safe and let the rendering vary by sink.
++ Обе формы бесплатны при отключении (аргумент передаётся по имени), но типизированные поля
++ сохраняют типобезопасность события и позволяют отображению меняться в зависимости от
++ приёмника.
+
+- **Exception — call-site context.** When rendering a value needs information only
+- available at the call site (for example, a `serpentine.Path on plane` whose
+- textual form depends on its `plane`), capture the rendered `Text` *there*:
++ **Исключение — контекст места вызова.** Когда для отображения значения нужна информация,
++ доступная только в месте вызова (например, `serpentine.Path on plane`, текстовая форма которого
++ зависит от его `plane`), захватывайте отображённый `Text` *там*:
+
+= textual form depends on its `plane`), capture the rendered `Text` *there*:
+=
+- ```scala
++ ```scala
+
+- def move[plane: Filesystem](source: Path on plane, destination: Path on plane): Unit logs Io.Event =
++ def move[plane: Filesystem](source: Path on plane, destination: Path on plane): Unit logs Io.Event =
+
+-   Log.info(Io.Event.Move(source.show, destination.show))   // path rendering needs `plane`
++   Log.info(Io.Event.Move(source.show, destination.show))   // path rendering needs `plane`
+
+=   Log.info(Io.Event.Move(source.show, destination.show))   // path rendering needs `plane`
+- ```
++ ```
+
+- This is correct, not a compromise: the `.show` runs at the (by-name) call site
+- where the context exists, and still only when the event is actually logged.
++ Это правильно, а не компромисс: `.show` выполняется в месте вызова (по имени), где существует
++ контекст, и всё равно только тогда, когда событие действительно журналируется.
+
+- ## 4. Event types
++ ## 4. Типы событий
+
+- Each module that logs defines a single `enum` named `Event`, nested in the
+- object that names its domain (`Exec.Event`, `Http.Event`, `Io.Event`), with the
+- companion `object` before the `enum` (L3). Cases are CamelCase verb or noun
+- phrases carrying the relevant values as typed fields, and each extends the
+- `Log` categories it belongs to:
++ Каждый модуль, который журналирует, определяет одно `enum` с именем `Event`, вложенное в
++ объект, называющий его предметную область (`Exec.Event`, `Http.Event`, `Io.Event`), причём
++ `object`-компаньон стоит перед `enum` (L3). Кейсы — это глагольные или именные фразы в
++ CamelCase, несущие соответствующие значения как типизированные поля, и каждый расширяет
++ категории `Log`, к которым относится:
+
+= `Log` categories it belongs to:
+=
+- ```scala
++ ```scala
+
+- object Exec:
++ object Exec:
+
+-   object Event:
++   object Event:
+
+-     given communicable: Event is Communicable =
++     given communicable: Event is Communicable =
+
+-       case AbortProcess(pid)       => m"aborted the process with PID $pid"
++       case AbortProcess(pid)       => m"aborted the process with PID $pid"
+
+-       case PipelineStart(commands) => m"starting the pipeline ${commands.map(_.show).join(t" ")}"
++       case PipelineStart(commands) => m"starting the pipeline ${commands.map(_.show).join(t" ")}"
+
+-       case KillProcess(pid)        => m"killed the process with PID $pid"
++       case KillProcess(pid)        => m"killed the process with PID $pid"
+
+-       case ProcessStart(command)   => m"starting the process $command"
++       case ProcessStart(command)   => m"starting the process $command"
+
+-   enum Event:
++   enum Event:
+
+-     case ProcessStart(command: Command) extends Event, Log.Process
++     case ProcessStart(command: Command) extends Event, Log.Process
+
+-     case AbortProcess(pid: Pid) extends Event, Log.Process
++     case AbortProcess(pid: Pid) extends Event, Log.Process
+
+-     case PipelineStart(commands: List[Command]) extends Event, Log.Process
++     case PipelineStart(commands: List[Command]) extends Event, Log.Process
+
+-     case KillProcess(pid: Pid) extends Event, Log.Process
++     case KillProcess(pid: Pid) extends Event, Log.Process
+
+=     case KillProcess(pid: Pid) extends Event, Log.Process
+- ```
++ ```
+
+- The companion holds a `given communicable: <Event> is Communicable` that maps each
+- case to an `m"..."` message, with the `=>` arrows aligned (Consequent Style `T1`).
++ Компаньон содержит `given communicable: <Event> is Communicable`, который сопоставляет каждому
++ кейсу сообщение `m"..."`, причём стрелки `=>` выровнены (Consequent Style `T1`).
+
+- The event type must be exported into the `soundness` package (L4).
++ Тип события должен экспортироваться в пакет `soundness` (L4).
+
+- ### Composing with `Exec.Event`
++ ### Композиция с `Exec.Event`
+
+- A module that shells out to a subprocess reuses `guillotine.Exec.Event` by
+- transcribing it into its own event, rather than duplicating process cases:
++ Модуль, который запускает подпроцессы, переиспользует `guillotine.Exec.Event`, транскрибируя
++ его в собственное событие, а не дублируя кейсы процессов:
+
+= transcribing it into its own event, rather than duplicating process cases:
+=
+- ```scala
++ ```scala
+
+- given execEvent: CliEvent transcribes guillotine.Exec.Event = CliEvent.Exec(_)
++ given execEvent: CliEvent transcribes guillotine.Exec.Event = CliEvent.Exec(_)
+
+= given execEvent: CliEvent transcribes guillotine.Exec.Event = CliEvent.Exec(_)
+- ```
++ ```
+
+- (existing pattern: `CliEvent`, `octogenarian.Commandline.Event`).
++ (существующий образец: `CliEvent`, `octogenarian.Commandline.Event`).
+
+- ## 5. Message style
++ ## 5. Стиль сообщений
+
+- Log messages are lowercase, terse, present-tense, with no trailing period, and
+- interpolate the relevant context — matching the house style for `fulminate`
+- error messages (see `messages.md`):
++ Сообщения журнала пишутся строчными буквами, кратко, в настоящем времени, без точки в конце и
++ интерполируют соответствующий контекст — в соответствии с принятым стилем сообщений об ошибках
++ `fulminate` (см. `messages.md`):
+
+= error messages (see `messages.md`):
+=
+- ```scala fuel
++ ```scala fuel
+
+- parse
++ parse
+
+= parse
+- ##
++ ##
+
+- m"connected to $remote"
++ m"connected to $remote"
+
+- m"opened $path for reading"
++ m"opened $path for reading"
+
+- m"killed process $pid"
++ m"killed process $pid"
+
+- m"downloaded $url ($size bytes in ${elapsed}ms)"
++ m"downloaded $url ($size bytes in ${elapsed}ms)"
+
+= m"downloaded $url ($size bytes in ${elapsed}ms)"
+- ```
++ ```
+
+- A message must say something specific: `m"a failure occurred"` is not acceptable —
+- name what failed and include the identifier.
++ Сообщение должно говорить что-то конкретное: `m"a failure occurred"` неприемлемо — назовите,
++ что именно отказало, и включите идентификатор.
+
+- ## 6. Emitting
++ ## 6. Порождение
+
+- Call `Log.fine`, `Log.info`, `Log.warn`, or `Log.fail` with an event value at the
+- point the side effect happens:
++ Вызывайте `Log.fine`, `Log.info`, `Log.warn` или `Log.fail` со значением события в той точке,
++ где происходит побочный эффект:
+
+= point the side effect happens:
+=
+- ```scala
++ ```scala
+
+- def start(command: Command, builder: ProcessBuilder): Unit logs Exec.Event =
++ def start(command: Command, builder: ProcessBuilder): Unit logs Exec.Event =
+
+-   Log.info(Exec.Event.ProcessStart(command))
++   Log.info(Exec.Event.ProcessStart(command))
+
+-   builder.start()
++   builder.start()
+
+=   builder.start()
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- def kill(pid: Pid, process: java.lang.Process): Unit logs Exec.Event =
++ def kill(pid: Pid, process: java.lang.Process): Unit logs Exec.Event =
+
+-   Log.warn(Exec.Event.KillProcess(pid))
++   Log.warn(Exec.Event.KillProcess(pid))
+
+-   process.destroyForcibly()
++   process.destroyForcibly()
+
+=   process.destroyForcibly()
+- ```
++ ```
+
+- A lifecycle event is logged once, at `Info`; a per-unit event (per frame, per
+- file) is logged at `Fine`; a handled anomaly is logged at `Warn`.
++ Событие жизненного цикла журналируется один раз, на уровне `Info`; событие для отдельной
++ единицы (кадра, файла) — на уровне `Fine`; обработанная аномалия — на уровне `Warn`.

@@ -1,0 +1,14 @@
+orthant 1 language
+
+- entry .tastySymbolTeletypeable   renders a `Tasty.Symbol` as a two-column table of its properties
+-     The `Teletypeable` given for `Tasty.Symbol`, needing a `TastyPalette`. The table has a
+-     row for the name (prefix dimmed, name bold), a row of flags with the set ones highlighted
+-     on the palette's `flagOn` colour, a row of properties with the set ones on
+-     `propertyOn`, and one row per detail. It is a top-level given, so it resolves without
+-     an import inside `hyperbole` and by name elsewhere:
++ entry .tastySymbolTeletypeable   отображает `Tasty.Symbol` как таблицу его свойств в два столбца
++     Given-экземпляр `Teletypeable` для `Tasty.Symbol`, которому нужна `TastyPalette`. В таблице
++     есть строка для имени (префикс приглушён, имя полужирное), строка флагов, где установленные
++     выделены на цвете палитры `flagOn`, строка свойств, где установленные даны на
++     `propertyOn`, и по строке на каждую подробность. Это given верхнего уровня, поэтому внутри
++     `hyperbole` он разрешается без импорта, а в других местах — по имени:

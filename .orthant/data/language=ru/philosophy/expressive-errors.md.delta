@@ -1,0 +1,318 @@
+orthant 1 language
+
+- # Expressive Errors
++ # Выразительные ошибки
+
+- When an error does occur, Soundness makes it as informative as it can be. An error is
+- an immutable value carrying the full detail of what went wrong — what was expected, what
+- was found, and where — rather than a bare message or an opaque code. Because that detail
+- is structured data, it can be inspected, rendered legibly for a person, or matched on by
+- handling code, and the same richness that helps a developer diagnose a fault lets a
+- program respond to it precisely.
++ Когда ошибка всё же возникает, Soundness делает её настолько информативной, насколько это
++ возможно. Ошибка — это неизменяемое значение, которое несёт все подробности того, что пошло не
++ так, — что ожидалось, что обнаружено и где, — а не голое сообщение или непрозрачный код.
++ Поскольку эти подробности — структурированные данные, их можно исследовать, разборчиво
++ отобразить для человека или сопоставить в коде обработки, и то же богатство, которое помогает
++ разработчику диагностировать сбой, позволяет программе точно на него отреагировать.
+
+- Above all, errors are designed for pattern matching. An error is a case class, its
+- distinct causes are the cases of a `Reason` enumeration, and the values that explain the
+- failure are fields — so handling code deconstructs the error rather than parsing its
+- message:
++ Прежде всего ошибки рассчитаны на сопоставление с образцом. Ошибка — это case-класс, её
++ различные причины — кейсы перечисления `Reason`, а значения, которые объясняют неудачу, — поля,
++ поэтому код обработки деконструирует ошибку, а не разбирает её сообщение:
+
+= message:
+=
+- ```scala fuel
++ ```scala fuel
+
+= message:
+=
+= ```scala fuel
+- parse
++ parse
+
+= message:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- recover:
++ recover:
+
+-   case Io.Error(path, _, Io.Error.Reason.Nonexistent, _)      => create(path)
++   case Io.Error(path, _, Io.Error.Reason.Nonexistent, _)      => create(path)
+
+-   case Io.Error(_, _, Io.Error.Reason.PermissionDenied, _)    => escalate()
++   case Io.Error(_, _, Io.Error.Reason.PermissionDenied, _)    => escalate()
+
+- . protect(openConfiguration())
++ . protect(openConfiguration())
+
+= . protect(openConfiguration())
+- ```
++ ```
+
+- A handler that matches on structure is checked by the compiler — a renamed reason breaks
+- the match, not the production behaviour — and can be exactly as discriminating as the
+- situation needs, where string-matching on messages is fragile in every way. The message a
+- person reads and the structure a program matches are two renderings of one value, so they
+- can never disagree.
++ Обработчик, который сопоставляет по структуре, проверяется компилятором — переименованная
++ причина ломает сопоставление, а не поведение в продакшене — и может различать ровно настолько
++ тонко, насколько требует ситуация, тогда как сопоставление сообщений по строкам хрупко во всех
++ отношениях. Сообщение, которое читает человек, и структура, которую сопоставляет программа, —
++ два отображения одного значения, поэтому они никогда не могут разойтись.
+
+- ## The anatomy of an error
++ ## Анатомия ошибки
+
+- The shape is consistent enough to be worth stating. An error is a case class carrying the
+- values that explain it, its distinct causes are a `Reason` enumeration, and its message is
+- built with the `m"…"` interpolator from those same values:
++ Форма достаточно единообразна, чтобы её стоило описать. Ошибка — это case-класс, несущий
++ значения, которые её объясняют, её различные причины — перечисление `Reason`, а её сообщение
++ строится интерполятором `m"…"` из тех же самых значений:
+
+= built with the `m"…"` interpolator from those same values:
+=
+- ```scala fuel
++ ```scala fuel
+
+= built with the `m"…"` interpolator from those same values:
+=
+= ```scala fuel
+- parse
++ parse
+
+= built with the `m"…"` interpolator from those same values:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- object IpAddressError:
++ object IpAddressError:
+
+-   enum Reason(val number: Int) extends Clarification:
++   enum Reason(val number: Int) extends Clarification:
+
+-     case Ipv4ByteOutOfRange(byte: Int)        extends Reason(1)
++     case Ipv4ByteOutOfRange(byte: Int)        extends Reason(1)
+
+-     case Ipv4ByteNotNumeric(byte: Text)       extends Reason(2)
++     case Ipv4ByteNotNumeric(byte: Text)       extends Reason(2)
+
+-     case Ipv6WrongNumberOfGroups(count: Int)  extends Reason(7)
++     case Ipv6WrongNumberOfGroups(count: Int)  extends Reason(7)
+
+-     case Ipv6MultipleDoubleColons             extends Reason(8)
++     case Ipv6MultipleDoubleColons             extends Reason(8)
+
+-   object Reason:
++   object Reason:
+
+-     given communicable: Reason is Communicable =
++     given communicable: Reason is Communicable =
+
+-       case Ipv4ByteOutOfRange(byte)       => m"the number $byte is not in the range 0-255"
++       case Ipv4ByteOutOfRange(byte)       => m"the number $byte is not in the range 0-255"
+
+-       case Ipv4ByteNotNumeric(byte)       => m"the part $byte is not a number"
++       case Ipv4ByteNotNumeric(byte)       => m"the part $byte is not a number"
+
+-       case Ipv6WrongNumberOfGroups(count) => m"the address has $count groups, but should have 8"
++       case Ipv6WrongNumberOfGroups(count) => m"the address has $count groups, but should have 8"
+
+-       case Ipv6MultipleDoubleColons       => m":: appears more than once"
++       case Ipv6MultipleDoubleColons       => m":: appears more than once"
+
+=       case Ipv6MultipleDoubleColons       => m":: appears more than once"
+- ```
++ ```
+
+- Note that a reason may carry data of its own — the byte that was out of range, the number
+- of groups actually found — so the diagnosis is specific rather than categorical.
++ Заметьте, что причина может нести собственные данные — байт, вышедший за пределы диапазона,
++ фактически найденное число групп, — поэтому диагноз конкретен, а не категориален.
+
+- The numbers are the error's identity. An error type has a bolt code — the number
+- of its module and its own within the module — and each reason a number within it, and every code has a page in `doc/errors` explaining
+- the cause and the usual remedies — so `↯/s.100.2` in a user's report can be looked up rather
+- than guessed at.
++ Номера — это идентичность ошибки. У типа ошибки есть bolt-код — номер его модуля и его
++ собственный номер внутри модуля, — а у каждой причины есть номер внутри него, и для каждого кода
++ есть страница в `doc/errors`, объясняющая причину и обычные способы исправления, — поэтому
++ `↯/s.100.2` в отчёте пользователя можно найти, а не угадывать.
+
+- Three further properties follow from the shape, and each is worth having.
++ Из формы следуют ещё три свойства, и каждое стоит того, чтобы его иметь.
+
+- The message is *derived* from the fields, so it cannot describe a state the value is not
+- in. A `Reason` is a closed set, so a handler matching on it is checked for exhaustiveness
+- and a new reason is reported at every site that has not considered it. And the values
+- that explain the failure are available to the handler, not merely rendered into a
+- sentence.
++ Сообщение *выводится* из полей, поэтому оно не может описывать состояние, в котором значение не
++ находится. `Reason` — замкнутое множество, поэтому обработчик, который сопоставляет по нему,
++ проверяется на полноту, и о новой причине сообщается в каждом месте, где она не учтена. А
++ значения, объясняющие неудачу, доступны обработчику, а не просто вписаны в предложение.
+
+- ## Messages are values too
++ ## Сообщения — тоже значения
+
+- A `Message` is not a `Text`. It is a structured value built from interpolated parts, so
+- that anything `Communicable` can be embedded and rendered consistently wherever the
+- message is shown:
++ `Message` — это не `Text`. Это структурированное значение, построенное из интерполированных
++ частей, так что всё `Communicable` можно встроить в него и единообразно отобразить везде, где
++ показывается сообщение:
+
+= message is shown:
+=
+- ```scala fuel
++ ```scala fuel
+
+= message is shown:
+=
+= ```scala fuel
+- parse
++ parse
+
+= message is shown:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- m"the port $text is not valid because $reason"
++ m"the port $text is not valid because $reason"
+
+= m"the port $text is not valid because $reason"
+- ```
++ ```
+
+- The reason renders through its own `Communicable` instance rather than through
+- `toString`, so the phrasing lives with the type it describes and one wording serves every
+- message that embeds it. This is also the seam through which messages could be localized:
+- the structure survives to the point of rendering rather than being flattened into a string
+- at the point of construction.
++ Причина отображается через собственный экземпляр `Communicable`, а не через `toString`, поэтому
++ формулировка живёт рядом с типом, который она описывает, и одна формулировка служит каждому
++ сообщению, которое её встраивает. Это также шов, через который сообщения можно было бы
++ локализовать: структура доживает до момента отображения, а не сплющивается в строку в момент
++ построения.
+
+- ## Errors are pure
++ ## Ошибки чисты
+
+- An error may never hold a live capability, and the compiler enforces it: `Error` extends
+- `caps.Pure`.
++ Ошибка никогда не может удерживать живую возможность, и компилятор это обеспечивает: `Error`
++ расширяет `caps.Pure`.
+
+- The reason is precise. `throw` is the one channel [capture checking](capture-checking.md)
+- cannot see — an exception caught outside a scope arrives with its captures erased — so an
+- error carrying a capability would be a hole in the guarantee that scoped things do not
+- escape. Purity closes it: no error, however it travels, can smuggle a file handle or an
+- error handler out of the scope that confined it.
++ Причина точна. `throw` — единственный канал, который
++ [проверка захвата](capture-checking.md) не видит: исключение, перехваченное вне области
++ видимости, приходит со стёртыми захватами, — поэтому ошибка, несущая возможность, была бы дырой
++ в гарантии того, что ограниченные областью видимости вещи не ускользают. Чистота закрывает её:
++ никакая ошибка, как бы она ни перемещалась, не может тайком вынести файловый дескриптор или
++ обработчик ошибок из области видимости, которая их ограничивала.
+
+- This has a design consequence worth knowing. An error may carry the *path* that could not
+- be opened, but not the open handle; the *URL* that failed, but not the connection. In
+- practice that is what a diagnosis wants anyway.
++ У этого есть следствие для проектирования, которое стоит знать. Ошибка может нести *путь*,
++ который не удалось открыть, но не открытый дескриптор; *URL*, обращение к которому не удалось, но
++ не соединение. На практике диагнозу всё равно нужно именно это.
+
+- ## Stack traces are optional
++ ## Трассировки стека необязательны
+
+- Capturing a stack trace is the expensive part of constructing an exception, and much of
+- the time it is wasted: an error that is expected and handled two frames away has no use
+- for one.
++ Захват трассировки стека — дорогая часть построения исключения, и большую часть времени она
++ тратится впустую: ошибке, которая ожидаема и обрабатывается двумя кадрами выше, трассировка не
++ нужна.
+
+- Whether an error captures a trace is therefore a contextual choice:
++ Поэтому захватывает ли ошибка трассировку — это выбор, определяемый контекстом:
+
+= Whether an error captures a trace is therefore a contextual choice:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Whether an error captures a trace is therefore a contextual choice:
+=
+= ```scala fuel
+- parse
++ parse
+
+= Whether an error captures a trace is therefore a contextual choice:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- import errorDiagnostics.stackTracesDiagnostics   // capture, for debugging
++ import errorDiagnostics.stackTracesDiagnostics   // capture, for debugging
+
+- import errorDiagnostics.emptyDiagnostics         // omit, where the error is expected
++ import errorDiagnostics.emptyDiagnostics         // omit, where the error is expected
+
+= import errorDiagnostics.emptyDiagnostics         // omit, where the error is expected
+- ```
++ ```
+
+- The `Diagnostics` parameter appears in every error's constructor for this reason. It is
+- the one piece of ceremony the design imposes on defining an error, and it buys the
+- ability to use typed errors in hot paths without paying for traces nobody will read.
++ По этой причине параметр `Diagnostics` присутствует в конструкторе каждой ошибки. Это
++ единственная церемония, которую дизайн навязывает при определении ошибки, и она покупает
++ возможность использовать типизированные ошибки на горячих путях, не платя за трассировки,
++ которые никто не прочитает.
+
+- ## What it costs
++ ## Чего это стоит
+
+- **Defining an error is more work than throwing a string.** A case class, a `Reason`
+- enumeration, a `Communicable` instance and a `Diagnostics` parameter is real ceremony
+- against `throw new RuntimeException("bad port")`.
++ **Определить ошибку — больше работы, чем бросить строку.** Case-класс, перечисление `Reason`,
++ экземпляр `Communicable` и параметр `Diagnostics` — настоящая церемония по сравнению с
++ `throw new RuntimeException("bad port")`.
+
+- The defence is that the ceremony is proportional to the error's importance and is paid
+- once per error type, while the benefit is paid out at every handler — and that the
+- alternative degrades predictably: string messages get matched on, then the messages get
+- improved, and the matching breaks silently.
++ В защиту можно сказать, что церемония пропорциональна важности ошибки и оплачивается один раз на
++ тип ошибки, а выгода выплачивается в каждом обработчике, — и что альтернатива деградирует
++ предсказуемо: сообщения-строки начинают сопоставлять, затем сообщения улучшают, и сопоставление
++ молча ломается.
+
+- **Reason enumerations are a commitment.** Adding a case is a source-breaking change for
+- exhaustive handlers, which is the exhaustivity check working as intended, but it does
+- mean the set of reasons deserves thought when the error is designed.
++ **Перечисления причин — это обязательство.** Добавление кейса — изменение, ломающее исходный код
++ для исчерпывающих обработчиков; это проверка полноты, работающая так, как задумано, но это
++ значит, что набор причин заслуживает обдумывания при проектировании ошибки.
+
+- See [error handling](error-handling.md) for how these values are raised and responded to,
+- and [total transitions](total-transitions.md) for why the exhaustiveness matters.
++ См. [обработку ошибок](error-handling.md) о том, как эти значения порождаются и как на них
++ реагируют, и [тотальные переходы](total-transitions.md) о том, почему важна полнота.

@@ -1,0 +1,1371 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base graffiti
++ base graffiti
+
+- import soundness
++ import soundness
+
+- info   web pages composed from archetype traits: each adds a feature, its CSS and its metadata
++ info   веб-страницы, составленные из трейтов-архетипов: каждый добавляет функцию, её CSS и её метаданные
+
+- detail
++ detail
+
+-     _Graffiti_ assembles a web page from reusable parts. A page is a class extending
+-     `Archetype` which mixes in the features it wants — a `Masthead`, a `Hero` banner,
+-     `Breadcrumbs`, a `VersoPanel` beside the content, a `Colophon` at the foot, `Keywords` and
+-     a `Favicon` in the head — and supplies its one obligation, `content`, the central matter.
+-     Each feature trait contributes its own markup, its own CSS rules and its own `<head>`
+-     metadata by wrapping what the traits listed before it produced, so mixing them nests them
+-     in the order they are listed, and independent features never collide. The result is a
+-     complete HTML document, typed with honeycomb's element vocabulary, which renders to text
+-     with `html`, streams, and serves directly as an HTTP response.
++     _Graffiti_ собирает веб-страницу из повторно используемых частей. Страница — это класс,
++     расширяющий `Archetype`, который подмешивает нужные ему функции — шапку `Masthead`, баннер
++     `Hero`, «хлебные крошки» `Breadcrumbs`, боковую панель `VersoPanel` рядом с содержимым,
++     колофон `Colophon` внизу, `Keywords` и `Favicon` в заголовке документа — и выполняет своё
++     единственное обязательство, `content`, центральное содержимое. Каждый трейт функции вносит
++     собственную разметку, собственные правила CSS и собственные метаданные `<head>`,
++     обёртывая то, что произвели трейты, перечисленные до него, поэтому при подмешивании они
++     вкладываются друг в друга в порядке перечисления, а независимые функции никогда не
++     конфликтуют. Результат — полный HTML-документ, типизированный словарём элементов honeycomb,
++     который отображается в текст через `html`, передаётся потоком данных и напрямую
++     обслуживается как HTTP-ответ.
+
+=     with `html`, streams, and serves directly as an HTTP response.
+=
+-     ```scala
++     ```scala
+
+=     with `html`, streams, and serves directly as an HTTP response.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     with `html`, streams, and serves directly as an HTTP response.
+=
+=     ```scala
+=     import soundness.*
+-     import htmlDoms.whatwg.*
++     import htmlDoms.whatwg.*
+
+-     import formatting.indentedCssFormatting
++     import formatting.indentedCssFormatting
+
+-     class Welcome extends Archetype, Mainstay, Masthead, Colophon, Headline(t"Welcome"):
++     class Welcome extends Archetype, Mainstay, Masthead, Colophon, Headline(t"Welcome"):
+
+-       def content: Html of (? <: Flow) = P("Hello, world!")
++       def content: Html of (? <: Flow) = P("Hello, world!")
+
+-       override def masthead: Html of (? <: Flow) = Strong("Example Site")
++       override def masthead: Html of (? <: Flow) = Strong("Example Site")
+
+-       override def colophon: Html of (? <: Flow) = P("Copyright 2026")
++       override def colophon: Html of (? <: Flow) = P("Copyright 2026")
+
+-     Welcome().html.show
++     Welcome().html.show
+
+-     Welcome().css.show
++     Welcome().css.show
+
+=     Welcome().css.show
+-     ```
++     ```
+
+-     Because the page is a class, the compiler sees its structure: a page without `content`
+-     does not compile, a slot given an element which does not belong there is a type error,
+-     and two features which each define a slot of the same name are reported where they are
+-     combined. Each feature exposes hooks a page overrides directly — a slot (`masthead`,
+-     `verso`, `hero`), a setting (`versoWidth`, `menuGap`) and a rule set (`mastheadStyles`,
+-     `menuStyles`) — so a page adjusts a feature without touching its markup or calling
+-     `super`. Every layout uses only logical CSS properties, so setting `direction` to
+-     `HDir.Rtl` mirrors the page with the stylesheet unchanged.
++     Поскольку страница — это класс, компилятор видит её структуру: страница без `content` не
++     компилируется, слот, получивший элемент, которому там не место, — ошибка типа, а о двух
++     функциях, каждая из которых определяет слот с одним и тем же именем, сообщается там, где
++     они объединяются. Каждая функция предоставляет точки расширения, которые страница
++     переопределяет напрямую, — слот (`masthead`, `verso`, `hero`), настройку (`versoWidth`,
++     `menuGap`) и набор правил (`mastheadStyles`, `menuStyles`), — так что страница
++     подстраивает функцию, не трогая её разметку и не вызывая `super`. Каждая раскладка
++     использует только логические свойства CSS, поэтому установка `direction` в `HDir.Rtl`
++     зеркально отражает страницу без изменения таблицы стилей.
+
+-     There is one source set, `graffiti.core`, which builds on honeycomb (HTML), cataclysm
+-     (CSS) and parasite, and compiles for every platform honeycomb does; nothing in it exists
+-     only on Scala.js. Everything, including the `urlText` given, is exported to the
+-     `soundness` umbrella. A page needs honeycomb's element constructors in scope
+-     (`import htmlDoms.whatwg.*`) and, to render its stylesheet, a CSS formatting choice such
+-     as `formatting.indentedCssFormatting`; the `cataclysm.formatting.indentedCssFormatting`
+-     import inside the library renders the inline `<style>` element.
++     Набор исходников один, `graffiti.core`; он построен на honeycomb (HTML), cataclysm (CSS) и
++     parasite и компилируется для всех платформ, для которых компилируется honeycomb; ничто в
++     нём не существует только в Scala.js. Всё, включая given `urlText`, экспортируется в
++     зонтичный модуль `soundness`. Странице нужны в области видимости конструкторы элементов
++     honeycomb (`import htmlDoms.whatwg.*`) и, чтобы отобразить её таблицу стилей, выбор
++     форматирования CSS, например `formatting.indentedCssFormatting`; импорт
++     `cataclysm.formatting.indentedCssFormatting` внутри библиотеки отображает встроенный
++     элемент `<style>`.
+
+- refer graffiti.Archetype
++ refer graffiti.Archetype
+
+- refer graffiti.Dashboard
++ refer graffiti.Dashboard
+
+- refer honeycomb.Html
++ refer honeycomb.Html
+
+- refer cataclysm.Css
++ refer cataclysm.Css
+
+- entry .Archetype   the base of every page: its content, title, direction, stylesheet and the seams features compose through
++ entry .Archetype   основа каждой страницы: её содержимое, заголовок, направление, таблица стилей и швы, через которые составляются функции
+
+= entry .Archetype   the base of every page: its content, title, direction, stylesheet and the seams features compose through
+-   detail
++   detail
+
+-       A concrete page extends `Archetype` and the feature traits it wants, and defines
+-       `#content`. The traits compose through three protected seams: `#frame`, the wrapping
+-       pipeline, which a layout trait overrides as some decoration of `super.frame`;
+-       `#styles`, the stylesheet accumulator, overridden as `super.styles + ownRules`; and
+-       `#head`, the `<head>` accumulator, overridden as a fragment of a new element and
+-       `super.head`. A page author rarely touches them: each feature exposes its own hooks
+-       instead.
++       Конкретная страница расширяет `Archetype` и нужные ей трейты функций и определяет
++       `#content`. Трейты составляются через три защищённых шва: `#frame`, конвейер обёртывания,
++       который трейт раскладки переопределяет как некоторое оформление `super.frame`;
++       `#styles`, аккумулятор таблицы стилей, переопределяемый как `super.styles + ownRules`; и
++       `#head`, аккумулятор `<head>`, переопределяемый как фрагмент из нового элемента и
++       `super.head`. Автор страницы редко их касается: вместо этого каждая функция
++       предоставляет собственные точки расширения.
+
+-       The whole page is `#document`, a `Document[Html]` with a doctype, or `html` (honeycomb's
+-       extension, through `.renderable`): `<html>` with a `<head>` of the `#pageTitle`, the
+-       stylesheet — inline in a `<style>`, or a `<link>` to `#stylesheetUrl` when one is
+-       given — and the accumulated metadata, and a `<body>` whose `dir` is `#direction`,
+-       holding the framed content. The assembly is final, so a page cannot override it and
+-       silently lose its stylesheet or its direction; `#css` is the stylesheet alone, for
+-       serving at `#stylesheetUrl`.
++       Вся страница целиком — это `#document`, `Document[Html]` с doctype, или `html`
++       (расширение honeycomb, через `.renderable`): `<html>` с `<head>`, содержащим
++       `#pageTitle`, таблицу стилей — встроенную в `<style>` или `<link>` на `#stylesheetUrl`,
++       когда он задан, — и накопленные метаданные, и с `<body>`, чей `dir` равен `#direction` и
++       который содержит обрамлённое содержимое. Сборка финальна, поэтому страница не может её
++       переопределить и молча потерять таблицу стилей или направление; `#css` — это только
++       таблица стилей, для обслуживания по адресу `#stylesheetUrl`.
+
+=       serving at `#stylesheetUrl`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label The bare page: content, and nothing else
++         label Голая страница: содержимое и больше ничего
+
+=         label The bare page: content, and nothing else
+-         code
++         code
+
+=         label The bare page: content, and nothing else
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label The bare page: content, and nothing else
+=         code
+=             import soundness.*
+-             import htmlDoms.whatwg.*
++             import htmlDoms.whatwg.*
+
+-             class Guide extends Archetype:
++             class Guide extends Archetype:
+
+=             class Guide extends Archetype:
+-               def content: Html of (? <: Flow) = P("The guide")
++               def content: Html of (? <: Flow) = P("The guide")
+
+-             Guide().html   // <html><head><title></title><style></style></head><body dir="ltr"><p>The guide</p></body></html>
++             Guide().html   // <html><head><title></title><style></style></head><body dir="ltr"><p>The guide</p></body></html>
+
+=             Guide().html   // <html><head><title></title><style></style></head><body dir="ltr"><p>The guide</p></body></html>
+-       frame
++       frame
+
+-         label A headline sets the title and puts an <h1> above the content
++         label Headline задаёт заголовок и помещает <h1> над содержимым
+
+=         label A headline sets the title and puts an <h1> above the content
+-         code
++         code
+
+=         label A headline sets the title and puts an <h1> above the content
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A headline sets the title and puts an <h1> above the content
+=         code
+=             import soundness.*
+-             import htmlDoms.whatwg.*
++             import htmlDoms.whatwg.*
+
+-             class Guide extends Archetype, Headline(t"Guide"):
++             class Guide extends Archetype, Headline(t"Guide"):
+
+=             class Guide extends Archetype, Headline(t"Guide"):
+-               def content: Html of (? <: Flow) = P("The guide")
++               def content: Html of (? <: Flow) = P("The guide")
+
+-             Guide().html   // <title>Guide</title> … <h1 class="graffiti-headline">Guide</h1><p>The guide</p>
++             Guide().html   // <title>Guide</title> … <h1 class="graffiti-headline">Guide</h1><p>The guide</p>
+
+=             Guide().html   // <title>Guide</title> … <h1 class="graffiti-headline">Guide</h1><p>The guide</p>
+-       frame
++       frame
+
+-         label A landmark wraps what came before it
++         label Ориентир обёртывает то, что было до него
+
+=         label A landmark wraps what came before it
+-         code
++         code
+
+=         label A landmark wraps what came before it
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A landmark wraps what came before it
+=         code
+=             import soundness.*
+-             import htmlDoms.whatwg.*
++             import htmlDoms.whatwg.*
+
+-             class Guide extends Archetype, Headline(t"Guide"), Mainstay:
++             class Guide extends Archetype, Headline(t"Guide"), Mainstay:
+
+=             class Guide extends Archetype, Headline(t"Guide"), Mainstay:
+-               def content: Html of (? <: Flow) = P("The guide")
++               def content: Html of (? <: Flow) = P("The guide")
+
+-             Guide().html   // <main class="graffiti-mainstay"><h1 …>Guide</h1><p>The guide</p></main>
++             Guide().html   // <main class="graffiti-mainstay"><h1 …>Guide</h1><p>The guide</p></main>
+
+=             Guide().html   // <main class="graffiti-mainstay"><h1 …>Guide</h1><p>The guide</p></main>
+-       frame
++       frame
+
+-         label A masthead listed after the landmark sits outside it
++         label Шапка, перечисленная после ориентира, находится вне его
+
+=         label A masthead listed after the landmark sits outside it
+-         code
++         code
+
+=         label A masthead listed after the landmark sits outside it
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A masthead listed after the landmark sits outside it
+=         code
+=             import soundness.*
+-             import htmlDoms.whatwg.*
++             import htmlDoms.whatwg.*
+
+-             class Guide extends Archetype, Headline(t"Guide"), Mainstay, Masthead:
++             class Guide extends Archetype, Headline(t"Guide"), Mainstay, Masthead:
+
+=             class Guide extends Archetype, Headline(t"Guide"), Mainstay, Masthead:
+-               def content: Html of (? <: Flow) = P("The guide")
++               def content: Html of (? <: Flow) = P("The guide")
+
+=             class Guide extends Archetype, Headline(t"Guide"), Mainstay, Masthead:
+=               def content: Html of (? <: Flow) = P("The guide")
+-               override def masthead: Html of (? <: Flow) = Strong("Example Site")
++               override def masthead: Html of (? <: Flow) = Strong("Example Site")
+
+-             Guide().html   // <header class="graffiti-masthead"><strong>Example Site</strong></header><main …>…</main>
++             Guide().html   // <header class="graffiti-masthead"><strong>Example Site</strong></header><main …>…</main>
+
+=             Guide().html   // <header class="graffiti-masthead"><strong>Example Site</strong></header><main …>…</main>
+-       frame
++       frame
+
+-         label Metadata goes to the head, and a linked stylesheet replaces the inline one
++         label Метаданные идут в заголовок документа, а связанная таблица стилей заменяет встроенную
+
+=         label Metadata goes to the head, and a linked stylesheet replaces the inline one
+-         code
++         code
+
+=         label Metadata goes to the head, and a linked stylesheet replaces the inline one
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Metadata goes to the head, and a linked stylesheet replaces the inline one
+=         code
+=             import soundness.*
+-             import htmlDoms.whatwg.*
++             import htmlDoms.whatwg.*
+
+-             class Guide extends Archetype, Headline(t"Guide"), Mainstay, Masthead, StandardMetadata(t"A guide"):
++             class Guide extends Archetype, Headline(t"Guide"), Mainstay, Masthead, StandardMetadata(t"A guide"):
+
+=             class Guide extends Archetype, Headline(t"Guide"), Mainstay, Masthead, StandardMetadata(t"A guide"):
+-               def content: Html of (? <: Flow) = P("The guide")
++               def content: Html of (? <: Flow) = P("The guide")
+
+=             class Guide extends Archetype, Headline(t"Guide"), Mainstay, Masthead, StandardMetadata(t"A guide"):
+=               def content: Html of (? <: Flow) = P("The guide")
+-               override def masthead: Html of (? <: Flow) = Strong("Example Site")
++               override def masthead: Html of (? <: Flow) = Strong("Example Site")
+
+-               override def stylesheetUrl: Optional[Text] = t"/site.css"
++               override def stylesheetUrl: Optional[Text] = t"/site.css"
+
+-             Guide().html   // <head><title>Guide</title><link rel="stylesheet" href="/site.css"><meta name="description" …><meta name="viewport" …></head>
++             Guide().html   // <head><title>Guide</title><link rel="stylesheet" href="/site.css"><meta name="description" …><meta name="viewport" …></head>
+
+-             Guide().css    // the stylesheet to serve at /site.css
++             Guide().css    // the stylesheet to serve at /site.css
+
+=             Guide().css    // the stylesheet to serve at /site.css
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       A page is also a response body in its own right: it declares the media type
+-       `text/html` (`.media`) and streams its rendered document (`.streamable`), so an HTTP
+-       handler returns it directly and the `Content-Type` header follows from the value. A
+-       `Css` value serves the same way, as `text/css`, which is all a linked stylesheet needs.
++       Страница сама по себе является и телом ответа: она объявляет медиатип `text/html`
++       (`.media`) и передаёт потоком данных свой отображённый документ (`.streamable`), так что
++       HTTP-обработчик возвращает её напрямую, а заголовок `Content-Type` следует из значения.
++       Значение `Css` обслуживается так же, как `text/css`, и это всё, что нужно связанной
++       таблице стилей.
+
+=       `Css` value serves the same way, as `text/css`, which is all a linked stylesheet needs.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       typecheck
++       typecheck
+
+=       typecheck
+-       ##
++       ##
+
+-       def site(): Unit = supervise:
++       def site(): Unit = supervise:
+
+-         SocketServer(8080).handle:
++         SocketServer(8080).handle:
+
+-           request.target match
++           request.target match
+
+-             case t"/"         => Http.Response(Http.Ok)(Guide())
++             case t"/"         => Http.Response(Http.Ok)(Guide())
+
+-             case t"/site.css" => Http.Response(Http.Ok)(Guide().css)
++             case t"/site.css" => Http.Response(Http.Ok)(Guide().css)
+
+-             case _            => Http.Response(Http.NotFound)(t"No such page")
++             case _            => Http.Response(Http.NotFound)(t"No such page")
+
+=             case _            => Http.Response(Http.NotFound)(t"No such page")
+-       ```
++       ```
+
+-   refer graffiti.Headline
++   refer graffiti.Headline
+
+=   refer graffiti.Headline
+-   refer graffiti.Mainstay
++   refer graffiti.Mainstay
+
+=   refer graffiti.Headline
+=   refer graffiti.Mainstay
+-   refer graffiti.Masthead
++   refer graffiti.Masthead
+
+=   refer graffiti.Masthead
+-   refer graffiti.VersoPanel
++   refer graffiti.VersoPanel
+
+-   refer graffiti.StandardMetadata
++   refer graffiti.StandardMetadata
+
+-   entry .media   every page's media type: `text/html; charset=UTF-8`
+-       The `Media` given for any `page <: Archetype`, in implicit scope, from which a
+-       `Servable` is synthesised wherever an HTTP handler returns a page.
+-   entry .renderable   renders any page as its complete `<html>` element
+-       The `Renderable in "html"` given for any `page <: Archetype`, in implicit scope: it is
+-       what honeycomb's `page.html` extension calls, giving the `<html>` element with its
+-       `<head>` (title, stylesheet, metadata) and `<body dir="…">`. A page which defines its
+-       own `html` member shadows the extension rather than failing to compile.
+-   entry .streamable   streams any page's rendered document as text
+-       The `Streamable by Text` given for any `page <: Archetype`, needing a `Monitor` and a
+-       `Probate` in scope: the page's `document` is rendered as it is streamed, within the
+-       supervising scope a server runs under, with nothing buffered. `page.read[Text]` under
+-       `supervise` is the whole document, doctype first.
+-   entry #content   the central matter of the page; the one member a concrete page must define
+-       Flow content: a `P`, a `Div`, a fragment of several. Every feature's `frame` wraps or
+-       flanks this.
+-   entry #pageTitle   the document's `<title>`; empty unless overridden or set by `Headline` or `Dashboard`
+-   entry #direction   the writing direction, `HDir.Ltr` by default
+-       Set as `dir` on the `<body>`, since `<html>` admits no global attributes here. Every
+-       layout uses only logical properties (`inline-size`, `inline-start`), so `HDir.Rtl`
+-       swaps verso and recto in the browser and the emitted CSS is byte-for-byte the same.
+-   entry #frame   the wrapping pipeline: the content as framed by every feature so far; protected
+-       `content` at the base. A layout trait overrides it as a decoration of `super.frame`,
+-       so features nest in linearization order; a page author uses the features' hooks
+-       instead.
+-   entry #styles   the stylesheet accumulator: every feature's rules so far; protected
+-       Empty at the base; each feature overrides it as `super.styles + ownRules`. `css` is
+-       its final value.
+-   entry #head   the `<head>` metadata accumulator: every feature's elements so far; protected
+-       An empty fragment at the base; a metadata trait overrides it as a fragment of its own
+-       `<meta>` or `<link>` and `super.head`.
+-   entry #stylesheetUrl   where the stylesheet is served, if the page links it rather than embedding it
+-       `Unset` by default, so the stylesheet is embedded in a `<style>` element and the page
+-       is self-contained. When set, the head refers to it with `<link rel="stylesheet">`
+-       instead, and the application serves `css` at that address, so a site with many pages
+-       serves one stylesheet.
++   entry .media   медиатип каждой страницы: `text/html; charset=UTF-8`
++       Given `Media` для любого `page <: Archetype` в неявной области видимости, из которого
++       синтезируется `Servable` везде, где HTTP-обработчик возвращает страницу.
++   entry .renderable   отображает любую страницу как её полный элемент `<html>`
++       Given `Renderable in "html"` для любого `page <: Archetype` в неявной области видимости:
++       именно его вызывает расширение `page.html` из honeycomb, давая элемент `<html>` с его
++       `<head>` (заголовок, таблица стилей, метаданные) и `<body dir="…">`. Страница, которая
++       определяет собственный член `html`, затеняет расширение, а не перестаёт компилироваться.
++   entry .streamable   передаёт отображённый документ любой страницы потоком данных как текст
++       Given `Streamable by Text` для любого `page <: Archetype`, требующий в области видимости
++       `Monitor` и `Probate`: `document` страницы отображается по мере передачи, внутри
++       контролирующей области видимости, в которой работает сервер, без какой-либо буферизации.
++       `page.read[Text]` под `supervise` — это весь документ, начиная с doctype.
++   entry #content   центральное содержимое страницы; единственный член, который должна определить конкретная страница
++       Потоковое содержимое: `P`, `Div`, фрагмент из нескольких элементов. `frame` каждой
++       функции обёртывает его или располагается по сторонам от него.
++   entry #pageTitle   `<title>` документа; пуст, если не переопределён и не задан через `Headline` или `Dashboard`
++   entry #direction   направление письма, по умолчанию `HDir.Ltr`
++       Устанавливается как `dir` на `<body>`, поскольку `<html>` здесь не допускает глобальных
++       атрибутов. Каждая раскладка использует только логические свойства (`inline-size`,
++       `inline-start`), поэтому `HDir.Rtl` меняет местами версо и ректо в браузере, а
++       выдаваемый CSS остаётся байт в байт тем же.
++   entry #frame   конвейер обёртывания: содержимое, обрамлённое всеми функциями до этого места; защищённый
++       В основе — `content`. Трейт раскладки переопределяет его как оформление `super.frame`,
++       так что функции вкладываются в порядке линеаризации; автор страницы вместо этого
++       пользуется точками расширения функций.
++   entry #styles   аккумулятор таблицы стилей: правила всех функций до этого места; защищённый
++       В основе пуст; каждая функция переопределяет его как `super.styles + ownRules`. `css` —
++       его итоговое значение.
++   entry #head   аккумулятор метаданных `<head>`: элементы всех функций до этого места; защищённый
++       В основе — пустой фрагмент; трейт метаданных переопределяет его как фрагмент из своего
++       `<meta>` или `<link>` и `super.head`.
++   entry #stylesheetUrl   где обслуживается таблица стилей, если страница ссылается на неё, а не встраивает её
++       По умолчанию `Unset`, так что таблица стилей встраивается в элемент `<style>`, а
++       страница самодостаточна. Если адрес задан, заголовок вместо этого ссылается на него через
++       `<link rel="stylesheet">`, а приложение обслуживает `css` по этому адресу, так что сайт со
++       многими страницами обслуживает одну таблицу стилей.
+
+=       serves one stylesheet.
+=
+-       ```scala
++       ```scala
+
+=       serves one stylesheet.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       serves one stylesheet.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Linked extends Archetype, VersoPanel:
++       class Linked extends Archetype, VersoPanel:
+
+=       class Linked extends Archetype, VersoPanel:
+-         def content: Html of (? <: Flow) = P("body")
++         def content: Html of (? <: Flow) = P("body")
+
+-         override def stylesheetUrl: Optional[Text] = t"/site.css"
++         override def stylesheetUrl: Optional[Text] = t"/site.css"
+
+-       Linked().html   // <link rel="stylesheet" href="/site.css"> in the head, and no <style>
++       Linked().html   // <link rel="stylesheet" href="/site.css"> in the head, and no <style>
+
+=       Linked().html   // <link rel="stylesheet" href="/site.css"> in the head, and no <style>
+-       ```
++       ```
+
+-   entry #css   the page's whole stylesheet, as structured `Css`; final
+-       The accumulated rules of every feature, for serving at `stylesheetUrl` or rendering
+-       with `show` (which needs a CSS formatting choice such as
+-       `formatting.indentedCssFormatting`). It is final: a page restyles a feature through
+-       that feature's rule hook, such as `mastheadStyles`, not by overriding this.
+-   entry #document   the page as a `Document[Html]` with a leading doctype; final
+-       The form served over HTTP and streamed by `.streamable`: the doctype, then the
+-       `<html>` element `html` renders.
++   entry #css   вся таблица стилей страницы как структурированный `Css`; финальный
++       Накопленные правила всех функций, для обслуживания по адресу `stylesheetUrl` или
++       отображения через `show` (которому нужен выбор форматирования CSS, например
++       `formatting.indentedCssFormatting`). Он финален: страница меняет стиль функции через
++       точку расширения правил этой функции, например `mastheadStyles`, а не переопределяя его.
++   entry #document   страница как `Document[Html]` с начальным doctype; финальный
++       Форма, обслуживаемая по HTTP и передаваемая потоком данных через `.streamable`: doctype,
++       затем элемент `<html>`, который отображает `html`.
+
+- entry .Headline   sets the document title and prepends a top-level heading
++ entry .Headline   задаёт заголовок документа и добавляет в начало заголовок верхнего уровня
+
+= entry .Headline   sets the document title and prepends a top-level heading
+-   detail
++   detail
+
+-       `Headline(title)` makes `pageTitle` the title and puts an `<h1 class="graffiti-headline">`
+-       at the head of the frame, so it appears above whatever the features listed before it
+-       built. It fills no slot of its own.
++       `Headline(title)` делает `pageTitle` заголовком и помещает `<h1 class="graffiti-headline">`
++       в начало обрамления, так что он появляется над всем, что построили функции,
++       перечисленные до него. Собственного слота он не заполняет.
+
+=       built. It fills no slot of its own.
+=
+-       ```scala
++       ```scala
+
+=       built. It fills no slot of its own.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       built. It fills no slot of its own.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Welcome extends Archetype, Headline(t"Welcome"):
++       class Welcome extends Archetype, Headline(t"Welcome"):
+
+=       class Welcome extends Archetype, Headline(t"Welcome"):
+-         def content: Html of (? <: Flow) = P("Hello, world!")
++         def content: Html of (? <: Flow) = P("Hello, world!")
+
+-       Welcome().html   // <title>Welcome</title> … <h1 class="graffiti-headline">Welcome</h1><p>Hello, world!</p>
++       Welcome().html   // <title>Welcome</title> … <h1 class="graffiti-headline">Welcome</h1><p>Hello, world!</p>
+
+=       Welcome().html   // <title>Welcome</title> … <h1 class="graffiti-headline">Welcome</h1><p>Hello, world!</p>
+-       ```
++       ```
+
+-   entry .headlineClass   the CSS class of the heading: `graffiti-headline`
+-   entry #heading   the rendered heading, an `<h1>`; protected, override to restructure it
+-   entry #headlineStyles   this feature's rules, a margin below the heading; protected, override to restyle it
++   entry .headlineClass   класс CSS заголовка: `graffiti-headline`
++   entry #heading   отображённый заголовок, `<h1>`; защищённый, переопределите, чтобы изменить его структуру
++   entry #headlineStyles   правила этой функции, отступ под заголовком; защищённый, переопределите, чтобы изменить стиль
+
+- entry .TopMenu   a horizontal navigation bar across the top of the page, reusable as `menu`
++ entry .TopMenu   горизонтальная навигационная панель вдоль верха страницы, повторно используемая как `menu`
+
+= entry .TopMenu   a horizontal navigation bar across the top of the page, reusable as `menu`
+-   detail
++   detail
+
+-       Prepends a `<nav class="graffiti-top-menu">` of the `#menuItems`, laid out as a flex row
+-       with `#menuGap` between items. The rendered bar is also `#menu`, a helper a page may
+-       place elsewhere — in a side panel, say — instead of or as well as at the top.
++       Добавляет в начало `<nav class="graffiti-top-menu">` из `#menuItems`, расположенных как
++       flex-строка с промежутком `#menuGap` между пунктами. Отображённая панель доступна также
++       как `#menu` — вспомогательный член, который страница может разместить в другом месте,
++       скажем в боковой панели, вместо верха страницы или вдобавок к нему.
+
+=       place elsewhere — in a side panel, say — instead of or as well as at the top.
+=
+-       ```scala
++       ```scala
+
+=       place elsewhere — in a side panel, say — instead of or as well as at the top.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       place elsewhere — in a side panel, say — instead of or as well as at the top.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Manual extends Archetype, VersoPanel, TopMenu, Headline(t"Manual"):
++       class Manual extends Archetype, VersoPanel, TopMenu, Headline(t"Manual"):
+
+-         def content: Html of (? <: Flow) = P("Chapter one")
++         def content: Html of (? <: Flow) = P("Chapter one")
+
+-         override def menuItems: List[Html of (? <: Phrasing)] = List(Strong("Home"), Strong("About"))
++         override def menuItems: List[Html of (? <: Phrasing)] = List(Strong("Home"), Strong("About"))
+
+-         override def verso: Html of (? <: Flow) = menu
++         override def verso: Html of (? <: Flow) = menu
+
+=         override def verso: Html of (? <: Flow) = menu
+-       ```
++       ```
+
+-   entry .menuClass   the CSS class of the bar: `graffiti-top-menu`
+-   entry #menuItems   the bar's links, phrasing elements; empty until overridden
+-   entry #menuGap   the spacing between items, `1rem` by default
+-   entry #menu   the rendered `<nav>`; protected, a helper a page may reuse to fill another slot
+-   entry #menuStyles   this feature's rules, a flex row with `menuGap`; protected, override to restyle it
++   entry .menuClass   класс CSS панели: `graffiti-top-menu`
++   entry #menuItems   ссылки панели, фразовые элементы; пусто, пока не переопределено
++   entry #menuGap   промежуток между пунктами, по умолчанию `1rem`
++   entry #menu   отображённый `<nav>`; защищённый, вспомогательный член, который страница может повторно использовать, чтобы заполнить другой слот
++   entry #menuStyles   правила этой функции, flex-строка с `menuGap`; защищённый, переопределите, чтобы изменить стиль
+
+- entry .VersoPanel   a side panel on the inline-start edge, beside the content
++ entry .VersoPanel   боковая панель у начального края строки, рядом с содержимым
+
+= entry .VersoPanel   a side panel on the inline-start edge, beside the content
+-   detail
++   detail
+
+-       The verso page of a spread: the left in left-to-right text, the right in right-to-left.
+-       The content and an `<aside class="graffiti-verso">` of the `#verso` slot are placed in a
+-       two-column grid whose source order is panel-then-content, so the grid follows the
+-       writing direction and `direction = HDir.Rtl` mirrors it with no change to the CSS. The
+-       panel is `#versoWidth` wide with `#versoGap` before the content. It is independent of
+-       `RectoPanel`: a page may mix in both, in either order.
++       Версо — левая страница разворота при письме слева направо и правая при письме справа
++       налево. Содержимое и `<aside class="graffiti-verso">` из слота `#verso` размещаются в
++       двухколоночной сетке, порядок в исходнике которой — сначала панель, потом содержимое,
++       поэтому сетка следует направлению письма, а `direction = HDir.Rtl` отражает её зеркально
++       без изменения CSS. Панель имеет ширину `#versoWidth` и промежуток `#versoGap` перед
++       содержимым. Она независима от `RectoPanel`: страница может подмешать обе, в любом порядке.
+
+=       `RectoPanel`: a page may mix in both, in either order.
+=
+-       ```scala
++       ```scala
+
+=       `RectoPanel`: a page may mix in both, in either order.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `RectoPanel`: a page may mix in both, in either order.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class WideVerso extends Archetype, VersoPanel:
++       class WideVerso extends Archetype, VersoPanel:
+
+=       class WideVerso extends Archetype, VersoPanel:
+-         def content: Html of (? <: Flow) = P("body")
++         def content: Html of (? <: Flow) = P("body")
+
+-         override def verso: Html of (? <: Flow) = P("A table of contents")
++         override def verso: Html of (? <: Flow) = P("A table of contents")
+
+-         override def versoWidth = 20.0*Rem
++         override def versoWidth = 20.0*Rem
+
+-       WideVerso().css   // .graffiti-verso { inline-size: 20rem }
++       WideVerso().css   // .graffiti-verso { inline-size: 20rem }
+
+=       WideVerso().css   // .graffiti-verso { inline-size: 20rem }
+-       ```
++       ```
+
+=       ```
+-   refer graffiti.RectoPanel
++   refer graffiti.RectoPanel
+
+-   entry .layoutClass   the CSS class of the grid container: `graffiti-verso-layout`
+-   entry .versoClass   the CSS class of the panel: `graffiti-verso`
+-   entry .contentClass   the CSS class of the content column: `graffiti-verso-content`
+-   entry #verso   the panel's content; empty until overridden
+-   entry #versoWidth   the panel's inline size, `16rem` by default
+-   entry #versoGap   the gap between panel and content, `1rem` by default
+-   entry #versoArrangement   how panel and content are arranged, a grid `<div>`; protected, override to change the container
+-   entry #versoStyles   this feature's rules, the grid and the panel's width; protected, override to restyle it
++   entry .layoutClass   класс CSS контейнера сетки: `graffiti-verso-layout`
++   entry .versoClass   класс CSS панели: `graffiti-verso`
++   entry .contentClass   класс CSS колонки содержимого: `graffiti-verso-content`
++   entry #verso   содержимое панели; пусто, пока не переопределено
++   entry #versoWidth   размер панели вдоль строки, по умолчанию `16rem`
++   entry #versoGap   промежуток между панелью и содержимым, по умолчанию `1rem`
++   entry #versoArrangement   как располагаются панель и содержимое, сеточный `<div>`; защищённый, переопределите, чтобы сменить контейнер
++   entry #versoStyles   правила этой функции, сетка и ширина панели; защищённый, переопределите, чтобы изменить стиль
+
+- entry .RectoPanel   a side panel on the inline-end edge, beside the content
++ entry .RectoPanel   боковая панель у конечного края строки, рядом с содержимым
+
+= entry .RectoPanel   a side panel on the inline-end edge, beside the content
+-   detail
++   detail
+
+-       The recto page of a spread: the right in left-to-right text, the left in right-to-left.
+-       The content and an `<aside class="graffiti-recto">` of the `#recto` slot are placed in
+-       a two-column grid whose source order is content-then-panel, using only logical
+-       properties, so `direction = HDir.Rtl` mirrors it for free. The panel is `#rectoWidth`
+-       wide with `#rectoGap` after the content. `FoldableRectoPanel` refines it with a fold.
++       Ректо — правая страница разворота при письме слева направо и левая при письме справа
++       налево. Содержимое и `<aside class="graffiti-recto">` из слота `#recto` размещаются в
++       двухколоночной сетке, порядок в исходнике которой — сначала содержимое, потом панель,
++       с использованием только логических свойств, поэтому `direction = HDir.Rtl` отражает её
++       зеркально даром. Панель имеет ширину `#rectoWidth` и промежуток `#rectoGap` после
++       содержимого. `FoldableRectoPanel` уточняет её, добавляя сворачивание.
+
+=       wide with `#rectoGap` after the content. `FoldableRectoPanel` refines it with a fold.
+-   refer graffiti.VersoPanel
++   refer graffiti.VersoPanel
+
+-   refer graffiti.FoldableRectoPanel
++   refer graffiti.FoldableRectoPanel
+
+-   entry .layoutClass   the CSS class of the grid container: `graffiti-recto-layout`
+-   entry .rectoClass   the CSS class of the panel: `graffiti-recto`
+-   entry .contentClass   the CSS class of the content column: `graffiti-recto-content`
+-   entry #recto   the panel's content; empty until overridden
+-   entry #rectoWidth   the panel's inline size, `16rem` by default
+-   entry #rectoGap   the gap between content and panel, `1rem` by default
+-   entry #rectoArrangement   how content and panel are arranged, a grid `<div>`; protected, override to change the container
+-   entry #rectoStyles   this feature's rules, the grid and the panel's width; protected, override to restyle it
++   entry .layoutClass   класс CSS контейнера сетки: `graffiti-recto-layout`
++   entry .rectoClass   класс CSS панели: `graffiti-recto`
++   entry .contentClass   класс CSS колонки содержимого: `graffiti-recto-content`
++   entry #recto   содержимое панели; пусто, пока не переопределено
++   entry #rectoWidth   размер панели вдоль строки, по умолчанию `16rem`
++   entry #rectoGap   промежуток между содержимым и панелью, по умолчанию `1rem`
++   entry #rectoArrangement   как располагаются содержимое и панель, сеточный `<div>`; защищённый, переопределите, чтобы сменить контейнер
++   entry #rectoStyles   правила этой функции, сетка и ширина панели; защищённый, переопределите, чтобы изменить стиль
+
+- entry .FoldableRectoPanel   a recto panel which can fold away, by CSS alone
++ entry .FoldableRectoPanel   панель ректо, которая может сворачиваться, средствами одного лишь CSS
+
+= entry .FoldableRectoPanel   a recto panel which can fold away, by CSS alone
+-   detail
++   detail
+
+-       Adds nothing structural over `RectoPanel`: it layers further rules onto the stylesheet,
+-       clipping the panel's overflow and bounding its inline size at `#maxRectoWidth` with a
+-       transition, so a script or a hover rule which lowers that size folds the panel shut. It
+-       shows how a feature refines another purely through its rules.
++       Ничего не добавляет к структуре `RectoPanel`: она накладывает на таблицу стилей
++       дополнительные правила, обрезая переполнение панели и ограничивая её размер вдоль строки
++       значением `#maxRectoWidth` с переходом, так что скрипт или правило hover, уменьшающее этот
++       размер, сворачивает панель. Она показывает, как одна функция уточняет другую исключительно
++       через свои правила.
+
+=       shows how a feature refines another purely through its rules.
+-   refer graffiti.RectoPanel
++   refer graffiti.RectoPanel
+
+-   entry #maxRectoWidth   the inline size the panel folds down from, `16rem` by default
+-   entry #foldedStyles   the fold's rules, over `RectoPanel`'s; protected, override to change the fold
++   entry #maxRectoWidth   размер вдоль строки, от которого сворачивается панель, по умолчанию `16rem`
++   entry #foldedStyles   правила сворачивания поверх правил `RectoPanel`; защищённый, переопределите, чтобы изменить сворачивание
+
+- entry .Breadcrumbs   a breadcrumb trail of path segments, before the content
++ entry .Breadcrumbs   цепочка «хлебных крошек» из сегментов пути перед содержимым
+
+= entry .Breadcrumbs   a breadcrumb trail of path segments, before the content
+-   detail
++   detail
+
+-       `Breadcrumbs(segments*)` prepends a `<nav class="graffiti-breadcrumbs">` holding an
+-       `<ol>` with one `<li>` per segment, as a flex row.
++       `Breadcrumbs(segments*)` добавляет в начало `<nav class="graffiti-breadcrumbs">`,
++       содержащий `<ol>` с одним `<li>` на сегмент, в виде flex-строки.
+
+=       `<ol>` with one `<li>` per segment, as a flex row.
+=
+-       ```scala
++       ```scala
+
+=       `<ol>` with one `<li>` per segment, as a flex row.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `<ol>` with one `<li>` per segment, as a flex row.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Guide extends Archetype, Breadcrumbs(t"home", t"docs"), Mainstay:
++       class Guide extends Archetype, Breadcrumbs(t"home", t"docs"), Mainstay:
+
+=       class Guide extends Archetype, Breadcrumbs(t"home", t"docs"), Mainstay:
+-         def content: Html of (? <: Flow) = P("The guide")
++         def content: Html of (? <: Flow) = P("The guide")
+
+-       Guide().html   // <main><nav class="graffiti-breadcrumbs"><ol><li>home</li><li>docs</li></ol></nav><p>The guide</p></main>
++       Guide().html   // <main><nav class="graffiti-breadcrumbs"><ol><li>home</li><li>docs</li></ol></nav><p>The guide</p></main>
+
+=       Guide().html   // <main><nav class="graffiti-breadcrumbs"><ol><li>home</li><li>docs</li></ol></nav><p>The guide</p></main>
+-       ```
++       ```
+
+-   entry .crumbsClass   the CSS class of the trail: `graffiti-breadcrumbs`
+-   entry #breadcrumbs   the rendered trail, a `<nav>`; protected, override to restructure it
+-   entry #breadcrumbStyles   this feature's rules, a flex row; protected, override to restyle it
++   entry .crumbsClass   класс CSS цепочки: `graffiti-breadcrumbs`
++   entry #breadcrumbs   отображённая цепочка, `<nav>`; защищённый, переопределите, чтобы изменить её структуру
++   entry #breadcrumbStyles   правила этой функции, flex-строка; защищённый, переопределите, чтобы изменить стиль
+
+- entry .Logo   a phrasing-level mark, `logo`, for a page or another feature to place anywhere
++ entry .Logo   знак фразового уровня, `logo`, который страница или другая функция может поместить куда угодно
+
+= entry .Logo   a phrasing-level mark, `logo`, for a page or another feature to place anywhere
+-   detail
++   detail
+
+-       Contributes no structure of its own: `#logo` is a `<span class="graffiti-logo">` of the
+-       `#logoText`, rendered bold, which a page drops into a masthead, a menu or a panel.
++       Собственной структуры не вносит: `#logo` — это `<span class="graffiti-logo">` из
++       `#logoText`, отображённый полужирным, который страница вставляет в шапку, меню или
++       панель.
+
+=       `#logoText`, rendered bold, which a page drops into a masthead, a menu or a panel.
+=
+-       ```scala
++       ```scala
+
+=       `#logoText`, rendered bold, which a page drops into a masthead, a menu or a panel.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `#logoText`, rendered bold, which a page drops into a masthead, a menu or a panel.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Branded extends Archetype, Masthead, Logo:
++       class Branded extends Archetype, Masthead, Logo:
+
+=       class Branded extends Archetype, Masthead, Logo:
+-         def content: Html of (? <: Flow) = P("body")
++         def content: Html of (? <: Flow) = P("body")
+
+-         override def logoText: Text = t"Example"
++         override def logoText: Text = t"Example"
+
+-         override def masthead: Html of (? <: Flow) = logo
++         override def masthead: Html of (? <: Flow) = logo
+
+=         override def masthead: Html of (? <: Flow) = logo
+-       ```
++       ```
+
+-   entry .logoClass   the CSS class of the mark: `graffiti-logo`
+-   entry #logoText   the logo's wording; empty until overridden
+-   entry #logo   the rendered mark, a `<span>`; protected, for placing wherever the page likes
+-   entry #logoStyles   this feature's rules, bold text; protected, override to restyle it
++   entry .logoClass   класс CSS знака: `graffiti-logo`
++   entry #logoText   текст логотипа; пусто, пока не переопределено
++   entry #logo   отображённый знак, `<span>`; защищённый, для размещения там, где удобно странице
++   entry #logoStyles   правила этой функции, полужирный текст; защищённый, переопределите, чтобы изменить стиль
+
+- entry .Masthead   a `<header>` masthead at the top of the page, filled through the `masthead` slot
++ entry .Masthead   шапка `<header>` вверху страницы, заполняемая через слот `masthead`
+
+= entry .Masthead   a `<header>` masthead at the top of the page, filled through the `masthead` slot
+-   detail
++   detail
+
+-       Prepends a `<header class="graffiti-masthead">` of the `#masthead` slot — often a logo,
+-       a headline and a menu — laid out as a flex row, before whatever the features listed
+-       earlier built. Listed after `Mainstay`, it sits outside the `<main>` landmark.
++       Добавляет в начало `<header class="graffiti-masthead">` из слота `#masthead` — часто это
++       логотип, заголовок и меню, — расположенный как flex-строка, перед всем, что построили
++       функции, перечисленные раньше. Если она перечислена после `Mainstay`, то находится вне
++       ориентира `<main>`.
+
+=       earlier built. Listed after `Mainstay`, it sits outside the `<main>` landmark.
+=
+-       ```scala
++       ```scala
+
+=       earlier built. Listed after `Mainstay`, it sits outside the `<main>` landmark.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       earlier built. Listed after `Mainstay`, it sits outside the `<main>` landmark.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Welcome extends Archetype, Mainstay, Masthead:
++       class Welcome extends Archetype, Mainstay, Masthead:
+
+=       class Welcome extends Archetype, Mainstay, Masthead:
+-         def content: Html of (? <: Flow) = P("Hello, world!")
++         def content: Html of (? <: Flow) = P("Hello, world!")
+
+=         def content: Html of (? <: Flow) = P("Hello, world!")
+-         override def masthead: Html of (? <: Flow) = Strong("Example Site")
++         override def masthead: Html of (? <: Flow) = Strong("Example Site")
+
+=         override def masthead: Html of (? <: Flow) = Strong("Example Site")
+-       ```
++       ```
+
+-   refer graffiti.Colophon
++   refer graffiti.Colophon
+
+=   refer graffiti.Colophon
+-   refer graffiti.Mainstay
++   refer graffiti.Mainstay
+
+-   entry .mastheadClass   the CSS class of the header: `graffiti-masthead`
+-   entry #masthead   the masthead's content; empty until overridden
+-   entry #mastheadStyles   this feature's rules, a flex row with a gap; protected, override to restyle it
++   entry .mastheadClass   класс CSS шапки: `graffiti-masthead`
++   entry #masthead   содержимое шапки; пусто, пока не переопределено
++   entry #mastheadStyles   правила этой функции, flex-строка с промежутком; защищённый, переопределите, чтобы изменить стиль
+
+=   entry #mastheadStyles   this feature's rules, a flex row with a gap; protected, override to restyle it
+-       ```scala
++       ```scala
+
+=   entry #mastheadStyles   this feature's rules, a flex row with a gap; protected, override to restyle it
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=   entry #mastheadStyles   this feature's rules, a flex row with a gap; protected, override to restyle it
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Welcome extends Archetype, Masthead:
++       class Welcome extends Archetype, Masthead:
+
+=       class Welcome extends Archetype, Masthead:
+-         def content: Html of (? <: Flow) = P("Hello, world!")
++         def content: Html of (? <: Flow) = P("Hello, world!")
+
+-       class Branded extends Welcome:
++       class Branded extends Welcome:
+
+-         override def mastheadStyles: Css =
++         override def mastheadStyles: Css =
+
+-           super.mastheadStyles + css".graffiti-masthead { padding-block: 1rem }"
++           super.mastheadStyles + css".graffiti-masthead { padding-block: 1rem }"
+
+=           super.mastheadStyles + css".graffiti-masthead { padding-block: 1rem }"
+-       ```
++       ```
+
+- entry .Colophon   a `<footer>` colophon at the foot of the page, filled through the `colophon` slot
++ entry .Colophon   колофон `<footer>` внизу страницы, заполняемый через слот `colophon`
+
+= entry .Colophon   a `<footer>` colophon at the foot of the page, filled through the `colophon` slot
+-   detail
++   detail
+
+-       Appends a `<footer class="graffiti-colophon">` of the `#colophon` slot — a sitemap, a
+-       copyright line, contact details — after whatever the features listed earlier built,
+-       with a margin above it.
++       Добавляет в конец `<footer class="graffiti-colophon">` из слота `#colophon` — карту
++       сайта, строку об авторских правах, контактные данные — после всего, что построили
++       функции, перечисленные раньше, с отступом над ним.
+
+=       with a margin above it.
+=
+-       ```scala
++       ```scala
+
+=       with a margin above it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       with a margin above it.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Welcome extends Archetype, Mainstay, Colophon:
++       class Welcome extends Archetype, Mainstay, Colophon:
+
+=       class Welcome extends Archetype, Mainstay, Colophon:
+-         def content: Html of (? <: Flow) = P("Hello, world!")
++         def content: Html of (? <: Flow) = P("Hello, world!")
+
+-         override def colophon: Html of (? <: Flow) = P("Copyright 2026")
++         override def colophon: Html of (? <: Flow) = P("Copyright 2026")
+
+=         override def colophon: Html of (? <: Flow) = P("Copyright 2026")
+-       ```
++       ```
+
+=       ```
+-   refer graffiti.Masthead
++   refer graffiti.Masthead
+
+-   entry .colophonClass   the CSS class of the footer: `graffiti-colophon`
+-   entry #colophon   the colophon's content; empty until overridden
+-   entry #colophonStyles   this feature's rules, the margin and padding; protected, override to restyle it
++   entry .colophonClass   класс CSS подвала: `graffiti-colophon`
++   entry #colophon   содержимое колофона; пусто, пока не переопределено
++   entry #colophonStyles   правила этой функции, внешний и внутренний отступы; защищённый, переопределите, чтобы изменить стиль
+
+- entry .Mainstay   wraps the content so far in a `<main>` landmark
++ entry .Mainstay   обёртывает построенное к этому месту содержимое в ориентир `<main>`
+
+= entry .Mainstay   wraps the content so far in a `<main>` landmark
+-   detail
++   detail
+
+-       Wraps the frame built by the features listed before it in a
+-       `<main class="graffiti-mainstay">`. List it before the page chrome (`Masthead`,
+-       `Colophon`) so the landmark encloses the content but not the chrome; listed after
+-       them, it would enclose the masthead too. It adds no rules.
++       Обёртывает обрамление, построенное функциями, перечисленными до него, в
++       `<main class="graffiti-mainstay">`. Перечисляйте его перед обрамлением страницы
++       (`Masthead`, `Colophon`), чтобы ориентир охватывал содержимое, но не обрамление;
++       перечисленный после них, он охватил бы и шапку. Правил он не добавляет.
+
+=       them, it would enclose the masthead too. It adds no rules.
+=
+-       ```scala
++       ```scala
+
+=       them, it would enclose the masthead too. It adds no rules.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       them, it would enclose the masthead too. It adds no rules.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Guide extends Archetype, Breadcrumbs(t"home", t"docs"), Mainstay, Masthead:
++       class Guide extends Archetype, Breadcrumbs(t"home", t"docs"), Mainstay, Masthead:
+
+=       class Guide extends Archetype, Breadcrumbs(t"home", t"docs"), Mainstay, Masthead:
+-         def content: Html of (? <: Flow) = P("The guide")
++         def content: Html of (? <: Flow) = P("The guide")
+
+=         def content: Html of (? <: Flow) = P("The guide")
+-         override def masthead: Html of (? <: Flow) = Strong("Example Site")
++         override def masthead: Html of (? <: Flow) = Strong("Example Site")
+
+-       Guide().html   // <header>…</header><main><nav>…</nav><p>The guide</p></main>
++       Guide().html   // <header>…</header><main><nav>…</nav><p>The guide</p></main>
+
+=       Guide().html   // <header>…</header><main><nav>…</nav><p>The guide</p></main>
+-       ```
++       ```
+
+-   entry .mainstayClass   the CSS class of the landmark: `graffiti-mainstay`
++   entry .mainstayClass   класс CSS ориентира: `graffiti-mainstay`
+
+- entry .Hero   a prominent banner introducing the page, headed by the trait parameter
++ entry .Hero   заметный баннер, открывающий страницу, с заголовком из параметра трейта
+
+= entry .Hero   a prominent banner introducing the page, headed by the trait parameter
+-   detail
++   detail
+
+-       `Hero(headline)` prepends a `<section class="graffiti-hero">` holding an `<h1>` of the
+-       headline and whatever the `#hero` slot supplies beneath it, centred with generous
+-       vertical padding.
++       `Hero(headline)` добавляет в начало `<section class="graffiti-hero">`, содержащий `<h1>`
++       с заголовком и то, что под ним предоставляет слот `#hero`, по центру и с щедрыми
++       вертикальными отступами.
+
+=       vertical padding.
+=
+-       ```scala
++       ```scala
+
+=       vertical padding.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       vertical padding.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Landing extends Archetype, Hero(t"Build pages from parts"):
++       class Landing extends Archetype, Hero(t"Build pages from parts"):
+
+-         def content: Html of (? <: Flow) = P("Welcome aboard")
++         def content: Html of (? <: Flow) = P("Welcome aboard")
+
+-         override def hero: Html of (? <: Flow) = P("Compose, don't template")
++         override def hero: Html of (? <: Flow) = P("Compose, don't template")
+
+=         override def hero: Html of (? <: Flow) = P("Compose, don't template")
+-       ```
++       ```
+
+-   entry .heroClass   the CSS class of the banner: `graffiti-hero`
+-   entry #hero   further banner material beneath the headline; empty until overridden
+-   entry #heroBanner   the rendered banner, a `<section>`; protected, override to restructure it
+-   entry #heroStyles   this feature's rules, padding and centred text; protected, override to restyle it
++   entry .heroClass   класс CSS баннера: `graffiti-hero`
++   entry #hero   дополнительное содержимое баннера под заголовком; пусто, пока не переопределено
++   entry #heroBanner   отображённый баннер, `<section>`; защищённый, переопределите, чтобы изменить его структуру
++   entry #heroStyles   правила этой функции, отступы и выравнивание текста по центру; защищённый, переопределите, чтобы изменить стиль
+
+- entry .Description   adds a `<meta name="description">` to the head
+-     `Description(text)` contributes the description element and nothing to the body.
+-     `StandardMetadata` supplies the same together with a viewport.
++ entry .Description   добавляет в заголовок документа `<meta name="description">`
++     `Description(text)` вносит элемент описания и ничего не вносит в тело.
++     `StandardMetadata` предоставляет то же самое вместе с viewport.
+
+- entry .Viewport   adds a responsive `<meta name="viewport">` to the head
++ entry .Viewport   добавляет в заголовок документа адаптивный `<meta name="viewport">`
+
+= entry .Viewport   adds a responsive `<meta name="viewport">` to the head
+-   detail
++   detail
+
+-       The directive is `#viewport`, `width=device-width, initial-scale=1` unless overridden.
+-       `StandardMetadata` extends this trait.
+-   entry #viewport   the viewport directive, `width=device-width, initial-scale=1` by default
++       Директива — `#viewport`, `width=device-width, initial-scale=1`, если не переопределена.
++       `StandardMetadata` расширяет этот трейт.
++   entry #viewport   директива viewport, по умолчанию `width=device-width, initial-scale=1`
+
+- entry .Keywords   adds a `<meta name="keywords">` to the head, from the trait parameters
+-     `Keywords(words*)` joins the words with `, ` as the element's content.
++ entry .Keywords   добавляет в заголовок документа `<meta name="keywords">` из параметров трейта
++     `Keywords(words*)` соединяет слова через `, ` в содержимое элемента.
+
+- entry .Author   adds a `<meta name="author">` to the head
+-     `Author(name)` contributes the author element and nothing to the body.
++ entry .Author   добавляет в заголовок документа `<meta name="author">`
++     `Author(name)` вносит элемент автора и ничего не вносит в тело.
+
+- entry .ThemeColor   adds a `<meta name="theme-color">` to the head
+-     `ThemeColor(color)` takes the colour as CSS colour text, such as `t"#336699"`.
++ entry .ThemeColor   добавляет в заголовок документа `<meta name="theme-color">`
++     `ThemeColor(color)` принимает цвет как текст цвета CSS, например `t"#336699"`.
+
+- entry .Favicon   adds a `<link rel="icon">` to the head
+-     `Favicon(href)` takes the icon's address as `Text` — a path such as `t"/icon.png"` as
+-     readily as a URL — through the `urlText` given.
++ entry .Favicon   добавляет в заголовок документа `<link rel="icon">`
++     `Favicon(href)` принимает адрес значка как `Text` — путь, например `t"/icon.png"`, так же
++     охотно, как URL, — через given `urlText`.
+
+- entry .Canonical   adds a `<link rel="canonical">` to the head
+-     `Canonical(href)` takes the canonical address as `Text`, through the `urlText` given.
++ entry .Canonical   добавляет в заголовок документа `<link rel="canonical">`
++     `Canonical(href)` принимает канонический адрес как `Text` через given `urlText`.
+
+- entry .StandardMetadata   the metadata nearly every page wants: a description and a responsive viewport
+-     `StandardMetadata(description)` extends `Viewport` and adds a `<meta name="description">`
+-     from its parameter, so a page mixes in one trait instead of wiring each element. Add
+-     `Keywords`, `Author`, `Favicon`, `Canonical` and `ThemeColor` alongside it as needed.
++ entry .StandardMetadata   метаданные, нужные почти каждой странице: описание и адаптивный viewport
++     `StandardMetadata(description)` расширяет `Viewport` и добавляет `<meta name="description">`
++     из своего параметра, так что страница подмешивает один трейт вместо того, чтобы
++     подключать каждый элемент. При необходимости добавьте рядом `Keywords`, `Author`,
++     `Favicon`, `Canonical` и `ThemeColor`.
+
+=     `Keywords`, `Author`, `Favicon`, `Canonical` and `ThemeColor` alongside it as needed.
+=
+-     ```scala
++     ```scala
+
+=     `Keywords`, `Author`, `Favicon`, `Canonical` and `ThemeColor` alongside it as needed.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     `Keywords`, `Author`, `Favicon`, `Canonical` and `ThemeColor` alongside it as needed.
+=
+=     ```scala
+=     import soundness.*
+-     import htmlDoms.whatwg.*
++     import htmlDoms.whatwg.*
+
+-     class Landing extends Archetype, Hero(t"Build pages from parts"),
++     class Landing extends Archetype, Hero(t"Build pages from parts"),
+
+-         StandardMetadata(t"Pages composed from archetypes"), Author(t"William Shakespeare"),
++         StandardMetadata(t"Pages composed from archetypes"), Author(t"William Shakespeare"),
+
+-         Keywords(t"scala", t"html"), Favicon(t"/icon.png"),
++         Keywords(t"scala", t"html"), Favicon(t"/icon.png"),
+
+-         Canonical(t"https://example.com/"), ThemeColor(t"#336699"):
++         Canonical(t"https://example.com/"), ThemeColor(t"#336699"):
+
+-       override def pageTitle: Text = t"Example"
++       override def pageTitle: Text = t"Example"
+
+-       def content: Html of (? <: Flow) = P("Welcome aboard")
++       def content: Html of (? <: Flow) = P("Welcome aboard")
+
+-     Landing().html
++     Landing().html
+
+=     Landing().html
+-     ```
++     ```
+
+- entry .Dashboard   a dashboard view: a brand in the masthead and cards in a responsive grid
++ entry .Dashboard   представление панели мониторинга: бренд в шапке и карточки в адаптивной сетке
+
+= entry .Dashboard   a dashboard view: a brand in the masthead and cards in a responsive grid
+-   detail
++   detail
+
+-       An archetype composed from `Mainstay` and `Masthead`. It titles the document after
+-       `#brand`, shows the brand in the masthead, and lays `#cards` out as the content in a
+-       grid of `<article class="graffiti-card">` tiles, each rendered by `#card`. A concrete
+-       dashboard supplies only the brand and the cards.
++       Архетип, составленный из `Mainstay` и `Masthead`. Он называет документ по `#brand`,
++       показывает бренд в шапке и раскладывает `#cards` как содержимое в сетке плиток
++       `<article class="graffiti-card">`, каждая из которых отображается через `#card`.
++       Конкретная панель мониторинга предоставляет только бренд и карточки.
+
+=       dashboard supplies only the brand and the cards.
+=
+-       ```scala
++       ```scala
+
+=       dashboard supplies only the brand and the cards.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       dashboard supplies only the brand and the cards.
+=
+=       ```scala
+=       import soundness.*
+-       import htmlDoms.whatwg.*
++       import htmlDoms.whatwg.*
+
+-       class Admin extends Dashboard:
++       class Admin extends Dashboard:
+
+-         def brand: Text = t"Admin"
++         def brand: Text = t"Admin"
+
+-         def cards: List[Dashboard.Card] =
++         def cards: List[Dashboard.Card] =
+
+-           List(Dashboard.Card(t"Users", P("128 active")), Dashboard.Card(t"Revenue", P("4200")))
++           List(Dashboard.Card(t"Users", P("128 active")), Dashboard.Card(t"Revenue", P("4200")))
+
+-       Admin().html
++       Admin().html
+
+=       Admin().html
+-       ```
++       ```
+
+=       ```
+-   refer graffiti.Mainstay
++   refer graffiti.Mainstay
+
+=       ```
+=   refer graffiti.Mainstay
+-   refer graffiti.Masthead
++   refer graffiti.Masthead
+
+-   entry .gridClass   the CSS class of the grid: `graffiti-dashboard`
+-   entry .cardClass   the CSS class of a tile: `graffiti-card`
+-   entry .Card   one tile of a dashboard: a heading and its own flow content
+-     entry #heading   the tile's heading, rendered as an `<h2>`
+-     entry #body   the tile's content
+-   entry #brand   the name shown in the masthead and used as the title; abstract
+-   entry #cards   the tiles, as `Dashboard.Card`s; abstract
+-   entry #card   renders one tile as an `<article>`; protected, override to restructure it
+-   entry #dashboardStyles   this view's rules, the grid and the tiles' borders; protected, override to restyle it
++   entry .gridClass   класс CSS сетки: `graffiti-dashboard`
++   entry .cardClass   класс CSS плитки: `graffiti-card`
++   entry .Card   одна плитка панели мониторинга: заголовок и собственное потоковое содержимое
++     entry #heading   заголовок плитки, отображаемый как `<h2>`
++     entry #body   содержимое плитки
++   entry #brand   имя, показываемое в шапке и используемое как заголовок; абстрактный
++   entry #cards   плитки как `Dashboard.Card`; абстрактный
++   entry #card   отображает одну плитку как `<article>`; защищённый, переопределите, чтобы изменить её структуру
++   entry #dashboardStyles   правила этого представления, сетка и рамки плиток; защищённый, переопределите, чтобы изменить стиль
+
+- entry .urlText   lets a `Text` be given where honeycomb wants a URL attribute, such as `href`
+-     The `Text is Attributive to Whatwg.Url` given, at the package's top level and exported
+-     to the `soundness` umbrella. honeycomb types `href` as a URL attribute and accepts an
+-     `HttpUrl` or anything abstractable to one, but a favicon or canonical address is
+-     naturally an arbitrary path such as `/icon.png`, so `Favicon` and `Canonical` take
+-     `Text` and this given passes it through unchanged. It is in scope with
+-     `import soundness.*`; outside the umbrella, import it by name.
++ entry .urlText   позволяет передать `Text` там, где honeycomb ожидает URL-атрибут, например `href`
++     Given `Text is Attributive to Whatwg.Url` на верхнем уровне пакета, экспортированный в
++     зонтичный модуль `soundness`. honeycomb типизирует `href` как URL-атрибут и принимает
++     `HttpUrl` или что угодно, абстрагируемое до него, но адрес значка или канонический адрес —
++     это естественным образом произвольный путь, например `/icon.png`, поэтому `Favicon` и
++     `Canonical` принимают `Text`, а этот given передаёт его без изменений. Он находится в
++     области видимости при `import soundness.*`; вне зонтичного модуля импортируйте его по
++     имени.

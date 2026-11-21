@@ -1,0 +1,178 @@
+orthant 1 language
+
+- # Correctness
++ # Корректность
+
+- Correctness is the end that Soundness's other principles serve: a program should be
+- constrained to behave correctly, and the language should help ensure that it does.
+- Where most libraries make correctness merely possible, Soundness tries to make
+- incorrectness impossible — moving checks to compiletime, ruling out invalid states, and
+- making failure visible in the types — so that a program which compiles is already known
+- to be right about a great deal. This is what "sound by default" means: safety is the
+- starting point, not an extra to be bolted on later.
++ Корректность — та цель, которой служат остальные принципы Soundness: программа должна быть
++ ограничена так, чтобы вести себя корректно, а язык должен помогать это обеспечивать. Там, где
++ большинство библиотек делает корректность лишь возможной, Soundness стремится сделать
++ некорректность невозможной — перенося проверки на время компиляции, исключая недопустимые
++ состояния и делая сбои видимыми в типах, — чтобы о скомпилировавшейся программе уже было
++ известно, что она права во многом. Именно это означает «корректно по умолчанию»: безопасность —
++ это отправная точка, а не дополнение, которое прикручивают позже.
+
+- ## What "a great deal" amounts to
++ ## Что означает «во многом»
+
+- The claim is worth making concrete. In a program built on Soundness — each line below
+- with the relevant module's names in scope — the following are compile errors rather than
+- possibilities:
++ Это утверждение стоит сделать конкретным. В программе, построенной на Soundness, — с именами
++ соответствующего модуля в области видимости для каждой строки ниже — следующее является ошибками
++ компиляции, а не возможностями:
+
+- ```scala fuel
++ ```scala fuel
+
+- parse
++ parse
+
+- ##
++ ##
+
+- 2012-Feb-30                            // a date that does not exist
++ 2012-Feb-30                            // a date that does not exist
+
+- Eur(3.01) + Gbp(2.50)                  // money in mismatched currencies
++ Eur(3.01) + Gbp(2.50)                  // money in mismatched currencies
+
+- url"https:/example.com"                // a malformed URL
++ url"https:/example.com"                // a malformed URL
+
+- (3*Metre) + (4*Second)                 // incoherent dimensions
++ (3*Metre) + (4*Second)                 // incoherent dimensions
+
+- Br(Hr)                                 // a void element given children
++ Br(Hr)                                 // a void element given children
+
+- json.verify[Person].nope               // a field the schema does not declare
++ json.verify[Person].nope               // a field the schema does not declare
+
+- ```
++ ```
+
+- And the following are *visible in a signature*, so a caller cannot fail to know about
+- them: that an operation might fail and how; that it might block; that it needs the
+- network, the filesystem, or a random source; that it logs, and what.
++ А следующее *видно в сигнатуре*, поэтому вызывающий не может о нём не знать: что операция может
++ завершиться неудачей и как; что она может блокироваться; что ей нужны сеть, файловая система или
++ источник случайности; что она пишет в журнал, и что именно.
+
+- None of this is exotic. Each is an ordinary mistake that ordinary programs make, caught
+- by construction rather than by review.
++ Ничего экзотического здесь нет. Каждое из этого — обычная ошибка, которую совершают обычные
++ программы, пойманная по построению, а не на ревью.
+
+- ## Where the checking happens
++ ## Где происходит проверка
+
+- Three mechanisms carry most of the weight, and they are described in their own right
+- elsewhere.
++ Большую часть нагрузки несут три механизма, и каждый из них описан отдельно.
+
+- Values are checked **as they are constructed**, so possessing one is proof it is
+- well-formed — the subject of [safety by construction](safety-by-construction.md).
++ Значения проверяются **при построении**, поэтому обладание значением доказывает его
++ корректность — это предмет [безопасности по построению](safety-by-construction.md).
+
+- Types are shaped so that **invalid states have no representation**, and every transition
+- between states is **total** — the two golden rules, in
+- [impossible states](impossible-states.md) and [total transitions](total-transitions.md).
++ Типы устроены так, что у **недопустимых состояний нет представления**, а каждый переход между
++ состояниями **тотален** — два золотых правила, описанные в
++ [невозможных состояниях](impossible-states.md) и [тотальных переходах](total-transitions.md).
+
+- Requirements are stated **honestly in signatures**, so nothing an operation needs is
+- hidden and nothing it declares is unused — [honest signatures](honest-signatures.md).
++ Требования **честно высказываются в сигнатурах**, поэтому ничто нужное операции не скрыто, и
++ ничто объявленное ею не остаётся неиспользованным, — [честные сигнатуры](honest-signatures.md).
+
+- ## The conviction underneath
++ ## Убеждение в основе
+
+- Any static analysis a programmer can perform, the compiler can perform better; and any
+- analysis the compiler can perform, it should.
++ Любой статический анализ, который может выполнить программист, компилятор может выполнить лучше;
++ и любой анализ, который может выполнить компилятор, он должен выполнять.
+
+- A programmer checking by eye that every `match` covers every case does the compiler's
+- job, less reliably, and does it again after every change. The compiler does it on every
+- build, exhaustively, and reports every site affected by adding an enumeration case. The
+- question is therefore never *whether* to do the analysis but *who* does it — and the
+- answer is the same every time.
++ Программист, проверяющий на глаз, что каждый `match` покрывает каждый кейс, делает работу
++ компилятора, менее надёжно, и делает её снова после каждого изменения. Компилятор делает это при
++ каждой сборке, исчерпывающе, и сообщает о каждом месте, затронутом добавлением кейса в
++ перечисление. Поэтому вопрос никогда не в том, *выполнять ли* анализ, а в том, *кто* его
++ выполняет, — и ответ каждый раз один и тот же.
+
+- This is why exhaustivity warnings are treated as errors rather than as noise, why
+- `-Wunused` is on, and why a deliberately partial match must say so with `.absolve`
+- rather than being silently permitted. The discipline costs nothing except accidental
+- partiality, which is the kind that becomes a bug.
++ Вот почему предупреждения об исчерпываемости считаются ошибками, а не шумом, почему включён
++ `-Wunused` и почему намеренно частичное сопоставление должно заявить об этом через `.absolve`, а
++ не допускаться молча. Эта дисциплина ничего не стоит, кроме случайной частичности, — той самой,
++ что становится ошибкой в программе.
+
+- ## What correctness is not
++ ## Чем корректность не является
+
+- **It is not verification.** Soundness does not prove that a program computes the right
+- answer. It rules out large, well-understood classes of wrongness — malformed values,
+- impossible states, unhandled failures, escaped resources — and leaves the domain logic
+- to the programmer and the tests.
++ **Это не верификация.** Soundness не доказывает, что программа вычисляет правильный ответ. Она
++ исключает большие, хорошо изученные классы неправильности — некорректные значения, невозможные
++ состояния, необработанные сбои, утёкшие ресурсы, — а логику предметной области оставляет
++ программисту и тестам.
+
+- **It is not a guarantee about the outside world.** A `Hostname` is syntactically valid;
+- whether it resolves is not a static question. The discipline is to encode what is
+- genuinely determined by the value and to report the rest as typed failures, rather than
+- to invent a type that promises more than it can deliver.
++ **Это не гарантия относительно внешнего мира.** `Hostname` синтаксически допустим; разрешается
++ ли он — вопрос не статический. Дисциплина в том, чтобы кодировать то, что действительно
++ определяется значением, а об остальном сообщать как о типизированных сбоях, а не изобретать тип,
++ обещающий больше, чем может дать.
+
+- **It is not free of judgement.** Every check moved to compiletime is a constraint on what
+- can be written, and a constraint that rules out more mistakes than it rules out
+- legitimate programs is a good one. That trade is made case by case, and it is possible to
+- get wrong in both directions.
++ **Это не свободно от суждений.** Каждая проверка, перенесённая на время компиляции, — это
++ ограничение на то, что можно написать, и ограничение, исключающее больше ошибок, чем законных
++ программ, — хорошее. Этот компромисс находится в каждом случае отдельно, и ошибиться можно в обе
++ стороны.
+
+- ## What it costs
++ ## Чего это стоит
+
+- Compiletime, mostly. Type-level computation, inlining and macro expansion are work the
+- compiler does on every build so the machine need not do it on every run, and a Soundness
+- project compiles more slowly than an equivalent one written loosely.
++ В основном — времени компиляции. Вычисления на уровне типов, встраивание и раскрытие макросов —
++ это работа, которую компилятор выполняет при каждой сборке, чтобы машине не приходилось
++ выполнять её при каждом запуске, и проект на Soundness компилируется медленнее, чем эквивалентный,
++ написанный небрежно.
+
+- The second cost is a steeper start. A library that accepts `String` everywhere is easier
+- to begin with than one that wants a `Path on Linux`, a `Port` and a `MediaType`; the
+- payment comes back at the point where the loose version would have been debugging a
+- production incident. That is a real trade, and worth making knowingly rather than by
+- assumption.
++ Вторая цена — более крутое начало. С библиотекой, которая повсюду принимает `String`, начать
++ проще, чем с той, которой нужны `Path on Linux`, `Port` и `MediaType`; расплата возвращается в
++ тот момент, когда небрежная версия отлаживала бы инцидент в продакшене. Это реальный компромисс,
++ и на него стоит идти сознательно, а не по умолчанию.
+
+- See [zero cost](zero-cost.md) for why the runtime bill, at least, is close to nothing.
++ О том, почему счёт за время выполнения по крайней мере близок к нулю, см.
++ [нулевую стоимость](zero-cost.md).

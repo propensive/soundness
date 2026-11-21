@@ -1,0 +1,65 @@
+orthant 1 language
+
+- # Migration notes
++ # Заметки о миграции
+
+- Soundness moves quickly and renames, moves and reshapes its API between releases. Downstream
+- code is expected to be upgraded by an LLM agent rather than by hand, so from the 0.64.0
+- release onwards every release ships a machine-oriented record of what changed.
++ Soundness развивается быстро и между релизами переименовывает, перемещает и перестраивает свой
++ API. Предполагается, что зависимый код обновляется LLM-агентом, а не вручную, поэтому начиная с
++ релиза 0.64.0 каждый релиз поставляется с машинно-ориентированной записью того, что изменилось.
+
+- ## How it works
++ ## Как это работает
+
+- - The changes since the last release accumulate in `doc/migration/<version>.md`, named from
+-   the start after the release they will be part of (for example `doc/migration/0.71.0.md`
+-   after Soundness 0.70.0). Every PR that makes a material change to the public API or
+-   observable behaviour adds an entry to it; the first such change after a release creates it.
+- - Tagging the release publishes the file as it stands, so no change has to merge first. The
+-   release refuses to run while `<version>.md` is missing, or while another version's notes are
+-   unreleased, so the notes cannot be skipped or stranded under the wrong version. Released
+-   files are not edited afterwards except to correct mistakes.
+- - The result is one file per release, each describing exactly the changes between the
+-   previous release and that one.
++ - Изменения с последнего релиза накапливаются в `doc/migration/<version>.md`, названном с самого
++   начала по релизу, в который они войдут (например, `doc/migration/0.71.0.md` после Soundness
++   0.70.0). Каждый пул-реквест, вносящий существенное изменение в публичный API или наблюдаемое
++   поведение, добавляет в него запись; первое такое изменение после релиза создаёт файл.
++ - Тегирование релиза публикует файл в его текущем виде, поэтому никакому изменению не нужно
++   сливаться первым. Релиз отказывается выполняться, пока `<version>.md` отсутствует или пока
++   заметки другой версии не выпущены, поэтому заметки нельзя пропустить или оставить под неверной
++   версией. Выпущенные файлы впоследствии не редактируются, кроме исправления ошибок.
++ - В результате получается один файл на релиз, и каждый описывает ровно изменения между
++   предыдущим релизом и этим.
+
+- ## Upgrading downstream code
++ ## Обновление зависимого кода
+
+- To upgrade a project from version `A` to version `B`, instruct an LLM agent to read every file
+- `doc/migration/<v>.md` with `A < v <= B`, in ascending version order, and to apply the changes
+- each one describes to the project's code. For example, moving from 0.64.0 to 0.67.0 means
+- reading `0.65.0.md`, `0.66.0.md` and `0.67.0.md`, in that order.
++ Чтобы обновить проект с версии `A` до версии `B`, поручите LLM-агенту прочитать каждый файл
++ `doc/migration/<v>.md` с `A < v <= B` в порядке возрастания версий и применить к коду проекта
++ изменения, которые описывает каждый из них. Например, переход с 0.64.0 на 0.67.0 означает чтение
++ `0.65.0.md`, `0.66.0.md` и `0.67.0.md` в этом порядке.
+
+- ## What the files contain
++ ## Что содержат файлы
+
+- The files are written for an intelligent LLM, not for people. They are precise, dense and
+- complete: every rename, move, signature change, removal, changed default and changed
+- behaviour that a consumer of a Soundness library could observe. They say *what* changed,
+- with fully-qualified old and new names and exact semantics, and leave working out *how* to
+- adapt a particular codebase to the agent reading them, except where the adaptation is not
+- deducible from the change itself. `AGENTS.md` at the repository root specifies the format
+- and the rules for maintaining them.
++ Файлы написаны для умной LLM, а не для людей. Они точны, плотны и полны: каждое переименование,
++ перемещение, изменение сигнатуры, удаление, изменённое значение по умолчанию и изменённое
++ поведение, которое может заметить потребитель библиотеки Soundness. Они говорят, *что*
++ изменилось, с полностью квалифицированными старыми и новыми именами и точной семантикой, а то,
++ *как* адаптировать конкретную кодовую базу, оставляют агенту, который их читает, за исключением
++ случаев, когда адаптацию нельзя вывести из самого изменения. `AGENTS.md` в корне репозитория
++ задаёт формат и правила их сопровождения.

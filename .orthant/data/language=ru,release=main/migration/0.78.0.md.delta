@@ -1,0 +1,173 @@
+orthant 1 language
+
+- # Changes since 0.77.0
++ # Изменения с 0.77.0
+
+- This file is read by an LLM agent to upgrade code that consumes Soundness libraries from
+- 0.77.0 to the next release. Each entry states precisely what changed; see `AGENTS.md` for the
+- format. Entries are grouped by module, most-recently-added last within a module.
++ Этот файл читает LLM-агент, чтобы обновить код, использующий библиотеки Soundness, с 0.77.0 до
++ следующего выпуска. Каждая запись точно указывает, что изменилось; формат описан в `AGENTS.md`.
++ Записи сгруппированы по модулям, внутри модуля последние добавленные идут в конце.
+
+- ## breviloquence
++ ## breviloquence
+
+- - The `Map[key, element]` decoded by the given `breviloquence.Cbor.mapDecodable` (`Map[key, element]
+-   is Decodable in Cbor`) is filled with `proscenium.Map.build`. A result of five or more entries is
+-   backed by a flat hash table, so its iteration order differs from before; neither order is
+-   specified, and a result of four or fewer entries still iterates in document order. Contents,
+-   equality and `hashCode` are unchanged. (#2532)
++ - `Map[key, element]`, декодируемый given `breviloquence.Cbor.mapDecodable` (`Map[key, element]
++   is Decodable in Cbor`), заполняется с помощью `proscenium.Map.build`. Результат из пяти и более
++   элементов хранится в плоской хеш-таблице, поэтому порядок его обхода отличается от прежнего;
++   ни один из порядков не специфицирован, а результат из четырёх и менее элементов по-прежнему
++   обходится в порядке документа. Содержимое, равенство и `hashCode` не изменились. (#2532)
+
+- ## denominative
++ ## denominative
+
+- - The givens `denominative.Applicable.map` and `denominative.Applicable.hashMap` are typed
+-   `Map[key, value] is Applicable.Probing` and `scala.collection.mutable.HashMap[key, value] is
+-   Applicable.Probing`; they were `… is Applicable`. `Applicable` gains `def probe(value: Self,
+-   index: Operand): Optional[Result]`, concrete, defaulting to `contains` then `access`;
+-   `Applicable.Probing` is a new subtrait of `Applicable` with no members of its own, whose
+-   instances override `probe`. The checked `at` and `apply` extensions (`rudiments`, from
+-   `concordance`) call `probe` once where the receiver's `Applicable` instance is statically a
+-   `Probing`, instead of `contains` then `access`; for any other receiver they are unchanged.
+-   Results are the same. A map's key is now hashed
+-   and compared once per checked read rather than twice, which is observable only through a
+-   key type whose `hashCode` or `equals` has side effects. (#2531)
++ - Given `denominative.Applicable.map` и `denominative.Applicable.hashMap` имеют типы
++   `Map[key, value] is Applicable.Probing` и `scala.collection.mutable.HashMap[key, value] is
++   Applicable.Probing`; раньше они были `… is Applicable`. В `Applicable` появляется конкретный метод
++   `def probe(value: Self, index: Operand): Optional[Result]`, который по умолчанию вызывает
++   `contains`, а затем `access`; `Applicable.Probing` — новый подтрейт `Applicable` без собственных
++   членов, экземпляры которого переопределяют `probe`. Проверяющие расширения `at` и `apply`
++   (`rudiments`, из `concordance`) вызывают `probe` один раз, когда экземпляр `Applicable`
++   получателя статически является `Probing`, вместо `contains` и затем `access`; для любого другого
++   получателя они не изменились. Результаты те же. Ключ словаря теперь хешируется
++   и сравнивается один раз за проверяемое чтение, а не дважды, что заметно только для типа ключа,
++   у которого `hashCode` или `equals` имеют побочные эффекты. (#2531)
+
+- ## jacinta
++ ## jacinta
+
+- - The `Map[key, element]` decoded by `Map[key, element] is Json.Decodable` and by
+-   `jacinta.Json.Parsable.dictionary` (`Map[key, element] is Json.Parsable`) is filled with
+-   `proscenium.Map.build`. A result of five or more entries is backed by a flat hash table, so its
+-   iteration order differs from before; neither order is specified, and a result of four or fewer
+-   entries still iterates in document order. Contents, equality and `hashCode` are unchanged. (#2532)
++ - `Map[key, element]`, декодируемый через `Map[key, element] is Json.Decodable` и через
++   `jacinta.Json.Parsable.dictionary` (`Map[key, element] is Json.Parsable`), заполняется с помощью
++   `proscenium.Map.build`. Результат из пяти и более элементов хранится в плоской хеш-таблице,
++   поэтому порядок его обхода отличается от прежнего; ни один из порядков не специфицирован, а
++   результат из четырёх и менее элементов по-прежнему обходится в порядке документа. Содержимое,
++   равенство и `hashCode` не изменились. (#2532)
+
+- ## murmuration
++ ## murmuration
+
+- - `xs.to[Map]` (the given `murmuration.Convertible.map`) builds its result with
+-   `proscenium.Map.build` instead of the standard library's map builder. A result of five or more
+-   entries is backed by a flat hash table rather than `scala.collection.immutable.HashMap`, so
+-   its iteration order — as seen by `each`, `fold`, `remap`, `keys`, `values`, `inspect` and
+-   `.stdlib.iterator` — differs from before; neither order is specified. A result of four or
+-   fewer entries still iterates in insertion order. Equality, `hashCode`, `at`, `defines`,
+-   `define`, `omit` and which of two pairs with equal keys is kept (the later) are unchanged.
+-   The runtime class of such a result's `.stdlib` is no longer `HashMap`; it is still a
+-   `scala.collection.immutable.Map`. Code that depends on the order must sort, or use `Ledger`.
++ - `xs.to[Map]` (given `murmuration.Convertible.map`) строит свой результат с помощью
++   `proscenium.Map.build` вместо построителя словарей стандартной библиотеки. Результат из пяти и
++   более элементов хранится в плоской хеш-таблице, а не в `scala.collection.immutable.HashMap`,
++   поэтому порядок его обхода — тот, что видят `each`, `fold`, `remap`, `keys`, `values`, `inspect` и
++   `.stdlib.iterator`, — отличается от прежнего; ни один из порядков не специфицирован. Результат из
++   четырёх и менее элементов по-прежнему обходится в порядке вставки. Равенство, `hashCode`, `at`,
++   `defines`, `define`, `omit` и то, какая из двух пар с равными ключами сохраняется (более поздняя),
++   не изменились. Класс времени выполнения у `.stdlib` такого результата больше не `HashMap`; это
++   по-прежнему `scala.collection.immutable.Map`. Код, зависящий от порядка, должен сортировать или
++   использовать `Ledger`.
+
+-   (#2531)
++   (#2531)
+
+- - A pairwise reshape of a `Map` into a `Map` (the given `murmuration.Reshapable.map`, behind
+-   `remap`, `filter`, `bind` and the other reshaping operations when their result is a `Map`) and
+-   `group` fill their result with `proscenium.Map.build`. As for `xs.to[Map]` above, a result of five
+-   or more entries iterates in a different, still unspecified, order. (#2532)
++ - Попарное преобразование `Map` в `Map` (given `murmuration.Reshapable.map`, стоящий за
++   `remap`, `filter`, `bind` и другими преобразующими операциями, когда их результат — `Map`) и
++   `group` заполняют свой результат с помощью `proscenium.Map.build`. Как и для `xs.to[Map]` выше,
++   результат из пяти и более элементов обходится в другом, по-прежнему не специфицированном, порядке.
++   (#2532)
+
+- ## proscenium
++ ## proscenium
+
+- - `proscenium.Map.apply(pairs*)` (a map literal), `proscenium.Map.from(pairs)` for a source that is
+-   not already a map, the stdlib-factory form `xs.to(Map)` for the same sources, and the
+-   value-mapping `map` on a `Map` fill their result in place, as `proscenium.Map.build` does. A
+-   result of five or more entries is backed by a flat hash table rather than
+-   `scala.collection.immutable.HashMap`, so its iteration order — as seen by `each`, `fold`, `remap`,
+-   `keys`, `values`, `inspect` and `.stdlib.iterator` — differs from before; neither order is
+-   specified. A result of four or fewer entries iterates in the order its entries were given, as
+-   before. `Map.from` of a value that is already a map still returns it unchanged. Equality,
+-   `hashCode`, `at`, `defines`, `define` and `omit` are unchanged; the runtime class of such a
+-   result's `.stdlib` is no longer `HashMap`. Code that depends on a map's order must sort, or use
++ - `proscenium.Map.apply(pairs*)` (литерал словаря), `proscenium.Map.from(pairs)` для источника,
++   который ещё не является словарём, форма со стандартной фабрикой `xs.to(Map)` для тех же
++   источников и отображающий значения `map` на `Map` заполняют свой результат на месте, как это делает
++   `proscenium.Map.build`. Результат из пяти и более элементов хранится в плоской хеш-таблице, а не в
++   `scala.collection.immutable.HashMap`, поэтому порядок его обхода — тот, что видят `each`, `fold`,
++   `remap`, `keys`, `values`, `inspect` и `.stdlib.iterator`, — отличается от прежнего; ни один из
++   порядков не специфицирован. Результат из четырёх и менее элементов обходится в том порядке, в
++   котором были заданы его элементы, как и раньше. `Map.from` от значения, которое уже является
++   словарём, по-прежнему возвращает его без изменений. Равенство, `hashCode`, `at`, `defines`,
++   `define` и `omit` не изменились; класс времени выполнения у `.stdlib` такого результата больше не
++   `HashMap`. Код, зависящий от порядка словаря, должен сортировать или использовать
+
+-   `Ledger`. (#2532)
++   `Ledger`. (#2532)
+
+- ## stratiform
++ ## stratiform
+
+- - The `Map[key, value]` decoded by the given `mapDecodable` (`Map[key, value] is Tel.Decodable`) is
+-   filled with `proscenium.Map.build`. A result of five or more entries is backed by a flat hash
+-   table, so its iteration order differs from before; neither order is specified, and a result of
+-   four or fewer entries still iterates in document order. Contents, equality and `hashCode` are
+-   unchanged. (#2532)
++ - `Map[key, value]`, декодируемый given `mapDecodable` (`Map[key, value] is Tel.Decodable`),
++   заполняется с помощью `proscenium.Map.build`. Результат из пяти и более элементов хранится в
++   плоской хеш-таблице, поэтому порядок его обхода отличается от прежнего; ни один из порядков не
++   специфицирован, а результат из четырёх и менее элементов по-прежнему обходится в порядке
++   документа. Содержимое, равенство и `hashCode` не изменились. (#2532)
+
+- ## xylophone
++ ## xylophone
+
+- - The `Map[key, value]` decoded by the given `mapDecodable` (`Map[key, value] is Decodable in Xml`)
+-   is filled with `proscenium.Map.build`. A result of five or more entries is backed by a flat hash
+-   table, so its iteration order differs from before; neither order is specified, and a result of
+-   four or fewer entries still iterates in document order. Contents, equality and `hashCode` are
+-   unchanged. (#2532)
++ - `Map[key, value]`, декодируемый given `mapDecodable` (`Map[key, value] is Decodable in Xml`),
++   заполняется с помощью `proscenium.Map.build`. Результат из пяти и более элементов хранится в
++   плоской хеш-таблице, поэтому порядок его обхода отличается от прежнего; ни один из порядков не
++   специфицирован, а результат из четырёх и менее элементов по-прежнему обходится в порядке
++   документа. Содержимое, равенство и `hashCode` не изменились. (#2532)
+
+- ## ypsiloid
++ ## ypsiloid
+
+- - The `Map[Text, value]` decoded by the givens `map` for `Map[Text, value] is Decodable in Yaml` and
+-   for `Map[Text, value] is Yaml.Field` is filled with `proscenium.Map.build`. A result of five or
+-   more entries is backed by a flat hash table, so its iteration order differs from before; neither
+-   order is specified, and a result of four or fewer entries still iterates in document order.
+-   Contents, equality and `hashCode` are unchanged. (#2532)
++ - `Map[Text, value]`, декодируемый given `map` для `Map[Text, value] is Decodable in Yaml` и
++   для `Map[Text, value] is Yaml.Field`, заполняется с помощью `proscenium.Map.build`. Результат из
++   пяти и более элементов хранится в плоской хеш-таблице, поэтому порядок его обхода отличается от
++   прежнего; ни один из порядков не специфицирован, а результат из четырёх и менее элементов
++   по-прежнему обходится в порядке документа. Содержимое, равенство и `hashCode` не изменились.
++   (#2532)

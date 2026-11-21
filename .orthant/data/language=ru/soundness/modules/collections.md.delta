@@ -1,0 +1,1314 @@
+orthant 1 language
+
+- ## Collections
++ ## Коллекции
+
+- ### About
++ ### Обзор
+
+- Soundness has its own collection types: `List`, `Sequence`, `Set`, `Map` and the lazy `Chain`.
+- One vocabulary of operations works over all of them, and over [text](text.md), which is
+- traversed as its characters.
++ В Soundness есть собственные типы коллекций: `List`, `Sequence`, `Set`, `Map` и ленивая `Chain`.
++ Один словарь операций работает над всеми ними, а также над [текстом](text.md), который
++ обходится как последовательность его символов.
+
+- Each type is an [opaque type] over the standard library's structure, so it costs nothing extra.
+- What changes is the API, which is smaller and makes three promises:
++ Каждый тип — [непрозрачный тип] над структурой стандартной библиотеки, поэтому ничего сверх
++ неё не стоит. Меняется API: он меньше и даёт три обещания:
+
+- - An operation which could fail gives an [optional](optional-values.md) value. It does not
+-   throw.
+- - An operation which is slower than its name suggests must be acknowledged with an import.
+- - Sorting names the algorithm it uses.
++ - Операция, которая может завершиться неудачей, даёт [опциональное](optional-values.md)
++   значение. Она не бросает исключений.
++ - Операцию, которая медленнее, чем подсказывает её имя, нужно подтвердить импортом.
++ - Сортировка называет используемый алгоритм.
+
+- The operations are provided through [typeclasses][typeclass]. A new shape, such as a byte
+- buffer, a parsed document or a stream of records, gains the whole vocabulary by supplying one
+- instance, and the vocabulary reads the same whatever it is applied to.
++ Операции предоставляются через [классы типов][класс типов]. Новая форма — например, байтовый
++ буфер, разобранный документ или поток данных записей — получает весь словарь, предоставив один
++ экземпляр, и словарь читается одинаково, к чему бы его ни применяли.
+
+- ### On collections
++ ### О коллекциях
+
+- The standard library's collections are large, partial and quietly expensive:
++ Коллекции стандартной библиотеки велики, частичны и незаметно дороги:
+
+= The standard library's collections are large, partial and quietly expensive:
+=
+- ```tabular
++ ```tabular
+
+- column  In the standard library
+- column  The pitfall
+- row  `head`  throws on an empty list
+- row  `apply` on a `List`  walks the list, but looks like reading an array
+- row  `sorted`  picks an algorithm unasked, and orders a `String` without asking in which language
+- row  every collection type  carries several hundred methods, many of them duplicates under other names
++ column  В стандартной библиотеке
++ column  Подвох
++ row  `head`  бросает исключение на пустом списке
++ row  `apply` на `List`  проходит по списку, но выглядит как чтение массива
++ row  `sorted`  выбирает алгоритм, не спрашивая, и упорядочивает `String`, не спрашивая, на каком языке
++ row  каждый тип коллекции  несёт несколько сотен методов, многие из которых — дубликаты под другими именами
+
+= row  every collection type  carries several hundred methods, many of them duplicates under other names
+- ```
++ ```
+
+- Soundness keeps the structures and replaces the surface. Nothing is copied, and nothing costs
+- more than before: a `List` is still a linked list. But the methods are the ones a program needs,
+- and each has a type which says what it can and cannot do.
++ Soundness сохраняет структуры и заменяет их поверхность. Ничего не копируется, и ничто не
++ стоит дороже, чем раньше: `List` по-прежнему связный список. Но методы — те, что нужны
++ программе, и у каждого есть тип, который говорит, что метод может и чего не может.
+
+- Where a method's cost depends on the structure, the program must say that it knows. Counting a
+- linked list means walking all of it, so a `List`'s `size` is available only where the
+- *linear size* acknowledgment has been imported.
++ Там, где стоимость метода зависит от структуры, программа должна заявить, что знает об этом.
++ Подсчёт элементов связного списка означает проход по нему целиком, поэтому `size` у `List`
++ доступен только там, где импортировано подтверждение *линейного размера*.
+
+- Everything comes from the `soundness` package. The samples throw any error as an exception, and
+- the last import lets them print their results:
++ Всё берётся из пакета `soundness`. Примеры бросают любую ошибку как исключение, а последний
++ импорт позволяет им печатать результаты:
+
+= the last import lets them print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### The types
++ ### Типы
+
+- The five types differ in their structure, and so in what is cheap:
++ Пять типов различаются структурой, а значит, и тем, что в них дёшево:
+
+= The five types differ in their structure, and so in what is cheap:
+=
+- ```tabular
++ ```tabular
+
+- column  Type
+- column  Holds
+- column  Cheap
+- column  `size` needs
+- row  `List`  a linked list  prepending, and traversing  `linearSize`
+- row  `Sequence`  an indexed sequence  reading at any position  nothing
+- row  `Set`  each element once, unordered  testing membership  nothing
+- row  `Map`  values paired with keys  reading a value by key  nothing
+- row  `Chain`  a lazy sequence, remembered once computed, and possibly infinite  forcing only the prefix demanded  `unboundedSize`
++ column  Тип
++ column  Содержит
++ column  Дёшево
++ column  `size` требует
++ row  `List`  связный список  добавление в начало и обход  `linearSize`
++ row  `Sequence`  индексированную последовательность  чтение в любой позиции  ничего
++ row  `Set`  каждый элемент по одному разу, без порядка  проверка принадлежности  ничего
++ row  `Map`  значения в паре с ключами  чтение значения по ключу  ничего
++ row  `Chain`  ленивую последовательность, запоминаемую после вычисления и, возможно, бесконечную  вычисление только запрошенного префикса  `unboundedSize`
+
+= row  `Chain`  a lazy sequence, remembered once computed, and possibly infinite  forcing only the prefix demanded  `unboundedSize`
+- ```
++ ```
+
+- Each is constructed by applying its companion, and `Nil` is the empty list:
++ Каждый создаётся применением его компаньона, а `Nil` — пустой список:
+
+= Each is constructed by applying its companion, and `Nil` is the empty list:
+=
+- ```scala
++ ```scala
+
+- val numbers: List[Int] = List(3, 1, 2)
++ val numbers: List[Int] = List(3, 1, 2)
+
+- val letters = Sequence(t"a", t"b", t"c")
++ val letters = Sequence(t"a", t"b", t"c")
+
+- val primes = Set(2, 3, 5, 7)
++ val primes = Set(2, 3, 5, 7)
+
+- val ages = Map(t"Lear" -> 80, t"Kent" -> 48)
++ val ages = Map(t"Lear" -> 80, t"Kent" -> 48)
+
+- val naturals: Chain[Int] = Chain.iterate(0)(_ + 1)
++ val naturals: Chain[Int] = Chain.iterate(0)(_ + 1)
+
+= val naturals: Chain[Int] = Chain.iterate(0)(_ + 1)
+- ```
++ ```
+
+- A list built from a known number of elements is typed as *populated*, and on that type `head`,
+- `last` and `tail` cannot fail. They are not available on a `List` of unknown length, where the
+- accessors which give an `Optional` are used instead.
++ Список, построенный из известного числа элементов, типизируется как *непустой*, и на этом
++ типе `head`, `last` и `tail` не могут завершиться неудачей. На `List` неизвестной длины они
++ недоступны, и вместо них используются методы доступа, дающие `Optional`.
+
+- ### Positions and access
++ ### Позиции и доступ
+
+- A position is an [ordinal](numbers.md), not an integer. `Prim`, `Sec` and `Ter` name the first
+- three positions, and `Ordinal.zerary` converts a zero-based index. Applying a collection to an
+- ordinal reads the element there, as an `Optional`, since the position may lie beyond the end.
+- `inspect` displays a present optional value between corner brackets, and an absent one as `○`:
++ Позиция — это [порядковый номер](numbers.md), а не целое число. `Prim`, `Sec` и `Ter` называют
++ первые три позиции, а `Ordinal.zerary` преобразует индекс, отсчитываемый от нуля. Применение
++ коллекции к порядковому номеру читает элемент в этой позиции как `Optional`, поскольку
++ позиция может оказаться за концом. `inspect` показывает присутствующее опциональное значение
++ между угловыми скобками, а отсутствующее — как `○`:
+
+= `inspect` displays a present optional value between corner brackets, and an absent one as `○`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `inspect` displays a present optional value between corner brackets, and an absent one as `○`:
+=
+= ```scala fuel
+- run
++ run
+
+= `inspect` displays a present optional value between corner brackets, and an absent one as `○`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(letters(Sec).inspect)
++ Out.println(letters(Sec).inspect)
+
+- Out.println(letters(Ordinal.zerary(7)).inspect)
++ Out.println(letters(Ordinal.zerary(7)).inspect)
+
+- Out.println(numbers.head.inspect)
++ Out.println(numbers.head.inspect)
+
+= Out.println(numbers.head.inspect)
+- ```
++ ```
+
+- `prim`, `sec` and `ter` read the first few elements directly.
++ `prim`, `sec` и `ter` читают первые несколько элементов напрямую.
+
+- Reading a `List` at a position means walking from its head. Counting one means walking all of
+- it. Neither is available until the cost has been acknowledged:
++ Чтение `List` в некоторой позиции означает проход от его головы. Подсчёт элементов — проход
++ по нему целиком. Ни то, ни другое недоступно, пока стоимость не подтверждена:
+
+= it. Neither is available until the cost has been acknowledged:
+=
+- ```scala fuel
++ ```scala fuel
+
+= it. Neither is available until the cost has been acknowledged:
+=
+= ```scala fuel
+- compile
++ compile
+
+= it. Neither is available until the cost has been acknowledged:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= it. Neither is available until the cost has been acknowledged:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- numbers.size
++ numbers.size
+
+= numbers.size
+- ```
++ ```
+
+- Each acknowledgment is a given in the package `dysasymptotics`:
++ Каждое подтверждение — given в пакете `dysasymptotics`:
+
+= Each acknowledgment is a given in the package `dysasymptotics`:
+=
+- ```tabular
++ ```tabular
+
+- column  Acknowledgment
+- column  Gates
+- column  Because
+- row  `linearSize`  `size` and `last` of a `List`, and appending to one with `:+`  each walks the whole list
+- row  `linearAccess`  reading a `List` at an ordinal beyond the first few  it walks from the head to the position
+- row  `unboundedSize`  `size` and `last` of a `Chain`  each forces the whole chain, which may be infinite
++ column  Подтверждение
++ column  Открывает
++ column  Потому что
++ row  `linearSize`  `size` и `last` у `List`, а также добавление в конец с помощью `:+`  каждая операция проходит весь список
++ row  `linearAccess`  чтение `List` по порядковому номеру дальше первых нескольких  проход идёт от головы до позиции
++ row  `unboundedSize`  `size` и `last` у `Chain`  каждая операция вычисляет всю цепочку, которая может быть бесконечной
+
+= row  `unboundedSize`  `size` and `last` of a `Chain`  each forces the whole chain, which may be infinite
+- ```
++ ```
+
+= row  `unboundedSize`  `size` and `last` of a `Chain`  each forces the whole chain, which may be infinite
+= ```
+=
+- ```scala
++ ```scala
+
+- import dysasymptotics.{linearSize, linearAccess}
++ import dysasymptotics.{linearSize, linearAccess}
+
+= import dysasymptotics.{linearSize, linearAccess}
+- ```
++ ```
+
+= import dysasymptotics.{linearSize, linearAccess}
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import dysasymptotics.{linearSize, linearAccess}
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import dysasymptotics.{linearSize, linearAccess}
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(numbers.size.show)
++ Out.println(numbers.size.show)
+
+- Out.println(numbers(Ter).inspect)
++ Out.println(numbers(Ter).inspect)
+
+- Out.println(numbers.last.inspect)
++ Out.println(numbers.last.inspect)
+
+= Out.println(numbers.last.inspect)
+- ```
++ ```
+
+- A `Sequence` has neither cost, and needs no import. The imports are cheap to write, and they
+- say something true. A program which reads a linked list by position inside a loop has a
+- quadratic algorithm, and should know it.
++ У `Sequence` нет ни той, ни другой стоимости, и импорт ей не нужен. Импорты легко написать,
++ и они говорят правду. Программа, которая читает связный список по позиции внутри цикла,
++ реализует квадратичный алгоритм и должна это знать.
+
+- ### Traversing and transforming
++ ### Обход и преобразование
+
+- Five operations cover most traversals:
++ Пять операций покрывают большинство обходов:
+
+= Five operations cover most traversals:
+=
+- ```tabular
++ ```tabular
+
+- column  Operation
+- column  Does
+- row  `each`  visits every element, with the element's ordinal available as a contextual value
+- row  `map`  transforms each element
+- row  `filter`  keeps the elements which match a predicate
+- row  `bind`  transforms each element into a collection, and flattens the results
+- row  `flat`  flattens one level of nesting
++ column  Операция
++ column  Делает
++ row  `each`  посещает каждый элемент, с порядковым номером элемента, доступным как контекстное значение
++ row  `map`  преобразует каждый элемент
++ row  `filter`  оставляет элементы, удовлетворяющие предикату
++ row  `bind`  преобразует каждый элемент в коллекцию и сглаживает результаты
++ row  `flat`  сглаживает один уровень вложенности
+
+= row  `flat`  flattens one level of nesting
+- ```
++ ```
+
+= row  `flat`  flattens one level of nesting
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= row  `flat`  flattens one level of nesting
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= row  `flat`  flattens one level of nesting
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(numbers.map(_*2).inspect)
++ Out.println(numbers.map(_*2).inspect)
+
+- Out.println(numbers.filter(_ > 1).inspect)
++ Out.println(numbers.filter(_ > 1).inspect)
+
+- Out.println(numbers.bind(n => List(n, n)).inspect)
++ Out.println(numbers.bind(n => List(n, n)).inspect)
+
+- Out.println(List(List(1, 2), List(3)).flat.inspect)
++ Out.println(List(List(1, 2), List(3)).flat.inspect)
+
+= Out.println(List(List(1, 2), List(3)).flat.inspect)
+- ```
++ ```
+
+- `bind` is the operation the standard library calls `flatMap`. It is available under that name
+- too, so that `for` comprehensions work:
++ `bind` — это операция, которую стандартная библиотека называет `flatMap`. Она доступна и под
++ этим именем, чтобы работали выражения `for`:
+
+= too, so that `for` comprehensions work:
+=
+- ```scala
++ ```scala
+
+- val sums =
++ val sums =
+
+-   for
++   for
+
+-     n <- numbers
++     n <- numbers
+
+-     m <- List(10, 20)
++     m <- List(10, 20)
+
+-   yield n + m
++   yield n + m
+
+=   yield n + m
+- ```
++ ```
+
+=   yield n + m
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   yield n + m
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   yield n + m
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(sums.inspect)
++ Out.println(sums.inspect)
+
+= Out.println(sums.inspect)
+- ```
++ ```
+
+- Every operation gives back the shape it was given. Mapping a `Set` gives a `Set`, and filtering
+- a `Chain` gives a lazy `Chain`. The exception is where the result cannot be that shape. `map` on
+- a `Map` transforms its values and keeps its keys. `remap` transforms its entries as pairs, and
+- gives a `Map` where the results are pairs, and a `List` where they are not:
++ Каждая операция возвращает ту форму, которую получила. Отображение `Set` даёт `Set`, а
++ фильтрация `Chain` — ленивую `Chain`. Исключение — случаи, когда результат не может иметь
++ эту форму. `map` на `Map` преобразует его значения и сохраняет ключи. `remap` преобразует его
++ записи как пары и даёт `Map`, если результаты — пары, и `List`, если нет:
+
+= gives a `Map` where the results are pairs, and a `List` where they are not:
+=
+- ```scala fuel
++ ```scala fuel
+
+= gives a `Map` where the results are pairs, and a `List` where they are not:
+=
+= ```scala fuel
+- run
++ run
+
+= gives a `Map` where the results are pairs, and a `List` where they are not:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(ages.map(_ + 1).inspect)
++ Out.println(ages.map(_ + 1).inspect)
+
+- Out.println(ages.remap { (name, age) => name }.inspect)
++ Out.println(ages.remap { (name, age) => name }.inspect)
+
+= Out.println(ages.remap { (name, age) => name }.inspect)
+- ```
++ ```
+
+- ### Searching and measuring
++ ### Поиск и измерение
+
+- `has` tests membership, `exists` tests a predicate, and `count` counts the matches. `fold`
+- accumulates from an initial state, and `trace` is a `fold` which keeps every intermediate
+- state, beginning with the initial one:
++ `has` проверяет принадлежность, `exists` проверяет предикат, а `count` подсчитывает
++ совпадения. `fold` накапливает результат от начального состояния, а `trace` — это `fold`,
++ сохраняющий каждое промежуточное состояние, начиная с начального:
+
+= state, beginning with the initial one:
+=
+- ```scala fuel
++ ```scala fuel
+
+= state, beginning with the initial one:
+=
+= ```scala fuel
+- run
++ run
+
+= state, beginning with the initial one:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(numbers.has(2).inspect)
++ Out.println(numbers.has(2).inspect)
+
+- Out.println(numbers.exists(_ > 2).inspect)
++ Out.println(numbers.exists(_ > 2).inspect)
+
+- Out.println(numbers.count(_ > 1).show)
++ Out.println(numbers.count(_ > 1).show)
+
+- Out.println(numbers.fold(0)(_ + _).show)
++ Out.println(numbers.fold(0)(_ + _).show)
+
+- Out.println(numbers.trace(0)(_ + _).inspect)
++ Out.println(numbers.trace(0)(_ + _).inspect)
+
+= Out.println(numbers.trace(0)(_ + _).inspect)
+- ```
++ ```
+
+- `minimum` and `maximum` give the least and greatest elements. Each is an `Optional`, since the
+- collection may be empty, and both are defined for any element type which can be compared:
++ `minimum` и `maximum` дают наименьший и наибольший элементы. Каждый из них — `Optional`,
++ поскольку коллекция может быть пустой, и оба определены для любого типа элементов, который
++ можно сравнивать:
+
+= collection may be empty, and both are defined for any element type which can be compared:
+=
+- ```scala fuel
++ ```scala fuel
+
+= collection may be empty, and both are defined for any element type which can be compared:
+=
+= ```scala fuel
+- run
++ run
+
+= collection may be empty, and both are defined for any element type which can be compared:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(numbers.minimum.inspect)
++ Out.println(numbers.minimum.inspect)
+
+- Out.println(numbers.maximum.inspect)
++ Out.println(numbers.maximum.inspect)
+
+- Out.println(List[Int]().maximum.inspect)
++ Out.println(List[Int]().maximum.inspect)
+
+= Out.println(List[Int]().maximum.inspect)
+- ```
++ ```
+
+- ### Reshaping
++ ### Изменение формы
+
+- These operations rearrange a collection without changing its elements:
++ Эти операции переупорядочивают коллекцию, не меняя её элементов:
+
+= These operations rearrange a collection without changing its elements:
+=
+- ```tabular
++ ```tabular
+
+- column  Operation
+- column  Gives
+- row  `excerpt(from, to)`  a run by position, excluding the end; bounds beyond the end are clamped, so it never fails
+- row  `zip(other)`  pairs of elements by position, stopping at the shorter side
+- row  `group(f)`  a `Map` from each key to the elements with that key
+- row  `partition(p)`  the elements which match, and those which do not, each in order
+- row  `span(p)`  the elements before the first which fails a predicate, and the rest
+- row  `batched(n)`  runs of at most `n` elements
++ column  Операция
++ column  Даёт
++ row  `excerpt(from, to)`  серию по позиции, исключая конец; границы за концом усекаются, поэтому операция никогда не завершается неудачей
++ row  `zip(other)`  пары элементов по позиции, останавливаясь на более короткой стороне
++ row  `group(f)`  `Map` от каждого ключа к элементам с этим ключом
++ row  `partition(p)`  элементы, которые удовлетворяют предикату, и те, что не удовлетворяют, каждые по порядку
++ row  `span(p)`  элементы до первого, не удовлетворяющего предикату, и остальные
++ row  `batched(n)`  серии не более чем из `n` элементов
+
+= row  `batched(n)`  runs of at most `n` elements
+- ```
++ ```
+
+= row  `batched(n)`  runs of at most `n` elements
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= row  `batched(n)`  runs of at most `n` elements
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= row  `batched(n)`  runs of at most `n` elements
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(numbers.excerpt(1, 3).inspect)
++ Out.println(numbers.excerpt(1, 3).inspect)
+
+- Out.println(numbers.excerpt(2, 99).inspect)
++ Out.println(numbers.excerpt(2, 99).inspect)
+
+- Out.println(numbers.zip(letters).inspect)
++ Out.println(numbers.zip(letters).inspect)
+
+- Out.println(List(1, 2, 3, 4).group(_%2).inspect)
++ Out.println(List(1, 2, 3, 4).group(_%2).inspect)
+
+- Out.println(List(1, 2, 3, 4).partition(_%2 == 0).inspect)
++ Out.println(List(1, 2, 3, 4).partition(_%2 == 0).inspect)
+
+- Out.println(List(1, 2, 3, 4).span(_ < 3).inspect)
++ Out.println(List(1, 2, 3, 4).span(_ < 3).inspect)
+
+- Out.println(List(1, 2, 3, 4, 5).batched(2).inspect)
++ Out.println(List(1, 2, 3, 4, 5).batched(2).inspect)
+
+= Out.println(List(1, 2, 3, 4, 5).batched(2).inspect)
+- ```
++ ```
+
+- `sweep` filters and maps in one pass, through a partial function:
++ `sweep` фильтрует и отображает за один проход с помощью частичной функции:
+
+= `sweep` filters and maps in one pass, through a partial function:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `sweep` filters and maps in one pass, through a partial function:
+=
+= ```scala fuel
+- run
++ run
+
+= `sweep` filters and maps in one pass, through a partial function:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(numbers.sweep { case n if n > 1 => n*10 }.inspect)
++ Out.println(numbers.sweep { case n if n > 1 => n*10 }.inspect)
+
+= Out.println(numbers.sweep { case n if n > 1 => n*10 }.inspect)
+- ```
++ ```
+
+- `join` is the inverse of `batched`. Elements which are themselves joinable, such as collections
+- or text, are concatenated, with an optional separator of the same type between them. Elements
+- which are not joinable are interleaved with a separator which is itself an element, giving a
+- collection of the original shape:
++ `join` — операция, обратная `batched`. Элементы, которые сами допускают объединение, такие
++ как коллекции или текст, конкатенируются, с необязательным разделителем того же типа между
++ ними. Элементы, которые не допускают объединения, перемежаются разделителем, который сам
++ является элементом, что даёт коллекцию исходной формы:
+
+= collection of the original shape:
+=
+- ```scala fuel
++ ```scala fuel
+
+= collection of the original shape:
+=
+= ```scala fuel
+- run
++ run
+
+= collection of the original shape:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(List(List(1, 2), List(3), List(4, 5)).join.inspect)
++ Out.println(List(List(1, 2), List(3), List(4, 5)).join.inspect)
+
+- Out.println(List(List(1, 2), List(3), List(4, 5)).join(List(0)).inspect)
++ Out.println(List(List(1, 2), List(3), List(4, 5)).join(List(0)).inspect)
+
+- Out.println(List(1, 2, 3).join(0).inspect)
++ Out.println(List(1, 2, 3).join(0).inspect)
+
+= Out.println(List(1, 2, 3).join(0).inspect)
+- ```
++ ```
+
+- ### Duplicates and order
++ ### Дубликаты и порядок
+
+- `distinct` drops repeated elements, keeping the first of each. `deduplicate` does the same by a
+- key. `reverse` reverses any shape which has an order, text included:
++ `distinct` отбрасывает повторяющиеся элементы, сохраняя первый из каждых. `deduplicate`
++ делает то же по ключу. `reverse` обращает любую форму, у которой есть порядок, включая текст:
+
+= key. `reverse` reverses any shape which has an order, text included:
+=
+- ```scala fuel
++ ```scala fuel
+
+= key. `reverse` reverses any shape which has an order, text included:
+=
+= ```scala fuel
+- run
++ run
+
+= key. `reverse` reverses any shape which has an order, text included:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(List(1, 2, 1, 3, 2).distinct.inspect)
++ Out.println(List(1, 2, 1, 3, 2).distinct.inspect)
+
+- Out.println(List(10, 43, 22, 71, 52).deduplicate(_%10).inspect)
++ Out.println(List(10, 43, 22, 71, 52).deduplicate(_%10).inspect)
+
+- Out.println(numbers.reverse.inspect)
++ Out.println(numbers.reverse.inspect)
+
+- Out.println(t"stressed".reverse)
++ Out.println(t"stressed".reverse)
+
+= Out.println(t"stressed".reverse)
+- ```
++ ```
+
+- A `Set` has no order, so it cannot be reversed, sorted, excerpted or deduplicated. Those
+- operations are absent from it, instead of being defined to do something arbitrary:
++ У `Set` нет порядка, поэтому его нельзя обратить, отсортировать, вырезать из него фрагмент
++ или устранить дубликаты. Эти операции у него отсутствуют, а не определены так, чтобы делать
++ что-то произвольное:
+
+= operations are absent from it, instead of being defined to do something arbitrary:
+=
+- ```scala fuel
++ ```scala fuel
+
+= operations are absent from it, instead of being defined to do something arbitrary:
+=
+= ```scala fuel
+- compile
++ compile
+
+= operations are absent from it, instead of being defined to do something arbitrary:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= operations are absent from it, instead of being defined to do something arbitrary:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- primes.reverse
++ primes.reverse
+
+= primes.reverse
+- ```
++ ```
+
+- ### Sorting
++ ### Сортировка
+
+- Sorting has two ingredients, and both are explicit.
++ У сортировки два ингредиента, и оба явные.
+
+- The *comparison* comes from a `Comparable` instance for the element type. The numeric types
+- have one. [Text](text.md#sorting-and-comparing-text) needs a collation to be chosen, since no
+- order of text is natural.
++ *Сравнение* берётся из экземпляра `Comparable` для типа элементов. У числовых типов он есть.
++ Для [текста](text.md#sorting-and-comparing-text) нужно выбрать упорядочение, поскольку
++ естественного порядка текста не существует.
+
+- The *algorithm* is a given, selected by import. With no algorithm in scope, a sort does not
+- compile:
++ *Алгоритм* — это given, выбираемый импортом. Без алгоритма в области видимости сортировка не
++ компилируется:
+
+= compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- numbers.sort
++ numbers.sort
+
+= numbers.sort
+- ```
++ ```
+
+- The algorithms are the givens in the package `sortingAlgorithms`:
++ Алгоритмы — это given-экземпляры в пакете `sortingAlgorithms`:
+
+= The algorithms are the givens in the package `sortingAlgorithms`:
+=
+- ```tabular
++ ```tabular
+
+- column  Given
++ column  Given
+
+- column  Stable
+- column  Suited to
+- row  `timsort`  yes  partly-ordered data; the JDK's own sort
+- row  `powersort`  yes  partly-ordered data
+- row  `quicksort`  no  bounded memory
+- row  `heapsort`  no  bounded memory
+- row  `insertionSort`  yes  tiny inputs
+- row  `bubbleSort`  yes  tiny inputs
++ column  Устойчивый
++ column  Подходит для
++ row  `timsort`  да  частично упорядоченных данных; собственная сортировка JDK
++ row  `powersort`  да  частично упорядоченных данных
++ row  `quicksort`  нет  ограниченной памяти
++ row  `heapsort`  нет  ограниченной памяти
++ row  `insertionSort`  да  крошечных входных данных
++ row  `bubbleSort`  да  крошечных входных данных
+
+= row  `bubbleSort`  yes  tiny inputs
+- ```
++ ```
+
+- The compiler insists on the choice because the algorithm decides things a program may depend
+- on: whether equal elements keep their order, and how the sort behaves on data which is nearly
+- sorted already. With two algorithms in scope, a sort is ambiguous, and does not compile either.
++ Компилятор настаивает на выборе, потому что алгоритм определяет то, от чего может зависеть
++ программа: сохраняют ли равные элементы свой порядок и как сортировка ведёт себя на почти
++ уже отсортированных данных. С двумя алгоритмами в области видимости сортировка неоднозначна
++ и тоже не компилируется.
+
+= sorted already. With two algorithms in scope, a sort is ambiguous, and does not compile either.
+=
+- ```scala
++ ```scala
+
+- import sortingAlgorithms.timsort
++ import sortingAlgorithms.timsort
+
+= import sortingAlgorithms.timsort
+- ```
++ ```
+
+- `sort` orders elements by their own comparison, and `order` orders them by a key:
++ `sort` упорядочивает элементы по их собственному сравнению, а `order` — по ключу:
+
+= `sort` orders elements by their own comparison, and `order` orders them by a key:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `sort` orders elements by their own comparison, and `order` orders them by a key:
+=
+= ```scala fuel
+- run
++ run
+
+= `sort` orders elements by their own comparison, and `order` orders them by a key:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(numbers.sort.inspect)
++ Out.println(numbers.sort.inspect)
+
+- Out.println(numbers.order(-_).inspect)
++ Out.println(numbers.order(-_).inspect)
+
+- Out.println(List(t"ccc", t"a", t"bb", t"d").order(_.length).inspect)
++ Out.println(List(t"ccc", t"a", t"bb", t"d").order(_.length).inspect)
+
+= Out.println(List(t"ccc", t"a", t"bb", t"d").order(_.length).inspect)
+- ```
++ ```
+
+- Timsort is stable, so `t"a"` and `t"d"`, which have the same length, keep their original order.
++ Timsort устойчив, поэтому `t"a"` и `t"d"`, имеющие одинаковую длину, сохраняют свой исходный
++ порядок.
+
+- ### The operations at a glance
++ ### Операции вкратце
+
+- The operations of the sections above, in one place:
++ Операции из разделов выше, собранные в одном месте:
+
+= The operations of the sections above, in one place:
+=
+- ```tabular
++ ```tabular
+
+- column  Operation
+- column  Gives
+- row  `each(f)`  nothing; visits every element, with its ordinal in context
+- row  `map(f)`  each element transformed; a `Map`'s values, keeping its keys
+- row  `remap(f)`  a `Map`'s entries transformed as pairs
+- row  `filter(p)`  the elements matching a predicate
+- row  `bind(f)`, `flatMap(f)`  the results of `f`, flattened
+- row  `flat`  one level of nesting flattened
+- row  `sweep(pf)`  the elements a partial function is defined at, mapped by it
+- row  `has(x)`  whether an element is present
+- row  `exists(p)`  whether any element matches
+- row  `count(p)`  the number of matching elements
+- row  `fold(z)(f)`  the final state of an accumulation
+- row  `trace(z)(f)`  every state of an accumulation, initial first
+- row  `minimum`, `maximum`  the least or greatest element, as an `Optional`
+- row  `excerpt(from, to)`  a run by position, end-exclusive and clamped
+- row  `zip(other)`  pairs by position, to the shorter side
+- row  `group(f)`  a `Map` from each key to its elements
+- row  `partition(p)`  the matching and other elements, in order
+- row  `span(p)`  the prefix matching a predicate, and the rest
+- row  `batched(n)`  runs of at most `n` elements
+- row  `join`, `join(separator)`  the elements concatenated, or interleaved with a separator
+- row  `distinct`  the first of each repeated element
+- row  `deduplicate(f)`  the first element for each key
+- row  `reverse`  the elements in reverse order
+- row  `sort`  the elements in their own order
+- row  `order(f)`  the elements in the order of a key
++ column  Операция
++ column  Даёт
++ row  `each(f)`  ничего; посещает каждый элемент, с его порядковым номером в контексте
++ row  `map(f)`  каждый элемент, преобразованный; значения `Map` с сохранением ключей
++ row  `remap(f)`  записи `Map`, преобразованные как пары
++ row  `filter(p)`  элементы, удовлетворяющие предикату
++ row  `bind(f)`, `flatMap(f)`  результаты `f`, сглаженные
++ row  `flat`  сглаженный один уровень вложенности
++ row  `sweep(pf)`  элементы, на которых определена частичная функция, отображённые ею
++ row  `has(x)`  присутствует ли элемент
++ row  `exists(p)`  удовлетворяет ли какой-либо элемент
++ row  `count(p)`  число удовлетворяющих элементов
++ row  `fold(z)(f)`  конечное состояние накопления
++ row  `trace(z)(f)`  каждое состояние накопления, начиная с начального
++ row  `minimum`, `maximum`  наименьший или наибольший элемент как `Optional`
++ row  `excerpt(from, to)`  серию по позиции, без конца и с усечением границ
++ row  `zip(other)`  пары по позиции, до более короткой стороны
++ row  `group(f)`  `Map` от каждого ключа к его элементам
++ row  `partition(p)`  удовлетворяющие и остальные элементы, по порядку
++ row  `span(p)`  префикс, удовлетворяющий предикату, и остаток
++ row  `batched(n)`  серии не более чем из `n` элементов
++ row  `join`, `join(separator)`  элементы, конкатенированные или перемежаемые разделителем
++ row  `distinct`  первый из каждых повторяющихся элементов
++ row  `deduplicate(f)`  первый элемент для каждого ключа
++ row  `reverse`  элементы в обратном порядке
++ row  `sort`  элементы в их собственном порядке
++ row  `order(f)`  элементы в порядке ключа
+
+= row  `order(f)`  the elements in the order of a key
+- ```
++ ```
+
+- ### Sets and maps
++ ### Множества и словари
+
+- A `Set` and a `Map` add operations of their own:
++ `Set` и `Map` добавляют собственные операции:
+
+= A `Set` and a `Map` add operations of their own:
+=
+- ```tabular
++ ```tabular
+
+- column  Operation
+- column  On
+- column  Gives
+- row  `:+`  `Set`  the set with an element added
+- row  `concat`  `Set`  the union of two sets
+- row  `intersect`  `Set`  the elements in both sets
+- row  `except`  `Set`  the elements not in the other set
+- row  `has`  `Set`  whether an element is a member
+- row  `at`  `Map`  the value for a key, as an `Optional`
+- row  `defines`  `Map`  whether a key is present
+- row  `define`  `Map`  the map with a key's value added or replaced
+- row  `omit`  `Map`  the map without a key
+- row  `keys`, `values`  `Map`  the keys, or the values
++ column  Операция
++ column  На
++ column  Даёт
++ row  `:+`  `Set`  множество с добавленным элементом
++ row  `concat`  `Set`  объединение двух множеств
++ row  `intersect`  `Set`  элементы, входящие в оба множества
++ row  `except`  `Set`  элементы, не входящие в другое множество
++ row  `has`  `Set`  является ли элемент членом
++ row  `at`  `Map`  значение для ключа как `Optional`
++ row  `defines`  `Map`  присутствует ли ключ
++ row  `define`  `Map`  словарь с добавленным или заменённым значением ключа
++ row  `omit`  `Map`  словарь без ключа
++ row  `keys`, `values`  `Map`  ключи или значения
+
+= row  `keys`, `values`  `Map`  the keys, or the values
+- ```
++ ```
+
+= row  `keys`, `values`  `Map`  the keys, or the values
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= row  `keys`, `values`  `Map`  the keys, or the values
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= row  `keys`, `values`  `Map`  the keys, or the values
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((primes :+ 11).inspect)
++ Out.println((primes :+ 11).inspect)
+
+- Out.println(primes.intersect(Set(2, 4)).inspect)
++ Out.println(primes.intersect(Set(2, 4)).inspect)
+
+- Out.println(primes.except(Set(2, 3)).inspect)
++ Out.println(primes.except(Set(2, 3)).inspect)
+
+= Out.println(primes.except(Set(2, 3)).inspect)
+- ```
++ ```
+
+- Looking up a key which is not in a map gives `Unset`. It does not throw:
++ Поиск ключа, которого нет в словаре, даёт `Unset`. Исключение не бросается:
+
+= Looking up a key which is not in a map gives `Unset`. It does not throw:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Looking up a key which is not in a map gives `Unset`. It does not throw:
+=
+= ```scala fuel
+- run
++ run
+
+= Looking up a key which is not in a map gives `Unset`. It does not throw:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(ages.at(t"Lear").inspect)
++ Out.println(ages.at(t"Lear").inspect)
+
+- Out.println(ages.at(t"Edgar").inspect)
++ Out.println(ages.at(t"Edgar").inspect)
+
+- Out.println(ages.defines(t"Lear").inspect)
++ Out.println(ages.defines(t"Lear").inspect)
+
+- Out.println(ages.define(t"Edgar", 29).inspect)
++ Out.println(ages.define(t"Edgar", 29).inspect)
+
+- Out.println(ages.omit(t"Kent").inspect)
++ Out.println(ages.omit(t"Kent").inspect)
+
+- Out.println(ages.keys.inspect)
++ Out.println(ages.keys.inspect)
+
+= Out.println(ages.keys.inspect)
+- ```
++ ```
+
+- Every collection is [immutable]. `define` and `omit` give new maps, and `ages` is unchanged
+- after both, as [immutability](../../philosophy/immutability.md) asks everywhere else.
+- [Bit flags](flags.md) holds a set of an enumeration's cases in a single word.
++ Все коллекции [неизменяемы][неизменяемый]. `define` и `omit` дают новые словари, а `ages` после
++ обоих остаётся неизменным, как того требует [неизменяемость](../../philosophy/immutability.md)
++ везде. [Битовые флаги](flags.md) хранят множество кейсов перечисления в одном слове.
+
+- ### Lazy chains
++ ### Ленивые цепочки
+
+- A `Chain` computes its elements on demand, and remembers them. It can therefore describe an
+- infinite sequence, such as every natural number, or every line a process will print, provided
+- only a finite part of it is ever forced. These operations build and cut chains without forcing
+- what they leave alone:
++ `Chain` вычисляет свои элементы по требованию и запоминает их. Поэтому она может описывать
++ бесконечную последовательность, например все натуральные числа или все строки, которые
++ напечатает процесс, при условии, что вычисляется лишь её конечная часть. Эти операции строят и
++ обрезают цепочки, не вычисляя того, чего они не касаются:
+
+= what they leave alone:
+=
+- ```tabular
++ ```tabular
+
+- column  Operation
+- column  Gives
+- row  `x #:: chain`  the chain with `x` prepended, without forcing what follows
+- row  `Chain.iterate(seed)(f)`  `seed`, then `f` applied repeatedly
+- row  `Chain.unfold(seed)(f)`  the elements `f` generates from a seed
+- row  `Chain.continually(x)`  `x`, repeated
+- row  `keep(n)`  the first `n` elements, without forcing the rest
+- row  `skip(n)`  all but the first `n` elements, without forcing the rest
++ column  Операция
++ column  Даёт
++ row  `x #:: chain`  цепочку с `x` в начале, не вычисляя последующего
++ row  `Chain.iterate(seed)(f)`  `seed`, затем многократное применение `f`
++ row  `Chain.unfold(seed)(f)`  элементы, которые `f` порождает из начального значения
++ row  `Chain.continually(x)`  `x`, повторённый
++ row  `keep(n)`  первые `n` элементов, не вычисляя остальные
++ row  `skip(n)`  все элементы, кроме первых `n`, не вычисляя остальные
+
+= row  `skip(n)`  all but the first `n` elements, without forcing the rest
+- ```
++ ```
+
+= row  `skip(n)`  all but the first `n` elements, without forcing the rest
+= ```
+=
+- ```scala
++ ```scala
+
+- def evens: Chain[Int] = naturals.filter(_%2 == 0)
++ def evens: Chain[Int] = naturals.filter(_%2 == 0)
+
+= def evens: Chain[Int] = naturals.filter(_%2 == 0)
+- ```
++ ```
+
+= def evens: Chain[Int] = naturals.filter(_%2 == 0)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= def evens: Chain[Int] = naturals.filter(_%2 == 0)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= def evens: Chain[Int] = naturals.filter(_%2 == 0)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(naturals.keep(5).to[List].inspect)
++ Out.println(naturals.keep(5).to[List].inspect)
+
+- Out.println(naturals.skip(10).keep(2).to[List].inspect)
++ Out.println(naturals.skip(10).keep(2).to[List].inspect)
+
+- Out.println(Chain.continually(7).keep(3).to[List].inspect)
++ Out.println(Chain.continually(7).keep(3).to[List].inspect)
+
+- Out.println(evens.keep(3).to[List].inspect)
++ Out.println(evens.keep(3).to[List].inspect)
+
+= Out.println(evens.keep(3).to[List].inspect)
+- ```
++ ```
+
+- A chain may be unbounded, so `size` is not defined on it unless the program acknowledges, with
+- `dysasymptotics.unboundedSize`, that counting may never finish. A lazily parsed
+- [stream](streams.md), or a recurrence of [dates](time.md), is a `Chain` for exactly this reason:
+- the consumer decides how much is computed.
++ Цепочка может быть неограниченной, поэтому `size` на ней не определён, если программа не
++ подтверждает с помощью `dysasymptotics.unboundedSize`, что подсчёт может никогда не
++ закончиться. Лениво разбираемый [поток данных](streams.md) или повторение [дат](time.md) —
++ это `Chain` именно по этой причине: потребитель решает, сколько вычислять.
+
+- ### Text as a collection
++ ### Текст как коллекция
+
+- `Text` is traversed as its characters, so the same vocabulary applies to it directly. An
+- operation whose result is characters gives text back:
++ `Text` обходится как последовательность его символов, поэтому тот же словарь применяется к
++ нему напрямую. Операция, результат которой — символы, возвращает текст:
+
+= operation whose result is characters gives text back:
+=
+- ```scala fuel
++ ```scala fuel
+
+= operation whose result is characters gives text back:
+=
+= ```scala fuel
+- run
++ run
+
+= operation whose result is characters gives text back:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"hello".has('e').inspect)
++ Out.println(t"hello".has('e').inspect)
+
+- Out.println(t"hello".count(_ == 'l').show)
++ Out.println(t"hello".count(_ == 'l').show)
+
+- Out.println(t"hello".filter(_ != 'l'))
++ Out.println(t"hello".filter(_ != 'l'))
+
+- Out.println(t"hello world".subsumes(t"lo wo").inspect)
++ Out.println(t"hello world".subsumes(t"lo wo").inspect)
+
+= Out.println(t"hello world".subsumes(t"lo wo").inspect)
+- ```
++ ```
+
+- [Text](text.md) describes the operations which are particular to text.
++ В разделе [Текст](text.md) описаны операции, свойственные только тексту.
+
+- ### Crossing to the standard library
++ ### Переход к стандартной библиотеке
+
+- Some code must hand a collection to a library written against the standard library. `stdlib`
+- exposes the underlying structure without copying, and the companion's `from` comes back:
++ Некоторый код должен передавать коллекцию библиотеке, написанной для стандартной библиотеки.
++ `stdlib` открывает доступ к нижележащей структуре без копирования, а `from` компаньона
++ возвращает обратно:
+
+= exposes the underlying structure without copying, and the companion's `from` comes back:
+=
+- ```scala
++ ```scala
+
+- val standard: scala.collection.immutable.List[Int] = numbers.stdlib
++ val standard: scala.collection.immutable.List[Int] = numbers.stdlib
+
+- val returned: List[Int] = List.from(scala.collection.immutable.List(1, 2))
++ val returned: List[Int] = List.from(scala.collection.immutable.List(1, 2))
+
+= val returned: List[Int] = List.from(scala.collection.immutable.List(1, 2))
+- ```
++ ```
+
+- Keeping the crossing explicit, and easy to search for, is what lets the rest of a program be
+- written in the smaller vocabulary. The larger, partial API can still be reached, but only where
+- the code says so.
++ Явный и легко находимый поиском переход — это то, что позволяет писать остальную часть
++ программы в меньшем словаре. До большего, частичного API по-прежнему можно добраться, но
++ только там, где код об этом говорит.

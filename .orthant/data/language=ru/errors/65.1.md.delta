@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.65.1` — Path is not valid on any platform
++ # `↯/s.65.1` — Путь недопустим ни на одной платформе
+
+- Raised at compiletime when a path literal is valid on neither Windows nor POSIX.
++ Порождается во время компиляции, когда литерал пути недопустим ни в Windows, ни в POSIX.
+
+- ## Cause
++ ## Причина
+
+- A path literal whose platform is not stated must be valid on at least one platform for the
+- literal to have a meaning.
++ Литерал пути, платформа которого не указана, должен быть допустим хотя бы на одной платформе,
++ чтобы литерал имел смысл.
+
+- ## Example message
++ ## Пример сообщения
+
+=
+- ```
++ ```
+
+- [↯/s.65.1] The path <name> is not a valid Windows or POSIX path
++ [↯/s.65.1] The path <name> is not a valid Windows or POSIX path
+
+= [↯/s.65.1] The path <name> is not a valid Windows or POSIX path
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- Correct the path, or state the platform explicitly — a path valid on one platform and not
+- the other is accepted when it says which it is for.
++ Исправьте путь или явно укажите платформу: путь, допустимый на одной платформе и недопустимый на
++ другой, принимается, если в нём сказано, для какой он платформы.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/galilei/src/core/galilei.internal.scala`
++ - Исходный код: `lib/galilei/src/core/galilei.internal.scala`

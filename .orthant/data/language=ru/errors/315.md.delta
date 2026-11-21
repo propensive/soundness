@@ -1,0 +1,35 @@
+orthant 1 language
+
+- # `SN-315` — Blank-line spacing between sibling declarations (retired)
++ # `SN-315` — Пустые строки между соседними объявлениями (упразднён)
+
+- This error no longer exists. The page is kept so that the code is not reused, and so
+- that a reference to it from an older release can still be resolved.
++ Этой ошибки больше не существует. Страница сохранена, чтобы код не использовался повторно и
++ чтобы ссылку на него из более старого релиза всё ещё можно было разрешить.
+
+- ## What became of it
++ ## Что с этим стало
+
+- The Decorum compiler plugin, which raised this error, was extracted from Soundness and
+- is now [Consequent](https://github.com/propensive/consequent), a standalone checker for
+- Consequent Style. The rule survives there under a new identifier, in which the letter
+- names the principle it derives from:
++ Плагин компилятора Decorum, который порождал эту ошибку, был выделен из Soundness и теперь
++ называется [Consequent](https://github.com/propensive/consequent) — это самостоятельный
++ инструмент проверки стиля Consequent. Правило сохранилось там под новым идентификатором, буква
++ в котором называет принцип, из которого оно выведено:
+
+- ```tabular
++ ```tabular
+
+- column  Was
+- column  Now
++ column  Было
++ column  Стало
+
+- row  `SN-315`  [`P2`](https://github.com/propensive/consequent/blob/main/doc/rules/P2.md)
++ row  `SN-315`  [`P2`](https://github.com/propensive/consequent/blob/main/doc/rules/P2.md)
+
+- ```
++ ```

@@ -1,0 +1,948 @@
+orthant 1 language
+
+- ## Git
++ ## Git
+
+- ### About
++ ### Обзор
+
+- [Git](https://git-scm.com/) is driven through typed operations on a repository which is opened
+- for a scope. A branch, a tag and a commit hash are distinct types, not interchangeable strings.
+- Results come back as values, not as text to parse. And the API is honest about the one thing
+- every Git library must be honest about: the repository is on disk, and other processes write to
+- it.
++ [Git](https://git-scm.com/) управляется через типизированные операции над репозиторием, который
++ открывается на время области видимости. Ветка, тег и хеш коммита — разные типы, а не
++ взаимозаменяемые строки. Результаты возвращаются значениями, а не текстом, который нужно
++ разбирать. И API честен в том, в чём должна быть честна любая библиотека для Git: репозиторий
++ лежит на диске, и в него пишут другие процессы.
+
+- A backend carries out the operations. The command-line backend runs the `git` command, so
+- anything Git can do is available. The native backend reads and writes the files of the
+- repository itself, and needs no `git` at all. Both implement the same `Git.Backend`
+- [typeclass], and the choice is an import: `gitBackends.commandlineGit` or
+- `gitBackends.soundnessGit`.
++ Операции выполняет бэкенд. Бэкенд командной строки запускает команду `git`, поэтому доступно
++ всё, что умеет Git. Нативный бэкенд сам читает и записывает файлы репозитория, и `git` ему
++ вообще не нужен. Оба реализуют один и тот же [класс типов] `Git.Backend`, а выбор делается
++ импортом: `gitBackends.commandlineGit` или `gitBackends.soundnessGit`.
+
+- ### On Git
++ ### О Git
+
+- Git's real interface is its command line, built for a person at a shell. Driving it from a
+- program means assembling command strings, parsing text output by hand, and treating a branch
+- name, a tag name and a commit hash alike until Git rejects one. Worse, every program which
+- drives Git races with every other. A ref read now may have moved by the time it is written.
++ Настоящий интерфейс Git — его командная строка, созданная для человека за оболочкой.
++ Управлять им из программы — значит собирать командные строки, вручную разбирать текстовый вывод
++ и обращаться с именем ветки, именем тега и хешем коммита одинаково, пока Git не отвергнет одно
++ из них. Хуже того, каждая программа, управляющая Git, состязается со всеми остальными. Ссылка,
++ прочитанная сейчас, может сдвинуться к моменту записи.
+
+- Repository operations here report their failures in their types, cannot run without the
+- [capabilities][capability] they need, and cannot pretend that a reading is still current. These
+- are [honest signatures](../../philosophy/honest-signatures.md) for version control.
++ Операции над репозиторием здесь сообщают о своих неудачах в своих типах, не могут выполняться
++ без нужных им [возможностей][возможность] и не могут делать вид, будто прочитанное всё ещё
++ актуально. Это [честные сигнатуры](../../philosophy/honest-signatures.md) для системы контроля
++ версий.
+
+- Everything comes from the `soundness` package. The other imports select a backend, bring the
+- capabilities which the operations need into scope, and let the samples print their results. The
+- samples work in a fresh repository under the temporary directory:
++ Всё берётся из пакета `soundness`. Остальные импорты выбирают бэкенд, вносят в область
++ видимости возможности, нужные операциям, и позволяют примерам печатать свои результаты. Примеры
++ работают в свежем репозитории во временном каталоге:
+
+= samples work in a fresh repository under the temporary directory:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import filesystemOptions.createNonexistentParents
++ import filesystemOptions.createNonexistentParents
+
+- import gitBackends.commandlineGit
++ import gitBackends.commandlineGit
+
+- import gitCommands.searchpathGitCommand
++ import gitCommands.searchpathGitCommand
+
+- import internetAccess.online
++ import internetAccess.online
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLinux
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import temporaryDirectories.javaBaseTemporaryDirectory
++ import temporaryDirectories.javaBaseTemporaryDirectory
+
+- import workingDirectories.javaBaseWorkingDirectory
++ import workingDirectories.javaBaseWorkingDirectory
+
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+- import filesystemBackends.javaBaseFilesystem
++ import filesystemBackends.javaBaseFilesystem
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+- val directory = temporaryDirectory[Path on Linux] / "git" / Uuid().show
++ val directory = temporaryDirectory[Path on Linux] / "git" / Uuid().show
+
+- directory.create[Directory](CreateFlag.Parents)
++ directory.create[Directory](CreateFlag.Parents)
+
+= directory.create[Directory](CreateFlag.Parents)
+- ```
++ ```
+
+- ### Opening a repository
++ ### Открытие репозитория
+
+- A repository is created with `Git.init`, and is opened, for the duration of a block, as one of
+- two forms. A `Git.Repo` is the object
+- database and its refs, which is what a bare repository has. A `Git.Worktree` is a checked-out
+- tree, with an index and working files, over its repository.
++ Репозиторий создаётся через `Git.init` и открывается на время выполнения блока в одной из двух
++ форм. `Git.Repo` — это база данных объектов и её ссылки, то есть то, что есть у голого
++ репозитория. `Git.Worktree` — это извлечённое дерево с индексом и рабочими файлами поверх своего
++ репозитория.
+
+- The mode names the grants which the handle carries. A handle opened with `Read` alone cannot be
+- used to write, and that is a compile error, not a runtime one:
++ Режим называет права доступа, которые несёт дескриптор. Дескриптор, открытый только с `Read`,
++ нельзя использовать для записи, и это ошибка компиляции, а не времени выполнения:
+
+= used to write, and that is a compile error, not a runtime one:
+=
+- ```scala fuel
++ ```scala fuel
+
+= used to write, and that is a compile error, not a runtime one:
+=
+= ```scala fuel
+- run
++ run
+
+= used to write, and that is a compile error, not a runtime one:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Git.init(directory, initialBranch = Git.Branch(t"main"))
++ Git.init(directory, initialBranch = Git.Branch(t"main"))
+
+=
+- directory.open[Git.Worktree](Read & Write): worktree ?=>
++ directory.open[Git.Worktree](Read & Write): worktree ?=>
+
+-   Out.println(worktree.head().value.inspect)
++   Out.println(worktree.head().value.inspect)
+
+=   Out.println(worktree.head().value.inspect)
+- ```
++ ```
+
+- The repository has no commits yet, so `HEAD` is attached to a branch with no tip.
++ В репозитории ещё нет коммитов, поэтому `HEAD` прикреплён к ветке без вершины.
+
+- A `Git.Worktree.Handle` is also a `Git.Repo.Handle`, so every repository operation is available
+- on it. It is a directory handle too. A path formed from it, such as `worktree / "notes.txt"`,
+- belongs to this handle alone, cannot express `..`, and may be read and written with the
+- [filesystem](filesystem.md) operations under the same grants.
++ `Git.Worktree.Handle` является также `Git.Repo.Handle`, поэтому на нём доступна любая операция
++ над репозиторием. Он также является дескриптором каталога. Путь, образованный от него, например
++ `worktree / "notes.txt"`, принадлежит только этому дескриптору, не может выразить `..` и может
++ читаться и записываться операциями [файловой системы](filesystem.md) с теми же правами доступа.
+
+- ### Observing a repository that others change
++ ### Наблюдение за репозиторием, который меняют другие
+
+- Every read which resolves a ref, `HEAD`, the index or the working files returns a `Stale` value.
+- What it holds was true at the moment of the read, and may have changed since. `head()` reads
+- where `HEAD` is, and the `Stale[Git.Head]` it returns is the proof of what was seen:
++ Каждое чтение, которое разрешает ссылку, `HEAD`, индекс или рабочие файлы, возвращает значение
++ `Stale`. То, что в нём содержится, было верно в момент чтения и с тех пор могло измениться.
++ `head()` читает, где находится `HEAD`, а возвращаемый им `Stale[Git.Head]` — доказательство
++ того, что было увидено:
+
+= where `HEAD` is, and the `Stale[Git.Head]` it returns is the proof of what was seen:
+=
+- ```scala fuel
++ ```scala fuel
+
+= where `HEAD` is, and the `Stale[Git.Head]` it returns is the proof of what was seen:
+=
+= ```scala fuel
+- run
++ run
+
+= where `HEAD` is, and the `Stale[Git.Head]` it returns is the proof of what was seen:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= where `HEAD` is, and the `Stale[Git.Head]` it returns is the proof of what was seen:
+=
+= ```scala fuel
+= run
+= ##
+- directory.open[Git.Worktree](): worktree ?=>
++ directory.open[Git.Worktree](): worktree ?=>
+
+-   val head: Stale[Git.Head] = worktree.head()
++   val head: Stale[Git.Head] = worktree.head()
+
+-   head.value match
++   head.value match
+
+-     case Git.Head.Attached(branch, tip) => Out.println(t"on $branch")
++     case Git.Head.Attached(branch, tip) => Out.println(t"on $branch")
+
+-     case Git.Head.Detached(at)          => Out.println(t"detached at $at")
++     case Git.Head.Detached(at)          => Out.println(t"detached at $at")
+
+=     case Git.Head.Detached(at)          => Out.println(t"detached at $at")
+- ```
++ ```
+
+- Every write which moves a ref takes the `Stale` value it is conditional on. It fails with
+- `Git.Error(Moved(ref, expected, actual))` if the ref no longer holds that value. This is Git's
+- own compare-and-swap, `git update-ref ref new old`, made unavoidable. A commit cannot overwrite
+- work which another process committed between the read and the write.
++ Каждая запись, которая сдвигает ссылку, принимает значение `Stale`, от которого она зависит.
++ Она завершается неудачей с `Git.Error(Moved(ref, expected, actual))`, если ссылка больше не
++ содержит это значение. Это собственное сравнение с обменом в Git, `git update-ref ref new old`,
++ ставшее неизбежным. Коммит не может перезаписать работу, которую другой процесс закоммитил между
++ чтением и записью.
+
+- ### Making a commit
++ ### Создание коммита
+
+- Staging and committing are methods on the worktree. `commit` takes the reading of `HEAD` it is
+- conditional on, and returns the hash of the new commit:
++ Индексирование и коммит — методы рабочего дерева. `commit` принимает прочитанное значение
++ `HEAD`, от которого он зависит, и возвращает хеш нового коммита:
+
+= conditional on, and returns the hash of the new commit:
+=
+- ```scala fuel
++ ```scala fuel
+
+= conditional on, and returns the hash of the new commit:
+=
+= ```scala fuel
+- run
++ run
+
+= conditional on, and returns the hash of the new commit:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= conditional on, and returns the hash of the new commit:
+=
+= ```scala fuel
+= run
+= ##
+- directory.open[Git.Worktree](Read & Write): worktree ?=>
++ directory.open[Git.Worktree](Read & Write): worktree ?=>
+
+-   val head = worktree.head()
++   val head = worktree.head()
+
+-   (worktree / "notes.txt").overwrite(t"Remember the milk")
++   (worktree / "notes.txt").overwrite(t"Remember the milk")
+
+-   worktree.add(worktree / "notes.txt")
++   worktree.add(worktree / "notes.txt")
+
+-   val hash = worktree.commit(t"Add notes", head)
++   val hash = worktree.commit(t"Add notes", head)
+
+-   Out.println(hash.show.length.show)
++   Out.println(hash.show.length.show)
+
+=   Out.println(hash.show.length.show)
+- ```
++ ```
+
+- The commit object is assembled here and stored, and is not made by `git commit`. So a signature
+- (`signer = …`) never leaves the process, and the same code serves both backends. A commit whose
+- tree is unchanged raises `NothingToCommit`, unless `allowEmpty = true`. `amend` rewrites the
+- tip.
++ Объект коммита собирается и сохраняется здесь, а не создаётся через `git commit`. Поэтому
++ подпись (`signer = …`) никогда не покидает процесс, а один и тот же код служит обоим бэкендам.
++ Коммит, дерево которого не изменилось, порождает `NothingToCommit`, если не указано
++ `allowEmpty = true`. `amend` переписывает вершину.
+
+- ### Inspecting history
++ ### Просмотр истории
+
+- `log` gives the commits as a list, newest first. Each is a `Commit` with its hash, author,
+- parents and message. The list is `Stale`, since the branch it follows may move:
++ `log` даёт коммиты списком, начиная с самого нового. Каждый — это `Commit` с хешем, автором,
++ родителями и сообщением. Список является `Stale`, поскольку ветка, по которой он идёт, может
++ сдвинуться:
+
+= parents and message. The list is `Stale`, since the branch it follows may move:
+=
+- ```scala fuel
++ ```scala fuel
+
+= parents and message. The list is `Stale`, since the branch it follows may move:
+=
+= ```scala fuel
+- run
++ run
+
+= parents and message. The list is `Stale`, since the branch it follows may move:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= parents and message. The list is `Stale`, since the branch it follows may move:
+=
+= ```scala fuel
+= run
+= ##
+- directory.open[Git.Worktree](): worktree ?=>
++ directory.open[Git.Worktree](): worktree ?=>
+
+-   worktree.log().value.each(commit => Out.println(commit.message))
++   worktree.log().value.each(commit => Out.println(commit.message))
+
+=   worktree.log().value.each(commit => Out.println(commit.message))
+- ```
++ ```
+
+- Objects are [immutable] and named by their content, so a read keyed by a hash is a plain value:
++ Объекты [неизменяемы][неизменяемый] и именуются по содержимому, поэтому чтение по хешу даёт
++ простое значение:
+
+= Objects are [immutable] and named by their content, so a read keyed by a hash is a plain value:
+=
+- ```tabular
++ ```tabular
+
+- column  A read of
+- column  Such as
+- column  Returns
+- row  a ref, HEAD, the index or the working files  `head`, `ref`, `resolve`, `branches`, `tags`, `log`, `note`, `remotes`, `stashes`, `diff`  a `Stale` value
+- row  an object, by its hash  `show`, `commitAt`, `treeAt`, `blobAt`, `diffBetween`  a plain value
++ column  Чтение
++ column  Например
++ column  Возвращает
++ row  ссылки, HEAD, индекса или рабочих файлов  `head`, `ref`, `resolve`, `branches`, `tags`, `log`, `note`, `remotes`, `stashes`, `diff`  значение `Stale`
++ row  объекта по его хешу  `show`, `commitAt`, `treeAt`, `blobAt`, `diffBetween`  простое значение
+
+= row  an object, by its hash  `show`, `commitAt`, `treeAt`, `blobAt`, `diffBetween`  a plain value
+- ```
++ ```
+
+- ### Branches and tags
++ ### Ветки и теги
+
+- Branches and tags are created, listed and switched between with typed references. A branch is
+- created at a commit, and switching takes the reading of `HEAD` it moves from:
++ Ветки и теги создаются, перечисляются и переключаются через типизированные ссылки. Ветка
++ создаётся на коммите, а переключение принимает прочитанное значение `HEAD`, от которого оно
++ уходит:
+
+= created at a commit, and switching takes the reading of `HEAD` it moves from:
+=
+- ```scala fuel
++ ```scala fuel
+
+= created at a commit, and switching takes the reading of `HEAD` it moves from:
+=
+= ```scala fuel
+- run
++ run
+
+= created at a commit, and switching takes the reading of `HEAD` it moves from:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= created at a commit, and switching takes the reading of `HEAD` it moves from:
+=
+= ```scala fuel
+= run
+= ##
+- directory.open[Git.Worktree](Read & Write): worktree ?=>
++ directory.open[Git.Worktree](Read & Write): worktree ?=>
+
+-   worktree.switch(Git.Branch(t"feature"), worktree.head(), create = true)
++   worktree.switch(Git.Branch(t"feature"), worktree.head(), create = true)
+
+-   worktree.switch(Git.Branch(t"main"), worktree.head())
++   worktree.switch(Git.Branch(t"main"), worktree.head())
+
+-   worktree.branches().value.keys.each(branch => Out.println(branch.show))
++   worktree.branches().value.keys.each(branch => Out.println(branch.show))
+
+=   worktree.branches().value.keys.each(branch => Out.println(branch.show))
+- ```
++ ```
+
+- Deleting a branch or a tag takes the reading of its tip, so a branch which moved since it was
+- listed is not deleted by mistake. `makeTag` makes a lightweight tag. `annotatedTag` writes a tag
+- object with a message, and optionally a signature.
++ Удаление ветки или тега принимает прочитанное значение её вершины, поэтому ветка, сдвинувшаяся
++ с тех пор, как её перечислили, не удаляется по ошибке. `makeTag` создаёт лёгкий тег.
++ `annotatedTag` записывает объект тега с сообщением и, при желании, подписью.
+
+- ### Cloning, fetching and pushing
++ ### Клонирование, получение и отправка
+
+- An operation which reaches a remote needs the `Online` capability. It blocks until it is done,
+- and reports its progress through a `Git.Activity`: a shared tracker of atomic counters, updated
+- as objects arrive, which a user interface may poll from another thread with `report()`.
++ Операции, обращающейся к удалённому репозиторию, нужна возможность `Online`. Она блокируется до
++ завершения и сообщает о ходе работы через `Git.Activity`: общий трекер атомарных счётчиков,
++ обновляемых по мере поступления объектов, который пользовательский интерфейс может опрашивать
++ из другого потока выполнения через `report()`.
+
+= as objects arrive, which a user interface may poll from another thread with `report()`.
+=
+- ```scala
++ ```scala
+
+- import dysasymptotics.linearSize
++ import dysasymptotics.linearSize
+
+- val target = directory / "clone"
++ val target = directory / "clone"
+
+- Git.clone(directory, target)
++ Git.clone(directory, target)
+
+= Git.clone(directory, target)
+- ```
++ ```
+
+= Git.clone(directory, target)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= Git.clone(directory, target)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= Git.clone(directory, target)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- target.open[Git.Worktree](): cloned ?=>
++ target.open[Git.Worktree](): cloned ?=>
+
+-   Out.println(cloned.log().value.size.show)
++   Out.println(cloned.log().value.size.show)
+
+=   Out.println(cloned.log().value.size.show)
+- ```
++ ```
+
+- `push` takes refspecs and a force policy. `Push.Force.Lease` is the compare-and-swap on the
+- remote side, `--force-with-lease`. It carries the readings of the remote's refs which the push
+- is conditional on.
++ `push` принимает refspec и политику принудительной отправки. `Push.Force.Lease` — это сравнение
++ с обменом на удалённой стороне, `--force-with-lease`. Она несёт прочитанные значения ссылок
++ удалённого репозитория, от которых зависит отправка.
+
+- ### Choosing a backend
++ ### Выбор бэкенда
+
+- The two backends differ in how they do the work, and so in what each is for:
++ Два бэкенда различаются тем, как они выполняют работу, а значит, и тем, для чего предназначен
++ каждый:
+
+= The two backends differ in how they do the work, and so in what each is for:
+=
+- ```tabular
++ ```tabular
+
+- column  Backend
+- column  Works by
+- column  Reaches remotes
+- column  The choice for
+- row  `gitBackends.commandlineGit`  running the `git` command  as `git` does  git's own behaviour in full: hooks, filters, credential helpers, submodules
+- row  `gitBackends.soundnessGit`  reading and writing git's formats directly  through a transport: `SmartHttp`, `SshCommand`  no dependency on `git`
++ column  Бэкенд
++ column  Работает через
++ column  Обращается к удалённым репозиториям
++ column  Выбор для
++ row  `gitBackends.commandlineGit`  запуск команды `git`  как это делает `git`  полного поведения самого git: хуков, фильтров, помощников учётных данных, подмодулей
++ row  `gitBackends.soundnessGit`  прямое чтение и запись форматов git  через транспорт: `SmartHttp`, `SshCommand`  отсутствия зависимости от `git`
+
+= row  `gitBackends.soundnessGit`  reading and writing git's formats directly  through a transport: `SmartHttp`, `SshCommand`  no dependency on `git`
+- ```
++ ```
+
+- `gitBackends.commandlineGit` runs the `git` command which `gitCommands.searchpathGitCommand`
+- finds, in the working directory and environment in scope, and logs each invocation.
++ `gitBackends.commandlineGit` запускает команду `git`, которую находит
++ `gitCommands.searchpathGitCommand`, в рабочем каталоге и окружении из области видимости и
++ записывает в журнал каждый вызов.
+
+- `gitBackends.soundnessGit` is the native backend. Objects, loose and packed, refs, the index,
+- configuration, notes, linked worktrees, merging, rebasing and the stash are all read and
+- written directly, in Git's own formats. A repository is therefore always one which `git` itself
+- understands, and an operation which one side stops on a conflict, the other can continue. It
+- reaches a repository on the same filesystem by path. A remote one needs a transport, which the
+- `http` and `ssh` components supply. `octogenarian.Native(List(SmartHttp(), SshCommand()))`
+- speaks Git's wire protocol over whichever `Http.Backend` is in scope, and over a spawned `ssh`.
+- `Native` is not exported to `soundness`, where the name is xenophile's, so it is written
+- qualified:
++ `gitBackends.soundnessGit` — нативный бэкенд. Объекты, свободные и упакованные, ссылки, индекс,
++ конфигурация, заметки, связанные рабочие деревья, слияние, перебазирование и stash читаются и
++ записываются напрямую, в собственных форматах Git. Поэтому репозиторий всегда остаётся таким,
++ который понимает сам `git`, и операцию, остановленную одной стороной на конфликте, может
++ продолжить другая. Репозиторий на той же файловой системе он находит по пути. Для удалённого
++ нужен транспорт, который предоставляют компоненты `http` и `ssh`.
++ `octogenarian.Native(List(SmartHttp(), SshCommand()))` говорит на сетевом протоколе Git поверх
++ того `Http.Backend`, который находится в области видимости, и поверх запущенного `ssh`. `Native`
++ не экспортируется в `soundness`, где это имя принадлежит xenophile, поэтому оно пишется с
++ квалификатором:
+
+= qualified:
+=
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+= typecheck
+- ##
++ ##
+
+- import gitTransports.{smartHttp, sshCommand}
++ import gitTransports.{smartHttp, sshCommand}
+
+- import httpBackends.javaNetHttp
++ import httpBackends.javaNetHttp
+
+- given Git.Backend = octogenarian.Native(List(SmartHttp(), SshCommand()))
++ given Git.Backend = octogenarian.Native(List(SmartHttp(), SshCommand()))
+
+= given Git.Backend = octogenarian.Native(List(SmartHttp(), SshCommand()))
+- ```
++ ```
+
+- Signing is independent of the backend. A `Git.Signer` makes the signature which a commit or tag
+- carries, and a `Git.Verifier` checks one:
++ Подпись не зависит от бэкенда. `Git.Signer` создаёт подпись, которую несёт коммит или тег, а
++ `Git.Verifier` её проверяет:
+
+= carries, and a `Git.Verifier` checks one:
+=
+- ```tabular
++ ```tabular
+
+- column  Scheme
+- column  Signer
+- column  Verifier
+- column  Drives
+- row  SSH  `SshKeygen.Signer(key)`  `SshKeygen.Verifier(allowedSigners)`  `ssh-keygen -Y`, as `gpg.format = ssh` has git do
++ column  Схема
++ column  Подписывающий
++ column  Проверяющий
++ column  Запускает
++ row  SSH  `SshKeygen.Signer(key)`  `SshKeygen.Verifier(allowedSigners)`  `ssh-keygen -Y`, как это заставляет делать git `gpg.format = ssh`
+
+- row  OpenPGP  `Gpg.Signer()`  `Gpg.Verifier()`  `gpg`
++ row  OpenPGP  `Gpg.Signer()`  `Gpg.Verifier()`  `gpg`
+
+= row  OpenPGP  `Gpg.Signer()`  `Gpg.Verifier()`  `gpg`
+- ```
++ ```
+
+- A tag signed through either is one which `git tag -v` accepts.
++ Тег, подписанный любым из них, принимается `git tag -v`.
+
+- Whichever backend is chosen, `Exclusive` arbitrates only between handles in this JVM. Another
+- process is never waited for, which is why every operation which moves a ref is a compare-and-swap
+- on the `Stale` reading it was given.
++ Какой бы бэкенд ни был выбран, `Exclusive` разрешает споры только между дескрипторами в этой
++ JVM. Другой процесс никогда не ожидается, поэтому каждая операция, сдвигающая ссылку, — это
++ сравнение с обменом по переданному ей прочитанному значению `Stale`.
+
+- ### References
++ ### Ссылки
+
+- Each kind of reference is its own type:
++ Каждый вид ссылки — отдельный тип:
+
+= Each kind of reference is its own type:
+=
+- ```tabular
++ ```tabular
+
+- column  Type
+- column  Names
+- row  `Git.Branch`  a branch
+- row  `Git.Tag`  a tag
+- row  `Git.Hash`  a commit, by a well-formed forty-character identifier
+- row  `Git.Revision`  any of these, or a relative expression: `Git.Revision.head(1)` is `HEAD~1`
+- row  `Git.Ref`  a fully-qualified reference path, such as `refs/heads/main`
++ column  Тип
++ column  Называет
++ row  `Git.Branch`  ветку
++ row  `Git.Tag`  тег
++ row  `Git.Hash`  коммит по правильно сформированному сорокасимвольному идентификатору
++ row  `Git.Revision`  любое из этого или относительное выражение: `Git.Revision.head(1)` — это `HEAD~1`
++ row  `Git.Ref`  полностью квалифицированный путь ссылки, например `refs/heads/main`
+
+= row  `Git.Ref`  a fully-qualified reference path, such as `refs/heads/main`
+- ```
++ ```
+
+- So an operation which expects a branch will not accept a tag:
++ Поэтому операция, ожидающая ветку, не примет тег:
+
+= So an operation which expects a branch will not accept a tag:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+= compile
+- errors show
++ errors show
+
+= compile
+= errors show
+- ##
++ ##
+
+= errors show
+= ##
+- directory.open[Git.Worktree](Read & Write): worktree ?=>
++ directory.open[Git.Worktree](Read & Write): worktree ?=>
+
+-   worktree.switch(Git.Tag(t"v1"), worktree.head())
++   worktree.switch(Git.Tag(t"v1"), worktree.head())
+
+=   worktree.switch(Git.Tag(t"v1"), worktree.head())
+- ```
++ ```
+
+- A `Git.Ref` is modeled as a [path](paths.md) on the `Git.Refs` plane. Reference names follow
+- Git's own rules: no leading dot, no `..`, no trailing `lock` suffix, and the rest. The rules are
+- checked when a name is parsed from text, with `Git.Branch.parse`, `Git.Tag.parse` or
+- `Git.Refs.heads`, and a bad name is reported as a `Git.RefError`:
++ `Git.Ref` моделируется как [путь](paths.md) на плоскости `Git.Refs`. Имена ссылок следуют
++ собственным правилам Git: без точки в начале, без `..`, без завершающего суффикса `lock` и так
++ далее. Правила проверяются, когда имя разбирается из текста через `Git.Branch.parse`,
++ `Git.Tag.parse` или `Git.Refs.heads`, а о неправильном имени сообщается как о `Git.RefError`:
+
+= `Git.Refs.heads`, and a bad name is reported as a `Git.RefError`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `Git.Refs.heads`, and a bad name is reported as a `Git.RefError`:
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- errors show
++ errors show
+
+= run
+= errors show
+- ##
++ ##
+
+- Git.Branch.parse(t"feature..old")
++ Git.Branch.parse(t"feature..old")
+
+= Git.Branch.parse(t"feature..old")
+- ```
++ ```
+
+- ### Diffs
++ ### Различия
+
+- `diff` reports changes as structured values, not as patch text to parse again. Each
+- `Git.Delta` carries the paths on both sides, the kind of change, which is added, modified,
+- deleted, renamed or copied, and its hunks. Each hunk is a list of edits:
++ `diff` сообщает об изменениях структурированными значениями, а не текстом патча, который снова
++ нужно разбирать. Каждый `Git.Delta` несёт пути с обеих сторон, вид изменения — добавление,
++ изменение, удаление, переименование или копирование — и свои ханки. Каждый ханк — список правок:
+
+= deleted, renamed or copied, and its hunks. Each hunk is a list of edits:
+=
+- ```scala fuel
++ ```scala fuel
+
+= deleted, renamed or copied, and its hunks. Each hunk is a list of edits:
+=
+= ```scala fuel
+- run
++ run
+
+= deleted, renamed or copied, and its hunks. Each hunk is a list of edits:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= deleted, renamed or copied, and its hunks. Each hunk is a list of edits:
+=
+= ```scala fuel
+= run
+= ##
+- directory.open[Git.Worktree](Read & Write): worktree ?=>
++ directory.open[Git.Worktree](Read & Write): worktree ?=>
+
+-   (worktree / "notes.txt").overwrite(t"Remember the milk and the eggs")
++   (worktree / "notes.txt").overwrite(t"Remember the milk and the eggs")
+
+-   val files = worktree.diff().value
++   val files = worktree.diff().value
+
+-   Out.println(files.head.let(_.status).inspect)
++   Out.println(files.head.let(_.status).inspect)
+
+=   Out.println(files.head.let(_.status).inspect)
+- ```
++ ```
+
+- Each diff method compares two sides:
++ Каждый метод различий сравнивает две стороны:
+
+= Each diff method compares two sides:
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Left
+- column  Right
+- row  `diff()`  the index  the working files
+- row  `diffStaged()`  HEAD  the index
+- row  `diffAgainst(revision)`  the revision  the working files
+- row  `diffBetween(left, right)`  a commit  a commit
++ column  Метод
++ column  Слева
++ column  Справа
++ row  `diff()`  индекс  рабочие файлы
++ row  `diffStaged()`  HEAD  индекс
++ row  `diffAgainst(revision)`  ревизия  рабочие файлы
++ row  `diffBetween(left, right)`  коммит  коммит
+
+= row  `diffBetween(left, right)`  a commit  a commit
+- ```
++ ```
+
+- The same parser, `Git.Patch.parse`, reads a patch from anywhere.
++ Тот же парсер, `Git.Patch.parse`, читает патч откуда угодно.
+
+- ### Merging, cherry-picking, reverting and rebasing
++ ### Слияние, cherry-pick, отмена и перебазирование
+
+- `merge` takes the revision to merge, the reading of `HEAD`, and a fast-forward policy. Whether a
+- merge commit is created is stated, and not inherited from configuration. The outcome is a
+- value:
++ `merge` принимает ревизию для слияния, прочитанное значение `HEAD` и политику перемотки вперёд.
++ Создаётся ли коммит слияния, указывается явно и не наследуется из конфигурации. Исход — это
++ значение:
+
+= value:
+=
+- ```tabular
++ ```tabular
+
+- column  Outcome
+- column  Meaning
+- row  `FastForwarded(head)`  the branch moved forward to `head`, with no merge commit
+- row  `Merged(head)`  a merge commit, `head`, was created
+- row  `UpToDate`  there was nothing to merge
+- row  `Stopped(operation)`  the merge stopped on a conflict
++ column  Исход
++ column  Значение
++ row  `FastForwarded(head)`  ветка перемотана вперёд до `head` без коммита слияния
++ row  `Merged(head)`  создан коммит слияния `head`
++ row  `UpToDate`  сливать было нечего
++ row  `Stopped(operation)`  слияние остановилось на конфликте
+
+= row  `Stopped(operation)`  the merge stopped on a conflict
+- ```
++ ```
+
+= row  `Stopped(operation)`  the merge stopped on a conflict
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= row  `Stopped(operation)`  the merge stopped on a conflict
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= row  `Stopped(operation)`  the merge stopped on a conflict
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= ```
+=
+= ```scala fuel
+= run
+= ##
+- directory.open[Git.Worktree](Read & Write): worktree ?=>
++ directory.open[Git.Worktree](Read & Write): worktree ?=>
+
+-   Out.println(worktree.merge(Git.Branch(t"feature"), worktree.head(), ff = FastForward.Only).inspect)
++   Out.println(worktree.merge(Git.Branch(t"feature"), worktree.head(), ff = FastForward.Only).inspect)
+
+=   Out.println(worktree.merge(Git.Branch(t"feature"), worktree.head(), ff = FastForward.Only).inspect)
+- ```
++ ```
+
+- A conflict is not an error. The operation stops, and the `Stopped` outcome carries a
+- `Git.Operation` which names the paths in conflict. Once they are resolved and added,
+- `continue()` finishes the operation, `skip()` passes over the commit, and `abandon()` restores
+- the state the operation began from. `cherryPick`, `revert` and `rebase` have the same shape, and
+- `stash` saves and restores uncommitted work.
++ Конфликт — не ошибка. Операция останавливается, а исход `Stopped` несёт `Git.Operation`,
++ который называет пути в конфликте. Когда они разрешены и добавлены, `continue()` завершает
++ операцию, `skip()` пропускает коммит, а `abandon()` восстанавливает состояние, с которого
++ операция началась. `cherryPick`, `revert` и `rebase` устроены так же, а `stash` сохраняет и
++ восстанавливает незакоммиченную работу.
+
+- ### Remotes, configuration, notes and the reflog
++ ### Удалённые репозитории, конфигурация, заметки и reflog
+
+- Remotes are added, listed and removed as values. Configuration is read and written through a
+- lent handle, typed by the codec of the value: `repo.config { config ?=> config.get[Text](key) }`.
++ Удалённые репозитории добавляются, перечисляются и удаляются как значения. Конфигурация
++ читается и записывается через предоставленный на время дескриптор, типизированный кодеком
++ значения: `repo.config { config ?=> config.get[Text](key) }`.
+
+- Notes attach text to a commit without altering it, in a chosen namespace. A note write is
+- conditional on a reading of the notes ref. That is how build attestations and other out-of-band
+- metadata travel with a repository, without one writer clobbering another:
++ Заметки прикрепляют к коммиту текст, не изменяя его, в выбранном пространстве имён. Запись
++ заметки зависит от прочитанного значения ссылки заметок. Именно так аттестации сборки и другие
++ внеполосные метаданные путешествуют вместе с репозиторием, и один писатель не затирает
++ другого:
+
+= metadata travel with a repository, without one writer clobbering another:
+=
+- ```scala fuel
++ ```scala fuel
+
+= metadata travel with a repository, without one writer clobbering another:
+=
+= ```scala fuel
+- run
++ run
+
+= metadata travel with a repository, without one writer clobbering another:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= metadata travel with a repository, without one writer clobbering another:
+=
+= ```scala fuel
+= run
+= ##
+- directory.open[Git.Worktree](Read & Write): worktree ?=>
++ directory.open[Git.Worktree](Read & Write): worktree ?=>
+
+-   worktree.addRemote(t"origin", t"git@example.com:globe/hamlet.git")
++   worktree.addRemote(t"origin", t"git@example.com:globe/hamlet.git")
+
+-   val hash = worktree.head().value.commit.or(Git.Hash.zero)
++   val hash = worktree.head().value.commit.or(Git.Hash.zero)
+
+-   val notes = worktree.ref(Git.Refs.defaultNotes)
++   val notes = worktree.ref(Git.Refs.defaultNotes)
+
+-   worktree.addNote(hash, t"a note body", notes)
++   worktree.addNote(hash, t"a note body", notes)
+
+-   Out.println(worktree.note(hash).value.inspect)
++   Out.println(worktree.note(hash).value.inspect)
+
+=   Out.println(worktree.note(hash).value.inspect)
+- ```
++ ```
+
+- `note` gives `Unset` where there is no note. `reflog` gives the local history of where a
+- reference has pointed, newest first. That record is what makes a mistaken reset recoverable.
++ `note` даёт `Unset`, если заметки нет. `reflog` даёт локальную историю того, куда указывала
++ ссылка, начиная с самого нового. Именно эта запись позволяет исправить ошибочный reset.
+
+- ### Related
++ ### Связанное
+
+- - [Filesystem](filesystem.md) describes the directory handles and grants which a worktree
+-   shares.
+- - [Paths](paths.md) describes the planes which `Git.Ref` is a path on.
+- - [Diffing](diffing.md) computes and applies diffs outside a repository.
+- - [Processes](processes.md) describes how the command-line backend runs `git`.
+- - [SSH](ssh.md) and the [HTTP client](http-client.md) carry the native backend's transports.
+- - [Cryptography](cryptography.md) describes the keys which sign commits and tags.
+- - [Trees](trees.md) draws a commit history in lanes.
++ - [Файловая система](filesystem.md) описывает дескрипторы каталогов и права доступа, которые
++   разделяет рабочее дерево.
++ - [Пути](paths.md) описывают плоскости, на которых `Git.Ref` является путём.
++ - [Сравнение](diffing.md) вычисляет и применяет различия вне репозитория.
++ - [Процессы](processes.md) описывают, как бэкенд командной строки запускает `git`.
++ - [SSH](ssh.md) и [HTTP-клиент](http-client.md) переносят транспорты нативного бэкенда.
++ - [Криптография](cryptography.md) описывает ключи, которыми подписываются коммиты и теги.
++ - [Деревья](trees.md) рисуют историю коммитов по дорожкам.

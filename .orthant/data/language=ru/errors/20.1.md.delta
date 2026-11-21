@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.20.1` — Value is not `Optional` (`mandatable`)
++ # `↯/s.20.1` — Значение не является `Optional` (`mandatable`)
+
+- Raised at compile time by Vacuous's `mandatable` macro when the
+- value's type is not an `Optional`.
++ Порождается во время компиляции макросом `mandatable` из Vacuous, когда
++ тип значения не является `Optional`.
+
+- ## Cause
++ ## Причина
+
+- `Mandatable` is the typeclass that converts an `Optional[T]` to a
+- mandatory `T` (or fails). The macro requires the type to contain
+- `Unset.type` in its union.
++ `Mandatable` — класс типов, который преобразует `Optional[T]` в
++ обязательный `T` (или завершается неудачей). Макрос требует, чтобы
++ объединение, составляющее тип, содержало `Unset.type`.
+
+- ## Example message
++ ## Пример сообщения
+
+=
+- ```
++ ```
+
+- [↯/s.20.1] the value is not an `Optional`
++ [↯/s.20.1] the value is not an `Optional`
+
+= [↯/s.20.1] the value is not an `Optional`
+- ```
++ ```
+
+- ## Resolution
++ ## Решение
+
+- Use an `Optional[T]` value at the call site.
++ Используйте в месте вызова значение типа `Optional[T]`.
+
+- ## See also
++ ## См. также
+
+- - Source: `lib/vacuous/src/core/vacuous.internal.scala`
++ - Исходный код: `lib/vacuous/src/core/vacuous.internal.scala`

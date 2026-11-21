@@ -1,0 +1,31 @@
+orthant 1 language
+
+- - The changes since the last release accumulate in `doc/work/migration/<version>.md`, named from
+-   the start after the release they will be part of (for example `doc/work/migration/0.71.0.md`
+-   after Soundness 0.70.0). Every PR that makes a material change to the public API or
+-   observable behaviour adds an entry to it; the first such change after a release creates it.
+- - Tagging the release publishes the file as it stands, so no change has to merge first. The
+-   release refuses to run while `<version>.md` is missing, or while another version's notes are
+-   unreleased, so the notes cannot be skipped or stranded under the wrong version. Released
+-   files are not edited afterwards except to correct mistakes.
+- - The result is one file per release, each describing exactly the changes between the
+-   previous release and that one.
++ - Изменения с последнего релиза накапливаются в `doc/work/migration/<version>.md`, названном с самого
++   начала по релизу, в который они войдут (например, `doc/work/migration/0.71.0.md` после Soundness
++   0.70.0). Каждый пул-реквест, вносящий существенное изменение в публичный API или наблюдаемое
++   поведение, добавляет в него запись; первое такое изменение после релиза создаёт файл.
++ - Тегирование релиза публикует файл в его текущем виде, поэтому никакому изменению не нужно
++   сливаться первым. Релиз отказывается выполняться, пока `<version>.md` отсутствует или пока
++   заметки другой версии не выпущены, поэтому заметки нельзя пропустить или оставить под неверной
++   версией. Выпущенные файлы впоследствии не редактируются, кроме исправления ошибок.
++ - В результате получается один файл на релиз, и каждый описывает ровно изменения между
++   предыдущим релизом и этим.
+
+- To upgrade a project from version `A` to version `B`, instruct an LLM agent to read every file
+- `doc/work/migration/<v>.md` with `A < v <= B`, in ascending version order, and to apply the changes
+- each one describes to the project's code. For example, moving from 0.64.0 to 0.67.0 means
+- reading `0.65.0.md`, `0.66.0.md` and `0.67.0.md`, in that order.
++ Чтобы обновить проект с версии `A` до версии `B`, поручите LLM-агенту прочитать каждый файл
++ `doc/work/migration/<v>.md` с `A < v <= B` в порядке возрастания версий и применить к коду проекта
++ изменения, которые описывает каждый из них. Например, переход с 0.64.0 на 0.67.0 означает чтение
++ `0.65.0.md`, `0.66.0.md` и `0.67.0.md` в этом порядке.

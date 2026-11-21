@@ -1,0 +1,53 @@
+orthant 1 language
+
+- The surface has already been measured: `etc/api-reduction-candidates.md` inventories every
+- identifier the `soundness` package exports, and classifies the reduction candidates:
++ Поверхность уже измерена: `etc/api-reduction-candidates.md` перечисляет каждый
++ идентификатор, который экспортирует пакет `soundness`, и классифицирует кандидатов на
++ сокращение:
+
+- Done when: the rename table in `etc/api-nesting-proposal.md` (which superseded the C1
+- section) is fully applied, and the inventory's "Remaining names by prefix family" section
+- lists no name outside "Reviewed items which should not be moved".
++ Готово, когда: таблица переименований в `etc/api-nesting-proposal.md` (которая заменила
++ раздел C1) применена полностью, а раздел перечня «Remaining names by prefix family» не
++ перечисляет ни одного имени вне «Reviewed items which should not be moved».
+
+- Done when: the C2 section of the inventory is empty. (C3 and C3b were superseded by
+- `etc/api-nesting-proposal.md` and closed with it.)
++ Готово, когда: раздел C2 в перечне пуст. (C3 и C3b были заменены
++ `etc/api-nesting-proposal.md` и закрыты вместе с ним.)
+
+- The naming standards in `doc/work/standards/naming.md` and `doc/work/standards/given-naming.md` gain a
+- conformance sweep, so that drift back into incoherence is caught mechanically rather than in
+- review. `etc/check-given-uniqueness.py`, run by `make build`, covers the given-naming half;
+- nothing checks `naming.md`, though flare's `S1.1` rule enforces its one `unsafe…` clause.
++ Стандарты именования в `doc/work/standards/naming.md` и `doc/work/standards/given-naming.md` получают
++ проверку соответствия, чтобы дрейф обратно к несогласованности обнаруживался механически, а не
++ при ревью. `etc/check-given-uniqueness.py`, запускаемый `make build`, покрывает половину,
++ относящуюся к именованию given-экземпляров; `naming.md` не проверяет ничто, хотя правило
++ `S1.1` из flare обеспечивает его единственный пункт об `unsafe…`.
+
+-     test -f etc/api-reduction-candidates.md || echo absent    # absent
++     test -f etc/api-reduction-candidates.md || echo absent    # absent
+
+- api-1 nests a name whose prefix repeats its context. This item covers the case with no prefix
+- to strip: a single word whose bare spelling claims a general concept when it names one
+- library's notion. ultimatum's layout tree is not *the* `Frame`. Each candidate is judged
+- case by case against rule R8 in `etc/api-nesting-proposal.md`. Convenience keeps a name
+- top-level only when it is the library's principal type, or a concept that really is general.
++ api-1 вкладывает имя, префикс которого повторяет его контекст. Этот пункт охватывает случай,
++ когда снимать нечего: одно слово, голое написание которого претендует на общее понятие, хотя
++ называет понятие одной библиотеки. Дерево раскладки ultimatum — это не *тот самый* `Frame`.
++ Каждый кандидат оценивается отдельно по правилу R8 в `etc/api-nesting-proposal.md`. Удобство
++ оставляет имя на верхнем уровне, только когда это главный тип библиотеки или действительно
++ общее понятие.
+
+- Done when: no name is exported into `package soundness` by more than one library, no
+- `@unexported` exists only to dodge a clash, and every row of the R8 tables in
+- `etc/api-nesting-proposal.md` has been either applied or moved to its "Reviewed and kept
+- top-level" list.
++ Готово, когда: ни одно имя не экспортируется в `package soundness` более чем одной
++ библиотекой, ни одна аннотация `@unexported` не существует лишь для того, чтобы избежать
++ конфликта, и каждая строка таблиц R8 в `etc/api-nesting-proposal.md` либо применена, либо
++ перенесена в её список «Reviewed and kept top-level».
