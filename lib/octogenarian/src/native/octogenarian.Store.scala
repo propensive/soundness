@@ -69,24 +69,44 @@ private[octogenarian] object Store:
 
     Refstore.descend(objects, List(hash.text.keep(2), hash.text.skip(2)))
 
-  private def packs(objects: Path on Local)
+  // The packs of each object directory, each loaded once, by the path of the directory. They
+  // are listed again only when a hash is in none of them, or one of them has gone; a pack whose
+  // index is still there when they are is not loaded again.
+  private val loaded: java.util.concurrent.ConcurrentHashMap[Text, List[Packfile]] =
+    java.util.concurrent.ConcurrentHashMap()
+
+  private def packs(objects: Path on Local, relist: Boolean = false)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   List[Packfile] =
 
-    val directory = objects / "pack"
+    val key = objects.encode
+    val cached = loaded.get(key)
 
-    if !directory.existent() then Nil else
-      def recur(paths: List[Path on Local], acc: List[Packfile]): List[Packfile] = paths match
-        case path :: rest =>
-          if path.name.ends(t".idx") then
-            val pack = Refstore.descend(directory, List(t"${path.name.skip(4, Rtl)}.pack"))
-            recur(rest, Packfile(pack, Packfile.loadIndex(path.read[Data])) :: acc)
-          else
-            recur(rest, acc)
+    if cached != null && !relist then cached else
+      val known: List[Packfile] = if cached == null then Nil else cached
+      val directory = objects / "pack"
 
-        case _ => acc.reverse
+      val listed: List[Packfile] =
+        if !directory.existent() then Nil else
+          def recur(paths: List[Path on Local], acc: List[Packfile]): List[Packfile] =
+            paths match
+              case path :: rest =>
+                if path.name.ends(t".idx") then
+                  val pack = Refstore.descend(directory, List(t"${path.name.skip(4, Rtl)}.pack"))
+                  val same = known.find(_.pack.encode == pack.encode)
 
-      recur(directory.children.to[List], Nil)
+                  recur
+                    ( rest,
+                      same.or(Packfile(pack, Packfile.loadIndex(path.read[Data]))) :: acc )
+
+                else recur(rest, acc)
+
+              case _ => acc.reverse
+
+          recur(directory.children.to[List], Nil)
+
+      loaded.put(key, listed)
+      listed
 
   private def alternates(objects: Path on Local)(using Tactic[Io.Error], Tactic[Git.Error])
   :   List[Path on Local] =
@@ -141,7 +161,14 @@ private[octogenarian] object Store:
           case store :: rest => read(store, hash).or(fromAlternates(rest))
           case _             => Unset
 
-      fromPacks(packs(objects)).or(fromAlternates(alternates(objects)))
+      // A pack which has gone since the packs were listed means they are listed again.
+      def present(packs: List[Packfile]): Optional[(Git.Object.Kind, Data)] =
+        if packs.exists { pack => pack.contains(hash) && !pack.pack.existent() } then Unset
+        else fromPacks(packs)
+
+      present(packs(objects))
+      . or(fromPacks(packs(objects, relist = true)))
+      . or(fromAlternates(alternates(objects)))
 
   // Writes a loose object, unless it is already present: written to a temporary name, then moved
   // into place, so a concurrent reader never sees a partial object.
@@ -181,7 +208,7 @@ private[octogenarian] object Store:
 
     val loose = objects.children.to[List].bind(hashesIn(_))
 
-    loose + packs(objects).bind(_.index.entries.map(_(0)))
+    loose + packs(objects, relist = true).bind(_.index.entries.map(_(0)))
 
   def hash(kind: Git.Object.Kind, data: Data): Git.Hash =
     val header = Objects.bytes(t"${kind.text} ${data.length}\u0000")
