@@ -1,0 +1,41 @@
+orthant 1 language
+
+- # `↯/s.17.3` — Type has multiple `flatMap` methods
++ # `↯/s.17.3` — Il tipo ha più metodi `flatMap`
+
+- Raised at compile time by Mercator's `monad` macro when the target
+- type has more than one `flatMap` overload.
++ Sollevato a tempo di compilazione dalla macro `monad` di Mercator quando il tipo di destinazione ha
++ più di un overload di `flatMap`.
+
+- ## Cause
++ ## Causa
+
+- Multiple `flatMap` overloads are ambiguous for derivation purposes.
++ Più overload di `flatMap` sono ambigui ai fini della derivazione.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.17.3] the type Play has more than one possible flatMap method
++ [↯/s.17.3] the type Play has more than one possible flatMap method
+
+= [↯/s.17.3] the type Play has more than one possible flatMap method
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Remove or rename overloads, or supply a `Monad` instance manually.
++ Rimuovere o rinominare gli overload, o fornire manualmente un'istanza di `Monad`.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/mercator/src/core/mercator.internal.scala`
++ - Sorgente: `lib/mercator/src/core/mercator.internal.scala`

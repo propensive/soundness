@@ -1,0 +1,16 @@
+orthant 1 language
+
+- row  ISO-8859-1  `iso88591Codepage`  `iso88591Charset`
++ row  ISO-8859-1  `iso88591Codepage`  `iso88591Charset`
+
+- Every charset uses the sanitizer in scope.
++ Ogni charset usa il sanitizzatore nell'ambito.
+
+- Encoding has the opposite problem: a character which the encoding has no bytes for, such as `é`
+- in ASCII. By default a `Codepage` writes the encoding's substitute, `?`, in its place. With
+- `encodingSanitizers.strictEncodingSanitizer` imported, it raises a `Codepage.Error` which names
+- the character instead.
++ La codifica ha il problema opposto: un carattere per cui la codifica non ha byte, come `é` in
++ ASCII. Per impostazione predefinita un `Codepage` scrive al suo posto il sostituto della
++ codifica, `?`. Con `encodingSanitizers.strictEncodingSanitizer` importato, solleva invece un
++ `Codepage.Error` che nomina il carattere.

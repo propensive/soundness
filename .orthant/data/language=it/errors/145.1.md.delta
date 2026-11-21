@@ -1,0 +1,52 @@
+orthant 1 language
+
+- # `↯/s.145.1` — `DebuggerError`
++ # `↯/s.145.1` — `DebuggerError`
+
+- Raised when a debug session cannot be established, or when the debuggee VM replies to a JDWP
+- command with an error code. The subcode is the JDWP error constant the VM returned, or a negative
+- value for a fault local to the debugger (a failed handshake, or a lost connection).
++ Sollevato quando non è possibile stabilire una sessione di debug, o quando la VM del processo
++ sottoposto a debug risponde a un comando JDWP con un codice di errore. Il sottocodice è la costante
++ di errore JDWP restituita dalla VM, o un valore negativo per un guasto locale al debugger (un
++ handshake fallito o una connessione persa).
+
+- ## Cause
++ ## Causa
+
+- Vivisection speaks the Java Debug Wire Protocol to a debuggee JVM. This error covers a debuggee
+- that refuses or drops the connection, a handshake that is not echoed, and any command the VM
+- rejects — an invalid identifier, a thread that is not suspended, a VM that has already died, and
+- the rest of the JDWP error constants.
++ Vivisection parla il Java Debug Wire Protocol con una JVM sottoposta a debug. Questo errore copre un
++ processo sottoposto a debug che rifiuta o interrompe la connessione, un handshake che non viene
++ ripetuto in eco, e qualsiasi comando che la VM rifiuta: un identificatore non valido, un thread che
++ non è sospeso, una VM già terminata e le altre costanti di errore JDWP.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.145.1] the JDWP action failed because the thread was not suspended
++ [↯/s.145.1] the JDWP action failed because the thread was not suspended
+
+= [↯/s.145.1] the JDWP action failed because the thread was not suspended
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Most JDWP error constants indicate that the command referred to state that has since changed —
+- a frame that has returned, an object that has been collected, or a thread that has resumed. Re-read
+- the relevant state after the VM last suspended before issuing the command again. A `Disconnected`
+- reason means the transport itself failed; check that the debuggee is still running and reachable.
++ La maggior parte delle costanti di errore JDWP indica che il comando faceva riferimento a uno stato
++ che nel frattempo è cambiato: un frame che è ritornato, un oggetto che è stato raccolto dal garbage
++ collector o un thread che ha ripreso l'esecuzione. Rileggi lo stato pertinente dopo l'ultima
++ sospensione della VM prima di inviare di nuovo il comando. Un motivo `Disconnected` significa che è
++ fallito il trasporto stesso; verifica che il processo sottoposto a debug sia ancora in esecuzione e
++ raggiungibile.

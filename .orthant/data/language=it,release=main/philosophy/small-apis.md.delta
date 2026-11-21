@@ -1,0 +1,10 @@
+orthant 1 language
+
+- The first is when an operation genuinely differs. `read` and `load` are two verbs for
+- [XML](/doc/soundness/modules/xml.md), because reading yields the content and loading yields the
+- document with its header — a real distinction, not a variant. Collapsing them would
+- force a flag argument, which is a worse way to say the same thing.
++ La prima è quando un'operazione è davvero diversa. `read` e `load` sono due verbi per
++ [XML](/doc/soundness/modules/xml.md), perché leggere fornisce il contenuto e caricare fornisce il documento
++ con la sua intestazione: una distinzione reale, non una variante. Unificarli imporrebbe un
++ argomento flag, che è un modo peggiore di dire la stessa cosa.

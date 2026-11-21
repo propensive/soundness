@@ -1,0 +1,81 @@
+orthant 1 language
+
+- # `↯/s.105.1` — `Pem.Error`
++ # `↯/s.105.1` — `Pem.Error`
+
+- Raised when Enigmatic cannot parse PEM-encoded content.
++ Sollevato quando Enigmatic non riesce ad analizzare un contenuto codificato in PEM.
+
+- ## Cause
++ ## Causa
+
+- PEM content has the form `-----BEGIN <label>-----` / Base64 body /
+- `-----END <label>-----`. This error flags structural problems before
+- the body is decoded. The message is `could not parse PEM content
++ Il contenuto PEM ha la forma `-----BEGIN <label>-----` / corpo Base64 / `-----END <label>-----`.
++ Questo errore segnala i problemi strutturali prima che il corpo venga decodificato. Il messaggio è
++ `could not parse PEM content
+
+- because $reason`.
++ because $reason`.
+
+- ## Variants
++ ## Varianti
+
+- ### `↯/s.105.1.1` — `BeginMissing`
++ ### `↯/s.105.1.1` — `BeginMissing`
+
+- The opening `-----BEGIN <label>-----` line was not found.
++ La riga di apertura `-----BEGIN <label>-----` non è stata trovata.
+
+- **Example.** `[↯/s.105.1.1] could not parse PEM content because the BEGIN line could not be found`
++ **Esempio.** `[↯/s.105.1.1] could not parse PEM content because the BEGIN line could not be found`
+
+- **Resolution.** Confirm the input is PEM-encoded; some sources
+- strip the BEGIN/END lines and require re-wrapping.
++ **Soluzione.** Verifica che l'input sia codificato in PEM; alcune sorgenti rimuovono le righe
++ BEGIN/END e richiedono di ricostruire l'armatura.
+
+- ### `↯/s.105.1.2` — `EndMissing`
++ ### `↯/s.105.1.2` — `EndMissing`
+
+- The closing `-----END <label>-----` line was not found.
++ La riga di chiusura `-----END <label>-----` non è stata trovata.
+
+- **Example.** `[↯/s.105.1.2] could not parse PEM content because the END line could not be found`
++ **Esempio.** `[↯/s.105.1.2] could not parse PEM content because the END line could not be found`
+
+- **Resolution.** Confirm the input is complete and not truncated.
++ **Soluzione.** Verifica che l'input sia completo e non troncato.
+
+- ### `↯/s.105.1.3` — `BadBase64`
++ ### `↯/s.105.1.3` — `BadBase64`
+
+- The body between BEGIN and END could not be decoded as Base64.
++ Il corpo tra BEGIN ed END non può essere decodificato come Base64.
+
+- **Example.** `[↯/s.105.1.3] could not parse PEM content because could not parse the BASE-64 PEM message`
++ **Esempio.** `[↯/s.105.1.3] could not parse PEM content because could not parse the BASE-64 PEM message`
+
+- **Resolution.** Inspect the body for invalid characters or line
+- endings; some pipelines mangle Base64 content.
++ **Soluzione.** Ispeziona il corpo alla ricerca di caratteri o fine riga non validi; alcune pipeline
++ alterano il contenuto Base64.
+
+- ### `↯/s.105.1.4` — `EmptyFile`
++ ### `↯/s.105.1.4` — `EmptyFile`
+
+- The input was empty.
++ L'input era vuoto.
+
+- **Example.** `[↯/s.105.1.4] could not parse PEM content because the file was empty`
++ **Esempio.** `[↯/s.105.1.4] could not parse PEM content because the file was empty`
+
+- **Resolution.** Provide a non-empty PEM file.
++ **Soluzione.** Fornisci un file PEM non vuoto.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/enigmatic/src/core/enigmatic.Pem.scala`
++ - Sorgente: `lib/enigmatic/src/core/enigmatic.Pem.scala`

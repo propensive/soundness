@@ -1,0 +1,2700 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base espionage
++ base espionage
+
+- import soundness
++ import soundness
+
+- info   a client for the Agent Client Protocol, version 1: drive a coding agent through sessions, prompts and tool calls
++ info   un client per l'Agent Client Protocol, versione 1: guidare un agente di programmazione tramite sessioni, prompt e chiamate di strumenti
+
+- detail
++ detail
+
+-     _Espionage_ is the client half of the [Agent Client
+-     Protocol](https://agentclientprotocol.com/), version 1: the role an editor plays towards a
+-     coding agent such as Claude Code or Gemini CLI, here for programmatic use. A program
+-     launches an agent as a subprocess (or reaches one behind a pair of streams), opens a
+-     session, sends prompts, and watches the agent's work stream back — message chunks,
+-     thoughts, tool calls, plans — while answering the requests the agent makes of it:
+-     permission to act, file reads and writes, terminals.
++     _Espionage_ è la metà client dell'[Agent Client
++     Protocol](https://agentclientprotocol.com/), versione 1: il ruolo che un editor svolge
++     verso un agente di programmazione come Claude Code o Gemini CLI, qui per un uso
++     programmatico. Un programma avvia un agente come sottoprocesso (o ne raggiunge uno dietro
++     una coppia di stream), apre una sessione, invia prompt e osserva il lavoro dell'agente che
++     torna in streaming — chunk di messaggi, pensieri, chiamate di strumenti, piani — mentre
++     risponde alle richieste che l'agente gli rivolge: permesso di agire, letture e scritture di
++     file, terminali.
+
+-     The protocol is JSON-RPC in both directions at once, and a prompt is not a function call
+-     but a **turn**: one long-lived request whose response arrives only after everything the
+-     agent did inside it. The library models the turn directly. `Acp.connect` takes two blocks:
+-     the first registers handlers on a lent `Acp.Registry` with the combinators `Acp.updated`,
+-     `Acp.permission`, `Acp.readFile`, `Acp.writeFile` and `Acp.terminals`; the second holds the
+-     live `Acp.Connection`, whose `prompt` blocks until the agent reports a `StopReason` while
+-     the turn's updates stream concurrently to the registered handler. The capabilities the
+-     client advertises at `initialize` are derived from what was registered, so the declaration
+-     can never disagree with the implementation.
++     Il protocollo è JSON-RPC in entrambe le direzioni contemporaneamente, e un prompt non è una
++     chiamata di funzione ma un **turno**: una richiesta di lunga durata la cui risposta arriva
++     solo dopo tutto ciò che l'agente ha fatto al suo interno. La libreria modella il turno
++     direttamente. `Acp.connect` prende due blocchi: il primo registra gli handler su un
++     `Acp.Registry` prestato con i combinatori `Acp.updated`, `Acp.permission`, `Acp.readFile`,
++     `Acp.writeFile` e `Acp.terminals`; il secondo contiene l'`Acp.Connection` attiva, il cui
++     `prompt` si blocca finché l'agente non riporta uno `StopReason`, mentre gli aggiornamenti
++     del turno arrivano in streaming, in modo concorrente, all'handler registrato. Le capability
++     che il client dichiara a `initialize` sono derivate da ciò che è stato registrato, quindi la
++     dichiarazione non può mai essere in disaccordo con l'implementazione.
+
+-     ```scala fuel
++     ```scala fuel
+
+-     typecheck
++     typecheck
+
+-     ##
++     ##
+
+-     import soundness.*
++     import soundness.*
+
+-     import environments.javaBaseEnvironment
++     import environments.javaBaseEnvironment
+
+-     import errorDiagnostics.stackTracesDiagnostics
++     import errorDiagnostics.stackTracesDiagnostics
+
+-     import probates.awaitProbate
++     import probates.awaitProbate
+
+-     import stdios.javaLangSystemStdio
++     import stdios.javaLangSystemStdio
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import threads.virtualThreads
++     import threads.virtualThreads
+
+-     import workingDirectories.javaBaseWorkingDirectory
++     import workingDirectories.javaBaseWorkingDirectory
+
+-     supervise:
++     supervise:
+
+-       Acp.connect(Acp.Endpoint(sh"claude-code-acp")):
++       Acp.connect(Acp.Endpoint(sh"claude-code-acp")):
+
+-         Acp.updated:
++         Acp.updated:
+
+=         Acp.updated:
+-           Acp.update match
++           Acp.update match
+
+=         Acp.updated:
+=           Acp.update match
+-             case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
++             case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
+
+-             case other                                           => ()
++             case other                                           => ()
+
+-         Acp.permission:
++         Acp.permission:
+
+=         Acp.permission:
+-           Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowOnce).head
++           Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowOnce).head
+
+=         Acp.permission:
+=           Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowOnce).head
+-           . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
++           . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
+
+-       . apply:
++       . apply:
+
+-           val session = Acp.connection.newSession(t"/workspace")
++           val session = Acp.connection.newSession(t"/workspace")
+
+-           Acp.connection.prompt(session.sessionId, t"Fix the failing test")
++           Acp.connection.prompt(session.sessionId, t"Fix the failing test")
+
+-     ```
++     ```
+
+-     A connection needs, as contextual values, a `Monitor` (it runs a reader task and a writer
+-     task, so it sits inside `supervise`), a `Probate`, `Diagnostics`, a `WorkingDirectory` and
+-     an `Environment` for launching the agent, and a `Tactic[Acp.Error]`. Every handler is lent
+-     the session id it concerns and its payloads, read with the contextual accessors
+-     `Acp.sessionId`, `Acp.update`, `Acp.toolCall`, `Acp.options`, `Acp.path`, `Acp.line`,
+-     `Acp.limit` and `Acp.content`, and an `Emit[Acp.Error]`, so a fault raised in a handler
+-     becomes an error response to the agent rather than a hung turn.
++     Una connessione richiede, come valori contestuali, un `Monitor` (esegue un task di lettura e
++     un task di scrittura, quindi sta dentro `supervise`), una `Probate`, `Diagnostics`, una
++     `WorkingDirectory` e un `Environment` per avviare l'agente, e un `Tactic[Acp.Error]`. A ogni
++     handler vengono prestati l'id della sessione che lo riguarda e i suoi payload, letti con
++     gli accessor contestuali `Acp.sessionId`, `Acp.update`, `Acp.toolCall`, `Acp.options`,
++     `Acp.path`, `Acp.line`, `Acp.limit` e `Acp.content`, e un `Emit[Acp.Error]`, così un errore
++     sollevato in un handler diventa una risposta di errore all'agente invece di un turno
++     bloccato.
+
+-     Every message type is a case class or enum nested in `Acp`, each with its JSON codec in
+-     its companion: `SessionUpdate` and its eight cases, `ToolCall` and `ToolCallUpdate`,
+-     `PermissionOption`, `StopReason`, the capability records, and the content blocks, which
+-     ACP adopts from the Model Context Protocol and which are re-exported here from
+-     `synesthesia.Content`, so content crosses between the two protocols without translation.
++     Ogni tipo di messaggio è una case class o un enum annidato in `Acp`, ciascuno con il suo
++     codec JSON nel suo oggetto compagno: `SessionUpdate` e i suoi otto casi, `ToolCall` e
++     `ToolCallUpdate`, `PermissionOption`, `StopReason`, i record delle capability, e i blocchi di
++     contenuto, che ACP adotta dal Model Context Protocol e che qui sono riesportati da
++     `synesthesia.Content`, così il contenuto passa tra i due protocolli senza traduzione.
+
+-     Several of `Acp`'s members — `update`, `path`, `content`, `options`, `line`, `connection`,
+-     `Cancelled` — are names other libraries use too, which is why the umbrella exports `Acp`
+-     and not its contents. Write them as `Acp.update`, or `import Acp.*` inside the object which
+-     uses them, as the demo does.
++     Diversi membri di `Acp` — `update`, `path`, `content`, `options`, `line`, `connection`,
++     `Cancelled` — sono nomi usati anche da altre librerie, ed è per questo che l'ombrello esporta
++     `Acp` e non il suo contenuto. Si scrivono come `Acp.update`, oppure con `import Acp.*` dentro
++     l'oggetto che li usa, come fa la demo.
+
+-     The stdio framing is newline-delimited JSON, one compact UTF-8 message per line, split on
+-     the raw linefeed byte before any decoding. A message is delivered the moment its newline
+-     arrives: the framer peeks at the terminator and advances past it without asking for more
+-     input, so on a live pipe it never waits for the agent's next message to deliver this one.
+-     Blank lines, and the remnant of a `\r\n` terminator, are skipped.
++     Il framing su stdio è JSON delimitato da a capo, un messaggio UTF-8 compatto per riga,
++     diviso sul byte di line feed grezzo prima di qualsiasi decodifica. Un messaggio viene
++     consegnato nel momento in cui arriva il suo a capo: il framer sbircia il terminatore e lo
++     oltrepassa senza chiedere altro input, quindi su una pipe attiva non aspetta mai il messaggio
++     successivo dell'agente per consegnare questo. Le righe vuote, e il residuo di un terminatore
++     `\r\n`, vengono saltati.
+
+-     The library has two source sets:
++     La libreria ha due source set:
+
+-     - `espionage.core` — `Acp` and the `@rpc` wire traits (`Acp.Agent`, `Acp.Client` and their
+-       parts). It is built for the JVM only, since it depends on obligatory's JSON-RPC
+-       support, and needs capture checking.
+-     - `espionage.demo` — `DemoAcpClient`, a complete command-line client, not published as a
+-       library.
++     - `espionage.core` — `Acp` e i trait di trasmissione `@rpc` (`Acp.Agent`, `Acp.Client` e le
++       loro parti). È compilato solo per la JVM, poiché dipende dal supporto JSON-RPC di
++       obligatory, e richiede il capture checking.
++     - `espionage.demo` — `DemoAcpClient`, un client completo da riga di comando, non pubblicato
++       come libreria.
+
+-     `Acp` and the wire traits are exported to the `soundness` umbrella; the demo is not. The
+-     library takes no choice-package givens of its own, but a connection needs the named
+-     imports above (`threads`, `probates`, `workingDirectories`, `environments`, and an error
+-     strategy), because `import soundness.*` imports no givens.
++     `Acp` e i trait di trasmissione sono esportati nell'ombrello `soundness`; la demo no. La
++     libreria non ha given propri da package di scelta, ma una connessione richiede gli import
++     per nome visti sopra (`threads`, `probates`, `workingDirectories`, `environments`, e una
++     strategia di errore), perché `import soundness.*` non importa alcun given.
+
+- refer espionage.Acp
++ refer espionage.Acp
+
+- refer espionage.Acp.connect
++ refer espionage.Acp.connect
+
+- refer espionage.Acp.Connection
++ refer espionage.Acp.Connection
+
+- refer espionage.Acp.SessionUpdate
++ refer espionage.Acp.SessionUpdate
+
+- refer espionage.Acp.Error
++ refer espionage.Acp.Error
+
+- refer synesthesia.Content
++ refer synesthesia.Content
+
+- entry .Acp   the Agent Client Protocol: its message types, the handler registry, `connect`, and the connection
++ entry .Acp   l'Agent Client Protocol: i suoi tipi di messaggio, il registro degli handler, `connect` e la connessione
+
+-   detail
++   detail
+
+-       `Acp` holds the whole client. Its members fall into four groups:
++       `Acp` contiene l'intero client. I suoi membri si dividono in quattro gruppi:
+
+-       - the **protocol types**, one case class or enum per ACP structure, each with its JSON
+-         codec in its companion: the capability records (`ClientCapabilities`,
+-         `AgentCapabilities`, …), sessions (`McpServer`, `SessionMode`, `NewSessionResult`),
+-         turns (`StopReason`, `PromptResult`), updates (`SessionUpdate` and its cases), tool
+-         calls (`ToolCall`, `ToolCallUpdate`, `ToolCallContent`), plans, permissions and the
+-         filesystem and terminal results, together with the content blocks re-exported from
+-         `synesthesia.Content`;
+-       - the **handler side**: the handler types (`UpdateHandler`, `PermissionHandler`,
+-         `ReadFileHandler`, `WriteFileHandler`, and the `Terminals` bundle), the contextual
+-         accessors a handler reads (`sessionId`, `update`, `toolCall`, `options`, `path`,
+-         `line`, `limit`, `content`), the registration combinators (`updated`, `permission`,
+-         `readFile`, `writeFile`, `terminals`, `capabilities`) and the `Registry` they write to;
+-       - the **connection side**: `Endpoint`, which says where the agent is, `connect`, which
+-         opens the exchange, `Connection`, the handle it lends, reached as `connection`, and
+-         `Observer`, which sees the raw traffic;
+-       - `Error`, which the connection raises and a handler emits.
++       - i **tipi del protocollo**, una case class o un enum per ogni struttura ACP, ciascuno con
++         il suo codec JSON nel suo oggetto compagno: i record delle capability
++         (`ClientCapabilities`, `AgentCapabilities`, …), le sessioni (`McpServer`, `SessionMode`,
++         `NewSessionResult`), i turni (`StopReason`, `PromptResult`), gli aggiornamenti
++         (`SessionUpdate` e i suoi casi), le chiamate di strumenti (`ToolCall`, `ToolCallUpdate`,
++         `ToolCallContent`), i piani, i permessi e i risultati del filesystem e dei terminali,
++         insieme ai blocchi di contenuto riesportati da `synesthesia.Content`;
++       - il **lato degli handler**: i tipi di handler (`UpdateHandler`, `PermissionHandler`,
++         `ReadFileHandler`, `WriteFileHandler`, e il pacchetto `Terminals`), gli accessor
++         contestuali che un handler legge (`sessionId`, `update`, `toolCall`, `options`, `path`,
++         `line`, `limit`, `content`), i combinatori di registrazione (`updated`, `permission`,
++         `readFile`, `writeFile`, `terminals`, `capabilities`) e il `Registry` in cui scrivono;
++       - il **lato della connessione**: `Endpoint`, che dice dove si trova l'agente, `connect`, che
++         apre lo scambio, `Connection`, l'handle che presta, raggiunto come `connection`, e
++         `Observer`, che vede il traffico grezzo;
++       - `Error`, che la connessione solleva e un handler emette.
+
+=       - `Error`, which the connection raises and a handler emits.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       - `Error`, which the connection raises and a handler emits.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       - `Error`, which the connection raises and a handler emits.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       - `Error`, which the connection raises and a handler emits.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+-       object Client:
++       object Client:
+
+-         import Acp.*
++         import Acp.*
+
+=         import Acp.*
+=
+-         def register(using Acp.Registry^): Unit =
++         def register(using Acp.Registry^): Unit =
+
+-           updated:
++           updated:
+
+-             update match
++             update match
+
+-               case AgentMessageChunk(TextContent(text, _)) => Out.print(text)
++               case AgentMessageChunk(TextContent(text, _)) => Out.print(text)
+
+-               case call: ToolCall                          => Out.println(call.title)
++               case call: ToolCall                          => Out.println(call.title)
+
+-               case _                                       => ()
++               case _                                       => ()
+
+-           readFile:
++           readFile:
+
+-             t"contents of $path"
++             t"contents of $path"
+
+=             t"contents of $path"
+-       ```
++       ```
+
+-       Registration is possible wherever an `Acp.Registry^` is in scope — the first block of
+-       `connect`, or a helper such as `register` above which takes one — so a client can split
+-       its handlers across methods.
++       La registrazione è possibile ovunque un `Acp.Registry^` sia nell'ambito — il primo blocco
++       di `connect`, o un helper come `register` qui sopra che ne prende uno — così un client può
++       ripartire i suoi handler tra più metodi.
+
+-   refer espionage.Acp.connect
++   refer espionage.Acp.connect
+
+-   refer espionage.Acp.Connection
++   refer espionage.Acp.Connection
+
+-   refer espionage.Acp.Registry
++   refer espionage.Acp.Registry
+
+-   refer espionage.Acp.SessionUpdate
++   refer espionage.Acp.SessionUpdate
+
+-   entry .version   the protocol version this library implements: `1`
+-       ACP versions are a single integer, incremented only for breaking changes. The client
+-       sends this at `initialize`, and `Connection#initialize` aborts with
+-       `Acp.Error.Reason.Incompatible` if the agent answers with any other.
++   entry .version   la versione del protocollo che questa libreria implementa: `1`
++       Le versioni di ACP sono un singolo intero, incrementato solo per modifiche incompatibili.
++       Il client lo invia a `initialize`, e `Connection#initialize` interrompe con
++       `Acp.Error.Reason.Incompatible` se l'agente risponde con qualsiasi altra.
+
+-   entry .Icon   an icon's source, MIME type, sizes and theme; re-exported from `synesthesia.Content`
+-       `Acp.Icon` is `synesthesia.Content.Icon`, shared with MCP, whose page has the full account.
+-   entry .Annotations   audience, priority and modification hints on content; re-exported from `synesthesia.Content`
+-       `Acp.Annotations` is `synesthesia.Content.Annotations`.
+-   entry .Role   who a piece of content is for, `User` or `Assistant`; re-exported from `synesthesia.Content`
+-       `Acp.Role` is `synesthesia.Content.Role`.
+-   entry .ContentBlock   a block of content: text, image, audio, resource link or embedded resource; re-exported from `synesthesia.Content`
+-       `Acp.ContentBlock` is `synesthesia.Content.ContentBlock`, whose page has the full
+-       account. A prompt is a `List[ContentBlock]`, and every message and thought chunk an agent
+-       streams carries one. It is discriminated on the wire by its `type` member.
+-   entry .TextContent   a block of text, with optional annotations; re-exported from `synesthesia.Content`
+-       `Acp.TextContent` is `synesthesia.Content.TextContent`. The usual pattern for streamed
+-       text is `case Acp.AgentMessageChunk(Acp.TextContent(text, _))`, and
+-       `Connection#prompt(sessionId, text)` wraps its text in one.
+-   entry .ImageContent   a Base64 image with its MIME type, and an optional URI; re-exported from `synesthesia.Content`
+-       `Acp.ImageContent` is `synesthesia.Content.ImageContent`. Its `uri` member is ACP's
+-       addition to MCP's shape, and vanishes from the wire when unset. An agent accepts images
+-       in a prompt only if its `PromptCapabilities#image` says so.
+-   entry .AudioContent   Base64 audio with its MIME type; re-exported from `synesthesia.Content`
+-       `Acp.AudioContent` is `synesthesia.Content.AudioContent`. An agent accepts audio in a
+-       prompt only if its `PromptCapabilities#audio` says so.
+-   entry .ResourceLink   a link to a resource by URI, with its name and optional metadata; re-exported from `synesthesia.Content`
+-       `Acp.ResourceLink` is `synesthesia.Content.ResourceLink`.
+-   entry .EmbeddedResource   a resource's contents carried inline; re-exported from `synesthesia.Content`
+-       `Acp.EmbeddedResource` is `synesthesia.Content.EmbeddedResource`. An agent accepts
+-       embedded context in a prompt only if its `PromptCapabilities#embeddedContext` says so.
+-   entry .Contents   a resource's contents, as text or as a blob; re-exported from `synesthesia.Content`
+-       `Acp.Contents` is `synesthesia.Content.Contents`.
+-   entry .ResourceContents   the common shape of a resource's contents: URI, MIME type and metadata; re-exported from `synesthesia.Content`
+-       `Acp.ResourceContents` is `synesthesia.Content.ResourceContents`.
+-   entry .TextResourceContents   a resource's contents as text; re-exported from `synesthesia.Content`
+-       `Acp.TextResourceContents` is `synesthesia.Content.TextResourceContents`.
+-   entry .BlobResourceContents   a resource's contents as a Base64 blob; re-exported from `synesthesia.Content`
+-       `Acp.BlobResourceContents` is `synesthesia.Content.BlobResourceContents`.
++   entry .Icon   la sorgente, il tipo MIME, le dimensioni e il tema di un'icona; riesportato da `synesthesia.Content`
++       `Acp.Icon` è `synesthesia.Content.Icon`, condiviso con MCP, la cui pagina ne dà il resoconto completo.
++   entry .Annotations   indicazioni di destinatari, priorità e modifica sul contenuto; riesportato da `synesthesia.Content`
++       `Acp.Annotations` è `synesthesia.Content.Annotations`.
++   entry .Role   a chi è destinato un contenuto, `User` o `Assistant`; riesportato da `synesthesia.Content`
++       `Acp.Role` è `synesthesia.Content.Role`.
++   entry .ContentBlock   un blocco di contenuto: testo, immagine, audio, link a una risorsa o risorsa incorporata; riesportato da `synesthesia.Content`
++       `Acp.ContentBlock` è `synesthesia.Content.ContentBlock`, la cui pagina ne dà il resoconto
++       completo. Un prompt è una `List[ContentBlock]`, e ogni chunk di messaggio e di pensiero che
++       un agente trasmette in streaming ne porta uno. Sulla connessione si discrimina tramite il
++       suo membro `type`.
++   entry .TextContent   un blocco di testo, con annotazioni opzionali; riesportato da `synesthesia.Content`
++       `Acp.TextContent` è `synesthesia.Content.TextContent`. Il pattern abituale per il testo in
++       streaming è `case Acp.AgentMessageChunk(Acp.TextContent(text, _))`, e
++       `Connection#prompt(sessionId, text)` avvolge il suo testo in uno di questi.
++   entry .ImageContent   un'immagine Base64 con il suo tipo MIME, e un URI opzionale; riesportato da `synesthesia.Content`
++       `Acp.ImageContent` è `synesthesia.Content.ImageContent`. Il suo membro `uri` è l'aggiunta
++       di ACP alla forma di MCP, e scompare dalla trasmissione quando non è impostato. Un agente
++       accetta immagini in un prompt solo se il suo `PromptCapabilities#image` lo indica.
++   entry .AudioContent   audio Base64 con il suo tipo MIME; riesportato da `synesthesia.Content`
++       `Acp.AudioContent` è `synesthesia.Content.AudioContent`. Un agente accetta audio in un
++       prompt solo se il suo `PromptCapabilities#audio` lo indica.
++   entry .ResourceLink   un link a una risorsa tramite URI, con il suo nome e metadati opzionali; riesportato da `synesthesia.Content`
++       `Acp.ResourceLink` è `synesthesia.Content.ResourceLink`.
++   entry .EmbeddedResource   il contenuto di una risorsa trasportato in linea; riesportato da `synesthesia.Content`
++       `Acp.EmbeddedResource` è `synesthesia.Content.EmbeddedResource`. Un agente accetta contesto
++       incorporato in un prompt solo se il suo `PromptCapabilities#embeddedContext` lo indica.
++   entry .Contents   il contenuto di una risorsa, come testo o come blob; riesportato da `synesthesia.Content`
++       `Acp.Contents` è `synesthesia.Content.Contents`.
++   entry .ResourceContents   la forma comune del contenuto di una risorsa: URI, tipo MIME e metadati; riesportato da `synesthesia.Content`
++       `Acp.ResourceContents` è `synesthesia.Content.ResourceContents`.
++   entry .TextResourceContents   il contenuto di una risorsa come testo; riesportato da `synesthesia.Content`
++       `Acp.TextResourceContents` è `synesthesia.Content.TextResourceContents`.
++   entry .BlobResourceContents   il contenuto di una risorsa come blob Base64; riesportato da `synesthesia.Content`
++       `Acp.BlobResourceContents` è `synesthesia.Content.BlobResourceContents`.
+
+-   entry .Envelope   the two members of any JSON-RPC message which decide how it is handled
++   entry .Envelope   i due membri di qualsiasi messaggio JSON-RPC che decidono come viene gestito
+
+=   entry .Envelope   the two members of any JSON-RPC message which decide how it is handled
+-     detail
++     detail
+
+-         A message read only for its `method`, which a response lacks, and its `id`, which a
+-         notification lacks. Both are optional, so every message decodes: no method means a
+-         response, and no id a notification. The exchange's reader uses it to route each
+-         message without knowing its shape.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder; a malformed envelope throws `Json.Error`
+-     entry #method   the method the message names, or `Unset` for a response
+-     entry #id   the id the message correlates on, as raw JSON, or `Unset` for a notification
++         Un messaggio letto solo per il suo `method`, che manca in una risposta, e per il suo `id`,
++         che manca in una notifica. Entrambi sono opzionali, quindi ogni messaggio si decodifica:
++         nessun metodo significa una risposta, e nessun id una notifica. Il lettore dello scambio
++         lo usa per instradare ogni messaggio senza conoscerne la forma.
++     entry .encodable   l'encoder JSON derivato
++     entry .decodable   il decoder JSON derivato; una busta malformata lancia `Json.Error`
++     entry #method   il metodo che il messaggio nomina, o `Unset` per una risposta
++     entry #id   l'id su cui il messaggio si correla, come JSON grezzo, o `Unset` per una notifica
+
+-   entry .FsCapabilities   whether the client serves the agent's file reads and writes
++   entry .FsCapabilities   se il client serve le letture e le scritture di file dell'agente
+
+=   entry .FsCapabilities   whether the client serves the agent's file reads and writes
+-     detail
++     detail
+
+-         Part of `ClientCapabilities`. `Acp.connect` sets `#readTextFile` exactly when a
+-         `readFile` handler was registered and `#writeTextFile` exactly when a `writeFile`
+-         handler was, so a conformant agent never asks for an operation the client cannot do.
+-     entry #readTextFile   `true` if the client answers `fs/read_text_file`
+-     entry #writeTextFile   `true` if the client answers `fs/write_text_file`
++         Parte di `ClientCapabilities`. `Acp.connect` imposta `#readTextFile` esattamente quando
++         è stato registrato un handler `readFile` e `#writeTextFile` esattamente quando lo è
++         stato un handler `writeFile`, così un agente conforme non chiede mai un'operazione che
++         il client non sa fare.
++     entry #readTextFile   `true` se il client risponde a `fs/read_text_file`
++     entry #writeTextFile   `true` se il client risponde a `fs/write_text_file`
+
+-   entry .ClientCapabilities   what the client tells the agent it can do, at `initialize`
++   entry .ClientCapabilities   ciò che il client dice all'agente di saper fare, a `initialize`
+
+=   entry .ClientCapabilities   what the client tells the agent it can do, at `initialize`
+-     detail
++     detail
+
+-         Derived by `Acp.connect` from the registrations: `#fs` is present if either
+-         filesystem handler was registered, and `#terminal` is `true` if a `Terminals` bundle
+-         was. The `capabilities` combinator adjusts the derived value, last, for a client which
+-         must declare something the registrations do not imply.
++         Derivato da `Acp.connect` a partire dalle registrazioni: `#fs` è presente se è stato
++         registrato uno dei due handler del filesystem, e `#terminal` è `true` se lo è stato un
++         pacchetto `Terminals`. Il combinatore `capabilities` regola il valore derivato, per
++         ultimo, per un client che deve dichiarare qualcosa che le registrazioni non implicano.
+
+=         must declare something the registrations do not imply.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         must declare something the registrations do not imply.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         must declare something the registrations do not imply.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         must declare something the registrations do not imply.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+=         import soundness.*
+=
+-         def register(using Acp.Registry^): Unit =
++         def register(using Acp.Registry^): Unit =
+
+-           Acp.readFile(t"")
++           Acp.readFile(t"")
+
+-           Acp.capabilities(_.copy(terminal = Unset))
++           Acp.capabilities(_.copy(terminal = Unset))
+
+=           Acp.capabilities(_.copy(terminal = Unset))
+-         ```
++         ```
+
+-     entry #fs   the filesystem capabilities, or `Unset` if the client serves no file operations
+-     entry #terminal   `true` if the client offers terminals, or `Unset`
++     entry #fs   le capability del filesystem, o `Unset` se il client non serve alcuna operazione sui file
++     entry #terminal   `true` se il client offre terminali, o `Unset`
+
+-   entry .PromptCapabilities   which kinds of content an agent accepts in a prompt
++   entry .PromptCapabilities   quali tipi di contenuto un agente accetta in un prompt
+
+=   entry .PromptCapabilities   which kinds of content an agent accepts in a prompt
+-     detail
++     detail
+
+-         Reported by the agent in `AgentCapabilities#promptCapabilities`. Text and resource
+-         links are always accepted; images, audio and embedded resources only where the
+-         agent says so.
+-     entry #image   whether `ImageContent` may appear in a prompt
+-     entry #audio   whether `AudioContent` may appear in a prompt
+-     entry #embeddedContext   whether `EmbeddedResource` content may appear in a prompt
++         Riportato dall'agente in `AgentCapabilities#promptCapabilities`. Il testo e i link a
++         risorse sono sempre accettati; immagini, audio e risorse incorporate solo dove l'agente
++         lo dice.
++     entry #image   se `ImageContent` può comparire in un prompt
++     entry #audio   se `AudioContent` può comparire in un prompt
++     entry #embeddedContext   se un contenuto `EmbeddedResource` può comparire in un prompt
+
+-   entry .McpCapabilities   which MCP transports, beyond stdio, the agent can connect to
+-     entry #http   whether the agent connects to MCP servers over HTTP
+-     entry #sse   whether the agent connects to MCP servers over server-sent events
++   entry .McpCapabilities   a quali trasporti MCP, oltre a stdio, l'agente sa connettersi
++     entry #http   se l'agente si connette ai server MCP via HTTP
++     entry #sse   se l'agente si connette ai server MCP via server-sent events
+
+-   entry .AgentCapabilities   what the agent tells the client it can do, at `initialize`
++   entry .AgentCapabilities   ciò che l'agente dice al client di saper fare, a `initialize`
+
+=   entry .AgentCapabilities   what the agent tells the client it can do, at `initialize`
+-     detail
++     detail
+
+-         The agent's half of the capability negotiation, kept by the connection after the
+-         handshake and read as `Connection#agentCapabilities`. A client checks `#loadSession`
+-         before calling `Connection#loadSession`, and `#promptCapabilities` before putting
+-         anything but text and resource links in a prompt.
+-     entry #loadSession   whether the agent can resume a session with `session/load`
+-     entry #promptCapabilities   which content kinds the agent accepts in a prompt
+-     entry #mcpCapabilities   which MCP transports the agent can connect to
++         La metà dell'agente nella negoziazione delle capability, conservata dalla connessione
++         dopo l'handshake e letta come `Connection#agentCapabilities`. Un client controlla
++         `#loadSession` prima di chiamare `Connection#loadSession`, e `#promptCapabilities` prima
++         di mettere in un prompt qualsiasi cosa che non sia testo o link a risorse.
++     entry #loadSession   se l'agente può riprendere una sessione con `session/load`
++     entry #promptCapabilities   quali tipi di contenuto l'agente accetta in un prompt
++     entry #mcpCapabilities   a quali trasporti MCP l'agente sa connettersi
+
+-   entry .AuthMethod   one way the agent offers to authenticate the client
++   entry .AuthMethod   un modo in cui l'agente offre di autenticare il client
+
+=   entry .AuthMethod   one way the agent offers to authenticate the client
+-     detail
++     detail
+
+-         Listed in `InitializeResult#authMethods`, and so in `Connection#authMethods`. When a
+-         request fails with `Acp.Error.Reason.AuthRequired`, the client answers with
++         Elencato in `InitializeResult#authMethods`, e quindi in `Connection#authMethods`. Quando
++         una richiesta fallisce con `Acp.Error.Reason.AuthRequired`, il client risponde con
+
+-         `Connection#authenticate(method.id)`.
++         `Connection#authenticate(method.id)`.
+
+-     entry #id   the identifier to pass to `Connection#authenticate`
+-     entry #name   the method's display name
+-     entry #description   a longer description, if the agent gives one
++     entry #id   l'identificatore da passare a `Connection#authenticate`
++     entry #name   il nome visualizzato del metodo
++     entry #description   una descrizione più lunga, se l'agente ne fornisce una
+
+-   entry .InitializeResult   the agent's answer to `initialize`: its protocol version, capabilities and auth methods
++   entry .InitializeResult   la risposta dell'agente a `initialize`: la sua versione del protocollo, le capability e i metodi di autenticazione
+
+=   entry .InitializeResult   the agent's answer to `initialize`: its protocol version, capabilities and auth methods
+-     detail
++     detail
+
+-         What `Connection#initialize` returns. `Acp.connect` performs the handshake itself, so a
+-         client reads the agent's answer as `Connection#agentCapabilities` and
+-         `Connection#authMethods` rather than handling this directly.
+-     entry .decodable   the derived JSON decoder; a malformed result throws `Json.Error`
+-     entry #protocolVersion   the version the agent speaks, which must be `Acp.version`
+-     entry #agentCapabilities   what the agent can do, if it says
+-     entry #authMethods   the ways the agent offers to authenticate, if any
+-     entry #_meta   the agent's implementation-defined metadata, as raw JSON
++         Ciò che restituisce `Connection#initialize`. `Acp.connect` esegue da sé l'handshake,
++         quindi un client legge la risposta dell'agente come `Connection#agentCapabilities` e
++         `Connection#authMethods` invece di gestirla direttamente.
++     entry .decodable   il decoder JSON derivato; un risultato malformato lancia `Json.Error`
++     entry #protocolVersion   la versione che l'agente parla, che deve essere `Acp.version`
++     entry #agentCapabilities   ciò che l'agente sa fare, se lo dice
++     entry #authMethods   i modi in cui l'agente offre di autenticare, se ce ne sono
++     entry #_meta   i metadati dell'agente definiti dall'implementazione, come JSON grezzo
+
+-   entry .EnvVariable   an environment variable, by name and value
++   entry .EnvVariable   una variabile d'ambiente, per nome e valore
+
+=   entry .EnvVariable   an environment variable, by name and value
+-     detail
++     detail
+
+-         Carried by `McpServer#env` for an MCP server the agent launches, and by a terminal the
+-         agent asks the client to create (`Terminals#create`).
+-     entry #name   the variable's name
+-     entry #value   the variable's value
++         Portata da `McpServer#env` per un server MCP che l'agente avvia, e da un terminale che
++         l'agente chiede al client di creare (`Terminals#create`).
++     entry #name   il nome della variabile
++     entry #value   il valore della variabile
+
+-   entry .McpServer   an MCP server the client wants the agent to connect to, by its launch command
++   entry .McpServer   un server MCP a cui il client vuole che l'agente si connetta, tramite il suo comando di avvio
+
+=   entry .McpServer   an MCP server the client wants the agent to connect to, by its launch command
+-     detail
++     detail
+
+-         Passed to `Connection#newSession` or `Connection#loadSession`: the agent launches each
+-         server with the stdio transport and makes its tools available within the session.
++         Passato a `Connection#newSession` o `Connection#loadSession`: l'agente avvia ogni server
++         con il trasporto stdio e ne rende disponibili gli strumenti nella sessione.
+
+=         server with the stdio transport and makes its tools available within the session.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         server with the stdio transport and makes its tools available within the session.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         server with the stdio transport and makes its tools available within the session.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         server with the stdio transport and makes its tools available within the session.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         val server = Acp.McpServer(t"files", t"mcp-files", List(t"--root", t"/workspace"))
++         val server = Acp.McpServer(t"files", t"mcp-files", List(t"--root", t"/workspace"))
+
+-         Acp.connection.newSession(t"/workspace", List(server))
++         Acp.connection.newSession(t"/workspace", List(server))
+
+=         Acp.connection.newSession(t"/workspace", List(server))
+-         ```
++         ```
+
+-     entry #name   the server's name, as the agent will refer to it
+-     entry #command   the command which launches the server
+-     entry #args   the command's arguments
+-     entry #env   environment variables to set for the server
++     entry #name   il nome del server, con cui l'agente vi farà riferimento
++     entry #command   il comando che avvia il server
++     entry #args   gli argomenti del comando
++     entry #env   le variabili d'ambiente da impostare per il server
+
+-   entry .SessionMode   one mode an agent can work in, such as asking before every edit
+-     entry #id   the identifier to pass to `Connection#setMode`
+-     entry #name   the mode's display name
+-     entry #description   a longer description, if the agent gives one
++   entry .SessionMode   una modalità in cui un agente può lavorare, come chiedere prima di ogni modifica
++     entry #id   l'identificatore da passare a `Connection#setMode`
++     entry #name   il nome visualizzato della modalità
++     entry #description   una descrizione più lunga, se l'agente ne fornisce una
+
+-   entry .SessionModeState   the modes a session offers, and which is current
++   entry .SessionModeState   le modalità che una sessione offre, e quale è quella corrente
+
+=   entry .SessionModeState   the modes a session offers, and which is current
+-     detail
++     detail
+
+-         Reported in `NewSessionResult#modes`. The current mode changes with
+-         `Connection#setMode`, or at the agent's own initiative, reported as a
++         Riportato in `NewSessionResult#modes`. La modalità corrente cambia con
++         `Connection#setMode`, o per iniziativa dell'agente stesso, riportata come
+
+-         `CurrentModeUpdate`.
++         `CurrentModeUpdate`.
+
+-     entry #currentModeId   the id of the mode the session is in
+-     entry #availableModes   every mode the session may switch to
++     entry #currentModeId   l'id della modalità in cui si trova la sessione
++     entry #availableModes   ogni modalità a cui la sessione può passare
+
+-   entry .NewSessionResult   the agent's answer to `session/new`: the session's id, and its modes
++   entry .NewSessionResult   la risposta dell'agente a `session/new`: l'id della sessione e le sue modalità
+
+=   entry .NewSessionResult   the agent's answer to `session/new`: the session's id, and its modes
+-     detail
++     detail
+
+-         Returned by `Connection#newSession`. `#sessionId` is what every later call about the
+-         session — `prompt`, `cancel`, `setMode`, `loadSession` — takes, and what every handler
+-         is lent as `Acp.sessionId`.
+-     entry .decodable   the derived JSON decoder; a malformed result throws `Json.Error`
+-     entry #sessionId   the new session's identifier
+-     entry #modes   the session's modes, if the agent offers any
+-     entry #_meta   the agent's implementation-defined metadata, as raw JSON
++         Restituito da `Connection#newSession`. `#sessionId` è ciò che prende ogni chiamata
++         successiva relativa alla sessione — `prompt`, `cancel`, `setMode`, `loadSession` — e ciò
++         che viene prestato a ogni handler come `Acp.sessionId`.
++     entry .decodable   il decoder JSON derivato; un risultato malformato lancia `Json.Error`
++     entry #sessionId   l'identificatore della nuova sessione
++     entry #modes   le modalità della sessione, se l'agente ne offre
++     entry #_meta   i metadati dell'agente definiti dall'implementazione, come JSON grezzo
+
+-   entry .StopReason   why a prompt turn ended: `EndTurn`, `MaxTokens`, `MaxTurnRequests`, `Refusal` or `Cancelled`
++   entry .StopReason   perché un turno di prompt è terminato: `EndTurn`, `MaxTokens`, `MaxTurnRequests`, `Refusal` o `Cancelled`
+
+=   entry .StopReason   why a prompt turn ended: `EndTurn`, `MaxTokens`, `MaxTurnRequests`, `Refusal` or `Cancelled`
+-     detail
++     detail
+
+-         What `Connection#prompt` returns, once the agent has finished everything it did in the
+-         turn. `EndTurn` means the agent finished; `MaxTokens` and `MaxTurnRequests` that it ran
+-         out of budget, in tokens or in model requests; `Refusal` that it declined to go on;
+-         and `Cancelled` that the client cancelled the turn with `Connection#cancel`, which the
+-         agent is obliged to answer this way. On the wire the cases are `end_turn`,
+-         `max_tokens`, `max_turn_requests`, `refusal` and `cancelled`.
++         Ciò che restituisce `Connection#prompt`, una volta che l'agente ha finito tutto ciò che
++         ha fatto nel turno. `EndTurn` significa che l'agente ha finito; `MaxTokens` e
++         `MaxTurnRequests` che ha esaurito il budget, in token o in richieste al modello;
++         `Refusal` che ha rifiutato di proseguire; e `Cancelled` che il client ha annullato il
++         turno con `Connection#cancel`, a cui l'agente è tenuto a rispondere in questo modo.
++         Sulla connessione i casi sono `end_turn`, `max_tokens`, `max_turn_requests`, `refusal` e
++         `cancelled`.
+
+=         `max_tokens`, `max_turn_requests`, `refusal` and `cancelled`.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         `max_tokens`, `max_turn_requests`, `refusal` and `cancelled`.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         `max_tokens`, `max_turn_requests`, `refusal` and `cancelled`.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         `max_tokens`, `max_turn_requests`, `refusal` and `cancelled`.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         Acp.connection.prompt(sessionId, t"Run the tests") match
++         Acp.connection.prompt(sessionId, t"Run the tests") match
+
+-           case Acp.StopReason.EndTurn   => Out.println(t"done")
++           case Acp.StopReason.EndTurn   => Out.println(t"done")
+
+-           case Acp.StopReason.Cancelled => Out.println(t"cancelled")
++           case Acp.StopReason.Cancelled => Out.println(t"cancelled")
+
+-           case other                    => Out.println(t"stopped: $other")
++           case other                    => Out.println(t"stopped: $other")
+
+=           case other                    => Out.println(t"stopped: $other")
+-         ```
++         ```
+
+-     entry .encodable   encodes a stop reason as its wire string
+-     entry .decodable   decodes a stop reason from its wire string, raising `Json.Error` for any other
+-         Needs a `Tactic[Json.Error]`, which an unknown string raises through with the reason
+-         `OutOfRange`.
++     entry .encodable   codifica un motivo di arresto come la sua stringa di trasmissione
++     entry .decodable   decodifica un motivo di arresto dalla sua stringa di trasmissione, sollevando `Json.Error` per qualsiasi altra
++         Richiede un `Tactic[Json.Error]`, attraverso cui una stringa sconosciuta solleva con il
++         motivo `OutOfRange`.
+
+-   entry .PromptResult   the agent's answer to `session/prompt`: why the turn ended
++   entry .PromptResult   la risposta dell'agente a `session/prompt`: perché il turno è terminato
+
+=   entry .PromptResult   the agent's answer to `session/prompt`: why the turn ended
+-     detail
++     detail
+
+-         `Connection#prompt` returns only its `#stopReason`.
+-     entry .decodable   the derived JSON decoder; a malformed result throws `Json.Error`
+-     entry #stopReason   why the turn ended
+-     entry #_meta   the agent's implementation-defined metadata, as raw JSON
++         `Connection#prompt` restituisce solo il suo `#stopReason`.
++     entry .decodable   il decoder JSON derivato; un risultato malformato lancia `Json.Error`
++     entry #stopReason   perché il turno è terminato
++     entry #_meta   i metadati dell'agente definiti dall'implementazione, come JSON grezzo
+
+-   entry .ToolKind   the kind of a tool call: read, edit, delete, move, search, execute, think, fetch or other
++   entry .ToolKind   il tipo di una chiamata di strumento: lettura, modifica, eliminazione, spostamento, ricerca, esecuzione, riflessione, recupero o altro
+
+=   entry .ToolKind   the kind of a tool call: read, edit, delete, move, search, execute, think, fetch or other
+-     detail
++     detail
+
+-         Reported in `ToolCall#kind`, so that a client can show a tool call with a fitting icon
+-         or decide how cautious to be about permitting it. The cases are `Read`, `Edit`,
+-         `Delete`, `Move`, `Search`, `Execute`, `Think`, `Fetch` and `Other`; on the wire each
+-         is its lower-case name.
+-     entry .encodable   encodes a kind as its wire string
+-     entry .decodable   decodes a kind from its wire string; an unknown kind is `Other`
+-         Unlike the other enums' decoders, it never fails: the protocol lets agents add kinds,
+-         so one this library does not know reads as `ToolKind.Other`.
++         Riportato in `ToolCall#kind`, così che un client possa mostrare una chiamata di
++         strumento con un'icona adatta o decidere quanta cautela usare nel permetterla. I casi
++         sono `Read`, `Edit`, `Delete`, `Move`, `Search`, `Execute`, `Think`, `Fetch` e `Other`;
++         sulla connessione ciascuno è il suo nome in minuscolo.
++     entry .encodable   codifica un tipo come la sua stringa di trasmissione
++     entry .decodable   decodifica un tipo dalla sua stringa di trasmissione; un tipo sconosciuto è `Other`
++         A differenza dei decoder degli altri enum, non fallisce mai: il protocollo permette agli
++         agenti di aggiungere tipi, quindi uno che questa libreria non conosce si legge come
++         `ToolKind.Other`.
+
+-   entry .ToolCallStatus   where a tool call has got to: `Pending`, `InProgress`, `Completed`, `Failed` or `Cancelled`
++   entry .ToolCallStatus   a che punto è una chiamata di strumento: `Pending`, `InProgress`, `Completed`, `Failed` o `Cancelled`
+
+=   entry .ToolCallStatus   where a tool call has got to: `Pending`, `InProgress`, `Completed`, `Failed` or `Cancelled`
+-     detail
++     detail
+
+-         Reported in `ToolCall#status` and updated by `ToolCallUpdate#status`. On the wire the
+-         cases are `pending`, `in_progress`, `completed`, `failed` and `cancelled`.
+-     entry .encodable   encodes a status as its wire string
+-     entry .decodable   decodes a status from its wire string, raising `Json.Error` for any other
++         Riportato in `ToolCall#status` e aggiornato da `ToolCallUpdate#status`. Sulla
++         connessione i casi sono `pending`, `in_progress`, `completed`, `failed` e `cancelled`.
++     entry .encodable   codifica uno stato come la sua stringa di trasmissione
++     entry .decodable   decodifica uno stato dalla sua stringa di trasmissione, sollevando `Json.Error` per qualsiasi altra
+
+-   entry .ToolCallLocation   a file, and optionally a line, that a tool call is working on
++   entry .ToolCallLocation   un file, e facoltativamente una riga, su cui sta lavorando una chiamata di strumento
+
+=   entry .ToolCallLocation   a file, and optionally a line, that a tool call is working on
+-     detail
++     detail
+
+-         Listed in `ToolCall#locations`, so that a client can follow the agent through the
+-         files it reads and edits.
+-     entry #path   the file's absolute path
+-     entry #line   the line within it, if the agent says
++         Elencato in `ToolCall#locations`, così che un client possa seguire l'agente attraverso i
++         file che legge e modifica.
++     entry #path   il percorso assoluto del file
++     entry #line   la riga al suo interno, se l'agente la indica
+
+-   entry .ToolCallContent   what a tool call produced: content, a file diff, or a terminal
++   entry .ToolCallContent   ciò che ha prodotto una chiamata di strumento: contenuto, un diff di file o un terminale
+
+=   entry .ToolCallContent   what a tool call produced: content, a file diff, or a terminal
+-     detail
++     detail
+
+-         A sealed hierarchy of three cases, discriminated on the wire by a `type` member:
+-         `ToolContent` (`content`) wraps an ordinary `ContentBlock`; `ToolDiff` (`diff`) is a
+-         structured edit to one file; `ToolTerminal` (`terminal`) refers to a terminal the
+-         client created for the agent, whose output the client can show.
++         Una gerarchia sigillata di tre casi, discriminati sulla connessione da un membro `type`:
++         `ToolContent` (`content`) avvolge un normale `ContentBlock`; `ToolDiff` (`diff`) è una
++         modifica strutturata a un file; `ToolTerminal` (`terminal`) si riferisce a un terminale
++         che il client ha creato per l'agente, il cui output il client può mostrare.
+
+=         client created for the agent, whose output the client can show.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         client created for the agent, whose output the client can show.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         client created for the agent, whose output the client can show.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         client created for the agent, whose output the client can show.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         def describe(content: Acp.ToolCallContent): Text = content match
++         def describe(content: Acp.ToolCallContent): Text = content match
+
+-           case Acp.ToolContent(Acp.TextContent(text, _)) => text
++           case Acp.ToolContent(Acp.TextContent(text, _)) => text
+
+-           case Acp.ToolContent(_)                        => t"(content)"
++           case Acp.ToolContent(_)                        => t"(content)"
+
+-           case Acp.ToolDiff(path, _, _)                  => t"edited $path"
++           case Acp.ToolDiff(path, _, _)                  => t"edited $path"
+
+-           case Acp.ToolTerminal(terminalId)              => t"terminal $terminalId"
++           case Acp.ToolTerminal(terminalId)              => t"terminal $terminalId"
+
+=           case Acp.ToolTerminal(terminalId)              => t"terminal $terminalId"
+-         ```
++         ```
+
+-     entry .encodable   encodes any of the three cases with its `type` discriminator
+-     entry .decodable   decodes by the `type` member, raising `Json.Error` for an unknown type
++     entry .encodable   codifica uno qualsiasi dei tre casi con il suo discriminatore `type`
++     entry .decodable   decodifica in base al membro `type`, sollevando `Json.Error` per un tipo sconosciuto
+
+-   entry .ToolContent   tool output as an ordinary content block
++   entry .ToolContent   l'output di uno strumento come normale blocco di contenuto
+
+=   entry .ToolContent   tool output as an ordinary content block
+-     detail
++     detail
+
+-         A `ToolCallContent` case, `type` `content` on the wire.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder; malformed content throws `Json.Error`
+-     entry #content   the content block
++         Un caso di `ToolCallContent`, con `type` `content` sulla connessione.
++     entry .encodable   l'encoder JSON derivato
++     entry .decodable   il decoder JSON derivato; un contenuto malformato lancia `Json.Error`
++     entry #content   il blocco di contenuto
+
+-   entry .ToolDiff   tool output as a structured edit to one file: its old text and its new
++   entry .ToolDiff   l'output di uno strumento come modifica strutturata a un file: il suo vecchio testo e il nuovo
+
+=   entry .ToolDiff   tool output as a structured edit to one file: its old text and its new
+-     detail
++     detail
+
+-         A `ToolCallContent` case, `type` `diff` on the wire. `#oldText` is `Unset` for a file
+-         the tool created.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder; a malformed diff throws `Json.Error`
+-     entry #path   the file's absolute path
+-     entry #oldText   the file's text before the edit, or `Unset` for a new file
+-     entry #newText   the file's text after the edit
++         Un caso di `ToolCallContent`, con `type` `diff` sulla connessione. `#oldText` è `Unset`
++         per un file che lo strumento ha creato.
++     entry .encodable   l'encoder JSON derivato
++     entry .decodable   il decoder JSON derivato; un diff malformato lancia `Json.Error`
++     entry #path   il percorso assoluto del file
++     entry #oldText   il testo del file prima della modifica, o `Unset` per un file nuovo
++     entry #newText   il testo del file dopo la modifica
+
+-   entry .ToolTerminal   tool output as a reference to a terminal the client created
++   entry .ToolTerminal   l'output di uno strumento come riferimento a un terminale creato dal client
+
+=   entry .ToolTerminal   tool output as a reference to a terminal the client created
+-     detail
++     detail
+
+-         A `ToolCallContent` case, `type` `terminal` on the wire. The id is one `Terminals#create`
+-         returned, so the client can show that terminal's output alongside the tool call.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder
+-     entry #terminalId   the terminal's id
++         Un caso di `ToolCallContent`, con `type` `terminal` sulla connessione. L'id è uno di
++         quelli restituiti da `Terminals#create`, così il client può mostrare l'output di quel
++         terminale accanto alla chiamata di strumento.
++     entry .encodable   l'encoder JSON derivato
++     entry .decodable   il decoder JSON derivato
++     entry #terminalId   l'id del terminale
+
+-   entry .ToolCall   a tool call as the agent first reports it: the `tool_call` session update
++   entry .ToolCall   una chiamata di strumento come l'agente la riporta la prima volta: l'aggiornamento di sessione `tool_call`
+
+=   entry .ToolCall   a tool call as the agent first reports it: the `tool_call` session update
+-     detail
++     detail
+
+-         A `SessionUpdate` case. Only the id and the title are required; everything else may be
+-         filled in later by a `ToolCallUpdate` with the same `#toolCallId`, so a client which
+-         displays tool calls keeps them by id and merges each update in.
++         Un caso di `SessionUpdate`. Sono obbligatori solo l'id e il titolo; tutto il resto può
++         essere compilato più tardi da un `ToolCallUpdate` con lo stesso `#toolCallId`, quindi un
++         client che visualizza le chiamate di strumenti le conserva per id e vi incorpora ogni
++         aggiornamento.
+
+=         displays tool calls keeps them by id and merges each update in.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         displays tool calls keeps them by id and merges each update in.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         displays tool calls keeps them by id and merges each update in.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         displays tool calls keeps them by id and merges each update in.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+=         displays tool calls keeps them by id and merges each update in.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=
+-         def register(using Acp.Registry^): Unit = Acp.updated:
++         def register(using Acp.Registry^): Unit = Acp.updated:
+
+=         displays tool calls keeps them by id and merges each update in.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=
+=         def register(using Acp.Registry^): Unit = Acp.updated:
+-           Acp.update match
++           Acp.update match
+
+-             case call: Acp.ToolCall =>
++             case call: Acp.ToolCall =>
+
+-               Out.println(t"${call.title} (${call.kind.let(_.show).or(t"unknown")})")
++               Out.println(t"${call.title} (${call.kind.let(_.show).or(t"unknown")})")
+
+-             case update: Acp.ToolCallUpdate =>
++             case update: Acp.ToolCallUpdate =>
+
+-               Out.println(t"${update.toolCallId}: ${update.status.let(_.show).or(t"unchanged")}")
++               Out.println(t"${update.toolCallId}: ${update.status.let(_.show).or(t"unchanged")}")
+
+-             case _ => ()
++             case _ => ()
+
+=             case _ => ()
+-         ```
++         ```
+
+-     entry .decodable   the derived JSON decoder; a malformed tool call throws `Json.Error`
+-     entry #toolCallId   the id later updates and permission requests refer to it by
+-     entry #title   a human-readable description of what the tool is doing
+-     entry #kind   the kind of tool, if the agent says
+-     entry #status   where the call has got to, if the agent says
+-     entry #content   what the call has produced so far
+-     entry #locations   the files the call is working on
+-     entry #rawInput   the tool's input, as raw JSON
+-     entry #rawOutput   the tool's output, as raw JSON
++     entry .decodable   il decoder JSON derivato; una chiamata di strumento malformata lancia `Json.Error`
++     entry #toolCallId   l'id con cui vi fanno riferimento gli aggiornamenti successivi e le richieste di permesso
++     entry #title   una descrizione leggibile di ciò che lo strumento sta facendo
++     entry #kind   il tipo di strumento, se l'agente lo dice
++     entry #status   a che punto è la chiamata, se l'agente lo dice
++     entry #content   ciò che la chiamata ha prodotto finora
++     entry #locations   i file su cui la chiamata sta lavorando
++     entry #rawInput   l'input dello strumento, come JSON grezzo
++     entry #rawOutput   l'output dello strumento, come JSON grezzo
+
+-   entry .ToolCallUpdate   a later report about a tool call, or the tool call a permission request concerns
++   entry .ToolCallUpdate   un resoconto successivo su una chiamata di strumento, o la chiamata di strumento a cui si riferisce una richiesta di permesso
+
+=   entry .ToolCallUpdate   a later report about a tool call, or the tool call a permission request concerns
+-     detail
++     detail
+
+-         A `SessionUpdate` case, `tool_call_update` on the wire. Every member but
+-         `#toolCallId` is optional, and a member which is present replaces what was reported
+-         before, so `#content` is the whole content, not an addition to it. The same shape
+-         carries the tool call a permission request is about, lent to a permission handler as
+-         `Acp.toolCall`.
+-     entry .decodable   the derived JSON decoder; a malformed update throws `Json.Error`
+-     entry #toolCallId   the id of the tool call being updated
+-     entry #title   a new title, or `Unset` to keep the old
+-     entry #kind   a new kind, or `Unset` to keep the old
+-     entry #status   a new status, or `Unset` to keep the old
+-     entry #content   the call's whole content, replacing what was reported, or `Unset` to keep it
+-     entry #locations   the call's whole list of locations, or `Unset` to keep it
+-     entry #rawInput   the tool's input, as raw JSON, or `Unset` to keep it
+-     entry #rawOutput   the tool's output, as raw JSON, or `Unset` to keep it
++         Un caso di `SessionUpdate`, `tool_call_update` sulla connessione. Ogni membro tranne
++         `#toolCallId` è opzionale, e un membro presente sostituisce quanto riportato prima,
++         quindi `#content` è l'intero contenuto, non un'aggiunta a esso. La stessa forma porta la
++         chiamata di strumento a cui si riferisce una richiesta di permesso, prestata a un
++         handler di permesso come `Acp.toolCall`.
++     entry .decodable   il decoder JSON derivato; un aggiornamento malformato lancia `Json.Error`
++     entry #toolCallId   l'id della chiamata di strumento da aggiornare
++     entry #title   un nuovo titolo, o `Unset` per mantenere il vecchio
++     entry #kind   un nuovo tipo, o `Unset` per mantenere il vecchio
++     entry #status   un nuovo stato, o `Unset` per mantenere il vecchio
++     entry #content   l'intero contenuto della chiamata, che sostituisce quanto riportato, o `Unset` per mantenerlo
++     entry #locations   l'intera lista delle posizioni della chiamata, o `Unset` per mantenerla
++     entry #rawInput   l'input dello strumento, come JSON grezzo, o `Unset` per mantenerlo
++     entry #rawOutput   l'output dello strumento, come JSON grezzo, o `Unset` per mantenerlo
+
+-   entry .PlanPriority   how important a step of the agent's plan is: `High`, `Medium` or `Low`
+-     entry .encodable   encodes a priority as its wire string
+-     entry .decodable   decodes a priority from its wire string, raising `Json.Error` for any other
++   entry .PlanPriority   quanto è importante un passo del piano dell'agente: `High`, `Medium` o `Low`
++     entry .encodable   codifica una priorità come la sua stringa di trasmissione
++     entry .decodable   decodifica una priorità dalla sua stringa di trasmissione, sollevando `Json.Error` per qualsiasi altra
+
+-   entry .PlanStatus   where a step of the agent's plan has got to: `Pending`, `InProgress` or `Completed`
+-     entry .encodable   encodes a status as its wire string
+-     entry .decodable   decodes a status from its wire string, raising `Json.Error` for any other
++   entry .PlanStatus   a che punto è un passo del piano dell'agente: `Pending`, `InProgress` o `Completed`
++     entry .encodable   codifica uno stato come la sua stringa di trasmissione
++     entry .decodable   decodifica uno stato dalla sua stringa di trasmissione, sollevando `Json.Error` per qualsiasi altra
+
+-   entry .PlanEntry   one step of the agent's plan: what it is, how important, and how far along
+-     entry #content   a human-readable description of the step
+-     entry #priority   how important the step is
+-     entry #status   where the step has got to
++   entry .PlanEntry   un passo del piano dell'agente: che cos'è, quanto è importante e a che punto è
++     entry #content   una descrizione leggibile del passo
++     entry #priority   quanto è importante il passo
++     entry #status   a che punto è il passo
+
+-   entry .AvailableCommand   a slash command the agent offers in a session, with its description
++   entry .AvailableCommand   un comando slash che l'agente offre in una sessione, con la sua descrizione
+
+=   entry .AvailableCommand   a slash command the agent offers in a session, with its description
+-     detail
++     detail
+
+-         Listed in an `AvailableCommandsUpdate`, so that a client can offer the commands for
+-         completion as the user types a prompt.
+-     entry #name   the command's name, without its slash
+-     entry #description   what the command does
+-     entry #input   the command's input specification, as raw JSON, if it takes input
++         Elencato in un `AvailableCommandsUpdate`, così che un client possa offrire i comandi
++         come completamenti mentre l'utente scrive un prompt.
++     entry #name   il nome del comando, senza la barra
++     entry #description   ciò che fa il comando
++     entry #input   la specifica dell'input del comando, come JSON grezzo, se prende un input
+
+-   entry .SessionUpdate   one `session/update` notification: something the agent reports about a session as it works
++   entry .SessionUpdate   una notifica `session/update`: qualcosa che l'agente riporta su una sessione mentre lavora
+
+=   entry .SessionUpdate   one `session/update` notification: something the agent reports about a session as it works
+-     detail
++     detail
+
+-         A sealed hierarchy of the eight things an agent streams during a turn — and, during
+-         `Connection#loadSession`, replays from a resumed one — discriminated on the wire by
+-         the `sessionUpdate` member:
++         Una gerarchia sigillata delle otto cose che un agente trasmette in streaming durante un
++         turno — e, durante `Connection#loadSession`, riproduce da una sessione ripresa —
++         discriminate sulla connessione dal membro `sessionUpdate`:
+
+-         ```tabular
++         ```tabular
+
+-         column  Case
++         column  Caso
+
+-         column  `sessionUpdate`
++         column  `sessionUpdate`
+
+-         column  Update
+-         row  `UserMessageChunk`  `user_message_chunk`  a piece of the user's own message, in a replayed session
+-         row  `AgentMessageChunk`  `agent_message_chunk`  a piece of the agent's answer
+-         row  `AgentThoughtChunk`  `agent_thought_chunk`  a piece of its reasoning
+-         row  `ToolCall`  `tool_call`  a tool call reported
+-         row  `ToolCallUpdate`  `tool_call_update`  a later change to a tool call
+-         row  `Plan`  `plan`  the agent's plan, in full
+-         row  `AvailableCommandsUpdate`  `available_commands_update`  the slash commands now offered
+-         row  `CurrentModeUpdate`  `current_mode_update`  the session's mode has changed
++         column  Aggiornamento
++         row  `UserMessageChunk`  `user_message_chunk`  un pezzo del messaggio dell'utente stesso, in una sessione riprodotta
++         row  `AgentMessageChunk`  `agent_message_chunk`  un pezzo della risposta dell'agente
++         row  `AgentThoughtChunk`  `agent_thought_chunk`  un pezzo del suo ragionamento
++         row  `ToolCall`  `tool_call`  una chiamata di strumento riportata
++         row  `ToolCallUpdate`  `tool_call_update`  una modifica successiva a una chiamata di strumento
++         row  `Plan`  `plan`  il piano dell'agente, per intero
++         row  `AvailableCommandsUpdate`  `available_commands_update`  i comandi slash ora offerti
++         row  `CurrentModeUpdate`  `current_mode_update`  la modalità della sessione è cambiata
+
+=         row  `CurrentModeUpdate`  `current_mode_update`  the session's mode has changed
+-         ```
++         ```
+
+-         Updates reach the handler registered with `Acp.updated` in the order the agent sent
+-         them: they are dispatched on the connection's reader task itself, not on spawned
+-         tasks, since the order of chunks matters. A handler should therefore return promptly,
+-         and must not block on a request of the same connection.
++         Gli aggiornamenti raggiungono l'handler registrato con `Acp.updated` nell'ordine in cui
++         l'agente li ha inviati: vengono smistati sul task di lettura della connessione stesso,
++         non su task generati, poiché l'ordine dei chunk conta. Un handler dovrebbe quindi
++         restituire subito, e non deve bloccarsi su una richiesta della stessa connessione.
+
+=         and must not block on a request of the same connection.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         and must not block on a request of the same connection.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         and must not block on a request of the same connection.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         and must not block on a request of the same connection.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+=         and must not block on a request of the same connection.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=
+-         def register(using Acp.Registry^): Unit = Acp.updated:
++         def register(using Acp.Registry^): Unit = Acp.updated:
+
+=         and must not block on a request of the same connection.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=
+=         def register(using Acp.Registry^): Unit = Acp.updated:
+-           Acp.update match
++           Acp.update match
+
+=         def register(using Acp.Registry^): Unit = Acp.updated:
+=           Acp.update match
+-             case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
++             case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
+
+-             case Acp.AgentThoughtChunk(Acp.TextContent(text, _)) => Out.print(t"(thinking) $text")
++             case Acp.AgentThoughtChunk(Acp.TextContent(text, _)) => Out.print(t"(thinking) $text")
+
+-             case Acp.Plan(entries)                               => entries.each { entry => Out.println(entry.content) }
++             case Acp.Plan(entries)                               => entries.each { entry => Out.println(entry.content) }
+
+-             case Acp.CurrentModeUpdate(modeId)                   => Out.println(t"mode: $modeId")
++             case Acp.CurrentModeUpdate(modeId)                   => Out.println(t"mode: $modeId")
+
+-             case _                                               => ()
++             case _                                               => ()
+
+=             case _                                               => ()
+-         ```
++         ```
+
+-     refer espionage.Acp.updated
++     refer espionage.Acp.updated
+
+-     refer espionage.Acp.update
++     refer espionage.Acp.update
+
+-     entry .encodable   encodes any update with its `sessionUpdate` discriminator
+-     entry .decodable   decodes by the `sessionUpdate` member, raising `Json.Error` for an unknown kind
++     entry .encodable   codifica qualsiasi aggiornamento con il suo discriminatore `sessionUpdate`
++     entry .decodable   decodifica in base al membro `sessionUpdate`, sollevando `Json.Error` per un tipo sconosciuto
+
+-   entry .UserMessageChunk   a piece of the user's message, as an agent replays a resumed session
++   entry .UserMessageChunk   un pezzo del messaggio dell'utente, quando un agente riproduce una sessione ripresa
+
+=   entry .UserMessageChunk   a piece of the user's message, as an agent replays a resumed session
+-     detail
++     detail
+
+-         A `SessionUpdate` case, `user_message_chunk` on the wire.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder
+-     entry #content   the piece of content
++         Un caso di `SessionUpdate`, `user_message_chunk` sulla connessione.
++     entry .encodable   l'encoder JSON derivato
++     entry .decodable   il decoder JSON derivato
++     entry #content   il pezzo di contenuto
+
+-   entry .AgentMessageChunk   a piece of the agent's answer, streamed as it is written
++   entry .AgentMessageChunk   un pezzo della risposta dell'agente, trasmesso in streaming mentre viene scritto
+
+=   entry .AgentMessageChunk   a piece of the agent's answer, streamed as it is written
+-     detail
++     detail
+
+-         A `SessionUpdate` case, `agent_message_chunk` on the wire. A turn's answer arrives as
+-         many chunks, in order; printing each `TextContent` as it arrives shows the answer as
+-         the agent writes it.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder
+-     entry #content   the piece of content, usually a `TextContent`
++         Un caso di `SessionUpdate`, `agent_message_chunk` sulla connessione. La risposta di un
++         turno arriva in molti chunk, in ordine; stampare ogni `TextContent` appena arriva mostra
++         la risposta mentre l'agente la scrive.
++     entry .encodable   l'encoder JSON derivato
++     entry .decodable   il decoder JSON derivato
++     entry #content   il pezzo di contenuto, di solito un `TextContent`
+
+-   entry .AgentThoughtChunk   a piece of the agent's reasoning, streamed as it thinks
++   entry .AgentThoughtChunk   un pezzo del ragionamento dell'agente, trasmesso in streaming mentre pensa
+
+=   entry .AgentThoughtChunk   a piece of the agent's reasoning, streamed as it thinks
+-     detail
++     detail
+
+-         A `SessionUpdate` case, `agent_thought_chunk` on the wire: text a client may show
+-         apart from the answer, or not at all.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder
+-     entry #content   the piece of content
++         Un caso di `SessionUpdate`, `agent_thought_chunk` sulla connessione: testo che un client
++         può mostrare separato dalla risposta, o non mostrare affatto.
++     entry .encodable   l'encoder JSON derivato
++     entry .decodable   il decoder JSON derivato
++     entry #content   il pezzo di contenuto
+
+-   entry .Plan   the agent's plan for the turn, in full
++   entry .Plan   il piano dell'agente per il turno, per intero
+
+=   entry .Plan   the agent's plan for the turn, in full
+-     detail
++     detail
+
+-         A `SessionUpdate` case, `plan` on the wire. Each report is the whole plan, replacing
+-         the last, not a change to it.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder
+-     entry #entries   the plan's steps, in order
++         Un caso di `SessionUpdate`, `plan` sulla connessione. Ogni resoconto è l'intero piano,
++         che sostituisce l'ultimo, non una modifica a esso.
++     entry .encodable   l'encoder JSON derivato
++     entry .decodable   il decoder JSON derivato
++     entry #entries   i passi del piano, in ordine
+
+-   entry .AvailableCommandsUpdate   the slash commands the agent now offers in the session
++   entry .AvailableCommandsUpdate   i comandi slash che l'agente offre ora nella sessione
+
+=   entry .AvailableCommandsUpdate   the slash commands the agent now offers in the session
+-     detail
++     detail
+
+-         A `SessionUpdate` case, `available_commands_update` on the wire. Each report is the
+-         whole list.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder
+-     entry #availableCommands   the commands now offered
++         Un caso di `SessionUpdate`, `available_commands_update` sulla connessione. Ogni
++         resoconto è l'intera lista.
++     entry .encodable   l'encoder JSON derivato
++     entry .decodable   il decoder JSON derivato
++     entry #availableCommands   i comandi ora offerti
+
+-   entry .CurrentModeUpdate   the session's mode has changed
++   entry .CurrentModeUpdate   la modalità della sessione è cambiata
+
+=   entry .CurrentModeUpdate   the session's mode has changed
+-     detail
++     detail
+
+-         A `SessionUpdate` case, `current_mode_update` on the wire, sent when the mode changes
+-         at the agent's initiative or in answer to `Connection#setMode`.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder
+-     entry #currentModeId   the id of the mode the session is now in
++         Un caso di `SessionUpdate`, `current_mode_update` sulla connessione, inviato quando la
++         modalità cambia per iniziativa dell'agente o in risposta a `Connection#setMode`.
++     entry .encodable   l'encoder JSON derivato
++     entry .decodable   il decoder JSON derivato
++     entry #currentModeId   l'id della modalità in cui si trova ora la sessione
+
+-   entry .PermissionOptionKind   what choosing a permission option means: allow or reject, once or always
++   entry .PermissionOptionKind   che cosa significa scegliere un'opzione di permesso: consentire o rifiutare, una volta o sempre
+
+=   entry .PermissionOptionKind   what choosing a permission option means: allow or reject, once or always
+-     detail
++     detail
+
+-         The cases are `AllowOnce`, `AllowAlways`, `RejectOnce` and `RejectAlways` (on the wire
+-         `allow_once`, `allow_always`, `reject_once` and `reject_always`). The kinds let a
+-         client pick an option by policy rather than by the agent's wording:
++         I casi sono `AllowOnce`, `AllowAlways`, `RejectOnce` e `RejectAlways` (sulla connessione
++         `allow_once`, `allow_always`, `reject_once` e `reject_always`). I tipi permettono a un
++         client di scegliere un'opzione secondo una politica invece che secondo la formulazione
++         dell'agente:
+
+=         client pick an option by policy rather than by the agent's wording:
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         client pick an option by policy rather than by the agent's wording:
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         client pick an option by policy rather than by the agent's wording:
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         client pick an option by policy rather than by the agent's wording:
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         def allowOnce(using Acp.Registry^): Unit = Acp.permission:
++         def allowOnce(using Acp.Registry^): Unit = Acp.permission:
+
+=         def allowOnce(using Acp.Registry^): Unit = Acp.permission:
+-           Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowOnce).head
++           Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowOnce).head
+
+=         def allowOnce(using Acp.Registry^): Unit = Acp.permission:
+=           Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowOnce).head
+-           . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
++           . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
+
+=           . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
+-         ```
++         ```
+
+-     entry .encodable   encodes a kind as its wire string
+-     entry .decodable   decodes a kind from its wire string, raising `Json.Error` for any other
++     entry .encodable   codifica un tipo come la sua stringa di trasmissione
++     entry .decodable   decodifica un tipo dalla sua stringa di trasmissione, sollevando `Json.Error` per qualsiasi altra
+
+-   entry .PermissionOption   one answer the agent offers to a permission request
++   entry .PermissionOption   una risposta che l'agente offre a una richiesta di permesso
+
+=   entry .PermissionOption   one answer the agent offers to a permission request
+-     detail
++     detail
+
+-         A permission handler is lent the offered options as `Acp.options`, and answers with
+-         `Acp.Selected(option.optionId)` for the one it chooses.
+-     entry .encodable   the derived JSON encoder
+-     entry .decodable   the derived JSON decoder
+-     entry #optionId   the id to answer with, in `Selected`
+-     entry #name   the option's label, to show the user
+-     entry #kind   what choosing the option means
++         A un handler di permesso vengono prestate le opzioni offerte come `Acp.options`, e
++         risponde con `Acp.Selected(option.optionId)` per quella che sceglie.
++     entry .encodable   l'encoder JSON derivato
++     entry .decodable   il decoder JSON derivato
++     entry #optionId   l'id con cui rispondere, in `Selected`
++     entry #name   l'etichetta dell'opzione, da mostrare all'utente
++     entry #kind   che cosa significa scegliere l'opzione
+
+-   entry .RequestPermissionOutcome   the answer to a permission request: `Selected(optionId)` or `Cancelled`
++   entry .RequestPermissionOutcome   la risposta a una richiesta di permesso: `Selected(optionId)` o `Cancelled`
+
+=   entry .RequestPermissionOutcome   the answer to a permission request: `Selected(optionId)` or `Cancelled`
+-     detail
++     detail
+
+-         A permission handler's result. `Selected` names one of the options offered;
+-         `Cancelled` declines to choose. `Cancelled` is also the answer the protocol requires to
+-         every permission request pending when its turn is cancelled, and the connection
+-         supplies it itself: a request which arrives after `Connection#cancel` is answered
+-         `Cancelled` without calling the handler, and one already in the handler when the
+-         cancellation arrives is answered `Cancelled` when the handler returns, its selection
+-         discarded. On the wire the outcome is discriminated by an `outcome` member.
+-     entry .encodable   encodes an outcome with its `outcome` discriminator
+-     entry .decodable   decodes by the `outcome` member, raising `Json.Error` for an unknown outcome
++         Il risultato di un handler di permesso. `Selected` nomina una delle opzioni offerte;
++         `Cancelled` rinuncia a scegliere. `Cancelled` è anche la risposta che il protocollo
++         richiede per ogni richiesta di permesso in sospeso quando il suo turno viene annullato,
++         e la connessione la fornisce da sé: a una richiesta che arriva dopo `Connection#cancel`
++         si risponde `Cancelled` senza chiamare l'handler, e a una che è già nell'handler quando
++         arriva l'annullamento si risponde `Cancelled` quando l'handler restituisce, scartandone
++         la selezione. Sulla connessione l'esito è discriminato da un membro `outcome`.
++     entry .encodable   codifica un esito con il suo discriminatore `outcome`
++     entry .decodable   decodifica in base al membro `outcome`, sollevando `Json.Error` per un esito sconosciuto
+
+-   entry .Selected   the permission answer which chooses one of the offered options
+-     entry #optionId   the chosen option's id, from `PermissionOption#optionId`
++   entry .Selected   la risposta di permesso che sceglie una delle opzioni offerte
++     entry #optionId   l'id dell'opzione scelta, da `PermissionOption#optionId`
+
+-   entry .Cancelled   the permission answer which chooses nothing, required for a cancelled turn
+-       A `RequestPermissionOutcome`. A handler returns it to decline, and it is the answer to
+-       a request for which no handler was registered. It is distinct from
+-       `StopReason.Cancelled`, which is how a cancelled turn ends.
++   entry .Cancelled   la risposta di permesso che non sceglie nulla, richiesta per un turno annullato
++       Un `RequestPermissionOutcome`. Un handler lo restituisce per rifiutare, ed è la risposta
++       a una richiesta per cui non è stato registrato alcun handler. È distinto da
++       `StopReason.Cancelled`, che è il modo in cui termina un turno annullato.
+
+-   entry .RequestPermissionResult   the client's response to `session/request_permission`, wrapping the outcome
+-     entry #outcome   the handler's answer, or `Cancelled`
++   entry .RequestPermissionResult   la risposta del client a `session/request_permission`, che avvolge l'esito
++     entry #outcome   la risposta dell'handler, o `Cancelled`
+
+-   entry .ReadTextFileResult   the client's response to `fs/read_text_file`: the file's content
+-     entry #content   the text read
++   entry .ReadTextFileResult   la risposta del client a `fs/read_text_file`: il contenuto del file
++     entry #content   il testo letto
+
+-   entry .CreateTerminalResult   the client's response to `terminal/create`: the new terminal's id
+-     entry #terminalId   the id `Terminals#create` returned
++   entry .CreateTerminalResult   la risposta del client a `terminal/create`: l'id del nuovo terminale
++     entry #terminalId   l'id restituito da `Terminals#create`
+
+-   entry .TerminalExitStatus   how a terminal's command ended: its exit code, or the signal which killed it
+-     entry #exitCode   the command's exit code, if it exited
+-     entry #signal   the name of the signal which killed it, if one did
++   entry .TerminalExitStatus   come è terminato il comando di un terminale: il suo codice di uscita, o il segnale che lo ha ucciso
++     entry #exitCode   il codice di uscita del comando, se è uscito
++     entry #signal   il nome del segnale che lo ha ucciso, se ce n'è stato uno
+
+-   entry .TerminalOutputResult   a terminal's output so far, and its exit status if it has finished
+-     entry #output   the output captured so far
+-     entry #truncated   whether output was dropped from the start to stay within the byte limit
+-     entry #exitStatus   how the command ended, or `Unset` while it runs
++   entry .TerminalOutputResult   l'output di un terminale finora, e il suo stato di uscita se ha finito
++     entry #output   l'output catturato finora
++     entry #truncated   se è stato scartato dell'output dall'inizio per restare entro il limite di byte
++     entry #exitStatus   come è terminato il comando, o `Unset` mentre è in esecuzione
+
+-   entry .Terminals   the five terminal operations a client offers an agent, supplied together
++   entry .Terminals   le cinque operazioni di terminale che un client offre a un agente, fornite insieme
+
+=   entry .Terminals   the five terminal operations a client offers an agent, supplied together
+-     detail
++     detail
+
+-         The protocol advertises terminal support as a single capability, so the operations are
+-         all or nothing: a client implements this trait and registers it with `Acp.terminals`,
+-         and `ClientCapabilities#terminal` is then `true`. Each method is called on a task of
+-         its own, with the session id it concerns; the terminal ids are the client's to mint.
++         Il protocollo dichiara il supporto ai terminali come un'unica capability, quindi le
++         operazioni sono tutto o niente: un client implementa questo trait e lo registra con
++         `Acp.terminals`, e `ClientCapabilities#terminal` è allora `true`. Ogni metodo viene
++         chiamato su un task proprio, con l'id della sessione che lo riguarda; gli id dei
++         terminali li conia il client.
+
+=         its own, with the session id it concerns; the terminal ids are the client's to mint.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         its own, with the session id it concerns; the terminal ids are the client's to mint.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         its own, with the session id it concerns; the terminal ids are the client's to mint.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         its own, with the session id it concerns; the terminal ids are the client's to mint.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         def register(using Acp.Registry^): Unit = Acp.terminals:
++         def register(using Acp.Registry^): Unit = Acp.terminals:
+
+-           new Acp.Terminals:
++           new Acp.Terminals:
+
+-             def create
++             def create
+
+-               ( sessionId:       Text,
++               ( sessionId:       Text,
+
+-                 command:         Text,
++                 command:         Text,
+
+-                 args:            List[Text],
++                 args:            List[Text],
+
+-                 env:             List[Acp.EnvVariable],
++                 env:             List[Acp.EnvVariable],
+
+-                 cwd:             Optional[Text],
++                 cwd:             Optional[Text],
+
+-                 outputByteLimit: Optional[Long] )
++                 outputByteLimit: Optional[Long] )
+
+-             :   Text =
++             :   Text =
+
+-               t"term1"
++               t"term1"
+
+-             def output(sessionId: Text, terminalId: Text): Acp.TerminalOutputResult =
++             def output(sessionId: Text, terminalId: Text): Acp.TerminalOutputResult =
+
+-               Acp.TerminalOutputResult(t"", false)
++               Acp.TerminalOutputResult(t"", false)
+
+-             def waitForExit(sessionId: Text, terminalId: Text): Acp.TerminalExitStatus =
++             def waitForExit(sessionId: Text, terminalId: Text): Acp.TerminalExitStatus =
+
+-               Acp.TerminalExitStatus(0)
++               Acp.TerminalExitStatus(0)
+
+-             def kill(sessionId: Text, terminalId: Text): Unit = ()
++             def kill(sessionId: Text, terminalId: Text): Unit = ()
+
+-             def release(sessionId: Text, terminalId: Text): Unit = ()
++             def release(sessionId: Text, terminalId: Text): Unit = ()
+
+=             def release(sessionId: Text, terminalId: Text): Unit = ()
+-         ```
++         ```
+
+-         A request for a terminal operation when no bundle was registered is answered with a
+-         `MethodNotFound` error, so a misbehaving agent is told rather than left waiting.
+-     entry #create   starts a command in a new terminal, returning the terminal's id
+-         Called with the command, its arguments and environment, an optional working directory,
+-         and an optional limit in bytes on the output to retain; the oldest output beyond it
+-         is dropped, and `TerminalOutputResult#truncated` reports that.
+-     entry #output   the terminal's output so far, and its exit status if it has finished
+-     entry #waitForExit   blocks until the terminal's command exits, returning how it ended
+-     entry #kill   kills the terminal's command, keeping the terminal for its output
+-     entry #release   kills the command if it still runs, and frees the terminal
++         A una richiesta di operazione di terminale quando non è stato registrato alcun pacchetto
++         si risponde con un errore `MethodNotFound`, così a un agente che si comporta male viene
++         detto invece di lasciarlo in attesa.
++     entry #create   avvia un comando in un nuovo terminale, restituendo l'id del terminale
++         Chiamato con il comando, i suoi argomenti e l'ambiente, una directory di lavoro opzionale,
++         e un limite opzionale in byte sull'output da conservare; l'output più vecchio oltre il
++         limite viene scartato, e `TerminalOutputResult#truncated` lo segnala.
++     entry #output   l'output del terminale finora, e il suo stato di uscita se ha finito
++     entry #waitForExit   si blocca finché il comando del terminale non esce, restituendo come è terminato
++     entry #kill   uccide il comando del terminale, conservando il terminale per il suo output
++     entry #release   uccide il comando se è ancora in esecuzione, e libera il terminale
+
+-   entry .Turned1   a handler's context: the session id, one tagged payload, and an error emitter
++   entry .Turned1   il contesto di un handler: l'id della sessione, un payload con tag e un emettitore di errori
+
+-       `(sessionId: Text aka "sessionId", payload: payload, emit: Emit[Acp.Error]^) ?=> result`.
++       `(sessionId: Text aka "sessionId", payload: payload, emit: Emit[Acp.Error]^) ?=> result`.
+
+-       Each payload is tagged with `aka`, so that the contextual accessors (`Acp.update`, and
+-       so on) find it by name. Everything lent is a context parameter and the result is pure,
+-       so nothing lent to a handler can leave it. `UpdateHandler` is one.
+-   entry .Turned2   a handler's context: the session id, two tagged payloads, and an error emitter
+-       As `Turned1`, with two payloads. `PermissionHandler` and `WriteFileHandler` are ones.
+-   entry .Turned3   a handler's context: the session id, three tagged payloads, and an error emitter
+-       As `Turned1`, with three payloads. `ReadFileHandler` is one.
++       Ogni payload ha un tag con `aka`, così che gli accessor contestuali (`Acp.update`, e così
++       via) lo trovino per nome. Tutto ciò che viene prestato è un parametro di contesto e il
++       risultato è puro, quindi nulla di ciò che viene prestato a un handler può uscirne.
++       `UpdateHandler` è uno di questi.
++   entry .Turned2   il contesto di un handler: l'id della sessione, due payload con tag e un emettitore di errori
++       Come `Turned1`, con due payload. `PermissionHandler` e `WriteFileHandler` sono di questo tipo.
++   entry .Turned3   il contesto di un handler: l'id della sessione, tre payload con tag e un emettitore di errori
++       Come `Turned1`, con tre payload. `ReadFileHandler` è di questo tipo.
+
+-   entry .UpdateHandler   the handler `Acp.updated` takes: sees each `SessionUpdate`, returns nothing
+-       Lent `Acp.sessionId` and `Acp.update`. It runs on the connection's reader task, in the
+-       order the agent sent the updates.
+-   entry .PermissionHandler   the handler `Acp.permission` takes: chooses among the offered options
+-       Lent `Acp.sessionId`, `Acp.toolCall` (the `ToolCallUpdate` the request concerns) and
+-       `Acp.options`, and returns a `RequestPermissionOutcome`. It runs on a task of its own,
+-       so it may block — waiting for the user, for minutes — without stalling the turn's
+-       updates.
+-   entry .ReadFileHandler   the handler `Acp.readFile` takes: returns a file's text
+-       Lent `Acp.sessionId`, `Acp.path`, and the optional `Acp.line` (one-based) to start at and
+-       `Acp.limit` on the number of lines, and returns the text. It may serve the client's own
+-       view of the file, such as an editor's unsaved buffer.
+-   entry .WriteFileHandler   the handler `Acp.writeFile` takes: writes a file's text
+-       Lent `Acp.sessionId`, `Acp.path` and `Acp.content`, and returns nothing.
++   entry .UpdateHandler   l'handler che prende `Acp.updated`: vede ogni `SessionUpdate`, non restituisce nulla
++       Gli vengono prestati `Acp.sessionId` e `Acp.update`. Viene eseguito sul task di lettura
++       della connessione, nell'ordine in cui l'agente ha inviato gli aggiornamenti.
++   entry .PermissionHandler   l'handler che prende `Acp.permission`: sceglie tra le opzioni offerte
++       Gli vengono prestati `Acp.sessionId`, `Acp.toolCall` (il `ToolCallUpdate` a cui si
++       riferisce la richiesta) e `Acp.options`, e restituisce un `RequestPermissionOutcome`.
++       Viene eseguito su un task proprio, quindi può bloccarsi — in attesa dell'utente, per
++       minuti — senza fermare gli aggiornamenti del turno.
++   entry .ReadFileHandler   l'handler che prende `Acp.readFile`: restituisce il testo di un file
++       Gli vengono prestati `Acp.sessionId`, `Acp.path`, e gli opzionali `Acp.line` (a partire da
++       uno) da cui iniziare e `Acp.limit` sul numero di righe, e restituisce il testo. Può servire
++       la vista del file propria del client, come il buffer non salvato di un editor.
++   entry .WriteFileHandler   l'handler che prende `Acp.writeFile`: scrive il testo di un file
++       Gli vengono prestati `Acp.sessionId`, `Acp.path` e `Acp.content`, e non restituisce nulla.
+
+-   entry .connection   the live connection `Acp.connect` lends to its second block
+-       `Acp.connection` reads the `Acp.Connection` context parameter, with its singleton type,
+-       so `Acp.connection.prompt(…)` is a call on the very connection in scope. It is
+-       available only inside `connect`'s second block, or a method which takes a `using
+-       Acp.Connection`.
+-   entry .sessionId   in a handler, the id of the session the request or update concerns
+-       Every handler is lent it.
+-   entry .update   in an update handler, the `SessionUpdate` being reported
+-   entry .toolCall   in a permission handler, the tool call the agent wants permission for
+-       A `ToolCallUpdate`: its id, and whatever the agent says of the call it is about to make.
+-   entry .options   in a permission handler, the answers the agent offers, as `PermissionOption`s
+-   entry .path   in a file handler, the absolute path of the file to read or write
+-   entry .line   in a read handler, the one-based line to start reading at, or `Unset` for the start
+-   entry .limit   in a read handler, the most lines to return, or `Unset` for no limit
+-   entry .content   in a write handler, the text to write
+-       Not to be confused with the `#content` members of the content-carrying records: this is
+-       the accessor, and needs a write handler's context.
++   entry .connection   la connessione attiva che `Acp.connect` presta al suo secondo blocco
++       `Acp.connection` legge il parametro di contesto `Acp.Connection`, con il suo tipo
++       singleton, quindi `Acp.connection.prompt(…)` è una chiamata proprio sulla connessione
++       nell'ambito. È disponibile solo dentro il secondo blocco di `connect`, o in un metodo che
++       prende un `using Acp.Connection`.
++   entry .sessionId   in un handler, l'id della sessione a cui si riferisce la richiesta o l'aggiornamento
++       Viene prestato a ogni handler.
++   entry .update   in un handler di aggiornamenti, il `SessionUpdate` riportato
++   entry .toolCall   in un handler di permesso, la chiamata di strumento per cui l'agente chiede il permesso
++       Un `ToolCallUpdate`: il suo id, e ciò che l'agente dice della chiamata che sta per fare.
++   entry .options   in un handler di permesso, le risposte che l'agente offre, come `PermissionOption`
++   entry .path   in un handler di file, il percorso assoluto del file da leggere o scrivere
++   entry .line   in un handler di lettura, la riga (a partire da uno) da cui iniziare a leggere, o `Unset` per l'inizio
++   entry .limit   in un handler di lettura, il numero massimo di righe da restituire, o `Unset` per nessun limite
++   entry .content   in un handler di scrittura, il testo da scrivere
++       Da non confondere con i membri `#content` dei record che trasportano contenuto: questo è
++       l'accessor, e richiede il contesto di un handler di scrittura.
+
+-   entry .updated   registers the handler for `session/update`: sees every update of every session
+-       An `UpdateHandler`, lent `Acp.sessionId` and `Acp.update`. Registering none discards the
+-       updates. Needs an `Acp.Registry` in scope, as in the first block of `Acp.connect`.
++   entry .updated   registra l'handler per `session/update`: vede ogni aggiornamento di ogni sessione
++       Un `UpdateHandler`, a cui vengono prestati `Acp.sessionId` e `Acp.update`. Se non se ne
++       registra nessuno, gli aggiornamenti vengono scartati. Richiede un `Acp.Registry`
++       nell'ambito, come nel primo blocco di `Acp.connect`.
+
+=       updates. Needs an `Acp.Registry` in scope, as in the first block of `Acp.connect`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       updates. Needs an `Acp.Registry` in scope, as in the first block of `Acp.connect`.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       updates. Needs an `Acp.Registry` in scope, as in the first block of `Acp.connect`.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       updates. Needs an `Acp.Registry` in scope, as in the first block of `Acp.connect`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+-       def register(using Acp.Registry^): Unit = Acp.updated:
++       def register(using Acp.Registry^): Unit = Acp.updated:
+
+-         Acp.update match
++         Acp.update match
+
+-           case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
++           case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
+
+-           case _                                               => ()
++           case _                                               => ()
+
+=           case _                                               => ()
+-       ```
++       ```
+
+-   entry .permission   registers the handler for `session/request_permission`
+-       A `PermissionHandler`, lent `Acp.sessionId`, `Acp.toolCall` and `Acp.options`, and
+-       returning `Acp.Selected(optionId)` or `Acp.Cancelled`. With no handler registered, every
+-       request is answered `Cancelled`. A request in a cancelled turn is answered `Cancelled`
+-       whatever the handler says.
+-   entry .readFile   registers the handler for `fs/read_text_file`, and advertises the capability
+-       A `ReadFileHandler`, lent `Acp.path`, `Acp.line` and `Acp.limit`, returning the text.
+-       Registering it sets `FsCapabilities#readTextFile`.
++   entry .permission   registra l'handler per `session/request_permission`
++       Un `PermissionHandler`, a cui vengono prestati `Acp.sessionId`, `Acp.toolCall` e
++       `Acp.options`, e che restituisce `Acp.Selected(optionId)` o `Acp.Cancelled`. Senza alcun
++       handler registrato, a ogni richiesta si risponde `Cancelled`. A una richiesta in un turno
++       annullato si risponde `Cancelled`, qualunque cosa dica l'handler.
++   entry .readFile   registra l'handler per `fs/read_text_file`, e dichiara la capability
++       Un `ReadFileHandler`, a cui vengono prestati `Acp.path`, `Acp.line` e `Acp.limit`, e che
++       restituisce il testo. Registrarlo imposta `FsCapabilities#readTextFile`.
+
+=       Registering it sets `FsCapabilities#readTextFile`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       Registering it sets `FsCapabilities#readTextFile`.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       Registering it sets `FsCapabilities#readTextFile`.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       Registering it sets `FsCapabilities#readTextFile`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+-       import charsets.utf8Charset
++       import charsets.utf8Charset
+
+-       import filesystemBackends.javaBaseFilesystem
++       import filesystemBackends.javaBaseFilesystem
+
+-       def files(using Acp.Registry^): Unit = Acp.readFile:
++       def files(using Acp.Registry^): Unit = Acp.readFile:
+
+-         Acp.path.as[Path on Linux].open[File]()(file.read[Text])
++         Acp.path.as[Path on Linux].open[File]()(file.read[Text])
+
+=         Acp.path.as[Path on Linux].open[File]()(file.read[Text])
+-       ```
++       ```
+
+-   entry .writeFile   registers the handler for `fs/write_text_file`, and advertises the capability
+-       A `WriteFileHandler`, lent `Acp.path` and `Acp.content`. Registering it sets
+-       `FsCapabilities#writeTextFile`.
+-   entry .terminals   registers the `Terminals` bundle, and advertises the terminal capability
+-       The five terminal operations are registered together, since the protocol advertises
+-       them as one capability. Registering them sets `ClientCapabilities#terminal`.
+-   entry .capabilities   adjusts the client capabilities derived from the registrations, last, at initialization
+-       An escape hatch: `Acp.capabilities(adjust)` is applied to the derived
+-       `ClientCapabilities` just before `initialize` is sent, so a client may withdraw a
+-       capability, or declare one it serves by other means. The derived declaration is right
+-       for almost every client.
++   entry .writeFile   registra l'handler per `fs/write_text_file`, e dichiara la capability
++       Un `WriteFileHandler`, a cui vengono prestati `Acp.path` e `Acp.content`. Registrarlo
++       imposta `FsCapabilities#writeTextFile`.
++   entry .terminals   registra il pacchetto `Terminals`, e dichiara la capability dei terminali
++       Le cinque operazioni di terminale vengono registrate insieme, poiché il protocollo le
++       dichiara come un'unica capability. Registrarle imposta `ClientCapabilities#terminal`.
++   entry .capabilities   regola le capability del client derivate dalle registrazioni, per ultimo, all'inizializzazione
++       Una via di fuga: `Acp.capabilities(adjust)` viene applicato alle `ClientCapabilities`
++       derivate appena prima che venga inviato `initialize`, così un client può ritirare una
++       capability, o dichiararne una che serve con altri mezzi. La dichiarazione derivata è
++       corretta per quasi ogni client.
+
+-   entry .connect   connects to an agent for the duration of a block: registers handlers, initializes, lends a connection
++   entry .connect   si connette a un agente per la durata di un blocco: registra gli handler, inizializza, presta una connessione
+
+=   entry .connect   connects to an agent for the duration of a block: registers handlers, initializes, lends a connection
+-     detail
++     detail
+
+-         `Acp.connect(agent, observer)(register)(lambda)`. The first block registers the
+-         client's handlers on the lent `Acp.Registry`; when it returns, the registry is consumed
+-         and the client's capabilities are derived from it, so nothing can be registered once
+-         the exchange begins. Then the exchange opens — a writer task drains outgoing messages
+-         onto the agent's input, and a reader task routes what comes back — and `initialize` is
+-         exchanged, raising `Acp.Error` with reason `Incompatible` if the agent speaks a
+-         protocol version other than `Acp.version`. The second block then runs with a live,
+-         initialized `Acp.Connection`, reached as `Acp.connection`, and its value is the value
+-         of `connect`. When it returns, the exchange is torn down and a subprocess agent is
+-         killed, so nothing outlives the agent it speaks to.
++         `Acp.connect(agent, observer)(register)(lambda)`. Il primo blocco registra gli handler
++         del client sull'`Acp.Registry` prestato; quando restituisce, il registro viene consumato
++         e le capability del client ne vengono derivate, così nulla può essere registrato una
++         volta iniziato lo scambio. Poi lo scambio si apre — un task di scrittura riversa i
++         messaggi in uscita sull'input dell'agente, e un task di lettura instrada ciò che torna —
++         e si scambia `initialize`, sollevando `Acp.Error` con il motivo `Incompatible` se
++         l'agente parla una versione del protocollo diversa da `Acp.version`. Il secondo blocco
++         viene poi eseguito con un'`Acp.Connection` attiva e inizializzata, raggiunta come
++         `Acp.connection`, e il suo valore è il valore di `connect`. Quando restituisce, lo
++         scambio viene smantellato e un agente in sottoprocesso viene ucciso, così nulla
++         sopravvive all'agente con cui parla.
+
+=         killed, so nothing outlives the agent it speaks to.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         killed, so nothing outlives the agent it speaks to.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         killed, so nothing outlives the agent it speaks to.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         killed, so nothing outlives the agent it speaks to.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         import environments.javaBaseEnvironment
++         import environments.javaBaseEnvironment
+
+=         import environments.javaBaseEnvironment
+-         import errorDiagnostics.stackTracesDiagnostics
++         import errorDiagnostics.stackTracesDiagnostics
+
+-         import probates.awaitProbate
++         import probates.awaitProbate
+
+-         import stdios.javaLangSystemStdio
++         import stdios.javaLangSystemStdio
+
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         import threads.virtualThreads
++         import threads.virtualThreads
+
+-         import workingDirectories.javaBaseWorkingDirectory
++         import workingDirectories.javaBaseWorkingDirectory
+
+-         val reason: Acp.StopReason = supervise:
++         val reason: Acp.StopReason = supervise:
+
+-           Acp.connect(Acp.Endpoint(sh"claude-code-acp")):
++           Acp.connect(Acp.Endpoint(sh"claude-code-acp")):
+
+-             Acp.updated:
++             Acp.updated:
+
+-               Acp.update match
++               Acp.update match
+
+-                 case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
++                 case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
+
+-                 case _                                               => ()
++                 case _                                               => ()
+
+-           . apply:
++           . apply:
+
+-               val session = Acp.connection.newSession(t"/workspace")
++               val session = Acp.connection.newSession(t"/workspace")
+
+-               Acp.connection.prompt(session.sessionId, t"Explain this repository")
++               Acp.connection.prompt(session.sessionId, t"Explain this repository")
+
+=               Acp.connection.prompt(session.sessionId, t"Explain this repository")
+-         ```
++         ```
+
+-         It needs a `Monitor` (so it sits inside `supervise`), a `Probate`, `Diagnostics`, a
+-         `WorkingDirectory` and an `Environment` (for launching a subprocess agent), and a
+-         `Tactic[Acp.Error]`. A subprocess which cannot be launched raises `Acp.Error` with
+-         reason `Internal` and the launch failure's message. The connection block may capture
+-         the monitor freely — a block which prompts on one task and cancels from another, say
+-         — since a monitor is a shared capability.
++         Richiede un `Monitor` (quindi sta dentro `supervise`), una `Probate`, `Diagnostics`, una
++         `WorkingDirectory` e un `Environment` (per avviare un agente in sottoprocesso), e un
++         `Tactic[Acp.Error]`. Un sottoprocesso che non si può avviare solleva `Acp.Error` con il
++         motivo `Internal` e il messaggio dell'errore di avvio. Il blocco della connessione può
++         catturare liberamente il monitor — un blocco che invia un prompt su un task e lo annulla
++         da un altro, per esempio — poiché un monitor è una capability condivisa.
+
+-         Messages from the agent are routed by kind. Responses are correlated with the requests
+-         awaiting them, so several requests may be in flight and answered in any order.
+-         `session/update` notifications are dispatched on the reader task, in order. Requests —
+-         permissions, file operations, terminals — are each dispatched on a spawned task, so a
+-         permission handler waiting on the user stalls neither the updates nor the responses.
+-         A request for a method this library does not model is answered `Method not found`, and
+-         an unmodelled notification is ignored.
++         I messaggi dall'agente vengono instradati per tipo. Le risposte vengono correlate alle
++         richieste che le attendono, quindi più richieste possono essere in corso e ricevere
++         risposta in qualsiasi ordine. Le notifiche `session/update` vengono smistate sul task di
++         lettura, in ordine. Le richieste — permessi, operazioni sui file, terminali — vengono
++         smistate ciascuna su un task generato, così un handler di permesso in attesa dell'utente
++         non ferma né gli aggiornamenti né le risposte. A una richiesta per un metodo che questa
++         libreria non modella si risponde `Method not found`, e una notifica non modellata viene
++         ignorata.
+
+-         `observer`, if given, sees every message in both directions as it crosses the
+-         transport; the default is `Acp.Observer.Silent`.
++         `observer`, se fornito, vede ogni messaggio in entrambe le direzioni mentre attraversa
++         il trasporto; il valore predefinito è `Acp.Observer.Silent`.
+
+-     refer espionage.Acp.Endpoint
++     refer espionage.Acp.Endpoint
+
+-     refer espionage.Acp.Connection
++     refer espionage.Acp.Connection
+
+-     refer espionage.Acp.Registry
++     refer espionage.Acp.Registry
+
+-     refer espionage.Acp.Observer
++     refer espionage.Acp.Observer
+
+-   entry .Observer   a hook on the raw traffic: every message as it crosses the transport
++   entry .Observer   un aggancio sul traffico grezzo: ogni messaggio mentre attraversa il trasporto
+
+=   entry .Observer   a hook on the raw traffic: every message as it crosses the transport
+-     detail
++     detail
+
+-         An agent's standard output is the wire, and a client may want a log or a protocol
+-         trace of what it exchanges: an observer sees each message as its JSON text — inbound
+-         before parsing, so a message which fails to decode is observed too, and outbound
+-         before framing, so both directions read alike. It is passed to `Acp.connect` as
+-         `observer`.
++         Lo standard output di un agente è il canale di trasmissione, e un client può volere un
++         log o una traccia di protocollo di ciò che scambia: un osservatore vede ogni messaggio
++         come il suo testo JSON — in ingresso prima del parsing, così si osserva anche un
++         messaggio che non si decodifica, e in uscita prima del framing, così le due direzioni si
++         leggono allo stesso modo. Viene passato ad `Acp.connect` come `observer`.
+
+=         `observer`.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         `observer`.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         `observer`.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         `observer`.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         val trace = new Acp.Observer:
++         val trace = new Acp.Observer:
+
+-           def received(message: Text): Unit = Err.println(t"← $message")
++           def received(message: Text): Unit = Err.println(t"← $message")
+
+-           def sent(message: Text): Unit = Err.println(t"→ $message")
++           def sent(message: Text): Unit = Err.println(t"→ $message")
+
+=           def sent(message: Text): Unit = Err.println(t"→ $message")
+-         ```
++         ```
+
+-         The writer task calls `#sent` and the reader task `#received`, at once, so an
+-         implementation must be safe to call from two threads. It is a shared, durable
+-         capability.
+-     entry .Silent   the observer which does nothing, as a pure value; `connect`'s default
+-     entry .silent   the given which supplies `Silent` contextually; in implicit scope
+-     entry #received   called with each message read from the agent, before it is parsed
+-     entry #sent   called with each message sent to the agent, as its encoded body, before it is framed
++         Il task di scrittura chiama `#sent` e il task di lettura `#received`, contemporaneamente,
++         quindi un'implementazione deve poter essere chiamata in sicurezza da due thread. È una
++         capability condivisa e durevole.
++     entry .Silent   l'osservatore che non fa nulla, come valore puro; il valore predefinito di `connect`
++     entry .silent   il given che fornisce `Silent` in modo contestuale; nell'ambito implicito
++     entry #received   chiamato con ogni messaggio letto dall'agente, prima del parsing
++     entry #sent   chiamato con ogni messaggio inviato all'agente, come il suo corpo codificato, prima del framing
+
+-   entry .Endpoint   where to find an agent this process can speak to: a command to launch, or a pair of streams
++   entry .Endpoint   dove trovare un agente con cui questo processo può parlare: un comando da avviare, o una coppia di stream
+
+=   entry .Endpoint   where to find an agent this process can speak to: a command to launch, or a pair of streams
+-     detail
++     detail
+
+-         A plain value saying where the agent is, holding no channel of its own: the channel is
+-         opened when `Acp.connect` begins and closed when it ends. `Endpoint.Process(command)` is
+-         an agent launched as a subprocess, whose standard input and output carry the protocol,
+-         and `Endpoint.Streams(input, output)` one already running behind a pair of `java.io`
+-         streams — in this process, behind a socket, or a fixture in a test. `Endpoint(command)`
+-         and `Endpoint.streams(input, output)` build each, widened to `Endpoint`.
++         Un valore semplice che dice dove si trova l'agente, senza un canale proprio: il canale si
++         apre quando inizia `Acp.connect` e si chiude quando finisce. `Endpoint.Process(command)` è
++         un agente avviato come sottoprocesso, il cui standard input e output trasportano il
++         protocollo, e `Endpoint.Streams(input, output)` uno già in esecuzione dietro una coppia
++         di stream `java.io` — in questo processo, dietro un socket, o una fixture in un test.
++         `Endpoint(command)` e `Endpoint.streams(input, output)` costruiscono ciascuno dei due,
++         allargato a `Endpoint`.
+
+=         and `Endpoint.streams(input, output)` build each, widened to `Endpoint`.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         and `Endpoint.streams(input, output)` build each, widened to `Endpoint`.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         and `Endpoint.streams(input, output)` build each, widened to `Endpoint`.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         and `Endpoint.streams(input, output)` build each, widened to `Endpoint`.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         val launched: Acp.Endpoint = Acp.Endpoint(sh"claude-code-acp")
++         val launched: Acp.Endpoint = Acp.Endpoint(sh"claude-code-acp")
+
+-         val gemini: Acp.Endpoint = Acp.Endpoint(sh"gemini --experimental-acp")
++         val gemini: Acp.Endpoint = Acp.Endpoint(sh"gemini --experimental-acp")
+
+=         val gemini: Acp.Endpoint = Acp.Endpoint(sh"gemini --experimental-acp")
+-         ```
++         ```
+
+-         A subprocess agent is launched with a silent exec log, since its standard output is
+-         the wire, and is killed, not waited for, when the connection ends.
++         Un agente in sottoprocesso viene avviato con un log di esecuzione silenzioso, poiché il
++         suo standard output è il canale di trasmissione, e viene ucciso, non atteso, quando la
++         connessione termina.
+
+=         the wire, and is killed, not waited for, when the connection ends.
+-     refer espionage.Acp.connect
++     refer espionage.Acp.connect
+
+-     entry .apply   an agent launched as a subprocess: `Acp.Endpoint(command)`
+-         Takes a guillotine `Command`, written with `sh"…"`.
+-     entry .streams   an agent already running behind an input and an output stream
+-         Which stream is which is from this process's point of view: `input` is what the agent
+-         writes, `output` what it reads. Each message the agent writes is delivered as soon as
+-         its terminating newline arrives, so a fixture writing to a pipe need only flush after
+-         each line.
++     entry .apply   un agente avviato come sottoprocesso: `Acp.Endpoint(command)`
++         Prende un `Command` di guillotine, scritto con `sh"…"`.
++     entry .streams   un agente già in esecuzione dietro uno stream di input e uno di output
++         Quale stream sia quale va inteso dal punto di vista di questo processo: `input` è ciò che
++         l'agente scrive, `output` ciò che legge. Ogni messaggio che l'agente scrive viene
++         consegnato appena arriva il suo a capo finale, quindi a una fixture che scrive su una
++         pipe basta fare flush dopo ogni riga.
+
+-   entry .Error   a fault in an ACP exchange, or one the agent reported, by its JSON-RPC reason
++   entry .Error   un errore in uno scambio ACP, o uno riportato dall'agente, secondo il suo motivo JSON-RPC
+
+=   entry .Error   a fault in an ACP exchange, or one the agent reported, by its JSON-RPC reason
+-     detail
++     detail
+
+-         Error `↯/s.125.1`: _the ACP operation failed because `reason`_, numbered by reason (148.1 for
+-         `Parse` through 148.7 for `Incompatible`). Each `Reason` carries the JSON-RPC wire
+-         code the protocol assigns it: `Parse` −32700, `InvalidRequest` −32600,
+-         `MethodNotFound` −32601, `InvalidParams` −32602, `Internal` −32603 and `AuthRequired`
+-         −32000; `Incompatible` is this library's own, raised by `Acp.connect` when the agent
+-         answers `initialize` with another protocol version.
++         Errore `↯/s.125.1`: _the ACP operation failed because `reason`_, numerato per motivo
++         (148.1 per `Parse` fino a 148.7 per `Incompatible`). Ogni `Reason` porta il codice di
++         trasmissione JSON-RPC che il protocollo gli assegna: `Parse` −32700, `InvalidRequest`
++         −32600, `MethodNotFound` −32601, `InvalidParams` −32602, `Internal` −32603 e
++         `AuthRequired` −32000; `Incompatible` è proprio di questa libreria, sollevato da
++         `Acp.connect` quando l'agente risponde a `initialize` con un'altra versione del
++         protocollo.
+
+-         The connection's requests raise one, through the `Tactic[Acp.Error]` in scope, for an
+-         error response from the agent, with the reason recovered from the wire code by
+-         `.reason` (a code outside the standard set is `Internal`) and the agent's message as
+-         `#details`. An agent which needs authentication answers with `AuthRequired`; the client
+-         then calls `Connection#authenticate`.
++         Le richieste della connessione ne sollevano uno, tramite il `Tactic[Acp.Error]`
++         nell'ambito, per una risposta di errore dell'agente, con il motivo ricavato dal codice
++         di trasmissione tramite `.reason` (un codice fuori dall'insieme standard è `Internal`) e
++         il messaggio dell'agente come `#details`. Un agente che richiede l'autenticazione
++         risponde con `AuthRequired`; il client chiama allora `Connection#authenticate`.
+
+-         A handler raises one through the `Emit[Acp.Error]` it is lent, and the client answers
+-         the agent's request with an error response carrying the reason's code and `#response`
+-         as the message:
++         Un handler ne solleva uno tramite l'`Emit[Acp.Error]` che gli viene prestato, e il
++         client risponde alla richiesta dell'agente con una risposta di errore che porta il
++         codice del motivo e `#response` come messaggio:
+
+=         as the message:
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         as the message:
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         as the message:
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         as the message:
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+=         import soundness.*
+-         import errorDiagnostics.stackTracesDiagnostics
++         import errorDiagnostics.stackTracesDiagnostics
+
+-         def register(using Acp.Registry^): Unit = Acp.readFile:
++         def register(using Acp.Registry^): Unit = Acp.readFile:
+
+-           if Acp.path.starts(t"/secret") then
++           if Acp.path.starts(t"/secret") then
+
+-             raise(Acp.Error(Acp.Error.Reason.InvalidParams, t"not readable"))
++             raise(Acp.Error(Acp.Error.Reason.InvalidParams, t"not readable"))
+
+-           t""
++           t""
+
+=           t""
+-         ```
++         ```
+
+-         Constructing one needs `Diagnostics` in scope, as every fulminate error does.
+-     entry .Reason   why the operation failed, each with its JSON-RPC wire `code` and its `number`
++         Costruirne uno richiede `Diagnostics` nell'ambito, come ogni errore di fulminate.
++     entry .Reason   perché l'operazione è fallita, ciascun motivo con il suo `code` di trasmissione JSON-RPC e il suo `number`
+
+=     entry .Reason   why the operation failed, each with its JSON-RPC wire `code` and its `number`
+-       detail
++       detail
+
+-           Each case has a JSON-RPC wire code beside its `number`:
++           Ogni caso ha un codice di trasmissione JSON-RPC accanto al suo `number`:
+
+-           ```tabular
++           ```tabular
+
+-           column  Case
+-           column  Code
+-           column  Message
+-           column  Note
+-           row  `Parse`  1  _the message could not be parsed as JSON_  wire code −32700
+-           row  `InvalidRequest`  2  _the message was not a valid JSON-RPC request_  wire code −32600
+-           row  `MethodNotFound`  3  _the method name was not recognised_  wire code −32601
+-           row  `InvalidParams`  4  _the parameters were not valid for the requested method_  wire code −32602
+-           row  `Internal`  5  _an internal error occurred_  wire code −32603
+-           row  `AuthRequired`  6  _the agent requires authentication_  wire code −32000
+-           row  `Incompatible`  7  _the agent does not support the protocol version this client implements_  no wire code
++           column  Caso
++           column  Codice
++           column  Messaggio
++           column  Nota
++           row  `Parse`  1  _the message could not be parsed as JSON_  codice di trasmissione −32700
++           row  `InvalidRequest`  2  _the message was not a valid JSON-RPC request_  codice di trasmissione −32600
++           row  `MethodNotFound`  3  _the method name was not recognised_  codice di trasmissione −32601
++           row  `InvalidParams`  4  _the parameters were not valid for the requested method_  codice di trasmissione −32602
++           row  `Internal`  5  _an internal error occurred_  codice di trasmissione −32603
++           row  `AuthRequired`  6  _the agent requires authentication_  codice di trasmissione −32000
++           row  `Incompatible`  7  _the agent does not support the protocol version this client implements_  nessun codice di trasmissione
+
+-           ```
++           ```
+
+-       entry #number   the sub-number of error `↯/s.125.1`
+-       entry #code   the JSON-RPC wire code, or `0` for `Incompatible`, which has none
+-     entry .reason   the reason a wire code names, or `Unset` for a code outside the standard set
+-         The inverse of `Reason#code`, for reading an error response. `0` is never a wire code,
+-         so it never yields `Incompatible`.
+-     entry .communicable   renders a reason as its message, _the agent requires authentication_ and the like
+-     entry #reason   why the operation failed
+-     entry #details   the agent's message, or the message given when the error was raised, if any
+-     entry #response   the message sent in an error response: the details, or the reason's description
++       entry #number   il sottonumero dell'errore `↯/s.125.1`
++       entry #code   il codice di trasmissione JSON-RPC, o `0` per `Incompatible`, che non ne ha
++     entry .reason   il motivo che un codice di trasmissione nomina, o `Unset` per un codice fuori dall'insieme standard
++         L'inverso di `Reason#code`, per leggere una risposta di errore. `0` non è mai un codice
++         di trasmissione, quindi non produce mai `Incompatible`.
++     entry .communicable   rende un motivo come il suo messaggio, _the agent requires authentication_ e simili
++     entry #reason   perché l'operazione è fallita
++     entry #details   il messaggio dell'agente, o il messaggio dato quando l'errore è stato sollevato, se c'è
++     entry #response   il messaggio inviato in una risposta di errore: i dettagli, o la descrizione del motivo
+
+-   entry .Registry   where a client's handlers are recorded, lent to the first block of `connect`
++   entry .Registry   dove vengono registrati gli handler di un client, prestato al primo blocco di `connect`
+
+=   entry .Registry   where a client's handlers are recorded, lent to the first block of `connect`
+-     detail
++     detail
+
+-         The target of the registration combinators: `Acp.connect` makes one, lends it to the
+-         registration block as a context parameter, and consumes it when the block returns, so
+-         registration after the exchange begins is impossible by construction. Its constructor
+-         is private, and it is a capability which cannot escape the block. A method of one's
+-         own which registers handlers takes it as `using Acp.Registry^`.
++         Il bersaglio dei combinatori di registrazione: `Acp.connect` ne crea uno, lo presta al
++         blocco di registrazione come parametro di contesto, e lo consuma quando il blocco
++         restituisce, così la registrazione dopo l'inizio dello scambio è impossibile per
++         costruzione. Il suo costruttore è privato, ed è una capability che non può uscire dal
++         blocco. Un metodo proprio che registra handler lo prende come `using Acp.Registry^`.
+
+-         Its slots — one public `var` per combinator, named for it with a trailing `0` — are
+-         public only because the inline combinators assign them, and each handler slot is
+-         typed `AnyRef | Null`: a union mentioning a context-function type would freshen its
+-         capture sets at every adaptation, so the typed boundary is the combinator's parameter,
+-         where a handler closing over the registry is rejected. Register through the
+-         combinators, not the slots.
++         I suoi slot — un `var` pubblico per combinatore, che porta il suo nome con uno `0` finale
++         — sono pubblici solo perché li assegnano i combinatori inline, e ogni slot di handler è
++         tipizzato `AnyRef | Null`: un'unione che menziona un tipo di funzione di contesto
++         rinnoverebbe i suoi insiemi di cattura a ogni adattamento, quindi il confine tipizzato è
++         il parametro del combinatore, dove un handler che si chiude sul registro viene
++         rifiutato. Si registra tramite i combinatori, non tramite gli slot.
+
+=         combinators, not the slots.
+-     refer espionage.Acp.connect
++     refer espionage.Acp.connect
+
+-     refer espionage.Acp.ClientCapabilities
++     refer espionage.Acp.ClientCapabilities
+
+-     entry .Slot   the box a registered handler is kept in
++     entry .Slot   la scatola in cui viene conservato un handler registrato
+
+=     entry .Slot   the box a registered handler is kept in
+-       detail
++       detail
+
+-           A context-function value adapts to any expected type which is not a context
+-           function by being applied, so a handler cannot inhabit an `Optional` or `AnyRef`
+-           slot directly: `Slot[handler](value)` holds it intact, and the service unboxes it
+-           when it dispatches.
+-       entry #value   the handler
+-     entry #updated0   the `updated` handler, boxed, or `null`
+-     entry #permission0   the `permission` handler, boxed, or `null`
+-     entry #readFile0   the `readFile` handler, boxed, or `null`
+-     entry #writeFile0   the `writeFile` handler, boxed, or `null`
+-     entry #terminal0   the `terminals` bundle, boxed, or `null`
+-     entry #adjust0   the `capabilities` adjustment, or `Unset`
++           Un valore funzione di contesto si adatta a qualsiasi tipo atteso che non sia una
++           funzione di contesto venendo applicato, quindi un handler non può abitare
++           direttamente uno slot `Optional` o `AnyRef`: `Slot[handler](value)` lo conserva
++           intatto, e il servizio lo estrae quando smista.
++       entry #value   l'handler
++     entry #updated0   l'handler `updated`, inscatolato, o `null`
++     entry #permission0   l'handler `permission`, inscatolato, o `null`
++     entry #readFile0   l'handler `readFile`, inscatolato, o `null`
++     entry #writeFile0   l'handler `writeFile`, inscatolato, o `null`
++     entry #terminal0   il pacchetto `terminals`, inscatolato, o `null`
++     entry #adjust0   la regolazione `capabilities`, o `Unset`
+
+-   entry .Connection   the client's handle on a running agent, lent by `connect` for the duration of a block
++   entry .Connection   l'handle del client su un agente in esecuzione, prestato da `connect` per la durata di un blocco
+
+=   entry .Connection   the client's handle on a running agent, lent by `connect` for the duration of a block
+-     detail
++     detail
+
+-         What `Acp.connect` lends its second block, reached as `Acp.connection`. It is a
+-         capability, disposed of when the block returns, so it cannot outlive the agent it
+-         speaks to. Its constructor is private.
++         Ciò che `Acp.connect` presta al suo secondo blocco, raggiunto come `Acp.connection`. È
++         una capability, eliminata quando il blocco restituisce, quindi non può sopravvivere
++         all'agente con cui parla. Il suo costruttore è privato.
+
+-         A request blocks its caller until the agent's response arrives, but never blocks the
+-         reader, so several may be in flight at once, on different tasks, and be answered out
+-         of order: one task may hold a prompt turn open while another cancels it.
++         Una richiesta blocca il suo chiamante finché non arriva la risposta dell'agente, ma non
++         blocca mai il lettore, quindi più richieste possono essere in corso contemporaneamente,
++         su task diversi, e ricevere risposta fuori ordine: un task può tenere aperto un turno di
++         prompt mentre un altro lo annulla.
+
+=         of order: one task may hold a prompt turn open while another cancels it.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         of order: one task may hold a prompt turn open while another cancels it.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         of order: one task may hold a prompt turn open while another cancels it.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         of order: one task may hold a prompt turn open while another cancels it.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         val session = Acp.connection.newSession(t"/workspace")
++         val session = Acp.connection.newSession(t"/workspace")
+
+-         val turn = async(Acp.connection.prompt(session.sessionId, t"Refactor the parser"))
++         val turn = async(Acp.connection.prompt(session.sessionId, t"Refactor the parser"))
+
+-         Acp.connection.cancel(session.sessionId)
++         Acp.connection.cancel(session.sessionId)
+
+-         turn.await()   // Acp.StopReason.Cancelled
++         turn.await()   // Acp.StopReason.Cancelled
+
+=         turn.await()   // Acp.StopReason.Cancelled
+-         ```
++         ```
+
+-         Every request raises `Acp.Error`, through the `Tactic[Acp.Error]` in scope, for an
+-         error response. The connection is obligatory's `JsonRpc` underneath, with `#Origin`
+-         the agent's interface `Acp.Agent`, and `#send` sends a message of a method this library
+-         does not model.
++         Ogni richiesta solleva `Acp.Error`, tramite il `Tactic[Acp.Error]` nell'ambito, per una
++         risposta di errore. Sotto, la connessione è il `JsonRpc` di obligatory, con `#Origin`
++         l'interfaccia dell'agente `Acp.Agent`, e `#send` invia un messaggio di un metodo che
++         questa libreria non modella.
+
+=         does not model.
+-     refer espionage.Acp.connect
++     refer espionage.Acp.connect
+
+-     refer espionage.Acp.Agent
++     refer espionage.Acp.Agent
+
+-     entry #Origin   the far end of the connection: `Acp.Agent`
+-     entry #lifecycle   the generated client for `Acp.Agent.Lifecycle`: `initialize` and `authenticate`
+-         Calling it directly bypasses the error conversion and version check the connection's
+-         own methods make.
+-     entry #sessions   the generated client for `Acp.Agent.Session`: the `session/*` methods
+-         As `#lifecycle`, prefer the connection's own methods.
+-     entry #send   sends a message exactly as given, minting no id and awaiting no answer
+-         The raw seam for an extension method or a notification this library does not model.
+-         A request sent this way has its response routed nowhere, so it is for notifications.
+-     entry #initialize   the handshake: sends the protocol version and the client's capabilities
+-         `Acp.connect` calls it before lending the connection, so a client does not. It raises
+-         `Acp.Error` with reason `Incompatible` if the agent answers with a protocol version
+-         other than `Acp.version`, and records the agent's answer for `#agentCapabilities` and
+-         `#authMethods`.
+-     entry #authenticate   authenticates with one of the methods the agent offered, by its id
+-         For an agent which answered a request with `Acp.Error.Reason.AuthRequired`: the id is
+-         an `AuthMethod#id` from `#authMethods`.
+-     entry #newSession   opens a session in a working directory, with optional MCP servers
+-         `newSession(cwd, mcpServers)` returns a `NewSessionResult`, whose `sessionId` every
+-         later call about the session takes. `cwd` should be an absolute path: the agent works
+-         relative to it.
+-     entry #loadSession   resumes a session by its id, replaying its history through the update handler
+-         The agent replays the whole conversation as `session/update` notifications — routed to
+-         the handler registered with `Acp.updated`, `UserMessageChunk`s included — before this
+-         returns. Only an agent whose `AgentCapabilities#loadSession` is `true` supports it.
+-     entry #prompt   one prompt turn: blocks until the agent reports why the turn ended
+-         `prompt(sessionId, content)` takes a `List[ContentBlock]`, and `prompt(sessionId,
+-         text)` a single `TextContent`. It returns the `StopReason` once the agent has finished
+-         everything it did in the turn, while the turn's updates stream concurrently to the
+-         update handler. Opening a turn clears the session's cancellation, so a client may
+-         prompt again after cancelling.
+-     entry #cancel   cancels the session's current turn
+-         A notification, not a request: the turn's outcome is the in-flight `#prompt`, which the
+-         agent must complete with `StopReason.Cancelled`. Permission requests pending when this
+-         is called, and any which arrive before the next turn opens, are answered `Cancelled`,
+-         as the protocol requires.
+-     entry #setMode   switches the session to one of its modes, by id
+-         The ids are the `SessionMode#id`s in `NewSessionResult#modes`.
+-     entry #agentCapabilities   what the agent reported it can do, at initialization
+-     entry #authMethods   the ways the agent offered to authenticate, at initialization
++     entry #Origin   l'estremità remota della connessione: `Acp.Agent`
++     entry #lifecycle   il client generato per `Acp.Agent.Lifecycle`: `initialize` e `authenticate`
++         Chiamarlo direttamente aggira la conversione degli errori e il controllo della versione
++         che fanno i metodi propri della connessione.
++     entry #sessions   il client generato per `Acp.Agent.Session`: i metodi `session/*`
++         Come per `#lifecycle`, si preferiscano i metodi propri della connessione.
++     entry #send   invia un messaggio esattamente come dato, senza coniare alcun id e senza attendere risposta
++         La giuntura grezza per un metodo di estensione o una notifica che questa libreria non
++         modella. Una richiesta inviata in questo modo ha la risposta instradata verso nessuna
++         destinazione, quindi serve per le notifiche.
++     entry #initialize   l'handshake: invia la versione del protocollo e le capability del client
++         `Acp.connect` lo chiama prima di prestare la connessione, quindi un client non lo fa.
++         Solleva `Acp.Error` con il motivo `Incompatible` se l'agente risponde con una versione
++         del protocollo diversa da `Acp.version`, e registra la risposta dell'agente per
++         `#agentCapabilities` e `#authMethods`.
++     entry #authenticate   si autentica con uno dei metodi offerti dall'agente, tramite il suo id
++         Per un agente che ha risposto a una richiesta con `Acp.Error.Reason.AuthRequired`: l'id è
++         un `AuthMethod#id` tratto da `#authMethods`.
++     entry #newSession   apre una sessione in una directory di lavoro, con server MCP opzionali
++         `newSession(cwd, mcpServers)` restituisce un `NewSessionResult`, il cui `sessionId` è
++         preso da ogni chiamata successiva relativa alla sessione. `cwd` dovrebbe essere un
++         percorso assoluto: l'agente lavora relativamente a esso.
++     entry #loadSession   riprende una sessione tramite il suo id, riproducendone la cronologia attraverso l'handler degli aggiornamenti
++         L'agente riproduce l'intera conversazione come notifiche `session/update` — instradate
++         all'handler registrato con `Acp.updated`, `UserMessageChunk` compresi — prima che questo
++         restituisca. Lo supporta solo un agente il cui `AgentCapabilities#loadSession` è `true`.
++     entry #prompt   un turno di prompt: si blocca finché l'agente non riporta perché il turno è terminato
++         `prompt(sessionId, content)` prende una `List[ContentBlock]`, e `prompt(sessionId,
++         text)` un singolo `TextContent`. Restituisce lo `StopReason` una volta che l'agente ha
++         finito tutto ciò che ha fatto nel turno, mentre gli aggiornamenti del turno arrivano in
++         streaming, in modo concorrente, all'handler degli aggiornamenti. Aprire un turno
++         azzera l'annullamento della sessione, così un client può inviare di nuovo un prompt
++         dopo aver annullato.
++     entry #cancel   annulla il turno corrente della sessione
++         Una notifica, non una richiesta: l'esito del turno è il `#prompt` in corso, che l'agente
++         deve completare con `StopReason.Cancelled`. Alle richieste di permesso in sospeso quando
++         questo viene chiamato, e a quelle che arrivano prima che si apra il turno successivo, si
++         risponde `Cancelled`, come richiede il protocollo.
++     entry #setMode   passa la sessione a una delle sue modalità, tramite id
++         Gli id sono i `SessionMode#id` in `NewSessionResult#modes`.
++     entry #agentCapabilities   ciò che l'agente ha riportato di saper fare, all'inizializzazione
++     entry #authMethods   i modi in cui l'agente ha offerto di autenticare, all'inizializzazione
+
+-   entry .Agent   the agent's whole interface, as the client calls it: `Acp.Agent.Lifecycle` and `Acp.Agent.Session`
++   entry .Agent   l'intera interfaccia dell'agente, come la chiama il client: `Acp.Agent.Lifecycle` e `Acp.Agent.Session`
+
+=   entry .Agent   the agent's whole interface, as the client calls it: `Acp.Agent.Lifecycle` and `Acp.Agent.Session`
+-     detail
++     detail
+
+-         The union of the client→agent wire traits, and the `JsonRpc` `Origin` of an
+-         `Acp.Connection`. Nothing implements it on the client side: it is the type of the far
+-         end.
+-     entry .Lifecycle   the wire trait for `initialize` and `authenticate`, the client→agent handshake
++         L'unione dei trait di trasmissione client→agente, e l'`Origin` `JsonRpc` di
++         un'`Acp.Connection`. Nulla la implementa dal lato del client: è il tipo dell'estremità
++         remota.
++     entry .Lifecycle   il trait di trasmissione per `initialize` e `authenticate`, l'handshake client→agente
+
+=     entry .Lifecycle   the wire trait for `initialize` and `authenticate`, the client→agent handshake
+-       detail
++       detail
+
+-           One of the `@rpc` traits which, together, make up the agent's interface `Acp.Agent`;
+-           split out so that obligatory's `JsonRpc.proxy` generates a class of manageable size per
+-           trait. `Acp.Connection#lifecycle` is the generated client for it. A program needs it
+-           only to build a connection of its own; `Acp.Connection` wraps it.
++           Uno dei trait `@rpc` che, insieme, compongono l'interfaccia dell'agente `Acp.Agent`;
++           separato perché il `JsonRpc.proxy` di obligatory generi una classe di dimensioni
++           gestibili per ogni trait. `Acp.Connection#lifecycle` è il client generato per esso. A
++           un programma serve solo per costruire una connessione propria; `Acp.Connection` lo
++           avvolge.
+
+-       refer espionage.Acp.Agent
++       refer espionage.Acp.Agent
+
+-       entry #initialize   sends `initialize` with the protocol version and client capabilities
+-       entry #authenticate   sends `authenticate` with an auth method's id
+-     entry .Session   the wire trait for the `session/*` methods the client calls on the agent
+-         `session/new`, `session/load`, `session/prompt`, `session/cancel` (a notification, so
+-         returning `Unit`) and `session/set_mode`, each a method of that name, taking the
+-         protocol's own parameter names and types. `Acp.Connection#sessions` is the generated
+-         client for it, and `Acp.Connection`'s `newSession`, `loadSession`, `prompt`, `cancel` and
+-         `setMode` wrap it.
++       entry #initialize   invia `initialize` con la versione del protocollo e le capability del client
++       entry #authenticate   invia `authenticate` con l'id di un metodo di autenticazione
++     entry .Session   il trait di trasmissione per i metodi `session/*` che il client chiama sull'agente
++         `session/new`, `session/load`, `session/prompt`, `session/cancel` (una notifica, quindi
++         restituisce `Unit`) e `session/set_mode`, ciascuno un metodo con quel nome, che prende i
++         nomi e i tipi dei parametri propri del protocollo. `Acp.Connection#sessions` è il client
++         generato per esso, e `newSession`, `loadSession`, `prompt`, `cancel` e `setMode` di
++         `Acp.Connection` lo avvolgono.
+
+-   entry .Client   the client's whole interface, as the agent calls it: session, filesystem and terminal methods
++   entry .Client   l'intera interfaccia del client, come la chiama l'agente: metodi di sessione, filesystem e terminale
+
+=   entry .Client   the client's whole interface, as the agent calls it: session, filesystem and terminal methods
+-     detail
++     detail
+
+-         The union of `Acp.Client.Session`, `Acp.Client.Fs` and `Acp.Client.Terminal`. The service
+-         `Acp.connect` builds implements it, with one generated JSON-RPC dispatcher per part, so
+-         a program implements it itself only to serve the protocol by other means than
+-         `Acp.connect`.
+-     entry .Session   the wire trait for what the agent calls on the client about a session
+-         `session/update`, the protocol's only notification in this direction, and
+-         `session/request_permission`, a request the agent blocks on. Implemented by the service
+-         `Acp.connect` builds, which routes them to the handlers registered with `Acp.updated` and
+-         `Acp.permission`.
+-     entry .Fs   the wire trait for the agent's filesystem requests: `fs/read_text_file` and `fs/write_text_file`
+-         Implemented by the service `Acp.connect` builds, which routes them to the handlers
+-         registered with `Acp.readFile` and `Acp.writeFile`, and answers `MethodNotFound` for one
+-         which was not registered.
+-     entry .Terminal   the wire trait for the agent's terminal requests: `terminal/create`, `output`, `wait_for_exit`, `kill`, `release`
+-         Implemented by the service `Acp.connect` builds, which routes them to the `Acp.Terminals`
+-         bundle registered with `Acp.terminals`, and answers `MethodNotFound` if none was.
++         L'unione di `Acp.Client.Session`, `Acp.Client.Fs` e `Acp.Client.Terminal`. Il servizio
++         costruito da `Acp.connect` la implementa, con un dispatcher JSON-RPC generato per ogni
++         parte, quindi un programma la implementa da sé solo per servire il protocollo con mezzi
++         diversi da `Acp.connect`.
++     entry .Session   il trait di trasmissione per ciò che l'agente chiama sul client riguardo a una sessione
++         `session/update`, l'unica notifica del protocollo in questa direzione, e
++         `session/request_permission`, una richiesta su cui l'agente si blocca. Implementato dal
++         servizio costruito da `Acp.connect`, che li instrada agli handler registrati con
++         `Acp.updated` e `Acp.permission`.
++     entry .Fs   il trait di trasmissione per le richieste dell'agente al filesystem: `fs/read_text_file` e `fs/write_text_file`
++         Implementato dal servizio costruito da `Acp.connect`, che le instrada agli handler
++         registrati con `Acp.readFile` e `Acp.writeFile`, e risponde `MethodNotFound` per una che
++         non è stata registrata.
++     entry .Terminal   il trait di trasmissione per le richieste dell'agente ai terminali: `terminal/create`, `output`, `wait_for_exit`, `kill`, `release`
++         Implementato dal servizio costruito da `Acp.connect`, che le instrada al pacchetto
++         `Acp.Terminals` registrato con `Acp.terminals`, e risponde `MethodNotFound` se non ne è
++         stato registrato nessuno.

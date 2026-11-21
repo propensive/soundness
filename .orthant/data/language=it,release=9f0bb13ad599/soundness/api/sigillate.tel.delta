@@ -1,0 +1,180 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base sigillate
++ base sigillate
+
+- import soundness
++ import soundness
+
+- info   JOSE: signed and encrypted tokens, keys as JSON, and bearer authentication
++ info   JOSE: token firmati e cifrati, chiavi come JSON e autenticazione bearer
+
+- detail
++ detail
+
+-     _Sigillate_ implements [JOSE](https://www.rfc-editor.org/rfc/rfc7515), the standards
+-     (RFC 7515–7519) behind the tokens web APIs authenticate with: `Jws`, content with a
+-     signature or MAC over it; `Jwe`, encrypted content; `Jwk` and `Jwks`, keys as JSON; and
+-     `Jwt`, a set of claims carried in either. They are built over enigmatic's keys and ciphers
+-     and jacinta's JSON.
++     _Sigillate_ implementa [JOSE](https://www.rfc-editor.org/rfc/rfc7515), gli standard
++     (RFC 7515–7519) alla base dei token con cui si autenticano le API web: `Jws`, un contenuto
++     su cui è apposta una firma o un MAC; `Jwe`, un contenuto cifrato; `Jwk` e `Jwks`, chiavi
++     come JSON; e `Jwt`, un insieme di asserzioni trasportato in uno dei due. Sono costruiti
++     sulle chiavi e sui cifrari di enigmatic e sul JSON di jacinta.
+
+-     The key's type chooses the algorithm. A header's `alg` is compared with the algorithm
+-     the key's cipher stands for, and is never used to decide what to do with the key, so a
+-     token cannot be relabelled to be checked some other way:
++     È il tipo della chiave a scegliere l'algoritmo. L'`alg` di un'intestazione viene
++     confrontato con l'algoritmo che il cifrario della chiave rappresenta, e non viene mai
++     usato per decidere che cosa fare con la chiave, quindi un token non può essere
++     rietichettato per essere controllato in un altro modo:
+
+-     ```scala fuel
++     ```scala fuel
+
+-     typecheck
++     typecheck
+
+-     ##
++     ##
+
+-     import soundness.*
++     import soundness.*
+
+-     import soundness.textDecodable
++     import soundness.textDecodable
+
+-     import codepages.utf8Codepage, charsets.utf8Charset, textSanitizers.skipSanitizer
++     import codepages.utf8Codepage, charsets.utf8Charset, textSanitizers.skipSanitizer
+
+-     import cloaks.heapCloak
++     import cloaks.heapCloak
+
+-     import errorDiagnostics.stackTracesDiagnostics
++     import errorDiagnostics.stackTracesDiagnostics
+
+-     import providers.javaBaseProvider
++     import providers.javaBaseProvider
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import formatting.compactJsonFormatting
++     import formatting.compactJsonFormatting
+
+-     val key = PrivateKey.generate[Ecdsa[256]]()
++     val key = PrivateKey.generate[Ecdsa[256]]()
+
+-     val token: Text = Jwt(Jwt.Claims(issuer = t"globe", subject = t"burbage")).sign(key).in[Text]
++     val token: Text = Jwt(Jwt.Claims(issuer = t"globe", subject = t"burbage")).sign(key).in[Text]
+
+-     val jwt: Jwt = Jwt.verify(token, key.public)
++     val jwt: Jwt = Jwt.verify(token, key.public)
+
+-     ```
++     ```
+
+-     The library has three source sets:
++     La libreria ha tre insiemi di sorgenti:
+
+-     - `sigillate.core` — `Jws`, `Jwe`, `Jwk`, `Jwks`, `Jwt` and `Jose`, which holds the header,
+-       the error and the typeclasses that map a cipher to an algorithm name.
+-     - `sigillate.http` — `Jwks.retrieve`, a key set fetched from the URL its owner publishes
+-       it at.
+-     - `sigillate.server` — `bearerAuth`, bearer-token authentication as scintillate
+-       middleware, with the verified token in scope as `jwt`.
++     - `sigillate.core` — `Jws`, `Jwe`, `Jwk`, `Jwks`, `Jwt` e `Jose`, che contiene
++       l'intestazione, l'errore e le typeclass che associano un cifrario al nome di un
++       algoritmo.
++     - `sigillate.http` — `Jwks.retrieve`, un insieme di chiavi scaricato dall'URL a cui il suo
++       proprietario lo pubblica.
++     - `sigillate.server` — `bearerAuth`, l'autenticazione con token bearer come middleware di
++       scintillate, con il token verificato nell'ambito come `jwt`.
+
+-     Everything is exported to the `soundness` umbrella. There are no choice packages of its
+-     own; signing and encryption need a `Crypto` provider (`providers.javaBaseProvider`),
+-     reading a private key needs a `Cloak` (`cloaks.heapCloak`), verifying a token needs a
+-     `Clock`, and every failure is a `Jose.Error`.
++     Tutto è esportato nel modulo ombrello `soundness`. Non ci sono package di scelta propri;
++     firma e cifratura richiedono un provider `Crypto` (`providers.javaBaseProvider`), leggere
++     una chiave privata richiede un `Cloak` (`cloaks.heapCloak`), verificare un token richiede
++     un `Clock`, e ogni fallimento è un `Jose.Error`.
+
+- refer sigillate.Jws
++ refer sigillate.Jws
+
+- refer sigillate.Jwe
++ refer sigillate.Jwe
+
+- refer sigillate.Jwk
++ refer sigillate.Jwk
+
+- refer sigillate.Jwt
++ refer sigillate.Jwt
+
+- refer sigillate.Jose.Error
++ refer sigillate.Jose.Error
+
+- entry .Jws   a JSON Web Signature: content with a signature or MAC over it and its header
++ entry .Jws   una JSON Web Signature: un contenuto su cui sono apposti una firma o un MAC e la sua intestazione
+
+= entry .Jws   a JSON Web Signature: content with a signature or MAC over it and its header
+-   detail
++   detail
+
+-       `Jws(payload, key)` signs under the algorithm the key's cipher stands for.
+-       `#verify` checks the signature against a public or symmetric key and gives the payload,
+-       which is the only way to reach it. The compact serialization is the `Text` codec; the
+-       JSON serializations are `#flattened`, `Jws.general` and `Jws.read`.
++       `Jws(payload, key)` firma con l'algoritmo che il cifrario della chiave rappresenta.
++       `#verify` controlla la firma rispetto a una chiave pubblica o simmetrica e dà il payload,
++       che è l'unico modo per raggiungerlo. La serializzazione compatta è il codec `Text`; le
++       serializzazioni JSON sono `#flattened`, `Jws.general` e `Jws.read`.
+
+- entry .Jwe   JSON Web Encryption: content encrypted under a key conveyed to its recipient
++ entry .Jwe   una JSON Web Encryption: un contenuto cifrato con una chiave trasmessa al suo destinatario
+
+= entry .Jwe   JSON Web Encryption: content encrypted under a key conveyed to its recipient
+-   detail
++   detail
+
+-       `Jwe[content](payload, key)` encrypts with the content cipher named by the type
+-       argument, conveying its key by the key-management family the recipient's key stands
+-       for; `#decrypt` reverses it. Every failure to decrypt is the same error.
++       `Jwe[content](payload, key)` cifra con il cifrario del contenuto indicato dall'argomento
++       di tipo, trasmettendone la chiave tramite la famiglia di gestione delle chiavi che la
++       chiave del destinatario rappresenta; `#decrypt` la inverte. Ogni fallimento della
++       decifratura è lo stesso errore.
+
+- entry .Jwk   a JSON Web Key: a public, private or symmetric key as a JSON object
++ entry .Jwk   una JSON Web Key: una chiave pubblica, privata o simmetrica come oggetto JSON
+
+= entry .Jwk   a JSON Web Key: a public, private or symmetric key as a JSON object
+-   detail
++   detail
+
+-       `Jwk(key)` writes a public key, and `Jwk(key, Divulgence)` a private or symmetric one.
+-       `#publicKey`, `#privateKey` and `#symmetricKey` read it back as a key of a named cipher,
+-       and `#thumbprint` is its RFC 7638 thumbprint.
++       `Jwk(key)` scrive una chiave pubblica, e `Jwk(key, Divulgence)` una privata o simmetrica.
++       `#publicKey`, `#privateKey` e `#symmetricKey` la rileggono come chiave di un cifrario
++       indicato, e `#thumbprint` è la sua thumbprint secondo RFC 7638.
+
+- entry .Jwt   a JSON Web Token: registered claims and an application's own
++ entry .Jwt   un JSON Web Token: le asserzioni registrate e quelle proprie di un'applicazione
+
+= entry .Jwt   a JSON Web Token: registered claims and an application's own
+-   detail
++   detail
+
+-       `Jwt.verify` checks a signed token against a key and its validity period against the
+-       `Clock` in scope. `#validate` checks its issuer and audience, and `#sign` makes a `Jws`
+-       of it.
++       `Jwt.verify` controlla un token firmato rispetto a una chiave e il suo periodo di
++       validità rispetto al `Clock` nell'ambito. `#validate` ne controlla l'issuer e il
++       pubblico, e `#sign` ne crea un `Jws`.

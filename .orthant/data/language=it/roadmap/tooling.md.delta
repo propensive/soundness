@@ -1,0 +1,429 @@
+orthant 1 language
+
+- # The Toolchain
++ # La toolchain
+
+- Soundness code should be written, built, tested, explored and debugged with tools that share
+- its philosophy — total, honest, native-feeling — rather than through a Maven-era toolchain that
+- predates every idea the platform embodies. The end-state is a developer, human or agent, who
+- never leaves the ecosystem: flame for exploration, fury for building, fume for testing,
+- fluence for finding APIs, the exegesis LSP server inside any editor, a debugger that speaks
+- Soundness rather than Java, and the synesthesia MCP server giving agents the same access
+- programmatically.
++ Il codice Soundness dovrebbe essere scritto, costruito, testato, esplorato e sottoposto a debug
++ con strumenti che ne condividono la filosofia — totali, onesti, dall'aspetto nativo — anziché
++ tramite una toolchain dell'era Maven che precede ogni idea incarnata dalla piattaforma. Lo stato
++ finale è uno sviluppatore, umano o agente, che non lascia mai l'ecosistema: flame per
++ l'esplorazione, fury per la build, fume per i test, fluence per trovare le API, il server LSP
++ exegesis dentro qualsiasi editor, un debugger che parla Soundness anziché Java, e il server MCP
++ synesthesia che dà agli agenti lo stesso accesso in modo programmatico.
+
+- The pieces are in different states, and the roadmap is honest about which. Of the tools
+- that live elsewhere, this track records only what Soundness owes each of them, never their own
+- progress:
++ I pezzi sono in stati diversi, e la roadmap è onesta su quali. Degli strumenti che vivono altrove,
++ questo filone registra solo ciò che Soundness deve a ciascuno di essi, mai i loro progressi:
+
+= progress:
+=
+- ```tabular
++ ```tabular
+
+- column  Tool
+- column  Role
+- column  Where
+- column  State
+- row  flame  exploration (the REPL)  its own repository  pinned in `etc/tools` (0.8.0), configured under `.pyrocosm/`
+- row  fury  building  its own repository  cannot yet build this repository
+- row  fume  testing  its own repository  pinned in `etc/tools` (0.8.3), configured under `.pyrocosm/`; runs this repository's suites
+- row  fluence  finding APIs  its own repository  not started
+- row  exegesis  the LSP server  this repository  working
+- row  vivisection  the debugger  this repository  working
+- row  synesthesia  the MCP server  this repository  working
++ column  Strumento
++ column  Ruolo
++ column  Dove
++ column  Stato
++ row  flame  esplorazione (il REPL)  un proprio repository  fissato in `etc/tools` (0.8.0), configurato sotto `.pyrocosm/`
++ row  fury  build  un proprio repository  non sa ancora costruire questo repository
++ row  fume  test  un proprio repository  fissato in `etc/tools` (0.8.3), configurato sotto `.pyrocosm/`; esegue le suite di questo repository
++ row  fluence  ricerca delle API  un proprio repository  non iniziato
++ row  exegesis  il server LSP  questo repository  funzionante
++ row  vivisection  il debugger  questo repository  funzionante
++ row  synesthesia  il server MCP  questo repository  funzionante
+
+= row  synesthesia  the MCP server  this repository  working
+- ```
++ ```
+
+- fume is a front-end and runner over the probably framework, which remains the library. TEL —
+- the configuration language the whole toolchain standardises on — is specified and implemented,
+- with stratiform as its reference implementation. The bootstrap test for the entire track is
+- Soundness being buildable by fury, attestation-equal to the Mill build.
++ fume è un front-end e un runner sopra il framework probably, che resta la libreria. TEL — il
++ linguaggio di configurazione su cui si standardizza l'intera toolchain — è specificato e
++ implementato, con stratiform come implementazione di riferimento. Il test di bootstrap per
++ l'intero filone è che Soundness si possa costruire con fury, con un'attestazione uguale a quella
++ della build Mill.
+
+- The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
++ Le voci del filone, con i loro orizzonti e le dipendenze rigide; [`status.tel`](status.tel) registra a che punto è ciascuna:
+
+= The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+=
+- ```tabular
++ ```tabular
+
+- column  Item
+- column  Title
+- column  Horizon
+- column  Needs
+- row  tool-1  flame tracks current releases  near
+- row  tool-2  fume runs the suites  near → mid
+- row  tool-3  the LSP server serves a real session  near → mid
+- row  tool-4  Soundness builds with fury  mid
+- row  tool-5  agents reach everything over MCP  mid
+- row  tool-6  the property-testing question is settled  mid
+- row  tool-7  fluence searches the APIs  long  doc-5
+- row  tool-8  fume reports live to the web  long
+- row  tool-9  TEL everywhere  long
+- row  tool-10  a debugger that speaks Soundness  near → mid
+- row  tool-11  coverage is tracked  mid  tool-2
+- row  tool-12  benchmarks on every commit  mid  tool-2
++ column  Voce
++ column  Titolo
++ column  Orizzonte
++ column  Richiede
++ row  tool-1  flame segue le release correnti  breve
++ row  tool-2  fume esegue le suite  breve → medio
++ row  tool-3  il server LSP serve una sessione reale  breve → medio
++ row  tool-4  Soundness si costruisce con fury  medio
++ row  tool-5  gli agenti raggiungono tutto tramite MCP  medio
++ row  tool-6  la questione del property testing è risolta  medio
++ row  tool-7  fluence fa ricerche nelle API  lungo  doc-5
++ row  tool-8  fume riporta dal vivo sul web  lungo
++ row  tool-9  TEL ovunque  lungo
++ row  tool-10  un debugger che parla Soundness  breve → medio
++ row  tool-11  la copertura è tracciata  medio  tool-2
++ row  tool-12  benchmark su ogni commit  medio  tool-2
+
+= row  tool-12  benchmarks on every commit  mid  tool-2
+- ```
++ ```
+
+- ## tool-1: flame tracks current releases
++ ## tool-1: flame segue le release correnti
+
+- Horizon: near
+- Baseline: flame 0.8.0 is pinned in `etc/tools`; the current Soundness release is 0.72.0 (measured 2026-10-21; 0.3.0 and 0.68.0 on 2026-09-25; on 2026-08-01 flame built against 0.62.0 while the release was 0.64.0)
++ Orizzonte: breve
++ Linea di base: flame 0.8.0 è fissato in `etc/tools`; la release corrente di Soundness è la 0.72.0 (misurato il 2026-10-21; 0.3.0 e 0.68.0 il 2026-09-25; il 2026-08-01 flame si costruiva contro la 0.62.0 mentre la release era la 0.64.0)
+
+- A REPL that lags the platform cannot be the platform's front door. flame builds against each
+- release as it happens, and staying current becomes a checked property rather than an intention.
+- Since #2044 flame is a pinned tool with its own `.pyrocosm/flame/config.tel`, and `make
+- doccheck` runs every tutorial's examples through it; nothing yet ties a Soundness release to a
+- green flame build.
++ Un REPL che resta indietro rispetto alla piattaforma non può esserne la porta d'ingresso. flame si
++ costruisce contro ogni release man mano che esce, e restare aggiornati diventa una proprietà
++ verificata anziché un'intenzione. Dalla #2044 flame è uno strumento fissato con il proprio
++ `.pyrocosm/flame/config.tel`, e `make doccheck` esegue tramite esso gli esempi di ogni tutorial;
++ niente lega ancora una release di Soundness a una build di flame verde.
+
+- Done when: flame's CI builds it against every new Soundness release, and a release is not
+- announced until that build is green.
++ Fatto quando: la CI di flame lo costruisce contro ogni nuova release di Soundness, e una release
++ non viene annunciata finché quella build non è verde.
+
+- ## tool-2: fume runs the suites
++ ## tool-2: fume esegue le suite
+
+- Done: #2091 (2026-09-27), which re-enabled orthodoxy's suite
+- Baseline was fume 0.4.1 running the suite with 1 test suite (orthodoxy) disabled (measured 2026-09-25; fume did not exist and 3 suites were disabled on 2026-08-01); fume 0.8.3 runs every suite on 2026-10-21
++ Fatto: #2091 (2026-09-27), che ha riabilitato la suite di orthodoxy
++ La linea di base era fume 0.4.1 che eseguiva la suite con 1 suite di test (orthodoxy) disabilitata (misurato il 2026-09-25; il 2026-08-01 fume non esisteva e 3 suite erano disabilitate); fume 0.8.3 esegue ogni suite il 2026-10-21
+
+- fume is the testing tool over the probably framework: multiple report formats, live updates in
+- the terminal, and results recorded as git notes alongside the existing attestation notes. Its
+- first milestone — running this repository's own suites in CI — is reached: `make ci` is
+- `fume run` over the umbrella assembly named in `.pyrocosm/fume/config.tel`, and probably no longer
+- renders reports of its own. No suite is disabled.
++ fume è lo strumento di test sopra il framework probably: più formati di report, aggiornamenti dal
++ vivo nel terminale, e risultati registrati come note git accanto alle note di attestazione
++ esistenti. Il suo primo traguardo — eseguire nella CI le suite di questo repository — è
++ raggiunto: `make ci` è `fume run` sull'assembly ombrello indicato in `.pyrocosm/fume/config.tel`,
++ e probably non produce più report propri. Nessuna suite è disabilitata.
+
+- Done when: fume runs the full Soundness suite in CI and
++ Fatto quando: fume esegue nella CI l'intera suite di Soundness e
+
+-     grep -c 'enabled = false' build.mill    # 0
++     grep -c 'enabled = false' build.mill    # 0
+
+- ## tool-3: the LSP server serves a real session
++ ## tool-3: il server LSP serve una sessione reale
+
+- Horizon: near → mid
++ Orizzonte: breve → medio
+
+- exegesis provides the LSP framework; the criterion is lived experience made mechanical: a
+- scripted editor session — open, diagnose, complete, navigate — runs against a Soundness project
+- in CI. exegesis's own suite already drives an in-process server over JSON-RPC (initialize,
+- open, diagnose, hover, incremental change, completion, folding, rename and inlay hints), with
+- message framing tested over an in-memory `Stdio`; navigation (definition, references) and a
+- session against a real project in CI are what separate it from the criterion (2026-10-21).
++ exegesis fornisce il framework LSP; il criterio è l'esperienza vissuta resa meccanica: una
++ sessione di editor scriptata — apertura, diagnosi, completamento, navigazione — viene eseguita
++ nella CI contro un progetto Soundness. La suite di exegesis pilota già un server in-process tramite
++ JSON-RPC (initialize, apertura, diagnosi, hover, modifica incrementale, completamento, folding,
++ rinomina e inlay hint), con il framing dei messaggi testato su uno `Stdio` in memoria; la
++ navigazione (definizione, riferimenti) e una sessione contro un progetto reale nella CI sono ciò
++ che la separa dal criterio (2026-10-21).
+
+- Done when: the scripted editor-session test passes in CI.
++ Fatto quando: il test della sessione di editor scriptata passa nella CI.
+
+- ## tool-4: Soundness builds with fury
++ ## tool-4: Soundness si costruisce con fury
+
+= ## tool-4: Soundness builds with fury
+=
+- Horizon: mid
++ Orizzonte: medio
+
+- The bootstrap is the criterion: `fury build` produces the same artifacts as the Mill build,
+- verified by the same attestation input-digest discipline, on this repository — the hardest
+- Scala build it will ever face. fury itself is an [external gate](index.md#dependencies); what
+- this item tracks is Soundness's side of the bootstrap — the things a build tool needs from this
+- repository's own libraries, each filed as an issue:
++ Il bootstrap è il criterio: `fury build` produce gli stessi artefatti della build Mill,
++ verificati con la stessa disciplina del digest di input dell'attestazione, su questo repository —
++ la build Scala più difficile che dovrà mai affrontare. fury stesso è un
++ [cancello esterno](index.md#dependencies); ciò che questa voce segue è la parte di Soundness del
++ bootstrap — le cose di cui uno strumento di build ha bisogno dalle librerie di questo repository,
++ ciascuna registrata come issue:
+
+= repository's own libraries, each filed as an issue:
+=
+- ```tabular
++ ```tabular
+
+- column  Need
++ column  Necessità
+
+- column  Issue
++ column  Issue
+
+- row  the manifest `source` record  #2022
+- row  section-scoped `Tool` records and `Setting`  #2023
+- row  the closed `Lira.Hash.Domain`  #2024
+- row  the `Materializer` cache against the store's derivative tier  #2025
+- row  a compiler-version accessor  #2026
+- row  the diagnostics `ScalacEdges` drops  #2027
+- row  retained compiler sessions for a daemon  #2028
+- row  TASTy UUIDs against LIRA §17 determinism  #2029
+- row  `Tel.Provider` records over custom validators (nested and repeatable compounds are done)  #2030
++ row  il record `source` del manifesto  #2022
++ row  i record `Tool` e `Setting` con ambito di sezione  #2023
++ row  il `Lira.Hash.Domain` chiuso  #2024
++ row  la cache del `Materializer` rispetto al livello derivato del deposito  #2025
++ row  un accessor della versione del compilatore  #2026
++ row  i diagnostici che `ScalacEdges` scarta  #2027
++ row  sessioni del compilatore conservate per un demone  #2028
++ row  gli UUID TASTy rispetto al determinismo di LIRA §17  #2029
++ row  record `Tel.Provider` su validatori personalizzati (i composti annidati e ripetibili sono fatti)  #2030
+
+= row  `Tel.Provider` records over custom validators (nested and repeatable compounds are done)  #2030
+- ```
++ ```
+
+- Done when: `fury build` builds Soundness from a clean checkout, attestation-equal to the Mill
+- build.
++ Fatto quando: `fury build` costruisce Soundness da un checkout pulito, con un'attestazione uguale
++ a quella della build Mill.
+
+- ## tool-5: agents reach everything over MCP
++ ## tool-5: gli agenti raggiungono tutto tramite MCP
+
+= ## tool-5: agents reach everything over MCP
+=
+- Horizon: mid
++ Orizzonte: medio
+
+- synesthesia exposes the platform's knowledge to agents: module documentation, error
+- pages, roadmap status from `status.tel`, and migration instructions. An agent should never
+- need to clone the repository to answer "what does ↯/s.42.1 mean?" Today synesthesia is the
+- generic MCP library — tools, resources and prompts — and none of those resources exists.
++ synesthesia espone agli agenti la conoscenza della piattaforma: la documentazione dei moduli, le
++ pagine degli errori, lo stato della roadmap da `status.tel`, e le istruzioni di migrazione. Un
++ agente non dovrebbe mai aver bisogno di clonare il repository per rispondere a «cosa significa
++ ↯/s.42.1?» Oggi synesthesia è la libreria MCP generica — strumenti, risorse e prompt — e nessuna
++ di quelle risorse esiste.
+
+- Done when: a scripted MCP session resolves a bolt code to its page, a module to its topic
+- guide, and a roadmap item to its status, in CI.
++ Fatto quando: una sessione MCP scriptata risolve nella CI un codice bolt nella sua pagina, un
++ modulo nella sua guida tematica, e una voce della roadmap nel suo stato.
+
+- ## tool-6: the property-testing question is settled
++ ## tool-6: la questione del property testing è risolta
+
+= ## tool-6: the property-testing question is settled
+=
+- Horizon: mid
++ Orizzonte: medio
+
+- probably tests over axes and spreads rather than `forAll` and shrinking. Either that is the
+- answer — in which case a philosophy page argues it — or generative testing with shrinking
+- ships in probably. Either artifact closes the item; what is not acceptable is the question
+- staying open by default.
++ probably testa su assi e distribuzioni anziché con `forAll` e lo shrinking. O quella è la
++ risposta — e in tal caso una pagina di filosofia lo argomenta — oppure il testing generativo con
++ shrinking viene distribuito in probably. L'uno o l'altro artefatto chiude la voce; ciò che non è
++ accettabile è che la questione resti aperta per inerzia.
+
+- Done when: probably ships `forAll`-style generation with shrinking, or a philosophy page
+- documents why axes and spreads are the design.
++ Fatto quando: probably distribuisce una generazione in stile `forAll` con shrinking, oppure una
++ pagina di filosofia documenta perché assi e distribuzioni sono il design.
+
+- ## tool-7: fluence searches the APIs
++ ## tool-7: fluence fa ricerche nelle API
+
+- Horizon: long
+- Needs: doc-5
++ Orizzonte: lungo
++ Richiede: doc-5
+
+- fluence makes the API surface searchable — by name, by type, by signature — over the extraction
+- pipeline that `doc-5` builds.
++ fluence rende ricercabile la superficie delle API — per nome, per tipo, per firma — sopra la
++ pipeline di estrazione costruita da `doc-5`.
+
+- Done when: fluence answers name, type and signature queries against the current release's
+- published API documentation.
++ Fatto quando: fluence risponde a query per nome, tipo e firma sulla documentazione delle API
++ pubblicata della release corrente.
+
+- ## tool-8: fume reports live to the web
++ ## tool-8: fume riporta dal vivo sul web
+
+= ## tool-8: fume reports live to the web
+=
+- Horizon: long
++ Orizzonte: lungo
+
+- fume's second front-end: live test reporting over HTTP and WebSockets, the same data that
+- drives the terminal renderer.
++ Il secondo front-end di fume: report dei test dal vivo tramite HTTP e WebSocket, gli stessi dati
++ che alimentano il renderer del terminale.
+
+- Done when: a fume run can be watched live in a browser, and the recorded git-note report
+- matches what was streamed.
++ Fatto quando: un'esecuzione di fume si può seguire dal vivo in un browser, e il report registrato
++ nella nota git corrisponde a ciò che è stato trasmesso.
+
+- ## tool-9: TEL everywhere
++ ## tool-9: TEL ovunque
+
+= ## tool-9: TEL everywhere
+=
+- Horizon: long
++ Orizzonte: lungo
+
+- Every ecosystem tool that needs configuration reads TEL, with stratiform as the reference
+- implementation. No tool in the ecosystem asks for YAML, JSON or HOCON configuration. The three
+- tools this repository runs — flare, flame and fume — already read theirs from
+- `.pyrocosm/<tool>/config.tel`.
++ Ogni strumento dell'ecosistema che ha bisogno di configurazione legge TEL, con stratiform come
++ implementazione di riferimento. Nessuno strumento dell'ecosistema chiede una configurazione in
++ YAML, JSON o HOCON. I tre strumenti che questo repository esegue — flare, flame e fume — leggono
++ già la loro da `.pyrocosm/<tool>/config.tel`.
+
+- Done when: no ecosystem tool's own configuration surface accepts any format but TEL.
++ Fatto quando: la superficie di configurazione propria di nessuno strumento dell'ecosistema
++ accetta un formato diverso da TEL.
+
+- ## tool-10: a debugger that speaks Soundness
++ ## tool-10: un debugger che parla Soundness
+
+- Done: #2306 (2026-10-21)
+- Baseline was a JDWP core, an expression evaluator and a DAP server whose suite drove a live session end to end, with an object inspecting as its JVM class name and no topic (measured 2026-09-25)
++ Fatto: #2306 (2026-10-21)
++ La linea di base era un nucleo JDWP, un valutatore di espressioni e un server DAP la cui suite pilotava una sessione dal vivo da un capo all'altro, con un oggetto che si ispezionava come il nome della sua classe JVM e nessun topic (misurato il 2026-09-25)
+
+- Debugging a running application should feel native, not hosted: breakpoints, stepping and
+- inspection through a Debug Adapter Protocol server, with inspected values rendered as their
+- Soundness types — the same no-Java-encodings discipline `core-5` applies to traces, applied
+- to live state. vivisection is that server: `vivisection.DapServer` handles the request set
+- (launch, attach, breakpoints, threads, stack traces, scopes, variables, evaluate, stepping),
+- and its suite's `DapClient` drives a live debuggee through a breakpoint, a `next` step and
+- inspection in the ordinary run, with each local rendered through its `Inspectable` instance
+- and an object snapshot shown by its simple name and identity rather than a JVM class name. The
+- topic is `doc/en/modules/debugging.md`.
++ Il debug di un'applicazione in esecuzione dovrebbe sembrare nativo, non ospitato: breakpoint,
++ avanzamento passo passo e ispezione tramite un server Debug Adapter Protocol, con i valori
++ ispezionati resi come i loro tipi Soundness — la stessa disciplina senza codifiche Java che
++ `core-5` applica agli stack trace, applicata allo stato dal vivo. vivisection è quel server:
++ `vivisection.DapServer` gestisce l'insieme delle richieste (avvio, collegamento, breakpoint,
++ thread, stack trace, ambiti, variabili, valutazione, avanzamento), e il `DapClient` della sua
++ suite pilota un processo sottoposto a debug attraverso un breakpoint, un passo `next` e
++ un'ispezione nell'esecuzione ordinaria, con ogni variabile locale resa tramite la sua istanza
++ `Inspectable` e un'istantanea di oggetto mostrata con il suo nome semplice e la sua identità
++ anziché con un nome di classe JVM. Il topic è `doc/en/modules/debugging.md`.
+
+- Done when: a scripted DAP session — set a breakpoint, step, inspect a value rendered in
+- Soundness terms — passes against a running Soundness application in CI.
++ Fatto quando: una sessione DAP scriptata — impostare un breakpoint, avanzare di un passo,
++ ispezionare un valore reso in termini Soundness — passa nella CI contro un'applicazione Soundness
++ in esecuzione.
+
+- ## tool-11: coverage is tracked
++ ## tool-11: la copertura è tracciata
+
+= ## tool-11: coverage is tracked
+=
+- Horizon: mid
+- Needs: tool-2
++ Orizzonte: medio
++ Richiede: tool-2
+
+- probably's own scoverage reader went with its report renderer when fume took over reporting;
+- coverage returns as a fume concern, a tracked property rather than a one-off report: unit-test
+- coverage recorded for every commit, stored in git notes alongside the test reports, so the
+- trend is queryable and a regression is visible at review time. flare's unsafety census
+- (`safety-7`) already keeps its record this way, and is the pattern to follow.
++ Il lettore scoverage di probably se n'è andato con il suo renderer di report quando fume ha preso
++ in carico i report; la copertura ritorna come compito di fume, una proprietà tracciata anziché un
++ report occasionale: la copertura dei test unitari registrata per ogni commit, memorizzata nelle
++ note git accanto ai report dei test, così che l'andamento sia interrogabile e una regressione sia
++ visibile al momento della revisione. Il censimento delle insicurezze di flare (`safety-7`) tiene
++ già il proprio registro in questo modo, ed è il modello da seguire.
+
+- Done when: every CI run records coverage in a git note, and a single command reports the
+- coverage delta between any two commits.
++ Fatto quando: ogni esecuzione della CI registra la copertura in una nota git, e un solo comando
++ riporta la differenza di copertura tra due commit qualsiasi.
+
+- ## tool-12: benchmarks on every commit
++ ## tool-12: benchmark su ogni commit
+
+= ## tool-12: benchmarks on every commit
+=
+- Horizon: mid
+- Needs: tool-2
++ Orizzonte: medio
++ Richiede: tool-2
+
+- The benchmark suites run for every commit, with results stored in git notes under the same
+- discipline as test reports and attestations, so performance history travels with the
+- repository and regressions are caught when they land, not when users notice.
++ Le suite di benchmark vengono eseguite per ogni commit, con i risultati memorizzati nelle note git
++ secondo la stessa disciplina dei report dei test e delle attestazioni, così che la cronologia
++ delle prestazioni viaggi con il repository e le regressioni vengano colte quando vengono
++ integrate, non quando se ne accorgono gli utenti.
+
+- Done when: every commit on the main branch carries a benchmark git note, and a single command
+- reports the benchmark delta between any two commits.
++ Fatto quando: ogni commit sul branch principale porta una nota git di benchmark, e un solo comando
++ riporta la differenza dei benchmark tra due commit qualsiasi.

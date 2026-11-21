@@ -1,0 +1,397 @@
+orthant 1 language
+
+- ## Service Discovery
++ ## Scoperta dei servizi
+
+- ### About
++ ### Panoramica
+
+- A program which serves something on the local network, such as a build daemon, a printer or a
+- game, can be found without anyone being told its address.
+- [DNS-based service discovery](https://www.rfc-editor.org/rfc/rfc6763) names a service type,
+- such as `_fury._tcp`, and its instances, such as `Elsinore._fury._tcp.local`.
+- [Multicast DNS](https://www.rfc-editor.org/rfc/rfc6762) carries those names on the link without
+- a nameserver. Every host answers for its own.
++ Un programma che serve qualcosa sulla rete locale, come un demone di build, una stampante o un
++ gioco, può essere trovato senza che a nessuno venga detto il suo indirizzo.
++ La [scoperta dei servizi basata su DNS](https://www.rfc-editor.org/rfc/rfc6763) dà un nome a un
++ tipo di servizio, come `_fury._tcp`, e alle sue istanze, come `Elsinore._fury._tcp.local`.
++ Il [DNS multicast](https://www.rfc-editor.org/rfc/rfc6762) trasporta quei nomi sul collegamento
++ senza un nameserver. Ogni host risponde per i propri.
+
+- A service is advertised, others' services are browsed for, and an instance is resolved to its
+- host, port and addresses, through a `Discovery.Backend`. The backend provided here is an mDNS
+- responder over sockets. A later backend may delegate to a system responder such as Bonjour or
+- Avahi.
++ Un servizio viene pubblicizzato, i servizi altrui vengono esplorati, e un'istanza viene risolta
++ nel suo host, nella sua porta e nei suoi indirizzi, tramite un `Discovery.Backend`. Il backend
++ fornito qui è un responder mDNS su socket. Un backend futuro potrà delegare a un responder di
++ sistema come Bonjour o Avahi.
+
+- ### On discovery
++ ### Sulla scoperta
+
+- Everything comes from the `soundness` package. The second import chooses a
+- [strategy](errors.md#choosing-a-strategy) for errors, and the third lets the samples print their
+- results:
++ Tutto proviene dal package `soundness`. Il secondo import sceglie una
++ [strategia](errors.md#choosing-a-strategy) per gli errori, e il terzo permette agli esempi di
++ stampare i loro risultati:
+
+= results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- The samples which build names and records run here. Those which touch the network are compiled
+- but not run.
++ Gli esempi che costruiscono nomi e record vengono eseguiti qui. Quelli che toccano la rete sono
++ compilati ma non eseguiti.
+
+- ### Services and instances
++ ### Servizi e istanze
+
+- A service type is a registered name of up to fifteen characters and a transport. An instance is
+- one UTF-8 label, spaces and dots included, under that type. Both compute their DNS-SD names when
+- they are constructed, under validation, so a name over the DNS limits is reported then, and not
+- on the wire:
++ Un tipo di servizio è un nome registrato di al massimo quindici caratteri più un trasporto.
++ Un'istanza è un'unica etichetta UTF-8, spazi e punti compresi, sotto quel tipo. Entrambi calcolano
++ i loro nomi DNS-SD quando vengono costruiti, sotto validazione, quindi un nome che supera i limiti
++ del DNS viene segnalato in quel momento, e non sulla connessione:
+
+= on the wire:
+=
+- ```scala
++ ```scala
+
+- val fury = Discovery.Service(t"fury", Tcp)
++ val fury = Discovery.Service(t"fury", Tcp)
+
+= val fury = Discovery.Service(t"fury", Tcp)
+- ```
++ ```
+
+= val fury = Discovery.Service(t"fury", Tcp)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val fury = Discovery.Service(t"fury", Tcp)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val fury = Discovery.Service(t"fury", Tcp)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(fury.dnsName.show)
++ Out.println(fury.dnsName.show)
+
+- Out.println(Discovery.Instance(t"Hamlet's Build Daemon", fury).dnsName.show)
++ Out.println(Discovery.Instance(t"Hamlet's Build Daemon", fury).dnsName.show)
+
+= Out.println(Discovery.Instance(t"Hamlet's Build Daemon", fury).dnsName.show)
+- ```
++ ```
+
+- A service name over fifteen characters is rejected:
++ Un nome di servizio di più di quindici caratteri viene rifiutato:
+
+= A service name over fifteen characters is rejected:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A service name over fifteen characters is rejected:
+=
+= ```scala fuel
+- run
++ run
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- Discovery.Service(t"a-very-long-service-name", Tcp)
++ Discovery.Service(t"a-very-long-service-name", Tcp)
+
+= Discovery.Service(t"a-very-long-service-name", Tcp)
+- ```
++ ```
+
+- An instance says more about itself in a TXT record: `key=value` pairs, read without regard to
+- case, with the first occurrence of a key winning:
++ Un'istanza dice di più su sé stessa in un record TXT: coppie `key=value`, lette senza distinguere
++ maiuscole e minuscole, in cui vince la prima occorrenza di una chiave:
+
+= case, with the first occurrence of a key winning:
+=
+- ```scala
++ ```scala
+
+- val txt = Discovery.Txt(t"fingerprint" -> t"ab12", t"version" -> t"0.71")
++ val txt = Discovery.Txt(t"fingerprint" -> t"ab12", t"version" -> t"0.71")
+
+= val txt = Discovery.Txt(t"fingerprint" -> t"ab12", t"version" -> t"0.71")
+- ```
++ ```
+
+= val txt = Discovery.Txt(t"fingerprint" -> t"ab12", t"version" -> t"0.71")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val txt = Discovery.Txt(t"fingerprint" -> t"ab12", t"version" -> t"0.71")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val txt = Discovery.Txt(t"fingerprint" -> t"ab12", t"version" -> t"0.71")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(txt(t"Fingerprint").inspect)
++ Out.println(txt(t"Fingerprint").inspect)
+
+- Out.println(txt(t"missing").inspect)
++ Out.println(txt(t"missing").inspect)
+
+= Out.println(txt(t"missing").inspect)
+- ```
++ ```
+
+- ### Advertising
++ ### Pubblicizzazione
+
+- An advertisement is a loan. The instance is probed for, claimed, and announced. If another host
+- holds the name, the instance is renamed, to `Elsinore (2)`. It stays advertised for the block,
+- and a goodbye is sent when the block ends, or when the `Monitor` is canceled, which unwinds it:
++ Una pubblicizzazione è un prestito. Per l'istanza si esegue un sondaggio, poi la si rivendica e la
++ si annuncia. Se un altro host possiede il nome, l'istanza viene rinominata in `Elsinore (2)`.
++ Resta pubblicizzata per tutto il blocco, e quando il blocco finisce, o quando il `Monitor` viene
++ annullato, il che lo fa terminare, viene inviato un saluto di congedo:
+
+= and a goodbye is sent when the block ends, or when the `Monitor` is canceled, which unwinds it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= and a goodbye is sent when the block ends, or when the `Monitor` is canceled, which unwinds it:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= and a goodbye is sent when the block ends, or when the `Monitor` is canceled, which unwinds it:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import socketBackends.javaBaseSockets
++ import socketBackends.javaBaseSockets
+
+- import discoveryBackends.mdnsSockets
++ import discoveryBackends.mdnsSockets
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+= import logging.silentLogging
+=
+- supervise:
++ supervise:
+
+-   val description = Discovery.Description(t"Elsinore", tcp"8443", txt)
++   val description = Discovery.Description(t"Elsinore", tcp"8443", txt)
+
+-   fury.advertise(description):
++   fury.advertise(description):
+
+-     summon[Discovery.Advertisement].instance.dnsName
++     summon[Discovery.Advertisement].instance.dnsName
+
+=     summon[Discovery.Advertisement].instance.dnsName
+- ```
++ ```
+
+- The name inside the block is the name the instance was claimed with, which may not be the name
+- it asked for.
++ Il nome dentro il blocco è quello con cui l'istanza è stata rivendicata, che potrebbe non essere il
++ nome che aveva chiesto.
+
+- ### Browsing and resolving
++ ### Esplorazione e risoluzione
+
+- A browse is a loan too. It lends a `Discovery.Browser`, whose `events` are the instances
+- appearing on and leaving the link, as they happen, and whose `instances` are those currently
+- known. Resolving an instance gives its host name, port, TXT record and addresses, within a
+- timeout:
++ Anche un'esplorazione è un prestito. Presta un `Discovery.Browser`, i cui `events` sono le istanze
++ che compaiono sul collegamento e lo lasciano, mentre accade, e i cui `instances` sono quelle
++ attualmente note. Risolvere un'istanza fornisce il suo nome host, la porta, il record TXT e gli
++ indirizzi, entro un timeout:
+
+= timeout:
+=
+- ```scala fuel
++ ```scala fuel
+
+= timeout:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= timeout:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import abstractables.millisecondsAbstractable
++ import abstractables.millisecondsAbstractable
+
+- val found: Promise[List[Endpoint[Port]]] = Promise()
++ val found: Promise[List[Endpoint[Port]]] = Promise()
+
+= val found: Promise[List[Endpoint[Port]]] = Promise()
+=
+- supervise:
++ supervise:
+
+-   fury.browse:
++   fury.browse:
+
+-     summon[Discovery.Browser].events.each:
++     summon[Discovery.Browser].events.each:
+
+-       case Discovery.Event.Found(instance) =>
++       case Discovery.Event.Found(instance) =>
+
+-         val resolution = instance.resolve(5000L)
++         val resolution = instance.resolve(5000L)
+
+-         if resolution.txt(t"fingerprint") == t"ab12" then found.offer(resolution.endpoints)
++         if resolution.txt(t"fingerprint") == t"ab12" then found.offer(resolution.endpoints)
+
+-       case Discovery.Event.Lost(instance) => ()
++       case Discovery.Event.Lost(instance) => ()
+
+=       case Discovery.Event.Lost(instance) => ()
+- ```
++ ```
+
+- ### The responder
++ ### Il responder
+
+- `discoveryBackends.mdnsSockets` is the mDNS responder over multicast [sockets](sockets.md). It
+- joins `224.0.0.251:5353` and `[ff02::fb]:5353` on every interface which is up,
+- multicast-capable and has an address of the group's family, with address and port reuse, so it
+- runs beside the system's own responder. One responder per program is the intent, so bind the
+- given once, rather than summoning it at each use. It opens its sockets at the first loan, and
+- closes them after the last.
++ `discoveryBackends.mdnsSockets` è il responder mDNS su [socket](sockets.md) multicast. Si unisce a
++ `224.0.0.251:5353` e `[ff02::fb]:5353` su ogni interfaccia attiva, capace di multicast e dotata di
++ un indirizzo della famiglia del gruppo, con riuso di indirizzo e porta, così da funzionare accanto
++ al responder del sistema. L'intento è un responder per programma, quindi lega il given una volta
++ sola invece di evocarlo a ogni uso. Apre i suoi socket al primo prestito e li chiude dopo
++ l'ultimo.
+
+- Two hosts which claim one name at once are settled as RFC 6762 prescribes. Each sees the other's
+- probe. The one proposing the lexicographically lower records yields, and when it probes again a
+- second later, the winner defends the name, so the loser is renamed. A host which turns up later,
+- asserting a name which this responder has established, makes it probe for the name afresh, and
+- rename if the probe is answered. That is why `Advertisement.instance` is read live, and not
+- copied.
++ Due host che rivendicano lo stesso nome contemporaneamente vengono messi d'accordo come prescrive
++ RFC 6762. Ciascuno vede il sondaggio dell'altro. Quello che propone i record lessicograficamente
++ minori cede, e quando sonda di nuovo un secondo dopo, il vincitore difende il nome, quindi il
++ perdente viene rinominato. Un host che compare più tardi, affermando un nome che questo responder
++ ha stabilito, lo costringe a sondare di nuovo il nome da capo, e a rinominarsi se il sondaggio
++ riceve risposta. Ecco perché `Advertisement.instance` viene letto dal vivo, e non copiato.
+
+- What the responder does for a loan, which is probing, yielding, a conflict, claiming,
+- withdrawing, browsing and resolving, is logged as `Discovery.Activity` events through the
+- `Loggable` in scope at the loan. That is silent unless a [log sink](logging.md) is. Its
+- background work between loans is not logged.
++ Ciò che il responder fa per un prestito, cioè sondare, cedere, gestire un conflitto, rivendicare,
++ ritirare, esplorare e risolvere, viene registrato come eventi `Discovery.Activity` tramite il
++ `Loggable` nell'ambito del prestito. Ciò resta silenzioso a meno che non lo sia un
++ [sink di log](logging.md). Il suo lavoro in background tra un prestito e l'altro non viene
++ registrato.
+
+- For a program under test, `Mdns.Transport.Bus` is an in-memory link. Responders joined to one
+- bus hear one another and nothing else, so the protocol, with its probing, renaming and goodbyes,
+- runs deterministically without a network.
++ Per un programma sotto test, `Mdns.Transport.Bus` è un collegamento in memoria. I responder uniti
++ a uno stesso bus sentono l'un l'altro e nient'altro, quindi il protocollo, con i suoi sondaggi,
++ le sue rinomine e i suoi saluti di congedo, si esegue in modo deterministico senza una rete.
+
+- ### Errors
++ ### Errori
+
+- Validation, a name which cannot be claimed, a resolution which times out, and a responder which
+- cannot start are each a `Discovery.Error`, whose reason says which. The responder's own failure
+- to join the group is an `Mdns.Error`.
++ La validazione, un nome che non si può rivendicare, una risoluzione che va in timeout e un
++ responder che non riesce ad avviarsi sono ciascuno un `Discovery.Error`, il cui motivo dice quale.
++ Il fallimento del responder stesso nell'unirsi al gruppo è un `Mdns.Error`.
+
+- ### Related
++ ### Correlati
+
+- - [Sockets](sockets.md) describes the multicast sockets which the responder uses.
+- - [Network addresses](network-addresses.md) describes the ports and addresses which a
+-   resolution gives.
+- - [Daemons](daemons.md) describes the resident processes which are often advertised.
+- - [Concurrency](concurrency.md) describes `supervise`, `Promise` and the `Monitor` which
+-   unwinds a loan.
+- - [Logging](logging.md) receives the `Discovery.Activity` events.
++ - [Socket](sockets.md) descrive i socket multicast che il responder usa.
++ - [Indirizzi di rete](network-addresses.md) descrive le porte e gli indirizzi che una risoluzione
++   fornisce.
++ - [Demoni](daemons.md) descrive i processi residenti che vengono spesso pubblicizzati.
++ - [Concorrenza](concurrency.md) descrive `supervise`, `Promise` e il `Monitor` che fa terminare un
++   prestito.
++ - [Logging](logging.md) riceve gli eventi `Discovery.Activity`.

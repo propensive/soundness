@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.27.5` — Binary literal must be 8, 16, 32, or 64 bits
++ # `↯/s.27.5` — Un letterale binario deve essere di 8, 16, 32 o 64 bit
+
+- Raised at compile time by Hypotenuse's `bin"…"` literal macro when
+- the literal's bit count is not one of the supported widths.
++ Sollevato a tempo di compilazione dalla macro del letterale `bin"…"` di Hypotenuse quando il
++ numero di bit del letterale non è una delle ampiezze supportate.
+
+- ## Cause
++ ## Causa
+
+- Binary literals are typed by their bit count; only `8`, `16`,
+- `32`, and `64` are supported.
++ I letterali binari sono tipizzati in base al loro numero di bit; sono supportati solo `8`, `16`,
++ `32` e `64`.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.27.5] a binary literal must be 8, 16, 32 or 64 bits long
++ [↯/s.27.5] a binary literal must be 8, 16, 32 or 64 bits long
+
+= [↯/s.27.5] a binary literal must be 8, 16, 32 or 64 bits long
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Pad or trim the literal to one of the supported widths.
++ Completare o accorciare il letterale fino a una delle ampiezze supportate.
+
+- ## See also
++ ## Vedi anche
+
+- - The other binary and hexadecimal literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - Gli altri errori dei letterali binari ed esadecimali: [Famiglie](README.md#families)
++ - Sorgente: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

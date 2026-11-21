@@ -1,0 +1,2942 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base hallucination
++ base hallucination
+
+- import soundness
++ import soundness
+
+- info   raster images as immutable, typed values: read, inspect, transform and write in five formats
++ info   immagini raster come valori immutabili e tipizzati: leggere, ispezionare, trasformare e scrivere in cinque formati
+
+- detail
++ detail
+
+-     _Hallucination_ reads and writes raster images — PNG, JPEG, WebP, GIF and BMP — as
+-     `Raster` values: an immutable grid of pixels which knows its width and height, reads each
+-     pixel as a typed colour, and carries its **format** in its type, so that a `Raster in Png`
+-     and a `Raster in Jpeg` are different types and converting between them is one method,
+-     `to[Jpeg]`. The JVM's `BufferedImage` is mutable, forgets the format it came from and
+-     leaves every encoding decision to flag-driven calls; a `Raster` is a value, and reading
+-     bytes which are not the format named is a typed `Raster.Error`, not a null.
++     _Hallucination_ legge e scrive immagini raster — PNG, JPEG, WebP, GIF e BMP — come valori
++     `Raster`: una griglia immutabile di pixel che conosce la propria larghezza e altezza, legge
++     ogni pixel come un colore tipizzato e porta il suo **formato** nel tipo, così che un
++     `Raster in Png` e un `Raster in Jpeg` siano tipi diversi e la conversione tra loro sia un
++     solo metodo, `to[Jpeg]`. Il `BufferedImage` della JVM è mutabile, dimentica il formato da
++     cui proviene e lascia ogni decisione di codifica a chiamate guidate da flag; un `Raster` è
++     un valore, e leggere byte che non sono nel formato indicato dà un `Raster.Error` tipizzato,
++     non un null.
+
+-     A raster may also carry its **pixel layout** in its type — `Raster by Rgba`, or `Raster
+-     by (Channel.Red[5], Channel.Green[6], Channel.Blue[5])` — which is a tuple of iridescence `Channel` types, most
+-     significant first. A layout-typed raster's `pixel` reads a `Pixel[layout]` with one shift
+-     and mask computed as the code compiles, and `repack` converts between layouts. Whatever
+-     its layout, a raster's `descriptor` is the runtime mirror of that layout, for the
+-     operations which must work on any image, and `raster(x, y)` reads a pixel as a `Chroma`.
++     Un raster può anche portare nel tipo il suo **layout dei pixel** — `Raster by Rgba`, o
++     `Raster by (Channel.Red[5], Channel.Green[6], Channel.Blue[5])` — che è una tupla di tipi
++     `Channel` di iridescence, dal più significativo. Il `pixel` di un raster tipizzato per
++     layout legge un `Pixel[layout]` con un solo shift e una sola maschera calcolati mentre il
++     codice viene compilato, e `repack` converte tra layout. Qualunque sia il suo layout, il
++     `descriptor` di un raster è lo specchio a runtime di quel layout, per le operazioni che
++     devono funzionare su qualsiasi immagine, e `raster(x, y)` legge un pixel come `Chroma`.
+
+=     operations which must work on any image, and `raster(x, y)` reads a pixel as a `Chroma`.
+=
+-     ```scala
++     ```scala
+
+=     operations which must work on any image, and `raster(x, y)` reads a pixel as a `Chroma`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     import soundness.*
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=     import soundness.*
+=     import strategies.throwUnsafely
+-     import errorDiagnostics.stackTracesDiagnostics
++     import errorDiagnostics.stackTracesDiagnostics
+
+=     import soundness.*
+=     import strategies.throwUnsafely
+=     import errorDiagnostics.stackTracesDiagnostics
+=
+-     val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
++     val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+
+=     import soundness.*
+=     import strategies.throwUnsafely
+=     import errorDiagnostics.stackTracesDiagnostics
+=
+=     val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+-                       0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
++                       0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+
+-     val image: Raster in Png = data.read[Raster in Png]
++     val image: Raster in Png = data.read[Raster in Png]
+
+-     image.width          // 2
++     image.width          // 2
+
+-     image(0, 0).red      // 255
++     image(0, 0).red      // 255
+
+-     image.landscape      // true
++     image.landscape      // true
+
+-     val jpeg: Data = image.crop(right = 1).to[Jpeg].read[Data]
++     val jpeg: Data = image.crop(right = 1).to[Jpeg].read[Data]
+
+=     val jpeg: Data = image.crop(right = 1).to[Jpeg].read[Data]
+-     ```
++     ```
+
+-     Reading is the same `read[…]` every other source offers, naming the format as the raster's
+-     form; writing is reading the raster as `Data`, through the `Streamable` given in
+-     `Raster`'s companion. A raster whose format is unknown is recognised from its opening
+-     bytes by `Raster(data)`, among the formats a `Raster.Formats` in scope names.
++     La lettura è lo stesso `read[…]` che offre ogni altra sorgente, indicando il formato come
++     forma del raster; la scrittura consiste nel leggere il raster come `Data`, attraverso il
++     given `Streamable` nell'oggetto compagno di `Raster`. Un raster il cui formato è
++     sconosciuto viene riconosciuto dai suoi byte iniziali da `Raster(data)`, tra i formati che
++     nomina un `Raster.Formats` nell'ambito.
+
+-     An image which a drawing algorithm wants to write pixel by pixel is opened as a `Canvas`
+-     (`raster.open[Canvas](Read & Write)`), which gives a scoped `CanvasHandle` over its
+-     buffer; the handle's `snapshot` takes an independent copy. The `canvasOpenable` given is
+-     top level and must be imported by name.
++     Un'immagine che un algoritmo di disegno vuole scrivere pixel per pixel si apre come
++     `Canvas` (`raster.open[Canvas](Read & Write)`), che dà un `CanvasHandle` con ambito sul
++     suo buffer; lo `snapshot` dello handle ne prende una copia indipendente. Il given
++     `canvasOpenable` è di livello superiore e va importato per nome.
+
+-     Each format is a `Rasterizable` — `Bmp`, `Gif`, `Jpeg`, `Png`, `Webp` — whose companion
+-     holds its codec as the given `rasterization`, in implicit scope; `Png()` is the same
+-     instance as a value, for `Raster.Formats`. The library is split by component, so a
+-     program compiles only the codecs it names:
++     Ogni formato è un `Rasterizable` — `Bmp`, `Gif`, `Jpeg`, `Png`, `Webp` — il cui oggetto
++     compagno contiene il suo codec come given `rasterization`, nell'ambito implicito; `Png()` è
++     la stessa istanza come valore, per `Raster.Formats`. La libreria è suddivisa per
++     componente, così un programma compila solo i codec che nomina:
+
+-     - `hallucination.core` — `Raster`, `Raster.Error`, `Raster.Formats`, `Rasterizable`,
++     - `hallucination.core` — `Raster`, `Raster.Error`, `Raster.Formats`, `Rasterizable`,
+
+-       `Descriptor`, `Canvas`, and the `pixel` and `repack` extensions. On the JVM it also
+-       holds the `javax.imageio` bridge the format backends use.
++       `Descriptor`, `Canvas`, e le estensioni `pixel` e `repack`. Sulla JVM contiene anche il
++       ponte con `javax.imageio` che usano i backend dei formati.
+
+-     - `hallucination.bmp`, `hallucination.gif`, `hallucination.jpeg`, `hallucination.png` —
++     - `hallucination.bmp`, `hallucination.gif`, `hallucination.jpeg`, `hallucination.png` —
+
+-       one codec each, with a pure-Scala implementation compiled on every platform. On the
+-       JVM, decoding and encoding go through `javax.imageio`, whose native codecs are faster;
+-       on Scala.js and WASI the pure codec is used. Each adds a `construables` given
+-       (`pngConstruable`, …) binding the format's media type to `Raster in Png`.
+-     - `hallucination.webp` — the WebP codec, lossy VP8 and lossless VP8L, pure Scala on every
+-       platform since no standard JRE has a WebP reader.
+-     - `hallucination.formats` — the given `allRasterFormats`, a `Raster.Formats` of all five,
+-       for `Raster(data)` to recognise any format the library implements; it links every
+-       codec.
+-     - `hallucination.canvas` — `CanvasHandle`, `RasterOpenable` and the `canvasOpenable`
+-       given, over aperture's `Openable`.
++       un codec ciascuno, con un'implementazione in Scala puro compilata su ogni piattaforma.
++       Sulla JVM, decodifica e codifica passano per `javax.imageio`, i cui codec nativi sono più
++       veloci; su Scala.js e WASI si usa il codec puro. Ciascuno aggiunge un given
++       `construables` (`pngConstruable`, …) che lega il tipo di media del formato a `Raster in
++       Png`.
++     - `hallucination.webp` — il codec WebP, VP8 con perdita e VP8L senza perdita, in Scala puro
++       su ogni piattaforma, poiché nessun JRE standard ha un lettore WebP.
++     - `hallucination.formats` — il given `allRasterFormats`, un `Raster.Formats` di tutti e
++       cinque, perché `Raster(data)` riconosca qualsiasi formato implementato dalla libreria;
++       collega ogni codec.
++     - `hallucination.canvas` — `CanvasHandle`, `RasterOpenable` e il given `canvasOpenable`,
++       sull'`Openable` di aperture.
+
+-     Everything but `Descriptor` is exported to the `soundness` umbrella: `Descriptor` would
+-     clash with the OCI `Descriptor` there, so it is reached as `hallucination.Descriptor`.
+-     The `construables` package merges with the umbrella's own, and its givens are imported by
+-     name, since `import soundness.*` does not import givens.
++     Tutto tranne `Descriptor` è esportato nel modulo ombrello `soundness`: `Descriptor` vi
++     entrerebbe in conflitto con il `Descriptor` di OCI, quindi lo si raggiunge come
++     `hallucination.Descriptor`. Il package `construables` si fonde con quello del modulo
++     ombrello, e i suoi given si importano per nome, poiché `import soundness.*` non importa i
++     given.
+
+-     A `Raster` is also `Graphical`, the anticipation interface for anything with a width, a
+-     height and pixels, and a `Raster in <format>` is `Abstractable` to an HTTP body with the
+-     format's media type, so an image can be served directly as a response.
++     Un `Raster` è anche `Graphical`, l'interfaccia di anticipation per qualsiasi cosa abbia
++     una larghezza, un'altezza e dei pixel, e un `Raster in <format>` è `Abstractable` in un
++     corpo HTTP con il tipo di media del formato, così un'immagine può essere servita
++     direttamente come risposta.
+
+- refer hallucination.Raster
++ refer hallucination.Raster
+
+- refer hallucination.Rasterizable
++ refer hallucination.Rasterizable
+
+- refer hallucination.Png
++ refer hallucination.Png
+
+- refer hallucination.Canvas
++ refer hallucination.Canvas
+
+- entry .Raster   an immutable raster image: pixels in a known layout, with its format in its type
++ entry .Raster   un'immagine raster immutabile: pixel in un layout noto, con il formato nel tipo
+
+= entry .Raster   an immutable raster image: pixels in a known layout, with its format in its type
+-   detail
++   detail
+
+-       A `Raster` is a `width` by `height` grid of pixels, stored one machine word per pixel in
+-       the storage primitive its layout needs (a byte, short, int or long), and immutable once
+-       built. Its type takes two optional refinements: the **form** phantom, `Raster in Png`,
+-       is the image format, which `to[Format]` sets and the `Streamable` given reads; and the
+-       **operand** phantom, `Raster by Rgba`, is the pixel layout, a tuple of iridescence
+-       channel types which `pixel` and `repack` use. The runtime counterpart of the layout is
+-       `#descriptor`, which the layout-agnostic operations consult.
++       Un `Raster` è una griglia di pixel `width` per `height`, memorizzata con una parola
++       macchina per pixel nel tipo primitivo di memorizzazione richiesto dal suo layout (un
++       byte, uno short, un int o un long), e immutabile una volta costruita. Il suo tipo accetta
++       due raffinamenti facoltativi: il fantasma di **forma**, `Raster in Png`, è il formato
++       dell'immagine, che `to[Format]` imposta e il given `Streamable` legge; e il fantasma di
++       **operando**, `Raster by Rgba`, è il layout dei pixel, una tupla di tipi di canale di
++       iridescence che usano `pixel` e `repack`. La controparte a runtime del layout è
++       `#descriptor`, che consultano le operazioni indipendenti dal layout.
+
+-       A raster is built from a pixel function with `.apply`, decoded from bytes with
+-       `data.read[Raster in Png]` (through `.aggregable`) or recognised from its opening bytes
+-       with `Raster(data)`, and written with `raster.to[Png].read[Data]` (through
++       Un raster si costruisce da una funzione dei pixel con `.apply`, si decodifica da byte
++       con `data.read[Raster in Png]` (attraverso `.aggregable`) o si riconosce dai suoi byte
++       iniziali con `Raster(data)`, e si scrive con `raster.to[Png].read[Data]` (attraverso
+
+-       `.streamable`).
++       `.streamable`).
+
+=       `.streamable`).
+=
+-       ```scala
++       ```scala
+
+=       `.streamable`).
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `.streamable`).
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       `.streamable`).
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import errorDiagnostics.stackTracesDiagnostics
++       import errorDiagnostics.stackTracesDiagnostics
+
+-       val gradient: Raster by Rgb = Raster(256, 1)((x, y) => Chroma(x, 0, 255 - x))
++       val gradient: Raster by Rgb = Raster(256, 1)((x, y) => Chroma(x, 0, 255 - x))
+
+-       gradient(10, 0).red                       // 10
++       gradient(10, 0).red                       // 10
+
+-       gradient.crop(left = 128).width           // 128
++       gradient.crop(left = 128).width           // 128
+
+-       gradient.rotate(90).portrait              // true
++       gradient.rotate(90).portrait              // true
+
+-       val png: Data = gradient.to[Png].read[Data]
++       val png: Data = gradient.to[Png].read[Data]
+
+-       val back: Raster in Png = png.read[Raster in Png]
++       val back: Raster in Png = png.read[Raster in Png]
+
+=       val back: Raster in Png = png.read[Raster in Png]
+-       ```
++       ```
+
+-       `#apply` reads a pixel as a `Chroma` whatever the layout; a layout-typed raster's
+-       `pixel` extension reads a `Pixel[layout]` with a constant shift and mask instead.
+-       `#crop`, `#flipX`, `#flipY` and `#rotate` each build a new raster of the same layout;
+-       none mutates. Writing pixels in place is done through a `Canvas` opened over the raster,
+-       which a `CanvasHandle` with the `Write` grant mutates in place — the one deliberate
+-       exception to the raster's immutability, scoped to the block.
++       `#apply` legge un pixel come `Chroma` qualunque sia il layout; l'estensione `pixel` di
++       un raster tipizzato per layout legge invece un `Pixel[layout]` con shift e maschera
++       costanti. `#crop`, `#flipX`, `#flipY` e `#rotate` costruiscono ciascuno un nuovo raster
++       dello stesso layout; nessuno muta. La scrittura dei pixel sul posto si fa attraverso un
++       `Canvas` aperto sul raster, che un `CanvasHandle` con il permesso `Write` muta sul posto —
++       l'unica eccezione deliberata all'immutabilità del raster, limitata all'ambito del blocco.
+
+-       Reading an image through a `Raster in <format>` type dispatches to that format's codec:
+-       bytes which are not that format raise `Raster.Error`. The decoded raster's layout is
+-       `Rgb` or `Rgba` according to whether the image has an alpha channel (`Rgba` for every
+-       GIF, since a GIF may be transparent); `repack[Rgba]` makes it uniform.
++       Leggere un'immagine attraverso un tipo `Raster in <format>` passa al codec di quel
++       formato: i byte che non sono in quel formato sollevano `Raster.Error`. Il layout del
++       raster decodificato è `Rgb` o `Rgba` a seconda che l'immagine abbia un canale alfa
++       (`Rgba` per ogni GIF, poiché una GIF può essere trasparente); `repack[Rgba]` lo rende
++       uniforme.
+
+=       GIF, since a GIF may be transparent); `repack[Rgba]` makes it uniform.
+-   refer hallucination.Rasterizable
++   refer hallucination.Rasterizable
+
+=   refer hallucination.Rasterizable
+-   refer hallucination.Canvas
++   refer hallucination.Canvas
+
+-   refer hallucination.pixel
++   refer hallucination.pixel
+
+-   refer hallucination.repack
++   refer hallucination.repack
+
+-   entry .apply   a raster from a pixel function, with or without a layout, or decoded from unnamed bytes
+-       Three overloads. `Raster(width, height)((x, y) => chroma)` evaluates the function at
+-       every coordinate, row by row from the top left, packing each `Chroma` as 24-bit RGB,
+-       and gives a `Raster by Rgb`. `Raster[layout](width, height)((x, y) => pixel)` takes a
+-       `Pixel[layout]` per coordinate and gives a `Raster by layout`, in the storage primitive
+-       the layout's total bit depth needs, so a raster of `(Channel.Red[5], Channel.Green[6], Channel.Blue[5])` pixels
+-       is stored two bytes per pixel.
++   entry .apply   un raster da una funzione dei pixel, con o senza layout, o decodificato da byte non nominati
++       Tre overload. `Raster(width, height)((x, y) => chroma)` valuta la funzione a ogni
++       coordinata, riga per riga dall'alto a sinistra, impacchettando ogni `Chroma` come RGB a
++       24 bit, e dà un `Raster by Rgb`. `Raster[layout](width, height)((x, y) => pixel)` prende
++       un `Pixel[layout]` per coordinata e dà un `Raster by layout`, nel tipo primitivo di
++       memorizzazione richiesto dalla profondità totale in bit del layout, così un raster di
++       pixel `(Channel.Red[5], Channel.Green[6], Channel.Blue[5])` è memorizzato con due byte per
++       pixel.
+
+=       is stored two bytes per pixel.
+=
+-       ```scala
++       ```scala
+
+=       is stored two bytes per pixel.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val stripes: Raster by Rgb = Raster(2, 4)((x, y) => Chroma(y*10, 0, 0))
++       val stripes: Raster by Rgb = Raster(2, 4)((x, y) => Chroma(y*10, 0, 0))
+
+-       val translucent: Raster by Rgba = Raster[Rgba](8, 8): (x, y) =>
++       val translucent: Raster by Rgba = Raster[Rgba](8, 8): (x, y) =>
+
+-         Pixel[Rgba](Srgb(x/8.0, y/8.0, 1.0))
++         Pixel[Rgba](Srgb(x/8.0, y/8.0, 1.0))
+
+=         Pixel[Rgba](Srgb(x/8.0, y/8.0, 1.0))
+-       ```
++       ```
+
+-       `Raster(input)`, for any `input` which is `Streamable by Data` (bytes, a file, a
+-       response body), reads the whole input and decodes it in whichever of the formats the
+-       `Raster.Formats` in scope names recognises its opening bytes, in the order they were
+-       named. It needs a `Tactic[Raster.Error]`, and raises `Raster.Error` with no format
+-       (`rasterizable` is `Unset`) when no candidate recognises the data, or the recognised
+-       format's own error when its codec rejects it. Only a format which has been linked and
+-       named can be recognised: `import soundness.allRasterFormats` (from
+-       `hallucination.formats`) names all five, or a `Raster.Formats(Png(), Jpeg())` given
+-       narrows the candidates to those a program compiles.
++       `Raster(input)`, per qualsiasi `input` che sia `Streamable by Data` (byte, un file, il
++       corpo di una risposta), legge l'intero input e lo decodifica in quello dei formati
++       nominati dal `Raster.Formats` nell'ambito che ne riconosce i byte iniziali, nell'ordine in
++       cui sono stati nominati. Richiede un `Tactic[Raster.Error]`, e solleva `Raster.Error`
++       senza formato (`rasterizable` è `Unset`) quando nessun candidato riconosce i dati, o
++       l'errore proprio del formato riconosciuto quando il suo codec li rifiuta. Si può
++       riconoscere solo un formato che è stato collegato e nominato: `import
++       soundness.allRasterFormats` (da `hallucination.formats`) li nomina tutti e cinque, oppure
++       un given `Raster.Formats(Png(), Jpeg())` restringe i candidati a quelli che un programma
++       compila.
+
+=       narrows the candidates to those a program compiles.
+=
+-       ```scala
++       ```scala
+
+=       narrows the candidates to those a program compiles.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       narrows the candidates to those a program compiles.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       narrows the candidates to those a program compiles.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import errorDiagnostics.stackTracesDiagnostics
++       import errorDiagnostics.stackTracesDiagnostics
+
+=       narrows the candidates to those a program compiles.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import errorDiagnostics.stackTracesDiagnostics
+=
+-       val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
++       val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+
+=       narrows the candidates to those a program compiles.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import errorDiagnostics.stackTracesDiagnostics
+=
+=       val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+-                         0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
++                         0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+
+-       given Raster.Formats = Raster.Formats(Png(), Jpeg(), Gif())
++       given Raster.Formats = Raster.Formats(Png(), Jpeg(), Gif())
+
+-       val raster: Raster = Raster(data)
++       val raster: Raster = Raster(data)
+
+-       raster.width   // 2
++       raster.width   // 2
+
+=       raster.width   // 2
+-       ```
++       ```
+
+-       The result of the recognising overload is a plain `Raster`, with no form phantom: the
+-       format is a runtime fact, so the raster must be given one with `to[Png]` before it is
+-       written.
+-   entry .streamable   writes a `Raster in <format>` as the format's bytes, as `raster.read[Data]`
+-       The given which makes a raster with a form phantom `Streamable by Data`: reading a
+-       `Raster in Png` as `Data` encodes it through `Png`'s codec, and the same raster read
+-       through `to[Jpeg]` encodes as a JPEG. It needs a `<format> is Rasterizable` in scope,
+-       which each format's companion supplies, so no import is needed; a raster with no form
+-       phantom cannot be written until `to[Format]` gives it one. The encoded form is 8-bit
+-       truecolour, with alpha where both the raster's layout and the format (`Rasterizable#alpha`)
+-       carry it; JPEG and BMP drop alpha, and GIF quantizes to a 256-colour palette.
++       Il risultato dell'overload che riconosce è un semplice `Raster`, senza fantasma di forma:
++       il formato è un fatto di runtime, quindi al raster va dato un formato con `to[Png]` prima
++       che venga scritto.
++   entry .streamable   scrive un `Raster in <format>` come i byte del formato, come `raster.read[Data]`
++       Il given che rende `Streamable by Data` un raster con un fantasma di forma: leggere un
++       `Raster in Png` come `Data` lo codifica attraverso il codec di `Png`, e lo stesso raster
++       letto attraverso `to[Jpeg]` si codifica come JPEG. Richiede nell'ambito un `<format> is
++       Rasterizable`, fornito dall'oggetto compagno di ogni formato, così non serve alcun import;
++       un raster senza fantasma di forma non può essere scritto finché `to[Format]` non gliene
++       dà uno. La forma codificata è truecolour a 8 bit, con l'alfa dove lo portano sia il
++       layout del raster sia il formato (`Rasterizable#alpha`); JPEG e BMP scartano l'alfa, e GIF
++       quantizza in una tavolozza di 256 colori.
+
+=       carry it; JPEG and BMP drop alpha, and GIF quantizes to a 256-colour palette.
+=
+-       ```scala
++       ```scala
+
+=       carry it; JPEG and BMP drop alpha, and GIF quantizes to a 256-colour palette.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       carry it; JPEG and BMP drop alpha, and GIF quantizes to a 256-colour palette.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       carry it; JPEG and BMP drop alpha, and GIF quantizes to a 256-colour palette.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import errorDiagnostics.stackTracesDiagnostics
++       import errorDiagnostics.stackTracesDiagnostics
+
+=       carry it; JPEG and BMP drop alpha, and GIF quantizes to a 256-colour palette.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import errorDiagnostics.stackTracesDiagnostics
+=
+-       val raster = Raster(4, 4)((x, y) => Chroma(x*60, y*60, 0))
++       val raster = Raster(4, 4)((x, y) => Chroma(x*60, y*60, 0))
+
+=       val raster = Raster(4, 4)((x, y) => Chroma(x*60, y*60, 0))
+-       val png: Data = raster.to[Png].read[Data]
++       val png: Data = raster.to[Png].read[Data]
+
+=       val png: Data = raster.to[Png].read[Data]
+-       val bmp: Data = raster.to[Bmp].read[Data]
++       val bmp: Data = raster.to[Bmp].read[Data]
+
+=       val bmp: Data = raster.to[Bmp].read[Data]
+-       ```
++       ```
+
+-       It is also the `Streamable` which `source[Data]` and the `Abstractable` HTTP body use.
+-   entry .abstractable   a `Raster in <format>` as an HTTP response body with the format's media type
+-       The given which makes a raster with a form phantom `Abstractable` to `HttpStreams`: its
+-       `genericize` pairs the format's `mediaType` (`image/png`, `image/jpeg`, …) with the
+-       encoded bytes as a body, so a `Raster in Png` can be returned from a request handler or
+-       posted as a body, and the client sees `Content-Type: image/png`.
+-   entry .graphical   a `Raster` as anticipation's `Graphical`: width, height and a `Chroma` per pixel
+-       The given which lets any raster, whatever its layout, be used wherever a `Graphical`
+-       is wanted: `width`, `height` and `pixel(x, y)` delegate to `#width`, `#height` and
+-       `#apply`.
+-   entry .aggregable   decodes bytes as a `Raster in <format>`: `data.read[Raster in Png]`
+-       The given which makes `Raster in <format>` `Aggregable by Data` for any
+-       `<format> is Rasterizable`: the bytes are gathered and handed to the format's `read`. It
+-       needs a `Tactic[Raster.Error]`, raised when the data is not that format (or, for the
+-       pure codecs, is truncated, has a bad checksum or uses an unsupported variant, with the
+-       `Raster.Error#reason` saying which).
++       È anche lo `Streamable` che usano `source[Data]` e il corpo HTTP `Abstractable`.
++   entry .abstractable   un `Raster in <format>` come corpo di una risposta HTTP con il tipo di media del formato
++       Il given che rende un raster con un fantasma di forma `Abstractable` in `HttpStreams`: il
++       suo `genericize` abbina il `mediaType` del formato (`image/png`, `image/jpeg`, …) ai byte
++       codificati come corpo, così un `Raster in Png` può essere restituito da un handler di
++       richieste o inviato come corpo, e il client vede `Content-Type: image/png`.
++   entry .graphical   un `Raster` come `Graphical` di anticipation: larghezza, altezza e un `Chroma` per pixel
++       Il given che permette di usare qualsiasi raster, qualunque sia il suo layout, ovunque sia
++       richiesto un `Graphical`: `width`, `height` e `pixel(x, y)` delegano a `#width`,
++       `#height` e `#apply`.
++   entry .aggregable   decodifica byte come `Raster in <format>`: `data.read[Raster in Png]`
++       Il given che rende `Raster in <format>` `Aggregable by Data` per qualsiasi `<format> is
++       Rasterizable`: i byte vengono raccolti e consegnati al `read` del formato. Richiede un
++       `Tactic[Raster.Error]`, sollevato quando i dati non sono in quel formato (o, per i codec
++       puri, sono troncati, hanno un checksum errato o usano una variante non supportata, e
++       `Raster.Error#reason` dice quale caso).
+
+=       `Raster.Error#reason` saying which).
+=
+-       ```scala
++       ```scala
+
+=       `Raster.Error#reason` saying which).
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Raster.Error#reason` saying which).
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       `Raster.Error#reason` saying which).
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import errorDiagnostics.stackTracesDiagnostics
++       import errorDiagnostics.stackTracesDiagnostics
+
+=       `Raster.Error#reason` saying which).
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import errorDiagnostics.stackTracesDiagnostics
+=
+-       val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
++       val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+
+=       `Raster.Error#reason` saying which).
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import errorDiagnostics.stackTracesDiagnostics
+=
+=       val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+-                         0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
++                         0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+
+-       data.read[Raster in Png].height             // 1
++       data.read[Raster in Png].height             // 1
+
+-       capture[Raster.Error](data.read[Raster in Jpeg]) == Raster.Error(Jpeg())   // true
++       capture[Raster.Error](data.read[Raster in Jpeg]) == Raster.Error(Jpeg())   // true
+
+=       capture[Raster.Error](data.read[Raster in Jpeg]) == Raster.Error(Jpeg())   // true
+-       ```
++       ```
+
+-       The same given reads a file, a classpath resource or an HTTP response body as a raster,
+-       since each of those is `Streamable by Data`.
+-   entry .aggregable2   decodes bytes as a plain `Raster`, recognising the format from its opening bytes
+-       The given which makes `Raster` itself `Aggregable by Data`, so `data.read[Raster]` works
+-       without naming a format. It is `Raster(data)` as a given: it needs a `Raster.Formats`
+-       in scope (such as `allRasterFormats`) and a `Tactic[Raster.Error]`, and raises
+-       `Raster.Error` with no format when none of the candidates recognises the bytes.
+-   entry .Error   raised when bytes cannot be read as a raster image
++       Lo stesso given legge come raster un file, una risorsa del classpath o il corpo di una
++       risposta HTTP, poiché ciascuno di essi è `Streamable by Data`.
++   entry .aggregable2   decodifica byte come semplice `Raster`, riconoscendo il formato dai suoi byte iniziali
++       Il given che rende `Raster` stesso `Aggregable by Data`, così `data.read[Raster]`
++       funziona senza indicare un formato. È `Raster(data)` come given: richiede nell'ambito un
++       `Raster.Formats` (come `allRasterFormats`) e un `Tactic[Raster.Error]`, e solleva
++       `Raster.Error` senza formato quando nessuno dei candidati riconosce i byte.
++   entry .Error   sollevato quando dei byte non possono essere letti come immagine raster
+
+=   entry .Error   raised when bytes cannot be read as a raster image
+-     detail
++     detail
+
+-         _unable to read the raster image in `format` format_, where the format is the
+-         `Rasterizable#name` of the codec which failed (`PNG`, `JPEG`, `WEBP`, `GIF`, `BMP`), or
+-         `unspecified` when `Raster(data)` found no format which recognised the bytes. It is
+-         raised by the `Aggregable` givens, by `Rasterizable#read` and `Rasterizable#decode`,
+-         and by `Raster(data)`. It is a case class, so two errors for the same format and
+-         reason are equal, which is how a test checks which codec rejected its input:
+-         `capture[Raster.Error](data.read[Raster in Jpeg]) == Raster.Error(Jpeg())`.
++         _unable to read the raster image in `format` format_, dove il formato è il
++         `Rasterizable#name` del codec che ha fallito (`PNG`, `JPEG`, `WEBP`, `GIF`, `BMP`), o
++         `unspecified` quando `Raster(data)` non ha trovato alcun formato che riconoscesse i byte.
++         È sollevato dai given `Aggregable`, da `Rasterizable#read` e `Rasterizable#decode`, e
++         da `Raster(data)`. È una case class, quindi due errori per lo stesso formato e lo stesso
++         motivo sono uguali, ed è così che un test controlla quale codec ha rifiutato il suo
++         input: `capture[Raster.Error](data.read[Raster in Jpeg]) == Raster.Error(Jpeg())`.
+
+-         The `javax.imageio` backends used on the JVM report no reason; the pure codecs used
+-         on Scala.js and WASI (and WebP everywhere) say why in `#reason`. Constructing one
+-         needs a `Diagnostics` in scope, such as `errorDiagnostics.stackTracesDiagnostics`.
+-     entry .Reason   why a pure codec rejected its input
+-         An unnumbered enum of the failures the pure-Scala codecs distinguish, with no message of
+-         its own:
++         I backend `javax.imageio` usati sulla JVM non riportano alcun motivo; i codec puri usati
++         su Scala.js e WASI (e WebP ovunque) dicono il perché in `#reason`. Costruirne uno
++         richiede nell'ambito un `Diagnostics`, come `errorDiagnostics.stackTracesDiagnostics`.
++     entry .Reason   perché un codec puro ha rifiutato il suo input
++         Un enum non numerato dei fallimenti che i codec in Scala puro distinguono, senza un
++         messaggio proprio:
+
+-         ```tabular
++         ```tabular
+
+-         column  Case
+-         column  Meaning
+-         row  `BadSignature`  the opening bytes are not the format's magic
+-         row  `BadCrc`  a PNG chunk's checksum does not match
+-         row  `Truncated`  the data ended before the image did, or a read ran past its end
+-         row  `UnsupportedVariant`  a form the codec does not implement: a run-length-encoded BMP, an arithmetic-coded JPEG, a GIF extension block it does not know
+-         row  `Bitstream`  a malformed entropy-coded stream, in a JPEG or WebP
+-         row  `Huffman`  a malformed entropy-coded stream, in a JPEG or WebP
+-         row  `InvalidTransform`  a WebP lossless transform the decoder cannot apply
++         column  Caso
++         column  Significato
++         row  `BadSignature`  i byte iniziali non sono il magic number del formato
++         row  `BadCrc`  il checksum di un chunk PNG non corrisponde
++         row  `Truncated`  i dati sono finiti prima dell'immagine, o una lettura è andata oltre la fine
++         row  `UnsupportedVariant`  una forma che il codec non implementa: una BMP con codifica run-length, una JPEG con codifica aritmetica, un blocco di estensione GIF che non conosce
++         row  `Bitstream`  uno stream con codifica entropica malformato, in una JPEG o in una WebP
++         row  `Huffman`  uno stream con codifica entropica malformato, in una JPEG o in una WebP
++         row  `InvalidTransform`  una trasformazione lossless WebP che il decodificatore non sa applicare
+
+=         row  `InvalidTransform`  a WebP lossless transform the decoder cannot apply
+-         ```
++         ```
+
+-     entry #rasterizable   the format whose codec failed, or `Unset` when no format was recognised
+-     entry #reason   the `Raster.Error.Reason` from a pure codec, or `Unset` from a `javax.imageio` backend
+-   entry .Formats   the formats `Raster(data)` will try, in order, when the format was not named
++     entry #rasterizable   il formato il cui codec ha fallito, o `Unset` quando non è stato riconosciuto alcun formato
++     entry #reason   il `Raster.Error.Reason` di un codec puro, o `Unset` da un backend `javax.imageio`
++   entry .Formats   i formati che `Raster(data)` proverà, in ordine, quando il formato non è stato indicato
+
+=   entry .Formats   the formats `Raster(data)` will try, in order, when the format was not named
+-     detail
++     detail
+
+-         A `Raster` decoded without a named format must recognise one from the data's opening
+-         bytes, and it can only recognise a format whose codec has been linked: each codec is
+-         its own component. So the candidates are a contextual value, `Raster.Formats`, which
+-         lists the `Rasterizable`s to try in order; `#recognise` returns the first whose
+-         `sniff` accepts the data.
++         Un `Raster` decodificato senza un formato indicato deve riconoscerne uno dai byte
++         iniziali dei dati, e può riconoscere solo un formato il cui codec è stato collegato:
++         ogni codec è un componente a sé. Quindi i candidati sono un valore contestuale,
++         `Raster.Formats`, che elenca i `Rasterizable` da provare in ordine; `#recognise`
++         restituisce il primo il cui `sniff` accetta i dati.
+
+-         ```scala
++         ```scala
+
+-         import soundness.*
++         import soundness.*
+
+-         val formats: Raster.Formats = Raster.Formats(Png(), Jpeg())
++         val formats: Raster.Formats = Raster.Formats(Png(), Jpeg())
+
+-         formats.recognise(Data()).let(_.name)   // Unset
++         formats.recognise(Data()).let(_.name)   // Unset
+
+=         formats.recognise(Data()).let(_.name)   // Unset
+-         ```
++         ```
+
+-         `hallucination.formats` supplies `allRasterFormats`, a given of all five, for a
+-         program which is content to link every codec; a program which links fewer gives its
+-         own.
+-     entry .apply   a `Raster.Formats` of the given codecs, in the order they are to be tried
+-         `Raster.Formats(Png(), Jpeg(), Gif())`: each argument is a `Rasterizable`, which every
+-         format's companion `apply` returns.
+-     entry #candidates   the codecs to try, in order
+-     entry #recognise   the first candidate whose `sniff` accepts the data, or `Unset`
+-         Reads only the opening bytes: a PNG by its eight-byte signature, a JPEG by its SOI
+-         marker, a GIF by `GIF`, a BMP by `BM`, a WebP by its `RIFF`/`WEBP` header. Empty data
+-         and data in no named format give `Unset`. Recognition says nothing about whether the
+-         rest of the data decodes.
+-   entry #width   the width of the image, in pixels
+-   entry #height   the height of the image, in pixels
+-   entry #descriptor   the runtime description of the pixel layout: each channel's label and depth
+-       A `Descriptor` — reached as `hallucination.Descriptor`, since it is not exported to the
+-       umbrella — fixed when the raster was built from its static layout. It is what the
+-       layout-agnostic operations use: `descriptor.hasAlpha`, `descriptor.alpha(word)`,
+-       `descriptor.chroma(word)`. A decoded image's descriptor has eight-bit channels: `Rgb`
+-       or `Rgba`.
+-   entry #Operand   the pixel layout, a tuple of channel types, when the raster's type states it
+-       The type member behind `Raster by Rgba`: a `Tuple` of iridescence channel types such
+-       as `Channel.Red[8]`. It is a phantom: the layout is fixed when the raster is built, and the
+-       refinement records it for `pixel` and the canvas. A raster read from bytes has no
+-       layout in its type; `repack[Rgba]` gives it one.
+-   entry #apply   the pixel at `(x, y)` as a `Chroma`, whatever the layout
+-       `raster(x, y)` reads the pixel word and rescales its channels to 24-bit RGB through the
+-       descriptor: an RGB layout's channels are rescaled to eight bits, a CMYK or greyscale
+-       layout is converted through its colour model, and alpha is ignored. Coordinates run
+-       from the top left, `x` across and `y` down. The result is an iridescence `Chroma`, with
+-       `red`, `green` and `blue` as bytes. For a layout-typed raster, the `pixel` extension
+-       reads the typed `Pixel` without any conversion.
++         `hallucination.formats` fornisce `allRasterFormats`, un given di tutti e cinque, per un
++         programma a cui va bene collegare ogni codec; un programma che ne collega meno ne
++         fornisce uno proprio.
++     entry .apply   un `Raster.Formats` dei codec dati, nell'ordine in cui vanno provati
++         `Raster.Formats(Png(), Jpeg(), Gif())`: ogni argomento è un `Rasterizable`, che è ciò
++         che restituisce l'`apply` dell'oggetto compagno di ogni formato.
++     entry #candidates   i codec da provare, in ordine
++     entry #recognise   il primo candidato il cui `sniff` accetta i dati, o `Unset`
++         Legge solo i byte iniziali: una PNG dalla sua firma di otto byte, una JPEG dal suo
++         marcatore SOI, una GIF da `GIF`, una BMP da `BM`, una WebP dalla sua intestazione
++         `RIFF`/`WEBP`. Dati vuoti e dati in nessuno dei formati indicati danno `Unset`. Il
++         riconoscimento non dice nulla sul fatto che il resto dei dati si decodifichi.
++   entry #width   la larghezza dell'immagine, in pixel
++   entry #height   l'altezza dell'immagine, in pixel
++   entry #descriptor   la descrizione a runtime del layout dei pixel: l'etichetta e la profondità di ogni canale
++       Un `Descriptor` — raggiunto come `hallucination.Descriptor`, poiché non è esportato nel
++       modulo ombrello — fissato quando il raster è stato costruito a partire dal suo layout
++       statico. È ciò che usano le operazioni indipendenti dal layout: `descriptor.hasAlpha`,
++       `descriptor.alpha(word)`, `descriptor.chroma(word)`. Il descrittore di un'immagine
++       decodificata ha canali a otto bit: `Rgb` o `Rgba`.
++   entry #Operand   il layout dei pixel, una tupla di tipi di canale, quando il tipo del raster lo dichiara
++       Il membro di tipo dietro `Raster by Rgba`: una `Tuple` di tipi di canale di iridescence
++       come `Channel.Red[8]`. È un fantasma: il layout è fissato quando il raster viene
++       costruito, e il raffinamento lo registra per `pixel` e per il canvas. Un raster letto da
++       byte non ha layout nel tipo; `repack[Rgba]` gliene dà uno.
++   entry #apply   il pixel in `(x, y)` come `Chroma`, qualunque sia il layout
++       `raster(x, y)` legge la parola del pixel e riscala i suoi canali in RGB a 24 bit
++       attraverso il descrittore: i canali di un layout RGB vengono riscalati a otto bit, un
++       layout CMYK o in scala di grigi viene convertito attraverso il suo modello di colore, e
++       l'alfa viene ignorato. Le coordinate partono dall'alto a sinistra, `x` in orizzontale e
++       `y` verso il basso. Il risultato è un `Chroma` di iridescence, con `red`, `green` e
++       `blue` come byte. Per un raster tipizzato per layout, l'estensione `pixel` legge il
++       `Pixel` tipizzato senza alcuna conversione.
+
+=       reads the typed `Pixel` without any conversion.
+=
+-       ```scala
++       ```scala
+
+=       reads the typed `Pixel` without any conversion.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val raster = Raster(2, 1)((x, y) => Chroma(x*255, 0, 0))
++       val raster = Raster(2, 1)((x, y) => Chroma(x*255, 0, 0))
+
+-       raster(1, 0).red   // 255
++       raster(1, 0).red   // 255
+
+=       raster(1, 0).red   // 255
+-       ```
++       ```
+
+-   entry #to   the same image, re-expressed in another format: `raster.to[Jpeg]`
+-       Sets the form phantom, and nothing else: `to[Jpeg]` returns the same pixels as a
+-       `Raster in Jpeg`, which then encodes as a JPEG when read as `Data`. The type parameter
+-       must be `Rasterizable` — `Bmp`, `Gif`, `Jpeg`, `Png` or `Webp`, given their components
+-       are linked. No encoding happens until the raster is read.
++   entry #to   la stessa immagine, espressa in un altro formato: `raster.to[Jpeg]`
++       Imposta il fantasma di forma, e nient'altro: `to[Jpeg]` restituisce gli stessi pixel come
++       `Raster in Jpeg`, che si codifica poi come JPEG quando viene letto come `Data`. Il
++       parametro di tipo deve essere `Rasterizable` — `Bmp`, `Gif`, `Jpeg`, `Png` o `Webp`,
++       purché i loro componenti siano collegati. Nessuna codifica avviene finché il raster non
++       viene letto.
+
+=       are linked. No encoding happens until the raster is read.
+=
+-       ```scala
++       ```scala
+
+=       are linked. No encoding happens until the raster is read.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       are linked. No encoding happens until the raster is read.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       are linked. No encoding happens until the raster is read.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import errorDiagnostics.stackTracesDiagnostics
++       import errorDiagnostics.stackTracesDiagnostics
+
+=       are linked. No encoding happens until the raster is read.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import errorDiagnostics.stackTracesDiagnostics
+=
+-       val raster = Raster(4, 4)((x, y) => Chroma(x*60, y*60, 0))
++       val raster = Raster(4, 4)((x, y) => Chroma(x*60, y*60, 0))
+
+=       val raster = Raster(4, 4)((x, y) => Chroma(x*60, y*60, 0))
+-       val gif: Data = raster.to[Gif].read[Data]
++       val gif: Data = raster.to[Gif].read[Data]
+
+-       gif.read[Raster in Gif].width   // 4
++       gif.read[Raster in Gif].width   // 4
+
+=       gif.read[Raster in Gif].width   // 4
+-       ```
++       ```
+
+-   entry #crop   a new raster with rows and columns removed from any of the four edges
+-       `crop(left, bottom, top, right)`, every parameter defaulting to `0`: the number of
+-       pixels to remove from each edge. `crop(top = 1, bottom = 1)` keeps the middle rows,
+-       `crop(right = 1)` drops the rightmost column, and `crop()` is a copy. The result has
+-       the same layout; the pixels are copied, not shared.
++   entry #crop   un nuovo raster con righe e colonne rimosse da uno qualsiasi dei quattro bordi
++       `crop(left, bottom, top, right)`, con ogni parametro predefinito a `0`: il numero di
++       pixel da rimuovere da ciascun bordo. `crop(top = 1, bottom = 1)` mantiene le righe
++       centrali, `crop(right = 1)` scarta la colonna più a destra, e `crop()` è una copia. Il
++       risultato ha lo stesso layout; i pixel vengono copiati, non condivisi.
+
+=       the same layout; the pixels are copied, not shared.
+=
+-       ```scala
++       ```scala
+
+=       the same layout; the pixels are copied, not shared.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val stripes = Raster(2, 4)((x, y) => Chroma(y*10, 0, 0))
++       val stripes = Raster(2, 4)((x, y) => Chroma(y*10, 0, 0))
+
+-       val middle = stripes.crop(top = 1, bottom = 1)
++       val middle = stripes.crop(top = 1, bottom = 1)
+
+-       (middle.height, middle(0, 0).red)   // (2, 10)
++       (middle.height, middle(0, 0).red)   // (2, 10)
+
+=       (middle.height, middle(0, 0).red)   // (2, 10)
+-       ```
++       ```
+
+-   entry #flipX   a new raster mirrored left to right
+-       The pixel at `(x, y)` becomes the pixel at `(width - 1 - x, y)`; the dimensions are
+-       kept, and flipping twice restores the image.
+-   entry #flipY   a new raster mirrored top to bottom
+-       The pixel at `(x, y)` becomes the pixel at `(x, height - 1 - y)`; the dimensions are
+-       kept. `flipX.flipY` is `rotate(180)`.
+-   entry #rotate   a new raster turned clockwise by a quarter, half or three-quarter turn
+-       The angle is typed `90 | 180 | 270`, so only a rotation which needs no resampling can
+-       be written; `rotate(45)` does not compile. `rotate(90)` and `rotate(270)` swap the width
+-       and height; `rotate(180)` keeps them. Four quarter turns, or `rotate(90).rotate(270)`,
+-       restore the image.
++   entry #flipX   un nuovo raster specchiato da sinistra a destra
++       Il pixel in `(x, y)` diventa il pixel in `(width - 1 - x, y)`; le dimensioni restano
++       invariate, e specchiare due volte ripristina l'immagine.
++   entry #flipY   un nuovo raster specchiato dall'alto in basso
++       Il pixel in `(x, y)` diventa il pixel in `(x, height - 1 - y)`; le dimensioni restano
++       invariate. `flipX.flipY` è `rotate(180)`.
++   entry #rotate   un nuovo raster ruotato in senso orario di un quarto, mezzo o tre quarti di giro
++       L'angolo è tipizzato `90 | 180 | 270`, così si può scrivere solo una rotazione che non
++       richiede ricampionamento; `rotate(45)` non compila. `rotate(90)` e `rotate(270)`
++       scambiano larghezza e altezza; `rotate(180)` le mantiene. Quattro quarti di giro, o
++       `rotate(90).rotate(270)`, ripristinano l'immagine.
+
+=       restore the image.
+=
+-       ```scala
++       ```scala
+
+=       restore the image.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val grid = Raster(3, 2)((x, y) => Chroma(x*40, y*40, 0))
++       val grid = Raster(3, 2)((x, y) => Chroma(x*40, y*40, 0))
+
+-       val turned = grid.rotate(90)
++       val turned = grid.rotate(90)
+
+-       (turned.width, turned.height)   // (2, 3)
++       (turned.width, turned.height)   // (2, 3)
+
+-       grid.rotate(45)                 // does not compile
++       grid.rotate(45)                 // does not compile
+
+=       grid.rotate(45)                 // does not compile
+-       ```
++       ```
+
+-   entry #portrait   whether the image is taller than it is wide
+-   entry #square   whether the width and height are equal
+-   entry #landscape   whether the image is wider than it is tall
++   entry #portrait   se l'immagine è più alta che larga
++   entry #square   se larghezza e altezza sono uguali
++   entry #landscape   se l'immagine è più larga che alta
+
+- entry .Rasterizable   a raster image format and its codec: name, media type, decode, encode, sniff
++ entry .Rasterizable   un formato di immagine raster e il suo codec: nome, tipo di media, decodifica, codifica, riconoscimento
+
+= entry .Rasterizable   a raster image format and its codec: name, media type, decode, encode, sniff
+-   detail
++   detail
+
+-       The typeclass of an image format. Each format's companion holds one instance as the
+-       given `rasterization` — `Png.rasterization: Png is Rasterizable` — and returns the same
+-       instance from `Png()`, so a format is both a type (the form phantom in `Raster in Png`)
+-       and a value (a candidate in `Raster.Formats`). The instance lives in the format's own
+-       component, so a program compiles only the codecs it names, and it chooses its own
+-       implementation per platform: `Bmp`, `Gif`, `Jpeg` and `Png` decode and encode through
+-       `javax.imageio` on the JVM and through their pure-Scala codecs on Scala.js and WASI,
+-       while `Webp` is pure Scala everywhere.
++       La typeclass di un formato di immagine. L'oggetto compagno di ogni formato contiene
++       un'istanza come given `rasterization` — `Png.rasterization: Png is Rasterizable` — e
++       restituisce la stessa istanza da `Png()`, così un formato è sia un tipo (il fantasma di
++       forma in `Raster in Png`) sia un valore (un candidato in `Raster.Formats`). L'istanza vive
++       nel componente proprio del formato, così un programma compila solo i codec che nomina, e
++       sceglie la propria implementazione per piattaforma: `Bmp`, `Gif`, `Jpeg` e `Png`
++       decodificano e codificano attraverso `javax.imageio` sulla JVM e attraverso i loro codec
++       in Scala puro su Scala.js e WASI, mentre `Webp` è in Scala puro ovunque.
+
+=       while `Webp` is pure Scala everywhere.
+=
+-       ```scala
++       ```scala
+
+=       while `Webp` is pure Scala everywhere.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val format: Rasterizable = Png()
++       val format: Rasterizable = Png()
+
+-       format.name        // t"PNG"
++       format.name        // t"PNG"
+
+-       format.mediaType   // media"image/png"
++       format.mediaType   // media"image/png"
+
+-       format.alpha       // true
++       format.alpha       // true
+
+=       format.alpha       // true
+-       ```
++       ```
+
+-       A program that wants another implementation of a format supplies its own given; the
+-       `Raster` givens for reading and writing take whichever `<format> is Rasterizable` is in
+-       scope.
++       Un programma che vuole un'altra implementazione di un formato fornisce un proprio given;
++       i given di `Raster` per la lettura e la scrittura prendono qualunque `<format> is
++       Rasterizable` sia nell'ambito.
+
+=       scope.
+-   refer hallucination.Raster
++   refer hallucination.Raster
+
+-   refer hallucination.Png
++   refer hallucination.Png
+
+-   entry #name   the format's name, as `javax.imageio` knows it: `PNG`, `JPEG`, `WEBP`, `GIF`, `BMP`
+-       Used in `Raster.Error`'s message, and on the JVM to select the `javax.imageio` reader
+-       and writer.
+-   entry #mediaType   the format's media type: `image/png`, `image/jpeg`, `image/webp`, `image/gif`, `image/bmp`
+-       What a `Raster in <format>` is served as when it is an HTTP body.
+-   entry #alpha   whether the encoded form can carry an alpha channel
+-       `true` for PNG, GIF and WebP; `false` for JPEG and BMP, whose encoders drop a raster's
+-       alpha. A format which can carry alpha writes it only when the raster's layout has an
+-       alpha channel too.
+-   entry #decode   decodes bytes in this format to a `Raster`, raising `Raster.Error` on failure
+-       The raw codec entry: the whole image's bytes to a raster with an eight-bit `Rgb` or
+-       `Rgba` layout. Needs a `Tactic[Raster.Error]`. `data.read[Raster in Png]` is the usual
+-       way to reach it; `#read` is the same for any streamable source.
+-   entry #encode   encodes a raster, whatever its layout, as this format's bytes
+-       Every raster is rescaled to eight-bit truecolour on the way out, with alpha where the
+-       format and the layout both have it. `raster.to[Png].read[Data]` is the usual way to
+-       reach it.
+-   entry #sniff   whether the data opens with this format's magic bytes
+-       Reads only the first few bytes, and does not decode: `Png().sniff(jpegBytes)` is
+-       `false` and `Png().sniff(truncatedPng)` may be `true`. `Raster.Formats#recognise` asks
+-       each candidate in turn.
+-   entry #read   reads any streamable source as a `Raster in <this format>`
+-       `Png().read(file)`, for any source `Streamable by Data`, reads it whole and decodes it
+-       with `#decode`, typing the result `Raster in Png`. Needs a `Tactic[Raster.Error]`. The
+-       `Raster.aggregable` given calls this for `source.read[Raster in Png]`.
++   entry #name   il nome del formato, come lo conosce `javax.imageio`: `PNG`, `JPEG`, `WEBP`, `GIF`, `BMP`
++       Usato nel messaggio di `Raster.Error`, e sulla JVM per scegliere il lettore e lo
++       scrittore di `javax.imageio`.
++   entry #mediaType   il tipo di media del formato: `image/png`, `image/jpeg`, `image/webp`, `image/gif`, `image/bmp`
++       Ciò come cui un `Raster in <format>` viene servito quando è un corpo HTTP.
++   entry #alpha   se la forma codificata può portare un canale alfa
++       `true` per PNG, GIF e WebP; `false` per JPEG e BMP, i cui codificatori scartano l'alfa di
++       un raster. Un formato che può portare l'alfa lo scrive solo quando anche il layout del
++       raster ha un canale alfa.
++   entry #decode   decodifica byte in questo formato in un `Raster`, sollevando `Raster.Error` in caso di fallimento
++       L'ingresso grezzo del codec: dai byte dell'intera immagine a un raster con un layout `Rgb`
++       o `Rgba` a otto bit. Richiede un `Tactic[Raster.Error]`. `data.read[Raster in Png]` è il
++       modo abituale per raggiungerlo; `#read` è lo stesso per qualsiasi sorgente trasmissibile.
++   entry #encode   codifica un raster, qualunque sia il suo layout, come i byte di questo formato
++       Ogni raster viene riscalato in truecolour a otto bit in uscita, con l'alfa dove lo hanno
++       sia il formato sia il layout. `raster.to[Png].read[Data]` è il modo abituale per
++       raggiungerlo.
++   entry #sniff   se i dati iniziano con i magic byte di questo formato
++       Legge solo i primi byte, e non decodifica: `Png().sniff(jpegBytes)` è `false` e
++       `Png().sniff(truncatedPng)` può essere `true`. `Raster.Formats#recognise` lo chiede a
++       ogni candidato a turno.
++   entry #read   legge qualsiasi sorgente trasmissibile come `Raster in <this format>`
++       `Png().read(file)`, per qualsiasi sorgente `Streamable by Data`, la legge per intero e la
++       decodifica con `#decode`, tipizzando il risultato come `Raster in Png`. Richiede un
++       `Tactic[Raster.Error]`. Il given `Raster.aggregable` chiama questo metodo per
++       `source.read[Raster in Png]`.
+
+- entry .Descriptor   the runtime mirror of a pixel layout: each channel's label and bit depth, in order
++ entry .Descriptor   lo specchio a runtime di un layout dei pixel: l'etichetta e la profondità in bit di ogni canale, in ordine
+
+= entry .Descriptor   the runtime mirror of a pixel layout: each channel's label and bit depth, in order
+-   detail
++   detail
+
+-       A `Descriptor` is a list of `Descriptor.Entry`s, one per channel, most significant
+-       first, such as `red` 8, `green` 8, `blue` 8, `alpha` 8 for `Rgba`. Every `Raster` holds
+-       one as its `descriptor`, fixed when it was built from its static layout, and it powers
+-       the operations which cannot use `Pixel`'s inline accessors because they are generic in
+-       the layout: `Raster#apply`, `repack`, the `Graphical` given and the codecs. It reads
+-       any pixel word as a colour (`#chroma`, `#srgb`, `#alpha`) and packs a colour into one
+-       (`#pack`), trying RGB, then CMYK, then grey, according to which channel groups the
+-       layout has in full.
++       Un `Descriptor` è una lista di `Descriptor.Entry`, una per canale, dal più significativo,
++       come `red` 8, `green` 8, `blue` 8, `alpha` 8 per `Rgba`. Ogni `Raster` ne contiene uno
++       come suo `descriptor`, fissato quando è stato costruito a partire dal suo layout statico,
++       e alimenta le operazioni che non possono usare gli accessor inline di `Pixel` perché sono
++       generiche nel layout: `Raster#apply`, `repack`, il given `Graphical` e i codec. Legge
++       qualsiasi parola di pixel come colore (`#chroma`, `#srgb`, `#alpha`) e impacchetta un
++       colore in una parola (`#pack`), provando RGB, poi CMYK, poi il grigio, a seconda di quali
++       gruppi di canali il layout possiede per intero.
+
+=       layout has in full.
+=
+-       ```scala
++       ```scala
+
+=       layout has in full.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import hallucination.Descriptor
++       import hallucination.Descriptor
+
+-       val descriptor: Descriptor = Descriptor.of[Rgba]
++       val descriptor: Descriptor = Descriptor.of[Rgba]
+
+-       descriptor.totalBits    // 32
++       descriptor.totalBits    // 32
+
+-       descriptor.hasAlpha     // true
++       descriptor.hasAlpha     // true
+
+-       descriptor.locate(t"blue")   // (8, 8): shifted eight bits, eight bits deep
++       descriptor.locate(t"blue")   // (8, 8): shifted eight bits, eight bits deep
+
+=       descriptor.locate(t"blue")   // (8, 8): shifted eight bits, eight bits deep
+-       ```
++       ```
+
+-       `Descriptor` is not exported to the `soundness` umbrella, because embarcadero's OCI
+-       `Descriptor` is: reach it as `hallucination.Descriptor`.
++       `Descriptor` non è esportato nel modulo ombrello `soundness`, perché lo è il
++       `Descriptor` OCI di embarcadero: lo si raggiunge come `hallucination.Descriptor`.
+
+=       `Descriptor` is: reach it as `hallucination.Descriptor`.
+-   refer hallucination.Raster
++   refer hallucination.Raster
+
+-   entry .Entry   one channel of a layout: its label and its depth in bits
++   entry .Entry   un canale di un layout: la sua etichetta e la sua profondità in bit
+
+=   entry .Entry   one channel of a layout: its label and its depth in bits
+-     detail
++     detail
+
+-         `Descriptor.Entry(label, depth)`: the label is the channel's name as iridescence's
+-         `Channel.Label` gives it (`red`, `green`, `blue`, `alpha`, `cyan`, `magenta`,
+-         `yellow`, `key`, `grey`), and the depth the number of bits it occupies.
+-     entry #label   the channel's name, such as `red` or `alpha`
+-     entry #depth   the channel's width in bits
+-   entry .rgb   the descriptor of the eight-bit `Rgb` layout
+-   entry .rgba   the descriptor of the eight-bit `Rgba` layout
+-   entry .of   the descriptor of a static layout: `Descriptor.of[(Channel.Red[5], Channel.Green[6], Channel.Blue[5])]`
+-       An inline method which walks the layout tuple as the code compiles, reading each
+-       channel's label and depth from iridescence's `Channel` type functions, and builds the
+-       entries as values.
+-   entry #entries   the channels, most significant first
+-   entry #totalBits   the number of bits one pixel occupies: the sum of the channel depths
+-   entry #storageBits   the width of the primitive a pixel is stored in: 8, 16, 32 or 64
+-       The smallest of a byte, a short, an int and a long which holds `#totalBits`; a raster
+-       of this layout is a flat array of that primitive.
+-   entry #locate   the shift and depth of a labelled channel, or `Unset` if the layout lacks it
+-       `locate(t"green")` on `Rgba` is `(16, 8)`: the channel starts sixteen bits up from the
+-       least significant bit and is eight bits wide, so `(word >>> 16) & 0xff` is its value.
+-   entry #has   whether the layout has a channel with the given label
+-   entry #hasAlpha   whether the layout has an `alpha` channel
+-       What the encoders consult to decide whether to write alpha.
+-   entry #alpha   the opacity of a pixel word, in the unit interval; `1.0` when there is no alpha channel
+-   entry #srgb   the colour of a pixel word as `Srgb`, through whichever model the layout has
+-       Tries the RGB channels first, then CMYK, then grey; a layout with an incomplete group
+-       (`red` but no `green`) falls through to the next, and one with none gives black. The
+-       result is exact at any channel depth.
+-   entry #chroma   the colour of a pixel word rescaled to 24-bit RGB, as a `Chroma`
+-       What `Raster#apply` returns: RGB channels are rescaled to eight bits with rounding, and
+-       any other model is converted through `#srgb`.
+-   entry #pack   a pixel word holding a colour and an opacity, in this layout
+-       `pack(srgb, alpha)` scales each component to its channel's depth and shifts it into
+-       place: into the RGB channels, with alpha where the layout has it, or into the CMYK
+-       channels (converted from the colour), or into the grey channel by Rec. 601 luma. The
+-       opacity defaults to `1.0`. It is the runtime counterpart of `Pixel[layout](color)`, and
+-       what `repack` uses to convert between layouts.
++         `Descriptor.Entry(label, depth)`: l'etichetta è il nome del canale come lo dà
++         `Channel.Label` di iridescence (`red`, `green`, `blue`, `alpha`, `cyan`, `magenta`,
++         `yellow`, `key`, `grey`), e la profondità il numero di bit che occupa.
++     entry #label   il nome del canale, come `red` o `alpha`
++     entry #depth   la larghezza del canale in bit
++   entry .rgb   il descrittore del layout `Rgb` a otto bit
++   entry .rgba   il descrittore del layout `Rgba` a otto bit
++   entry .of   il descrittore di un layout statico: `Descriptor.of[(Channel.Red[5], Channel.Green[6], Channel.Blue[5])]`
++       Un metodo inline che percorre la tupla del layout mentre il codice viene compilato,
++       leggendo l'etichetta e la profondità di ogni canale dalle funzioni di tipo `Channel` di
++       iridescence, e costruisce le voci come valori.
++   entry #entries   i canali, dal più significativo
++   entry #totalBits   il numero di bit che occupa un pixel: la somma delle profondità dei canali
++   entry #storageBits   la larghezza del primitivo in cui è memorizzato un pixel: 8, 16, 32 o 64
++       Il più piccolo tra un byte, uno short, un int e un long che contiene `#totalBits`; un
++       raster di questo layout è un array piatto di quel primitivo.
++   entry #locate   lo shift e la profondità di un canale etichettato, o `Unset` se il layout non lo ha
++       `locate(t"green")` su `Rgba` è `(16, 8)`: il canale inizia sedici bit sopra il bit meno
++       significativo ed è largo otto bit, così `(word >>> 16) & 0xff` è il suo valore.
++   entry #has   se il layout ha un canale con l'etichetta data
++   entry #hasAlpha   se il layout ha un canale `alpha`
++       Ciò che i codificatori consultano per decidere se scrivere l'alfa.
++   entry #alpha   l'opacità di una parola di pixel, nell'intervallo unitario; `1.0` quando non c'è un canale alfa
++   entry #srgb   il colore di una parola di pixel come `Srgb`, attraverso qualunque modello abbia il layout
++       Prova prima i canali RGB, poi CMYK, poi il grigio; un layout con un gruppo incompleto
++       (`red` ma nessun `green`) passa al successivo, e uno senza alcun gruppo dà il nero. Il
++       risultato è esatto a qualsiasi profondità dei canali.
++   entry #chroma   il colore di una parola di pixel riscalato in RGB a 24 bit, come `Chroma`
++       Ciò che restituisce `Raster#apply`: i canali RGB vengono riscalati a otto bit con
++       arrotondamento, e ogni altro modello viene convertito attraverso `#srgb`.
++   entry #pack   una parola di pixel che contiene un colore e un'opacità, in questo layout
++       `pack(srgb, alpha)` scala ogni componente alla profondità del suo canale e lo sposta al
++       suo posto: nei canali RGB, con l'alfa dove il layout lo ha, o nei canali CMYK (convertito
++       dal colore), o nel canale del grigio secondo la luma Rec. 601. L'opacità è `1.0` per
++       impostazione predefinita. È la controparte a runtime di `Pixel[layout](color)`, ed è ciò
++       che `repack` usa per convertire tra layout.
+
+- entry .Canvas   the form a raster is opened as, for scoped pixel access: `raster.open[Canvas](…)`
++ entry .Canvas   la forma con cui si apre un raster, per un accesso ai pixel con ambito: `raster.open[Canvas](…)`
+
+= entry .Canvas   the form a raster is opened as, for scoped pixel access: `raster.open[Canvas](…)`
+-   detail
++   detail
+
+-       A `Raster` is immutable, and building one through `Raster(width, height)(…)` is not the
+-       shape every drawing algorithm wants. `Canvas` is the form phantom which opens a
+-       layout-typed raster over aperture's `Openable` protocol: the block receives a
+-       `CanvasHandle[layout]` as a contextual value, confined to the block by capture
+-       checking, which reads pixels through `canvas(x, y)` and, when opened with the `Write`
+-       grant, writes them through `canvas(x, y) = pixel`, mutating the raster's buffer in
+-       place. A canvas opened for reading alone has no `update`: the mismatch is a compile
+-       error, not a runtime one.
++       Un `Raster` è immutabile, e costruirne uno con `Raster(width, height)(…)` non è la forma
++       che vuole ogni algoritmo di disegno. `Canvas` è il fantasma di forma che apre un raster
++       tipizzato per layout attraverso il protocollo `Openable` di aperture: il blocco riceve un
++       `CanvasHandle[layout]` come valore contestuale, confinato al blocco dal capture
++       checking, che legge i pixel con `canvas(x, y)` e, quando è aperto con il permesso
++       `Write`, li scrive con `canvas(x, y) = pixel`, mutando sul posto il buffer del raster. Un
++       canvas aperto in sola lettura non ha `update`: la discrepanza è un errore di
++       compilazione, non di runtime.
+
+=       error, not a runtime one.
+=
+-       ```scala
++       ```scala
+
+=       error, not a runtime one.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       error, not a runtime one.
+=
+=       ```scala
+=       import soundness.*
+-       import soundness.canvasOpenable
++       import soundness.canvasOpenable
+
+-       val raster: Raster by Rgba = Raster[Rgba](2, 2)((x, y) => Pixel[Rgba](Srgb(0.0, 0.0, 0.0)))
++       val raster: Raster by Rgba = Raster[Rgba](2, 2)((x, y) => Pixel[Rgba](Srgb(0.0, 0.0, 0.0)))
+
+=       val raster: Raster by Rgba = Raster[Rgba](2, 2)((x, y) => Pixel[Rgba](Srgb(0.0, 0.0, 0.0)))
+=
+-       raster.open[Canvas](Read & Write): canvas ?=>
++       raster.open[Canvas](Read & Write): canvas ?=>
+
+-         canvas(0, 0) = Pixel[Rgba](Srgb(1.0, 0.0, 0.0))
++         canvas(0, 0) = Pixel[Rgba](Srgb(1.0, 0.0, 0.0))
+
+-       raster(0, 0).red   // 255
++       raster(0, 0).red   // 255
+
+=       raster(0, 0).red   // 255
+-       ```
++       ```
+
+-       The `Openable` instance, `canvasOpenable` in `hallucination.canvas`, is a top-level
+-       given and must be imported by name (`import soundness.canvasOpenable`); without it,
+-       `open[Canvas]` does not compile, since `Openable` has no fallback. The raster must have
+-       a layout in its type (`Raster by Rgba`, which `Raster[Rgba](…)` and `repack[Rgba]`
+-       give), so that the handle's pixel type is known.
++       L'istanza di `Openable`, `canvasOpenable` in `hallucination.canvas`, è un given di
++       livello superiore e va importata per nome (`import soundness.canvasOpenable`); senza di
++       essa, `open[Canvas]` non compila, poiché `Openable` non ha un ripiego. Il raster deve
++       avere un layout nel tipo (`Raster by Rgba`, che danno `Raster[Rgba](…)` e
++       `repack[Rgba]`), così che il tipo dei pixel dello handle sia noto.
+
+-       The pipeline below reads an image, trims it, draws on it through a canvas and writes it
+-       in another format:
++       La pipeline qui sotto legge un'immagine, la ritaglia, ci disegna sopra attraverso un
++       canvas e la scrive in un altro formato:
+
+=       in another format:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       in another format:
+=
+=       ```scala fuel
+-       frame
++       frame
+
+-         label Read a PNG
++         label Leggere una PNG
+
+=         label Read a PNG
+-         code
++         code
+
+=         label Read a PNG
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Read a PNG
+=         code
+=             import soundness.*
+-             import soundness.canvasOpenable
++             import soundness.canvasOpenable
+
+=         label Read a PNG
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label Read a PNG
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+-             import errorDiagnostics.stackTracesDiagnostics
++             import errorDiagnostics.stackTracesDiagnostics
+
+=         label Read a PNG
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+-             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
++             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+
+=         label Read a PNG
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+=             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+-                               0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
++                               0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+
+-             val image: Raster = data.read[Raster in Png]
++             val image: Raster = data.read[Raster in Png]
+
+=             val image: Raster = data.read[Raster in Png]
+-       frame
++       frame
+
+-         label Trim it and give it a layout
++         label Ritagliarla e darle un layout
+
+=         label Trim it and give it a layout
+-         code
++         code
+
+=         label Trim it and give it a layout
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Trim it and give it a layout
+=         code
+=             import soundness.*
+-             import soundness.canvasOpenable
++             import soundness.canvasOpenable
+
+=         label Trim it and give it a layout
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label Trim it and give it a layout
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+-             import errorDiagnostics.stackTracesDiagnostics
++             import errorDiagnostics.stackTracesDiagnostics
+
+=         label Trim it and give it a layout
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+-             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
++             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+
+=         label Trim it and give it a layout
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+=             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+-                               0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
++                               0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+
+=         label Trim it and give it a layout
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+=             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+=                               0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+=
+-             val image: Raster by Rgba = data.read[Raster in Png].crop(right = 1).repack[Rgba]
++             val image: Raster by Rgba = data.read[Raster in Png].crop(right = 1).repack[Rgba]
+
+=             val image: Raster by Rgba = data.read[Raster in Png].crop(right = 1).repack[Rgba]
+-       frame
++       frame
+
+-         label Paint through a canvas
++         label Dipingere attraverso un canvas
+
+=         label Paint through a canvas
+-         code
++         code
+
+=         label Paint through a canvas
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Paint through a canvas
+=         code
+=             import soundness.*
+-             import soundness.canvasOpenable
++             import soundness.canvasOpenable
+
+=         label Paint through a canvas
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label Paint through a canvas
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+-             import errorDiagnostics.stackTracesDiagnostics
++             import errorDiagnostics.stackTracesDiagnostics
+
+=         label Paint through a canvas
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+-             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
++             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+
+=         label Paint through a canvas
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+=             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+-                               0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
++                               0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+
+=         label Paint through a canvas
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+=             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+=                               0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+=
+-             val image: Raster by Rgba = data.read[Raster in Png].crop(right = 1).repack[Rgba]
++             val image: Raster by Rgba = data.read[Raster in Png].crop(right = 1).repack[Rgba]
+
+=         label Paint through a canvas
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+=             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+=                               0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+=
+=             val image: Raster by Rgba = data.read[Raster in Png].crop(right = 1).repack[Rgba]
+=
+-             image.open[Canvas](Read & Write): canvas ?=>
++             image.open[Canvas](Read & Write): canvas ?=>
+
+=         label Paint through a canvas
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+=             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+=                               0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+=
+=             val image: Raster by Rgba = data.read[Raster in Png].crop(right = 1).repack[Rgba]
+=
+=             image.open[Canvas](Read & Write): canvas ?=>
+-               canvas(0, 0) = Pixel[Rgba](Srgb(0.0, 1.0, 0.0))
++               canvas(0, 0) = Pixel[Rgba](Srgb(0.0, 1.0, 0.0))
+
+=               canvas(0, 0) = Pixel[Rgba](Srgb(0.0, 1.0, 0.0))
+-       frame
++       frame
+
+-         label Write it as a GIF
++         label Scriverla come GIF
+
+=         label Write it as a GIF
+-         code
++         code
+
+=         label Write it as a GIF
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Write it as a GIF
+=         code
+=             import soundness.*
+-             import soundness.canvasOpenable
++             import soundness.canvasOpenable
+
+=         label Write it as a GIF
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label Write it as a GIF
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+-             import errorDiagnostics.stackTracesDiagnostics
++             import errorDiagnostics.stackTracesDiagnostics
+
+=         label Write it as a GIF
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+-             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
++             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+
+=         label Write it as a GIF
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+=             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+-                               0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
++                               0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+
+=         label Write it as a GIF
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+=             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+=                               0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+=
+-             val image: Raster by Rgba = data.read[Raster in Png].crop(right = 1).repack[Rgba]
++             val image: Raster by Rgba = data.read[Raster in Png].crop(right = 1).repack[Rgba]
+
+=         label Write it as a GIF
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+=             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+=                               0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+=
+=             val image: Raster by Rgba = data.read[Raster in Png].crop(right = 1).repack[Rgba]
+=
+-             image.open[Canvas](Read & Write): canvas ?=>
++             image.open[Canvas](Read & Write): canvas ?=>
+
+=         label Write it as a GIF
+=         code
+=             import soundness.*
+=             import soundness.canvasOpenable
+=             import strategies.throwUnsafely
+=             import errorDiagnostics.stackTracesDiagnostics
+=
+=             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+=                               0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+=
+=             val image: Raster by Rgba = data.read[Raster in Png].crop(right = 1).repack[Rgba]
+=
+=             image.open[Canvas](Read & Write): canvas ?=>
+-               canvas(0, 0) = Pixel[Rgba](Srgb(0.0, 1.0, 0.0))
++               canvas(0, 0) = Pixel[Rgba](Srgb(0.0, 1.0, 0.0))
+
+-             val gif: Data = image.to[Gif].read[Data]
++             val gif: Data = image.to[Gif].read[Data]
+
+=             val gif: Data = image.to[Gif].read[Data]
+-       ##
++       ##
+
+=             val gif: Data = image.to[Gif].read[Data]
+=       ##
+-       ```
++       ```
+
+-       Writing through a canvas is the one way a raster's pixels change after it is built, and
+-       the change is visible to every holder of the raster, as a write through an open file
+-       handle is; `CanvasHandle#snapshot` takes an independent copy for deriving a new image
+-       instead.
++       Scrivere attraverso un canvas è l'unico modo in cui i pixel di un raster cambiano dopo la
++       sua costruzione, e la modifica è visibile a chiunque possieda il raster, come lo è una
++       scrittura attraverso lo handle di un file aperto; `CanvasHandle#snapshot` prende invece
++       una copia indipendente da cui derivare una nuova immagine.
+
+-   refer hallucination.CanvasHandle
++   refer hallucination.CanvasHandle
+
+=   refer hallucination.CanvasHandle
+-   refer hallucination.canvasOpenable
++   refer hallucination.canvasOpenable
+
+=   refer hallucination.canvasOpenable
+-   refer hallucination.RasterOpenable
++   refer hallucination.RasterOpenable
+
+- entry .CanvasHandle   the scoped handle over an open raster's pixels: read with `apply`, write with `update`
++ entry .CanvasHandle   lo handle con ambito sui pixel di un raster aperto: si legge con `apply`, si scrive con `update`
+
+= entry .CanvasHandle   the scoped handle over an open raster's pixels: read with `apply`, write with `update`
+-   detail
++   detail
+
+-       What `raster.open[Canvas](…)` provides to its block, intersected with the `Granting` of
+-       the mode's grants: a `CanvasHandle[layout] & Granting[Grant.Read]` reads, and one with
+-       `Grant.Write` also writes. The pixel operations are extensions gated on those grants,
+-       so a read-only handle simply has no `update`. The handle is an exclusive capability:
+-       it cannot escape the block, and no other handle over the same raster is open at once.
++       Ciò che `raster.open[Canvas](…)` fornisce al suo blocco, in intersezione con il
++       `Granting` dei permessi della modalità: un `CanvasHandle[layout] & Granting[Grant.Read]`
++       legge, e uno con `Grant.Write` scrive anche. Le operazioni sui pixel sono estensioni
++       subordinate a quei permessi, così uno handle in sola lettura semplicemente non ha
++       `update`. Lo handle è una capability esclusiva: non può uscire dal blocco, e nessun altro
++       handle sullo stesso raster è aperto contemporaneamente.
+
+=       it cannot escape the block, and no other handle over the same raster is open at once.
+=
+-       ```scala
++       ```scala
+
+=       it cannot escape the block, and no other handle over the same raster is open at once.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       it cannot escape the block, and no other handle over the same raster is open at once.
+=
+=       ```scala
+=       import soundness.*
+-       import soundness.canvasOpenable
++       import soundness.canvasOpenable
+
+-       val raster = Raster[Rgb](2, 2)((x, y) => Pixel[Rgb](Srgb(x.toDouble, y.toDouble, 0.0)))
++       val raster = Raster[Rgb](2, 2)((x, y) => Pixel[Rgb](Srgb(x.toDouble, y.toDouble, 0.0)))
+
+-       raster.open[Canvas](): canvas ?=>
++       raster.open[Canvas](): canvas ?=>
+
+-         canvas(1, 1).red   // 255
++         canvas(1, 1).red   // 255
+
+=         canvas(1, 1).red   // 255
+=
+-       raster.open[Canvas](Read & Write): canvas ?=>
++       raster.open[Canvas](Read & Write): canvas ?=>
+
+-         val before = canvas.snapshot
++         val before = canvas.snapshot
+
+-         canvas(0, 0) = Pixel[Rgb](Srgb(1.0, 1.0, 1.0))
++         canvas(0, 0) = Pixel[Rgb](Srgb(1.0, 1.0, 1.0))
+
+-         before(0, 0).red   // 0: the snapshot is unaffected
++         before(0, 0).red   // 0: the snapshot is unaffected
+
+=         before(0, 0).red   // 0: the snapshot is unaffected
+-       ```
++       ```
+
+=       ```
+-   refer hallucination.Canvas
++   refer hallucination.Canvas
+
+=   refer hallucination.Canvas
+-   refer hallucination.RasterOpenable
++   refer hallucination.RasterOpenable
+
+-   entry .apply   `canvas(x, y)`: the typed pixel at a coordinate, through any open canvas
+-       An extension on a handle granted `Read`, which every open canvas is: the same constant
+-       shift and mask as the `pixel` extension on the raster, giving a `Pixel[layout]`.
+-   entry .update   `canvas(x, y) = pixel`: writes a pixel in place, through a canvas opened with `Write`
+-       An extension on a handle granted `Write` only: a canvas opened with `open[Canvas]()`
+-       has no `update`, and the assignment does not compile. The write stores the pixel's
+-       word directly into the raster's buffer, so it is seen by the raster itself and every
+-       other reference to it, immediately.
+-   entry #width   the width of the open raster
+-   entry #height   the height of the open raster
+-   entry #snapshot   an independent copy of the raster as it is now
+-       A new `Raster by layout` with its own buffer, unaffected by writes made through the
+-       canvas afterwards, for deriving an image from the state of a drawing without closing
+-       it.
++   entry .apply   `canvas(x, y)`: il pixel tipizzato a una coordinata, attraverso qualsiasi canvas aperto
++       Un'estensione su uno handle con permesso `Read`, che ogni canvas aperto possiede: lo
++       stesso shift e la stessa maschera costanti dell'estensione `pixel` sul raster, che danno
++       un `Pixel[layout]`.
++   entry .update   `canvas(x, y) = pixel`: scrive un pixel sul posto, attraverso un canvas aperto con `Write`
++       Un'estensione solo su uno handle con permesso `Write`: un canvas aperto con
++       `open[Canvas]()` non ha `update`, e l'assegnazione non compila. La scrittura memorizza la
++       parola del pixel direttamente nel buffer del raster, così viene vista immediatamente dal
++       raster stesso e da ogni altro riferimento a esso.
++   entry #width   la larghezza del raster aperto
++   entry #height   l'altezza del raster aperto
++   entry #snapshot   una copia indipendente del raster com'è in questo momento
++       Un nuovo `Raster by layout` con un proprio buffer, non toccato dalle scritture fatte in
++       seguito attraverso il canvas, per derivare un'immagine dallo stato di un disegno senza
++       chiuderlo.
+
+- entry .RasterOpenable   the `Openable` instance class which opens a `Raster by layout` as a `Canvas`
++ entry .RasterOpenable   la classe di istanza di `Openable` che apre un `Raster by layout` come `Canvas`
+
+= entry .RasterOpenable   the `Openable` instance class which opens a `Raster by layout` as a `Canvas`
+-   detail
++   detail
+
+-       The typeclass instance behind `raster.open[Canvas](…)`: its `Self` is `Raster by
+-       layout`, its `Form` is `Canvas`, it takes no flags (`Operand` is `Nothing`), and its
+-       `Result` is `CanvasHandle[layout]`. It is a named class rather than an anonymous given
+-       so that the handle's type is stated exactly; the given which supplies it is
+-       `canvasOpenable`, which is what a program imports. Nothing is gained by naming this
+-       class directly.
++       L'istanza della typeclass dietro `raster.open[Canvas](…)`: il suo `Self` è `Raster by
++       layout`, il suo `Form` è `Canvas`, non accetta flag (`Operand` è `Nothing`), e il suo
++       `Result` è `CanvasHandle[layout]`. È una classe con nome anziché un given anonimo, così
++       che il tipo dello handle sia dichiarato esattamente; il given che la fornisce è
++       `canvasOpenable`, ed è quello che un programma importa. Non si guadagna nulla nominando
++       direttamente questa classe.
+
+=       class directly.
+-   refer hallucination.canvasOpenable
++   refer hallucination.canvasOpenable
+
+-   entry #Self   `Raster by layout`: the raster type this opens
+-   entry #Form   `Canvas`: the form the raster is opened as
+-   entry #Operand   `Nothing`: a canvas takes no flags
+-   entry #Result   `CanvasHandle[layout]`: the handle the block receives
+-   entry #open   runs a block with a `CanvasHandle` over the raster, granted what the mode grants
+-       Called by aperture's `open`: wraps the raster in a handle, refines it with the mode's
+-       grants, and passes it to the block as a contextual value. The handle is new for each
+-       open.
++   entry #Self   `Raster by layout`: il tipo di raster che questa apre
++   entry #Form   `Canvas`: la forma con cui il raster viene aperto
++   entry #Operand   `Nothing`: un canvas non accetta flag
++   entry #Result   `CanvasHandle[layout]`: lo handle che il blocco riceve
++   entry #open   esegue un blocco con un `CanvasHandle` sul raster, con i permessi concessi dalla modalità
++       Chiamato dall'`open` di aperture: incapsula il raster in uno handle, lo raffina con i
++       permessi della modalità e lo passa al blocco come valore contestuale. Lo handle è nuovo a
++       ogni apertura.
+
+- entry .canvasOpenable   the given which lets a `Raster by layout` be opened as a `Canvas`; import it by name
+-     A top-level given in `hallucination.canvas`, so that decoding an image does not also
+-     compile the scoped-resource machinery: it is not in implicit scope, and must be imported
+-     as `import soundness.canvasOpenable` (or `import hallucination.canvasOpenable`). It
+-     provides a `RasterOpenable[layout]` for every layout. Without it, `raster.open[Canvas]()`
+-     fails to compile, since `Openable` has no generic fallback.
++ entry .canvasOpenable   il given che permette di aprire un `Raster by layout` come `Canvas`; va importato per nome
++     Un given di livello superiore in `hallucination.canvas`, così che decodificare
++     un'immagine non compili anche il meccanismo delle risorse con ambito: non è nell'ambito
++     implicito, e va importato come `import soundness.canvasOpenable` (o `import
++     hallucination.canvasOpenable`). Fornisce un `RasterOpenable[layout]` per ogni layout.
++     Senza di esso, `raster.open[Canvas]()` non compila, poiché `Openable` non ha un ripiego
++     generico.
+
+=     fails to compile, since `Openable` has no generic fallback.
+=
+-     ```scala
++     ```scala
+
+=     fails to compile, since `Openable` has no generic fallback.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import soundness.canvasOpenable
++     import soundness.canvasOpenable
+
+-     val raster = Raster[Rgb](1, 1)((x, y) => Pixel[Rgb](Srgb(0.5, 0.5, 0.5)))
++     val raster = Raster[Rgb](1, 1)((x, y) => Pixel[Rgb](Srgb(0.5, 0.5, 0.5)))
+
+-     raster.open[Canvas](): canvas ?=>
++     raster.open[Canvas](): canvas ?=>
+
+-       canvas.width
++       canvas.width
+
+=       canvas.width
+-     ```
++     ```
+
+- entry .pixel   the typed pixel of a layout-typed raster: `raster.pixel(x, y)` as a `Pixel[layout]`
+-     An inline extension on `Raster by layout`. The raster's storage primitive is known from
+-     the layout as the code compiles, so the read is a single array load, and the `Pixel`'s
+-     channel accessors (`red`, `alpha`, `grey`, …) are each a constant shift and mask: this is
+-     the hot path for pixel-by-pixel work, and there is no conversion to `Chroma` on the way.
+-     A raster with no layout in its type has no `pixel`; `Raster#apply` reads it as a
+-     `Chroma`, and `repack[Rgba]` gives it a layout.
++ entry .pixel   il pixel tipizzato di un raster tipizzato per layout: `raster.pixel(x, y)` come `Pixel[layout]`
++     Un'estensione inline su `Raster by layout`. Il tipo primitivo di memorizzazione del
++     raster è noto dal layout mentre il codice viene compilato, così la lettura è un solo
++     accesso all'array, e gli accessor dei canali del `Pixel` (`red`, `alpha`, `grey`, …) sono
++     ciascuno uno shift e una maschera costanti: questo è il percorso critico per il lavoro
++     pixel per pixel, e lungo la strada non c'è alcuna conversione in `Chroma`. Un raster senza
++     layout nel tipo non ha `pixel`; `Raster#apply` lo legge come `Chroma`, e `repack[Rgba]`
++     gli dà un layout.
+
+=     `Chroma`, and `repack[Rgba]` gives it a layout.
+=
+-     ```scala
++     ```scala
+
+=     `Chroma`, and `repack[Rgba]` gives it a layout.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val raster = Raster[Rgba](2, 2)((x, y) => Pixel[Rgba](Srgb(x.toDouble, y.toDouble, 1.0)))
++     val raster = Raster[Rgba](2, 2)((x, y) => Pixel[Rgba](Srgb(x.toDouble, y.toDouble, 1.0)))
+
+-     raster.pixel(1, 0).red     // 255
++     raster.pixel(1, 0).red     // 255
+
+-     raster.pixel(1, 0).alpha   // 255
++     raster.pixel(1, 0).alpha   // 255
+
+-     raster.pixel(0, 1).green   // 255
++     raster.pixel(0, 1).green   // 255
+
+=     raster.pixel(0, 1).green   // 255
+-     ```
++     ```
+
+- entry .repack   a copy of a raster in another pixel layout: `raster.repack[Rgba]`
+-     An inline extension on any `Raster`, giving a `Raster by layout`. Every pixel is read as
+-     a colour and an opacity through the raster's descriptor and packed into the new layout:
+-     channels are rescaled where the depths differ, the colour is converted where the models
+-     differ (RGB, CMYK or grey), alpha is carried over when both layouts have it and set fully
+-     opaque when only the target does. Repacking to the layout the raster already has returns
+-     the same raster, so `decoded.repack[Rgba]` is free when the image had alpha already.
++ entry .repack   una copia di un raster in un altro layout dei pixel: `raster.repack[Rgba]`
++     Un'estensione inline su qualsiasi `Raster`, che dà un `Raster by layout`. Ogni pixel viene
++     letto come colore e opacità attraverso il descrittore del raster e impacchettato nel nuovo
++     layout: i canali vengono riscalati dove le profondità differiscono, il colore viene
++     convertito dove i modelli differiscono (RGB, CMYK o grigio), l'alfa viene riportato quando
++     entrambi i layout lo hanno e impostato a completamente opaco quando lo ha solo quello di
++     destinazione. Reimpacchettare nel layout che il raster ha già restituisce lo stesso
++     raster, così `decoded.repack[Rgba]` non costa nulla quando l'immagine aveva già l'alfa.
+
+=     the same raster, so `decoded.repack[Rgba]` is free when the image had alpha already.
+=
+-     ```scala
++     ```scala
+
+=     the same raster, so `decoded.repack[Rgba]` is free when the image had alpha already.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val stripes: Raster by Rgb = Raster(2, 4)((x, y) => Chroma(y*10, 0, 0))
++     val stripes: Raster by Rgb = Raster(2, 4)((x, y) => Chroma(y*10, 0, 0))
+
+-     val rgba = stripes.repack[Rgba]
++     val rgba = stripes.repack[Rgba]
+
+-     rgba.pixel(0, 2).alpha   // 255
++     rgba.pixel(0, 2).alpha   // 255
+
+-     val packed = Raster(1, 1)((x, y) => Chroma(255, 0, 51)).repack[(Channel.Red[5], Channel.Green[6], Channel.Blue[5])]
++     val packed = Raster(1, 1)((x, y) => Chroma(255, 0, 51)).repack[(Channel.Red[5], Channel.Green[6], Channel.Blue[5])]
+
+-     packed.pixel(0, 0).red   // 31
++     packed.pixel(0, 0).red   // 31
+
+-     packed.pixel(0, 0).blue  // 6
++     packed.pixel(0, 0).blue  // 6
+
+=     packed.pixel(0, 0).blue  // 6
+-     ```
++     ```
+
+- entry .Png   the PNG format: lossless, with alpha; `Raster in Png`
++ entry .Png   il formato PNG: senza perdita, con alfa; `Raster in Png`
+
+= entry .Png   the PNG format: lossless, with alpha; `Raster in Png`
+-   detail
++   detail
+
+-       The form phantom for a PNG image, and the companion which holds its codec. A PNG is
+-       read with `data.read[Raster in Png]`, written with `raster.to[Png].read[Data]`, and
+-       named as a candidate for recognition with `Png()`. Its media type is `image/png`, and
+-       it carries alpha.
++       Il fantasma di forma per un'immagine PNG, e l'oggetto compagno che contiene il suo codec.
++       Una PNG si legge con `data.read[Raster in Png]`, si scrive con
++       `raster.to[Png].read[Data]`, e si nomina come candidato per il riconoscimento con
++       `Png()`. Il suo tipo di media è `image/png`, e porta l'alfa.
+
+=       it carries alpha.
+=
+-       ```scala
++       ```scala
+
+=       it carries alpha.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       it carries alpha.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       it carries alpha.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import errorDiagnostics.stackTracesDiagnostics
++       import errorDiagnostics.stackTracesDiagnostics
+
+-       val raster = Raster[Rgba](8, 8)((x, y) => Pixel[Rgba](Srgb(x/8.0, y/8.0, 0.5)))
++       val raster = Raster[Rgba](8, 8)((x, y) => Pixel[Rgba](Srgb(x/8.0, y/8.0, 0.5)))
+
+=       val raster = Raster[Rgba](8, 8)((x, y) => Pixel[Rgba](Srgb(x/8.0, y/8.0, 0.5)))
+-       val png: Data = raster.to[Png].read[Data]
++       val png: Data = raster.to[Png].read[Data]
+
+-       png.read[Raster in Png].descriptor.hasAlpha   // true
++       png.read[Raster in Png].descriptor.hasAlpha   // true
+
+=       png.read[Raster in Png].descriptor.hasAlpha   // true
+-       ```
++       ```
+
+-       On the JVM, `hallucination.png` decodes and encodes through `javax.imageio`. On
+-       Scala.js and WASI it uses its pure-Scala codec, over pneumatic's `Zlib`: decoding
+-       covers every critical chunk and colour type (greyscale, truecolour, palette, with and
+-       without alpha), bit depths 1 to 16 (sixteen-bit samples are reduced to their high
+-       byte), all five filters, `tRNS` transparency and Adam7 interlacing, and verifies each
+-       chunk's CRC, raising `Raster.Error` with reason `BadCrc` on a mismatch; encoding writes
+-       eight-bit truecolour, with alpha when the raster's layout has it, choosing each
+-       scanline's filter by the least sum of absolute differences. The two implementations
+-       agree pixel for pixel.
++       Sulla JVM, `hallucination.png` decodifica e codifica attraverso `javax.imageio`. Su
++       Scala.js e WASI usa il suo codec in Scala puro, sullo `Zlib` di pneumatic: la decodifica
++       copre ogni chunk critico e ogni tipo di colore (scala di grigi, truecolour, tavolozza,
++       con e senza alfa), profondità da 1 a 16 bit (i campioni a sedici bit vengono ridotti al
++       loro byte alto), tutti e cinque i filtri, la trasparenza `tRNS` e l'interlacciamento
++       Adam7, e verifica il CRC di ogni chunk, sollevando `Raster.Error` con motivo `BadCrc` in
++       caso di discrepanza; la codifica scrive truecolour a otto bit, con l'alfa quando il
++       layout del raster lo ha, scegliendo il filtro di ogni riga di scansione secondo la minima
++       somma delle differenze assolute. Le due implementazioni concordano pixel per pixel.
+
+=       agree pixel for pixel.
+-   refer hallucination.Rasterizable
++   refer hallucination.Rasterizable
+
+=       agree pixel for pixel.
+=   refer hallucination.Rasterizable
+-   refer hallucination.Raster
++   refer hallucination.Raster
+
+=       agree pixel for pixel.
+=   refer hallucination.Rasterizable
+=   refer hallucination.Raster
+-   refer hallucination.construables
++   refer hallucination.construables
+
+-   entry .apply   the PNG codec as a `Rasterizable` value, for `Raster.Formats(Png(), …)`
+-       The same instance as the given `.rasterization`.
+-   entry .rasterization   the given `Png is Rasterizable`, in implicit scope
+-       Name `PNG`, media type `image/png`, alpha `true`; `sniff` checks the first two bytes of
+-       the eight-byte PNG signature. It is in `Png`'s companion, so reading or writing a
+-       `Raster in Png` needs no import.
++   entry .apply   il codec PNG come valore `Rasterizable`, per `Raster.Formats(Png(), …)`
++       La stessa istanza del given `.rasterization`.
++   entry .rasterization   il given `Png is Rasterizable`, nell'ambito implicito
++       Nome `PNG`, tipo di media `image/png`, alfa `true`; `sniff` controlla i primi due byte
++       della firma PNG di otto byte. Si trova nell'oggetto compagno di `Png`, così leggere o
++       scrivere un `Raster in Png` non richiede alcun import.
+
+- entry .Gif   the GIF format: a 256-colour palette, with one transparent entry; `Raster in Gif`
++ entry .Gif   il formato GIF: una tavolozza di 256 colori, con una voce trasparente; `Raster in Gif`
+
+= entry .Gif   the GIF format: a 256-colour palette, with one transparent entry; `Raster in Gif`
+-   detail
++   detail
+
+-       The form phantom for a GIF image, and the companion which holds its codec. A GIF is
+-       read with `data.read[Raster in Gif]`, written with `raster.to[Gif].read[Data]`, and
+-       named for recognition with `Gif()`. Its media type is `image/gif`. A decoded GIF
+-       always has an `Rgba` layout, since any GIF may declare a transparent colour; an encoded
+-       one holds at most 256 colours, so a raster with more is quantized by median cut, and a
+-       raster with alpha has one palette entry reserved for transparency, with pixels less
+-       than half opaque made transparent.
++       Il fantasma di forma per un'immagine GIF, e l'oggetto compagno che contiene il suo codec.
++       Una GIF si legge con `data.read[Raster in Gif]`, si scrive con
++       `raster.to[Gif].read[Data]`, e si nomina per il riconoscimento con `Gif()`. Il suo tipo
++       di media è `image/gif`. Una GIF decodificata ha sempre un layout `Rgba`, poiché qualsiasi
++       GIF può dichiarare un colore trasparente; una codificata contiene al massimo 256 colori,
++       così un raster che ne ha di più viene quantizzato per median cut, e un raster con l'alfa
++       ha una voce della tavolozza riservata alla trasparenza, con i pixel opachi meno della
++       metà resi trasparenti.
+
+=       than half opaque made transparent.
+=
+-       ```scala
++       ```scala
+
+=       than half opaque made transparent.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       than half opaque made transparent.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       than half opaque made transparent.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import errorDiagnostics.stackTracesDiagnostics
++       import errorDiagnostics.stackTracesDiagnostics
+
+-       val raster = Raster(32, 24)((x, y) => Chroma(x*7, y*10, (x + y)*4))
++       val raster = Raster(32, 24)((x, y) => Chroma(x*7, y*10, (x + y)*4))
+
+=       val raster = Raster(32, 24)((x, y) => Chroma(x*7, y*10, (x + y)*4))
+-       val gif: Data = raster.to[Gif].read[Data]
++       val gif: Data = raster.to[Gif].read[Data]
+
+-       gif.read[Raster in Gif].descriptor.hasAlpha   // true
++       gif.read[Raster in Gif].descriptor.hasAlpha   // true
+
+=       gif.read[Raster in Gif].descriptor.hasAlpha   // true
+-       ```
++       ```
+
+-       On the JVM, `hallucination.gif` decodes and encodes through `javax.imageio`. On
+-       Scala.js and WASI it uses its pure-Scala codec: decoding reads GIF87a and GIF89a, with
+-       global and local colour tables, interlacing and transparency, compositing the first
+-       frame onto the logical screen — later frames of an animation are ignored — and raises
+-       `Raster.Error` with reason `UnsupportedVariant` for a block it does not know; encoding
+-       writes a single GIF89a frame with the GIF variant of LZW.
++       Sulla JVM, `hallucination.gif` decodifica e codifica attraverso `javax.imageio`. Su
++       Scala.js e WASI usa il suo codec in Scala puro: la decodifica legge GIF87a e GIF89a, con
++       tabelle dei colori globali e locali, interlacciamento e trasparenza, componendo il primo
++       fotogramma sullo schermo logico — i fotogrammi successivi di un'animazione vengono
++       ignorati — e solleva `Raster.Error` con motivo `UnsupportedVariant` per un blocco che non
++       conosce; la codifica scrive un singolo fotogramma GIF89a con la variante GIF di LZW.
+
+=       writes a single GIF89a frame with the GIF variant of LZW.
+-   refer hallucination.Rasterizable
++   refer hallucination.Rasterizable
+
+=       writes a single GIF89a frame with the GIF variant of LZW.
+=   refer hallucination.Rasterizable
+-   refer hallucination.Raster
++   refer hallucination.Raster
+
+=       writes a single GIF89a frame with the GIF variant of LZW.
+=   refer hallucination.Rasterizable
+=   refer hallucination.Raster
+-   refer hallucination.construables
++   refer hallucination.construables
+
+-   entry .apply   the GIF codec as a `Rasterizable` value, for `Raster.Formats(Gif(), …)`
+-       The same instance as the given `.rasterization`.
+-   entry .rasterization   the given `Gif is Rasterizable`, in implicit scope
+-       Name `GIF`, media type `image/gif`, alpha `true`; `sniff` checks for the three bytes
+-       `GIF`. It is in `Gif`'s companion, so reading or writing a `Raster in Gif` needs no
+-       import.
++   entry .apply   il codec GIF come valore `Rasterizable`, per `Raster.Formats(Gif(), …)`
++       La stessa istanza del given `.rasterization`.
++   entry .rasterization   il given `Gif is Rasterizable`, nell'ambito implicito
++       Nome `GIF`, tipo di media `image/gif`, alfa `true`; `sniff` controlla la presenza dei tre
++       byte `GIF`. Si trova nell'oggetto compagno di `Gif`, così leggere o scrivere un `Raster
++       in Gif` non richiede alcun import.
+
+- entry .Bmp   the BMP format: uncompressed 24-bit pixels, no alpha; `Raster in Bmp`
++ entry .Bmp   il formato BMP: pixel a 24 bit non compressi, senza alfa; `Raster in Bmp`
+
+= entry .Bmp   the BMP format: uncompressed 24-bit pixels, no alpha; `Raster in Bmp`
+-   detail
++   detail
+
+-       The form phantom for a Windows bitmap, and the companion which holds its codec. A BMP
+-       is read with `data.read[Raster in Bmp]`, written with `raster.to[Bmp].read[Data]`, and
+-       named for recognition with `Bmp()`. Its media type is `image/bmp`, and its encoder
+-       drops alpha: a transparent raster is written opaque.
++       Il fantasma di forma per una bitmap di Windows, e l'oggetto compagno che contiene il suo
++       codec. Una BMP si legge con `data.read[Raster in Bmp]`, si scrive con
++       `raster.to[Bmp].read[Data]`, e si nomina per il riconoscimento con `Bmp()`. Il suo tipo
++       di media è `image/bmp`, e il suo codificatore scarta l'alfa: un raster trasparente viene
++       scritto opaco.
+
+=       drops alpha: a transparent raster is written opaque.
+=
+-       ```scala
++       ```scala
+
+=       drops alpha: a transparent raster is written opaque.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       drops alpha: a transparent raster is written opaque.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       drops alpha: a transparent raster is written opaque.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import errorDiagnostics.stackTracesDiagnostics
++       import errorDiagnostics.stackTracesDiagnostics
+
+-       val raster = Raster(16, 16)((x, y) => Chroma(x*16, y*16, (x + y)*8))
++       val raster = Raster(16, 16)((x, y) => Chroma(x*16, y*16, (x + y)*8))
+
+=       val raster = Raster(16, 16)((x, y) => Chroma(x*16, y*16, (x + y)*8))
+-       val bmp: Data = raster.to[Bmp].read[Data]
++       val bmp: Data = raster.to[Bmp].read[Data]
+
+-       bmp.read[Raster in Bmp](0, 0)   // Chroma(0, 0, 0)
++       bmp.read[Raster in Bmp](0, 0)   // Chroma(0, 0, 0)
+
+=       bmp.read[Raster in Bmp](0, 0)   // Chroma(0, 0, 0)
+-       ```
++       ```
+
+-       On the JVM, `hallucination.bmp` decodes and encodes through `javax.imageio`. On
+-       Scala.js and WASI it uses its pure-Scala codec: decoding reads 1-, 4- and 8-bit palette
+-       images and 16-, 24- and 32-bit pixels, `BI_RGB` or `BI_BITFIELDS` (with an alpha mask
+-       in a V4 or V5 header giving an `Rgba` raster), in either row order, and raises
+-       `Raster.Error` with reason `UnsupportedVariant` for a run-length-encoded file or one
+-       with an OS/2 core header; encoding writes bottom-up 24-bit `BI_RGB`, the most widely read
+-       form.
++       Sulla JVM, `hallucination.bmp` decodifica e codifica attraverso `javax.imageio`. Su
++       Scala.js e WASI usa il suo codec in Scala puro: la decodifica legge immagini a tavolozza
++       a 1, 4 e 8 bit e pixel a 16, 24 e 32 bit, `BI_RGB` o `BI_BITFIELDS` (con una maschera alfa
++       in un'intestazione V4 o V5 che dà un raster `Rgba`), in entrambi gli ordini delle righe,
++       e solleva `Raster.Error` con motivo `UnsupportedVariant` per un file con codifica
++       run-length o con un'intestazione core OS/2; la codifica scrive `BI_RGB` a 24 bit dal
++       basso verso l'alto, la forma più largamente letta.
+
+=       form.
+-   refer hallucination.Rasterizable
++   refer hallucination.Rasterizable
+
+=       form.
+=   refer hallucination.Rasterizable
+-   refer hallucination.Raster
++   refer hallucination.Raster
+
+=       form.
+=   refer hallucination.Rasterizable
+=   refer hallucination.Raster
+-   refer hallucination.construables
++   refer hallucination.construables
+
+-   entry .apply   the BMP codec as a `Rasterizable` value, for `Raster.Formats(Bmp(), …)`
+-       The same instance as the given `.rasterization`.
+-   entry .rasterization   the given `Bmp is Rasterizable`, in implicit scope
+-       Name `BMP`, media type `image/bmp`, alpha `false`; `sniff` checks for the two bytes
+-       `BM`. It is in `Bmp`'s companion, so reading or writing a `Raster in Bmp` needs no
+-       import.
++   entry .apply   il codec BMP come valore `Rasterizable`, per `Raster.Formats(Bmp(), …)`
++       La stessa istanza del given `.rasterization`.
++   entry .rasterization   il given `Bmp is Rasterizable`, nell'ambito implicito
++       Nome `BMP`, tipo di media `image/bmp`, alfa `false`; `sniff` controlla la presenza dei
++       due byte `BM`. Si trova nell'oggetto compagno di `Bmp`, così leggere o scrivere un
++       `Raster in Bmp` non richiede alcun import.
+
+- entry .allRasterFormats   a `Raster.Formats` of every format the library implements, as a given
+-     A top-level given in `hallucination.formats`, imported by name as `import
++ entry .allRasterFormats   un `Raster.Formats` di ogni formato implementato dalla libreria, come given
++     Un given di livello superiore in `hallucination.formats`, importato per nome come `import
+
+-     soundness.allRasterFormats`: `Raster.Formats(Bmp(), Gif(), Jpeg(), Png(), Webp())`, in
++     soundness.allRasterFormats`: `Raster.Formats(Bmp(), Gif(), Jpeg(), Png(), Webp())`, in
+
+-     that order, so that `Raster(data)` and `data.read[Raster]` recognise any of the five
+-     formats from the data's opening bytes. Depending on `hallucination.formats` links all
+-     five codecs; a program which needs fewer should depend on those formats' components and
+-     give its own `Raster.Formats`.
++     quest'ordine, così che `Raster(data)` e `data.read[Raster]` riconoscano uno qualsiasi dei
++     cinque formati dai byte iniziali dei dati. Dipendere da `hallucination.formats` collega
++     tutti e cinque i codec; un programma che ne ha bisogno di meno dovrebbe dipendere dai
++     componenti di quei formati e fornire un proprio `Raster.Formats`.
+
+=     give its own `Raster.Formats`.
+=
+-     ```scala
++     ```scala
+
+=     give its own `Raster.Formats`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import soundness.allRasterFormats
++     import soundness.allRasterFormats
+
+=     import soundness.allRasterFormats
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=     import soundness.allRasterFormats
+=     import strategies.throwUnsafely
+-     import errorDiagnostics.stackTracesDiagnostics
++     import errorDiagnostics.stackTracesDiagnostics
+
+=     import soundness.allRasterFormats
+=     import strategies.throwUnsafely
+=     import errorDiagnostics.stackTracesDiagnostics
+=
+-     val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
++     val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+
+=     import soundness.allRasterFormats
+=     import strategies.throwUnsafely
+=     import errorDiagnostics.stackTracesDiagnostics
+=
+=     val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
+-                       0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
++                       0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+
+-     Raster(data).width          // 2
++     Raster(data).width          // 2
+
+-     data.read[Raster].height    // 1
++     data.read[Raster].height    // 1
+
+=     data.read[Raster].height    // 1
+-     ```
++     ```
+
+- entry .construables   the media-type bindings which construe an HTTP body as a `Raster`, imported by name
++ entry .construables   i legami dei tipi di media che interpretano un corpo HTTP come `Raster`, importati per nome
+
+= entry .construables   the media-type bindings which construe an HTTP body as a `Raster`, imported by name
+-   detail
++   detail
+
+-       gesticulate's `Construable` family maps a media type, as a singleton string, to the
+-       Soundness type a body of that type is read as and written from. Each format component
+-       adds one: `("image/png" is Construable to (Raster in Png))`, and likewise for
+-       `image/gif`, `image/bmp`, `image/jpeg` and `image/webp`. A client which learns a
+-       response's media type from an API specification can then ask, as the code compiles,
+-       what to construe it as — `Raster in Png` for an `image/png` response — and a server can
+-       type a request body the same way.
++       La famiglia `Construable` di gesticulate associa un tipo di media, come stringa
++       singleton, al tipo Soundness come cui si legge e da cui si scrive un corpo di quel tipo.
++       Ogni componente di formato ne aggiunge uno: `("image/png" is Construable to (Raster in
++       Png))`, e analogamente per `image/gif`, `image/bmp`, `image/jpeg` e `image/webp`. Un
++       client che apprende il tipo di media di una risposta dalla specifica di un'API può allora
++       chiedere, mentre il codice viene compilato, come interpretarla — `Raster in Png` per una
++       risposta `image/png` — e un server può tipizzare allo stesso modo il corpo di una
++       richiesta.
+
+=       type a request body the same way.
+=
+-       ```scala
++       ```scala
+
+=       type a request body the same way.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import construables.pngConstruable
++       import construables.pngConstruable
+
+=       import construables.pngConstruable
+-       ```
++       ```
+
+-       Nothing is construed without a deliberate choice: `import soundness.*` brings none of
+-       these in, and each is imported by name. The package merges with the umbrella's own
+-       `construables`, so the import is the same whichever library the given came from.
+-   entry .pngConstruable   `image/png` construes as a `Raster in Png`
+-       In `hallucination.png`. Import it by name: `import construables.pngConstruable`.
+-   entry .gifConstruable   `image/gif` construes as a `Raster in Gif`
+-       In `hallucination.gif`. Import it by name: `import construables.gifConstruable`.
+-   entry .bmpConstruable   `image/bmp` construes as a `Raster in Bmp`
+-       In `hallucination.bmp`. Import it by name: `import construables.bmpConstruable`.
++       Nulla viene interpretato senza una scelta deliberata: `import soundness.*` non porta
++       nessuno di questi, e ciascuno si importa per nome. Il package si fonde con il
++       `construables` proprio del modulo ombrello, così l'import è lo stesso qualunque sia la
++       libreria da cui proviene il given.
++   entry .pngConstruable   `image/png` si interpreta come `Raster in Png`
++       In `hallucination.png`. Va importato per nome: `import construables.pngConstruable`.
++   entry .gifConstruable   `image/gif` si interpreta come `Raster in Gif`
++       In `hallucination.gif`. Va importato per nome: `import construables.gifConstruable`.
++   entry .bmpConstruable   `image/bmp` si interpreta come `Raster in Bmp`
++       In `hallucination.bmp`. Va importato per nome: `import construables.bmpConstruable`.
+
+-   entry .jpegConstruable   construes an `image/jpeg` response as a `Raster in Jpeg`
+-       The given `("image/jpeg" is Construable to (Raster in Jpeg))`, declared in
+-       `hallucination.jpeg`, which tells a media-typed client (such as an apoplexy `Api`) that a
+-       body of media type `image/jpeg` is read as a `Raster in Jpeg`, through `Jpeg`'s own codec.
+-       The typeclass carries no operations of its own. It lives in the `construables` choice
+-       package and so must be imported by name, `import construables.jpegConstruable`; `import
+-       soundness.*` does not bring it in.
+-   entry .webpConstruable   construes an `image/webp` response as a `Raster in Webp`
+-       The given `("image/webp" is Construable to (Raster in Webp))`, declared in
+-       `hallucination.webp`, which tells a media-typed client (such as an apoplexy `Api`) that a
+-       body of media type `image/webp` is read as a `Raster in Webp`, through `Webp`'s own codec.
+-       It lives in the `construables` choice package and so must be imported by name, `import
+-       construables.webpConstruable`; `import soundness.*` does not bring it in.
++   entry .jpegConstruable   interpreta una risposta `image/jpeg` come `Raster in Jpeg`
++       Il given `("image/jpeg" is Construable to (Raster in Jpeg))`, dichiarato in
++       `hallucination.jpeg`, che dice a un client tipizzato per tipo di media (come un `Api` di
++       apoplexy) che un corpo di tipo di media `image/jpeg` si legge come `Raster in Jpeg`,
++       attraverso il codec proprio di `Jpeg`. La typeclass non porta operazioni proprie. Vive nel
++       package di scelta `construables` e quindi va importato per nome, `import
++       construables.jpegConstruable`; `import soundness.*` non lo porta.
++   entry .webpConstruable   interpreta una risposta `image/webp` come `Raster in Webp`
++       Il given `("image/webp" is Construable to (Raster in Webp))`, dichiarato in
++       `hallucination.webp`, che dice a un client tipizzato per tipo di media (come un `Api` di
++       apoplexy) che un corpo di tipo di media `image/webp` si legge come `Raster in Webp`,
++       attraverso il codec proprio di `Webp`. Vive nel package di scelta `construables` e quindi
++       va importato per nome, `import construables.webpConstruable`; `import soundness.*` non lo
++       porta.
+
+- entry .Jpeg   the JPEG format: `Raster in Jpeg`, read and written by a baseline and progressive DCT codec
++ entry .Jpeg   il formato JPEG: `Raster in Jpeg`, letto e scritto da un codec DCT baseline e progressivo
+
+= entry .Jpeg   the JPEG format: `Raster in Jpeg`, read and written by a baseline and progressive DCT codec
+-   detail
++   detail
+
+-       `Jpeg` is the phantom format type of a JPEG raster, `Raster in Jpeg`, and its companion
+-       holds the codec as the given `.rasterization`, a `Jpeg is Rasterizable`, which is in
+-       implicit scope wherever `Jpeg` is named. `Jpeg()` returns that same instance as a plain
+-       `Rasterizable` value, for `Raster.Formats(Jpeg(), …)` and for `Raster.Error(Jpeg())`.
+-       The type is a sealed trait with no instances: it exists only to be written in a type.
++       `Jpeg` è il tipo di formato fantasma di un raster JPEG, `Raster in Jpeg`, e il suo
++       oggetto compagno contiene il codec come given `.rasterization`, un `Jpeg is
++       Rasterizable`, che è nell'ambito implicito ovunque `Jpeg` sia nominato. `Jpeg()`
++       restituisce quella stessa istanza come semplice valore `Rasterizable`, per
++       `Raster.Formats(Jpeg(), …)` e per `Raster.Error(Jpeg())`. Il tipo è un sealed trait
++       senza istanze: esiste solo per essere scritto in un tipo.
+
+=       The type is a sealed trait with no instances: it exists only to be written in a type.
+=
+-       ```scala
++       ```scala
+
+=       The type is a sealed trait with no instances: it exists only to be written in a type.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       The type is a sealed trait with no instances: it exists only to be written in a type.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val data: Data = Raster(2, 2)((x, y) => Chroma(x*100, y*100, 0)).to[Jpeg].read[Data]
++       val data: Data = Raster(2, 2)((x, y) => Chroma(x*100, y*100, 0)).to[Jpeg].read[Data]
+
+-       val photo: Raster in Jpeg = data.read[Raster in Jpeg]
++       val photo: Raster in Jpeg = data.read[Raster in Jpeg]
+
+-       val bytes: Data = photo.to[Jpeg].read[Data]
++       val bytes: Data = photo.to[Jpeg].read[Data]
+
+=       val bytes: Data = photo.to[Jpeg].read[Data]
+-       ```
++       ```
+
+-       Reading goes through `Rasterizable#read`, so it needs a `Tactic[Raster.Error]` and raises
+-       `Raster.Error(Jpeg())` when the bytes are not a JPEG, with a `Raster.Error.Reason` where
+-       the pure codec decoded them: `Truncated` for data which ends mid-stream, `Bitstream` for a
+-       malformed marker sequence, and `UnsupportedVariant` for the parts of the standard the
+-       codec does not implement. Writing never fails: `encode` takes any `Raster`, whatever its
+-       pixel layout, and drops an alpha channel, since `alpha` is `false` for JPEG.
++       La lettura passa per `Rasterizable#read`, quindi richiede un `Tactic[Raster.Error]` e
++       solleva `Raster.Error(Jpeg())` quando i byte non sono una JPEG, con un
++       `Raster.Error.Reason` dove li ha decodificati il codec puro: `Truncated` per dati che
++       finiscono a metà stream, `Bitstream` per una sequenza di marcatori malformata, e
++       `UnsupportedVariant` per le parti dello standard che il codec non implementa. La
++       scrittura non fallisce mai: `encode` accetta qualsiasi `Raster`, qualunque sia il suo
++       layout dei pixel, e scarta un canale alfa, poiché `alpha` è `false` per JPEG.
+
+-       The component is `hallucination.jpeg`, which depends only on `hallucination.core`, so a
+-       program which names `Jpeg` compiles this codec and no other. It has a platform split: on
+-       the JVM, decoding and encoding go through `javax.imageio`, whose native codec is faster
+-       than any pure one, and the pure Scala codec is compiled beside it and tested against it;
+-       on Scala.js and WASI the pure codec is the only one. The two decoders agree closely but
+-       not bit-for-bit, since each uses its own inverse DCT, so a pixel read from a JPEG may
+-       differ by a few units between platforms.
++       Il componente è `hallucination.jpeg`, che dipende solo da `hallucination.core`, così un
++       programma che nomina `Jpeg` compila questo codec e nessun altro. Ha una suddivisione per
++       piattaforma: sulla JVM, decodifica e codifica passano per `javax.imageio`, il cui codec
++       nativo è più veloce di qualsiasi codec puro, e il codec in Scala puro è compilato
++       accanto a esso e testato rispetto a esso; su Scala.js e WASI il codec puro è l'unico. I
++       due decodificatori concordano strettamente ma non bit per bit, poiché ciascuno usa la
++       propria DCT inversa, così un pixel letto da una JPEG può differire di qualche unità tra
++       una piattaforma e l'altra.
+
+-       The pure decoder reads baseline and progressive Huffman-coded images at eight bits per
+-       sample with one, three or four components: grayscale, YCbCr, RGB (by the Adobe marker),
+-       CMYK and YCCK, with any chroma subsampling, restart intervals, and JFIF and Adobe
+-       application segments. Arithmetic coding, lossless and hierarchical modes, twelve-bit
+-       samples and a DNL-defined height are `UnsupportedVariant`. The pure encoder writes a
+-       baseline sequential JPEG at quality 90, with per-image optimised Huffman tables and full
+-       4:4:4 chroma; the quality is not a parameter of the public API, so a program which needs
+-       another must supply its own `Jpeg is Rasterizable`. The JVM backend writes with
+-       `javax.imageio`'s defaults.
++       Il decodificatore puro legge immagini baseline e progressive con codifica di Huffman a
++       otto bit per campione con uno, tre o quattro componenti: scala di grigi, YCbCr, RGB
++       (tramite il marcatore Adobe), CMYK e YCCK, con qualsiasi sottocampionamento della
++       crominanza, intervalli di restart, e segmenti applicativi JFIF e Adobe. La codifica
++       aritmetica, le modalità lossless e gerarchica, i campioni a dodici bit e un'altezza
++       definita da DNL sono `UnsupportedVariant`. Il codificatore puro scrive una JPEG
++       sequenziale baseline a qualità 90, con tabelle di Huffman ottimizzate per immagine e
++       crominanza 4:4:4 completa; la qualità non è un parametro dell'API pubblica, così un
++       programma che ne ha bisogno di un'altra deve fornire un proprio `Jpeg is Rasterizable`.
++       Il backend JVM scrive con le impostazioni predefinite di `javax.imageio`.
+
+=       `javax.imageio`'s defaults.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       `javax.imageio`'s defaults.
+=
+=       ```scala fuel
+-       frame
++       frame
+
+-         label Read a JPEG, naming its format
++         label Leggere una JPEG, indicandone il formato
+
+=         label Read a JPEG, naming its format
+-         code
++         code
+
+=         label Read a JPEG, naming its format
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Read a JPEG, naming its format
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label Read a JPEG, naming its format
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             val data: Data = Raster(2, 2)((x, y) => Chroma(x*100, y*100, 0)).to[Jpeg].read[Data]
++             val data: Data = Raster(2, 2)((x, y) => Chroma(x*100, y*100, 0)).to[Jpeg].read[Data]
+
+=         label Read a JPEG, naming its format
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             val data: Data = Raster(2, 2)((x, y) => Chroma(x*100, y*100, 0)).to[Jpeg].read[Data]
+-             val photo = data.read[Raster in Jpeg]
++             val photo = data.read[Raster in Jpeg]
+
+-             photo.width
++             photo.width
+
+=             photo.width
+-       frame
++       frame
+
+-         label Re-express it as a lossless WebP
++         label Riesprimerla come WebP lossless
+
+=         label Re-express it as a lossless WebP
+-         code
++         code
+
+=         label Re-express it as a lossless WebP
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Re-express it as a lossless WebP
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label Re-express it as a lossless WebP
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             val data: Data = Raster(2, 2)((x, y) => Chroma(x*100, y*100, 0)).to[Jpeg].read[Data]
++             val data: Data = Raster(2, 2)((x, y) => Chroma(x*100, y*100, 0)).to[Jpeg].read[Data]
+
+=         label Re-express it as a lossless WebP
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             val data: Data = Raster(2, 2)((x, y) => Chroma(x*100, y*100, 0)).to[Jpeg].read[Data]
+-             val photo = data.read[Raster in Jpeg]
++             val photo = data.read[Raster in Jpeg]
+
+-             val webp: Raster in Webp = photo.to[Webp]
++             val webp: Raster in Webp = photo.to[Webp]
+
+-             webp.read[Data].length
++             webp.read[Data].length
+
+=             webp.read[Data].length
+-       frame
++       frame
+
+-         label Let the bytes name their own format
++         label Lasciare che i byte indichino il proprio formato
+
+=         label Let the bytes name their own format
+-         code
++         code
+
+=         label Let the bytes name their own format
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Let the bytes name their own format
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label Let the bytes name their own format
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             val data: Data = Raster(2, 2)((x, y) => Chroma(x*100, y*100, 0)).to[Jpeg].read[Data]
++             val data: Data = Raster(2, 2)((x, y) => Chroma(x*100, y*100, 0)).to[Jpeg].read[Data]
+
+-             given Raster.Formats = Raster.Formats(Jpeg(), Webp())
++             given Raster.Formats = Raster.Formats(Jpeg(), Webp())
+
+-             val either: Raster = Raster(data)
++             val either: Raster = Raster(data)
+
+-             Jpeg().sniff(data)
++             Jpeg().sniff(data)
+
+=             Jpeg().sniff(data)
+-       ##
++       ##
+
+=             Jpeg().sniff(data)
+=       ##
+-       ```
++       ```
+
+-       Everything is exported to the `soundness` umbrella: `Jpeg` itself, and
++       Tutto è esportato nel modulo ombrello `soundness`: `Jpeg` stesso, e
+
+-       `construables.jpegConstruable`.
++       `construables.jpegConstruable`.
+
+=       `construables.jpegConstruable`.
+-   refer hallucination.Raster
++   refer hallucination.Raster
+
+=       `construables.jpegConstruable`.
+=   refer hallucination.Raster
+-   refer hallucination.Rasterizable
++   refer hallucination.Rasterizable
+
+-   refer hallucination.Webp
++   refer hallucination.Webp
+
+=   refer hallucination.Webp
+-   refer hallucination.construables
++   refer hallucination.construables
+
+-   entry .apply   the JPEG codec as a `Rasterizable` value: `Jpeg()`
+-       Returns `.rasterization`, so `Jpeg()` can be listed in `Raster.Formats(…)` for format
+-       recognition, sniffed directly with `Jpeg().sniff(data)`, or matched in a `Raster.Error`:
+-       a failed `read[Raster in Jpeg]` is `Raster.Error(Jpeg())`.
+-   entry .rasterization   the given `Jpeg is Rasterizable`: the JPEG codec, in implicit scope
+-       Named `JPEG`, with media type `image/jpeg` and no alpha channel. Its `decode` reads a
+-       JPEG into a `Raster`, raising `Raster.Error` with a `Tactic[Raster.Error]` in scope; its
+-       `encode` writes any raster as a JPEG, discarding alpha; and its `sniff` is true for data
+-       which opens with the bytes `ff d8 ff`, which is how `Raster.Formats#recognise` tells a
+-       JPEG from the other formats without decoding it. On the JVM it delegates to
+-       `javax.imageio`; on Scala.js and WASI, to the pure Scala codec. Being in the companion,
+-       it needs no import; a different JPEG codec is an ordinary given of the same type, bound
+-       locally to take precedence.
++   entry .apply   il codec JPEG come valore `Rasterizable`: `Jpeg()`
++       Restituisce `.rasterization`, così `Jpeg()` può essere elencato in `Raster.Formats(…)`
++       per il riconoscimento del formato, interrogato direttamente con `Jpeg().sniff(data)`, o
++       confrontato in un `Raster.Error`: un `read[Raster in Jpeg]` fallito è
++       `Raster.Error(Jpeg())`.
++   entry .rasterization   il given `Jpeg is Rasterizable`: il codec JPEG, nell'ambito implicito
++       Nominato `JPEG`, con tipo di media `image/jpeg` e nessun canale alfa. Il suo `decode`
++       legge una JPEG in un `Raster`, sollevando `Raster.Error` con un `Tactic[Raster.Error]`
++       nell'ambito; il suo `encode` scrive qualsiasi raster come JPEG, scartando l'alfa; e il suo
++       `sniff` è vero per i dati che iniziano con i byte `ff d8 ff`, ed è così che
++       `Raster.Formats#recognise` distingue una JPEG dagli altri formati senza decodificarla.
++       Sulla JVM delega a `javax.imageio`; su Scala.js e WASI, al codec in Scala puro. Trovandosi
++       nell'oggetto compagno, non richiede alcun import; un codec JPEG diverso è un given
++       ordinario dello stesso tipo, legato localmente perché abbia la precedenza.
+
+- entry .Webp   the WebP format: `Raster in Webp`, read in its lossy, lossless and extended forms
++ entry .Webp   il formato WebP: `Raster in Webp`, letto nelle sue forme con perdita, senza perdita ed estesa
+
+= entry .Webp   the WebP format: `Raster in Webp`, read in its lossy, lossless and extended forms
+-   detail
++   detail
+
+-       `Webp` is the phantom format type of a WebP raster, `Raster in Webp`, and its companion
+-       holds the codec as the given `.rasterization`, a `Webp is Rasterizable`, in implicit scope
+-       wherever `Webp` is named. `Webp()` returns that instance as a `Rasterizable` value. The
+-       type is a sealed trait with no instances: it exists only to be written in a type.
++       `Webp` è il tipo di formato fantasma di un raster WebP, `Raster in Webp`, e il suo oggetto
++       compagno contiene il codec come given `.rasterization`, un `Webp is Rasterizable`,
++       nell'ambito implicito ovunque `Webp` sia nominato. `Webp()` restituisce quell'istanza come
++       valore `Rasterizable`. Il tipo è un sealed trait senza istanze: esiste solo per essere
++       scritto in un tipo.
+
+=       type is a sealed trait with no instances: it exists only to be written in a type.
+=
+-       ```scala
++       ```scala
+
+=       type is a sealed trait with no instances: it exists only to be written in a type.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       type is a sealed trait with no instances: it exists only to be written in a type.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val data: Data = Raster(2, 2)((x, y) => Chroma(x*100, y*100, 0)).to[Webp].read[Data]
++       val data: Data = Raster(2, 2)((x, y) => Chroma(x*100, y*100, 0)).to[Webp].read[Data]
+
+-       val picture: Raster in Webp = data.read[Raster in Webp]
++       val picture: Raster in Webp = data.read[Raster in Webp]
+
+-       picture.descriptor.hasAlpha
++       picture.descriptor.hasAlpha
+
+-       val bytes: Data = picture.to[Webp].read[Data]
++       val bytes: Data = picture.to[Webp].read[Data]
+
+=       val bytes: Data = picture.to[Webp].read[Data]
+-       ```
++       ```
+
+-       WebP has no `javax.imageio` reader on any standard JRE, so unlike the other formats this
+-       one has no platform split: the pure Scala codec, a port of the Rust `image-webp` crate,
+-       runs on the JVM, Scala.js and WASI alike, and the same bytes decode to the same pixels on
+-       each. The decoder is byte-exact against libwebp's `dwebp -nofancy`, which uses the same
+-       simple chroma upsampling.
++       WebP non ha un lettore `javax.imageio` su nessun JRE standard, così, a differenza degli
++       altri formati, questo non ha una suddivisione per piattaforma: il codec in Scala puro,
++       un porting del crate Rust `image-webp`, gira allo stesso modo sulla JVM, su Scala.js e su
++       WASI, e gli stessi byte si decodificano negli stessi pixel su ciascuna piattaforma. Il
++       decodificatore è esatto al byte rispetto a `dwebp -nofancy` di libwebp, che usa lo stesso
++       semplice sovracampionamento della crominanza.
+
+-       The decoder reads the three container kinds by the first chunk after the RIFF header:
+-       a lossless `VP8L` image, with its predictor, colour, subtract-green and colour-indexing
+-       transforms, meta-Huffman groups, backward references and colour cache, giving an RGBA
+-       raster; a lossy `VP8` keyframe, with intra prediction, dequantisation and the loop
+-       filter, giving an opaque RGB raster; and an extended `VP8X` container, where a lossy
+-       image may carry an `ALPH` chunk (raw or VP8L-compressed, with any of the four filters)
+-       and so decodes to RGBA, and an animation decodes to its first frame alone, composited on
+-       the canvas. The encoder writes lossless VP8L, with the subtract-green and predictor
+-       transforms and run-length coding, so a raster round-trips through `to[Webp]` pixel for
+-       pixel, alpha included: `alpha` is `true` for WebP. A lossy VP8 encoder exists in the
+-       component but is not reachable through the public API, so every WebP a program writes is
+-       lossless; a program which needs lossy output supplies its own `Webp is Rasterizable`.
++       Il decodificatore legge i tre tipi di contenitore in base al primo chunk dopo
++       l'intestazione RIFF: un'immagine lossless `VP8L`, con le sue trasformazioni predictor,
++       colour, subtract-green e colour-indexing, gruppi meta-Huffman, riferimenti all'indietro e
++       cache dei colori, che dà un raster RGBA; un keyframe lossy `VP8`, con predizione intra,
++       dequantizzazione e filtro di loop, che dà un raster RGB opaco; e un contenitore esteso
++       `VP8X`, dove un'immagine lossy può portare un chunk `ALPH` (grezzo o compresso in VP8L,
++       con uno qualsiasi dei quattro filtri) e quindi si decodifica in RGBA, e un'animazione si
++       decodifica nel solo primo fotogramma, composto sul canvas. Il codificatore scrive VP8L
++       lossless, con le trasformazioni subtract-green e predictor e la codifica run-length, così
++       un raster fa l'andata e ritorno attraverso `to[Webp]` pixel per pixel, alfa incluso:
++       `alpha` è `true` per WebP. Nel componente esiste un codificatore VP8 lossy, ma non è
++       raggiungibile attraverso l'API pubblica, così ogni WebP che un programma scrive è
++       lossless; un programma che ha bisogno di un output lossy fornisce un proprio `Webp is
++       Rasterizable`.
+
+-       Reading needs a `Tactic[Raster.Error]` and raises `Raster.Error(Webp())` with a reason:
+-       `BadSignature` for bytes without the `RIFF…WEBP` header or an unknown first chunk,
+-       `Truncated` for a stream which ends early, `Bitstream` for a malformed Huffman code or
+-       token, `InvalidTransform` for a VP8L transform applied twice, and `UnsupportedVariant`
+-       for a VP8 inter-frame, a non-zero VP8L version, an unknown alpha compression, or an
+-       extended file with none of the chunks the decoder knows.
++       La lettura richiede un `Tactic[Raster.Error]` e solleva `Raster.Error(Webp())` con un
++       motivo: `BadSignature` per byte senza l'intestazione `RIFF…WEBP` o con un primo chunk
++       sconosciuto, `Truncated` per uno stream che finisce in anticipo, `Bitstream` per un codice
++       o un token di Huffman malformato, `InvalidTransform` per una trasformazione VP8L applicata
++       due volte, e `UnsupportedVariant` per un inter-frame VP8, una versione VP8L diversa da
++       zero, una compressione alfa sconosciuta, o un file esteso privo di tutti i chunk che il
++       decodificatore conosce.
+
+-       Written as a lossless WebP, an RGBA raster keeps every pixel; written as a JPEG, it loses
+-       its alpha channel and some precision:
++       Scritto come WebP lossless, un raster RGBA conserva ogni pixel; scritto come JPEG, perde
++       il suo canale alfa e parte della precisione:
+
+=       its alpha channel and some precision:
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative WebP
++       alternative WebP
+
+=       alternative WebP
+-         code
++         code
+
+=       alternative WebP
+=         code
+-             import soundness.*
++             import soundness.*
+
+=       alternative WebP
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=       alternative WebP
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             val source = Raster[Rgba](8, 8): (x, y) =>
++             val source = Raster[Rgba](8, 8): (x, y) =>
+
+=       alternative WebP
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             val source = Raster[Rgba](8, 8): (x, y) =>
+-               Pixel.make[Rgba](x.toLong*30 << 24 | y.toLong*30 << 16 | 128L << 8 | (x*9 + y*9))
++               Pixel.make[Rgba](x.toLong*30 << 24 | y.toLong*30 << 16 | 128L << 8 | (x*9 + y*9))
+
+-             val webp = source.to[Webp].read[Data]
++             val webp = source.to[Webp].read[Data]
+
+-             webp.read[Raster in Webp].descriptor.hasAlpha   // true
++             webp.read[Raster in Webp].descriptor.hasAlpha   // true
+
+-       alternative JPEG
++       alternative JPEG
+
+=       alternative JPEG
+-         code
++         code
+
+=       alternative JPEG
+=         code
+-             import soundness.*
++             import soundness.*
+
+=       alternative JPEG
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=       alternative JPEG
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             val source = Raster[Rgba](8, 8): (x, y) =>
++             val source = Raster[Rgba](8, 8): (x, y) =>
+
+=       alternative JPEG
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             val source = Raster[Rgba](8, 8): (x, y) =>
+-               Pixel.make[Rgba](x.toLong*30 << 24 | y.toLong*30 << 16 | 128L << 8 | (x*9 + y*9))
++               Pixel.make[Rgba](x.toLong*30 << 24 | y.toLong*30 << 16 | 128L << 8 | (x*9 + y*9))
+
+-             val jpeg = source.to[Jpeg].read[Data]
++             val jpeg = source.to[Jpeg].read[Data]
+
+-             jpeg.read[Raster in Jpeg].descriptor.hasAlpha   // false
++             jpeg.read[Raster in Jpeg].descriptor.hasAlpha   // false
+
+=             jpeg.read[Raster in Jpeg].descriptor.hasAlpha   // false
+-       ##
++       ##
+
+=             jpeg.read[Raster in Jpeg].descriptor.hasAlpha   // false
+=       ##
+-       ```
++       ```
+
+-       The component is `hallucination.webp`, depending only on `hallucination.core`.
+-       Everything is exported to the `soundness` umbrella: `Webp` itself, and
++       Il componente è `hallucination.webp`, che dipende solo da `hallucination.core`. Tutto è
++       esportato nel modulo ombrello `soundness`: `Webp` stesso, e
+
+-       `construables.webpConstruable`.
++       `construables.webpConstruable`.
+
+=       `construables.webpConstruable`.
+-   refer hallucination.Raster
++   refer hallucination.Raster
+
+=       `construables.webpConstruable`.
+=   refer hallucination.Raster
+-   refer hallucination.Rasterizable
++   refer hallucination.Rasterizable
+
+-   refer hallucination.Jpeg
++   refer hallucination.Jpeg
+
+=   refer hallucination.Jpeg
+-   refer hallucination.construables
++   refer hallucination.construables
+
+-   entry .apply   the WebP codec as a `Rasterizable` value: `Webp()`
+-       Returns `.rasterization`, so `Webp()` can be listed in `Raster.Formats(…)`, sniffed
+-       directly with `Webp().sniff(data)`, or matched in a `Raster.Error`: a failed
+-       `read[Raster in Webp]` is `Raster.Error(Webp())`.
+-   entry .rasterization   the given `Webp is Rasterizable`: the WebP codec, in implicit scope
+-       Named `WEBP`, with media type `image/webp` and an alpha channel. Its `decode` reads a
+-       lossless, lossy or extended WebP into a `Raster`, raising `Raster.Error` with a
+-       `Tactic[Raster.Error]` in scope; its `encode` writes any raster as a lossless VP8L WebP,
+-       keeping alpha where the raster has it; and its `sniff` is true for data at least twelve
+-       bytes long which opens with `RIFF` and has `WEBP` at offset eight, which is how
+-       `Raster.Formats#recognise` tells a WebP from the other formats without decoding it. The
+-       same pure codec serves every platform. Being in the companion, it needs no import; a
+-       different WebP codec is an ordinary given of the same type, bound locally to take
+-       precedence.
++   entry .apply   il codec WebP come valore `Rasterizable`: `Webp()`
++       Restituisce `.rasterization`, così `Webp()` può essere elencato in `Raster.Formats(…)`,
++       interrogato direttamente con `Webp().sniff(data)`, o confrontato in un `Raster.Error`: un
++       `read[Raster in Webp]` fallito è `Raster.Error(Webp())`.
++   entry .rasterization   il given `Webp is Rasterizable`: il codec WebP, nell'ambito implicito
++       Nominato `WEBP`, con tipo di media `image/webp` e un canale alfa. Il suo `decode` legge
++       una WebP lossless, lossy o estesa in un `Raster`, sollevando `Raster.Error` con un
++       `Tactic[Raster.Error]` nell'ambito; il suo `encode` scrive qualsiasi raster come WebP
++       VP8L lossless, conservando l'alfa dove il raster lo ha; e il suo `sniff` è vero per dati
++       lunghi almeno dodici byte che iniziano con `RIFF` e hanno `WEBP` all'offset otto, ed è
++       così che `Raster.Formats#recognise` distingue una WebP dagli altri formati senza
++       decodificarla. Lo stesso codec puro serve ogni piattaforma. Trovandosi nell'oggetto
++       compagno, non richiede alcun import; un codec WebP diverso è un given ordinario dello
++       stesso tipo, legato localmente perché abbia la precedenza.

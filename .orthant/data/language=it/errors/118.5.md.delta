@@ -1,0 +1,115 @@
+orthant 1 language
+
+- # `↯/s.118.5` — `Bintel.Error`
++ # `↯/s.118.5` — `Bintel.Error`
+
+- Raised when a BinTEL document cannot be decoded.
++ Sollevato quando un documento BinTEL non può essere decodificato.
+
+- ## Cause
++ ## Causa
+
+- BinTEL is TEL's binary encoding, guided by a schema. This error covers malformed framing, a
+- schema signature that does not match the reader's schema, and content that does not conform
+- to the schema it claims. Variants 1–16 are the B01–B16 codes of §10 of the BinTEL
+- specification; variant 17 is a resource limit of the decoder (§11), which the specification
+- places outside that taxonomy because a decoder with a larger limit would accept the same
+- bytes.
++ BinTEL è la codifica binaria di TEL, guidata da uno schema. Questo errore copre un framing
++ malformato, una firma di schema che non corrisponde allo schema del lettore, e un contenuto che non
++ è conforme allo schema che dichiara. Le varianti 1–16 sono i codici B01–B16 del §10 della specifica
++ BinTEL; la variante 17 è un limite di risorse del decodificatore (§11), che la specifica colloca
++ fuori da quella tassonomia perché un decodificatore con un limite più grande accetterebbe gli
++ stessi byte.
+
+- ## Variants
++ ## Varianti
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Codice
++ column  Motivo
++ column  Messaggio
+
+- row  `↯/s.118.5/t.4.1`  `BadMagic`  the magic number is missing or matches neither B2 C4 B5 BB (external mode) nor B2 C4 B5 BC (self-contained mode)
++ row  `↯/s.118.5/t.4.1`  `BadMagic`  the magic number is missing or matches neither B2 C4 B5 BB (external mode) nor B2 C4 B5 BC (self-contained mode)
+
+- row  `↯/s.118.5/t.4.2`  `VarintError`  a variable-length integer in the stream is invalid
++ row  `↯/s.118.5/t.4.2`  `VarintError`  a variable-length integer in the stream is invalid
+
+- row  `↯/s.118.5/t.4.3`  `BadSignatureLength`  the schema signature length is not a valid palimpsest length under any (H, k_i, k_r)
++ row  `↯/s.118.5/t.4.3`  `BadSignatureLength`  the schema signature length is not a valid palimpsest length under any (H, k_i, k_r)
+
+- row  `↯/s.118.5/t.4.4`  `BadSignature`  the schema signature does not decode against the library
++ row  `↯/s.118.5/t.4.4`  `BadSignature`  the schema signature does not decode against the library
+
+- row  `↯/s.118.5/t.4.5`  `BadKeywordIndex`  a keyword index exceeds the parent's flat-keyword count
++ row  `↯/s.118.5/t.4.5`  `BadKeywordIndex`  a keyword index exceeds the parent's flat-keyword count
+
+- row  `↯/s.118.5/t.4.6`  `ValueTruncated`  a Scalar value's byte length extends beyond end of input
++ row  `↯/s.118.5/t.4.6`  `ValueTruncated`  a Scalar value's byte length extends beyond end of input
+
+- row  `↯/s.118.5/t.4.7`  `BadUtf8`  a Scalar value's bytes are not valid UTF-8
++ row  `↯/s.118.5/t.4.7`  `BadUtf8`  a Scalar value's bytes are not valid UTF-8
+
+- row  `↯/s.118.5/t.4.8`  `TrailingBytes`  a whole-document reader found bytes after the document
++ row  `↯/s.118.5/t.4.8`  `TrailingBytes`  a whole-document reader found bytes after the document
+
+- row  `↯/s.118.5/t.4.9`  `UnexpectedEoi`  the decoder requested bytes beyond end of input
++ row  `↯/s.118.5/t.4.9`  `UnexpectedEoi`  the decoder requested bytes beyond end of input
+
+- row  `↯/s.118.5/t.4.10`  `ReferenceUnresolved`  a Reference or SelectRef in the schema does not resolve to a definition of its kind
++ row  `↯/s.118.5/t.4.10`  `ReferenceUnresolved`  a Reference or SelectRef in the schema does not resolve to a definition of its kind
+
+- row  `↯/s.118.5/t.4.11`  `EmbeddedSignatureMismatch`  the signature recomputed from the embedded schema body does not equal the carried signature
++ row  `↯/s.118.5/t.4.11`  `EmbeddedSignatureMismatch`  the signature recomputed from the embedded schema body does not equal the carried signature
+
+- row  `↯/s.118.5/t.4.12`  `EmbeddedSchemaUndecodable`  the embedded schema body does not decode as a valid TEL document under tels
++ row  `↯/s.118.5/t.4.12`  `EmbeddedSchemaUndecodable`  the embedded schema body does not decode as a valid TEL document under tels
+
+- row  `↯/s.118.5/t.4.13`  `CodecUnresolved`  a scalar's declared encoding is not resolved by the codec binding
++ row  `↯/s.118.5/t.4.13`  `CodecUnresolved`  a scalar's declared encoding is not resolved by the codec binding
+
+- row  `↯/s.118.5/t.4.14`  `CodecDecodeFailed`  an encoded scalar's value bytes are rejected by the bound codec
++ row  `↯/s.118.5/t.4.14`  `CodecDecodeFailed`  an encoded scalar's value bytes are rejected by the bound codec
+
+- row  `↯/s.118.5/t.4.15`  `CodecNoncanonical`  an encoded scalar's value bytes are not the re-encoding of their decoded text
++ row  `↯/s.118.5/t.4.15`  `CodecNoncanonical`  an encoded scalar's value bytes are not the re-encoding of their decoded text
+
+- row  `↯/s.118.5/t.4.16`  `DeclaredLengthMismatch`  the declared document length disagrees with the structural extent of the document
++ row  `↯/s.118.5/t.4.16`  `DeclaredLengthMismatch`  the declared document length disagrees with the structural extent of the document
+
+- row  `↯/s.118.5.17`  `NestingLimitExceeded`  the document nests Structs more deeply than the decoder's limit
++ row  `↯/s.118.5.17`  `NestingLimitExceeded`  the document nests Structs more deeply than the decoder's limit
+
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- A signature mismatch means the reader holds a different schema from the writer; check the
+- signature before decoding rather than after. A self-contained frame carries its schema, so
+- it decodes without one being held locally. `TrailingBytes` is a property of the reader's
+- contract, not of the bytes: the same input is a well-formed stream to `Bintel.decodeStream`
+- and a single document with a continuation to `Bintel.decodeDocument`. A document framed
+- before the length field was added (before TEL commit 8380ef7) fails at `BadSignatureLength`,
+- because its signature length is read as the document length.
++ Una firma non corrispondente significa che il lettore ha uno schema diverso da quello dello
++ scrittore; controlla la firma prima di decodificare anziché dopo. Un frame autocontenuto porta il
++ suo schema, così si decodifica senza che ne sia conservato uno localmente. `TrailingBytes` è una
++ proprietà del contratto del lettore, non dei byte: lo stesso input è uno stream ben formato per
++ `Bintel.decodeStream` e un unico documento con una continuazione per `Bintel.decodeDocument`. Un
++ documento con frame creato prima che fosse aggiunto il campo della lunghezza (prima del commit TEL
++ 8380ef7) fallisce con `BadSignatureLength`, perché la sua lunghezza di firma viene letta come
++ lunghezza del documento.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/stratiform/src/core/stratiform.Bintel.scala`
++ - Sorgente: `lib/stratiform/src/core/stratiform.Bintel.scala`

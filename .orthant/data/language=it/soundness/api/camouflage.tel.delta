@@ -1,0 +1,285 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base camouflage
++ base camouflage
+
+- import soundness
++ import soundness
+
+- info   caches: a bounded least-recently-used map, and a single value memoized with a lifetime
++ info   cache: una mappa limitata con politica least-recently-used, e un singolo valore memoizzato con una durata di vita
+
+- detail
++ detail
+
+-     _Camouflage_ provides the two shapes a cache usually takes, so that the decisions every
+-     hand-rolled cache makes implicitly — when to evict, what to do when two threads want the
+-     same missing value, and when a cached value is too old to trust — are made by the type.
++     _Camouflage_ fornisce le due forme che una cache assume di solito, così che le decisioni che
++     ogni cache fatta a mano prende implicitamente (quando espellere, che cosa fare quando due
++     thread vogliono lo stesso valore mancante, e quando un valore in cache è troppo vecchio per
++     fidarsene) vengano prese dal tipo.
+
+-     An `LruCache` keeps up to a fixed number of keyed entries, evicting the least recently
+-     used. A `Cache` memoizes one value, optionally for a limited lifetime, and computes it
+-     under a lock, so concurrent callers share one result rather than stampeding. In both,
+-     the computation is passed by name and runs only on a miss.
++     Una `LruCache` conserva fino a un numero fisso di voci con chiave, espellendo quella usata meno
++     di recente. Una `Cache` memoizza un valore, eventualmente per una durata di vita limitata, e lo
++     calcola sotto un lock, così i chiamanti concorrenti condividono un unico risultato anziché
++     precipitarsi tutti insieme. In entrambe, il calcolo è passato per nome e viene eseguito solo in
++     caso di mancanza.
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     import durationInterfaces.aviationDuration
++     import durationInterfaces.aviationDuration
+
+-     val names = LruCache[Int, Text](100)
++     val names = LruCache[Int, Text](100)
+
+-     names(1)(t"one")          // computes and stores
++     names(1)(t"one")          // computes and stores
+
+-     names(1)(t"not needed")   // t"one", from the cache
++     names(1)(t"not needed")   // t"one", from the cache
+
+-     case class Configuration(port: Int)
++     case class Configuration(port: Int)
+
+-     val config: Cache[Configuration] = Cache(300.0*Second)
++     val config: Cache[Configuration] = Cache(300.0*Second)
+
+-     config.establish(Configuration(8080))   // computed now, then reused for five minutes
++     config.establish(Configuration(8080))   // computed now, then reused for five minutes
+
+-     ```
++     ```
+
+-     The library has a single source set, `camouflage.core`, and everything is exported to
+-     the `soundness` umbrella.
++     La libreria ha un unico insieme di sorgenti, `camouflage.core`, e tutto è esportato nel modulo
++     ombrello `soundness`.
+
+- refer camouflage.LruCache
++ refer camouflage.LruCache
+
+- refer camouflage.Cache
++ refer camouflage.Cache
+
+- entry .LruCache   a bounded keyed cache which evicts its least recently used entry when full
++ entry .LruCache   una cache limitata con chiavi che, quando è piena, espelle la voce usata meno di recente
+
+= entry .LruCache   a bounded keyed cache which evicts its least recently used entry when full
+-   detail
++   detail
+
+-       `LruCache[Key, Value](maxSize)` holds up to `maxSize` entries. Applying it with a key
+-       and a computation, `cache(key)(computation)`, returns the cached value if the key is
+-       present, and otherwise evaluates the computation, stores its result, and evicts the
+-       least recently used entries until the cache is within its size again.
++       `LruCache[Key, Value](maxSize)` contiene fino a `maxSize` voci. Applicarla con una chiave e
++       un calcolo, `cache(key)(computation)`, restituisce il valore in cache se la chiave è
++       presente, e altrimenti valuta il calcolo, ne memorizza il risultato, ed espelle le voci
++       usate meno di recente finché la cache non rientra di nuovo nella sua dimensione.
+
+-       Reading or writing an entry marks it as recent, so the entries that survive are the
+-       ones the program keeps returning to:
++       Leggere o scrivere una voce la segna come recente, così le voci che sopravvivono sono
++       quelle a cui il programma continua a tornare:
+
+=       ones the program keeps returning to:
+=
+-       ```scala
++       ```scala
+
+=       ones the program keeps returning to:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       ones the program keeps returning to:
+=
+=       ```scala
+=       import soundness.*
+=
+-       val cache = LruCache[Int, Text](4)
++       val cache = LruCache[Int, Text](4)
+
+=       ones the program keeps returning to:
+=
+=       ```scala
+=       import soundness.*
+=
+=       val cache = LruCache[Int, Text](4)
+-       cache(1)(t"one")
++       cache(1)(t"one")
+
+-       cache(2)(t"two")
++       cache(2)(t"two")
+
+-       cache(3)(t"three")
++       cache(3)(t"three")
+
+-       cache(4)(t"four")
++       cache(4)(t"four")
+
+-       cache(1)(t"ein")    // t"one": a hit, which makes 1 the most recent
++       cache(1)(t"ein")    // t"one": a hit, which makes 1 the most recent
+
+-       cache(5)(t"five")   // evicts 2, now the least recent
++       cache(5)(t"five")   // evicts 2, now the least recent
+
+-       cache(2)(t"zwei")   // t"zwei": computed again
++       cache(2)(t"zwei")   // t"zwei": computed again
+
+=       cache(2)(t"zwei")   // t"zwei": computed again
+-       ```
++       ```
+
+-       An `LruCache` holds no lock: it is for use by one thread at a time, or behind a lock of
+-       the caller's.
++       Una `LruCache` non tiene alcun lock: è pensata per essere usata da un thread alla volta, o
++       dietro un lock del chiamante.
+
+-   refer camouflage.Cache
++   refer camouflage.Cache
+
+-   entry #apply   the value for a key: the cached one, or the computation's result, stored
+-       The computation is passed by name and evaluated only on a miss. A hit marks the entry
+-       as the most recently used; a miss adds it as the most recent and evicts the least
+-       recent entries beyond the cache's size.
+-   entry #contains   whether the cache holds a value for a key
+-       Asks without computing anything and without marking the entry as recent.
+-   entry #remove   drops a key's entry, if it is present
+-       For invalidation, when the underlying data has changed and the cached value is known
+-       to be stale. Removing an absent key does nothing.
++   entry #apply   il valore per una chiave: quello in cache, o il risultato del calcolo, memorizzato
++       Il calcolo è passato per nome e valutato solo in caso di mancanza. Un successo segna la
++       voce come la più recente; una mancanza la aggiunge come la più recente ed espelle le voci
++       meno recenti oltre la dimensione della cache.
++   entry #contains   se la cache contiene un valore per una chiave
++       Chiede senza calcolare nulla e senza segnare la voce come recente.
++   entry #remove   elimina la voce di una chiave, se è presente
++       Per l'invalidazione, quando i dati sottostanti sono cambiati e il valore in cache è
++       notoriamente stantio. Rimuovere una chiave assente non fa nulla.
+
+=       to be stale. Removing an absent key does nothing.
+=
+-       ```scala
++       ```scala
+
+=       to be stale. Removing an absent key does nothing.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       to be stale. Removing an absent key does nothing.
+=
+=       ```scala
+=       import soundness.*
+=
+-       val cache = LruCache[Int, Text](4)
++       val cache = LruCache[Int, Text](4)
+
+=       to be stale. Removing an absent key does nothing.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val cache = LruCache[Int, Text](4)
+-       cache(1)(t"one")
++       cache(1)(t"one")
+
+-       cache.remove(1)
++       cache.remove(1)
+
+-       cache.contains(1)   // false
++       cache.contains(1)   // false
+
+=       cache.contains(1)   // false
+-       ```
++       ```
+
+- entry .Cache   a single memoized value, computed once under a lock and optionally expiring
++ entry .Cache   un singolo valore memoizzato, calcolato una volta sotto un lock e con scadenza facoltativa
+
+= entry .Cache   a single memoized value, computed once under a lock and optionally expiring
+-   detail
++   detail
+
+-       A `Cache[Value]` holds at most one value. `#establish` returns it, computing it only
+-       when none is held or the held one has expired. The computation runs under a lock, so
+-       when several threads ask for a missing or expired value at once, one computes it and
+-       the rest receive its result: the cache stampede a bare `lazy val` with a timestamp
+-       cannot prevent.
++       Una `Cache[Value]` contiene al più un valore. `#establish` lo restituisce, calcolandolo solo
++       quando non ne è contenuto alcuno o quello contenuto è scaduto. Il calcolo viene eseguito
++       sotto un lock, così quando diversi thread chiedono contemporaneamente un valore mancante o
++       scaduto, uno lo calcola e gli altri ne ricevono il risultato: è la corsa alla cache che un
++       semplice `lazy val` con un timestamp non può impedire.
+
+=       cannot prevent.
+=
+-       ```scala
++       ```scala
+
+=       cannot prevent.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import durationInterfaces.aviationDuration
++       import durationInterfaces.aviationDuration
+
+-       case class Configuration(port: Int)
++       case class Configuration(port: Int)
+
+-       val config: Cache[Configuration] = Cache(300.0*Second)
++       val config: Cache[Configuration] = Cache(300.0*Second)
+
+-       config.establish(Configuration(8080))   // computed now
++       config.establish(Configuration(8080))   // computed now
+
+-       config.establish(Configuration(9090))   // Configuration(8080), until five minutes pass
++       config.establish(Configuration(9090))   // Configuration(8080), until five minutes pass
+
+=       config.establish(Configuration(9090))   // Configuration(8080), until five minutes pass
+-       ```
++       ```
+
+-       The value's type is given as the expected type, or as a type argument,
++       Il tipo del valore si indica come tipo atteso, o come argomento di tipo,
+
+-       `Cache[Configuration]()`.
++       `Cache[Configuration]()`.
+
+-   refer camouflage.LruCache
++   refer camouflage.LruCache
+
+-   entry .apply   a cache with a lifetime, or with none, `Cache[Value]()`, which keeps its value forever
+-       The lifetime is any duration which is `Abstractable across Durations to Long` — an
+-       aviation `Quantity` of seconds, with `durationInterfaces.aviationDuration` imported,
+-       for instance — read at millisecond precision. The lifetime is measured from the
+-       moment the value was last computed, not from when it was last read.
+-   entry #establish   the cached value, computed by the given block if there is none or it has expired
+-       The block is passed by name and evaluated only when needed, while the cache's lock is
+-       held; other callers wait for it and receive the same value.
++   entry .apply   una cache con una durata di vita, o senza, `Cache[Value]()`, che conserva il suo valore per sempre
++       La durata di vita è una qualsiasi durata che sia `Abstractable across Durations to Long`,
++       per esempio una `Quantity` di secondi di aviation, con `durationInterfaces.aviationDuration`
++       importato, letta con precisione al millisecondo. La durata di vita si misura dal momento in
++       cui il valore è stato calcolato l'ultima volta, non da quando è stato letto l'ultima volta.
++   entry #establish   il valore in cache, calcolato dal blocco dato se non ce n'è alcuno o se è scaduto
++       Il blocco è passato per nome e valutato solo quando serve, mentre il lock della cache è
++       tenuto; gli altri chiamanti lo attendono e ricevono lo stesso valore.

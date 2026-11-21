@@ -1,0 +1,93 @@
+orthant 1 language
+
+- # `↯/s.73.3` — `Moment.Error`
++ # `↯/s.73.3` — `Moment.Error`
+
+- Raised when Aviation cannot determine a civil date-time value.
++ Sollevato quando Aviation non riesce a determinare un valore civile di data e ora.
+
+- ## Cause
++ ## Causa
+
+- A `Moment` is a date, a clock time and a timezone together, and this is the
+- error raised by every operation that builds one: parsing text against a
+- format, constructing a date in a calendar, naming a month, and grounding a
+- wall-clock time to an instant. The message is `the date was not valid
+- because $reason`.
++ Un `Moment` è una data, un'ora e un fuso orario insieme, e questo è l'errore sollevato da ogni
++ operazione che ne costruisce uno: il parsing di un testo secondo un formato, la costruzione di una
++ data in un calendario, il nome di un mese e l'ancoraggio di un'ora dell'orologio locale a un
++ istante. Il messaggio è `the date was not valid because $reason`.
+
+- Durations are not moments, so a duration that fails to parse raises
+- `Timespan.Error` (`↯/s.73.4`) rather than a variant of this.
++ Le durate non sono momenti, quindi una durata il cui parsing fallisce solleva `Timespan.Error`
++ (`↯/s.73.4`) anziché una variante di questo.
+
+- ## Variants
++ ## Varianti
+
+- ### `↯/s.73.3.1` — `Format`
++ ### `↯/s.73.3.1` — `Format`
+
+- The input did not match the date format being parsed.
++ L'input non corrispondeva al formato di data analizzato.
+
+- **Example.** `[↯/s.73.3.1] the date was not valid because 2026-13-01 does not conform to format ISO-8601 (... at ...)`
++ **Esempio.** `[↯/s.73.3.1] the date was not valid because 2026-13-01 does not conform to format ISO-8601 (... at ...)`
+
+- **Resolution.** Pass an input that matches the format, or choose a
+- format that matches the input.
++ **Soluzione.** Passa un input che corrisponda al formato, o scegli un formato che corrisponda
++ all'input.
+
+- ### `↯/s.73.3.2` — `Invalid`
++ ### `↯/s.73.3.2` — `Invalid`
+
+- The numeric components form a date that does not exist in the
+- chosen calendar (e.g. February 30 in the Gregorian calendar).
++ Le componenti numeriche formano una data che non esiste nel calendario scelto (per esempio il 30
++ febbraio nel calendario gregoriano).
+
+- **Example.** `[↯/s.73.3.2] the date was not valid because 2026-2-30 does not exist in the calendar Gregorian`
++ **Esempio.** `[↯/s.73.3.2] the date was not valid because 2026-2-30 does not exist in the calendar Gregorian`
+
+- **Resolution.** Adjust the day, month, or year to a valid combination.
++ **Soluzione.** Correggi il giorno, il mese o l'anno in una combinazione valida.
+
+- ### `↯/s.73.3.3` — `Unknown`
++ ### `↯/s.73.3.3` — `Unknown`
+
+- A textual value did not name a recognised date kind (e.g. day name,
+- month name).
++ Un valore testuale non nominava un tipo di data riconosciuto (per esempio il nome di un giorno o di
++ un mese).
+
+- **Example.** `[↯/s.73.3.3] the date was not valid because Ides is not a recognized weekday`
++ **Esempio.** `[↯/s.73.3.3] the date was not valid because Ides is not a recognized weekday`
+
+- **Resolution.** Use one of the documented names for the kind.
++ **Soluzione.** Usa uno dei nomi documentati per quel tipo.
+
+- ### `↯/s.73.3.4` — `Gap`
++ ### `↯/s.73.3.4` — `Gap`
+
+- A wall-clock time names an instant that does not exist, because the clocks moved forward past it.
++ Un'ora dell'orologio locale nomina un istante che non esiste, perché gli orologi sono stati spostati
++ in avanti oltre di esso.
+
+- **Example.** `[↯/s.73.3.4] the date was not valid because the wall-clock time does not exist in its timezone (a spring-forward DST gap)`
++ **Esempio.** `[↯/s.73.3.4] the date was not valid because the wall-clock time does not exist in its timezone (a spring-forward DST gap)`
+
+- **Resolution.** Choose a `GapPolicy`: the default pushes the time forward past the gap, and others push it backward or raise this error. Import the policy that suits the application.
++ **Soluzione.** Scegli una `GapPolicy`: quella predefinita sposta l'ora in avanti oltre il salto,
++ mentre altre la spostano indietro o sollevano questo errore. Importa la politica adatta
++ all'applicazione.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/aviation/src/core/aviation.Moment.scala`
+- - Related: `↯/s.73.4` (`Timespan.Error`)
++ - Sorgente: `lib/aviation/src/core/aviation.Moment.scala`
++ - Correlati: `↯/s.73.4` (`Timespan.Error`)

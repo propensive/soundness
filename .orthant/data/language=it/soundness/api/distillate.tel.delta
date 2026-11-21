@@ -1,0 +1,1457 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base distillate
++ base distillate
+
+- import soundness
++ import soundness
+
+- info   typed conversions out of text and other forms: `as[T]`, the `As` extractor and their typeclasses
++ info   conversioni tipizzate a partire dal testo e da altre forme: `as[T]`, l'estrattore `As` e le loro typeclass
+
+- detail
++ detail
+
+-     _Distillate_ turns loose values — command-line arguments, environment variables, regular
+-     expression captures, a field of a parsed document — into typed ones, and makes the way each
+-     conversion can fail visible in its type. It does so with three typeclasses, each with its
+-     own failure mode:
++     _Distillate_ trasforma valori sciolti — argomenti da riga di comando, variabili d'ambiente,
++     catture di espressioni regolari, un campo di un documento analizzato — in valori tipizzati,
++     e rende visibile nel tipo il modo in cui ogni conversione può fallire. Lo fa con tre
++     typeclass, ciascuna con la propria modalità di fallimento:
+
+-     - `Decodable` reads a value _out of_ a form (`Int is Decodable in Text`) and raises a typed
+-       error, through a `Tactic`, when it cannot;
+-     - `Extractable` converts _toward_ a result (`Text is Extractable to Int`) and yields `Unset`
+-       when it declines, which is what a pattern match wants;
+-     - `Irrefutable` converts where nothing can go wrong (`Byte is Irrefutable to Int`).
++     - `Decodable` legge un valore _da_ una forma (`Int is Decodable in Text`) e solleva un
++       errore tipizzato, attraverso una `Tactic`, quando non ci riesce;
++     - `Extractable` converte _verso_ un risultato (`Text is Extractable to Int`) e produce
++       `Unset` quando rinuncia, ed è ciò che vuole un pattern matching;
++     - `Irrefutable` converte dove nulla può andare storto (`Byte is Irrefutable to Int`).
+
+-     The everyday surface is two names: the `as` extension, which decodes, and the `As`
+-     extractor, which extracts in a pattern.
++     La superficie di tutti i giorni sono due nomi: l'estensione `as`, che decodifica, e
++     l'estrattore `As`, che estrae in un pattern.
+
+=     extractor, which extracts in a pattern.
+=
+-     ```scala
++     ```scala
+
+=     extractor, which extracts in a pattern.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     extractor, which extracts in a pattern.
+=
+=     ```scala
+=     import soundness.*
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import errorDiagnostics.stackTracesDiagnostics
++     import errorDiagnostics.stackTracesDiagnostics
+
+-     t"123".as[Int]                    // 123
++     t"123".as[Int]                    // 123
+
+-     safely(t"hello".as[Int]).or(0)    // 0
++     safely(t"hello".as[Int]).or(0)    // 0
+
+-     t"12:13:14" match
++     t"12:13:14" match
+
+-       case r"${As[Int](h)}(\d+):${As[Int](m)}(\d+):${As[Int](s)}(\d+)" => List(h, m, s)
++       case r"${As[Int](h)}(\d+):${As[Int](m)}(\d+):${As[Int](s)}(\d+)" => List(h, m, s)
+
+-       case _                                                            => List()
++       case _                                                            => List()
+
+=       case _                                                            => List()
+-     ```
++     ```
+
+-     The library also carries the pieces every data format shares: `Enumerable`, the derived
+-     description of an `enum` that every format's codecs use to name its cases; `Identifiable`,
+-     a two-way mapping between naming conventions; `Parsable`, the streaming counterpart of
+-     `Decodable` which reads a value straight from a format's token reader; the three
+-     `Decodable.Absence`, `Decodable.Nullity` and `Decodable.Fault` policies an `Optional` field
+-     consults; and `Codecs`, the contextual mode that selects between a format's derived and
+-     direct (generated) codecs. The encoding direction, `Encodable` and `value.in[Format]`,
+-     belongs to `anticipation`, beneath this library.
++     La libreria porta anche i pezzi che ogni formato di dati condivide: `Enumerable`, la
++     descrizione derivata di un `enum` che i codec di ogni formato usano per nominarne i casi;
++     `Identifiable`, una corrispondenza bidirezionale tra convenzioni di denominazione;
++     `Parsable`, la controparte in streaming di `Decodable` che legge un valore direttamente dal
++     lettore di token di un formato; le tre politiche `Decodable.Absence`, `Decodable.Nullity`
++     e `Decodable.Fault` che un campo `Optional` consulta; e `Codecs`, la modalità contestuale
++     che sceglie tra i codec derivati e quelli diretti (generati) di un formato. La direzione
++     della codifica, `Encodable` e `value.in[Format]`, appartiene ad `anticipation`, sotto
++     questa libreria.
+
+-     Two choice packages hold givens which must be imported by name, because `import pkg.*`
+-     does not import givens: `truths`, whose `Truth` spellings are accepted by the `Boolean`
+-     decoder beside `true`/`false`, and `codecs`, whose three modes select the codec path for
+-     every format at once.
++     Due package di scelta contengono given che vanno importati per nome, perché
++     `import pkg.*` non importa i given: `truths`, le cui grafie di `Truth` sono accettate dal
++     decodificatore di `Boolean` accanto a `true`/`false`, e `codecs`, le cui tre modalità
++     scelgono il percorso dei codec per tutti i formati insieme.
+
+-     The library is a single source set, `distillate.core`, for every platform. Everything is
+-     exported to the `soundness` umbrella, and the `truths` and `codecs` packages merge with the
+-     umbrella's own.
++     La libreria è un unico insieme di sorgenti, `distillate.core`, per ogni piattaforma. Tutto
++     è esportato nell'ombrello `soundness`, e i package `truths` e `codecs` si fondono con
++     quelli propri dell'ombrello.
+
+- refer distillate.Decodable
++ refer distillate.Decodable
+
+- refer distillate.Extractable
++ refer distillate.Extractable
+
+- refer distillate.Irrefutable
++ refer distillate.Irrefutable
+
+- refer distillate.As
++ refer distillate.As
+
+- refer distillate.as
++ refer distillate.as
+
+- entry .as   decodes a value as `T` with the `T is Decodable in` its form, or converts it with a given `Irrefutable`
+-     `value.as[T]` summons a `T is Decodable in F`, where `F` is the static type of `value`, and
+-     applies it. A decoder built from a `Tactic` (the number decoders need a
+-     `Tactic[Number.Error]`, the `Boolean` one a `Tactic[Truth.Error]`) raises through it, so the
+-     strategy in scope decides whether a failed decode throws, yields `Unset` under `safely`, or
+-     accrues. Nothing of the decoder is retained: the result is a plain value.
++ entry .as   decodifica un valore come `T` con il `T is Decodable in` della sua forma, o lo converte con un `Irrefutable` dato
++     `value.as[T]` evoca un `T is Decodable in F`, dove `F` è il tipo statico di `value`, e lo
++     applica. Un decodificatore costruito da una `Tactic` (i decodificatori di numeri hanno
++     bisogno di una `Tactic[Number.Error]`, quello di `Boolean` di una `Tactic[Truth.Error]`)
++     solleva attraverso di essa, così la strategia nell'ambito decide se una decodifica fallita
++     lancia un'eccezione, produce `Unset` sotto `safely`, o si accumula. Nulla del
++     decodificatore viene trattenuto: il risultato è un valore semplice.
+
+=     accrues. Nothing of the decoder is retained: the result is a plain value.
+=
+-     ```scala
++     ```scala
+
+=     accrues. Nothing of the decoder is retained: the result is a plain value.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     accrues. Nothing of the decoder is retained: the result is a plain value.
+=
+=     ```scala
+=     import soundness.*
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     t"123".as[Int]                          // 123
++     t"123".as[Int]                          // 123
+
+-     capture[Number.Error](t"300".as[Byte])  // Number.Error(..., Reason.OutOfRange)
++     capture[Number.Error](t"300".as[Byte])  // Number.Error(..., Reason.OutOfRange)
+
+=     capture[Number.Error](t"300".as[Byte])  // Number.Error(..., Reason.OutOfRange)
+-     ```
++     ```
+
+-     The second overload, `value.as[T](irrefutable)`, takes an `Irrefutable` explicitly, as an
+-     ordinary argument rather than a contextual one, and applies it; it cannot fail.
++     Il secondo overload, `value.as[T](irrefutable)`, prende un `Irrefutable` esplicitamente,
++     come argomento ordinario e non contestuale, e lo applica; non può fallire.
+
+- entry .As   the extractor `As[T]`, which matches a scrutinee that yields a `T` and binds it
++ entry .As   l'estrattore `As[T]`, che corrisponde a un valore esaminato che produce un `T` e lo lega
+
+= entry .As   the extractor `As[T]`, which matches a scrutinee that yields a `T` and binds it
+-   detail
++   detail
+
+-       `As[T](binding)` in a pattern summons `scrutinee.type is Extractable to T` and matches
+-       when it yields a value, falling through to the next case when it yields `Unset`. Because
+-       it is an ordinary extractor it nests in any pattern: in the groups of an `r"…"` pattern,
+-       inside a list pattern, or beside other extractors.
++       `As[T](binding)` in un pattern evoca `scrutinee.type is Extractable to T` e corrisponde
++       quando produce un valore, passando al caso successivo quando produce `Unset`. Poiché è un
++       estrattore ordinario si annida in qualsiasi pattern: nei gruppi di un pattern `r"…"`,
++       dentro un pattern di lista, o accanto ad altri estrattori.
+
+=       inside a list pattern, or beside other extractors.
+=
+-       ```scala
++       ```scala
+
+=       inside a list pattern, or beside other extractors.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       List(t"12", t"13", t"14") match
++       List(t"12", t"13", t"14") match
+
+-         case As[Int](first) :: As[Int](second) :: As[Int](third) :: Nil => (first, second, third)
++         case As[Int](first) :: As[Int](second) :: As[Int](third) :: Nil => (first, second, third)
+
+-         case _                                                          => (0, 0, 0)
++         case _                                                          => (0, 0, 0)
+
+-       300 match
++       300 match
+
+-         case As[Byte](byte) => byte
++         case As[Byte](byte) => byte
+
+-         case _              => -1      // 300 does not fit in a Byte
++         case _              => -1      // 300 does not fit in a Byte
+
+=         case _              => -1      // 300 does not fit in a Byte
+-       ```
++       ```
+
+-       Under capture checking, the explicit type argument of `As[T]` forces the scrutinee
+-       through a singleton type which the checker cannot bind to the instance's `Self`; the
+-       result-fixed extractors `As.Int` and `As.Boolean` take no type argument and are usable
+-       from capture-checked code.
++       Sotto il capture checking, l'argomento di tipo esplicito di `As[T]` costringe il valore
++       esaminato attraverso un tipo singleton che il controllo non riesce a legare al `Self`
++       dell'istanza; gli estrattori a risultato fisso `As.Int` e `As.Boolean` non prendono alcun
++       argomento di tipo e sono utilizzabili da codice sottoposto a capture checking.
+
+=       from capture-checked code.
+-   refer distillate.Extractable
++   refer distillate.Extractable
+
+-   entry .unapply   matches a scrutinee whose singleton type is `Extractable` to the result
+-   entry .Int   an extractor fixed to `Int`, with no type argument, for capture-checked code
++   entry .unapply   corrisponde a un valore esaminato il cui tipo singleton è `Extractable` verso il risultato
++   entry .Int   un estrattore fissato a `Int`, senza argomento di tipo, per codice sottoposto a capture checking
+
+=   entry .Int   an extractor fixed to `Int`, with no type argument, for capture-checked code
+-     detail
++     detail
+
+-         `case As.Int(number) =>` matches any scrutinee with a `scrutinee is Extractable to Int`
+-         in scope, inferring the scrutinee's type from the matched value rather than from a
+-         singleton, so the instance resolves cleanly under capture checking.
+-     entry .unapply   matches a scrutinee which is `Extractable to Int`
+-   entry .Boolean   an extractor fixed to `Boolean`, with no type argument, for capture-checked code
++         `case As.Int(number) =>` corrisponde a qualsiasi valore esaminato con uno
++         `scrutinee is Extractable to Int` nell'ambito, inferendo il tipo del valore esaminato dal
++         valore confrontato invece che da un singleton, così l'istanza si risolve senza problemi
++         sotto il capture checking.
++     entry .unapply   corrisponde a un valore esaminato che è `Extractable to Int`
++   entry .Boolean   un estrattore fissato a `Boolean`, senza argomento di tipo, per codice sottoposto a capture checking
+
+=   entry .Boolean   an extractor fixed to `Boolean`, with no type argument, for capture-checked code
+-     detail
++     detail
+
+-         `case As.Boolean(flag) =>` matches any scrutinee with a `scrutinee is Extractable to
+-         Boolean` in scope; for text that is exactly `true` or `false`.
+-     entry .unapply   matches a scrutinee which is `Extractable to Boolean`
++         `case As.Boolean(flag) =>` corrisponde a qualsiasi valore esaminato con uno
++         `scrutinee is Extractable to Boolean` nell'ambito; per un testo che è esattamente `true`
++         o `false`.
++     entry .unapply   corrisponde a un valore esaminato che è `Extractable to Boolean`
+
+- entry .Decodable   a typeclass reading `Self` out of a `Form`, raising a typed error when it cannot
++ entry .Decodable   una typeclass che legge `Self` da una `Form`, sollevando un errore tipizzato quando non ci riesce
+
+= entry .Decodable   a typeclass reading `Self` out of a `Form`, raising a typed error when it cannot
+-   detail
++   detail
+
+-       `T is Decodable in F` is a single function `F => T`, `#decoded`. It is what `value.as[T]`
+-       applies, and what every data format's codecs build on: `Person is Decodable in Json`,
+-       `Int is Decodable in Text`. An instance which can fail takes a `Tactic` for its error as
+-       a contextual parameter and raises through it, so the error is part of what the given
+-       needs, and the strategy is chosen where `as` is called.
++       `T is Decodable in F` è un'unica funzione `F => T`, `#decoded`. È ciò che `value.as[T]`
++       applica, e ciò su cui si basano i codec di ogni formato di dati:
++       `Person is Decodable in Json`, `Int is Decodable in Text`. Un'istanza che può fallire
++       prende una `Tactic` per il suo errore come parametro contestuale e solleva attraverso di
++       essa, così l'errore fa parte di ciò di cui il given ha bisogno, e la strategia si sceglie
++       dove si chiama `as`.
+
+-       Writing an instance is writing the function; in a companion object it is found with no
+-       import.
++       Scrivere un'istanza significa scrivere la funzione; in un oggetto compagno la si trova
++       senza import.
+
+=       import.
+=
+-       ```scala
++       ```scala
+
+=       import.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       enum Heading:
++       enum Heading:
+
+-         case N, S, E, W
++         case N, S, E, W
+
+-       object Heading:
++       object Heading:
+
+-         given (Heading is Decodable in Text) =
++         given (Heading is Decodable in Text) =
+
+-           case t"north" => N
++           case t"north" => N
+
+-           case t"south" => S
++           case t"south" => S
+
+-           case t"east"  => E
++           case t"east"  => E
+
+-           case t"west"  => W
++           case t"west"  => W
+
+-       t"north".as[Heading]   // Heading.N
++       t"north".as[Heading]   // Heading.N
+
+=       t"north".as[Heading]   // Heading.N
+-       ```
++       ```
+
+-       The companion holds the decoders out of `Text` for the primitive types and for any
+-       `enum`, and the three policies an `Optional` field consults (`.Absence`, `.Nullity`,
+-       `.Fault`). It extends `Decodable2`, whose lower-priority `generic` decodes any value in
+-       its own form as itself.
++       L'oggetto compagno contiene i decodificatori da `Text` per i tipi primitivi e per
++       qualsiasi `enum`, e le tre politiche che un campo `Optional` consulta (`.Absence`,
++       `.Nullity`, `.Fault`). Estende `Decodable2`, il cui `generic` a priorità inferiore
++       decodifica qualsiasi valore nella sua stessa forma come sé stesso.
+
+-       A format's catch-all given (`[value] => value is Decodable in Json` and the like) ties
+-       with any companion given over a bare type parameter, which is an ambiguity error; a given
+-       whose type parameter is bounded (`[item <: Item]`) is more specific and wins.
++       Il given catch-all di un formato (`[value] => value is Decodable in Json` e simili) è in
++       parità con qualsiasi given dell'oggetto compagno su un parametro di tipo nudo, il che è un
++       errore di ambiguità; un given il cui parametro di tipo è limitato (`[item <: Item]`) è più
++       specifico e vince.
+
+=       whose type parameter is bounded (`[item <: Item]`) is more specific and wins.
+-   refer distillate.as
++   refer distillate.as
+
+=   refer distillate.as
+-   refer distillate.Extractable
++   refer distillate.Extractable
+
+=   refer distillate.Extractable
+-   refer distillate.Parsable
++   refer distillate.Parsable
+
+-   refer anticipation.Encodable
++   refer anticipation.Encodable
+
+-   entry .int   decodes an `Int` from decimal text, raising `Number.Error` if it is unparseable
+-       Needs a `Tactic[Number.Error]`. Parses with `Integer.parseInt`, so the text must be an
+-       optionally-signed decimal integer with no surrounding space; any failure, including
+-       overflow, is `Number.Error.Reason.Unparseable`.
+-   entry .byte   decodes a `Byte` from decimal text, distinguishing unparseable from out-of-range
+-       Needs a `Tactic[Number.Error]`. Text which is not an integer raises `Number.Error` with
+-       `Reason.Unparseable`; an integer outside −128 to 127 raises it with `Reason.OutOfRange`.
+-   entry .short   decodes a `Short` from decimal text, distinguishing unparseable from out-of-range
+-       Needs a `Tactic[Number.Error]`. Text which is not an integer raises `Number.Error` with
+-       `Reason.Unparseable`; an integer outside the range of a `Short` raises it with
++   entry .int   decodifica un `Int` da testo decimale, sollevando `Number.Error` se non è analizzabile
++       Ha bisogno di una `Tactic[Number.Error]`. Analizza con `Integer.parseInt`, quindi il testo
++       deve essere un intero decimale con segno facoltativo e senza spazi attorno; qualsiasi
++       fallimento, overflow compreso, è `Number.Error.Reason.Unparseable`.
++   entry .byte   decodifica un `Byte` da testo decimale, distinguendo il non analizzabile dal fuori intervallo
++       Ha bisogno di una `Tactic[Number.Error]`. Un testo che non è un intero solleva
++       `Number.Error` con `Reason.Unparseable`; un intero fuori da −128 a 127 lo solleva con
+
+-       `Reason.OutOfRange`.
++       `Reason.OutOfRange`.
+
+-   entry .long   decodes a `Long` from decimal text, raising `Number.Error` if it is unparseable
+-       Needs a `Tactic[Number.Error]`; parses with `java.lang.Long.parseLong`.
+-   entry .double   decodes a `Double` from text, raising `Number.Error` if it is unparseable
+-       Needs a `Tactic[Number.Error]`; parses with `java.lang.Double.parseDouble`, so exponents,
+-       `NaN` and `Infinity` are accepted as Java accepts them.
+-   entry .float   decodes a `Float` from text, raising `Number.Error` if it is unparseable
+-       Needs a `Tactic[Number.Error]`; parses with `java.lang.Float.parseFloat`.
+-   entry .char   decodes a `Char` as the first character of the text
+-       Needs no tactic. Any text beyond the first character is ignored, and empty text is not
+-       checked for: prefer `As[Char]`, which matches only text of exactly one character.
+-   entry .boolean   decodes a `Boolean` from any `Truth` spelling in scope, in any case, raising `Truth.Error`
+-       Needs a `Tactic[Truth.Error]` and collects every `Truth` in scope (`Every[Truth]`). The
+-       text is trimmed and lowercased, then offered to each spelling in turn; text which none
+-       recognizes raises `Truth.Error`. `Truth.trueFalse`, in the `Truth` companion, is always
+-       in scope, and each `truths` given imported adds a spelling beside it rather than
+-       replacing it.
++   entry .short   decodifica uno `Short` da testo decimale, distinguendo il non analizzabile dal fuori intervallo
++       Ha bisogno di una `Tactic[Number.Error]`. Un testo che non è un intero solleva
++       `Number.Error` con `Reason.Unparseable`; un intero fuori dall'intervallo di uno `Short` lo
++       solleva con `Reason.OutOfRange`.
++   entry .long   decodifica un `Long` da testo decimale, sollevando `Number.Error` se non è analizzabile
++       Ha bisogno di una `Tactic[Number.Error]`; analizza con `java.lang.Long.parseLong`.
++   entry .double   decodifica un `Double` dal testo, sollevando `Number.Error` se non è analizzabile
++       Ha bisogno di una `Tactic[Number.Error]`; analizza con `java.lang.Double.parseDouble`,
++       così esponenti, `NaN` e `Infinity` sono accettati come li accetta Java.
++   entry .float   decodifica un `Float` dal testo, sollevando `Number.Error` se non è analizzabile
++       Ha bisogno di una `Tactic[Number.Error]`; analizza con `java.lang.Float.parseFloat`.
++   entry .char   decodifica un `Char` come primo carattere del testo
++       Non ha bisogno di alcuna tattica. Qualsiasi testo oltre il primo carattere viene ignorato,
++       e il testo vuoto non viene controllato: è preferibile `As[Char]`, che corrisponde solo a
++       un testo di esattamente un carattere.
++   entry .boolean   decodifica un `Boolean` da qualsiasi grafia di `Truth` nell'ambito, senza distinguere maiuscole e minuscole, sollevando `Truth.Error`
++       Ha bisogno di una `Tactic[Truth.Error]` e raccoglie ogni `Truth` nell'ambito
++       (`Every[Truth]`). Il testo viene ripulito dagli spazi e portato in minuscolo, poi offerto a
++       ciascuna grafia a turno; un testo che nessuna riconosce solleva `Truth.Error`.
++       `Truth.trueFalse`, nell'oggetto compagno di `Truth`, è sempre nell'ambito, e ogni given di
++       `truths` importato aggiunge una grafia accanto a esso invece di sostituirlo.
+
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label Only true and false
++         label Solo true e false
+
+=         label Only true and false
+-         code
++         code
+
+=         label Only true and false
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Only true and false
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+-             t" FALSE ".as[Boolean]           // false
++             t" FALSE ".as[Boolean]           // false
+
+-             safely(t"yes".as[Boolean])       // Unset: a Truth.Error was raised
++             safely(t"yes".as[Boolean])       // Unset: a Truth.Error was raised
+
+=             safely(t"yes".as[Boolean])       // Unset: a Truth.Error was raised
+-       frame
++       frame
+
+-         label Adding yes and no
++         label Aggiungendo yes e no
+
+=         label Adding yes and no
+-         code
++         code
+
+=         label Adding yes and no
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Adding yes and no
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+-             import truths.yesNoTruth
++             import truths.yesNoTruth
+
+-             t"yes".as[Boolean]               // true
++             t"yes".as[Boolean]               // true
+
+-             t"true".as[Boolean]              // true, still
++             t"true".as[Boolean]              // true, still
+
+=             t"true".as[Boolean]              // true, still
+-       frame
++       frame
+
+-         label Adding on/off and 1/0 as well
++         label Aggiungendo anche on/off e 1/0
+
+=         label Adding on/off and 1/0 as well
+-         code
++         code
+
+=         label Adding on/off and 1/0 as well
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Adding on/off and 1/0 as well
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+-             import truths.{yesNoTruth, onOffTruth, oneZeroTruth}
++             import truths.{yesNoTruth, onOffTruth, oneZeroTruth}
+
+-             List(t"on", t"OFF", t"1", t"no").map(_.as[Boolean])   // List(true, false, true, false)
++             List(t"on", t"OFF", t"1", t"no").map(_.as[Boolean])   // List(true, false, true, false)
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-   entry .enumeration   decodes an `enum` case from its name, raising `Enumerable.Error` if it names none
+-       For any `enum` with an `Enumerable` (derived automatically) and an `Identifiable` in
+-       scope, and a `Tactic[Enumerable.Error]`. The text is first mapped through the
+-       `Identifiable`'s `#decode`, so a naming convention (snake case in, camel case out) can sit
+-       between the text and the case names; the error lists the valid names, encoded back
+-       through the same `Identifiable`.
+-   entry .Absence   the policy for a key the document omits: lenient yields `Unset`, strict raises
++   entry .enumeration   decodifica un caso di `enum` dal suo nome, sollevando `Enumerable.Error` se non ne nomina alcuno
++       Per qualsiasi `enum` con un `Enumerable` (derivato automaticamente) e un `Identifiable`
++       nell'ambito, e una `Tactic[Enumerable.Error]`. Il testo viene prima passato attraverso il
++       `#decode` dell'`Identifiable`, così una convenzione di denominazione (snake case in
++       ingresso, camel case in uscita) può stare tra il testo e i nomi dei casi; l'errore elenca
++       i nomi validi, ricodificati attraverso lo stesso `Identifiable`.
++   entry .Absence   la politica per una chiave che il documento omette: quella permissiva produce `Unset`, quella rigorosa solleva un errore
+
+=   entry .Absence   the policy for a key the document omits: lenient yields `Unset`, strict raises
+-     detail
++     detail
+
+-         A policy indexed by its format (`Decodable.Absence in Json`), consulted by every format
+-         which decodes an `Optional` or `Option` field. The default, `.default`, is lenient for
+-         every format: an omitted key reads as `Unset` (or `None`). A format's
+-         `optionalityOptions` package offers a strict given named for the format
+-         (`strictJsonAbsence`), imported by name, which outranks the default; one may also be
+-         declared locally.
++         Una politica indicizzata dal suo formato (`Decodable.Absence in Json`), consultata da
++         ogni formato che decodifica un campo `Optional` o `Option`. Il predefinito, `.default`,
++         è permissivo per ogni formato: una chiave omessa si legge come `Unset` (o `None`). Il
++         package `optionalityOptions` di un formato offre un given rigoroso che prende il nome
++         dal formato (`strictJsonAbsence`), importato per nome, che ha la precedenza sul
++         predefinito; se ne può anche dichiarare uno localmente.
+
+=         declared locally.
+=
+-         ```scala
++         ```scala
+
+=         declared locally.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         summon[Decodable.Absence in Text].strict   // false
++         summon[Decodable.Absence in Text].strict   // false
+
+-         locally:
++         locally:
+
+-           given Decodable.Absence in Text = Decodable.Absence(true)
++           given Decodable.Absence in Text = Decodable.Absence(true)
+
+-           summon[Decodable.Absence in Text].strict // true
++           summon[Decodable.Absence in Text].strict // true
+
+=           summon[Decodable.Absence in Text].strict // true
+-         ```
++         ```
+
+-     entry .apply   an absence policy for a form, strict or lenient
+-     entry .default   the companion default for every form: lenient
+-     entry #strict   whether an omitted key is an error rather than `Unset`
+-   entry .Nullity   the policy for a format's explicit null: lenient yields `Unset`, strict raises
++     entry .apply   una politica di assenza per una forma, rigorosa o permissiva
++     entry .default   il predefinito dell'oggetto compagno per ogni forma: permissivo
++     entry #strict   se una chiave omessa è un errore invece di `Unset`
++   entry .Nullity   la politica per il null esplicito di un formato: quella permissiva produce `Unset`, quella rigorosa solleva un errore
+
+=   entry .Nullity   the policy for a format's explicit null: lenient yields `Unset`, strict raises
+-     detail
++     detail
+
+-         A policy indexed by its format (`Decodable.Nullity in Json`), consulted only by formats
+-         which have a null literal. The default, `.default`, is lenient: a null reads as `Unset`
+-         (or `None`). A format's `optionalityOptions` package offers a strict given named for the
+-         format (`strictCborNulls`), imported by name, which outranks the default.
+-     entry .apply   a nullity policy for a form, strict or lenient
+-     entry .default   the companion default for every form: lenient
+-     entry #strict   whether an explicit null is an error rather than `Unset`
+-   entry .Fault   the policy for a present value the inner decoder rejects: strict raises, lenient yields `Unset`
++         Una politica indicizzata dal suo formato (`Decodable.Nullity in Json`), consultata solo
++         dai formati che hanno un letterale null. Il predefinito, `.default`, è permissivo: un
++         null si legge come `Unset` (o `None`). Il package `optionalityOptions` di un formato
++         offre un given rigoroso che prende il nome dal formato (`strictCborNulls`), importato
++         per nome, che ha la precedenza sul predefinito.
++     entry .apply   una politica di nullità per una forma, rigorosa o permissiva
++     entry .default   il predefinito dell'oggetto compagno per ogni forma: permissivo
++     entry #strict   se un null esplicito è un errore invece di `Unset`
++   entry .Fault   la politica per un valore presente che il decodificatore interno rifiuta: quella rigorosa solleva un errore, quella permissiva produce `Unset`
+
+=   entry .Fault   the policy for a present value the inner decoder rejects: strict raises, lenient yields `Unset`
+-     detail
++     detail
+
+-         A policy indexed by its format (`Decodable.Fault in Json`). The default, `.default`, is
+-         strict: the inner decoder's error passes through. A format's `optionalityOptions`
+-         package offers a lenient given named for the format (`lenientYamlFaults`), imported by
+-         name; under it a rejected value decodes under the ambient tactic's `tolerate`, so
+-         nothing accrues under an accumulating tactic either, and reads as `Unset` (or `None`).
+-     entry .apply   a fault policy for a form, strict or lenient
+-     entry .default   the companion default for every form: strict
+-     entry #strict   whether a rejected value raises its error rather than reading as `Unset`
+-   entry #decodable   this instance, as a stable reference for use within a lambda
+-   entry #decoded   decodes a value of the form as `Self`
+-       The single abstract method: a lambda of type `Form => Self` is an instance. It may
+-       raise through a tactic the instance captured when it was resolved.
+-   entry #position   enriches a positional focus with what is known of the decoded form
+-       Identity by default. A format whose decoders track where in a document a value was found
+-       (Jacinta's `Json.Decodable`) overrides it to refine a focus with information derived
+-       from the `Form` after decoding.
+-   entry #map   a decoder in the same form for a new type, applying a function after decoding
+-       `summon[Int is Decodable in Text].map(Percent(_))` decodes an `Int` and wraps it. The
+-       result captures both this decoder and the function.
++         Una politica indicizzata dal suo formato (`Decodable.Fault in Json`). Il predefinito,
++         `.default`, è rigoroso: l'errore del decodificatore interno passa oltre. Il package
++         `optionalityOptions` di un formato offre un given permissivo che prende il nome dal
++         formato (`lenientYamlFaults`), importato per nome; sotto di esso un valore rifiutato
++         viene decodificato sotto il `tolerate` della tattica dell'ambiente, così nulla si
++         accumula nemmeno sotto una tattica cumulativa, e si legge come `Unset` (o `None`).
++     entry .apply   una politica di difetto per una forma, rigorosa o permissiva
++     entry .default   il predefinito dell'oggetto compagno per ogni forma: rigoroso
++     entry #strict   se un valore rifiutato solleva il suo errore invece di leggersi come `Unset`
++   entry #decodable   questa istanza, come riferimento stabile da usare dentro una lambda
++   entry #decoded   decodifica un valore della forma come `Self`
++       L'unico metodo astratto: una lambda di tipo `Form => Self` è un'istanza. Può sollevare
++       attraverso una tattica che l'istanza ha catturato quando è stata risolta.
++   entry #position   arricchisce un focus posizionale con ciò che si sa della forma decodificata
++       L'identità per impostazione predefinita. Un formato i cui decodificatori tengono traccia
++       del punto di un documento in cui un valore è stato trovato (il `Json.Decodable` di
++       Jacinta) lo ridefinisce per raffinare un focus con informazioni ricavate dalla `Form`
++       dopo la decodifica.
++   entry #map   un decodificatore nella stessa forma per un nuovo tipo, che applica una funzione dopo la decodifica
++       `summon[Int is Decodable in Text].map(Percent(_))` decodifica un `Int` e lo incapsula. Il
++       risultato cattura sia questo decodificatore sia la funzione.
+
+- entry .Decodable2   the lower-priority givens of the `Decodable` companion
++ entry .Decodable2   i given a priorità inferiore dell'oggetto compagno di `Decodable`
+
+= entry .Decodable2   the lower-priority givens of the `Decodable` companion
+-   detail
++   detail
+
+-       A trait the `Decodable` companion extends, so that its `generic` given ranks below every
+-       given declared in the companion itself.
+-   entry #generic   decodes any value in its own form as itself: `T is Decodable in T`
+-       The identity decoder, so `json.as[Json]` or `text.as[Text]` needs no instance of its own.
+-       Being in a parent of the companion, it ranks below the companion's specific givens.
++       Un trait che l'oggetto compagno di `Decodable` estende, così che il suo given `generic` si
++       collochi sotto ogni given dichiarato nell'oggetto compagno stesso.
++   entry #generic   decodifica qualsiasi valore nella sua stessa forma come sé stesso: `T is Decodable in T`
++       Il decodificatore identità, così `json.as[Json]` o `text.as[Text]` non ha bisogno di
++       un'istanza propria. Trovandosi in un genitore dell'oggetto compagno, si colloca sotto i
++       given specifici dell'oggetto compagno.
+
+- entry .Extractable   a typeclass converting `Self` toward a `Result`, yielding `Unset` when it declines
++ entry .Extractable   una typeclass che converte `Self` verso un `Result`, producendo `Unset` quando rinuncia
+
+= entry .Extractable   a typeclass converting `Self` toward a `Result`, yielding `Unset` when it declines
+-   detail
++   detail
+
+-       `Text is Extractable to Int` is a single function `Text => Optional[Int]`, `#extract`; its
+-       `#unapply` is what the `As[T]` extractor calls, so an instance is a pattern. It never
+-       raises: input it cannot convert yields `Unset`, and the match falls through.
++       `Text is Extractable to Int` è un'unica funzione `Text => Optional[Int]`, `#extract`; il
++       suo `#unapply` è ciò che chiama l'estrattore `As[T]`, così un'istanza è un pattern. Non
++       solleva mai errori: un input che non può convertire produce `Unset`, e il confronto passa
++       oltre.
+
+-       The companion holds conversions from text to each primitive type, every narrowing between
+-       the numeric types (each declining when the value does not survive the round trip), the
+-       conversion from text to an `enum` case by name and from an `Int` to one by ordinal, a
+-       lift through `Optional`, and a bridge from any `Decodable in Text` which runs the decoder
+-       under `safely`. That bridge is why `As[EmailAddress]` or `As[Uuid]` work for every type
+-       that can be decoded from text.
++       L'oggetto compagno contiene le conversioni dal testo a ciascun tipo primitivo, ogni
++       restringimento tra i tipi numerici (ciascuno dei quali rinuncia quando il valore non
++       sopravvive all'andata e ritorno), la conversione dal testo a un caso di `enum` per nome e
++       da un `Int` a uno per ordinale, un sollevamento attraverso `Optional`, e un ponte da
++       qualsiasi `Decodable in Text` che esegue il decodificatore sotto `safely`. È per quel
++       ponte che `As[EmailAddress]` o `As[Uuid]` funzionano per ogni tipo che può essere
++       decodificato dal testo.
+
+-       An instance can borrow an existing one:
++       Un'istanza può prenderne in prestito una esistente:
+
+=       An instance can borrow an existing one:
+=
+-       ```scala
++       ```scala
+
+=       An instance can borrow an existing one:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Percent(value: Int)
++       case class Percent(value: Int)
+
+-       given (Text is Extractable to Int) => Text is Extractable to Percent =
++       given (Text is Extractable to Int) => Text is Extractable to Percent =
+
+-         case As[Int](number) if number >= 0 && number <= 100 => Percent(number)
++         case As[Int](number) if number >= 0 && number <= 100 => Percent(number)
+
+-         case _                                               => Unset
++         case _                                               => Unset
+
+-       t"42" match
++       t"42" match
+
+-         case As[Percent](percent) => percent
++         case As[Percent](percent) => percent
+
+-         case _                    => Percent(0)
++         case _                    => Percent(0)
+
+=         case _                    => Percent(0)
+-       ```
++       ```
+
+-   refer distillate.As
++   refer distillate.As
+
+=   refer distillate.As
+-   refer distillate.Decodable
++   refer distillate.Decodable
+
+-   refer distillate.Irrefutable
++   refer distillate.Irrefutable
+
+-   entry .decodable   extracts any type with a `Decodable in Text`, yielding `Unset` where the decoder raises
+-       The bridge from `Decodable` to `Extractable`: the decoder is applied under `safely`, so
+-       any error it raises becomes `Unset`. It makes every text-decodable type usable with
+-       `As[T]`.
+-   entry .optional   lifts an extractor through `Optional`: `Unset` stays `Unset`
+-   entry .irrefutable   a `String` converts with the `Irrefutable` of `Text`, after conversion to `Text`
+-   entry .textChar   extracts a `Char` from text of exactly one character
+-   entry .textByte   extracts a `Byte` from text, declining text which is unparseable or out of range
+-   entry .textShort   extracts a `Short` from text, declining text which is unparseable or out of range
+-   entry .textInt   extracts an `Int` from text, declining text which is not a decimal integer that fits
+-   entry .textLong   extracts a `Long` from text, declining text which is not a decimal integer that fits
+-   entry .textFloat   extracts a `Float` from text, declining text which is not a number
+-   entry .textDouble   extracts a `Double` from text, declining text which is not a number
+-   entry .textBoolean   extracts a `Boolean` from exactly `true` or `false`, case-sensitively
+-       Unlike the `Boolean` decoder, which trims, lowercases and consults every `Truth` in scope,
+-       `As[Boolean]` matches only the two exact words.
+-   entry .shortByte   narrows a `Short` to a `Byte`, declining a value which does not fit
+-   entry .intByte   narrows an `Int` to a `Byte`, declining a value which does not fit
+-   entry .intShort   narrows an `Int` to a `Short`, declining a value which does not fit
+-   entry .intFloat   converts an `Int` to a `Float`, declining a value which a `Float` cannot hold exactly
+-   entry .longByte   narrows a `Long` to a `Byte`, declining a value which does not fit
+-   entry .longShort   narrows a `Long` to a `Short`, declining a value which does not fit
+-   entry .longInt   narrows a `Long` to an `Int`, declining a value which does not fit
+-   entry .longFloat   converts a `Long` to a `Float`, declining a value which a `Float` cannot hold exactly
+-   entry .longDouble   converts a `Long` to a `Double`, declining a value which a `Double` cannot hold exactly
+-   entry .floatByte   converts a `Float` to a `Byte`, declining a value which is not a whole number that fits
+-   entry .floatShort   converts a `Float` to a `Short`, declining a value which is not a whole number that fits
+-   entry .floatInt   converts a `Float` to an `Int`, declining a value which is not a whole number that fits
+-   entry .floatLong   converts a `Float` to a `Long`, declining a value which is not a whole number that fits
+-   entry .doubleByte   converts a `Double` to a `Byte`, declining a value which is not a whole number that fits
+-   entry .doubleShort   converts a `Double` to a `Short`, declining a value which is not a whole number that fits
+-   entry .doubleInt   converts a `Double` to an `Int`, declining a value which is not a whole number that fits
+-   entry .doubleLong   converts a `Double` to a `Long`, declining a value which is not a whole number that fits
+-   entry .doubleFloat   converts a `Double` to a `Float`, declining a value which a `Float` cannot hold exactly
+-   entry .valueOf   extracts an `enum` case from text naming it exactly, through the enum's `valueOf`
+-       Needs only the enum's `Mirror`, which the compiler provides: `As[Direction]` matches
+-       `t"North"` with no instance written. The name must match the case's name exactly; a
+-       parameterized case, which has no `valueOf`, never matches.
+-   entry .fromOrdinal   extracts an `enum` case from an `Int`, by its ordinal
+-       Declines an ordinal outside the enum's range.
+-   entry #extract   converts a value, or yields `Unset` if it cannot
+-   entry #unapply   converts a value as an `Option`, for use as an extractor
++   entry .decodable   estrae qualsiasi tipo con un `Decodable in Text`, producendo `Unset` dove il decodificatore solleva un errore
++       Il ponte da `Decodable` a `Extractable`: il decodificatore è applicato sotto `safely`,
++       così qualsiasi errore che solleva diventa `Unset`. Rende ogni tipo decodificabile dal
++       testo utilizzabile con `As[T]`.
++   entry .optional   solleva un estrattore attraverso `Optional`: `Unset` resta `Unset`
++   entry .irrefutable   una `String` si converte con l'`Irrefutable` di `Text`, dopo la conversione in `Text`
++   entry .textChar   estrae un `Char` da un testo di esattamente un carattere
++   entry .textByte   estrae un `Byte` dal testo, rinunciando a un testo non analizzabile o fuori intervallo
++   entry .textShort   estrae uno `Short` dal testo, rinunciando a un testo non analizzabile o fuori intervallo
++   entry .textInt   estrae un `Int` dal testo, rinunciando a un testo che non è un intero decimale che vi rientra
++   entry .textLong   estrae un `Long` dal testo, rinunciando a un testo che non è un intero decimale che vi rientra
++   entry .textFloat   estrae un `Float` dal testo, rinunciando a un testo che non è un numero
++   entry .textDouble   estrae un `Double` dal testo, rinunciando a un testo che non è un numero
++   entry .textBoolean   estrae un `Boolean` esattamente da `true` o `false`, distinguendo maiuscole e minuscole
++       A differenza del decodificatore di `Boolean`, che ripulisce gli spazi, porta in minuscolo
++       e consulta ogni `Truth` nell'ambito, `As[Boolean]` corrisponde solo alle due parole esatte.
++   entry .shortByte   restringe uno `Short` a un `Byte`, rinunciando a un valore che non vi rientra
++   entry .intByte   restringe un `Int` a un `Byte`, rinunciando a un valore che non vi rientra
++   entry .intShort   restringe un `Int` a uno `Short`, rinunciando a un valore che non vi rientra
++   entry .intFloat   converte un `Int` in un `Float`, rinunciando a un valore che un `Float` non può contenere esattamente
++   entry .longByte   restringe un `Long` a un `Byte`, rinunciando a un valore che non vi rientra
++   entry .longShort   restringe un `Long` a uno `Short`, rinunciando a un valore che non vi rientra
++   entry .longInt   restringe un `Long` a un `Int`, rinunciando a un valore che non vi rientra
++   entry .longFloat   converte un `Long` in un `Float`, rinunciando a un valore che un `Float` non può contenere esattamente
++   entry .longDouble   converte un `Long` in un `Double`, rinunciando a un valore che un `Double` non può contenere esattamente
++   entry .floatByte   converte un `Float` in un `Byte`, rinunciando a un valore che non è un numero intero che vi rientra
++   entry .floatShort   converte un `Float` in uno `Short`, rinunciando a un valore che non è un numero intero che vi rientra
++   entry .floatInt   converte un `Float` in un `Int`, rinunciando a un valore che non è un numero intero che vi rientra
++   entry .floatLong   converte un `Float` in un `Long`, rinunciando a un valore che non è un numero intero che vi rientra
++   entry .doubleByte   converte un `Double` in un `Byte`, rinunciando a un valore che non è un numero intero che vi rientra
++   entry .doubleShort   converte un `Double` in uno `Short`, rinunciando a un valore che non è un numero intero che vi rientra
++   entry .doubleInt   converte un `Double` in un `Int`, rinunciando a un valore che non è un numero intero che vi rientra
++   entry .doubleLong   converte un `Double` in un `Long`, rinunciando a un valore che non è un numero intero che vi rientra
++   entry .doubleFloat   converte un `Double` in un `Float`, rinunciando a un valore che un `Float` non può contenere esattamente
++   entry .valueOf   estrae un caso di `enum` da un testo che lo nomina esattamente, attraverso il `valueOf` dell'enum
++       Ha bisogno solo del `Mirror` dell'enum, che il compilatore fornisce: `As[Direction]`
++       corrisponde a `t"North"` senza scrivere alcuna istanza. Il nome deve corrispondere
++       esattamente al nome del caso; un caso parametrizzato, che non ha `valueOf`, non
++       corrisponde mai.
++   entry .fromOrdinal   estrae un caso di `enum` da un `Int`, attraverso il suo ordinale
++       Rinuncia a un ordinale fuori dall'intervallo dell'enum.
++   entry #extract   converte un valore, o produce `Unset` se non può
++   entry #unapply   converte un valore come `Option`, per l'uso come estrattore
+
+- entry .Irrefutable   a typeclass converting `Self` to a `Result` in a way that cannot fail
++ entry .Irrefutable   una typeclass che converte `Self` in un `Result` in un modo che non può fallire
+
+= entry .Irrefutable   a typeclass converting `Self` to a `Result` in a way that cannot fail
+-   detail
++   detail
+
+-       `Byte is Irrefutable to Int` is a single function `Byte => Int`, `#unapply`; being an
+-       `unapply` with no `Option`, an instance is an irrefutable pattern. The companion holds
+-       the conversions between `String` and `Text`, the identity, and every widening between the
+-       numeric types. It is a `Typeclass.Pure`: an instance captures nothing.
++       `Byte is Irrefutable to Int` è un'unica funzione `Byte => Int`, `#unapply`; essendo un
++       `unapply` senza `Option`, un'istanza è un pattern inconfutabile. L'oggetto compagno
++       contiene le conversioni tra `String` e `Text`, l'identità, e ogni allargamento tra i tipi
++       numerici. È una `Typeclass.Pure`: un'istanza non cattura nulla.
+
+-       `value.as[T](irrefutable)` applies one explicitly.
++       `value.as[T](irrefutable)` ne applica una esplicitamente.
+
+=       `value.as[T](irrefutable)` applies one explicitly.
+=
+-       ```scala
++       ```scala
+
+=       `value.as[T](irrefutable)` applies one explicitly.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val wide: Long = 42.toByte.as[Long](summon[Byte is Irrefutable to Long])
++       val wide: Long = 42.toByte.as[Long](summon[Byte is Irrefutable to Long])
+
+=       val wide: Long = 42.toByte.as[Long](summon[Byte is Irrefutable to Long])
+-       ```
++       ```
+
+=       ```
+-   refer distillate.Extractable
++   refer distillate.Extractable
+
+=   refer distillate.Extractable
+-   refer distillate.as
++   refer distillate.as
+
+-   entry .stringText   converts a `String` to `Text`
+-   entry .irrefutable   a `String` converts with the `Irrefutable` of `Text`, after conversion to `Text`
+-   entry .textString   converts `Text` to a `String`
+-   entry .ident   converts any value to itself
+-   entry .byteShort   widens a `Byte` to a `Short`
+-   entry .byteInt   widens a `Byte` to an `Int`
+-   entry .byteLong   widens a `Byte` to a `Long`
+-   entry .byteFloat   widens a `Byte` to a `Float`
+-   entry .byteDouble   widens a `Byte` to a `Double`
+-   entry .shortInt   widens a `Short` to an `Int`
+-   entry .shortLong   widens a `Short` to a `Long`
+-   entry .shortFloat   widens a `Short` to a `Float`
+-   entry .shortDouble   widens a `Short` to a `Double`
+-   entry .intLong   widens an `Int` to a `Long`
+-   entry .intDoule   widens an `Int` to a `Double` (the name is misspelt in the source)
+-   entry .floatDouble   widens a `Float` to a `Double`
+-   entry #unapply   converts a value; it cannot fail
+-   entry #contramap   an irrefutable conversion from a new type, applying a pure function first
++   entry .stringText   converte una `String` in `Text`
++   entry .irrefutable   una `String` si converte con l'`Irrefutable` di `Text`, dopo la conversione in `Text`
++   entry .textString   converte `Text` in una `String`
++   entry .ident   converte qualsiasi valore in sé stesso
++   entry .byteShort   allarga un `Byte` a uno `Short`
++   entry .byteInt   allarga un `Byte` a un `Int`
++   entry .byteLong   allarga un `Byte` a un `Long`
++   entry .byteFloat   allarga un `Byte` a un `Float`
++   entry .byteDouble   allarga un `Byte` a un `Double`
++   entry .shortInt   allarga uno `Short` a un `Int`
++   entry .shortLong   allarga uno `Short` a un `Long`
++   entry .shortFloat   allarga uno `Short` a un `Float`
++   entry .shortDouble   allarga uno `Short` a un `Double`
++   entry .intLong   allarga un `Int` a un `Long`
++   entry .intDoule   allarga un `Int` a un `Double` (il nome è scritto male nel sorgente)
++   entry .floatDouble   allarga un `Float` a un `Double`
++   entry #unapply   converte un valore; non può fallire
++   entry #contramap   una conversione inconfutabile da un nuovo tipo, che applica prima una funzione pura
+
+- entry .Enumerable   the derived description of an `enum`: its name, its cases, and lookup by name and ordinal
++ entry .Enumerable   la descrizione derivata di un `enum`: il suo nome, i suoi casi, e la ricerca per nome e per ordinale
+
+= entry .Enumerable   the derived description of an `enum`: its name, its cases, and lookup by name and ordinal
+-   detail
++   detail
+
+-       An `Enumerable` is derived for any `enum` whose cases are all singletons, with no
+-       instance to write: `.derived` reads the cases from the companion's `values`. It gives the
+-       enumeration's `#name`, its `#values` in declaration order, and lookup in both directions,
+-       each returning `Optional` rather than raising, since neither a name nor an ordinal is
+-       guaranteed to correspond to a case. Every format's derived codecs use it to name an
+-       enum's cases, so they all agree.
++       Un `Enumerable` viene derivato per qualsiasi `enum` i cui casi siano tutti singleton,
++       senza alcuna istanza da scrivere: `.derived` legge i casi dai `values` dell'oggetto
++       compagno. Fornisce il `#name` dell'enumerazione, i suoi `#values` nell'ordine di
++       dichiarazione, e la ricerca in entrambe le direzioni, ciascuna delle quali restituisce
++       `Optional` invece di sollevare un errore, poiché né un nome né un ordinale hanno la
++       garanzia di corrispondere a un caso. I codec derivati di ogni formato lo usano per
++       nominare i casi di un enum, così concordano tutti.
+
+=       enum's cases, so they all agree.
+=
+-       ```scala
++       ```scala
+
+=       enum's cases, so they all agree.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       enum Direction:
++       enum Direction:
+
+-         case North, South, East, West
++         case North, South, East, West
+
+-       val enumerable = summon[Direction is Enumerable]
++       val enumerable = summon[Direction is Enumerable]
+
+-       enumerable.values                  // every case, in order
++       enumerable.values                  // every case, in order
+
+-       enumerable.value(t"North")         // Direction.North
++       enumerable.value(t"North")         // Direction.North
+
+-       enumerable.value(Prim)             // Direction.North, by ordinal
++       enumerable.value(Prim)             // Direction.North, by ordinal
+
+-       enumerable.name(Direction.South)   // t"South"
++       enumerable.name(Direction.South)   // t"South"
+
+-       enumerable.index(Direction.East)   // 2
++       enumerable.index(Direction.East)   // 2
+
+=       enumerable.index(Direction.East)   // 2
+-       ```
++       ```
+
+-       Derivation halts with _enum `T` is not a simple choice_ for an enum with no `values`
+-       method, which is one with a parameterized case.
++       La derivazione si arresta con _enum `T` is not a simple choice_ per un enum senza metodo
++       `values`, cioè uno con un caso parametrizzato.
+
+-   refer distillate.Decodable.enumeration
++   refer distillate.Decodable.enumeration
+
+-   refer distillate.Identifiable
++   refer distillate.Identifiable
+
+-   entry .derived   derives an `Enumerable` for an `enum` of singleton cases, by macro
+-   entry .Error   text decoded as an enum which names none of its cases
++   entry .derived   deriva un `Enumerable` per un `enum` di casi singleton, tramite macro
++   entry .Error   un testo decodificato come enum che non nomina alcuno dei suoi casi
+
+=   entry .Error   text decoded as an enum which names none of its cases
+-     detail
++     detail
+
+-         Error `↯/s.25.3`: _the specified variant (`inputLabel`) is not one of the valid variants
+-         (`validVariants`) of the enumeration `sum`_. Raised by the `Decodable.enumeration`
+-         decoder.
+-     entry #inputLabel   the text which named no case
+-     entry #sum   the enumeration's name
+-     entry #validVariants   the names of every case, as the decoder would accept them
+-   entry #name   the enumeration's name, or the name of one of its cases
+-       Without an argument, the name of the enumeration type as the compiler shows it; applied
+-       to a case, that case's name.
+-   entry #values   every case of the enumeration, in declaration order
+-   entry #value   the case with a given name, or at a given `Ordinal`, if there is one
+-       `value(t"North")` looks a case up by its exact name, and `value(Prim)` by its position;
+-       each yields `Unset` where nothing corresponds.
+-   entry #index   a case's zero-based ordinal, as an `Int`
++         Errore `↯/s.25.3`: _the specified variant (`inputLabel`) is not one of the valid variants
++         (`validVariants`) of the enumeration `sum`_. Sollevato dal decodificatore
++         `Decodable.enumeration`.
++     entry #inputLabel   il testo che non ha nominato alcun caso
++     entry #sum   il nome dell'enumerazione
++     entry #validVariants   i nomi di ogni caso, così come il decodificatore li accetterebbe
++   entry #name   il nome dell'enumerazione, o il nome di uno dei suoi casi
++       Senza argomento, il nome del tipo dell'enumerazione come lo mostra il compilatore;
++       applicato a un caso, il nome di quel caso.
++   entry #values   ogni caso dell'enumerazione, nell'ordine di dichiarazione
++   entry #value   il caso con un dato nome, o in un dato `Ordinal`, se esiste
++       `value(t"North")` cerca un caso per il suo nome esatto, e `value(Prim)` per la sua
++       posizione; ciascuno produce `Unset` dove nulla corrisponde.
++   entry #index   l'ordinale di un caso a partire da zero, come `Int`
+
+- entry .Identifiable   a two-way mapping between a naming convention and the names of a type's members
++ entry .Identifiable   una corrispondenza bidirezionale tra una convenzione di denominazione e i nomi dei membri di un tipo
+
+= entry .Identifiable   a two-way mapping between a naming convention and the names of a type's members
+-   detail
++   detail
+
+-       An `Identifiable` is a pair of text functions: `#encode` converts a Scala name into the
+-       convention, and `#decode` converts back. The `Decodable.enumeration` decoder decodes
+-       through it before looking up a case, and reports valid names encoded through it, so a
+-       format can read `first_name` as `firstName`.
++       Un `Identifiable` è una coppia di funzioni sul testo: `#encode` converte un nome Scala
++       nella convenzione, e `#decode` lo riconverte. Il decodificatore `Decodable.enumeration`
++       decodifica attraverso di esso prima di cercare un caso, e riporta i nomi validi
++       codificati attraverso di esso, così un formato può leggere `first_name` come
++       `firstName`.
+
+=       format can read `first_name` as `firstName`.
+=
+-       ```scala
++       ```scala
+
+=       format can read `first_name` as `firstName`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Column()
++       case class Column()
+
+-       val snakeCase = Identifiable[Column](_.uncamel.snake, _.cut(t"_").camel)
++       val snakeCase = Identifiable[Column](_.uncamel.snake, _.cut(t"_").camel)
+
+=       val snakeCase = Identifiable[Column](_.uncamel.snake, _.cut(t"_").camel)
+-       ```
++       ```
+
+-       It is a `Typeclass.Pure`, so an instance captures nothing and may be shared freely.
+-   entry .apply   an `Identifiable` from an encoding function and a decoding function
+-   entry #encode   converts a Scala name into the convention
+-   entry #decode   converts a name in the convention back into a Scala name
++       È una `Typeclass.Pure`, così un'istanza non cattura nulla e può essere condivisa
++       liberamente.
++   entry .apply   un `Identifiable` da una funzione di codifica e una di decodifica
++   entry #encode   converte un nome Scala nella convenzione
++   entry #decode   riconverte un nome nella convenzione in un nome Scala
+
+- entry .Parsable   the streaming counterpart of `Decodable`, reading `Self` directly from a format's token reader
++ entry .Parsable   la controparte in streaming di `Decodable`, che legge `Self` direttamente dal lettore di token di un formato
+
+= entry .Parsable   the streaming counterpart of `Decodable`, reading `Self` directly from a format's token reader
+-   detail
++   detail
+
+-       Where a `Decodable` receives an already-built syntax tree (a `Json`, an `Xml`), a
+-       `Parsable` drives the format's token reader over the input, so a composite value is
+-       built with no intermediate tree: no allocation of one, no boxing, no second traversal.
+-       `Transport` names the format (`Person is Parsable over Json`), and each format's subtrait
+-       fixes the `#Reader` (Jacinta's `Json.Parsable` sets it to `Json.Reader`).
++       Dove un `Decodable` riceve un albero sintattico già costruito (un `Json`, un `Xml`), un
++       `Parsable` pilota il lettore di token del formato sull'input, così un valore composto
++       viene costruito senza alcun albero intermedio: nessuna sua allocazione, nessun boxing,
++       nessun secondo attraversamento. `Transport` nomina il formato
++       (`Person is Parsable over Json`), e il sottotrait di ogni formato fissa il `#Reader` (il
++       `Json.Parsable` di Jacinta lo imposta a `Json.Reader`).
+
+-       The reader is an exclusive, stateful capability lent for the duration of `#parse`;
+-       nothing of it may be retained in the result. Errors flow through the reader, which
+-       carries its own tactic, or through a tactic the instance captured when it was resolved,
+-       so `#parse` itself declares no error. Users rarely write one by hand: each format derives
+-       them (`derives Json.Direct`), and the `codecs` package chooses when they are used.
++       Il lettore è una capability esclusiva e con stato prestata per la durata di `#parse`;
++       nulla di esso può essere trattenuto nel risultato. Gli errori scorrono attraverso il
++       lettore, che porta la propria tattica, o attraverso una tattica che l'istanza ha catturato
++       quando è stata risolta, così `#parse` stesso non dichiara alcun errore. Gli utenti ne
++       scrivono raramente uno a mano: ogni formato li deriva (`derives Json.Direct`), e il
++       package `codecs` sceglie quando vengono usati.
+
+=       them (`derives Json.Direct`), and the `codecs` package chooses when they are used.
+-   refer distillate.Decodable
++   refer distillate.Decodable
+
+=   refer distillate.Decodable
+-   refer distillate.Codecs
++   refer distillate.Codecs
+
+-   entry #Reader   the format's token-reader capability, fixed by each format's subtrait
+-   entry #parse   reads a value of `Self` from the reader
++   entry #Reader   la capability di lettura dei token del formato, fissata dal sottotrait di ogni formato
++   entry #parse   legge un valore di `Self` dal lettore
+
+- entry .Number   the home of `Number.Error`, raised when text cannot be decoded as a number
++ entry .Number   la sede di `Number.Error`, sollevato quando un testo non può essere decodificato come numero
+
+= entry .Number   the home of `Number.Error`, raised when text cannot be decoded as a number
+-   detail
++   detail
+
+-       An object with no members but its error type.
+-   entry .Error   text which could not be decoded as a number, or whose number was out of range
++       Un oggetto senza membri tranne il suo tipo di errore.
++   entry .Error   un testo che non ha potuto essere decodificato come numero, o il cui numero era fuori intervallo
+
+=   entry .Error   text which could not be decoded as a number, or whose number was out of range
+-     detail
++     detail
+
+-         Error `↯/s.25.1`, with a subcode for its `#reason`: _`text` is not a valid `specializable`
+-         because `reason`_. Raised by the number decoders in the `Decodable` companion.
++         Errore `↯/s.25.1`, con un sottocodice per il suo `#reason`: _`text` is not a valid
++         `specializable` because `reason`_. Sollevato dai decodificatori di numeri nell'oggetto
++         compagno di `Decodable`.
+
+=         because `reason`_. Raised by the number decoders in the `Decodable` companion.
+=
+-         ```scala
++         ```scala
+
+=         because `reason`_. Raised by the number decoders in the `Decodable` companion.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         capture[Number.Error](t"300".as[Byte]).reason   // Number.Error.Reason.OutOfRange
++         capture[Number.Error](t"300".as[Byte]).reason   // Number.Error.Reason.OutOfRange
+
+-         capture[Number.Error](t"abc".as[Byte]).reason   // Number.Error.Reason.Unparseable
++         capture[Number.Error](t"abc".as[Byte]).reason   // Number.Error.Reason.Unparseable
+
+=         capture[Number.Error](t"abc".as[Byte]).reason   // Number.Error.Reason.Unparseable
+-         ```
++         ```
+
+-     entry .Reason   why the number could not be decoded: `Unparseable` or `OutOfRange`
++     entry .Reason   perché il numero non ha potuto essere decodificato: `Unparseable` o `OutOfRange`
+
+-       detail
++       detail
+
+-           An enum of two cases: `Unparseable` (subcode 1), for text which is not a number at
+-           all, and `OutOfRange` (subcode 2), for a number the target type cannot represent.
+-       entry #number   the subcode the reason contributes to the error's number
+-     entry .communicable   renders a `Number.Error.Reason` as the clause of the error message
+-     entry #text   the text which could not be decoded
+-     entry #specializable   the numeric type the text was decoded as
+-     entry #reason   why it could not be decoded, as a `Number.Error.Reason`
++           Un'enumerazione di due casi: `Unparseable` (sottocodice 1), per un testo che non è
++           affatto un numero, e `OutOfRange` (sottocodice 2), per un numero che il tipo di
++           destinazione non può rappresentare.
++       entry #number   il sottocodice che il motivo contribuisce al numero dell'errore
++     entry .communicable   rende un `Number.Error.Reason` come la proposizione del messaggio di errore
++     entry #text   il testo che non ha potuto essere decodificato
++     entry #specializable   il tipo numerico come cui il testo è stato decodificato
++     entry #reason   perché non ha potuto essere decodificato, come `Number.Error.Reason`
+
+- entry .Truth   a spelling of truth and falsity, accepted by the `Boolean` decoder when in scope
++ entry .Truth   una grafia del vero e del falso, accettata dal decodificatore di `Boolean` quando è nell'ambito
+
+= entry .Truth   a spelling of truth and falsity, accepted by the `Boolean` decoder when in scope
+-   detail
++   detail
+
+-       A `Truth` is a pair of words, `#affirmative` and `#negative`. The `Boolean` decoder
+-       collects every `Truth` in scope and accepts any of their spellings, after trimming and
+-       lowercasing the text, so several may be in scope together. `.trueFalse`, in this
+-       companion, is always found; the `truths` package adds `yes`/`no`, `on`/`off` and `1`/`0`
+-       by import, beside it rather than instead of it.
++       Una `Truth` è una coppia di parole, `#affirmative` e `#negative`. Il decodificatore di
++       `Boolean` raccoglie ogni `Truth` nell'ambito e accetta una qualsiasi delle loro grafie,
++       dopo aver ripulito il testo dagli spazi e averlo portato in minuscolo, così più grafie
++       possono essere nell'ambito insieme. `.trueFalse`, in questo oggetto compagno, viene
++       sempre trovata; il package `truths` aggiunge `yes`/`no`, `on`/`off` e `1`/`0` tramite
++       import, accanto a essa e non al suo posto.
+
+=       by import, beside it rather than instead of it.
+=
+-       ```scala
++       ```scala
+
+=       by import, beside it rather than instead of it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       by import, beside it rather than instead of it.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       given Truth = Truth(t"ja", t"nein")
++       given Truth = Truth(t"ja", t"nein")
+
+-       t"Ja".as[Boolean]    // true
++       t"Ja".as[Boolean]    // true
+
+=       t"Ja".as[Boolean]    // true
+-       ```
++       ```
+
+-   refer distillate.truths
++   refer distillate.truths
+
+-   refer distillate.Decodable.boolean
++   refer distillate.Decodable.boolean
+
+-   entry .trueFalse   the spelling `true`/`false`, always in scope through the companion
+-   entry .Error   text which no `Truth` in scope recognizes as a `Boolean`
++   entry .trueFalse   la grafia `true`/`false`, sempre nell'ambito attraverso l'oggetto compagno
++   entry .Error   un testo che nessuna `Truth` nell'ambito riconosce come `Boolean`
+
+=   entry .Error   text which no `Truth` in scope recognizes as a `Boolean`
+-     detail
++     detail
+
+-         Error `↯/s.25.2`: _`text` is not a recognized Boolean_. Raised by the `Boolean` decoder.
+-     entry #text   the text, as it was given
+-   entry #affirmative   the word for `true`, in lower case
+-   entry #negative   the word for `false`, in lower case
+-   entry #apply   reads text as `true` or `false` if it is one of the two words, or yields `Unset`
+-       Compares exactly: the `Boolean` decoder trims and lowercases before calling it.
++         Errore `↯/s.25.2`: _`text` is not a recognized Boolean_. Sollevato dal decodificatore
++         di `Boolean`.
++     entry #text   il testo, così come è stato dato
++   entry #affirmative   la parola per `true`, in minuscolo
++   entry #negative   la parola per `false`, in minuscolo
++   entry #apply   legge un testo come `true` o `false` se è una delle due parole, o produce `Unset`
++       Confronta esattamente: il decodificatore di `Boolean` ripulisce gli spazi e porta in
++       minuscolo prima di chiamarlo.
+
+- entry .truths   further spellings of a `Boolean`, each accepted beside `true`/`false` when imported
++ entry .truths   ulteriori grafie di un `Boolean`, ciascuna accettata accanto a `true`/`false` quando importata
+
+= entry .truths   further spellings of a `Boolean`, each accepted beside `true`/`false` when imported
+-   detail
++   detail
+
+-       A choice package whose givens are imported by name, since `import truths.*` does not
+-       import givens. Unlike most choice packages, importing is additive: the `Boolean` decoder
+-       collects every `Truth` in scope, so each import adds a spelling.
++       Un package di scelta i cui given si importano per nome, poiché `import truths.*` non
++       importa i given. A differenza della maggior parte dei package di scelta, l'import è
++       additivo: il decodificatore di `Boolean` raccoglie ogni `Truth` nell'ambito, così ogni
++       import aggiunge una grafia.
+
+=       collects every `Truth` in scope, so each import adds a spelling.
+=
+-       ```scala
++       ```scala
+
+=       collects every `Truth` in scope, so each import adds a spelling.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       collects every `Truth` in scope, so each import adds a spelling.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       import truths.{onOffTruth, oneZeroTruth}
++       import truths.{onOffTruth, oneZeroTruth}
+
+-       List(t"on", t"OFF", t"1", t"0").map(_.as[Boolean])   // List(true, false, true, false)
++       List(t"on", t"OFF", t"1", t"0").map(_.as[Boolean])   // List(true, false, true, false)
+
+=       List(t"on", t"OFF", t"1", t"0").map(_.as[Boolean])   // List(true, false, true, false)
+-       ```
++       ```
+
+-   refer distillate.Truth
++   refer distillate.Truth
+
+-   entry .yesNoTruth   accepts `yes` and `no` as a `Boolean`
+-   entry .onOffTruth   accepts `on` and `off` as a `Boolean`
+-   entry .oneZeroTruth   accepts `1` and `0` as a `Boolean`
++   entry .yesNoTruth   accetta `yes` e `no` come `Boolean`
++   entry .onOffTruth   accetta `on` e `off` come `Boolean`
++   entry .oneZeroTruth   accetta `1` e `0` come `Boolean`
+
+- entry .Codecs   the contextual mode which chooses between a format's derived and direct codecs
++ entry .Codecs   la modalità contestuale che sceglie tra i codec derivati e quelli diretti di un formato
+
+= entry .Codecs   the contextual mode which chooses between a format's derived and direct codecs
+-   detail
++   detail
+
+-       Every format with generated ("direct") codecs offers two paths to a typed value: the
+-       derived one, which builds the format's syntax tree and decodes it (or encodes to one),
+-       and the direct one, which drives the format's token reader or printer straight into or
+-       out of the value. A format's companion contributes givens conditional on one of these
+-       modes, so a single import from the `codecs` package selects the path for every format at
+-       once. With none in scope, a type takes the direct path exactly when it has a direct
+-       instance of its own (an explicit given, or `derives`), and the derived path otherwise.
++       Ogni formato con codec generati («diretti») offre due percorsi verso un valore
++       tipizzato: quello derivato, che costruisce l'albero sintattico del formato e lo decodifica
++       (o codifica in esso), e quello diretto, che pilota il lettore di token o il printer del
++       formato direttamente dentro il valore o fuori da esso. L'oggetto compagno di un formato
++       contribuisce con given condizionati a una di queste modalità, così un solo import dal
++       package `codecs` sceglie il percorso per tutti i formati insieme. Se nessuna è
++       nell'ambito, un tipo prende il percorso diretto esattamente quando ha una propria istanza
++       diretta (un given esplicito, o `derives`), e il percorso derivato altrimenti.
+
+-       Results are the same on either path; only the speed and the positions in error
+-       diagnostics differ.
++       I risultati sono gli stessi su entrambi i percorsi; differiscono solo la velocità e le
++       posizioni nei diagnostici di errore.
+
+-   refer distillate.codecs
++   refer distillate.codecs
+
+=   refer distillate.codecs
+-   refer distillate.Parsable
++   refer distillate.Parsable
+
+-   entry .Direct   the mode taking a generated codec wherever a type is inlinable
+-   entry .Derived   the mode taking the derived codec, even over a direct instance
+-   entry .Strict   the mode taking generated codecs, and a compile error where a type has none
+-       A `Strict` is a `Direct`, so a format's generated instances apply under both; the
+-       strictness is added at the entry points (`read[Play in F]`, `in[Text over F]`, `in[Data
+-       over F]`), which a format gates with `.strictFailure`.
+-   entry .strictFailure   the compile error a format reports under `codecs.strict` for a type with no direct codec
+-       A macro which halts compilation with _`format`: `T` has no direct codec, and
+-       `codecs.strict` does not take the derived one_. It is raised from within a given after
+-       that given has been selected, so it is the outcome of the search rather than a failed
+-       candidate which the search could pass over. For format authors.
++   entry .Direct   la modalità che prende un codec generato ovunque un tipo sia inlinable
++   entry .Derived   la modalità che prende il codec derivato, anche al posto di un'istanza diretta
++   entry .Strict   la modalità che prende i codec generati, con un errore di compilazione dove un tipo non ne ha
++       Uno `Strict` è un `Direct`, così le istanze generate di un formato si applicano sotto
++       entrambi; la rigidità viene aggiunta nei punti di ingresso (`read[Play in F]`,
++       `in[Text over F]`, `in[Data over F]`), che un formato subordina a `.strictFailure`.
++   entry .strictFailure   l'errore di compilazione che un formato segnala sotto `codecs.strict` per un tipo senza codec diretto
++       Una macro che interrompe la compilazione con _`format`: `T` has no direct codec, and
++       `codecs.strict` does not take the derived one_. È sollevato dall'interno di un given
++       dopo che quel given è stato selezionato, così è l'esito della ricerca e non un candidato
++       fallito che la ricerca potrebbe scavalcare. Per gli autori di formati.
+
+- entry .codecs   the three codec modes, each selecting a path for every format at once by import
++ entry .codecs   le tre modalità dei codec, ciascuna delle quali sceglie tramite import un percorso per tutti i formati insieme
+
+= entry .codecs   the three codec modes, each selecting a path for every format at once by import
+-   detail
++   detail
+
+-       A choice package whose givens are imported by name, since `import codecs.*` does not
+-       import givens. The modes are alternatives: importing two at once makes their givens
+-       ambiguous wherever both would apply.
++       Un package di scelta i cui given si importano per nome, poiché `import codecs.*` non
++       importa i given. Le modalità sono alternative: importarne due insieme rende ambigui i loro
++       given ovunque si applicherebbero entrambi.
+
+=       ambiguous wherever both would apply.
+=
+-       ```scala
++       ```scala
+
+=       ambiguous wherever both would apply.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import codecs.direct     // generated codecs wherever a type is inlinable
++       import codecs.direct     // generated codecs wherever a type is inlinable
+
+=       import codecs.direct     // generated codecs wherever a type is inlinable
+-       ```
++       ```
+
+-       `import codecs.derived` takes the derived codecs even over a direct instance, and `import
+-       codecs.strict` takes the generated codecs with a compile error, naming the type, wherever
+-       the derived path would otherwise be taken silently.
++       `import codecs.derived` prende i codec derivati anche al posto di un'istanza diretta, e
++       `import codecs.strict` prende i codec generati con un errore di compilazione, che nomina
++       il tipo, ovunque altrimenti verrebbe preso silenziosamente il percorso derivato.
+
+=       the derived path would otherwise be taken silently.
+-   refer distillate.Codecs
++   refer distillate.Codecs
+
+-   entry .direct   selects generated codecs wherever a type is inlinable, for every format
+-   entry .derived   selects the derived codecs, even where a direct instance is in scope
+-   entry .strict   selects generated codecs, and makes a type with none a compile error
++   entry .direct   sceglie i codec generati ovunque un tipo sia inlinable, per ogni formato
++   entry .derived   sceglie i codec derivati, anche dove un'istanza diretta è nell'ambito
++   entry .strict   sceglie i codec generati, e rende un errore di compilazione un tipo che non ne ha
+
+- entry .internal   the macro implementations behind `Enumerable.derived` and `Codecs.strictFailure`
++ entry .internal   le implementazioni delle macro dietro `Enumerable.derived` e `Codecs.strictFailure`
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use.
+-   entry .strictFailure   the macro behind `Codecs.strictFailure`
+-   entry .enumerable   the macro behind `Enumerable.derived`
++       Non da usare direttamente.
++   entry .strictFailure   la macro dietro `Codecs.strictFailure`
++   entry .enumerable   la macro dietro `Enumerable.derived`

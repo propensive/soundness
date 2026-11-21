@@ -1,0 +1,18 @@
+orthant 1 language
+
+-   entry .encodable   writes a locale as its language's code, such as `t"fr"`
+-   entry .inspectable   a debug rendering of a locale, as `Locale(fr)`
+-       The constructor form, so it is not mistaken for the bare code `.encodable` writes.
+-   entry .decodable   reads a locale from a language code, falling back to English
+-       Decodes to `Locale[en & pl & fr & de & es]`: `t"pl"`, `t"fr"`, `t"de"` and `t"es"` are
+-       their languages, in any case and with any region subtag ignored, so `t"FR"`, `t"fr-CA"`
+-       and `t"fr_CA"` are all French. Any other text is silently `en`.
+-   entry #language   the language this locale speaks
++   entry .encodable   scrive un locale come codice della sua lingua, come `t"fr"`
++   entry .inspectable   una resa di debug di un locale, come `Locale(fr)`
++       La forma del costruttore, così non si confonde con il codice nudo che scrive `.encodable`.
++   entry .decodable   legge un locale da un codice di lingua, ripiegando sull'inglese
++       Decodifica in `Locale[en & pl & fr & de & es]`: `t"pl"`, `t"fr"`, `t"de"` e `t"es"` sono
++       le loro lingue, maiuscole o minuscole e ignorando qualsiasi subtag di regione, così `t"FR"`,
++       `t"fr-CA"` e `t"fr_CA"` sono tutti francese. Qualunque altro testo è silenziosamente `en`.
++   entry #language   la lingua che questo locale parla

@@ -1,0 +1,2411 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base profanity
++ base profanity
+
+- import soundness
++ import soundness
+
+- info   raw-mode terminal sessions: keypresses and terminal reports as typed events, line editing and menus
++ info   sessioni di terminale in modalità raw: pressioni di tasto e segnalazioni del terminale come eventi tipizzati, modifica di riga e menu
+
+- detail
++ detail
+
+-     _Profanity_ is the input side of an interactive terminal program. A terminal reports
+-     everything — a keypress, a resize, a change of focus, a paste, its background colour — as
+-     escape sequences on standard input, and only in raw mode, which must be turned off again
+-     however the program exits. Profanity scopes the raw-mode session to a block, decodes the
+-     input into typed `Terminal.Event`s, and builds line editing and menus over the event
+-     stream.
++     _Profanity_ è il lato di input di un programma interattivo da terminale. Un terminale
++     segnala tutto — una pressione di tasto, un ridimensionamento, un cambio di focus, un
++     incolla, il suo colore di sfondo — come sequenze di escape sullo standard input, e solo in
++     modalità raw, che va disattivata di nuovo comunque il programma termini. Profanity limita la
++     sessione in modalità raw a un blocco, decodifica l'input in `Terminal.Event` tipizzati, e
++     costruisce modifica di riga e menu sopra lo stream degli eventi.
+
+-     The session is `interactive`. Within it a `Terminal` is a contextual capability: its
+-     `Terminal#eventIterator` yields the events, its `Terminal#stdio` writes to the screen with
+-     the terminal's real width and colour depth, and capture checking confines it to the block,
+-     since raw mode and standard input are torn down when the block ends.
++     La sessione è `interactive`. Al suo interno un `Terminal` è una capability contestuale: il
++     suo `Terminal#eventIterator` produce gli eventi, il suo `Terminal#stdio` scrive sullo
++     schermo con la larghezza e la profondità di colore reali del terminale, e il capture checking
++     lo confina al blocco, poiché la modalità raw e lo standard input vengono smantellati quando
++     il blocco termina.
+
+=     since raw mode and standard input are torn down when the block ends.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     since raw mode and standard input are torn down when the block ends.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     since raw mode and standard input are torn down when the block ends.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     since raw mode and standard input are torn down when the block ends.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     interactive: terminal ?=>
++     interactive: terminal ?=>
+
+-       terminal.eventIterator().each:
++       terminal.eventIterator().each:
+
+-         case Keypress.CharKey(char)               => Out.println(t"pressed $char")
++         case Keypress.CharKey(char)               => Out.println(t"pressed $char")
+
+-         case Keypress.Ctrl('C')                   => ()
++         case Keypress.Ctrl('C')                   => ()
+
+-         case Terminal.Info.WindowSize(rows, cols) => Out.println(t"now $cols×$rows")
++         case Terminal.Info.WindowSize(rows, cols) => Out.println(t"now $cols×$rows")
+
+-         case _                                    => ()
++         case _                                    => ()
+
+=         case _                                    => ()
+-     ```
++     ```
+
+-     A `Terminal.Event` is the union of four vocabularies: a clavichord `Keypress` (a character,
+-     a named editing key, a function key, or any of these held with `Shift`, `Alt`, `Ctrl` or
+-     `Meta`), a `Terminal.Info` report from the terminal, an `Interrupt` (a POSIX signal such as
+-     `WINCH`) and a `WindowsSignal`. `Keyboard.Standard` does the decoding, covering legacy and
+-     VT key sequences, modifier parameters, the kitty keyboard protocol's CSI-u form, bracketed
+-     paste, focus reports, cursor-position and size reports, and the background-colour reply.
++     Un `Terminal.Event` è l'unione di quattro vocabolari: una `Keypress` di clavichord (un
++     carattere, un tasto di modifica con nome, un tasto funzione, o uno qualsiasi di questi tenuto
++     premuto con `Shift`, `Alt`, `Ctrl` o `Meta`), una segnalazione `Terminal.Info` dal
++     terminale, un `Interrupt` (un segnale POSIX come `WINCH`) e un `WindowsSignal`.
++     `Keyboard.Standard` si occupa della decodifica, coprendo le sequenze di tasti legacy e VT, i
++     parametri dei modificatori, la forma CSI-u del protocollo di tastiera di kitty, l'incolla
++     delimitato, le segnalazioni di focus, le segnalazioni di posizione del cursore e di
++     dimensione, e la risposta sul colore di sfondo.
+
+-     Optional terminal modes — bracketed paste, focus reporting, mouse tracking, the alternate
+-     screen, the kitty keyboard protocol — are `Terminal.Feature`s in the `terminalFeatures`
+-     package. `interactive` turns on every one in scope for the session and off again at its end,
+-     so a program chooses its modes by importing their givens **by name**: `import pkg.*` does
+-     not import givens. The `keyboards` package likewise holds the decoders a program may choose
+-     between.
++     Le modalità opzionali del terminale — incolla delimitato, segnalazione del focus,
++     tracciamento del mouse, schermo alternativo, protocollo di tastiera di kitty — sono
++     `Terminal.Feature` nel package `terminalFeatures`. `interactive` attiva ognuna di quelle
++     nell'ambito per la durata della sessione e la disattiva di nuovo alla fine, quindi un
++     programma sceglie le sue modalità importandone i given **per nome**: `import pkg.*` non
++     importa i given. Il package `keyboards` contiene allo stesso modo i decodificatori tra cui un
++     programma può scegliere.
+
+-     On the event stream sit two widgets, each a pure state machine (an event in, a new state
+-     out) driven by an `Interaction` which renders it: `LineEditor` for a line, or several, of
+-     text, and `SelectMenu` for a choice among options. Both draw through a `Board`, so the same
+-     widget renders inline at the cursor (`InlineBoard`), across the whole terminal
+-     (`TerminalBoard`) or inside a panel of a larger layout.
++     Sopra lo stream degli eventi stanno due widget, ciascuno una macchina a stati pura (un evento
++     in ingresso, un nuovo stato in uscita) guidata da una `Interaction` che lo disegna:
++     `LineEditor` per una riga, o più righe, di testo, e `SelectMenu` per una scelta tra opzioni.
++     Entrambi disegnano attraverso una `Board`, quindi lo stesso widget si disegna in linea al
++     cursore (`InlineBoard`), sull'intero terminale (`TerminalBoard`) o dentro un pannello di un
++     layout più ampio.
+
+=     (`TerminalBoard`) or inside a panel of a larger layout.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     (`TerminalBoard`) or inside a panel of a larger layout.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     (`TerminalBoard`) or inside a panel of a larger layout.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     (`TerminalBoard`) or inside a panel of a larger layout.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     interactive: terminal ?=>
++     interactive: terminal ?=>
+
+-       LineEditor().ask: name =>
++       LineEditor().ask: name =>
+
+-         SelectMenu(List(t"tea", t"coffee"), t"tea").ask: drink =>
++         SelectMenu(List(t"tea", t"coffee"), t"tea").ask: drink =>
+
+-           Out.println(t"$name drinks $drink")
++           Out.println(t"$name drinks $drink")
+
+=           Out.println(t"$name drinks $drink")
+-     ```
++     ```
+
+-     Signals reach a session through the `Console` it runs on: a resize or a resumption is
+-     turned into an event, and the size the launcher measured, where there is one, is recorded
+-     directly. A `Signal` carries the `Interrupt` or `WindowsSignal` with whatever its sender
+-     attached.
++     I segnali raggiungono una sessione attraverso la `Console` su cui essa gira: un
++     ridimensionamento o una ripresa vengono trasformati in un evento, e la dimensione misurata dal
++     launcher, dove c'è, viene registrata direttamente. Un `Signal` porta l'`Interrupt` o il
++     `WindowsSignal` con ciò che il mittente vi ha allegato.
+
+-     `interactive` needs a `Console` — which exoskeleton's `cli` block provides, whether the
+-     program runs as itself or under an ethereal daemon — and a `Monitor`, a `Probate`, an
+-     `Environment` and a `Tactic[Terminal.Error]`. The library is one source set,
+-     `profanity.core`, for the JVM: the session sets raw mode by running `stty`. Everything is
+-     exported to the `soundness` umbrella, and the `keyboards` and `terminalFeatures` choice
+-     packages merge with the umbrella's own.
++     `interactive` richiede una `Console` — che il blocco `cli` di exoskeleton fornisce, sia che il
++     programma giri da sé sia sotto un demone ethereal — e un `Monitor`, un `Probate`, un
++     `Environment` e una `Tactic[Terminal.Error]`. La libreria è un solo insieme di sorgenti,
++     `profanity.core`, per la JVM: la sessione imposta la modalità raw eseguendo `stty`. Tutto è
++     esportato nell'ombrello `soundness`, e i package di scelta `keyboards` e `terminalFeatures`
++     si fondono con quelli dell'ombrello.
+
+- refer profanity.interactive
++ refer profanity.interactive
+
+- refer profanity.Terminal
++ refer profanity.Terminal
+
+- refer profanity.LineEditor
++ refer profanity.LineEditor
+
+- refer profanity.SelectMenu
++ refer profanity.SelectMenu
+
+- refer profanity.terminalFeatures
++ refer profanity.terminalFeatures
+
+- refer profanity.Keyboard
++ refer profanity.Keyboard
+
+- refer clavichord.Keypress
++ refer clavichord.Keypress
+
+- entry .interactive   runs a block as a raw-mode terminal session, with a `Terminal` in context
++ entry .interactive   esegue un blocco come sessione di terminale in modalità raw, con un `Terminal` nel contesto
+
+= entry .interactive   runs a block as a raw-mode terminal session, with a `Terminal` in context
+-   detail
++   detail
+
+-       `interactive(block)` makes a `Terminal`, puts the terminal in raw mode, applies every
+-       `Terminal.Feature` in scope, and evaluates the block with the terminal as a contextual
+-       value; when the block ends, however it ends, it turns the features off in reverse order,
+-       closes standard input, stops the event stream and waits for the input pump to finish.
++       `interactive(block)` crea un `Terminal`, mette il terminale in modalità raw, applica ogni
++       `Terminal.Feature` nell'ambito, e valuta il blocco con il terminale come valore
++       contestuale; quando il blocco termina, comunque termini, disattiva le funzionalità in
++       ordine inverso, chiude lo standard input, ferma lo stream degli eventi e attende che la
++       pompa di input finisca.
+
+=       closes standard input, stops the event stream and waits for the input pump to finish.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       closes standard input, stops the event stream and waits for the input pump to finish.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       closes standard input, stops the event stream and waits for the input pump to finish.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       import terminalFeatures.{bracketedPasteFeature, focusReportingFeature}
++       import terminalFeatures.{bracketedPasteFeature, focusReportingFeature}
+
+=       import terminalFeatures.{bracketedPasteFeature, focusReportingFeature}
+=
+-       interactive: terminal ?=>
++       interactive: terminal ?=>
+
+=       import terminalFeatures.{bracketedPasteFeature, focusReportingFeature}
+=
+=       interactive: terminal ?=>
+-         terminal.eventIterator().each:
++         terminal.eventIterator().each:
+
+-           case Terminal.Info.Paste(text) => Out.println(t"pasted ${text.length} characters")
++           case Terminal.Info.Paste(text) => Out.println(t"pasted ${text.length} characters")
+
+-           case Terminal.Info.LoseFocus   => Out.println(t"focus lost")
++           case Terminal.Info.LoseFocus   => Out.println(t"focus lost")
+
+-           case _                         => ()
++           case _                         => ()
+
+=           case _                         => ()
+-       ```
++       ```
+
+-       Raw mode is set with `stty intr undef -echo icanon raw opost` when the `Console`'s
+-       standard streams are the process's own; under a daemon, whose streams are forwarded from
+-       a launcher, the launcher has already set the client's terminal and nothing is run. Raw
+-       mode turns off the terminal driver's handling of `Ctrl`+`C`, so it arrives as the
+-       keypress `Keypress.Ctrl('C')` rather than as a signal. As soon as raw mode is on, the
+-       session asks the terminal for its size (`Terminal.reportSize`), since shells do not
+-       export `LINES` and `COLUMNS` by default; until the reply arrives the terminal is assumed
+-       to be 80×24.
++       La modalità raw si imposta con `stty intr undef -echo icanon raw opost` quando gli stream
++       standard della `Console` sono quelli del processo stesso; sotto un demone, i cui stream sono
++       inoltrati da un launcher, il launcher ha già impostato il terminale del client e non si
++       esegue nulla. La modalità raw disattiva la gestione di `Ctrl`+`C` da parte del driver del
++       terminale, quindi arriva come la pressione di tasto `Keypress.Ctrl('C')` anziché come
++       segnale. Appena la modalità raw è attiva, la sessione chiede al terminale la sua dimensione
++       (`Terminal.reportSize`), poiché le shell per impostazione predefinita non esportano `LINES`
++       e `COLUMNS`; finché la risposta non arriva, si presume che il terminale sia 80×24.
+
+-       It needs a `Console`, a `Monitor` and a `Probate` (the input pump is a daemon task), an
+-       `Environment` (for `TERMINAL_BG`, `LINES` and `COLUMNS`), an `Every[Terminal.Feature]`
+-       (empty when no feature is imported) and a `Tactic[Terminal.Error]`, raised when `stty`
+-       fails because standard input is not a terminal.
++       Richiede una `Console`, un `Monitor` e un `Probate` (la pompa di input è un task demone), un
++       `Environment` (per `TERMINAL_BG`, `LINES` e `COLUMNS`), un `Every[Terminal.Feature]` (vuoto
++       quando non si importa alcuna funzionalità) e una `Tactic[Terminal.Error]`, sollevata quando
++       `stty` fallisce perché lo standard input non è un terminale.
+
+-       The `Terminal` is an exclusive capability, and capture checking confines it to the block:
+-       it cannot be returned, captured by a returned closure or stashed in an outer variable,
+-       since the session it represents has ended when the block does.
++       Il `Terminal` è una capability esclusiva, e il capture checking la confina al blocco: non
++       può essere restituita, catturata da una closure restituita o riposta in una variabile
++       esterna, poiché la sessione che rappresenta è terminata quando termina il blocco.
+
+=       since the session it represents has ended when the block does.
+=
+-       ```scala
++       ```scala
+
+=       since the session it represents has ended when the block does.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def attempt(using Console, Monitor, Probate, Environment, Every[Terminal.Feature])
++       def attempt(using Console, Monitor, Probate, Environment, Every[Terminal.Feature])
+
+-       :   Terminal =
++       :   Terminal =
+
+-         interactive(summon[Terminal])   // does not compile
++         interactive(summon[Terminal])   // does not compile
+
+=         interactive(summon[Terminal])   // does not compile
+-       ```
++       ```
+
+=       ```
+-   refer profanity.Terminal
++   refer profanity.Terminal
+
+-   refer profanity.terminalFeatures
++   refer profanity.terminalFeatures
+
+-   refer profanity.Console
++   refer profanity.Console
+
+- entry .terminalStdio   the standard streams a `Terminal` in scope supplies, as a `Stdio`
+-     A top-level given which makes `Terminal#stdio` the `Stdio` wherever a `Terminal` is in
+-     context, so `Out.println` inside an `interactive` block writes through the session's
+-     streams, with a termcap reporting ANSI support, true colour and the terminal's live width.
+-     It is one canonical instance rather than a choice, so it is a named given at the package's
+-     top level. It is exported by the umbrella, and since `import soundness.*` does not import
+-     givens, it is imported by name where it is wanted: `import soundness.terminalStdio`.
++ entry .terminalStdio   gli stream standard forniti da un `Terminal` nell'ambito, come `Stdio`
++     Un given di primo livello che rende `Terminal#stdio` lo `Stdio` ovunque un `Terminal` sia
++     nel contesto, quindi `Out.println` dentro un blocco `interactive` scrive attraverso gli
++     stream della sessione, con un termcap che dichiara il supporto ANSI, il true color e la
++     larghezza attuale del terminale. È un'unica istanza canonica anziché una scelta, quindi è un
++     given con nome al primo livello del package. È esportato dall'ombrello, e poiché
++     `import soundness.*` non importa i given, lo si importa per nome dove serve:
++     `import soundness.terminalStdio`.
+
+- entry .Terminal   a live raw-mode terminal session: its event stream, its size, and its output streams
++ entry .Terminal   una sessione di terminale attiva in modalità raw: il suo stream di eventi, la sua dimensione e i suoi stream di output
+
+= entry .Terminal   a live raw-mode terminal session: its event stream, its size, and its output streams
+-   detail
++   detail
+
+-       A `Terminal` is the capability `interactive` lends its block. It holds the session's
+-       state: the stream of `Terminal.Event`s an input-pump daemon decodes from standard input,
+-       the terminal's size as last reported, whether its background is light or dark, and the
+-       `Stdio` through which to write to it. It is an `Interactivity[Terminal.Event]`, so the
+-       widgets `LineEditor` and `SelectMenu` take their events from it directly.
++       Un `Terminal` è la capability che `interactive` presta al suo blocco. Contiene lo stato
++       della sessione: lo stream di `Terminal.Event` che un demone di pompa dell'input decodifica
++       dallo standard input, la dimensione del terminale come segnalata per ultima, se il suo
++       sfondo è chiaro o scuro, e lo `Stdio` attraverso cui scrivervi. È una
++       `Interactivity[Terminal.Event]`, quindi i widget `LineEditor` e `SelectMenu` ne prendono
++       direttamente gli eventi.
+
+=       widgets `LineEditor` and `SelectMenu` take their events from it directly.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       widgets `LineEditor` and `SelectMenu` take their events from it directly.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       widgets `LineEditor` and `SelectMenu` take their events from it directly.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       widgets `LineEditor` and `SelectMenu` take their events from it directly.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       interactive: terminal ?=>
++       interactive: terminal ?=>
+
+-         Out.println(t"${terminal.knownColumns}×${terminal.knownRows}")
++         Out.println(t"${terminal.knownColumns}×${terminal.knownRows}")
+
+=
+-         terminal.eventIterator().each:
++         terminal.eventIterator().each:
+
+-           case Terminal.Info.WindowSize(rows, columns) => Out.println(t"$columns×$rows")
++           case Terminal.Info.WindowSize(rows, columns) => Out.println(t"$columns×$rows")
+
+-           case Keypress.Escape                         => ()
++           case Keypress.Escape                         => ()
+
+-           case _                                       => ()
++           case _                                       => ()
+
+=           case _                                       => ()
+-       ```
++       ```
+
+-       The size comes first from the `Console`'s termcap — under a daemon, the launcher measured
+-       the client's terminal — then from `LINES` and `COLUMNS`, and is updated by every size
+-       report and every resize signal; `#knownColumns` and `#knownRows` fall back to 80×24 while
+-       it is unknown. `#mode` is read from the `TERMINAL_BG` environment variable and updated by
+-       the reply which `terminalFeatures.backgroundColorFeature` asks for.
++       La dimensione proviene prima dal termcap della `Console` — sotto un demone, il launcher ha
++       misurato il terminale del client — poi da `LINES` e `COLUMNS`, e viene aggiornata da ogni
++       segnalazione di dimensione e da ogni segnale di ridimensionamento; `#knownColumns` e
++       `#knownRows` ripiegano su 80×24 finché è sconosciuta. `#mode` si legge dalla variabile
++       d'ambiente `TERMINAL_BG` e viene aggiornato dalla risposta che
++       `terminalFeatures.backgroundColorFeature` richiede.
+
+-       A resize is handled in full: on `WINCH` (or `CONT`), the session queries the cursor's
+-       position and, if the signal did not carry the new size, the size too. The event stream
+-       receives the `Interrupt` at once, a `Terminal.Info.WindowSize` (at once if the signal
+-       carried the size, and otherwise when the terminal replies), and a
+-       `Terminal.Info.CursorPosition` telling an inline renderer where a reflow moved its block.
++       Un ridimensionamento è gestito per intero: su `WINCH` (o `CONT`), la sessione interroga la
++       posizione del cursore e, se il segnale non portava la nuova dimensione, anche la
++       dimensione. Lo stream degli eventi riceve subito l'`Interrupt`, un
++       `Terminal.Info.WindowSize` (subito se il segnale portava la dimensione, altrimenti quando il
++       terminale risponde), e un `Terminal.Info.CursorPosition` che dice a un renderer in linea dove
++       un riflusso ha spostato il suo blocco.
+
+-       A `Terminal` is made only by `interactive`, which tears it down; it is an exclusive
+-       capability, so it cannot outlive that block.
++       Un `Terminal` è creato solo da `interactive`, che lo smantella; è una capability esclusiva,
++       quindi non può sopravvivere a quel blocco.
+
+=       capability, so it cannot outlive that block.
+-   refer profanity.interactive
++   refer profanity.interactive
+
+-   refer profanity.Terminal.Event
++   refer profanity.Terminal.Event
+
+=   refer profanity.Terminal.Event
+-   refer profanity.Keyboard
++   refer profanity.Keyboard
+
+-   refer profanity.Interactivity
++   refer profanity.Interactivity
+
+-   entry .reportSize   the escape sequence which asks the terminal for its size
+-       Saves the cursor, moves it as far right and down as the terminal allows, asks for its
+-       position, and restores it: `\e7\e[4095C\e[4095B\e[6n\e8`. The terminal's reply, a
+-       cursor-position report from the bottom-right corner, decodes as a
+-       `Terminal.Info.WindowSize`. `interactive` sends it when a session starts, and
+-       `terminalFeatures.terminalSizeFeature` is it as a feature.
+-   entry .anchorQuery   the escape sequence which asks where the cursor is: `\e[6n`
+-       A resize sends it before the size probe, so that an inline renderer learns where the
+-       terminal's reflow moved the cell its cursor was on. Its reply has the same form as the
+-       size probe's; the session tells the two apart by the order in which it sent them, and
+-       reports this one as a `Terminal.Info.CursorPosition`.
+-   entry .Error   raised when standard input is not attached to a terminal
++   entry .reportSize   la sequenza di escape che chiede al terminale la sua dimensione
++       Salva il cursore, lo sposta il più possibile a destra e in basso quanto il terminale
++       consente, ne chiede la posizione, e lo ripristina: `\e7\e[4095C\e[4095B\e[6n\e8`. La
++       risposta del terminale, una segnalazione di posizione del cursore dall'angolo in basso a
++       destra, si decodifica come `Terminal.Info.WindowSize`. `interactive` la invia all'avvio di
++       una sessione, e `terminalFeatures.terminalSizeFeature` è la stessa sequenza come
++       funzionalità.
++   entry .anchorQuery   la sequenza di escape che chiede dove si trova il cursore: `\e[6n`
++       Un ridimensionamento la invia prima della sonda della dimensione, così che un renderer in
++       linea sappia dove il riflusso del terminale ha spostato la cella su cui si trovava il suo
++       cursore. La sua risposta ha la stessa forma di quella della sonda della dimensione; la
++       sessione distingue le due dall'ordine in cui le ha inviate, e segnala questa come
++       `Terminal.Info.CursorPosition`.
++   entry .Error   sollevato quando lo standard input non è collegato a un terminale
+
+=   entry .Error   raised when standard input is not attached to a terminal
+-     detail
++     detail
+
+-         Error `↯/s.95.2`: _STDIN is not attached to a TTY_. Raised by `interactive` when `stty` fails
+-         to put the terminal in raw mode, as it does when the program's input is a pipe or a
+-         file.
+-   entry .Feature   a terminal mode turned on and off by a pair of escape sequences
++         Errore `↯/s.95.2`: _STDIN is not attached to a TTY_. Sollevato da `interactive` quando
++         `stty` non riesce a mettere il terminale in modalità raw, come accade quando l'input del
++         programma è una pipe o un file.
++   entry .Feature   una modalità del terminale attivata e disattivata da una coppia di sequenze di escape
+
+=   entry .Feature   a terminal mode turned on and off by a pair of escape sequences
+-     detail
++     detail
+
+-         A `Feature` is an `#enable` sequence and a `#disable` sequence: bracketed paste, focus
+-         reporting, mouse tracking, the alternate screen, the kitty keyboard protocol. The
+-         standard ones are givens in the `terminalFeatures` package, and `interactive` summons
+-         every one in scope as an `Every[Terminal.Feature]`, turning each on for the session
+-         and off at its end, nested so that the last turned on is the first turned off. A
+-         one-shot query, such as for the background colour or the size, has an empty
+-         `#disable`.
++         Una `Feature` è una sequenza `#enable` e una sequenza `#disable`: incolla delimitato,
++         segnalazione del focus, tracciamento del mouse, schermo alternativo, protocollo di
++         tastiera di kitty. Quelle standard sono given nel package `terminalFeatures`, e
++         `interactive` evoca ognuna di quelle nell'ambito come `Every[Terminal.Feature]`,
++         attivandole per la sessione e disattivandole alla fine, annidate in modo che l'ultima
++         attivata sia la prima disattivata. Un'interrogazione one-shot, come quella per il colore
++         di sfondo o per la dimensione, ha un `#disable` vuoto.
+
+=         `#disable`.
+=
+-         ```scala
++         ```scala
+
+=         `#disable`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         given synchronizedOutput: Terminal.Feature =
++         given synchronizedOutput: Terminal.Feature =
+
+-           Terminal.Feature(t"\e[?2026h", t"\e[?2026l")
++           Terminal.Feature(t"\e[?2026h", t"\e[?2026l")
+
+=           Terminal.Feature(t"\e[?2026h", t"\e[?2026l")
+-         ```
++         ```
+
+-         A feature can also be applied around a block within a session, with `#apply`.
++         Una funzionalità si può anche applicare attorno a un blocco all'interno di una sessione,
++         con `#apply`.
+
+-     refer profanity.terminalFeatures
++     refer profanity.terminalFeatures
+
+-     entry #enable   the escape sequence which turns the mode on
+-     entry #disable   the escape sequence which turns the mode off; empty for a one-shot query
+-     entry #apply   runs a block with the mode on, turning it off afterwards however the block ends
+-         Needs a `Terminal` in context, through whose `Stdio` the sequences are written, so a
+-         feature can be applied only inside an `interactive` session.
++     entry #enable   la sequenza di escape che attiva la modalità
++     entry #disable   la sequenza di escape che disattiva la modalità; vuota per un'interrogazione one-shot
++     entry #apply   esegue un blocco con la modalità attiva, disattivandola dopo comunque il blocco termini
++         Richiede un `Terminal` nel contesto, attraverso il cui `Stdio` si scrivono le sequenze,
++         quindi una funzionalità si può applicare solo dentro una sessione `interactive`.
+
+=         feature can be applied only inside an `interactive` session.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         feature can be applied only inside an `interactive` session.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         feature can be applied only inside an `interactive` session.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         feature can be applied only inside an `interactive` session.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         interactive: terminal ?=>
++         interactive: terminal ?=>
+
+-           terminalFeatures.alternateScreenFeature:
++           terminalFeatures.alternateScreenFeature:
+
+-             Out.println(t"on the alternate screen")
++             Out.println(t"on the alternate screen")
+
+=             Out.println(t"on the alternate screen")
+-         ```
++         ```
+
+-   entry .Info   a report from the terminal: its size, the cursor, its background, focus, or a paste
++   entry .Info   una segnalazione dal terminale: la sua dimensione, il cursore, il suo sfondo, il focus, o un incolla
+
+=   entry .Info   a report from the terminal: its size, the cursor, its background, focus, or a paste
+-     detail
++     detail
+
+-         The events a terminal sends which are not keypresses, decoded by `Keyboard.Standard`:
++         Gli eventi inviati da un terminale che non sono pressioni di tasto, decodificati da
++         `Keyboard.Standard`:
+
+-         ```tabular
++         ```tabular
+
+-         column  Case
+-         column  Report
+-         column  Sent
+-         row  `WindowSize(rows, columns)`  the terminal's size; the `Terminal` records it before passing it on  in reply to `Terminal.reportSize`: at session start, after a resize, or for `terminalFeatures.terminalSizeFeature`
+-         row  `CursorPosition(row, column)`  where the cursor is, in one-based screen coordinates  in reply to `Terminal.anchorQuery`, or as a `?`-prefixed DECXCPR report
+-         row  `BgColor(red, green, blue)`  the background colour, with sixteen-bit components; the `Terminal` updates its `#mode` from it  in reply to the query of `terminalFeatures.backgroundColorFeature`
+-         row  `LoseFocus`, `GainFocus`  a change of focus  with `terminalFeatures.focusReportingFeature`
+-         row  `Paste(text)`  the whole of a bracketed paste, rather than one keypress per character  with `terminalFeatures.bracketedPasteFeature`
+-         row  `Redraw`  a request to repaint  never by the terminal: an application puts it on the event stream to wake its event loop after a background task changes what is shown
++         column  Caso
++         column  Segnalazione
++         column  Inviata
++         row  `WindowSize(rows, columns)`  la dimensione del terminale; il `Terminal` la registra prima di passarla oltre  in risposta a `Terminal.reportSize`: all'avvio della sessione, dopo un ridimensionamento, o per `terminalFeatures.terminalSizeFeature`
++         row  `CursorPosition(row, column)`  dove si trova il cursore, in coordinate di schermo a base uno  in risposta a `Terminal.anchorQuery`, o come segnalazione DECXCPR con prefisso `?`
++         row  `BgColor(red, green, blue)`  il colore di sfondo, con componenti a sedici bit; il `Terminal` ne aggiorna il proprio `#mode`  in risposta all'interrogazione di `terminalFeatures.backgroundColorFeature`
++         row  `LoseFocus`, `GainFocus`  un cambio di focus  con `terminalFeatures.focusReportingFeature`
++         row  `Paste(text)`  l'intero contenuto di un incolla delimitato, anziché una pressione di tasto per carattere  con `terminalFeatures.bracketedPasteFeature`
++         row  `Redraw`  una richiesta di ridisegno  mai dal terminale: un'applicazione la mette sullo stream degli eventi per risvegliare il proprio ciclo di eventi dopo che un task in background ha cambiato ciò che è mostrato
+
+=         row  `Redraw`  a request to repaint  never by the terminal: an application puts it on the event stream to wake its event loop after a background task changes what is shown
+-         ```
++         ```
+
+=         ```
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         ```
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         ```
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         ```
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         interactive: terminal ?=>
++         interactive: terminal ?=>
+
+-           terminal.eventIterator().each:
++           terminal.eventIterator().each:
+
+-             case Terminal.Info.WindowSize(rows, columns) => Out.println(t"$columns×$rows")
++             case Terminal.Info.WindowSize(rows, columns) => Out.println(t"$columns×$rows")
+
+-             case Terminal.Info.Paste(text)               => Out.println(text)
++             case Terminal.Info.Paste(text)               => Out.println(text)
+
+-             case Terminal.Info.GainFocus                 => Out.println(t"welcome back")
++             case Terminal.Info.GainFocus                 => Out.println(t"welcome back")
+
+-             case _                                       => ()
++             case _                                       => ()
+
+=             case _                                       => ()
+-         ```
++         ```
+
+-   entry .Event   every event a terminal session yields: a keypress, a report, or a signal
+-       The union `Keypress | Terminal.Info | Interrupt | WindowsSignal`. `Keypress` is
+-       clavichord's, so that a browser driver can name a keypress without depending on a
+-       terminal library; a union rather than a sealed trait, since a type in another module
+-       cannot extend a sealed one here. A match over it is still checked for exhaustivity.
+-   entry #in   the session's standard input stream
+-   entry #out   the session's standard output stream
+-   entry #err   the session's standard error stream
+-   entry #keyboard   the `Keyboard.Standard` decoder which turns the input into events
+-       Its `Keyboard.Lookahead` consults the live input: a lone escape character followed at
+-       once by more input begins a sequence, and one followed by a quiet line for ten
+-       milliseconds is the `Escape` key.
+-   entry #mode   whether the terminal's background is light or dark, if known
+-       An `Optional[Brightness]`, read when the session starts from the `TERMINAL_BG`
+-       environment variable (as `rrrr/gggg/bbbb` hexadecimal components), and updated when the
+-       terminal replies to the query `terminalFeatures.backgroundColorFeature` sends. It can
+-       also be assigned.
+-   entry #rows   the terminal's height in rows, if known
+-       Updated by every size report and resize signal, and assignable within the session:
+-       `terminal.rows = 10`.
+-   entry #columns   the terminal's width in columns, if known
+-       Updated by every size report and resize signal, and assignable within the session:
+-       `terminal.columns = 40`.
+-   entry #knownColumns   the terminal's width, or 80 while it is unknown
+-       The conservative fallback is deliberate: drawing for a narrower terminal than the real
+-       one is benign, while assuming a wider one scatters absolutely-addressed output.
+-   entry #knownRows   the terminal's height, or 24 while it is unknown
+-   entry #cap   the session's termcap: ANSI, true colour, and the terminal's live width
+-   entry #stdio   the session's standard streams, carrying `#cap` as their termcap
+-       The `Stdio` through which to write to the terminal, with the `Console`'s streams and a
+-       termcap whose width follows the terminal's. `terminalStdio` makes it the `Stdio` in
+-       scope wherever the `Terminal` is.
+-   entry #events   the relay onto which the input pump and the signal handler put events
+-       A `Relay[Terminal.Event]`. An application may put its own events onto it — such as
+-       `Terminal.Info.Redraw`, to wake an event loop — and `interactive` stops it when the
+-       session ends, which ends every iterator over it.
+-   entry #eventIterator   an iterator over the session's events, in the order they arrived
+-       Each call drains the shared event queue afresh, so two iterators share the events
+-       between them rather than each seeing all of them. The iterator is exhausted when the
+-       session's input ends.
+-   entry #pumpInput   the daemon task which reads standard input and decodes it into events
+-       Started with the session, it reads characters from the `Console`'s input, decodes them
+-       with `#keyboard`, records any size or background-colour report, and puts each event on
+-       `#events`. However it ends — the session closing standard input, end of input, or a
+-       decoding failure — it stops the event stream, so a loop over the events sees the end
+-       rather than blocking for ever. `interactive` waits for it on teardown.
++   entry .Event   ogni evento prodotto da una sessione di terminale: una pressione di tasto, una segnalazione o un segnale
++       L'unione `Keypress | Terminal.Info | Interrupt | WindowsSignal`. `Keypress` è quella di
++       clavichord, così che un driver di browser possa nominare una pressione di tasto senza
++       dipendere da una libreria per terminali; un'unione anziché un sealed trait, poiché un tipo
++       in un altro modulo non può estenderne uno sealed definito qui. Un match su di essa viene
++       comunque verificato per esaustività.
++   entry #in   lo stream di standard input della sessione
++   entry #out   lo stream di standard output della sessione
++   entry #err   lo stream di standard error della sessione
++   entry #keyboard   il decodificatore `Keyboard.Standard` che trasforma l'input in eventi
++       Il suo `Keyboard.Lookahead` consulta l'input attivo: un carattere di escape isolato seguito
++       subito da altro input inizia una sequenza, e uno seguito da una linea silenziosa per dieci
++       millisecondi è il tasto `Escape`.
++   entry #mode   se lo sfondo del terminale è chiaro o scuro, se noto
++       Un `Optional[Brightness]`, letto all'avvio della sessione dalla variabile d'ambiente
++       `TERMINAL_BG` (come componenti esadecimali `rrrr/gggg/bbbb`), e aggiornato quando il
++       terminale risponde all'interrogazione inviata da `terminalFeatures.backgroundColorFeature`.
++       Si può anche assegnare.
++   entry #rows   l'altezza del terminale in righe, se nota
++       Aggiornata da ogni segnalazione di dimensione e segnale di ridimensionamento, e assegnabile
++       all'interno della sessione: `terminal.rows = 10`.
++   entry #columns   la larghezza del terminale in colonne, se nota
++       Aggiornata da ogni segnalazione di dimensione e segnale di ridimensionamento, e assegnabile
++       all'interno della sessione: `terminal.columns = 40`.
++   entry #knownColumns   la larghezza del terminale, o 80 finché è sconosciuta
++       Il ripiego prudente è voluto: disegnare per un terminale più stretto di quello reale è
++       innocuo, mentre presumerne uno più largo sparpaglia l'output indirizzato in modo assoluto.
++   entry #knownRows   l'altezza del terminale, o 24 finché è sconosciuta
++   entry #cap   il termcap della sessione: ANSI, true color e la larghezza attuale del terminale
++   entry #stdio   gli stream standard della sessione, che portano `#cap` come loro termcap
++       Lo `Stdio` attraverso cui scrivere sul terminale, con gli stream della `Console` e un
++       termcap la cui larghezza segue quella del terminale. `terminalStdio` lo rende lo `Stdio`
++       nell'ambito ovunque sia il `Terminal`.
++   entry #events   il relay su cui la pompa di input e il gestore dei segnali mettono gli eventi
++       Un `Relay[Terminal.Event]`. Un'applicazione può mettervi i propri eventi — come
++       `Terminal.Info.Redraw`, per risvegliare un ciclo di eventi — e `interactive` lo ferma
++       quando la sessione termina, il che termina ogni iteratore su di esso.
++   entry #eventIterator   un iteratore sugli eventi della sessione, nell'ordine in cui sono arrivati
++       Ogni chiamata svuota di nuovo la coda di eventi condivisa, quindi due iteratori si
++       dividono gli eventi anziché vederli tutti ciascuno. L'iteratore si esaurisce quando
++       l'input della sessione termina.
++   entry #pumpInput   il task demone che legge lo standard input e lo decodifica in eventi
++       Avviato con la sessione, legge caratteri dall'input della `Console`, li decodifica con
++       `#keyboard`, registra ogni segnalazione di dimensione o di colore di sfondo, e mette ogni
++       evento su `#events`. Comunque termini — la sessione che chiude lo standard input, la fine
++       dell'input, o un errore di decodifica — ferma lo stream degli eventi, quindi un ciclo
++       sugli eventi ne vede la fine anziché bloccarsi per sempre. `interactive` lo attende in fase
++       di smantellamento.
+
+- entry .Console   the console a terminal session runs on: its standard streams, and a signal trap
++ entry .Console   la console su cui gira una sessione di terminale: i suoi stream standard e una trappola per i segnali
+
+= entry .Console   the console a terminal session runs on: its standard streams, and a signal trap
+-   detail
++   detail
+
+-       `interactive` needs a `Console`: the standard streams the session reads and writes, and
+-       a way to be told of signals. Exoskeleton's `Cli`, which the `cli` block provides, is
+-       one, whether the program runs directly or as an ethereal daemon's client, whose streams
+-       and signals the launcher forwards.
++       `interactive` richiede una `Console`: gli stream standard che la sessione legge e scrive,
++       e un modo per essere informata dei segnali. Il `Cli` di exoskeleton, fornito dal blocco
++       `cli`, è una console, sia che il programma giri direttamente sia come client di un demone
++       ethereal, i cui stream e segnali sono inoltrati dal launcher.
+
+-       `Console(stdio)` makes one over any `Stdio`, whose `#trap` ignores every handler, for a
+-       session which needs no signals.
++       `Console(stdio)` ne crea una sopra qualsiasi `Stdio`, il cui `#trap` ignora ogni handler,
++       per una sessione che non ha bisogno di segnali.
+
+=       session which needs no signals.
+-   refer profanity.interactive
++   refer profanity.interactive
+
+=   refer profanity.interactive
+-   refer profanity.Signal
++   refer profanity.Signal
+
+-   entry .apply   a console over the given standard streams, which receives no signals
+-   entry #stdio   the console's standard streams
+-   entry #trap   registers a handler for the signals the console receives
+-       A `PartialFunction[Signal, SignalResponse]`. A `Terminal` registers one for `WINCH`
+-       and `CONT`, to track resizes, and turns every other signal into an event. The console
+-       made by `Console(stdio)` discards the handler.
++   entry .apply   una console sopra gli stream standard dati, che non riceve segnali
++   entry #stdio   gli stream standard della console
++   entry #trap   registra un handler per i segnali che la console riceve
++       Una `PartialFunction[Signal, SignalResponse]`. Un `Terminal` ne registra uno per `WINCH`
++       e `CONT`, per seguire i ridimensionamenti, e trasforma ogni altro segnale in un evento. La
++       console creata da `Console(stdio)` scarta l'handler.
+
+- entry .Keyboard   a decoder from the characters a terminal sends to the keypresses they mean
++ entry .Keyboard   un decodificatore dai caratteri inviati da un terminale alle pressioni di tasto che significano
+
+= entry .Keyboard   a decoder from the characters a terminal sends to the keypresses they mean
+-   detail
++   detail
+
+-       A `Keyboard` turns a lazy `Chain[Char]` of input into a `Chain` of its `#Keypress`
+-       type. `Keyboard.Standard` is the decoder a `Terminal` uses, and the `keyboards` package
+-       holds it with two trivial ones as givens to import by name.
++       Un `Keyboard` trasforma una `Chain[Char]` lazy di input in una `Chain` del suo tipo
++       `#Keypress`. `Keyboard.Standard` è il decodificatore usato da un `Terminal`, e il package
++       `keyboards` lo contiene, insieme a due decodificatori banali, come given da importare per
++       nome.
+
+=       holds it with two trivial ones as givens to import by name.
+=
+-       ```scala
++       ```scala
+
+=       holds it with two trivial ones as givens to import by name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val keys = Keyboard.Standard().process(Chain('h', 'i', '\u001b', '[', 'A', '\r'))
++       val keys = Keyboard.Standard().process(Chain('h', 'i', '\u001b', '[', 'A', '\r'))
+
+-       // CharKey('h'), CharKey('i'), Up, Enter
++       // CharKey('h'), CharKey('i'), Up, Enter
+
+=       // CharKey('h'), CharKey('i'), Up, Enter
+-       ```
++       ```
+
+-       The helpers in the companion are the pieces `Keyboard.Standard` is built from, and are
+-       public for decoders of related encodings.
++       Gli helper nell'oggetto compagno sono i pezzi con cui è costruito `Keyboard.Standard`, e
++       sono pubblici per i decodificatori di codifiche affini.
+
+-   refer profanity.keyboards
++   refer profanity.keyboards
+
+-   refer clavichord.Keypress
++   refer clavichord.Keypress
+
+-   entry .modified   wraps a key in the modifiers a legacy modifier digit names
+-       `Keyboard.modified(digit, key)` reads the digit of a sequence such as `\e[1;5A` as one
+-       plus a bitmask, and wraps the key as `applyModifiers` does: `'5'` is `Ctrl`, so
+-       `\e[1;5A` is `Ctrl(Up)`.
+-   entry .applyModifiers   wraps a key in the modifiers a bitmask names: shift 1, alt 2, ctrl 4, meta 8
+-       The modifiers nest outwards in that order, so a bitmask of 5 makes `Ctrl(Shift(key))`.
+-       The bitmask is the kitty protocol's modifier value less one.
+-   entry .csiu   decodes the parameters of a kitty-protocol CSI-u sequence into a keypress
+-       Takes the characters between `\e[` and the final `u`, of the form
+-       `codepoint[:shifted[:base]][;modifiers[:event]][;text]`. The codepoints 13, 9, 27 and 8
+-       or 127 are `Enter`, `Tab`, `Escape` and `Backspace`, which may carry any modifier; any
+-       other codepoint is a character, made a `Ctrl` keypress with the control modifier and
+-       upper-cased with the shift modifier.
++   entry .modified   avvolge un tasto nei modificatori indicati da una cifra di modificatore legacy
++       `Keyboard.modified(digit, key)` legge la cifra di una sequenza come `\e[1;5A` come uno più
++       una maschera di bit, e avvolge il tasto come fa `applyModifiers`: `'5'` è `Ctrl`, quindi
++       `\e[1;5A` è `Ctrl(Up)`.
++   entry .applyModifiers   avvolge un tasto nei modificatori indicati da una maschera di bit: shift 1, alt 2, ctrl 4, meta 8
++       I modificatori si annidano verso l'esterno in quell'ordine, quindi una maschera di bit di
++       5 produce `Ctrl(Shift(key))`. La maschera di bit è il valore del modificatore del protocollo
++       di kitty meno uno.
++   entry .csiu   decodifica i parametri di una sequenza CSI-u del protocollo di kitty in una pressione di tasto
++       Prende i caratteri tra `\e[` e la `u` finale, nella forma
++       `codepoint[:shifted[:base]][;modifiers[:event]][;text]`. I codepoint 13, 9, 27 e 8 o 127
++       sono `Enter`, `Tab`, `Escape` e `Backspace`, che possono portare qualsiasi modificatore;
++       ogni altro codepoint è un carattere, reso una pressione di tasto `Ctrl` con il
++       modificatore control e convertito in maiuscolo con il modificatore shift.
+
+=       upper-cased with the shift modifier.
+=
+-       ```scala
++       ```scala
+
+=       upper-cased with the shift modifier.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Keyboard.csiu(List('1', '3', ';', '2'))   // Shift(Enter)
++       Keyboard.csiu(List('1', '3', ';', '2'))   // Shift(Enter)
+
+=       Keyboard.csiu(List('1', '3', ';', '2'))   // Shift(Enter)
+-       ```
++       ```
+
+-   entry .ctrlChar   the `Ctrl` keypress for a character, or the plain character if it has no control form
+-       Letters (of either case) and `@`, `[`, `\`, `]`, `^` and `_` have control forms.
+-   entry .navigation   the editing key the final letter of a cursor sequence names: `A` is `Up`, `H` is `Home`
++   entry .ctrlChar   la pressione di tasto `Ctrl` per un carattere, o il carattere semplice se non ha una forma di controllo
++       Le lettere (maiuscole o minuscole) e `@`, `[`, `\`, `]`, `^` e `_` hanno forme di
++       controllo.
++   entry .navigation   il tasto di modifica indicato dalla lettera finale di una sequenza del cursore: `A` è `Up`, `H` è `Home`
+
+=   entry .navigation   the editing key the final letter of a cursor sequence names: `A` is `Up`, `H` is `Home`
+-       ```tabular
++       ```tabular
+
+-       column  Letter
+-       column  Key
++       column  Lettera
++       column  Tasto
+
+-       row  `A`  `Up`
++       row  `A`  `Up`
+
+-       row  `B`  `Down`
++       row  `B`  `Down`
+
+-       row  `C`  `Right`
++       row  `C`  `Right`
+
+-       row  `D`  `Left`
++       row  `D`  `Left`
+
+-       row  `F`  `End`
++       row  `F`  `End`
+
+-       row  `H`  `Home`
++       row  `H`  `Home`
+
+=       row  `H`  `Home`
+-       row  any other  `Escape`
++       row  qualsiasi altra  `Escape`
+
+=       row  `H`  `Home`
+=       row  any other  `Escape`
+-       ```
++       ```
+
+-   entry .vt   the editing key the digit of a VT sequence `\e[n~` names: `2` is `Insert`, `5` is `PageUp`
++   entry .vt   il tasto di modifica indicato dalla cifra di una sequenza VT `\e[n~`: `2` è `Insert`, `5` è `PageUp`
+
+=   entry .vt   the editing key the digit of a VT sequence `\e[n~` names: `2` is `Insert`, `5` is `PageUp`
+-       ```tabular
++       ```tabular
+
+-       column  Digit
+-       column  Key
++       column  Cifra
++       column  Tasto
+
+-       row  `1`, `7`  `Home`
++       row  `1`, `7`  `Home`
+
+-       row  `2`  `Insert`
++       row  `2`  `Insert`
+
+-       row  `3`  `Delete`
++       row  `3`  `Delete`
+
+-       row  `4`, `8`  `End`
++       row  `4`, `8`  `End`
+
+-       row  `5`  `PageUp`
++       row  `5`  `PageUp`
+
+-       row  `6`  `PageDown`
++       row  `6`  `PageDown`
+
+=       row  `6`  `PageDown`
+-       row  any other  `Escape`
++       row  qualsiasi altra  `Escape`
+
+=       row  `6`  `PageDown`
+=       row  any other  `Escape`
+-       ```
++       ```
+
+-   entry .Lookahead   decides whether an escape character begins a sequence or is the `Escape` key
++   entry .Lookahead   decide se un carattere di escape inizia una sequenza o è il tasto `Escape`
+
+=   entry .Lookahead   decides whether an escape character begins a sequence or is the `Escape` key
+-     detail
++     detail
+
+-         The escape key and the start of an escape sequence are the same character; they are
+-         told apart by whether more input follows closely. `#sequenceFollows` is given the
+-         rest of the input after an escape and answers whether it belongs to a sequence.
++         Il tasto escape e l'inizio di una sequenza di escape sono lo stesso carattere; si
++         distinguono a seconda che segua da vicino altro input. `#sequenceFollows` riceve il resto
++         dell'input dopo un escape e risponde se esso appartenga a una sequenza.
+
+-         A terminal writes a whole sequence at once, so on a live terminal already-buffered
+-         input decides at once, and only a quiet line waits, briefly, for the rest of a
+-         sequence split across packets (as an SSH connection may split one) before the escape
+-         is reported as the key. `.tty` is that policy; `.immediate`, in the companion and so
+-         in implicit scope, is for input which is already complete.
+-     entry .immediate   for complete input, such as a test or a replay: a sequence follows if anything does
+-         The `Keyboard.Lookahead` which `Keyboard.Standard()` uses when no other is given. It
+-         tests whether the rest of the input is empty, which on a live terminal would block
+-         until the next keypress; use `.tty` there.
++         Un terminale scrive un'intera sequenza in una volta, quindi su un terminale attivo
++         l'input già nel buffer decide subito, e solo una linea silenziosa attende, brevemente, il
++         resto di una sequenza spezzata tra pacchetti (come può spezzarla una connessione SSH)
++         prima che l'escape venga segnalato come il tasto. `.tty` è quella politica; `.immediate`,
++         nell'oggetto compagno e quindi nell'ambito implicito, è per l'input già completo.
++     entry .immediate   per l'input completo, come un test o una riproduzione: una sequenza segue se segue qualcosa
++         Il `Keyboard.Lookahead` che `Keyboard.Standard()` usa quando non ne è dato un altro.
++         Verifica se il resto dell'input è vuoto, il che su un terminale attivo si bloccherebbe
++         fino alla pressione di tasto successiva; lì si usi `.tty`.
+
+=         until the next keypress; use `.tty` there.
+=
+-         ```scala
++         ```scala
+
+=         until the next keypress; use `.tty` there.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Keyboard.Standard().process(Chain('\u001b')).head   // Escape
++         Keyboard.Standard().process(Chain('\u001b')).head   // Escape
+
+=         Keyboard.Standard().process(Chain('\u001b')).head   // Escape
+-         ```
++         ```
+
+-     entry .tty   for a live terminal: buffered input decides at once, a quiet line waits up to a deadline
+-         `Keyboard.Lookahead.tty(stdio, deadline)` asks the `Stdio` whether input is ready,
+-         polling each millisecond for up to `deadline` milliseconds (ten by default). The
+-         `Terminal`'s own keyboard uses it.
+-     entry #sequenceFollows   whether the input after an escape character continues an escape sequence
+-   entry .Standard   the decoder for what terminals send: keys, modifiers, CSI-u, pastes and reports
++     entry .tty   per un terminale attivo: l'input nel buffer decide subito, una linea silenziosa attende fino a una scadenza
++         `Keyboard.Lookahead.tty(stdio, deadline)` chiede allo `Stdio` se l'input è pronto,
++         interrogandolo ogni millisecondo per un massimo di `deadline` millisecondi (dieci per
++         impostazione predefinita). La tastiera del `Terminal` stesso lo usa.
++     entry #sequenceFollows   se l'input dopo un carattere di escape continua una sequenza di escape
++   entry .Standard   il decodificatore di ciò che i terminali inviano: tasti, modificatori, CSI-u, incolla e segnalazioni
+
+=   entry .Standard   the decoder for what terminals send: keys, modifiers, CSI-u, pastes and reports
+-     detail
++     detail
+
+-         `Keyboard.Standard()` decodes into `clavichord.Keypress | Terminal.Info`, with a
+-         `Keyboard.Lookahead` from context to tell the `Escape` key from the start of a
+-         sequence (`Keyboard.Lookahead.immediate` unless another is in scope). It reads:
++         `Keyboard.Standard()` decodifica in `clavichord.Keypress | Terminal.Info`, con un
++         `Keyboard.Lookahead` dal contesto per distinguere il tasto `Escape` dall'inizio di una
++         sequenza (`Keyboard.Lookahead.immediate` a meno che un altro non sia nell'ambito). Legge:
+
+-         - control characters: backspace (`\b` or DEL), tab, line feed or carriage return as
+-           `Enter`, and other C0 codes as `Ctrl` of their letter;
+-         - `\eO` followed by a letter as a `FunctionKey`;
+-         - cursor and VT editing sequences (`\e[A`, `\e[3~`), with legacy modifier digits
+-           (`\e[1;5A`, `\e[3;2~`);
+-         - kitty keyboard protocol sequences, `\e[…u`, through `Keyboard.csiu`;
+-         - a bracketed paste, `\e[200~…\e[201~`, as one `Terminal.Info.Paste`;
+-         - cursor-position reports, as `Terminal.Info.WindowSize` (the plain form, which a
+-           `Terminal` reclassifies when it is answering `Terminal.anchorQuery`) or
+-           `Terminal.Info.CursorPosition` (the `?`-prefixed form);
+-         - focus reports, as `Terminal.Info.LoseFocus` and `Terminal.Info.GainFocus`;
+-         - the reply to an OSC 11 background-colour query, as `Terminal.Info.BgColor`;
+-         - any other CSI sequence as an `EscapeSeq`, and every other character as a `CharKey`.
++         - i caratteri di controllo: backspace (`\b` o DEL), tab, line feed o carriage return come
++           `Enter`, e gli altri codici C0 come `Ctrl` della loro lettera;
++         - `\eO` seguito da una lettera come `FunctionKey`;
++         - le sequenze di modifica del cursore e VT (`\e[A`, `\e[3~`), con le cifre di
++           modificatore legacy (`\e[1;5A`, `\e[3;2~`);
++         - le sequenze del protocollo di tastiera di kitty, `\e[…u`, tramite `Keyboard.csiu`;
++         - un incolla delimitato, `\e[200~…\e[201~`, come un unico `Terminal.Info.Paste`;
++         - le segnalazioni di posizione del cursore, come `Terminal.Info.WindowSize` (la forma
++           semplice, che un `Terminal` riclassifica quando sta rispondendo a
++           `Terminal.anchorQuery`) o `Terminal.Info.CursorPosition` (la forma con prefisso `?`);
++         - le segnalazioni di focus, come `Terminal.Info.LoseFocus` e `Terminal.Info.GainFocus`;
++         - la risposta a un'interrogazione OSC 11 sul colore di sfondo, come
++           `Terminal.Info.BgColor`;
++         - ogni altra sequenza CSI come `EscapeSeq`, e ogni altro carattere come `CharKey`.
+
+-         A malformed report is dropped, and decoding continues after it.
++         Una segnalazione malformata viene scartata, e la decodifica prosegue dopo di essa.
+
+=         A malformed report is dropped, and decoding continues after it.
+=
+-         ```scala
++         ```scala
+
+=         A malformed report is dropped, and decoding continues after it.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Keyboard.Standard().process(Chain('\u001b', '[', '1', '3', ';', '2', 'u')).head
++         Keyboard.Standard().process(Chain('\u001b', '[', '1', '3', ';', '2', 'u')).head
+
+-         // Shift(Enter)
++         // Shift(Enter)
+
+-         Keyboard.Standard().process(Chain('\u001b', '[', '?', '1', '2', ';', '3', '4', 'R')).head
++         Keyboard.Standard().process(Chain('\u001b', '[', '?', '1', '2', ';', '3', '4', 'R')).head
+
+-         // Terminal.Info.CursorPosition(12, 34)
++         // Terminal.Info.CursorPosition(12, 34)
+
+=         // Terminal.Info.CursorPosition(12, 34)
+-         ```
++         ```
+
+-     entry #Keypress   `clavichord.Keypress | Terminal.Info`
++     entry #Keypress   `clavichord.Keypress | Terminal.Info`
+
+-     entry #process   decodes a lazy stream of input characters into keypresses and reports
+-         Lazy in both directions: each event is decoded as the characters it needs arrive, so a
+-         live terminal's input can be processed as it is typed.
+-   entry #Keypress   the type of event the keyboard decodes into
+-   entry #process   decodes a lazy stream of input characters into a lazy stream of events
++     entry #process   decodifica uno stream lazy di caratteri di input in pressioni di tasto e segnalazioni
++         Lazy in entrambe le direzioni: ogni evento viene decodificato man mano che arrivano i
++         caratteri di cui ha bisogno, quindi l'input di un terminale attivo si può elaborare
++         mentre viene digitato.
++   entry #Keypress   il tipo di evento in cui la tastiera decodifica
++   entry #process   decodifica uno stream lazy di caratteri di input in uno stream lazy di eventi
+
+- entry .keyboards   the keyboard decoders, each a given to import by name
++ entry .keyboards   i decodificatori di tastiera, ciascuno un given da importare per nome
+
+= entry .keyboards   the keyboard decoders, each a given to import by name
+-   detail
++   detail
+
+-       A `Keyboard` given chooses how input characters are decoded. `import soundness.*` brings
+-       none of these in, since `import pkg.*` does not import givens; one is imported by name.
++       Un given `Keyboard` sceglie come si decodificano i caratteri di input. `import soundness.*`
++       non ne porta dentro nessuno, poiché `import pkg.*` non importa i given; se ne importa uno
++       per nome.
+
+=       none of these in, since `import pkg.*` does not import givens; one is imported by name.
+=
+-       ```scala
++       ```scala
+
+=       none of these in, since `import pkg.*` does not import givens; one is imported by name.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import keyboards.rawKeyboard
++       import keyboards.rawKeyboard
+
+=       import keyboards.rawKeyboard
+-       ```
++       ```
+
+-       A `Terminal` always decodes with its own `Keyboard.Standard`; these givens are for
+-       code which processes input itself.
++       Un `Terminal` decodifica sempre con il proprio `Keyboard.Standard`; questi given sono per il
++       codice che elabora l'input da sé.
+
+=       code which processes input itself.
+-   refer profanity.Keyboard
++   refer profanity.Keyboard
+
+-   entry .rawKeyboard   passes every character through undecoded, as a `Char`
+-   entry .numericKeyboard   passes every character through undecoded, as its `Int` code
+-   entry .standardKeyboard   the full decoder, `Keyboard.Standard`, as a given
+-       Needs a `Monitor` and a `Probate` in scope, and uses the implicit-scope
+-       `Keyboard.Lookahead.immediate`, which suits complete input; a live terminal needs
+-       `Keyboard.Lookahead.tty`, as the `Terminal`'s own keyboard has.
++   entry .rawKeyboard   lascia passare ogni carattere non decodificato, come `Char`
++   entry .numericKeyboard   lascia passare ogni carattere non decodificato, come il suo codice `Int`
++   entry .standardKeyboard   il decodificatore completo, `Keyboard.Standard`, come given
++       Richiede un `Monitor` e un `Probate` nell'ambito, e usa `Keyboard.Lookahead.immediate`
++       dell'ambito implicito, adatto all'input completo; un terminale attivo richiede
++       `Keyboard.Lookahead.tty`, come quello che ha la tastiera del `Terminal` stesso.
+
+- entry .terminalFeatures   the standard terminal modes, each a given to import by name
++ entry .terminalFeatures   le modalità standard del terminale, ciascuna un given da importare per nome
+
+= entry .terminalFeatures   the standard terminal modes, each a given to import by name
+-   detail
++   detail
+
+-       Each given is a `Terminal.Feature`, which `interactive` turns on for the session and off
+-       at its end. A session has only the modes whose givens are in scope, and since `import
+-       pkg.*` does not import givens, each is imported by name:
++       Ogni given è una `Terminal.Feature`, che `interactive` attiva per la sessione e disattiva
++       alla sua fine. Una sessione ha solo le modalità i cui given sono nell'ambito, e poiché
++       `import pkg.*` non importa i given, ciascuno si importa per nome:
+
+=       pkg.*` does not import givens, each is imported by name:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       pkg.*` does not import givens, each is imported by name:
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       pkg.*` does not import givens, each is imported by name:
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       import terminalFeatures.{kittyKeyboardFeature, mouseTrackingFeature}
++       import terminalFeatures.{kittyKeyboardFeature, mouseTrackingFeature}
+
+=       import terminalFeatures.{kittyKeyboardFeature, mouseTrackingFeature}
+=
+-       interactive: terminal ?=>
++       interactive: terminal ?=>
+
+=       import terminalFeatures.{kittyKeyboardFeature, mouseTrackingFeature}
+=
+=       interactive: terminal ?=>
+-         terminal.eventIterator().each:
++         terminal.eventIterator().each:
+
+-           case Keypress.Shift(Keypress.Enter) => Out.println(t"shift-enter")
++           case Keypress.Shift(Keypress.Enter) => Out.println(t"shift-enter")
+
+-           case _                              => ()
++           case _                              => ()
+
+=           case _                              => ()
+-       ```
++       ```
+
+-       The effect is best seen by adding modes one at a time:
++       L'effetto si vede meglio aggiungendo le modalità una alla volta:
+
+=       The effect is best seen by adding modes one at a time:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label No features: keys and the size report only
++         label Nessuna funzionalità: solo tasti e segnalazione della dimensione
+
+=         label No features: keys and the size report only
+-         code
++         code
+
+=         code
+-             interactive: terminal ?=>
++             interactive: terminal ?=>
+
+=         code
+=             interactive: terminal ?=>
+-               terminal.eventIterator().each(event => Out.println(event.toString))
++               terminal.eventIterator().each(event => Out.println(event.toString))
+
+=               terminal.eventIterator().each(event => Out.println(event.toString))
+-       frame
++       frame
+
+-         label Bracketed paste: a paste is one event
++         label Incolla delimitato: un incolla è un solo evento
+
+=         label Bracketed paste: a paste is one event
+-         code
++         code
+
+-             import terminalFeatures.bracketedPasteFeature
++             import terminalFeatures.bracketedPasteFeature
+
+=             import terminalFeatures.bracketedPasteFeature
+=
+-             interactive: terminal ?=>
++             interactive: terminal ?=>
+
+=             import terminalFeatures.bracketedPasteFeature
+=
+=             interactive: terminal ?=>
+-               terminal.eventIterator().each(event => Out.println(event.toString))
++               terminal.eventIterator().each(event => Out.println(event.toString))
+
+-               // Terminal.Info.Paste(…) in place of one CharKey per character
++               // Terminal.Info.Paste(…) in place of one CharKey per character
+
+=               // Terminal.Info.Paste(…) in place of one CharKey per character
+-       frame
++       frame
+
+-         label And the kitty protocol: modified keys are distinguishable
++         label E il protocollo di kitty: i tasti modificati sono distinguibili
+
+=         label And the kitty protocol: modified keys are distinguishable
+-         code
++         code
+
+=         label And the kitty protocol: modified keys are distinguishable
+=         code
+-             import terminalFeatures.{bracketedPasteFeature, kittyKeyboardFeature}
++             import terminalFeatures.{bracketedPasteFeature, kittyKeyboardFeature}
+
+=             import terminalFeatures.{bracketedPasteFeature, kittyKeyboardFeature}
+=
+-             interactive: terminal ?=>
++             interactive: terminal ?=>
+
+=             import terminalFeatures.{bracketedPasteFeature, kittyKeyboardFeature}
+=
+=             interactive: terminal ?=>
+-               terminal.eventIterator().each(event => Out.println(event.toString))
++               terminal.eventIterator().each(event => Out.println(event.toString))
+
+-               // Shift(Enter) arrives distinct from Enter
++               // Shift(Enter) arrives distinct from Enter
+
+=               // Shift(Enter) arrives distinct from Enter
+-       frame
++       frame
+
+-         label And the alternate screen: the scrollback is left untouched
++         label E lo schermo alternativo: lo scrollback resta intatto
+
+=         label And the alternate screen: the scrollback is left untouched
+-         code
++         code
+
+=         label And the alternate screen: the scrollback is left untouched
+=         code
+-             import terminalFeatures.{bracketedPasteFeature, kittyKeyboardFeature}
++             import terminalFeatures.{bracketedPasteFeature, kittyKeyboardFeature}
+
+-             import terminalFeatures.alternateScreenFeature
++             import terminalFeatures.alternateScreenFeature
+
+=             import terminalFeatures.alternateScreenFeature
+=
+-             interactive: terminal ?=>
++             interactive: terminal ?=>
+
+=             import terminalFeatures.alternateScreenFeature
+=
+=             interactive: terminal ?=>
+-               terminal.eventIterator().each(event => Out.println(event.toString))
++               terminal.eventIterator().each(event => Out.println(event.toString))
+
+=               terminal.eventIterator().each(event => Out.println(event.toString))
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-   refer profanity.Terminal.Feature
++   refer profanity.Terminal.Feature
+
+=   refer profanity.Terminal.Feature
+-   refer profanity.interactive
++   refer profanity.interactive
+
+-   entry .bracketedPasteFeature   bracketed paste: a paste arrives as one `Terminal.Info.Paste`
+-       `\e[?2004h` on, `\e[?2004l` off. Without it, pasted text is indistinguishable from
+-       typing, and a pasted newline is an `Enter`.
+-   entry .focusReportingFeature   focus reporting: `Terminal.Info.GainFocus` and `LoseFocus` events
+-       `\e[?1004h` on, `\e[?1004l` off.
+-   entry .mouseTrackingFeature   mouse tracking, in SGR form: button presses as escape sequences
+-       `\e[?1000h\e[?1006h` on, `\e[?1006l\e[?1000l` off. The reports are not decoded into
+-       mouse events: they arrive as `Keypress.EscapeSeq`s.
+-   entry .alternateScreenFeature   the alternate screen buffer, which leaves the scrollback untouched
+-       `\e[?1049h` on, `\e[?1049l` off: a full-screen interface draws on a separate screen, and
+-       the terminal's previous contents return when the session ends.
+-   entry .kittyKeyboardFeature   the kitty keyboard protocol: unambiguous keys and modifiers as CSI-u
+-       `\e[>1u` pushes the protocol's disambiguation flag, and `\e[<u` pops it. With it,
+-       `Shift`+`Enter`, `Ctrl`+`I` and `Tab`, or `Escape` and `Alt` combinations are reported
+-       distinctly, decoded by `Keyboard.csiu`. A terminal which does not implement the protocol
+-       ignores both sequences.
+-   entry .backgroundColorFeature   a one-shot query for the background colour, answered as `Terminal.Info.BgColor`
+-       Sends `\e]11;?\e\` when the session starts and nothing at its end. The reply updates
+-       `Terminal#mode`, so a program can choose light or dark colours.
+-   entry .terminalSizeFeature   a one-shot query for the size, answered as `Terminal.Info.WindowSize`
+-       Sends `Terminal.reportSize` when the session starts and nothing at its end.
+-       `interactive` already sends it once on a real terminal, so this matters mainly for a
+-       session over forwarded streams.
++   entry .bracketedPasteFeature   incolla delimitato: un incolla arriva come un unico `Terminal.Info.Paste`
++       `\e[?2004h` per attivare, `\e[?2004l` per disattivare. Senza di esso, il testo incollato è
++       indistinguibile dalla digitazione, e un a capo incollato è un `Enter`.
++   entry .focusReportingFeature   segnalazione del focus: eventi `Terminal.Info.GainFocus` e `LoseFocus`
++       `\e[?1004h` per attivare, `\e[?1004l` per disattivare.
++   entry .mouseTrackingFeature   tracciamento del mouse, in forma SGR: le pressioni dei pulsanti come sequenze di escape
++       `\e[?1000h\e[?1006h` per attivare, `\e[?1006l\e[?1000l` per disattivare. Le segnalazioni
++       non vengono decodificate in eventi del mouse: arrivano come `Keypress.EscapeSeq`.
++   entry .alternateScreenFeature   il buffer dello schermo alternativo, che lascia intatto lo scrollback
++       `\e[?1049h` per attivare, `\e[?1049l` per disattivare: un'interfaccia a schermo intero
++       disegna su uno schermo separato, e i contenuti precedenti del terminale ritornano quando la
++       sessione termina.
++   entry .kittyKeyboardFeature   il protocollo di tastiera di kitty: tasti e modificatori non ambigui come CSI-u
++       `\e[>1u` inserisce il flag di disambiguazione del protocollo, e `\e[<u` lo rimuove. Con
++       esso, `Shift`+`Enter`, `Ctrl`+`I` e `Tab`, o le combinazioni di `Escape` e `Alt`, sono
++       segnalati distintamente, decodificati da `Keyboard.csiu`. Un terminale che non implementa
++       il protocollo ignora entrambe le sequenze.
++   entry .backgroundColorFeature   un'interrogazione one-shot sul colore di sfondo, a cui si risponde con `Terminal.Info.BgColor`
++       Invia `\e]11;?\e\` all'avvio della sessione e nulla alla sua fine. La risposta aggiorna
++       `Terminal#mode`, così un programma può scegliere colori chiari o scuri.
++   entry .terminalSizeFeature   un'interrogazione one-shot sulla dimensione, a cui si risponde con `Terminal.Info.WindowSize`
++       Invia `Terminal.reportSize` all'avvio della sessione e nulla alla sua fine. `interactive`
++       la invia già una volta su un terminale reale, quindi conta soprattutto per una sessione su
++       stream inoltrati.
+
+- entry .Board   the surface a widget draws on: a cursor to move, text to put, and a size
++ entry .Board   la superficie su cui disegna un widget: un cursore da spostare, testo da scrivere, e una dimensione
+
+= entry .Board   the surface a widget draws on: a cursor to move, text to put, and a size
+-   detail
++   detail
+
+-       Every renderer draws through a `Board`, positioning only with `#move` and never by
+-       printing escape codes, so the same widget code draws inline at the cursor
+-       (`InlineBoard`), across the whole terminal (`TerminalBoard`) or into a clipped region of
+-       a larger layout. Coordinates are local to the surface, zero-based `Ordinal`s, the column
+-       before the row.
++       Ogni renderer disegna attraverso una `Board`, posizionandosi solo con `#move` e mai
++       stampando codici di escape, quindi lo stesso codice di widget disegna in linea al cursore
++       (`InlineBoard`), sull'intero terminale (`TerminalBoard`) o in una regione ritagliata di un
++       layout più ampio. Le coordinate sono locali alla superficie, `Ordinal` a base zero, la
++       colonna prima della riga.
+
+=       before the row.
+=
+-       ```scala
++       ```scala
+
+=       before the row.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def banner(board: Board^): Unit =
++       def banner(board: Board^): Unit =
+
+=       def banner(board: Board^): Unit =
+-         board.move(Prim, Prim)
++         board.move(Prim, Prim)
+
+=         board.move(Prim, Prim)
+-         board.clear()
++         board.clear()
+
+-         board.put(t"Ready")
++         board.put(t"Ready")
+
+-         board.flush()
++         board.flush()
+
+=         board.flush()
+-       ```
++       ```
+
+-       A board is a stateful, exclusive capability: drawing changes it, so every drawing
+-       operation is an `update` method, callable only through an exclusive reference
+-       (`Board^`).
++       Una board è una capability esclusiva con stato: disegnare la modifica, quindi ogni
++       operazione di disegno è un metodo `update`, invocabile solo attraverso un riferimento
++       esclusivo (`Board^`).
+
+-       With a `Terminal` in context, `.inlineBoard`, in the companion, supplies an
+-       `InlineBoard` over it; a panel supplies its own board in a nearer scope, which takes
+-       precedence, which is how a `LineEditor` asked for inside a panel draws within it.
++       Con un `Terminal` nel contesto, `.inlineBoard`, nell'oggetto compagno, fornisce una
++       `InlineBoard` su di esso; un pannello fornisce la propria board in un ambito più vicino,
++       che ha la precedenza, ed è così che un `LineEditor` richiesto dentro un pannello disegna al
++       suo interno.
+
+-   refer profanity.InlineBoard
++   refer profanity.InlineBoard
+
+-   refer profanity.TerminalBoard
++   refer profanity.TerminalBoard
+
+=   refer profanity.TerminalBoard
+-   refer profanity.Interaction
++   refer profanity.Interaction
+
+-   entry .inlineBoard   with a `Terminal` in context, an `InlineBoard` at its cursor
+-       In implicit scope, so a widget asked for in an `interactive` block draws in place at the
+-       prompt with nothing imported.
+-   entry #width   the surface's width in cells
+-   entry #height   the surface's height in cells
+-   entry #move   moves the cursor to a cell, by column and then row
+-   entry #put   writes text, or styled `Teletype` text, at the cursor, advancing it
+-   entry #clear   erases the whole surface
+-   entry #clearLine   erases the current row from the cursor onwards
+-   entry #cursor   shows or hides the hardware cursor
+-   entry #showCaret   leaves the visible cursor at a cell, once a frame is drawn
+-       A buffered surface may move the cursor as it writes a frame out, so a widget which shows
+-       a caret places it after `#flush`.
+-   entry #flush   commits a frame; nothing on a surface which is not buffered
++   entry .inlineBoard   con un `Terminal` nel contesto, una `InlineBoard` al suo cursore
++       Nell'ambito implicito, quindi un widget richiesto in un blocco `interactive` disegna sul
++       posto al prompt senza importare nulla.
++   entry #width   la larghezza della superficie in celle
++   entry #height   l'altezza della superficie in celle
++   entry #move   sposta il cursore su una cella, per colonna e poi riga
++   entry #put   scrive testo, o testo `Teletype` con stile, al cursore, facendolo avanzare
++   entry #clear   cancella l'intera superficie
++   entry #clearLine   cancella la riga corrente dal cursore in poi
++   entry #cursor   mostra o nasconde il cursore hardware
++   entry #showCaret   lascia il cursore visibile su una cella, una volta disegnato un frame
++       Una superficie con buffer può spostare il cursore mentre scrive un frame, quindi un widget
++       che mostra un caret lo posiziona dopo `#flush`.
++   entry #flush   conferma un frame; nulla su una superficie senza buffer
+
+- entry .InlineBoard   a `Board` at the terminal's cursor, drawn with relative motion so it stays at the prompt
++ entry .InlineBoard   una `Board` al cursore del terminale, disegnata con movimenti relativi così che resti al prompt
+
+= entry .InlineBoard   a `Board` at the terminal's cursor, drawn with relative motion so it stays at the prompt
+-   detail
++   detail
+
+-       An `InlineBoard` draws a widget in place, where the cursor was when it began: row 0 is
+-       that line and column 0 its left edge, and each `#move` becomes relative vertical motion
+-       and an absolute column, so the widget redraws over itself rather than at the top of the
+-       screen, and the scrollback above it is left alone. It keeps track of its own cursor,
+-       counting a newline or a wrap at `#width` as a move to the next row. `put` of a
+-       `Teletype` writes its plain text.
++       Una `InlineBoard` disegna un widget sul posto, dove si trovava il cursore quando ha
++       iniziato: la riga 0 è quella linea e la colonna 0 il suo bordo sinistro, e ogni `#move`
++       diventa un movimento verticale relativo e una colonna assoluta, quindi il widget si
++       ridisegna sopra se stesso anziché in cima allo schermo, e lo scrollback sopra di esso resta
++       intatto. Tiene traccia del proprio cursore, contando un a capo o un ritorno a `#width` come
++       uno spostamento alla riga successiva. `put` di un `Teletype` ne scrive il testo semplice.
+
+-       With a `Terminal` in context, `Board.inlineBoard` supplies one over it, so this is the
+-       board `LineEditor` and `SelectMenu` use in an `interactive` block.
++       Con un `Terminal` nel contesto, `Board.inlineBoard` ne fornisce una su di esso, quindi
++       questa è la board che `LineEditor` e `SelectMenu` usano in un blocco `interactive`.
+
+=       board `LineEditor` and `SelectMenu` use in an `interactive` block.
+-   refer profanity.Board
++   refer profanity.Board
+
+-   entry .apply   an inline board over a terminal, at its known width and height
+-   entry #width   the width at which text wraps
+-   entry #height   the height the board was made with
++   entry .apply   una board in linea su un terminale, alla sua larghezza e altezza note
++   entry #width   la larghezza alla quale il testo va a capo
++   entry #height   l'altezza con cui la board è stata creata
+
+- entry .TerminalBoard   a `Board` over the whole terminal, with absolute positioning and the live size
++ entry .TerminalBoard   una `Board` sull'intero terminale, con posizionamento assoluto e la dimensione attuale
+
+= entry .TerminalBoard   a `Board` over the whole terminal, with absolute positioning and the live size
+-   detail
++   detail
+
+-       Every `#move` is an absolute cursor position, so the board is the whole screen, as a
+-       full-screen interface on the alternate screen wants. It keeps no cursor of its own,
+-       letting the terminal advance it as text is written, and reads its size when asked, so
+-       it follows a resize.
++       Ogni `#move` è una posizione assoluta del cursore, quindi la board è l'intero schermo, come
++       richiede un'interfaccia a schermo intero sullo schermo alternativo. Non tiene un proprio
++       cursore, lasciando che il terminale lo faccia avanzare mentre si scrive testo, e legge la
++       sua dimensione quando gli viene chiesta, quindi segue un ridimensionamento.
+
+=       it follows a resize.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       it follows a resize.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       it follows a resize.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       import terminalFeatures.alternateScreenFeature
++       import terminalFeatures.alternateScreenFeature
+
+=       import terminalFeatures.alternateScreenFeature
+=
+-       interactive: terminal ?=>
++       interactive: terminal ?=>
+
+-         val board = TerminalBoard(terminal)
++         val board = TerminalBoard(terminal)
+
+=         val board = TerminalBoard(terminal)
+-         board.clear()
++         board.clear()
+
+=         board.clear()
+-         board.move(Prim, Prim)
++         board.move(Prim, Prim)
+
+-         board.put(t"Full screen")
++         board.put(t"Full screen")
+
+=         board.put(t"Full screen")
+-       ```
++       ```
+
+-       The board captures its terminal only to read its size, so its capture set is
+-       `{terminal.rd, caps.any}`: the size thunks given to the constructor may only read.
++       La board cattura il suo terminale solo per leggerne la dimensione, quindi il suo insieme di
++       cattura è `{terminal.rd, caps.any}`: i thunk della dimensione dati al costruttore possono
++       solo leggere.
+
+=       `{terminal.rd, caps.any}`: the size thunks given to the constructor may only read.
+-   refer profanity.Board
++   refer profanity.Board
+
+-   entry .apply   a board over a terminal, sized live, or one of a fixed size over the `Stdio` in scope
+-       `TerminalBoard(terminal)` reads `Terminal#knownColumns` and `Terminal#knownRows` each
+-       time it is asked its size, and writes through the terminal's `Stdio`.
+-       `TerminalBoard(width, height)` has a fixed size and writes through the `Stdio` in
+-       context.
++   entry .apply   una board su un terminale, dimensionata dal vivo, o una di dimensione fissa sullo `Stdio` nell'ambito
++       `TerminalBoard(terminal)` legge `Terminal#knownColumns` e `Terminal#knownRows` ogni volta
++       che le viene chiesta la dimensione, e scrive attraverso lo `Stdio` del terminale.
++       `TerminalBoard(width, height)` ha una dimensione fissa e scrive attraverso lo `Stdio` nel
++       contesto.
+
+- entry .Interaction   how a widget is drawn and answered: renders each state, and decides what submits it
++ entry .Interaction   come si disegna e si risponde a un widget: disegna ogni stato, e decide che cosa lo invia
+
+= entry .Interaction   how a widget is drawn and answered: renders each state, and decides what submits it
+-   detail
++   detail
+
+-       An `Interaction[answer, question]` drives a widget — a `question`, such as a `LineEditor`
+-       or a `SelectMenu` — over a stream of events: it renders each state with `#render`,
+-       passes each event to the widget to make the next state, and stops when an event submits
+-       (`#submits`, by default `Enter`) or dismisses (`Escape`, `Ctrl`+`C`, `Ctrl`+`D`, or
+-       the end of the events). The answer is `#result` of the final state, or `Unset` if the
+-       widget was dismissed.
++       Una `Interaction[answer, question]` guida un widget — una `question`, come un `LineEditor`
++       o un `SelectMenu` — su uno stream di eventi: disegna ogni stato con `#render`, passa ogni
++       evento al widget per produrre lo stato successivo, e si ferma quando un evento lo invia
++       (`#submits`, per impostazione predefinita `Enter`) o lo annulla (`Escape`, `Ctrl`+`C`,
++       `Ctrl`+`D`, o la fine degli eventi). La risposta è il `#result` dello stato finale, o
++       `Unset` se il widget è stato annullato.
+
+-       The companion's `.selectMenu` and `.lineEditor` render through the `Board` in scope, so
+-       `ask` on either widget needs nothing imported. An interaction of one's own can render
+-       differently, or not at all, which is how a widget's logic is tested without a terminal:
++       `.selectMenu` e `.lineEditor` dell'oggetto compagno disegnano attraverso la `Board`
++       nell'ambito, quindi `ask` su entrambi i widget non richiede alcun import. Un'interazione
++       propria può disegnare in modo diverso, o non disegnare affatto, ed è così che si verifica
++       la logica di un widget senza un terminale:
+
+=       differently, or not at all, which is how a widget's logic is tested without a terminal:
+=
+-       ```scala
++       ```scala
+
+=       differently, or not at all, which is how a widget's logic is tested without a terminal:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val quiet = new Interaction[Text, SelectMenu[Text]]:
++       val quiet = new Interaction[Text, SelectMenu[Text]]:
+
+-         def render(old: Optional[SelectMenu[Text]], menu: SelectMenu[Text]): Unit = ()
++         def render(old: Optional[SelectMenu[Text]], menu: SelectMenu[Text]): Unit = ()
+
+-         def result(menu: SelectMenu[Text]): Text = menu.current
++         def result(menu: SelectMenu[Text]): Text = menu.current
+
+-       val menu = SelectMenu(List(t"alpha", t"beta", t"gamma"), t"alpha")
++       val menu = SelectMenu(List(t"alpha", t"beta", t"gamma"), t"alpha")
+
+-       quiet(Iterator(Keypress.Down, Keypress.Enter), menu)(_(_))   // t"beta"
++       quiet(Iterator(Keypress.Down, Keypress.Enter), menu)(_(_))   // t"beta"
+
+=       quiet(Iterator(Keypress.Down, Keypress.Enter), menu)(_(_))   // t"beta"
+-       ```
++       ```
+
+-       `#react` lets an interaction change the state in answer to an event before the widget
+-       sees it, as a completer does on `Tab`.
++       `#react` permette a un'interazione di cambiare lo stato in risposta a un evento prima che
++       il widget lo veda, come fa un completamento su `Tab`.
+
+=       sees it, as a completer does on `Tab`.
+-   refer profanity.LineEditor
++   refer profanity.LineEditor
+
+=       sees it, as a completer does on `Tab`.
+=   refer profanity.LineEditor
+-   refer profanity.SelectMenu
++   refer profanity.SelectMenu
+
+=   refer profanity.SelectMenu
+-   refer profanity.Board
++   refer profanity.Board
+
+-   entry .selectMenu   draws a `SelectMenu` on the `Board` in scope, one option per row, `>` at the current one
+-       Hides the cursor while the menu is shown, redraws the whole menu on each change —
+-       counting an option wider than the board as the rows it wraps onto — and clears it and
+-       restores the cursor when the menu is answered. Needs a `Showable` for the options.
+-   entry .lineEditor   draws a `LineEditor` on the `Board` in scope, with its caret, wrapping wide text
+-       Redraws the editor's text each frame and places the caret where
+-       `LineEditor.cursorPosition` says, counting embedded newlines, wrapping and wide
+-       characters; submits as the editor's `LineEditor.Mode` decides, and moves to a fresh line
+-       below the text when it is answered.
+-   entry #before   called once before the first state is drawn; does nothing by default
+-   entry #render   draws a state, given the state drawn before it, if any
+-   entry #after   called once the widget is answered or dismissed; does nothing by default
+-   entry #result   the answer a final state gives
+-   entry #submits   whether an event submits the widget in its current state; by default, `Enter`
+-   entry #react   changes the state in answer to an event before the widget sees it; by default, nothing
+-       Called for every event which neither submits nor dismisses. An interaction which
+-       completes a word on `Tab` overrides it:
++   entry .selectMenu   disegna un `SelectMenu` sulla `Board` nell'ambito, un'opzione per riga, `>` su quella corrente
++       Nasconde il cursore mentre il menu è mostrato, ridisegna l'intero menu a ogni cambiamento —
++       contando un'opzione più larga della board come le righe su cui va a capo — e lo cancella e
++       ripristina il cursore quando al menu si risponde. Richiede uno `Showable` per le opzioni.
++   entry .lineEditor   disegna un `LineEditor` sulla `Board` nell'ambito, con il suo caret, mandando a capo il testo largo
++       Ridisegna il testo dell'editor a ogni frame e posiziona il caret dove dice
++       `LineEditor.cursorPosition`, contando gli a capo incorporati, il ritorno a capo e i
++       caratteri larghi; invia come decide il `LineEditor.Mode` dell'editor, e si sposta su una
++       riga nuova sotto il testo quando gli si risponde.
++   entry #before   chiamato una volta prima che sia disegnato il primo stato; per impostazione predefinita non fa nulla
++   entry #render   disegna uno stato, dato lo stato disegnato prima di esso, se c'è
++   entry #after   chiamato una volta che al widget si è risposto o è stato annullato; per impostazione predefinita non fa nulla
++   entry #result   la risposta data da uno stato finale
++   entry #submits   se un evento invia il widget nel suo stato corrente; per impostazione predefinita, `Enter`
++   entry #react   cambia lo stato in risposta a un evento prima che il widget lo veda; per impostazione predefinita, nulla
++       Chiamato per ogni evento che né invia né annulla. Un'interazione che completa una parola
++       su `Tab` lo ridefinisce:
+
+=       completes a word on `Tab` overrides it:
+=
+-       ```scala
++       ```scala
+
+=       completes a word on `Tab` overrides it:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val completing = new Interaction[Text, LineEditor]:
++       val completing = new Interaction[Text, LineEditor]:
+
+-         def render(old: Optional[LineEditor], editor: LineEditor): Unit = ()
++         def render(old: Optional[LineEditor], editor: LineEditor): Unit = ()
+
+-         def result(editor: LineEditor): Text = editor.value
++         def result(editor: LineEditor): Text = editor.value
+
+-         override def react(editor: LineEditor, event: Terminal.Event): LineEditor =
++         override def react(editor: LineEditor, event: Terminal.Event): LineEditor =
+
+-           event match
++           event match
+
+-             case Keypress.Tab => LineEditor(t"${editor.value}ography")
++             case Keypress.Tab => LineEditor(t"${editor.value}ography")
+
+-             case _            => editor
++             case _            => editor
+
+=             case _            => editor
+-       ```
++       ```
+
+-   entry #recur   the event loop: renders, reads an event, and submits, dismisses or continues
+-       Not usually called directly: `#apply` calls it after `#before`.
+-   entry #apply   runs the widget over an iterator of events, from an initial state, to an answer or `Unset`
+-       `interaction(events, state)(step)`, where `step` makes the next state from a state and
+-       an event — `_(_)` for a `Question`, whose `apply` is that step. Calls `#before`, runs
+-       the loop, then `#after`.
++   entry #recur   il ciclo degli eventi: disegna, legge un evento, e invia, annulla o prosegue
++       Di solito non si chiama direttamente: `#apply` lo chiama dopo `#before`.
++   entry #apply   esegue il widget su un iteratore di eventi, da uno stato iniziale, fino a una risposta o a `Unset`
++       `interaction(events, state)(step)`, dove `step` produce lo stato successivo da uno stato e
++       un evento — `_(_)` per una `Question`, il cui `apply` è quel passo. Chiama `#before`,
++       esegue il ciclo, poi `#after`.
+
+- entry .Interactivity   a source of events for widgets to read from, such as a `Terminal`
++ entry .Interactivity   una sorgente di eventi da cui i widget leggono, come un `Terminal`
+
+= entry .Interactivity   a source of events for widgets to read from, such as a `Terminal`
+-   detail
++   detail
+
+-       `LineEditor#ask` and `SelectMenu#ask` take their events from the
+-       `Interactivity[Terminal.Event]` in context, which in an `interactive` block is the
+-       `Terminal` itself. They hand their continuation an `Interactivity` over the same
+-       iterator they read from, so a widget asked for in the continuation carries on where the
+-       first stopped, rather than missing events read ahead.
++       `LineEditor#ask` e `SelectMenu#ask` prendono i loro eventi dalla
++       `Interactivity[Terminal.Event]` nel contesto, che in un blocco `interactive` è il
++       `Terminal` stesso. Passano alla loro continuazione una `Interactivity` sullo stesso
++       iteratore da cui leggono, quindi un widget richiesto nella continuazione riprende dove il
++       primo si è fermato, anziché perdere eventi letti in anticipo.
+
+=       first stopped, rather than missing events read ahead.
+-   refer profanity.Terminal
++   refer profanity.Terminal
+
+-   entry .apply   an `Interactivity` which hands out an iterator already being read
+-   entry #eventIterator   the iterator of events to read from
++   entry .apply   una `Interactivity` che fornisce un iteratore già in lettura
++   entry #eventIterator   l'iteratore di eventi da cui leggere
+
+- entry .Question   a widget as a state machine: an event in, the next state out
++ entry .Question   un widget come macchina a stati: un evento in ingresso, lo stato successivo in uscita
+
+= entry .Question   a widget as a state machine: an event in, the next state out
+-   detail
++   detail
+
+-       `LineEditor` and `SelectMenu` are `Question`s. A question's `#apply` takes one
+-       `Terminal.Event` and gives the next state; an `Interaction` draws the states and
+-       decides when one is the answer.
++       `LineEditor` e `SelectMenu` sono `Question`. Il `#apply` di una question prende un
++       `Terminal.Event` e dà lo stato successivo; una `Interaction` disegna gli stati e decide
++       quando uno è la risposta.
+
+=       decides when one is the answer.
+-   refer profanity.LineEditor
++   refer profanity.LineEditor
+
+=       decides when one is the answer.
+=   refer profanity.LineEditor
+-   refer profanity.SelectMenu
++   refer profanity.SelectMenu
+
+=   refer profanity.SelectMenu
+-   refer profanity.Interaction
++   refer profanity.Interaction
+
+-   entry .Error   raised when the user dismisses a widget instead of answering it
++   entry .Error   sollevato quando l'utente annulla un widget anziché rispondergli
+
+=   entry .Error   raised when the user dismisses a widget instead of answering it
+-     detail
++     detail
+
+-         Error `↯/s.95.1`: _the user dismissed an interaction_. Raised by `LineEditor#ask` and
+-         `SelectMenu#ask` when the user presses `Escape`, `Ctrl`+`C` or `Ctrl`+`D`, or the
+-         input ends, before submitting.
+-   entry #apply   the next state, after an event
++         Errore `↯/s.95.1`: _the user dismissed an interaction_. Sollevato da `LineEditor#ask` e
++         `SelectMenu#ask` quando l'utente preme `Escape`, `Ctrl`+`C` o `Ctrl`+`D`, o l'input
++         termina, prima dell'invio.
++   entry #apply   lo stato successivo, dopo un evento
+
+- entry .LineEditor   an editable line of text, or several, with a cursor: a widget asked for its text
++ entry .LineEditor   una riga di testo modificabile, o più righe, con un cursore: un widget a cui si chiede il suo testo
+
+= entry .LineEditor   an editable line of text, or several, with a cursor: a widget asked for its text
+-   detail
++   detail
+
+-       A `LineEditor` is the state of a text field: its `#value` and the `#position` of the
+-       cursor within it. Each keypress makes a new editor, with the usual editing keys:
+-       characters insert at the cursor; `Backspace` and `Delete` remove either side of it;
+-       `Left`, `Right`, `Home` and `End` move it; `Ctrl` with `Left` or `Right` moves by
+-       words; `Ctrl`+`W` deletes the word before the cursor and `Ctrl`+`U` everything before
+-       it.
++       Un `LineEditor` è lo stato di un campo di testo: il suo `#value` e la `#position` del
++       cursore al suo interno. Ogni pressione di tasto produce un nuovo editor, con i consueti
++       tasti di modifica: i caratteri si inseriscono al cursore; `Backspace` e `Delete` rimuovono
++       da un lato o dall'altro di esso; `Left`, `Right`, `Home` e `End` lo spostano; `Ctrl` con
++       `Left` o `Right` lo sposta per parole; `Ctrl`+`W` cancella la parola prima del cursore e
++       `Ctrl`+`U` tutto ciò che lo precede.
+
+=       it.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       it.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       it.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       it.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       interactive: terminal ?=>
++       interactive: terminal ?=>
+
+-         LineEditor(t"draft").ask: text =>
++         LineEditor(t"draft").ask: text =>
+
+-           Out.println(t"You entered: $text")
++           Out.println(t"You entered: $text")
+
+=           Out.println(t"You entered: $text")
+-       ```
++       ```
+
+-       `#ask` runs the editor in the terminal, drawing it inline at the cursor (or in the
+-       `Board` in scope), and passes the submitted text to its continuation; dismissing it
+-       raises `Question.Error`.
++       `#ask` esegue l'editor nel terminale, disegnandolo in linea al cursore (o nella `Board`
++       nell'ambito), e passa il testo inviato alla sua continuazione; annullarlo solleva
++       `Question.Error`.
+
+-       In `LineEditor.Mode.Multiline` the arrow keys and `Home` and `End` move between and
+-       within lines, and a predicate on the text decides whether `Enter` submits or inserts a
+-       newline; `Shift`+`Enter`, which needs `terminalFeatures.kittyKeyboardFeature` for the
+-       terminal to report it, always submits.
++       In `LineEditor.Mode.Multiline` i tasti freccia e `Home` ed `End` si spostano tra le righe e
++       al loro interno, e un predicato sul testo decide se `Enter` invia o inserisce un a capo;
++       `Shift`+`Enter`, che richiede `terminalFeatures.kittyKeyboardFeature` perché il terminale
++       lo segnali, invia sempre.
+
+=       terminal to report it, always submits.
+=
+-       ```scala
++       ```scala
+
+=       terminal to report it, always submits.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val script = LineEditor(mode = LineEditor.Mode.Multiline(_.ends(t";")))
++       val script = LineEditor(mode = LineEditor.Mode.Multiline(_.ends(t";")))
+
+=       val script = LineEditor(mode = LineEditor.Mode.Multiline(_.ends(t";")))
+-       ```
++       ```
+
+=       ```
+-   refer profanity.Question
++   refer profanity.Question
+
+=       ```
+=   refer profanity.Question
+-   refer profanity.Interaction
++   refer profanity.Interaction
+
+=   refer profanity.Interaction
+-   refer profanity.SelectMenu
++   refer profanity.SelectMenu
+
+-   entry .Mode   whether `Enter` submits the editor, or inserts a newline
++   entry .Mode   se `Enter` invia l'editor o inserisce un a capo
+
+=   entry .Mode   whether `Enter` submits the editor, or inserts a newline
+-     detail
++     detail
+
+-         `SingleLine` (the default): `Enter` submits. `Multiline(submit)`: `Enter` submits if
+-         `submit` holds of the text so far, and otherwise inserts a newline; `Shift`+`Enter`
+-         always submits; `Up` and `Down` move between lines, and `Home` and `End` go to the
+-         ends of the current line.
+-   entry .cursorPosition   the row and column of a character offset in text laid out a given width
+-       `LineEditor.cursorPosition(text, position, columns)` lays the text out as a grid of
+-       cells does: by grapheme cluster, a wide character such as `中` taking two cells and a
+-       combining mark none, wrapping a cluster which would overrun the width, and moving to
+-       the next row at each newline. For plain text without newlines it is `position/columns`
+-       and `position%columns`.
++         `SingleLine` (il predefinito): `Enter` invia. `Multiline(submit)`: `Enter` invia se
++         `submit` vale per il testo fin lì, e altrimenti inserisce un a capo; `Shift`+`Enter`
++         invia sempre; `Up` e `Down` si spostano tra le righe, e `Home` ed `End` vanno agli
++         estremi della riga corrente.
++   entry .cursorPosition   la riga e la colonna di un offset di carattere in un testo disposto a una larghezza data
++       `LineEditor.cursorPosition(text, position, columns)` dispone il testo come fa una griglia
++       di celle: per cluster di grafemi, con un carattere largo come `中` che occupa due celle e un
++       segno combinante nessuna, mandando a capo un cluster che supererebbe la larghezza, e
++       passando alla riga successiva a ogni a capo. Per testo semplice senza a capo è
++       `position/columns` e `position%columns`.
+
+=       and `position%columns`.
+=
+-       ```scala
++       ```scala
+
+=       and `position%columns`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       LineEditor.cursorPosition(t"中b", 2, 10)   // (0, 3)
++       LineEditor.cursorPosition(t"中b", 2, 10)   // (0, 3)
+
+-       LineEditor.cursorPosition(t"ab中", 3, 3)   // (1, 2)
++       LineEditor.cursorPosition(t"ab中", 3, 3)   // (1, 2)
+
+=       LineEditor.cursorPosition(t"ab中", 3, 3)   // (1, 2)
+-       ```
++       ```
+
+-   entry #value   the text being edited
+-   entry #position0   the cursor offset given to the constructor, or `Unset` for the end of the text
+-   entry #mode   whether `Enter` submits or inserts a newline, as a `LineEditor.Mode`
+-   entry #position   the cursor's offset within the text
+-   entry #submitsOn   whether an event submits this editor, according to its `LineEditor.Mode`
+-   entry #apply   the editor after a keypress
+-       A keypress the editor does not handle, or one which would move the cursor out of
+-       range, leaves it as it was.
+-   entry #ask   runs the editor in the terminal and passes the submitted text to a continuation
+-       Needs an `Interactivity[Terminal.Event]` (the `Terminal`, in an `interactive` block), an
+-       `Interaction[Text, LineEditor]` (the companion's `Interaction.lineEditor`, drawing on
+-       the `Board` in scope) and a `Tactic[Question.Error]`, raised if the editor is
+-       dismissed. The continuation's result is `ask`'s; within it, a further widget reads the
+-       same events.
++   entry #value   il testo in modifica
++   entry #position0   l'offset del cursore dato al costruttore, o `Unset` per la fine del testo
++   entry #mode   se `Enter` invia o inserisce un a capo, come `LineEditor.Mode`
++   entry #position   l'offset del cursore all'interno del testo
++   entry #submitsOn   se un evento invia questo editor, secondo il suo `LineEditor.Mode`
++   entry #apply   l'editor dopo una pressione di tasto
++       Una pressione di tasto che l'editor non gestisce, o una che sposterebbe il cursore fuori
++       dall'intervallo, lo lascia com'era.
++   entry #ask   esegue l'editor nel terminale e passa il testo inviato a una continuazione
++       Richiede una `Interactivity[Terminal.Event]` (il `Terminal`, in un blocco `interactive`),
++       una `Interaction[Text, LineEditor]` (l'`Interaction.lineEditor` dell'oggetto compagno, che
++       disegna sulla `Board` nell'ambito) e una `Tactic[Question.Error]`, sollevata se l'editor
++       viene annullato. Il risultato della continuazione è quello di `ask`; al suo interno, un
++       ulteriore widget legge gli stessi eventi.
+
+- entry .SelectMenu   a choice among options, moved through with the arrow keys: a widget asked for its choice
++ entry .SelectMenu   una scelta tra opzioni, percorsa con i tasti freccia: un widget a cui si chiede la sua scelta
+
+= entry .SelectMenu   a choice among options, moved through with the arrow keys: a widget asked for its choice
+-   detail
++   detail
+
+-       A `SelectMenu` is the state of a menu: its `#options` and the `#current` one. `Up` and
+-       `Down` move by one, stopping at the ends, and `Home` and `End` go to the first and the
+-       last.
++       Un `SelectMenu` è lo stato di un menu: le sue `#options` e quella `#current`. `Up` e
++       `Down` si spostano di uno, fermandosi agli estremi, e `Home` ed `End` vanno alla prima e
++       all'ultima.
+
+=       last.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       last.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       last.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       last.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       interactive: terminal ?=>
++       interactive: terminal ?=>
+
+-         SelectMenu(List(t"alpha", t"beta", t"gamma"), t"alpha").ask: choice =>
++         SelectMenu(List(t"alpha", t"beta", t"gamma"), t"alpha").ask: choice =>
+
+-           Out.println(t"You chose $choice")
++           Out.println(t"You chose $choice")
+
+=           Out.println(t"You chose $choice")
+-       ```
++       ```
+
+-       `#ask` draws the menu inline at the cursor (or in the `Board` in scope), one option per
+-       row with `>` before the current one, and passes the option chosen with `Enter` to its
+-       continuation; dismissing it raises `Question.Error`.
++       `#ask` disegna il menu in linea al cursore (o nella `Board` nell'ambito), un'opzione per
++       riga con `>` davanti a quella corrente, e passa l'opzione scelta con `Enter` alla sua
++       continuazione; annullarlo solleva `Question.Error`.
+
+=       continuation; dismissing it raises `Question.Error`.
+-   refer profanity.Question
++   refer profanity.Question
+
+=       continuation; dismissing it raises `Question.Error`.
+=   refer profanity.Question
+-   refer profanity.Interaction
++   refer profanity.Interaction
+
+=   refer profanity.Interaction
+-   refer profanity.LineEditor
++   refer profanity.LineEditor
+
+-   entry #options   the options, in the order they are shown
+-   entry #current   the option the menu is on
+-   entry #apply   the menu after a keypress
+-   entry #ask   runs the menu in the terminal and passes the chosen option to a continuation
+-       Needs an `Interactivity[Terminal.Event]` (the `Terminal`, in an `interactive` block), an
+-       `Interaction[item, SelectMenu[item]]` (the companion's `Interaction.selectMenu`, which
+-       needs the options to be `Showable`) and a `Tactic[Question.Error]`, raised if the menu
+-       is dismissed.
++   entry #options   le opzioni, nell'ordine in cui sono mostrate
++   entry #current   l'opzione su cui si trova il menu
++   entry #apply   il menu dopo una pressione di tasto
++   entry #ask   esegue il menu nel terminale e passa l'opzione scelta a una continuazione
++       Richiede una `Interactivity[Terminal.Event]` (il `Terminal`, in un blocco `interactive`),
++       una `Interaction[item, SelectMenu[item]]` (l'`Interaction.selectMenu` dell'oggetto
++       compagno, che richiede che le opzioni siano `Showable`) e una `Tactic[Question.Error]`,
++       sollevata se il menu viene annullato.
+
+- entry .Signal   a signal as delivered to a program, with the terminal size or deadline its sender attached
++ entry .Signal   un segnale come consegnato a un programma, con la dimensione del terminale o la scadenza allegata dal mittente
+
+= entry .Signal   a signal as delivered to a program, with the terminal size or deadline its sender attached
+-   detail
++   detail
+
+-       A POSIX signal carries nothing of its own, but a launcher forwarding one can: an
+-       ethereal client sends `WINCH` and `CONT` with the terminal's size, which the daemon at
+-       the other end of a socket cannot measure, and a Windows close, logoff or shutdown event
+-       with the time the system allows before it ends the process regardless. A signal raised
+-       on the process itself carries nothing.
++       Un segnale POSIX non porta nulla di suo, ma un launcher che ne inoltra uno può farlo: un
++       client ethereal invia `WINCH` e `CONT` con la dimensione del terminale, che il demone
++       all'altro capo di un socket non può misurare, e un evento Windows di chiusura,
++       disconnessione o spegnimento con il tempo che il sistema concede prima di terminare
++       comunque il processo. Un segnale sollevato sul processo stesso non porta nulla.
+
+-       `Console#trap` handlers receive `Signal`s:
++       Gli handler di `Console#trap` ricevono dei `Signal`:
+
+=       `Console#trap` handlers receive `Signal`s:
+=
+-       ```scala
++       ```scala
+
+=       `Console#trap` handlers receive `Signal`s:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def handler: PartialFunction[Signal, SignalResponse] =
++       def handler: PartialFunction[Signal, SignalResponse] =
+
+-         case Signal(Interrupt.Winch, columns, rows, _) => SignalResponse.Accept
++         case Signal(Interrupt.Winch, columns, rows, _) => SignalResponse.Accept
+
+-         case Signal(_: WindowsSignal, _, _, deadline)  => SignalResponse.Accept
++         case Signal(_: WindowsSignal, _, _, deadline)  => SignalResponse.Accept
+
+-       Signal(Interrupt.Winch, 80, 24).size   // (80, 24)
++       Signal(Interrupt.Winch, 80, 24).size   // (80, 24)
+
+=       Signal(Interrupt.Winch, 80, 24).size   // (80, 24)
+-       ```
++       ```
+
+-       A signal shows as its short name: `WINCH`, `CTRL_LOGOFF`.
++       Un segnale si mostra con il suo nome breve: `WINCH`, `CTRL_LOGOFF`.
+
+=       A signal shows as its short name: `WINCH`, `CTRL_LOGOFF`.
+-   refer profanity.Interrupt
++   refer profanity.Interrupt
+
+=   refer profanity.Interrupt
+-   refer profanity.WindowsSignal
++   refer profanity.WindowsSignal
+
+-   refer profanity.SignalResponse
++   refer profanity.SignalResponse
+
+-   entry .showable   shows a signal as its short name, such as `WINCH` or `CTRL_CLOSE`
+-   entry #interrupt   the signal: an `Interrupt` (a POSIX signal) or a `WindowsSignal`
+-   entry #columns   the terminal's width, if the sender attached it
+-   entry #rows   the terminal's height, if the sender attached it
+-   entry #deadline   the time before the system ends the process, if the sender attached it
+-   entry #size   the terminal's size as `(columns, rows)`, if the sender attached both
++   entry .showable   mostra un segnale con il suo nome breve, come `WINCH` o `CTRL_CLOSE`
++   entry #interrupt   il segnale: un `Interrupt` (un segnale POSIX) o un `WindowsSignal`
++   entry #columns   la larghezza del terminale, se il mittente l'ha allegata
++   entry #rows   l'altezza del terminale, se il mittente l'ha allegata
++   entry #deadline   il tempo prima che il sistema termini il processo, se il mittente l'ha allegato
++   entry #size   la dimensione del terminale come `(columns, rows)`, se il mittente le ha allegate entrambe
+
+- entry .SignalResponse   how a signal handler answers: `Accept`, `Reject` or `Defer`
+-     `Accept` says the handler has dealt with the signal; `Reject` that it has not, so the
+-     signal's default action applies (a launcher dispatching to no handler answers `Reject`);
+-     `Defer` that it will be dealt with later.
++ entry .SignalResponse   come risponde un handler di segnale: `Accept`, `Reject` o `Defer`
++     `Accept` dice che l'handler ha gestito il segnale; `Reject` che non l'ha fatto, quindi si
++     applica l'azione predefinita del segnale (un launcher che non inoltra ad alcun handler
++     risponde `Reject`); `Defer` che sarà gestito più tardi.
+
+- entry .Interrupt   a POSIX signal, `HUP` to `SYS`, with its name and number
++ entry .Interrupt   un segnale POSIX, da `HUP` a `SYS`, con il suo nome e il suo numero
+
+= entry .Interrupt   a POSIX signal, `HUP` to `SYS`, with its name and number
+-   detail
++   detail
+
+-       The thirty POSIX signals as an enum: `Hup`, `Int`, `Quit`, `Ill`, `Trap`, `Abrt`, `Bus`,
++       I trenta segnali POSIX come enum: `Hup`, `Int`, `Quit`, `Ill`, `Trap`, `Abrt`, `Bus`,
+
+-       `Fpe`, `Kill`, `Usr1`, `Segv`, `Usr2`, `Pipe`, `Alrm`, `Term`, `Chld`, `Cont`, `Stop`,
++       `Fpe`, `Kill`, `Usr1`, `Segv`, `Usr2`, `Pipe`, `Alrm`, `Term`, `Chld`, `Cont`, `Stop`,
+
+-       `Tstp`, `Ttin`, `Ttou`, `Urg`, `Xcpu`, `Xfsz`, `Vtalrm`, `Prof`, `Winch`, `Io`, `Pwr`
+-       and `Sys`. It is also a `Terminal.Event`: a `Terminal` puts every signal its console
+-       receives onto its event stream. `UnixSignal` is another name for it.
++       `Tstp`, `Ttin`, `Ttou`, `Urg`, `Xcpu`, `Xfsz`, `Vtalrm`, `Prof`, `Winch`, `Io`, `Pwr` e
++       `Sys`. È anche un `Terminal.Event`: un `Terminal` mette sul proprio stream di eventi ogni
++       segnale che la sua console riceve. `UnixSignal` è un altro nome per esso.
+
+=       receives onto its event stream. `UnixSignal` is another name for it.
+=
+-       ```scala
++       ```scala
+
+=       receives onto its event stream. `UnixSignal` is another name for it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Interrupt.Winch.name   // t"SIGWINCH"
++       Interrupt.Winch.name   // t"SIGWINCH"
+
+-       Interrupt.Term.id      // 15
++       Interrupt.Term.id      // 15
+
+-       t"winch".as[Interrupt]   // Interrupt.Winch
++       t"winch".as[Interrupt]   // Interrupt.Winch
+
+=       t"winch".as[Interrupt]   // Interrupt.Winch
+-       ```
++       ```
+
+=       t"winch".as[Interrupt]   // Interrupt.Winch
+=       ```
+-   refer profanity.Signal
++   refer profanity.Signal
+
+=   refer profanity.Signal
+-   refer profanity.WindowsSignal
++   refer profanity.WindowsSignal
+
+-   entry .decoder   decodes a signal from its short name, in any case: `WINCH` or `winch`
+-       The name without its `SIG` prefix. A name which is not a signal's throws
+-       `IllegalArgumentException`, rather than raising an error through a tactic.
+-   entry .encodable   encodes a signal as its short name, `WINCH`
+-   entry .showable   shows a signal as its short name, `WINCH`
+-   entry #shortName   the name without its prefix, in capitals: `WINCH`
+-   entry #name   the full name: `SIGWINCH`
+-   entry #id   the signal's number, in Linux's numbering: `HUP` is 1, `TERM` 15, `CHLD` 17
+-       Numbered from 1 in the enum's order, skipping 16. The numbers are Linux's; macOS and
+-       the BSDs number signals from `URG` onwards differently.
++   entry .decoder   decodifica un segnale dal suo nome breve, in maiuscolo o minuscolo: `WINCH` o `winch`
++       Il nome senza il prefisso `SIG`. Un nome che non è quello di un segnale lancia
++       `IllegalArgumentException`, anziché sollevare un errore tramite una tattica.
++   entry .encodable   codifica un segnale come il suo nome breve, `WINCH`
++   entry .showable   mostra un segnale con il suo nome breve, `WINCH`
++   entry #shortName   il nome senza prefisso, in maiuscolo: `WINCH`
++   entry #name   il nome completo: `SIGWINCH`
++   entry #id   il numero del segnale, nella numerazione di Linux: `HUP` è 1, `TERM` 15, `CHLD` 17
++       Numerati da 1 nell'ordine dell'enum, saltando il 16. I numeri sono quelli di Linux; macOS
++       e i BSD numerano diversamente i segnali da `URG` in poi.
+
+- entry .UnixSignal   another name for `Interrupt`, the POSIX signals
+-     Both the type alias and its companion, so `UnixSignal.Winch` and `case _: UnixSignal`
+-     work as they do with `Interrupt`. The enum is named `Interrupt` because `Signal` is the
+-     delivered signal with its payload.
++ entry .UnixSignal   un altro nome per `Interrupt`, i segnali POSIX
++     Sia l'alias di tipo sia il suo oggetto compagno, quindi `UnixSignal.Winch` e
++     `case _: UnixSignal` funzionano come con `Interrupt`. L'enum si chiama `Interrupt` perché
++     `Signal` è il segnale consegnato con il suo payload.
+
+- entry .WindowsSignal   a Windows console control event: `Ctrl`+`C`, `Ctrl`+`Break`, close, logoff, shutdown
++ entry .WindowsSignal   un evento di controllo della console Windows: `Ctrl`+`C`, `Ctrl`+`Break`, chiusura, disconnessione, spegnimento
+
+= entry .WindowsSignal   a Windows console control event: `Ctrl`+`C`, `Ctrl`+`Break`, close, logoff, shutdown
+-   detail
++   detail
+
+-       The five events a Windows console delivers in place of POSIX signals: `CtrlC`,
+-       `CtrlBreak`, `Close`, `Logoff` and `Shutdown`. A launcher forwards them, and a `Close`,
+-       `Logoff` or `Shutdown` `Signal` carries the deadline before the system ends the process.
+-       It is also a `Terminal.Event`.
++       I cinque eventi che una console Windows consegna al posto dei segnali POSIX: `CtrlC`,
++       `CtrlBreak`, `Close`, `Logoff` e `Shutdown`. Un launcher li inoltra, e un `Signal` di
++       `Close`, `Logoff` o `Shutdown` porta la scadenza prima che il sistema termini il processo.
++       È anche un `Terminal.Event`.
+
+=       It is also a `Terminal.Event`.
+=
+-       ```scala
++       ```scala
+
+=       It is also a `Terminal.Event`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       WindowsSignal.Close.shortName   // t"CTRL_CLOSE"
++       WindowsSignal.Close.shortName   // t"CTRL_CLOSE"
+
+=       WindowsSignal.Close.shortName   // t"CTRL_CLOSE"
+-       ```
++       ```
+
+=       WindowsSignal.Close.shortName   // t"CTRL_CLOSE"
+=       ```
+-   refer profanity.Signal
++   refer profanity.Signal
+
+=   refer profanity.Signal
+-   refer profanity.Interrupt
++   refer profanity.Interrupt
+
+-   entry .decoder   decodes an event from its short name, such as `CTRL_C` or `CTRL_LOGOFF`
+-       In any case. A name which is not an event's throws `IllegalArgumentException`, rather
+-       than raising an error through a tactic.
+-   entry .encodable   encodes an event as its short name, such as `CTRL_BREAK`
+-   entry .showable   shows an event as its short name, such as `CTRL_BREAK`
+-   entry #shortName   the name a launcher uses: `CTRL_C`, `CTRL_BREAK`, `CTRL_CLOSE`, `CTRL_LOGOFF`, `CTRL_SHUTDOWN`
++   entry .decoder   decodifica un evento dal suo nome breve, come `CTRL_C` o `CTRL_LOGOFF`
++       In maiuscolo o minuscolo. Un nome che non è quello di un evento lancia
++       `IllegalArgumentException`, anziché sollevare un errore tramite una tattica.
++   entry .encodable   codifica un evento come il suo nome breve, come `CTRL_BREAK`
++   entry .showable   mostra un evento con il suo nome breve, come `CTRL_BREAK`
++   entry #shortName   il nome usato da un launcher: `CTRL_C`, `CTRL_BREAK`, `CTRL_CLOSE`, `CTRL_LOGOFF`, `CTRL_SHUTDOWN`
+
+- entry .CtrlChar   matches a C0 control character as the letter or symbol `Ctrl` makes it from
++ entry .CtrlChar   riconosce un carattere di controllo C0 come la lettera o il simbolo da cui `Ctrl` lo produce
+
+= entry .CtrlChar   matches a C0 control character as the letter or symbol `Ctrl` makes it from
+-   detail
++   detail
+
+-       An extractor: `case CtrlChar(letter)` matches a character whose code, plus 64, is `@`,
+-       a capital letter, or one of `[`, `\`, `]`, `^` and `_`, and binds that character, with
+-       a singleton-union type. `Keyboard.Standard` uses it to decode `\u0003` as
++       Un estrattore: `case CtrlChar(letter)` riconosce un carattere il cui codice, più 64, è `@`,
++       una lettera maiuscola, o uno tra `[`, `\`, `]`, `^` e `_`, e lega quel carattere, con un
++       tipo unione di singleton. `Keyboard.Standard` lo usa per decodificare `\u0003` come
+
+-       `Keypress.Ctrl('C')`.
++       `Keypress.Ctrl('C')`.
+
+=       `Keypress.Ctrl('C')`.
+=
+-       ```scala
++       ```scala
+
+=       `Keypress.Ctrl('C')`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       '\u0003' match
++       '\u0003' match
+
+-         case CtrlChar(letter) => letter   // 'C'
++         case CtrlChar(letter) => letter   // 'C'
+
+-         case _                => '?'
++         case _                => '?'
+
+=         case _                => '?'
+-       ```
++       ```
+
+-   entry .unapply   the control character's letter or symbol, or `None` for any other character
++   entry .unapply   la lettera o il simbolo del carattere di controllo, o `None` per ogni altro carattere

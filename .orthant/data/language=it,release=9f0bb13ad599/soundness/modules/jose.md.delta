@@ -1,0 +1,820 @@
+orthant 1 language
+
+- ## JOSE: signed and encrypted tokens
++ ## JOSE: token firmati e cifrati
+
+- ### About
++ ### Panoramica
+
+- [JOSE](https://www.rfc-editor.org/rfc/rfc7515) is the family of standards behind the tokens
+- that web APIs authenticate with. A *JWS* is content with a signature over it. A *JWE* is
+- content which has been encrypted. A *JWK* is a key, written as JSON. A *JWT* is a set of
+- claims, such as who issued a token and when it expires, carried inside a JWS or a JWE.
++ [JOSE](https://www.rfc-editor.org/rfc/rfc7515) è la famiglia di standard alla base dei token
++ con cui si autenticano le API web. Un *JWS* è un contenuto su cui è apposta una firma. Un *JWE*
++ è un contenuto che è stato cifrato. Una *JWK* è una chiave, scritta come JSON. Un *JWT* è un
++ insieme di asserzioni, come chi ha emesso un token e quando scade, trasportato dentro un JWS o
++ un JWE.
+
+- All four are provided here, over the keys and ciphers of [cryptography](cryptography.md) and
+- the values of [JSON](json.md). A server which only needs to accept bearer tokens can do so
+- with one call, as middleware for an [HTTP server](http-server.md).
++ Tutti e quattro sono forniti qui, sulle chiavi e sui cifrari della [crittografia](cryptography.md)
++ e sui valori di [JSON](json.md). Un server che deve solo accettare token bearer può farlo con
++ una sola chiamata, come middleware per un [server HTTP](http-server.md).
+
+- ### On choosing the algorithm
++ ### Sulla scelta dell'algoritmo
+
+- A JOSE object begins with a header which says how it was made, and the header is written by
+- whoever made the object. Reading the algorithm from the header, and then doing whatever it
+- says with the key at hand, is the origin of the best-known attacks on these standards: a
+- token whose header is changed to `none` and whose signature is removed, or an RSA public key
+- replayed as though it were an HMAC secret.
++ Un oggetto JOSE comincia con un'intestazione che dice come è stato creato, e l'intestazione è
++ scritta da chi ha creato l'oggetto. Leggere l'algoritmo dall'intestazione, e poi fare con la
++ chiave a disposizione qualunque cosa essa dica, è l'origine degli attacchi più noti a questi
++ standard: un token la cui intestazione è cambiata in `none` e la cui firma è rimossa, oppure una
++ chiave pubblica RSA riproposta come se fosse un segreto HMAC.
+
+- Here the key's type chooses the algorithm. A `PublicKey[Ecdsa[256]]` verifies `ES256` and
+- nothing else. The header's `alg` is compared with the algorithm the key's type stands for,
+- and a difference is an error. It is never used to decide what to do with the key, so neither
+- attack can be expressed.
++ Qui è il tipo della chiave a scegliere l'algoritmo. Una `PublicKey[Ecdsa[256]]` verifica
++ `ES256` e nient'altro. L'`alg` dell'intestazione viene confrontato con l'algoritmo che il tipo
++ della chiave rappresenta, e una differenza è un errore. Non viene mai usato per decidere che cosa
++ fare con la chiave, quindi nessuno dei due attacchi si può esprimere.
+
+- Everything comes from the `soundness` package. A provider of algorithms and a place to keep
+- keys are in scope, as they are for any cryptography, and the last import lets the samples
+- print their results:
++ Tutto proviene dal package `soundness`. Un provider di algoritmi e un luogo in cui conservare le
++ chiavi sono nell'ambito, come per qualsiasi operazione crittografica, e l'ultimo import permette
++ agli esempi di stampare i loro risultati:
+
+= print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import soundness.textDecodable
++ import soundness.textDecodable
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import charsets.utf8Charset
++ import charsets.utf8Charset
+
+- import textSanitizers.skipSanitizer
++ import textSanitizers.skipSanitizer
+
+- import cloaks.heapCloak
++ import cloaks.heapCloak
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import providers.javaBaseProvider
++ import providers.javaBaseProvider
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import formatting.compactJsonFormatting
++ import formatting.compactJsonFormatting
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Signing
++ ### Firmare
+
+- `Jws` signs a payload with a private key. The compact serialization, which is the familiar
+- three parts joined by periods, is the object's `Text` form:
++ `Jws` firma un payload con una chiave privata. La serializzazione compatta, cioè le familiari
++ tre parti unite da punti, è la forma `Text` dell'oggetto:
+
+= three parts joined by periods, is the object's `Text` form:
+=
+- ```scala
++ ```scala
+
+- val key = PrivateKey.generate[Ecdsa[256]]()
++ val key = PrivateKey.generate[Ecdsa[256]]()
+
+- val signed: Jws = Jws(t"Shall I compare thee to a summer's day?", key)
++ val signed: Jws = Jws(t"Shall I compare thee to a summer's day?", key)
+
+- val compact: Text = signed.in[Text]
++ val compact: Text = signed.in[Text]
+
+= val compact: Text = signed.in[Text]
+- ```
++ ```
+
+- The header names the algorithm of the key:
++ L'intestazione nomina l'algoritmo della chiave:
+
+= The header names the algorithm of the key:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The header names the algorithm of the key:
+=
+= ```scala fuel
+- run
++ run
+
+= The header names the algorithm of the key:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(signed.header.algorithm.or(t"none"))
++ Out.println(signed.header.algorithm.or(t"none"))
+
+= Out.println(signed.header.algorithm.or(t"none"))
+- ```
++ ```
+
+- A `Jws` which has been read from text is a claim, and nothing more. Its payload is reached
+- only through `verify`, which checks the signature against a public key:
++ Un `Jws` letto da un testo è un'asserzione, e nulla di più. Il suo payload si raggiunge solo
++ attraverso `verify`, che controlla la firma rispetto a una chiave pubblica:
+
+= only through `verify`, which checks the signature against a public key:
+=
+- ```scala
++ ```scala
+
+- val line: Text = compact.as[Jws].verify(key.public).read[Text]
++ val line: Text = compact.as[Jws].verify(key.public).read[Text]
+
+= val line: Text = compact.as[Jws].verify(key.public).read[Text]
+- ```
++ ```
+
+= val line: Text = compact.as[Jws].verify(key.public).read[Text]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val line: Text = compact.as[Jws].verify(key.public).read[Text]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val line: Text = compact.as[Jws].verify(key.public).read[Text]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(line)
++ Out.println(line)
+
+= Out.println(line)
+- ```
++ ```
+
+- A signature which does not verify raises a `Jose.Error`, as does a key of the wrong type.
+- This is the second of the two attacks, attempted with an HMAC key:
++ Una firma che non si verifica solleva un `Jose.Error`, come pure una chiave del tipo sbagliato.
++ Ecco il secondo dei due attacchi, tentato con una chiave HMAC:
+
+= This is the second of the two attacks, attempted with an HMAC key:
+=
+- ```scala
++ ```scala
+
+- val secret = SymmetricKey.generate[HmacCipher[Sha2[256]]]()
++ val secret = SymmetricKey.generate[HmacCipher[Sha2[256]]]()
+
+- val refusal = capture[Jose.Error](compact.as[Jws].verify(secret))
++ val refusal = capture[Jose.Error](compact.as[Jws].verify(secret))
+
+= val refusal = capture[Jose.Error](compact.as[Jws].verify(secret))
+- ```
++ ```
+
+= val refusal = capture[Jose.Error](compact.as[Jws].verify(secret))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val refusal = capture[Jose.Error](compact.as[Jws].verify(secret))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val refusal = capture[Jose.Error](compact.as[Jws].verify(secret))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(refusal.message.text)
++ Out.println(refusal.message.text)
+
+= Out.println(refusal.message.text)
+- ```
++ ```
+
+- Each signing cipher stands for one algorithm:
++ Ogni cifrario di firma rappresenta un solo algoritmo:
+
+= Each signing cipher stands for one algorithm:
+=
+- ```tabular
++ ```tabular
+
+- column  Key
+- column  Algorithm
+- row  `SymmetricKey[HmacCipher[Sha2[256]]]`  `HS256`, and likewise `HS384` and `HS512`
++ column  Chiave
++ column  Algoritmo
++ row  `SymmetricKey[HmacCipher[Sha2[256]]]`  `HS256`, e allo stesso modo `HS384` e `HS512`
+
+- row  `PrivateKey[Rsa[2048]]`  `RS256`
++ row  `PrivateKey[Rsa[2048]]`  `RS256`
+
+- row  `PrivateKey[RsaPss[2048]]`  `PS256`
++ row  `PrivateKey[RsaPss[2048]]`  `PS256`
+
+- row  `PrivateKey[Ecdsa[256]]`  `ES256`, and `ES384` and `ES512` for P-384 and P-521
++ row  `PrivateKey[Ecdsa[256]]`  `ES256`, e `ES384` ed `ES512` per P-384 e P-521
+
+- row  `PrivateKey[Ed25519]`  `EdDSA`
++ row  `PrivateKey[Ed25519]`  `EdDSA`
+
+= row  `PrivateKey[Ed25519]`  `EdDSA`
+- ```
++ ```
+
+- An RSA key signs with SHA-256 unless `signatureDigests.sha384Signature` or
+- `signatureDigests.sha512Signature` is imported, which makes it `RS384` or `RS512`. An ECDSA
+- key's curve fixes its digest, as the standard requires.
++ Una chiave RSA firma con SHA-256 a meno che non si importi `signatureDigests.sha384Signature` o
++ `signatureDigests.sha512Signature`, che la rendono `RS384` o `RS512`. La curva di una chiave
++ ECDSA fissa il suo digest, come richiede lo standard.
+
+- Other header parameters are passed as a `Jose.Header`, whose `alg` is always the key's:
++ Gli altri parametri dell'intestazione si passano come `Jose.Header`, il cui `alg` è sempre
++ quello della chiave:
+
+= Other header parameters are passed as a `Jose.Header`, whose `alg` is always the key's:
+=
+- ```scala
++ ```scala
+
+- val identified = Jws(t"Good night, sweet prince", key, Jose.Header(keyId = t"globe-1599"))
++ val identified = Jws(t"Good night, sweet prince", key, Jose.Header(keyId = t"globe-1599"))
+
+= val identified = Jws(t"Good night, sweet prince", key, Jose.Header(keyId = t"globe-1599"))
+- ```
++ ```
+
+- An unsecured object, whose algorithm is `none`, never verifies. Its payload can be read only
+- by saying so, with the `Jose.Unsecured` token:
++ Un oggetto non protetto, il cui algoritmo è `none`, non si verifica mai. Il suo payload si può
++ leggere solo dichiarandolo, con il token `Jose.Unsecured`:
+
+= by saying so, with the `Jose.Unsecured` token:
+=
+- ```scala
++ ```scala
+
+- val unsecured: Jws = Jws.unsecured(t"The rest is silence")
++ val unsecured: Jws = Jws.unsecured(t"The rest is silence")
+
+- val unvouched: Text = unsecured.payload(Jose.Unsecured).read[Text]
++ val unvouched: Text = unsecured.payload(Jose.Unsecured).read[Text]
+
+= val unvouched: Text = unsecured.payload(Jose.Unsecured).read[Text]
+- ```
++ ```
+
+- ### Keys as JSON
++ ### Chiavi come JSON
+
+- A `Jwk` is a key as a JSON object. A public key is written directly. A private or symmetric
+- key needs the `Divulgence` token, the same one which lets a private key out as PEM:
++ Una `Jwk` è una chiave come oggetto JSON. Una chiave pubblica si scrive direttamente. Una chiave
++ privata o simmetrica richiede il token `Divulgence`, lo stesso che lascia uscire una chiave
++ privata come PEM:
+
+= key needs the `Divulgence` token, the same one which lets a private key out as PEM:
+=
+- ```scala
++ ```scala
+
+- val published: Jwk = Jwk(key.public)
++ val published: Jwk = Jwk(key.public)
+
+- val divulged: Jwk = Jwk(key, Divulgence)
++ val divulged: Jwk = Jwk(key, Divulgence)
+
+= val divulged: Jwk = Jwk(key, Divulgence)
+- ```
++ ```
+
+= val divulged: Jwk = Jwk(key, Divulgence)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val divulged: Jwk = Jwk(key, Divulgence)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val divulged: Jwk = Jwk(key, Divulgence)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(published.in[Json].show)
++ Out.println(published.in[Json].show)
+
+= Out.println(published.in[Json].show)
+- ```
++ ```
+
+- A `Jwk` is read back as a key of a named cipher. The key's type and its size or curve must
+- agree with the cipher, or a `Jose.Error` is raised:
++ Una `Jwk` si rilegge come chiave di un cifrario indicato. Il tipo della chiave e la sua
++ dimensione o curva devono concordare con il cifrario, altrimenti viene sollevato un
++ `Jose.Error`:
+
+= agree with the cipher, or a `Jose.Error` is raised:
+=
+- ```scala
++ ```scala
+
+- val restored: PublicKey[Ecdsa[256]] = published.publicKey[Ecdsa[256]]
++ val restored: PublicKey[Ecdsa[256]] = published.publicKey[Ecdsa[256]]
+
+= val restored: PublicKey[Ecdsa[256]] = published.publicKey[Ecdsa[256]]
+- ```
++ ```
+
+- The same JSON object can stand for more than one cipher. An `RSA` key is an `Rsa[2048]` key
+- for `RS256`, an `RsaPss[2048]` key for `PS256` and an `RsaOaep[2048, Sha1]` key for
+- encryption, and the cipher asked for decides which.
++ Lo stesso oggetto JSON può rappresentare più di un cifrario. Una chiave `RSA` è una chiave
++ `Rsa[2048]` per `RS256`, una chiave `RsaPss[2048]` per `PS256` e una chiave
++ `RsaOaep[2048, Sha1]` per la cifratura, e decide il cifrario richiesto.
+
+- A key's *thumbprint* is a digest of its essential members, so two descriptions of one key
+- have one thumbprint. It makes a natural key identifier:
++ La *thumbprint* di una chiave è un digest dei suoi membri essenziali, quindi due descrizioni
++ di una stessa chiave hanno una sola thumbprint. È un identificatore di chiave naturale:
+
+= have one thumbprint. It makes a natural key identifier:
+=
+- ```scala
++ ```scala
+
+- val thumbprint: Text = published.thumbprint[Sha2[256]]
++ val thumbprint: Text = published.thumbprint[Sha2[256]]
+
+= val thumbprint: Text = published.thumbprint[Sha2[256]]
+- ```
++ ```
+
+- A `Jwks` is a set of keys, such as an identity provider publishes, in which a key is found by
+- its identifier:
++ Un `Jwks` è un insieme di chiavi, come quello pubblicato da un identity provider, in cui una
++ chiave si trova tramite il suo identificatore:
+
+= its identifier:
+=
+- ```scala
++ ```scala
+
+- val keys = Jwks(List(published.copy(keyId = t"globe-1599")))
++ val keys = Jwks(List(published.copy(keyId = t"globe-1599")))
+
+- val found: Optional[Jwk] = keys(t"globe-1599")
++ val found: Optional[Jwk] = keys(t"globe-1599")
+
+= val found: Optional[Jwk] = keys(t"globe-1599")
+- ```
++ ```
+
+- `Jwks.retrieve` fetches a set from the URL its owner publishes it at. That is an
+- [HTTP request](http-client.md#what-a-request-needs-in-scope), so it needs what a request
+- needs in scope.
++ `Jwks.retrieve` scarica un insieme dall'URL a cui il suo proprietario lo pubblica. È una
++ [richiesta HTTP](http-client.md#what-a-request-needs-in-scope), quindi richiede nell'ambito ciò
++ che richiede una richiesta.
+
+- ### Encrypting
++ ### Cifrare
+
+- `Jwe` encrypts a payload to a recipient. Two choices are made: how the content is encrypted,
+- which is the type argument, and how the content's key reaches the recipient, which the
+- recipient's key decides:
++ `Jwe` cifra un payload per un destinatario. Si compiono due scelte: come viene cifrato il
++ contenuto, che è l'argomento di tipo, e come la chiave del contenuto raggiunge il destinatario,
++ che decide la chiave del destinatario:
+
+= recipient's key decides:
+=
+- ```scala
++ ```scala
+
+- val recipient = PrivateKey.generate[Ecdh[256]]()
++ val recipient = PrivateKey.generate[Ecdh[256]]()
+
+- val sealedLine: Jwe = Jwe[AesGcm[256]](t"Speak the speech, I pray you", recipient.public)
++ val sealedLine: Jwe = Jwe[AesGcm[256]](t"Speak the speech, I pray you", recipient.public)
+
+- val opened: Text = sealedLine.in[Text].as[Jwe].decrypt[AesGcm[256]](recipient).read[Text]
++ val opened: Text = sealedLine.in[Text].as[Jwe].decrypt[AesGcm[256]](recipient).read[Text]
+
+= val opened: Text = sealedLine.in[Text].as[Jwe].decrypt[AesGcm[256]](recipient).read[Text]
+- ```
++ ```
+
+= val opened: Text = sealedLine.in[Text].as[Jwe].decrypt[AesGcm[256]](recipient).read[Text]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val opened: Text = sealedLine.in[Text].as[Jwe].decrypt[AesGcm[256]](recipient).read[Text]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val opened: Text = sealedLine.in[Text].as[Jwe].decrypt[AesGcm[256]](recipient).read[Text]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(sealedLine.header.algorithm.or(t"none"))
++ Out.println(sealedLine.header.algorithm.or(t"none"))
+
+- Out.println(sealedLine.header.encryption.or(t"none"))
++ Out.println(sealedLine.header.encryption.or(t"none"))
+
+- Out.println(opened)
++ Out.println(opened)
+
+= Out.println(opened)
+- ```
++ ```
+
+- The content ciphers are AES-GCM and AES-CBC with HMAC:
++ I cifrari del contenuto sono AES-GCM e AES-CBC con HMAC:
+
+= The content ciphers are AES-GCM and AES-CBC with HMAC:
+=
+- ```tabular
++ ```tabular
+
+- column  Content cipher
++ column  Cifrario del contenuto
+
+- column  `enc`
++ column  `enc`
+
+- row  `AesGcm[128]`, `AesGcm[192]`, `AesGcm[256]`  `A128GCM`, `A192GCM`, `A256GCM`
++ row  `AesGcm[128]`, `AesGcm[192]`, `AesGcm[256]`  `A128GCM`, `A192GCM`, `A256GCM`
+
+- row  `AesCbcHmac[256]`, `AesCbcHmac[384]`, `AesCbcHmac[512]`  `A128CBC-HS256`, `A192CBC-HS384`, `A256CBC-HS512`
++ row  `AesCbcHmac[256]`, `AesCbcHmac[384]`, `AesCbcHmac[512]`  `A128CBC-HS256`, `A192CBC-HS384`, `A256CBC-HS512`
+
+= row  `AesCbcHmac[256]`, `AesCbcHmac[384]`, `AesCbcHmac[512]`  `A128CBC-HS256`, `A192CBC-HS384`, `A256CBC-HS512`
+- ```
++ ```
+
+- The size of an `AesCbcHmac` is that of its whole key, half of which is for AES and half for
+- HMAC.
++ La dimensione di un `AesCbcHmac` è quella della sua intera chiave, metà della quale è per AES e
++ metà per HMAC.
+
+- A recipient's key stands for a family of key-management algorithms. Where the family has
+- more than one member, the first is used unless the header passed to `Jwe` names another, and
+- decryption accepts any of the family but nothing outside it:
++ La chiave di un destinatario rappresenta una famiglia di algoritmi di gestione delle chiavi.
++ Dove la famiglia ha più di un membro, si usa il primo a meno che l'intestazione passata a `Jwe`
++ non ne nomini un altro, e la decifratura accetta qualunque membro della famiglia ma nulla al di
++ fuori di essa:
+
+= decryption accepts any of the family but nothing outside it:
+=
+- ```tabular
++ ```tabular
+
+- column  Recipient's key
++ column  Chiave del destinatario
+
+- column  `alg`
++ column  `alg`
+
+- row  `PublicKey[RsaOaep[2048, Sha1]]`  `RSA-OAEP`
++ row  `PublicKey[RsaOaep[2048, Sha1]]`  `RSA-OAEP`
+
+- row  `PublicKey[RsaOaep[2048, Sha2[256]]]`  `RSA-OAEP-256`
++ row  `PublicKey[RsaOaep[2048, Sha2[256]]]`  `RSA-OAEP-256`
+
+- row  `PublicKey[Rsa[2048]]`  `RSA1_5`
++ row  `PublicKey[Rsa[2048]]`  `RSA1_5`
+
+- row  `PublicKey[Ecdh[256]]`, `PublicKey[X25519]`  `ECDH-ES`, or `ECDH-ES+A128KW`, `ECDH-ES+A192KW`, `ECDH-ES+A256KW`
+- row  `SymmetricKey[AesKeyWrap[128]]`  `A128KW`, and likewise `A192KW` and `A256KW`
+- row  `SymmetricKey[AesGcm[128]]`  `dir`, or `A128GCMKW`
++ row  `PublicKey[Ecdh[256]]`, `PublicKey[X25519]`  `ECDH-ES`, oppure `ECDH-ES+A128KW`, `ECDH-ES+A192KW`, `ECDH-ES+A256KW`
++ row  `SymmetricKey[AesKeyWrap[128]]`  `A128KW`, e allo stesso modo `A192KW` e `A256KW`
++ row  `SymmetricKey[AesGcm[128]]`  `dir`, oppure `A128GCMKW`
+
+- row  `SymmetricKey[AesCbcHmac[256]]`  `dir`
++ row  `SymmetricKey[AesCbcHmac[256]]`  `dir`
+
+- row  `Password`  `PBES2-HS256+A128KW`, or `PBES2-HS384+A192KW`, `PBES2-HS512+A256KW`
++ row  `Password`  `PBES2-HS256+A128KW`, oppure `PBES2-HS384+A192KW`, `PBES2-HS512+A256KW`
+
+= row  `Password`  `PBES2-HS256+A128KW`, or `PBES2-HS384+A192KW`, `PBES2-HS512+A256KW`
+- ```
++ ```
+
+- A member other than the first is chosen in the header:
++ Un membro diverso dal primo si sceglie nell'intestazione:
+
+= A member other than the first is chosen in the header:
+=
+- ```scala
++ ```scala
+
+- val wrapped: Jwe =
++ val wrapped: Jwe =
+
+-   Jwe[AesGcm[256]]
++   Jwe[AesGcm[256]]
+
+-     ( t"Speak the speech, I pray you",
++     ( t"Speak the speech, I pray you",
+
+-       recipient.public,
++       recipient.public,
+
+-       Jose.Header(algorithm = t"ECDH-ES+A256KW") )
++       Jose.Header(algorithm = t"ECDH-ES+A256KW") )
+
+=       Jose.Header(algorithm = t"ECDH-ES+A256KW") )
+- ```
++ ```
+
+- `RSA1_5` is provided because it is still met, but it should not be chosen for anything new.
++ `RSA1_5` è fornito perché lo si incontra ancora, ma non andrebbe scelto per nulla di nuovo.
+
+- A password derives its key slowly, on purpose. The number of iterations is
+- `Jwe.DefaultIterations` unless the header's `iterations` says otherwise, and an object which
+- asks its recipient for more than `Jwe.MaximumIterations` is refused before any work is done.
++ Una password deriva la sua chiave lentamente, di proposito. Il numero di iterazioni è
++ `Jwe.DefaultIterations` a meno che l'`iterations` dell'intestazione non dica altrimenti, e un
++ oggetto che chiede al suo destinatario più di `Jwe.MaximumIterations` viene rifiutato prima di
++ compiere qualsiasi lavoro.
+
+- Every failure to decrypt is the same `Jose.Error`, whose reason is `Undecryptable`. It does
+- not say whether the key or the content was at fault, since that is exactly what an attacker
+- would like to learn.
++ Ogni fallimento della decifratura è lo stesso `Jose.Error`, il cui motivo è `Undecryptable`.
++ Non dice se la colpa sia della chiave o del contenuto, perché è proprio ciò che un attaccante
++ vorrebbe sapere.
+
+- ### Tokens
++ ### Token
+
+- A `Jwt` is a set of claims. The seven which the standard registers are a `Jwt.Claims`, and an
+- application's own are a value of its own type, written to the same JSON object:
++ Un `Jwt` è un insieme di asserzioni. Le sette registrate dallo standard sono un `Jwt.Claims`, e
++ quelle proprie di un'applicazione sono un valore di un suo tipo, scritto nello stesso oggetto
++ JSON:
+
+= application's own are a value of its own type, written to the same JSON object:
+=
+- ```scala
++ ```scala
+
+- case class Role(part: Text, play: Text)
++ case class Role(part: Text, play: Text)
+
+- val claims =
++ val claims =
+
+-   Jwt.Claims
++   Jwt.Claims
+
+-     ( issuer   = t"globe",
++     ( issuer   = t"globe",
+
+-       subject  = t"burbage",
++       subject  = t"burbage",
+
+-       audience = List(t"groundlings"),
++       audience = List(t"groundlings"),
+
+-       expiry   = now() + 1*Hour )
++       expiry   = now() + 1*Hour )
+
+- val token: Text = Jwt(claims, Role(t"Hamlet", t"Hamlet")).sign(key).in[Text]
++ val token: Text = Jwt(claims, Role(t"Hamlet", t"Hamlet")).sign(key).in[Text]
+
+= val token: Text = Jwt(claims, Role(t"Hamlet", t"Hamlet")).sign(key).in[Text]
+- ```
++ ```
+
+- `Jwt.verify` is the whole of what a server does with a token it has been sent. It checks the
+- signature against the key, reads the claims, and checks that the token has not expired and is
+- not presented before its time, by the `Clock` in scope:
++ `Jwt.verify` è tutto ciò che un server fa con un token che gli è stato inviato. Controlla la
++ firma rispetto alla chiave, legge le asserzioni e controlla che il token non sia scaduto e non
++ venga presentato prima del tempo, secondo il `Clock` nell'ambito:
+
+= not presented before its time, by the `Clock` in scope:
+=
+- ```scala
++ ```scala
+
+- val jwt: Jwt = Jwt.verify(token, key.public)
++ val jwt: Jwt = Jwt.verify(token, key.public)
+
+- val role: Role = jwt.json.as[Role]
++ val role: Role = jwt.json.as[Role]
+
+= val role: Role = jwt.json.as[Role]
+- ```
++ ```
+
+= val role: Role = jwt.json.as[Role]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val role: Role = jwt.json.as[Role]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val role: Role = jwt.json.as[Role]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(jwt.claims.subject.or(t"nobody"))
++ Out.println(jwt.claims.subject.or(t"nobody"))
+
+- Out.println(role.part)
++ Out.println(role.part)
+
+= Out.println(role.part)
+- ```
++ ```
+
+- `validate` checks who issued the token and whom it is for, and allows some seconds of
+- `leeway` for the difference between two machines' clocks:
++ `validate` controlla chi ha emesso il token e a chi è destinato, e concede alcuni secondi di
++ `leeway` per la differenza tra gli orologi di due macchine:
+
+= `leeway` for the difference between two machines' clocks:
+=
+- ```scala
++ ```scala
+
+- val accepted: Jwt = jwt.validate(issuer = t"globe", audience = t"groundlings", leeway = 30)
++ val accepted: Jwt = jwt.validate(issuer = t"globe", audience = t"groundlings", leeway = 30)
+
+= val accepted: Jwt = jwt.validate(issuer = t"globe", audience = t"groundlings", leeway = 30)
+- ```
++ ```
+
+- There is no way to read a token's claims without verifying it.
++ Non c'è modo di leggere le asserzioni di un token senza verificarlo.
+
+- ### Bearer authentication
++ ### Autenticazione bearer
+
+- For an [HTTP server](http-server.md), `bearerAuth` is the counterpart of `basicAuth`. Its
+- handler runs only for a request whose `Authorization: Bearer` header carries a token which
+- verifies, and which names the issuer and audience expected of it. The token is in scope as
+- `jwt`:
++ Per un [server HTTP](http-server.md), `bearerAuth` è la controparte di `basicAuth`. Il suo
++ handler viene eseguito solo per una richiesta la cui intestazione `Authorization: Bearer` porta
++ un token che si verifica, e che nomina l'issuer e il pubblico che ci si attende. Il token è
++ nell'ambito come `jwt`:
+
+= `jwt`:
+=
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+= typecheck
+- ##
++ ##
+
+- def handler(using Http.Connection): Http.Response =
++ def handler(using Http.Connection): Http.Response =
+
+-   bearerAuth(key.public, t"globe", audience = t"groundlings"):
++   bearerAuth(key.public, t"globe", audience = t"groundlings"):
+
+-     Http.Response(Http.Ok)(t"Welcome, ${jwt.claims.subject.or(t"stranger")}")
++     Http.Response(Http.Ok)(t"Welcome, ${jwt.claims.subject.or(t"stranger")}")
+
+=     Http.Response(Http.Ok)(t"Welcome, ${jwt.claims.subject.or(t"stranger")}")
+- ```
++ ```
+
+- A request with no token is answered `401`, with a challenge. One whose token does not check
+- out is answered the same way, with `error="invalid_token"`, and is never told why.
++ A una richiesta senza token si risponde `401`, con una sfida. A una il cui token non supera i
++ controlli si risponde allo stesso modo, con `error="invalid_token"`, e non le si dice mai perché.
+
+- Where the keys are a set, the token's `kid` chooses among them, and the type argument is the
+- cipher every key in the set is read as: `bearerAuth[Ecdsa[256]](keys, …)`.
++ Dove le chiavi sono un insieme, il `kid` del token sceglie tra di esse, e l'argomento di tipo è
++ il cifrario come cui viene letta ogni chiave dell'insieme: `bearerAuth[Ecdsa[256]](keys, …)`.
+
+- ### Other serializations
++ ### Altre serializzazioni
+
+- The compact serialization carries one signature, or one recipient. The JSON serializations
+- carry several, and unprotected headers besides. `Jws.read` and `Jwe.read` take either JSON
+- form, and give one object for each signature or recipient. `flattened` writes one, and
+- `Jws.general` and `Jwe.general` write several:
++ La serializzazione compatta porta una sola firma, o un solo destinatario. Le serializzazioni
++ JSON ne portano diversi, e inoltre intestazioni non protette. `Jws.read` e `Jwe.read` accettano
++ entrambe le forme JSON, e danno un oggetto per ogni firma o destinatario. `flattened` ne scrive
++ uno, e `Jws.general` e `Jwe.general` ne scrivono diversi:
+
+= `Jws.general` and `Jwe.general` write several:
+=
+- ```scala
++ ```scala
+
+- val flattened: Json = signed.flattened
++ val flattened: Json = signed.flattened
+
+- val several: List[Jws] = Jws.read(flattened)
++ val several: List[Jws] = Jws.read(flattened)
+
+= val several: List[Jws] = Jws.read(flattened)
+- ```
++ ```
+
+- ### Related
++ ### Correlati
+
+- - [Cryptography](cryptography.md) provides the keys, the ciphers, and the files keys are
+-   read from.
+- - [OAuth 2](oauth.md) is how a client obtains a token.
+- - [JSON](json.md) is what a token's claims are read from and written to.
++ - [Crittografia](cryptography.md) fornisce le chiavi, i cifrari e i file da cui si leggono le
++   chiavi.
++ - [OAuth 2](oauth.md) è il modo in cui un client ottiene un token.
++ - [JSON](json.md) è ciò da cui si leggono e in cui si scrivono le asserzioni di un token.

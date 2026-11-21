@@ -1,0 +1,41 @@
+orthant 1 language
+
+- # `↯/s.100.3` — `Port.Error`
++ # `↯/s.100.3` — `Port.Error`
+
+- Raised when a value is not a valid TCP/UDP port number.
++ Sollevato quando un valore non è un numero di porta TCP/UDP valido.
+
+- ## Cause
++ ## Causa
+
+- Urticose constrains port numbers to the range 1–65535. Anything
+- outside is rejected.
++ Urticose limita i numeri di porta all'intervallo 1–65535. Qualsiasi valore al di fuori viene
++ rifiutato.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.100.3] the port is not in the valid range
++ [↯/s.100.3] the port is not in the valid range
+
+= [↯/s.100.3] the port is not in the valid range
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Use a port between 1 and 65535.
++ Usa una porta tra 1 e 65535.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/urticose/src/core/urticose.internal.scala`
++ - Sorgente: `lib/urticose/src/core/urticose.internal.scala`

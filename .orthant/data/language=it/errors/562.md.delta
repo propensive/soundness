@@ -1,0 +1,38 @@
+orthant 1 language
+
+- # `SN-562` — `XPathError` (retired)
++ # `SN-562` — `XPathError` (ritirato)
+
+- **This code is no longer raised.** A malformed XPath *expression* is now a
+- `Parse.Error` (`↯/s.60.2`) over the `XPath` format, like every other parse
+- failure in the codebase: `XPath` implements `zephyrine.Format`, as `Xml`
+- already did, and its former `Reason` cases are now `XPath.Issue`s. The
+- `Position` still carries the character offset, so the `xp"…"` interpolator
+- still places its caret exactly.
++ **Questo codice non viene più sollevato.** Un'*espressione* XPath malformata è ora un
++ `Parse.Error` (`↯/s.60.2`) sul formato `XPath`, come ogni altro errore di parsing nel codice:
++ `XPath` implementa `zephyrine.Format`, come già faceva `Xml`, e i suoi precedenti casi `Reason`
++ sono ora degli `XPath.Issue`. La `Position` porta ancora l'offset del carattere, quindi
++ l'interpolatore `xp"…"` colloca ancora il cursore con esattezza.
+
+- The name `XPath.Error` now belongs to the distinct failure of *evaluating*
+- an expression that parsed — see `↯/s.128.2`.
++ Il nome `XPath.Error` appartiene ora all'errore distinto della *valutazione* di un'espressione
++ analizzata con successo: vedi `↯/s.128.2`.
+
+- Two of the former reasons are gone rather than translated: `ExpectedSlash`
+- and `BadStep` were raised only by the pre-AST positional parser and were
+- retained solely to keep the numbering stable. `Issue`s are not numbered, so
+- nothing needed to hold their place.
++ Due dei motivi precedenti sono scomparsi anziché essere tradotti: `ExpectedSlash` e `BadStep`
++ venivano sollevati solo dal parser posizionale precedente all'AST, ed erano conservati al solo
++ scopo di mantenere stabile la numerazione. Gli `Issue` non sono numerati, quindi non serviva
++ nulla che ne tenesse il posto.
+
+- ## See also
++ ## Vedi anche
+
+- - Superseded by: `↯/s.60.2` (`Parse.Error`, format `XPath`)
+- - Related: `↯/s.128.2` (`XPath.Error`, evaluation)
++ - Sostituito da: `↯/s.60.2` (`Parse.Error`, formato `XPath`)
++ - Correlati: `↯/s.128.2` (`XPath.Error`, valutazione)

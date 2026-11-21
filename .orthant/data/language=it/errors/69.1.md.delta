@@ -1,0 +1,46 @@
+orthant 1 language
+
+- # `↯/s.69.1` — `Tenacity.Error`
++ # `↯/s.69.1` — `Tenacity.Error`
+
+- Raised when Parasite gives up retrying an operation after the
+- configured number of attempts.
++ Sollevato quando Parasite rinuncia a ritentare un'operazione dopo il numero di tentativi
++ configurato.
+
+- ## Cause
++ ## Causa
+
+- Parasite retries an operation up to `count` times. If every attempt
+- fails, this error is thrown.
++ Parasite ritenta un'operazione fino a `count` volte. Se ogni tentativo fallisce, viene lanciato
++ questo errore.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.69.1] aborted repeated evaluation after 5 attempts
++ [↯/s.69.1] aborted repeated evaluation after 5 attempts
+
+= [↯/s.69.1] aborted repeated evaluation after 5 attempts
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Inspect logs to identify why every attempt failed; either fix the
+- underlying problem or increase the attempt limit if transient
+- failure is expected.
++ Esaminare i log per capire perché ogni tentativo è fallito; correggere il problema sottostante,
++ oppure aumentare il limite di tentativi se ci si aspettano errori transitori.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/parasite/src/core/parasite.Tenacity.scala`
++ - Sorgente: `lib/parasite/src/core/parasite.Tenacity.scala`

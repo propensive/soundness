@@ -1,0 +1,3784 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base synesthesia
++ base synesthesia
+
+- import soundness
++ import soundness
+
+- info   Model Context Protocol servers whose tools, resources and prompts are annotated Scala methods
++ info   server Model Context Protocol i cui strumenti, risorse e prompt sono metodi Scala annotati
+
+- detail
++ detail
+
+-     _Synesthesia_ implements the [Model Context Protocol](https://modelcontextprotocol.io/),
+-     the protocol by which an AI assistant's harness reaches a server for **tools** it can call,
+-     **resources** it can read and **prompts** it can use. A server is an object extending
+-     `Mcp.Server` whose capabilities are ordinary methods marked with annotations: a `@tool`
+-     method is a callable tool, with its input and output schemas derived from its parameter
+-     and result types; a `@resource("uri")` method serves content at a URI; a `@prompt` method
+-     returns a conversation written with the `human"…"` and `agent"…"` interpolators. The
+-     protocol itself — JSON-RPC over the streamable HTTP transport, sessions, the listings the
+-     client discovers — is generated from those definitions by the `Mcp.Specification` macro, so
+-     the description a model reads can never disagree with the code it calls.
++     _Synesthesia_ implementa il [Model Context Protocol](https://modelcontextprotocol.io/), il
++     protocollo con cui l'harness di un assistente AI raggiunge un server per gli **strumenti** che
++     può chiamare, le **risorse** che può leggere e i **prompt** che può usare. Un server è un oggetto
++     che estende `Mcp.Server` e le cui capacità sono metodi ordinari marcati con annotazioni: un
++     metodo `@tool` è uno strumento chiamabile, con gli schemi di input e di output derivati dai tipi
++     dei suoi parametri e del suo risultato; un metodo `@resource("uri")` serve contenuto a un URI; un
++     metodo `@prompt` restituisce una conversazione scritta con gli interpolatori `human"…"` e
++     `agent"…"`. Il protocollo stesso — JSON-RPC sul trasporto HTTP streamable, le sessioni, gli
++     elenchi che il client scopre — viene generato da queste definizioni dalla macro
++     `Mcp.Specification`, quindi la descrizione che un modello legge non può mai essere in disaccordo
++     con il codice che chiama.
+
+=     the description a model reads can never disagree with the code it calls.
+=
+-     ```scala
++     ```scala
+
+=     the description a model reads can never disagree with the code it calls.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     val colors = Map(t"sky" -> t"blue", t"grass" -> t"green")
++     val colors = Map(t"sky" -> t"blue", t"grass" -> t"green")
+
+-     object AssistantTools extends Mcp.Server():
++     object AssistantTools extends Mcp.Server():
+
+=     object AssistantTools extends Mcp.Server():
+-       class Session() extends Mcp.Session
++       class Session() extends Mcp.Session
+
+=     object AssistantTools extends Mcp.Server():
+=       class Session() extends Mcp.Session
+-       def initialize(): Session = new Session()
++       def initialize(): Session = new Session()
+
+-       def name: Text = t"assistant-tools"
++       def name: Text = t"assistant-tools"
+
+-       def description: Text = t"Utilities for the assistant"
++       def description: Text = t"Utilities for the assistant"
+
+=       def description: Text = t"Utilities for the assistant"
+-       def version: Semver = v"1.0.0"
++       def version: Semver = v"1.0.0"
+
+=       def description: Text = t"Utilities for the assistant"
+=       def version: Semver = v"1.0.0"
+-       def prompts: List[Mcp.Prompt] = Nil
++       def prompts: List[Mcp.Prompt] = Nil
+
+=       def description: Text = t"Utilities for the assistant"
+=       def version: Semver = v"1.0.0"
+=       def prompts: List[Mcp.Prompt] = Nil
+=
+-       @tool
++       @tool
+
+-       @about("Look up the color of a named thing")
++       @about("Look up the color of a named thing")
+
+-       def color(name: Text): Text = colors.at(name).or(t"unknown")
++       def color(name: Text): Text = colors.at(name).or(t"unknown")
+
+=       def color(name: Text): Text = colors.at(name).or(t"unknown")
+-     ```
++     ```
+
+-     The server is mounted in an HTTP handler by calling `AssistantTools.serve`, which answers
+-     `POST`ed JSON-RPC requests, streams server-sent events to a `GET`, and ends a session on
+-     `DELETE`. A tool which takes a `using Mcp.Client` can talk back to the client while it runs:
+-     `log` streams progress and `elicit` asks the user for structured input, its form a schema
+-     derived from a case class.
++     Il server si monta in un handler HTTP chiamando `AssistantTools.serve`, che risponde alle
++     richieste JSON-RPC inviate con `POST`, invia in streaming eventi server-sent a un `GET`, e
++     termina una sessione con `DELETE`. Uno strumento che prende un `using Mcp.Client` può rivolgersi
++     al client mentre è in esecuzione: `log` trasmette in streaming l'avanzamento ed `elicit` chiede
++     all'utente un input strutturato, il cui modulo è uno schema derivato da una case class.
+
+-     The library has two source sets:
++     La libreria ha due insiemi di sorgenti:
+
+-     - `synesthesia.content` — the content-block vocabulary shared with the Agent Client
+-       Protocol: `Content` (text, image, audio, resource-link and embedded-resource blocks,
+-       resource contents, `Icon`, `Annotations`, `Role`) and the `@about` annotation. It depends
+-       only on JSON, so an ACP client can use it without an HTTP server.
+-     - `synesthesia.core` — JVM-only: `Mcp` with its protocol records, `Mcp.Server`,
+-       `Mcp.Client`, `Mcp.Interface`, `Mcp.Specification`; the `@tool`, `@resource`, `@prompt`,
+-       `@title` and `@ui` annotations; `Discourse` and the `human`/`agent` interpolators.
++     - `synesthesia.content` — il vocabolario dei blocchi di contenuto condiviso con l'Agent Client
++       Protocol: `Content` (blocchi di testo, immagine, audio, collegamento a risorsa e risorsa
++       incorporata, contenuti di risorse, `Icon`, `Annotations`, `Role`) e l'annotazione `@about`.
++       Dipende solo da JSON, quindi un client ACP può usarlo senza un server HTTP.
++     - `synesthesia.core` — solo JVM: `Mcp` con i suoi record di protocollo, `Mcp.Server`,
++       `Mcp.Client`, `Mcp.Interface`, `Mcp.Specification`; le annotazioni `@tool`, `@resource`,
++       `@prompt`, `@title` e `@ui`; `Discourse` e gli interpolatori `human`/`agent`.
+
+-     Everything is exported to the `soundness` umbrella, where `Content` is spelled `McpContent`
+-     (`Content` in the umbrella is gesticulate's media-typed payload); its members are also
+-     reachable as `Mcp.TextContent` and so on, since `Mcp` re-exports them. `Mcp.Server#serve`
+-     needs the contextual values an HTTP handler has — a `Monitor`, a `Probate`, an `Online`
+-     and the `Http.Request` — and deriving a specification needs a `Tactic[Json.Error]` and a
+-     `Tactic[Mcp.Error]`, which `strategies.throwUnsafely` supplies.
++     Tutto è esportato nel modulo ombrello `soundness`, dove `Content` si scrive `McpContent`
++     (`Content` nel modulo ombrello è il payload con tipo di media di gesticulate); i suoi membri
++     sono raggiungibili anche come `Mcp.TextContent` e così via, poiché `Mcp` li riesporta.
++     `Mcp.Server#serve` richiede i valori contestuali di cui dispone un handler HTTP — un `Monitor`,
++     un `Probate`, un `Online` e la `Http.Request` — e derivare una specifica richiede un
++     `Tactic[Json.Error]` e un `Tactic[Mcp.Error]`, che `strategies.throwUnsafely` fornisce.
+
+- refer synesthesia.Mcp
++ refer synesthesia.Mcp
+
+- refer synesthesia.Content
++ refer synesthesia.Content
+
+- refer synesthesia.tool
++ refer synesthesia.tool
+
+- refer synesthesia.resource
++ refer synesthesia.resource
+
+- refer synesthesia.prompt
++ refer synesthesia.prompt
+
+- entry .Mcp   the Model Context Protocol: its records, its JSON-RPC interface, servers, clients and sessions
++ entry .Mcp   il Model Context Protocol: i suoi record, la sua interfaccia JSON-RPC, server, client e sessioni
+
+= entry .Mcp   the Model Context Protocol: its records, its JSON-RPC interface, servers, clients and sessions
+-   detail
++   detail
+
+-       `Mcp` is the home of everything the protocol defines. Its records — `Tool`, `Resource`,
+-       `Prompt`, `CallTool`, `Initialize`, `ServerCapabilities` and the rest — are case classes
+-       mirroring the protocol's JSON objects field for field, each encodable to and decodable
+-       from `Json` by derivation, with `Optional` fields absent from the wire when `Unset`. Its
+-       enumerations (`LoggingLevel`, `TaskStatus`, `Role`, …) carry hand-written codecs to the
+-       protocol's lowercase spellings, and its sum types (`ContentBlock`, `Reference`) encode
+-       with a `type` discriminator.
++       `Mcp` è la sede di tutto ciò che il protocollo definisce. I suoi record — `Tool`, `Resource`,
++       `Prompt`, `CallTool`, `Initialize`, `ServerCapabilities` e gli altri — sono case class che
++       rispecchiano campo per campo gli oggetti JSON del protocollo, ciascuna codificabile in e
++       decodificabile da `Json` per derivazione, con i campi `Optional` assenti dalla trasmissione
++       quando sono `Unset`. Le sue enumerazioni (`LoggingLevel`, `TaskStatus`, `Role`, …) hanno codec
++       scritti a mano verso le grafie minuscole del protocollo, e i suoi tipi somma (`ContentBlock`,
++       `Reference`) si codificano con un discriminatore `type`.
+
+-       The server side is four pieces. A program's own server extends `.Server` and marks its
+-       methods `@tool`, `@resource` or `@prompt`; the `.Specification` macro reads those
+-       annotations into the listings and the dispatch; `.Interface` is the JSON-RPC
+-       implementation of `.Api` for one session, built over that specification; and `.send`
+-       maps one HTTP request onto it. A tool which takes a `using Mcp.Client` reaches the
+-       client through `.Client`.
++       Il lato server è fatto di quattro pezzi. Il server proprio di un programma estende `.Server` e
++       marca i suoi metodi `@tool`, `@resource` o `@prompt`; la macro `.Specification` legge queste
++       annotazioni per produrre gli elenchi e lo smistamento; `.Interface` è l'implementazione
++       JSON-RPC di `.Api` per una sessione, costruita su quella specifica; e `.send` associa a essa
++       una richiesta HTTP. Uno strumento che prende un `using Mcp.Client` raggiunge il client tramite
++       `.Client`.
+
+=       client through `.Client`.
+=
+-       ```scala
++       ```scala
+
+=       client through `.Client`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       client through `.Client`.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       object Pyrus extends Mcp.Server():
++       object Pyrus extends Mcp.Server():
+
+-         class Session() extends Mcp.Session
++         class Session() extends Mcp.Session
+
+-         def initialize(): Session = new Session()
++         def initialize(): Session = new Session()
+
+-         def name: Text = t"Pyrus"
++         def name: Text = t"Pyrus"
+
+-         def description: Text = t"A simple server"
++         def description: Text = t"A simple server"
+
+-         def version: Semver = v"1.0.0"
++         def version: Semver = v"1.0.0"
+
+-         def prompts: List[Mcp.Prompt] = Nil
++         def prompts: List[Mcp.Prompt] = Nil
+
+-         @tool
++         @tool
+
+-         def color(name: Text): Text = t"purple"
++         def color(name: Text): Text = t"purple"
+
+-       val spec = summon[Pyrus.type is Mcp.Specification]
++       val spec = summon[Pyrus.type is Mcp.Specification]
+
+-       spec.tools().map(_.name)   // List(t"color")
++       spec.tools().map(_.name)   // List(t"color")
+
+=       spec.tools().map(_.name)   // List(t"color")
+-       ```
++       ```
+
+-       The content-block vocabulary (`TextContent`, `ImageContent`, `AudioContent`,
+-       `ResourceLink`, `EmbeddedResource`, the resource contents, `Icon`, `Annotations` and
+-       `Role`) is defined in `Content` and re-exported here, so MCP code writes
+-       `Mcp.TextContent`. The protocol version spoken is `.version`, `2025-11-25`.
++       Il vocabolario dei blocchi di contenuto (`TextContent`, `ImageContent`, `AudioContent`,
++       `ResourceLink`, `EmbeddedResource`, i contenuti delle risorse, `Icon`, `Annotations` e `Role`)
++       è definito in `Content` e riesportato qui, quindi il codice MCP scrive `Mcp.TextContent`. La
++       versione del protocollo parlata è `.version`, `2025-11-25`.
+
+-   refer synesthesia.Mcp.Server
++   refer synesthesia.Mcp.Server
+
+-   refer synesthesia.Mcp.Specification
++   refer synesthesia.Mcp.Specification
+
+-   refer synesthesia.Mcp.Client
++   refer synesthesia.Mcp.Client
+
+-   refer synesthesia.Content
++   refer synesthesia.Content
+
+-   entry .version   the protocol version this implementation speaks: `2025-11-25`
+-       Sent as the `Mcp-Protocol-Version` header of every response and as the
+-       `protocolVersion` of an `Initialize` result.
+-   entry .Cursor   a pagination cursor, as `Text`
+-       The opaque token a listing (`ListTools`, `ListResources`, `ListPrompts`, `ListTasks`)
+-       returns as `nextCursor` and a client passes back to continue. The server's own listings
+-       are never paginated, so it is always `Unset`.
+-   entry .send   answers one HTTP request of the streamable HTTP transport against an interface
++   entry .version   la versione del protocollo che questa implementazione parla: `2025-11-25`
++       Inviata come intestazione `Mcp-Protocol-Version` di ogni risposta e come `protocolVersion` di
++       un risultato `Initialize`.
++   entry .Cursor   un cursore di paginazione, come `Text`
++       Il token opaco che un elenco (`ListTools`, `ListResources`, `ListPrompts`, `ListTasks`)
++       restituisce come `nextCursor` e che un client ripassa per continuare. Gli elenchi propri del
++       server non sono mai paginati, quindi è sempre `Unset`.
++   entry .send   risponde a una richiesta HTTP del trasporto HTTP streamable rispetto a un'interfaccia
+
+=   entry .send   answers one HTTP request of the streamable HTTP transport against an interface
+-     detail
++     detail
+
+-         `Mcp.send(sessionId, server, interface)(dispatch)` maps a request to the protocol's
+-         transport: `OPTIONS` answers `204 No Content`; `GET` answers `200 OK` with the
+-         interface's event stream as server-sent events, kept alive and uncached; `POST` reads
+-         the body as JSON, passes it to `dispatch` (normally `JsonRpc.serve(interface)`), and
+-         answers the result as JSON, or `202 Accepted` when the dispatch produced nothing (a
+-         notification). Any other method, including `DELETE`, answers `405 Method Not Allowed`;
+-         `Mcp.Server#serve` handles `DELETE` itself before reaching here. Every response carries
+-         the `Mcp-Protocol-Version` and `Mcp-Session-Id` headers.
++         `Mcp.send(sessionId, server, interface)(dispatch)` associa una richiesta al trasporto del
++         protocollo: `OPTIONS` risponde `204 No Content`; `GET` risponde `200 OK` con lo stream di
++         eventi dell'interfaccia come eventi server-sent, mantenuto attivo e non in cache; `POST` legge
++         il corpo come JSON, lo passa a `dispatch` (normalmente `JsonRpc.serve(interface)`), e
++         risponde con il risultato come JSON, o con `202 Accepted` quando lo smistamento non ha
++         prodotto nulla (una notifica). Qualsiasi altro metodo, compreso `DELETE`, risponde
++         `405 Method Not Allowed`; `Mcp.Server#serve` gestisce da sé `DELETE` prima di arrivare qui.
++         Ogni risposta porta le intestazioni `Mcp-Protocol-Version` e `Mcp-Session-Id`.
+
+-         A failure is a JSON-RPC error in a `200 OK` body, under the request's `id` so the
+-         client can match it: a body which does not parse is `-32700`, one which is not a valid
+-         request `-32600`, an `Mcp.Error` (an unknown tool, a missing parameter) `-32602`, an
+-         unknown method `-32601`, and any other exception `-32603`. A tool's own exception is
+-         not a failure here: `Mcp.Interface` answers it as a result marked `isError`.
++         Un fallimento è un errore JSON-RPC in un corpo `200 OK`, sotto l'`id` della richiesta così che
++         il client possa abbinarlo: un corpo che non si analizza è `-32700`, uno che non è una
++         richiesta valida `-32600`, un `Mcp.Error` (uno strumento sconosciuto, un parametro mancante)
++         `-32602`, un metodo sconosciuto `-32601`, e qualsiasi altra eccezione `-32603`. Un'eccezione
++         dello strumento stesso non è un fallimento qui: `Mcp.Interface` vi risponde con un risultato
++         marcato `isError`.
+
+-         It needs a `Monitor`, a `Probate`, an `Online` and the `Http.Request` in scope, as an
+-         HTTP handler body has. `Mcp.Server#serve` calls it; a program calls it directly only
+-         to put its own dispatch in front of the interface.
+-   entry .ParseError   the JSON-RPC error code `-32700`: the request body did not parse
+-   entry .InvalidRequest   the JSON-RPC error code `-32600`: the body was not a valid request
+-   entry .MethodNotFound   the JSON-RPC error code `-32601`: no such method
+-   entry .InvalidParams   the JSON-RPC error code `-32602`: an unknown tool or a missing parameter
+-       The code `Mcp.send` answers an `Mcp.Error` with.
+-   entry .InternalError   the JSON-RPC error code `-32603`: an unexpected exception in the server
+-   entry .UrlElicitationRequired   the JSON-RPC error code `-32042`: the request needs a URL elicitation first
+-   entry .TextInt   a JSON-RPC identifier which may be a string or an integer
++         Richiede un `Monitor`, un `Probate`, un `Online` e la `Http.Request` nell'ambito, come ha il
++         corpo di un handler HTTP. `Mcp.Server#serve` lo chiama; un programma lo chiama direttamente
++         solo per mettere un proprio smistamento davanti all'interfaccia.
++   entry .ParseError   il codice di errore JSON-RPC `-32700`: il corpo della richiesta non si è analizzato
++   entry .InvalidRequest   il codice di errore JSON-RPC `-32600`: il corpo non era una richiesta valida
++   entry .MethodNotFound   il codice di errore JSON-RPC `-32601`: nessun metodo di quel nome
++   entry .InvalidParams   il codice di errore JSON-RPC `-32602`: uno strumento sconosciuto o un parametro mancante
++       Il codice con cui `Mcp.send` risponde a un `Mcp.Error`.
++   entry .InternalError   il codice di errore JSON-RPC `-32603`: un'eccezione inattesa nel server
++   entry .UrlElicitationRequired   il codice di errore JSON-RPC `-32042`: la richiesta richiede prima un'elicitazione tramite URL
++   entry .TextInt   un identificatore JSON-RPC che può essere una stringa o un intero
+
+=   entry .TextInt   a JSON-RPC identifier which may be a string or an integer
+-     detail
++     detail
+
+-         Request ids and progress tokens in the protocol may be either a string or a number.
+-         `TextInt(id: Text | Int)` holds either, encodes as whichever it holds, and decodes a
+-         JSON number as an `Int` and anything else as `Text`. It is the one type in `Mcp` with
+-         an `Inspectable` of its own (`.inspectable`), since a derivation cannot render a
+-         `Text | Int` field; `Mcp.TextInt(42).inspect` is `TextInt(id:42)`.
+-     entry .encodable   writes the id as a JSON string or number, by which it holds
+-     entry .decodable   reads a JSON number as an `Int` and any other value as `Text`
+-     entry .inspectable   renders the id showing which side of the union it came from
+-         `TextInt(id:42)` for an integer and `TextInt(id:t"abc")` for text. Needed because the
+-         structural derivation has no instance for a `Text | Int` field and would fall back to
++         Gli id di richiesta e i token di avanzamento nel protocollo possono essere una stringa o un
++         numero. `TextInt(id: Text | Int)` contiene l'uno o l'altro, si codifica come quello che
++         contiene, e decodifica un numero JSON come `Int` e qualsiasi altra cosa come `Text`. È l'unico
++         tipo in `Mcp` con un `Inspectable` proprio (`.inspectable`), poiché una derivazione non può
++         rendere un campo `Text | Int`; `Mcp.TextInt(42).inspect` è `TextInt(id:42)`.
++     entry .encodable   scrive l'id come stringa o numero JSON, secondo ciò che contiene
++     entry .decodable   legge un numero JSON come `Int` e qualsiasi altro valore come `Text`
++     entry .inspectable   rende l'id mostrando da quale lato dell'unione proviene
++         `TextInt(id:42)` per un intero e `TextInt(id:t"abc")` per un testo. Necessario perché la
++         derivazione strutturale non ha un'istanza per un campo `Text | Int` e ripiegherebbe su
+
+-         `toString`.
++         `toString`.
+
+-     entry #id   the identifier, as `Text` or `Int`
+-   entry .TaskAugmented   a request's optional `task` metadata, asking for it to run as a task
+-     entry #task   the `TaskMetadata`, if the request is to be a task
+-   entry .TaskMetadata   the metadata a request carries to run as a task: a time-to-live
+-     entry #ttl   how long, in milliseconds, the task's result is kept, if given
+-   entry .RelatedTaskMetadata   the id of the task a message relates to
+-     entry #taskId   the related task's id
+-   entry .BaseMetadata   a name and an optional human-readable title, the base of every named record
++     entry #id   l'identificatore, come `Text` o `Int`
++   entry .TaskAugmented   i metadati `task` opzionali di una richiesta, che chiedono di eseguirla come task
++     entry #task   il `TaskMetadata`, se la richiesta deve essere un task
++   entry .TaskMetadata   i metadati che una richiesta porta per essere eseguita come task: un tempo di vita
++     entry #ttl   per quanto tempo, in millisecondi, il risultato del task viene conservato, se indicato
++   entry .RelatedTaskMetadata   l'id del task a cui si riferisce un messaggio
++     entry #taskId   l'id del task correlato
++   entry .BaseMetadata   un nome e un titolo leggibile opzionale, la base di ogni record con nome
+
+=   entry .BaseMetadata   a name and an optional human-readable title, the base of every named record
+-     detail
++     detail
+
+-         The two fields every tool, prompt, resource and implementation shares. Its companion
+-         holds the derived JSON codecs (an `Encodable`, and a `Decodable` needing a
+-         `Tactic[Json.Error]`), anchored once so that every record which embeds it reuses them.
+-     entry #name   the programmatic name
+-     entry #title   a human-readable title, if given
+-   entry .Implementation   the name, version and description of a client or server program
++         I due campi che ogni strumento, prompt, risorsa e implementazione condivide. Il suo compagno
++         contiene i codec JSON derivati (un `Encodable`, e un `Decodable` che richiede un
++         `Tactic[Json.Error]`), ancorati una volta così che ogni record che lo incorpora li riusi.
++     entry #name   il nome programmatico
++     entry #title   un titolo leggibile, se indicato
++   entry .Implementation   il nome, la versione e la descrizione di un programma client o server
+
+=   entry .Implementation   the name, version and description of a client or server program
+-     detail
++     detail
+
+-         What each side sends about itself when the session is initialised: a client in
+-         `initialize`, and a server in its `Initialize` reply, where `Mcp.Interface` builds it
+-         from the server's `name` and `version`. The companion holds anchored derived JSON
+-         codecs; decoding needs a `Tactic[Json.Error]`.
+-     entry #name   the program's name
+-     entry #title   a human-readable title, if given
+-     entry #icons   icons representing the program, if given
+-     entry #version   the program's version, as text
+-     entry #description   a description of the program, if given
+-     entry #websiteUrl   the program's website, if given
+-   entry .ClientInfo   a client's name, title, version, description and icons
+-     entry #name   the client's name
+-     entry #title   the client's title
+-     entry #version   the client's version
+-     entry #description   a description of the client
+-     entry #icons   icons representing the client, if given
+-   entry .ServerInfo   a server's name, title, version, description, icons and website
+-     entry #name   the server's name
+-     entry #title   the server's title
+-     entry #version   the server's version
+-     entry #description   a description of the server
+-     entry #icons   icons representing the server, if given
+-     entry #websiteUrl   the server's website, as an `HttpUrl`
+-   entry .Initialize   the server's reply to `initialize`: version, capabilities, identity and instructions
++         Ciò che ciascun lato invia su di sé quando la sessione viene inizializzata: un client in
++         `initialize`, e un server nella sua risposta `Initialize`, dove `Mcp.Interface` lo costruisce
++         dal `name` e dalla `version` del server. Il compagno contiene codec JSON derivati e ancorati;
++         la decodifica richiede un `Tactic[Json.Error]`.
++     entry #name   il nome del programma
++     entry #title   un titolo leggibile, se indicato
++     entry #icons   icone che rappresentano il programma, se indicate
++     entry #version   la versione del programma, come testo
++     entry #description   una descrizione del programma, se indicata
++     entry #websiteUrl   il sito web del programma, se indicato
++   entry .ClientInfo   il nome, il titolo, la versione, la descrizione e le icone di un client
++     entry #name   il nome del client
++     entry #title   il titolo del client
++     entry #version   la versione del client
++     entry #description   una descrizione del client
++     entry #icons   icone che rappresentano il client, se indicate
++   entry .ServerInfo   il nome, il titolo, la versione, la descrizione, le icone e il sito web di un server
++     entry #name   il nome del server
++     entry #title   il titolo del server
++     entry #version   la versione del server
++     entry #description   una descrizione del server
++     entry #icons   icone che rappresentano il server, se indicate
++     entry #websiteUrl   il sito web del server, come `HttpUrl`
++   entry .Initialize   la risposta del server a `initialize`: versione, capacità, identità e istruzioni
+
+=   entry .Initialize   the server's reply to `initialize`: version, capabilities, identity and instructions
+-     detail
++     detail
+
+-         `Mcp.Interface#initialize` answers with `Mcp.version`, a default `ServerCapabilities()`
+-         (tools, prompts and resources, each with list-change notifications), an
+-         `Implementation` of the server's name and version, and the server's `description` as
+-         the instructions.
+-     entry #protocolVersion   the protocol version the server speaks
+-     entry #capabilities   what the server can do, as `ServerCapabilities`
+-     entry #serverInfo   the server's identity, as an `Implementation`
+-     entry #instructions   text for the model about how to use the server, if given
+-   entry .ListChanged   a capability flag: whether a list-changed notification is sent
+-     entry #listChanged   whether the server notifies when the list changes, if stated
+-   entry .Resources   the resources capability: subscription and list-change support
+-     entry #subscribe   whether a client may subscribe to a resource, `true` by default
+-     entry #listChanged   whether the server notifies when the resource list changes, `true` by default
+-   entry .Sampling   a client's sampling capability: context inclusion and tool use
+-     entry #context   the client's support for including context, if stated
+-     entry #tools   the client's support for tools during sampling, if stated
+-   entry .Elicitation   a client's elicitation capability: form and URL modes
+-     entry #form   whether the client can show a form, if stated
+-     entry #url   whether the client can open a URL, if stated
+-   entry .RequestsElicitation   the elicitation requests a task may make
+-     entry #create   whether `elicitation/create` may run as a task, if stated
+-   entry .Call   whether `tools/call` may run as a task
+-     entry #call   the capability's value, if stated
+-   entry .RequestsSampling   the sampling requests a task may make
+-     entry #createMessage   whether `sampling/createMessage` may run as a task, if stated
+-   entry .Tasks   the tasks capability: listing, cancelling and which requests may be tasks
+-     entry #list   whether tasks may be listed, if stated
+-     entry #cancel   whether tasks may be cancelled, if stated
+-     entry #requests   which requests may run as tasks, as `Requests`, if stated
+-   entry .ListTasks   the reply to `tasks/list`: tasks and a continuation cursor
+-     entry #nextCursor   the cursor for the next page, if there is one
+-     entry #tasks   the tasks, as a list of `Task`
+-   entry .Requests   which requests may run as tasks: sampling, elicitation and tool calls
+-     entry #sampling   sampling requests, as `RequestsSampling`, if stated
+-     entry #elicitation   elicitation requests, as `RequestsElicitation`, if stated
+-     entry #tools   tool calls, as `Call`, if stated
+-   entry .ServerCapabilities   what a server offers: tools, prompts, resources, logging, completions, tasks
++         `Mcp.Interface#initialize` risponde con `Mcp.version`, delle `ServerCapabilities()`
++         predefinite (strumenti, prompt e risorse, ciascuno con notifiche di modifica dell'elenco), un
++         `Implementation` con il nome e la versione del server, e la `description` del server come
++         istruzioni.
++     entry #protocolVersion   la versione del protocollo che il server parla
++     entry #capabilities   ciò che il server sa fare, come `ServerCapabilities`
++     entry #serverInfo   l'identità del server, come `Implementation`
++     entry #instructions   testo per il modello su come usare il server, se indicato
++   entry .ListChanged   un flag di capacità: se viene inviata una notifica di elenco modificato
++     entry #listChanged   se il server notifica quando l'elenco cambia, se dichiarato
++   entry .Resources   la capacità delle risorse: supporto per la sottoscrizione e per la modifica dell'elenco
++     entry #subscribe   se un client può sottoscrivere una risorsa, `true` per impostazione predefinita
++     entry #listChanged   se il server notifica quando l'elenco delle risorse cambia, `true` per impostazione predefinita
++   entry .Sampling   la capacità di campionamento di un client: inclusione del contesto e uso di strumenti
++     entry #context   il supporto del client per l'inclusione del contesto, se dichiarato
++     entry #tools   il supporto del client per gli strumenti durante il campionamento, se dichiarato
++   entry .Elicitation   la capacità di elicitazione di un client: modalità modulo e URL
++     entry #form   se il client può mostrare un modulo, se dichiarato
++     entry #url   se il client può aprire un URL, se dichiarato
++   entry .RequestsElicitation   le richieste di elicitazione che un task può fare
++     entry #create   se `elicitation/create` può essere eseguito come task, se dichiarato
++   entry .Call   se `tools/call` può essere eseguito come task
++     entry #call   il valore della capacità, se dichiarato
++   entry .RequestsSampling   le richieste di campionamento che un task può fare
++     entry #createMessage   se `sampling/createMessage` può essere eseguito come task, se dichiarato
++   entry .Tasks   la capacità dei task: elencare, annullare e quali richieste possono essere task
++     entry #list   se i task possono essere elencati, se dichiarato
++     entry #cancel   se i task possono essere annullati, se dichiarato
++     entry #requests   quali richieste possono essere eseguite come task, come `Requests`, se dichiarato
++   entry .ListTasks   la risposta a `tasks/list`: i task e un cursore di continuazione
++     entry #nextCursor   il cursore per la pagina successiva, se ce n'è una
++     entry #tasks   i task, come lista di `Task`
++   entry .Requests   quali richieste possono essere eseguite come task: campionamento, elicitazione e chiamate di strumenti
++     entry #sampling   le richieste di campionamento, come `RequestsSampling`, se dichiarato
++     entry #elicitation   le richieste di elicitazione, come `RequestsElicitation`, se dichiarato
++     entry #tools   le chiamate di strumenti, come `Call`, se dichiarato
++   entry .ServerCapabilities   ciò che un server offre: strumenti, prompt, risorse, logging, completamenti, task
+
+=   entry .ServerCapabilities   what a server offers: tools, prompts, resources, logging, completions, tasks
+-     detail
++     detail
+
+-         The defaults describe what `Mcp.Interface` implements: `prompts` and `tools` with
+-         list-change notifications and `resources` with subscription, and no experimental,
+-         logging, completion or task capabilities.
+-     entry #experimental   experimental capabilities, by name, if any
+-     entry #logging   the logging capability, if offered
+-     entry #completions   the argument-completion capability, if offered
+-     entry #prompts   the prompts capability, with list-change notification by default
+-     entry #resources   the resources capability, as `Resources`, with its defaults
+-     entry #tools   the tools capability, with list-change notification by default
+-     entry #tasks   the tasks capability, if offered
+-   entry .ClientCapabilities   what a client offers: roots, sampling, elicitation and tasks
+-     entry #experimental   experimental capabilities, by name, if any
+-     entry #roots   whether the client exposes filesystem roots, if stated
+-     entry #sampling   the client's sampling capability, if offered
+-     entry #elicitation   the client's elicitation capability, if offered
+-     entry #tasks   the client's tasks capability, if offered
+-   entry .Context   the arguments already given, for completing another
+-     entry #arguments   the arguments by name, if any
+-   entry .ListResources   the reply to `resources/list`: resources and a continuation cursor
+-     entry #nextCursor   the cursor for the next page, if there is one
+-     entry #resources   the resources, as a list of `Resource`
+-   entry .ListResourceTemplates   the reply to `resources/templates/list`
+-     entry #nextCursor   the cursor for the next page, if there is one
+-     entry #resourceTemplates   the templates, as a list of `ResourceTemplate`
+-   entry .ReadResource   the reply to `resources/read`: the resource's contents
++         I valori predefiniti descrivono ciò che `Mcp.Interface` implementa: `prompts` e `tools` con
++         notifiche di modifica dell'elenco e `resources` con sottoscrizione, e nessuna capacità
++         sperimentale, di logging, di completamento o di task.
++     entry #experimental   capacità sperimentali, per nome, se ce ne sono
++     entry #logging   la capacità di logging, se offerta
++     entry #completions   la capacità di completamento degli argomenti, se offerta
++     entry #prompts   la capacità dei prompt, con notifica di modifica dell'elenco per impostazione predefinita
++     entry #resources   la capacità delle risorse, come `Resources`, con i suoi valori predefiniti
++     entry #tools   la capacità degli strumenti, con notifica di modifica dell'elenco per impostazione predefinita
++     entry #tasks   la capacità dei task, se offerta
++   entry .ClientCapabilities   ciò che un client offre: radici, campionamento, elicitazione e task
++     entry #experimental   capacità sperimentali, per nome, se ce ne sono
++     entry #roots   se il client espone radici del filesystem, se dichiarato
++     entry #sampling   la capacità di campionamento del client, se offerta
++     entry #elicitation   la capacità di elicitazione del client, se offerta
++     entry #tasks   la capacità dei task del client, se offerta
++   entry .Context   gli argomenti già forniti, per completarne un altro
++     entry #arguments   gli argomenti per nome, se ce ne sono
++   entry .ListResources   la risposta a `resources/list`: le risorse e un cursore di continuazione
++     entry #nextCursor   il cursore per la pagina successiva, se ce n'è una
++     entry #resources   le risorse, come lista di `Resource`
++   entry .ListResourceTemplates   la risposta a `resources/templates/list`
++     entry #nextCursor   il cursore per la pagina successiva, se ce n'è una
++     entry #resourceTemplates   i modelli, come lista di `ResourceTemplate`
++   entry .ReadResource   la risposta a `resources/read`: i contenuti della risorsa
+
+=   entry .ReadResource   the reply to `resources/read`: the resource's contents
+-     detail
++     detail
+
+-         `Mcp.Interface#resources/read` answers a single `Contents`, text or binary according
+-         to how the `@resource` method's result type streams.
+-     entry #contents   the contents, each text or a Base64 blob
+-   entry .Resource   a resource as listed: its name, URI, description, MIME type and metadata
++         `Mcp.Interface#resources/read` risponde con un singolo `Contents`, testuale o binario a
++         seconda di come si trasmette in streaming il tipo del risultato del metodo `@resource`.
++     entry #contents   i contenuti, ciascuno testo o un blob Base64
++   entry .Resource   una risorsa come elencata: il suo nome, URI, descrizione, tipo MIME e metadati
+
+=   entry .Resource   a resource as listed: its name, URI, description, MIME type and metadata
+-     detail
++     detail
+
+-         The `Mcp.Specification` macro builds one for each `@resource` method: `name` is the
+-         method's name, `uri` the annotation's, `title` and `description` from `@title` and
+-         `@about`, and `mimeType` the annotation's, or `text/html;profile=mcp-app` when a tool's
+-         `@ui` names the URI, or `text/plain` for a text result and `application/octet-stream`
+-         for a binary one.
+-     entry #name   the resource's name
+-     entry #uri   where the resource is read from
+-     entry #title   a human-readable title, if given
+-     entry #description   a description, if given
+-     entry #icons   icons representing the resource, if given
+-     entry #mimeType   the resource's MIME type, if known
+-     entry #annotations   audience and priority hints, as `Annotations`
+-     entry #size   the resource's size in bytes, if known
+-     entry #_meta   protocol metadata, if any
+-   entry .ResourceTemplate   a family of resources, described by a URI template
++         La macro `Mcp.Specification` ne costruisce una per ogni metodo `@resource`: `name` è il nome
++         del metodo, `uri` quello dell'annotazione, `title` e `description` vengono da `@title` e
++         `@about`, e `mimeType` è quello dell'annotazione, oppure `text/html;profile=mcp-app` quando
++         l'`@ui` di uno strumento nomina l'URI, oppure `text/plain` per un risultato testuale e
++         `application/octet-stream` per uno binario.
++     entry #name   il nome della risorsa
++     entry #uri   da dove si legge la risorsa
++     entry #title   un titolo leggibile, se indicato
++     entry #description   una descrizione, se indicata
++     entry #icons   icone che rappresentano la risorsa, se indicate
++     entry #mimeType   il tipo MIME della risorsa, se noto
++     entry #annotations   indicazioni di pubblico e priorità, come `Annotations`
++     entry #size   la dimensione della risorsa in byte, se nota
++     entry #_meta   metadati del protocollo, se ce ne sono
++   entry .ResourceTemplate   una famiglia di risorse, descritta da un modello di URI
+
+=   entry .ResourceTemplate   a family of resources, described by a URI template
+-     detail
++     detail
+
+-         Listed by `resources/templates/list`, which `Mcp.Interface` does not yet implement.
+-     entry #name   the template's name
+-     entry #title   a human-readable title, if given
+-     entry #icons   icons, if given
+-     entry #uriTemplate   the RFC 6570 template its resources' URIs match
+-     entry #description   a description, if given
+-     entry #mimeType   the MIME type of its resources, if they share one
+-     entry #annotations   audience and priority hints, as `Annotations`
+-     entry #_meta   protocol metadata, if any
+-   entry .ListPrompts   the reply to `prompts/list`: prompts and a continuation cursor
+-     entry #nextCursor   the cursor for the next page, if there is one
+-     entry #prompts   the prompts, as a list of `Prompt`
+-   entry .Complete   the reply to `completion/complete`
+-     entry #completion   the completion values, as `Completion`
+-   entry .Completion   suggested values for an argument, with a total and whether there are more
+-     entry #values   the suggested values
+-     entry #total   how many there are in all, if known
+-     entry #hasMore   whether more exist than were returned, if known
+-   entry .TaskSupport   whether a tool may, must or must not run as a task
++         Elencato da `resources/templates/list`, che `Mcp.Interface` non implementa ancora.
++     entry #name   il nome del modello
++     entry #title   un titolo leggibile, se indicato
++     entry #icons   icone, se indicate
++     entry #uriTemplate   il modello RFC 6570 a cui corrispondono gli URI delle sue risorse
++     entry #description   una descrizione, se indicata
++     entry #mimeType   il tipo MIME delle sue risorse, se ne condividono uno
++     entry #annotations   indicazioni di pubblico e priorità, come `Annotations`
++     entry #_meta   metadati del protocollo, se ce ne sono
++   entry .ListPrompts   la risposta a `prompts/list`: i prompt e un cursore di continuazione
++     entry #nextCursor   il cursore per la pagina successiva, se ce n'è una
++     entry #prompts   i prompt, come lista di `Prompt`
++   entry .Complete   la risposta a `completion/complete`
++     entry #completion   i valori di completamento, come `Completion`
++   entry .Completion   valori suggeriti per un argomento, con un totale e l'indicazione se ce ne sono altri
++     entry #values   i valori suggeriti
++     entry #total   quanti sono in tutto, se noto
++     entry #hasMore   se ne esistono più di quanti restituiti, se noto
++   entry .TaskSupport   se uno strumento può, deve o non deve essere eseguito come task
+
+=   entry .TaskSupport   whether a tool may, must or must not run as a task
+-     detail
++     detail
+
+-         `Forbidden`, `Optional` and `Required`, encoded as `forbidden`, `optional` and
+-         `required`; any other text fails to decode with a `Json.Error`.
+-     entry .encodable   writes the case as its lowercase name
+-     entry .decodable   reads `forbidden`, `optional` or `required`, raising `Json.Error` for anything else
+-   entry .LoggingLevel   the syslog severities a log message may carry
++         `Forbidden`, `Optional` e `Required`, codificati come `forbidden`, `optional` e `required`;
++         qualsiasi altro testo non si decodifica e produce un `Json.Error`.
++     entry .encodable   scrive il caso come il suo nome in minuscolo
++     entry .decodable   legge `forbidden`, `optional` o `required`, sollevando `Json.Error` per qualsiasi altra cosa
++   entry .LoggingLevel   le gravità syslog che un messaggio di log può portare
+
+=   entry .LoggingLevel   the syslog severities a log message may carry
+-     detail
++     detail
+
+-         `Debug`, `Info`, `Notice`, `Warning`, `Error`, `Critical`, `Alert` and `Emergency`,
+-         encoded as their lowercase names. `Mcp.Client#log` sends at `Info`, and
+-         `logging/setLevel` sets the level an `Mcp.Interface` holds.
+-     entry .encodable   writes the case as its lowercase name
+-     entry .decodable   reads a lowercase level name, raising `Json.Error` for anything else
+-   entry .LoggingMessage   a log notification: level, logger name and data
+-     entry #level   the severity, as `LoggingLevel`
+-     entry #logger   the logger's name, if given
+-     entry #data   the message, as JSON
+-   entry .TaskStatus   the state of a task: working, awaiting input, completed, failed or cancelled
++         `Debug`, `Info`, `Notice`, `Warning`, `Error`, `Critical`, `Alert` ed `Emergency`, codificati
++         come i loro nomi in minuscolo. `Mcp.Client#log` invia a livello `Info`, e `logging/setLevel`
++         imposta il livello che un `Mcp.Interface` mantiene.
++     entry .encodable   scrive il caso come il suo nome in minuscolo
++     entry .decodable   legge un nome di livello in minuscolo, sollevando `Json.Error` per qualsiasi altra cosa
++   entry .LoggingMessage   una notifica di log: livello, nome del logger e dati
++     entry #level   la gravità, come `LoggingLevel`
++     entry #logger   il nome del logger, se indicato
++     entry #data   il messaggio, come JSON
++   entry .TaskStatus   lo stato di un task: in corso, in attesa di input, completato, fallito o annullato
+
+=   entry .TaskStatus   the state of a task: working, awaiting input, completed, failed or cancelled
+-     detail
++     detail
+
+-         `Working`, `InputRequired`, `Completed`, `Failed` and `Cancelled`, encoded as `working`,
+-         `input_required`, `completed`, `failed` and `cancelled`.
+-     entry .encodable   writes the case as its wire spelling
+-     entry .decodable   reads a wire spelling, raising `Json.Error` for anything else
+-   entry .PromptArgument   an argument a prompt takes: name, title, description and whether required
++         `Working`, `InputRequired`, `Completed`, `Failed` e `Cancelled`, codificati come `working`,
++         `input_required`, `completed`, `failed` e `cancelled`.
++     entry .encodable   scrive il caso nella sua grafia di trasmissione
++     entry .decodable   legge una grafia di trasmissione, sollevando `Json.Error` per qualsiasi altra cosa
++   entry .PromptArgument   un argomento che un prompt prende: nome, titolo, descrizione e se è obbligatorio
+
+=   entry .PromptArgument   an argument a prompt takes: name, title, description and whether required
+-     detail
++     detail
+
+-         Built by the `Mcp.Specification` macro from each parameter of a `@prompt` method, with
+-         its `title` and `description` from the parameter's own `@title` and `@about`.
+-     entry #name   the argument's name
+-     entry #title   a human-readable title, if given
+-     entry #description   a description, if given
+-     entry #required   whether the argument must be supplied, if stated
+-   entry .Prompt   a prompt as listed: its name, title, description and arguments
++         Costruito dalla macro `Mcp.Specification` da ogni parametro di un metodo `@prompt`, con il suo
++         `title` e la sua `description` presi dagli `@title` e `@about` del parametro stesso.
++     entry #name   il nome dell'argomento
++     entry #title   un titolo leggibile, se indicato
++     entry #description   una descrizione, se indicata
++     entry #required   se l'argomento deve essere fornito, se dichiarato
++   entry .Prompt   un prompt come elencato: il suo nome, titolo, descrizione e argomenti
+
+=   entry .Prompt   a prompt as listed: its name, title, description and arguments
+-     detail
++     detail
+
+-         The `Mcp.Specification` macro builds one for each `@prompt` method, named after it,
+-         with `title` and `description` from `@title` and `@about` and an argument for each
+-         parameter; a method with no parameters has `arguments` `Unset`. The abstract
+-         `Mcp.Server#prompts` is a list of these.
+-     entry #name   the prompt's name
+-     entry #title   a human-readable title, if given
+-     entry #icons   icons, if given
+-     entry #description   a description, if given
+-     entry #arguments   the arguments the prompt takes, if any
+-     entry #_meta   protocol metadata, if any
+-   entry .Argument   a name and value, as given to `completion/complete`
+-     entry #name   the argument's name
+-     entry #value   the value typed so far
+-   entry .Reference   what a completion is for: a prompt or a resource template
++         La macro `Mcp.Specification` ne costruisce uno per ogni metodo `@prompt`, con il suo nome,
++         con `title` e `description` presi da `@title` e `@about` e un argomento per ogni parametro;
++         un metodo senza parametri ha `arguments` `Unset`. L'astratto `Mcp.Server#prompts` è una lista
++         di questi.
++     entry #name   il nome del prompt
++     entry #title   un titolo leggibile, se indicato
++     entry #icons   icone, se indicate
++     entry #description   una descrizione, se indicata
++     entry #arguments   gli argomenti che il prompt prende, se ce ne sono
++     entry #_meta   metadati del protocollo, se ce ne sono
++   entry .Argument   un nome e un valore, come forniti a `completion/complete`
++     entry #name   il nome dell'argomento
++     entry #value   il valore digitato finora
++   entry .Reference   ciò a cui serve un completamento: un prompt o un modello di risorsa
+
+=   entry .Reference   what a completion is for: a prompt or a resource template
+-     detail
++     detail
+
+-         A sealed sum of `PromptReference` and `ResourceTemplateReference`, encoded with a
+-         `type` discriminator of `ref/prompt` or `ref/resource`.
+-     entry .encodable   writes the reference with its `type` discriminator
+-     entry .decodable   reads a reference by its `type`, raising `Json.Error` for an unknown one
+-   entry .PromptReference   a reference to a prompt by name
+-     entry #name   the prompt's name
+-     entry #title   the prompt's title, if given
+-   entry .ResourceTemplateReference   a reference to a resource template by URI
+-     entry #uri   the template's URI
+-   entry .PromptMessage   one message of a prompt: a role and a content block
++         Una somma sealed di `PromptReference` e `ResourceTemplateReference`, codificata con un
++         discriminatore `type` pari a `ref/prompt` o `ref/resource`.
++     entry .encodable   scrive il riferimento con il suo discriminatore `type`
++     entry .decodable   legge un riferimento in base al suo `type`, sollevando `Json.Error` per uno sconosciuto
++   entry .PromptReference   un riferimento a un prompt per nome
++     entry #name   il nome del prompt
++     entry #title   il titolo del prompt, se indicato
++   entry .ResourceTemplateReference   un riferimento a un modello di risorsa per URI
++     entry #uri   l'URI del modello
++   entry .PromptMessage   un messaggio di un prompt: un ruolo e un blocco di contenuto
+
+=   entry .PromptMessage   one message of a prompt: a role and a content block
+-     detail
++     detail
+
+-         `Mcp.Interface#prompts/get` makes a `Discourse.Human` message a `User` `TextContent` and an
+-         `Discourse.Agent` message an `Assistant` one.
+-     entry #role   who speaks, as `Role`
+-     entry #content   what is said, as a `ContentBlock`
+-   entry .GetPrompt   the reply to `prompts/get`: a description and the messages
+-     entry #description   a description of the prompt, if given
+-     entry #messages   the messages, as a list of `PromptMessage`
+-   entry .CallTool   the reply to `tools/call`: content, structured content and whether it is an error
++         `Mcp.Interface#prompts/get` trasforma un messaggio `Discourse.Human` in un `TextContent` di
++         `User` e un messaggio `Discourse.Agent` in uno di `Assistant`.
++     entry #role   chi parla, come `Role`
++     entry #content   ciò che viene detto, come `ContentBlock`
++   entry .GetPrompt   la risposta a `prompts/get`: una descrizione e i messaggi
++     entry #description   una descrizione del prompt, se indicata
++     entry #messages   i messaggi, come lista di `PromptMessage`
++   entry .CallTool   la risposta a `tools/call`: contenuto, contenuto strutturato e se è un errore
+
+=   entry .CallTool   the reply to `tools/call`: content, structured content and whether it is an error
+-     detail
++     detail
+
+-         `Mcp.Interface#tools/call` answers a tool's result both as `structuredContent`, a JSON
+-         object `{"result": …}` of the result's encoding, and as a `TextContent` of that JSON.
+-         A tool which throws answers `CallTool(List(TextContent(message)), isError = true)`, a
+-         result the model can read and act on rather than a protocol failure.
++         `Mcp.Interface#tools/call` restituisce il risultato di uno strumento sia come
++         `structuredContent`, un oggetto JSON `{"result": …}` con la codifica del risultato, sia come
++         `TextContent` di quel JSON. Uno strumento che lancia un'eccezione risponde
++         `CallTool(List(TextContent(message)), isError = true)`, un risultato che il modello può
++         leggere e su cui può agire anziché un fallimento del protocollo.
+
+=         result the model can read and act on rather than a protocol failure.
+=
+-         ```scala
++         ```scala
+
+=         result the model can read and act on rather than a protocol failure.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Mcp.CallTool(List(Mcp.TextContent(t"boom")), isError = true)
++         Mcp.CallTool(List(Mcp.TextContent(t"boom")), isError = true)
+
+=         Mcp.CallTool(List(Mcp.TextContent(t"boom")), isError = true)
+-         ```
++         ```
+
+-     entry #content   the result as content blocks, for the model to read
+-     entry #structuredContent   the result as JSON matching the tool's output schema, if given
+-     entry #isError   whether the tool itself failed, if stated
+-   entry .ListTools   the reply to `tools/list`: tools and a continuation cursor
+-     entry #nextCursor   the cursor for the next page, if there is one
+-     entry #tools   the tools, as a list of `Tool`
+-   entry .ListRoots   the reply to `roots/list`: the client's filesystem roots
+-     entry #roots   the roots, as a list of `Root`
+-   entry .Root   a filesystem root the client exposes: a URI and a name
+-     entry #uri   the root's URI
+-     entry #name   the root's name, if given
+-     entry #_meta   protocol metadata, if any
+-   entry .Tool   a tool as listed: name, schemas, title, description, execution and annotations
++     entry #content   il risultato come blocchi di contenuto, che il modello legge
++     entry #structuredContent   il risultato come JSON conforme allo schema di output dello strumento, se indicato
++     entry #isError   se lo strumento stesso è fallito, se dichiarato
++   entry .ListTools   la risposta a `tools/list`: gli strumenti e un cursore di continuazione
++     entry #nextCursor   il cursore per la pagina successiva, se ce n'è una
++     entry #tools   gli strumenti, come lista di `Tool`
++   entry .ListRoots   la risposta a `roots/list`: le radici del filesystem del client
++     entry #roots   le radici, come lista di `Root`
++   entry .Root   una radice del filesystem che il client espone: un URI e un nome
++     entry #uri   l'URI della radice
++     entry #name   il nome della radice, se indicato
++     entry #_meta   metadati del protocollo, se ce ne sono
++   entry .Tool   uno strumento come elencato: nome, schemi, titolo, descrizione, esecuzione e annotazioni
+
+=   entry .Tool   a tool as listed: name, schemas, title, description, execution and annotations
+-     detail
++     detail
+
+-         The `Mcp.Specification` macro builds one for each `@tool` method. `name` is the
+-         method's name; `inputSchema` is a `JsonSchema.Object` with a property per parameter
+-         (each schema derived from the parameter's type, its `description` from the parameter's
+-         `@about`) whose `required` list omits every parameter typed `Optional` or carrying a
+-         default argument; `outputSchema` is an object with the one required property `result`,
+-         the schema of the result type; `title` and `description` come from `@title` and
+-         `@about`; and `_meta` names the resource a `@ui` annotation points to, as
++         La macro `Mcp.Specification` ne costruisce uno per ogni metodo `@tool`. `name` è il nome del
++         metodo; `inputSchema` è un `JsonSchema.Object` con una proprietà per parametro (ogni schema
++         derivato dal tipo del parametro, la sua `description` dall'`@about` del parametro) la cui
++         lista `required` omette ogni parametro di tipo `Optional` o con un argomento predefinito;
++         `outputSchema` è un oggetto con l'unica proprietà obbligatoria `result`, lo schema del tipo
++         del risultato; `title` e `description` vengono da `@title` e `@about`; e `_meta` nomina la
++         risorsa a cui punta un'annotazione `@ui`, come
+
+-         `{"ui": {"visibility": ["model", "app"], "resourceUri": "…"}}`.
++         `{"ui": {"visibility": ["model", "app"], "resourceUri": "…"}}`.
+
+-     entry #name   the tool's name
+-     entry #inputSchema   the JSON schema of the tool's arguments
+-     entry #outputSchema   the JSON schema of the tool's structured result, if given
+-     entry #title   a human-readable title, if given
+-     entry #icons   icons, if given
+-     entry #description   a description, for the model to decide when to call it, if given
+-     entry #execution   whether the tool may run as a task, if stated
+-     entry #annotations   behavioural hints, as `ToolAnnotations`, if given
+-     entry #_meta   protocol metadata, if any; a `@ui` tool's user-interface resource is named here
+-   entry .ToolExecution   how a tool executes: its task support
+-     entry #taskSupport   whether the tool may run as a task, if stated
+-   entry .ToolAnnotations   hints about a tool's behaviour: read-only, destructive, idempotent, open-world
+-     entry #title   a human-readable title, if given
+-     entry #readOnlyHint   whether the tool changes nothing, if stated
+-     entry #destructiveHint   whether the tool may make destructive changes, if stated
+-     entry #idempotentHint   whether repeating a call with the same arguments has no further effect, if stated
+-     entry #openWorldHint   whether the tool reaches outside its own closed world, if stated
+-   entry .ToolChoice   how a sampling request lets the model choose tools
+-     entry #mode   the mode, as `Mode`, if stated
+-   entry .Mode   whether a sampling model may, must or must not use tools
++     entry #name   il nome dello strumento
++     entry #inputSchema   lo schema JSON degli argomenti dello strumento
++     entry #outputSchema   lo schema JSON del risultato strutturato dello strumento, se indicato
++     entry #title   un titolo leggibile, se indicato
++     entry #icons   icone, se indicate
++     entry #description   una descrizione, con cui il modello decide quando chiamarlo, se indicata
++     entry #execution   se lo strumento può essere eseguito come task, se dichiarato
++     entry #annotations   indicazioni sul comportamento, come `ToolAnnotations`, se indicate
++     entry #_meta   metadati del protocollo, se ce ne sono; la risorsa di interfaccia utente di uno strumento `@ui` è nominata qui
++   entry .ToolExecution   come viene eseguito uno strumento: il suo supporto ai task
++     entry #taskSupport   se lo strumento può essere eseguito come task, se dichiarato
++   entry .ToolAnnotations   indicazioni sul comportamento di uno strumento: sola lettura, distruttivo, idempotente, mondo aperto
++     entry #title   un titolo leggibile, se indicato
++     entry #readOnlyHint   se lo strumento non modifica nulla, se dichiarato
++     entry #destructiveHint   se lo strumento può apportare modifiche distruttive, se dichiarato
++     entry #idempotentHint   se ripetere una chiamata con gli stessi argomenti non ha ulteriori effetti, se dichiarato
++     entry #openWorldHint   se lo strumento raggiunge qualcosa fuori dal proprio mondo chiuso, se dichiarato
++   entry .ToolChoice   come una richiesta di campionamento lascia scegliere gli strumenti al modello
++     entry #mode   la modalità, come `Mode`, se dichiarata
++   entry .Mode   se un modello di campionamento può, deve o non deve usare strumenti
+
+=   entry .Mode   whether a sampling model may, must or must not use tools
+-     detail
++     detail
+
+-         `Auto`, `Required` and `None`, encoded as `auto`, `required` and `none`.
+-     entry .encodable   writes the case as its lowercase name
+-     entry .decodable   reads `auto`, `required` or `none`, raising `Json.Error` for anything else
+-   entry .SamplingMessage   a message in a sampling request: a role and content blocks
+-     entry #role   who speaks, as `Role`
+-     entry #content   the message's blocks, each a `SamplingMessageContentBlock`
+-     entry #_meta   protocol metadata, if any
+-   entry .SamplingMessageContentBlock   the blocks a sampling message may hold, as a union type
++         `Auto`, `Required` e `None`, codificati come `auto`, `required` e `none`.
++     entry .encodable   scrive il caso come il suo nome in minuscolo
++     entry .decodable   legge `auto`, `required` o `none`, sollevando `Json.Error` per qualsiasi altra cosa
++   entry .SamplingMessage   un messaggio in una richiesta di campionamento: un ruolo e dei blocchi di contenuto
++     entry #role   chi parla, come `Role`
++     entry #content   i blocchi del messaggio, ciascuno un `SamplingMessageContentBlock`
++     entry #_meta   metadati del protocollo, se ce ne sono
++   entry .SamplingMessageContentBlock   i blocchi che un messaggio di campionamento può contenere, come tipo unione
+
+=   entry .SamplingMessageContentBlock   the blocks a sampling message may hold, as a union type
+-     detail
++     detail
+
+-         `TextContent | ImageContent | AudioContent | ToolUseContent | ToolResultContent`. It is
+-         a type alias rather than a sealed trait, because three of its members belong to
+-         `Content`, in a component this one builds on; its JSON codecs live in the companion of
+-         `ToolUseContent`, the first member defined here, which is in the union's implicit
+-         scope. They encode with a `type` discriminator of `text`, `image`, `audio`, `tool_use`
+-         or `tool_result`.
+-   entry .ToolUseContent   a model's request to call a tool, in a sampling message
++         `TextContent | ImageContent | AudioContent | ToolUseContent | ToolResultContent`. È un alias
++         di tipo anziché un trait sealed, perché tre dei suoi membri appartengono a `Content`, in un
++         componente su cui questo si basa; i suoi codec JSON stanno nel compagno di `ToolUseContent`,
++         il primo membro definito qui, che è nell'ambito implicito dell'unione. Si codificano con un
++         discriminatore `type` pari a `text`, `image`, `audio`, `tool_use` o `tool_result`.
++   entry .ToolUseContent   la richiesta di un modello di chiamare uno strumento, in un messaggio di campionamento
+
+=   entry .ToolUseContent   a model's request to call a tool, in a sampling message
+-     detail
++     detail
+
+-         The companion also anchors the JSON codecs of `SamplingMessageContentBlock`, the union
+-         this is a member of, since a type alias has no companion of its own.
+-     entry .encodable   writes any `SamplingMessageContentBlock` with its `type` discriminator
+-     entry .decodable   reads a `SamplingMessageContentBlock` by its `type`, raising `Json.Error` for an unknown one
+-     entry #id   the id the result will be matched by
+-     entry #name   the tool to call
+-     entry #input   the arguments, as JSON
+-   entry .ToolResultContent   the result of a tool call, in a sampling message
+-     entry #toolUseId   the id of the `ToolUseContent` this answers
+-     entry #content   the result as content blocks
+-     entry #structuredContent   the result as JSON, if given
+-     entry #isError   whether the tool failed, if stated
+-   entry .ModelPreferences   a server's preferences for which model samples: hints and priorities
+-     entry #hints   model names to prefer, in order, if given
+-     entry #costPriority   how much to weigh cost, from 0 to 1, if given
+-     entry #speedPriority   how much to weigh speed, from 0 to 1, if given
+-     entry #intelligencePriority   how much to weigh capability, from 0 to 1, if given
+-   entry .ModelHint   a hint naming a model or family to prefer
+-     entry #name   the model's name or a substring of it, if given
+-   entry .CreateMessage   the reply to `sampling/createMessage`: the model's message
+-     entry #role   who speaks, as `Role`
+-     entry #content   the message's blocks, each a `SamplingMessageContentBlock`
+-     entry #model   the name of the model which answered
+-     entry #stopReason   why generation stopped, if given
+-   entry .Task   a long-running request: its id, status, timestamps and polling interval
+-     entry #taskId   the task's id
+-     entry #status   the task's state, as `TaskStatus`
+-     entry #statusMessage   a human-readable account of the state, if given
+-     entry #createdAt   when the task was created, as an ISO 8601 timestamp
+-     entry #lastUpdatedAt   when the task last changed, as an ISO 8601 timestamp
+-     entry #ttl   how long the result is kept, in milliseconds, if given
+-     entry #pollInterval   how often to poll, in milliseconds, if suggested
+-   entry .CreateTaskResult   the reply to a request which became a task
+-     entry #task   the task created, as `Task`
+-   entry .ElicitAction   what the user did with an elicitation: accepted, declined or cancelled
++         Il compagno ancora anche i codec JSON di `SamplingMessageContentBlock`, l'unione di cui questo
++         è membro, poiché un alias di tipo non ha un compagno proprio.
++     entry .encodable   scrive qualsiasi `SamplingMessageContentBlock` con il suo discriminatore `type`
++     entry .decodable   legge un `SamplingMessageContentBlock` in base al suo `type`, sollevando `Json.Error` per uno sconosciuto
++     entry #id   l'id con cui verrà abbinato il risultato
++     entry #name   lo strumento da chiamare
++     entry #input   gli argomenti, come JSON
++   entry .ToolResultContent   il risultato di una chiamata di strumento, in un messaggio di campionamento
++     entry #toolUseId   l'id del `ToolUseContent` a cui risponde
++     entry #content   il risultato come blocchi di contenuto
++     entry #structuredContent   il risultato come JSON, se indicato
++     entry #isError   se lo strumento è fallito, se dichiarato
++   entry .ModelPreferences   le preferenze di un server su quale modello campiona: indicazioni e priorità
++     entry #hints   nomi di modelli da preferire, in ordine, se indicati
++     entry #costPriority   quanto pesare il costo, da 0 a 1, se indicato
++     entry #speedPriority   quanto pesare la velocità, da 0 a 1, se indicato
++     entry #intelligencePriority   quanto pesare la capacità, da 0 a 1, se indicato
++   entry .ModelHint   un'indicazione che nomina un modello o una famiglia da preferire
++     entry #name   il nome del modello o una sua sottostringa, se indicato
++   entry .CreateMessage   la risposta a `sampling/createMessage`: il messaggio del modello
++     entry #role   chi parla, come `Role`
++     entry #content   i blocchi del messaggio, ciascuno un `SamplingMessageContentBlock`
++     entry #model   il nome del modello che ha risposto
++     entry #stopReason   perché la generazione si è fermata, se indicato
++   entry .Task   una richiesta di lunga durata: il suo id, stato, timestamp e intervallo di polling
++     entry #taskId   l'id del task
++     entry #status   lo stato del task, come `TaskStatus`
++     entry #statusMessage   un resoconto leggibile dello stato, se indicato
++     entry #createdAt   quando il task è stato creato, come timestamp ISO 8601
++     entry #lastUpdatedAt   quando il task è cambiato l'ultima volta, come timestamp ISO 8601
++     entry #ttl   per quanto tempo il risultato viene conservato, in millisecondi, se indicato
++     entry #pollInterval   ogni quanto fare polling, in millisecondi, se suggerito
++   entry .CreateTaskResult   la risposta a una richiesta diventata un task
++     entry #task   il task creato, come `Task`
++   entry .ElicitAction   cosa ha fatto l'utente con un'elicitazione: accettata, rifiutata o annullata
+
+=   entry .ElicitAction   what the user did with an elicitation: accepted, declined or cancelled
+-     detail
++     detail
+
+-         `Accept`, `Decline` and `Cancel`, encoded as `accept`, `decline` and `cancel`.
+-     entry .encodable   writes the case as its lowercase name
+-     entry .decodable   reads `accept`, `decline` or `cancel`, raising `Json.Error` for anything else
+-   entry .ElicitResult   the client's reply to `elicitation/create`: the action and any content
+-     entry #action   what the user did, as `ElicitAction`
+-     entry #content   the submitted values, as JSON, if accepted
+-   entry .ElicitRequest   a request for user input: a form or a URL
+-       A sealed sum of `ElicitRequestForm` and `ElicitRequestUrl`.
+-   entry .ElicitRequestForm   an elicitation asking the user to fill in a form described by a schema
+-     entry #message   what to ask the user
+-     entry #requestedSchema   the JSON schema of the values wanted
+-     entry #mode   the elicitation mode, if given
+-   entry .ElicitRequestUrl   an elicitation asking the user to visit a URL
+-     entry #mode   the elicitation mode
+-     entry #message   what to ask the user
+-     entry #elicitationId   the id by which completion is reported
+-     entry #url   the URL to open
+-   entry .ElicitationComplete   the notification that a URL elicitation finished
+-     entry #elicitationId   the id of the elicitation which finished
+-   entry .Api   the JSON-RPC interface of an MCP server: every method a client may call, as `@rpc` methods
++         `Accept`, `Decline` e `Cancel`, codificati come `accept`, `decline` e `cancel`.
++     entry .encodable   scrive il caso come il suo nome in minuscolo
++     entry .decodable   legge `accept`, `decline` o `cancel`, sollevando `Json.Error` per qualsiasi altra cosa
++   entry .ElicitResult   la risposta del client a `elicitation/create`: l'azione e l'eventuale contenuto
++     entry #action   cosa ha fatto l'utente, come `ElicitAction`
++     entry #content   i valori inviati, come JSON, se accettata
++   entry .ElicitRequest   una richiesta di input all'utente: un modulo o un URL
++       Una somma sealed di `ElicitRequestForm` ed `ElicitRequestUrl`.
++   entry .ElicitRequestForm   un'elicitazione che chiede all'utente di compilare un modulo descritto da uno schema
++     entry #message   cosa chiedere all'utente
++     entry #requestedSchema   lo schema JSON dei valori richiesti
++     entry #mode   la modalità di elicitazione, se indicata
++   entry .ElicitRequestUrl   un'elicitazione che chiede all'utente di visitare un URL
++     entry #mode   la modalità di elicitazione
++     entry #message   cosa chiedere all'utente
++     entry #elicitationId   l'id con cui viene segnalato il completamento
++     entry #url   l'URL da aprire
++   entry .ElicitationComplete   la notifica che un'elicitazione tramite URL è terminata
++     entry #elicitationId   l'id dell'elicitazione terminata
++   entry .Api   l'interfaccia JSON-RPC di un server MCP: ogni metodo che un client può chiamare, come metodi `@rpc`
+
+=   entry .Api   the JSON-RPC interface of an MCP server: every method a client may call, as `@rpc` methods
+-     detail
++     detail
+
+-         The `JsonRpc` trait which declares the protocol's server-side methods, each marked
+-         `@rpc` and named as the protocol spells it: `ping`, `initialize`,
+-         `completion/complete`, `logging/setLevel`, `prompts/get`, `prompts/list`,
+-         `resources/list`, `resources/templates/list`, `resources/read`,
+-         `resources/subscribe`, `resources/unsubscribe`, `tools/call`, `tools/list`,
+-         `tasks/get`, `tasks/result`, `tasks/list`, `tasks/cancel`, and the notifications
+-         `notifications/cancelled`, `notifications/progress`, `notifications/initialized`,
+-         `notifications/roots/list_changed`, `notifications/tasks/status`,
+-         `notifications/resources/list_changed`, `notifications/resources/updated`,
+-         `notifications/prompts/list_changed`, `notifications/tools/list_changed` and
+-         `notifications/message`. Each takes the request's parameters by name, with a trailing
+-         `_meta: Optional[Json]`, and returns the protocol's result record (`Initialize`,
+-         `ListTools`, `CallTool`, `GetPrompt`, …) or `Unit` for a notification. Its `Origin`
+-         is `Mcp.Client`.
++         Il trait `JsonRpc` che dichiara i metodi lato server del protocollo, ciascuno marcato `@rpc` e
++         nominato come lo scrive il protocollo: `ping`, `initialize`, `completion/complete`,
++         `logging/setLevel`, `prompts/get`, `prompts/list`, `resources/list`,
++         `resources/templates/list`, `resources/read`, `resources/subscribe`,
++         `resources/unsubscribe`, `tools/call`, `tools/list`, `tasks/get`, `tasks/result`,
++         `tasks/list`, `tasks/cancel`, e le notifiche `notifications/cancelled`,
++         `notifications/progress`, `notifications/initialized`, `notifications/roots/list_changed`,
++         `notifications/tasks/status`, `notifications/resources/list_changed`,
++         `notifications/resources/updated`, `notifications/prompts/list_changed`,
++         `notifications/tools/list_changed` e `notifications/message`. Ognuno prende i parametri della
++         richiesta per nome, con un `_meta: Optional[Json]` finale, e restituisce il record di
++         risultato del protocollo (`Initialize`, `ListTools`, `CallTool`, `GetPrompt`, …) o `Unit` per
++         una notifica. Il suo `Origin` è `Mcp.Client`.
+
+-         `Mcp.Interface` is the implementation; `JsonRpc.serve(interface)` dispatches a JSON
+-         request to the method of that name, and an unknown method is a `JsonRpc.Error`, which
+-         `Mcp.send` answers as `-32601`.
+-     entry #Origin   the other side of the interface: `Mcp.Client`
+-     entry #ping   answers a liveness check with nothing
+-     entry #initialize   begins a session: takes the client's version, capabilities and identity, answers `Initialize`
+-   entry .Interface   the implementation of `Mcp.Api` for one session, over a server's specification
++         `Mcp.Interface` è l'implementazione; `JsonRpc.serve(interface)` smista una richiesta JSON al
++         metodo con quel nome, e un metodo sconosciuto è un `JsonRpc.Error`, a cui `Mcp.send` risponde
++         come `-32601`.
++     entry #Origin   l'altro lato dell'interfaccia: `Mcp.Client`
++     entry #ping   risponde a una verifica di vitalità con nulla
++     entry #initialize   inizia una sessione: prende la versione, le capacità e l'identità del client, risponde `Initialize`
++   entry .Interface   l'implementazione di `Mcp.Api` per una sessione, sulla specifica di un server
+
+=   entry .Interface   the implementation of `Mcp.Api` for one session, over a server's specification
+-     detail
++     detail
+
+-         `Mcp.Interface(sessionId, server)` is the object which answers a session's JSON-RPC
+-         calls. It is built once per session id and cached, so a second call with the same id
+-         returns the same interface; `Mcp.Server#terminate` evicts it, which also ends its
+-         event stream so an open `GET` finishes. It needs a `server.type is Mcp.Specification`,
+-         which the `Mcp.Specification.mcpSpecification` macro derives.
++         `Mcp.Interface(sessionId, server)` è l'oggetto che risponde alle chiamate JSON-RPC di una
++         sessione. Viene costruito una volta per id di sessione e messo in cache, quindi una seconda
++         chiamata con lo stesso id restituisce la stessa interfaccia; `Mcp.Server#terminate` lo
++         rimuove, il che termina anche il suo stream di eventi così che un `GET` aperto si concluda.
++         Richiede un `server.type is Mcp.Specification`, che la macro
++         `Mcp.Specification.mcpSpecification` deriva.
+
+-         The listings answer from the specification: `tools/list` is `spec.tools()`,
+-         `resources/list` is `spec.resources()`, `prompts/list` is `spec.prompts()`, each
+-         unpaginated. `tools/call` runs `spec.invokeTool` under its own supervision and
+-         answers `CallTool` with the result as `structuredContent` and as text; a tool which
+-         throws answers a result marked `isError` carrying the exception's message, while an
+-         `Mcp.Error` (an unknown tool, a missing required parameter) is rethrown for `Mcp.send`
+-         to answer as a JSON-RPC error. `prompts/get` runs `spec.invokePrompt` and turns each
+-         `Discourse.Human` into a `User` message and each `Discourse.Agent` into an `Assistant` one.
+-         `resources/read` answers `spec.invokeResource`. `initialize` answers the server's
+-         name, version and description with the default `ServerCapabilities`, and
+-         `logging/setLevel` records the level. `ping`, `notifications/initialized`,
+-         `notifications/cancelled` and `notifications/progress` accept and do nothing;
+-         `tasks/list` is always empty.
++         Gli elenchi rispondono dalla specifica: `tools/list` è `spec.tools()`, `resources/list` è
++         `spec.resources()`, `prompts/list` è `spec.prompts()`, ciascuno non paginato. `tools/call`
++         esegue `spec.invokeTool` sotto una propria supervisione e risponde `CallTool` con il risultato
++         come `structuredContent` e come testo; uno strumento che lancia un'eccezione risponde con un
++         risultato marcato `isError` che porta il messaggio dell'eccezione, mentre un `Mcp.Error` (uno
++         strumento sconosciuto, un parametro obbligatorio mancante) viene rilanciato perché `Mcp.send`
++         risponda con un errore JSON-RPC. `prompts/get` esegue `spec.invokePrompt` e trasforma ogni
++         `Discourse.Human` in un messaggio `User` e ogni `Discourse.Agent` in uno `Assistant`.
++         `resources/read` risponde con `spec.invokeResource`. `initialize` risponde con il nome, la
++         versione e la descrizione del server insieme alle `ServerCapabilities` predefinite, e
++         `logging/setLevel` registra il livello. `ping`, `notifications/initialized`,
++         `notifications/cancelled` e `notifications/progress` accettano e non fanno nulla;
++         `tasks/list` è sempre vuoto.
+
+-         Completion, resource templates, subscriptions, tasks and the remaining notifications
+-         are not implemented, and a call to one throws `NotImplementedError`, which
+-         `Mcp.send` answers as `-32603`.
++         Il completamento, i modelli di risorsa, le sottoscrizioni, i task e le notifiche rimanenti non
++         sono implementati, e una chiamata a uno di essi lancia `NotImplementedError`, a cui
++         `Mcp.send` risponde come `-32603`.
+
+=         `Mcp.send` answers as `-32603`.
+=
+-         ```scala
++         ```scala
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+-         object Pyrus extends Mcp.Server():
++         object Pyrus extends Mcp.Server():
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+-           class Session() extends Mcp.Session
++           class Session() extends Mcp.Session
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+-           def initialize(): Session = new Session()
++           def initialize(): Session = new Session()
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+-           def name: Text = t"Pyrus"
++           def name: Text = t"Pyrus"
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+=           def name: Text = t"Pyrus"
+-           def description: Text = t"A simple server"
++           def description: Text = t"A simple server"
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+=           def name: Text = t"Pyrus"
+=           def description: Text = t"A simple server"
+-           def version: Semver = v"1.0.0"
++           def version: Semver = v"1.0.0"
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+=           def name: Text = t"Pyrus"
+=           def description: Text = t"A simple server"
+=           def version: Semver = v"1.0.0"
+-           def prompts: List[Mcp.Prompt] = Nil
++           def prompts: List[Mcp.Prompt] = Nil
+
+=         `Mcp.send` answers as `-32603`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+=           def name: Text = t"Pyrus"
+=           def description: Text = t"A simple server"
+=           def version: Semver = v"1.0.0"
+=           def prompts: List[Mcp.Prompt] = Nil
+=
+-           @tool
++           @tool
+
+-           def greet(name: Text, greeting: Optional[Text]): Text = t"${greeting.or(t"Hello")}, $name"
++           def greet(name: Text, greeting: Optional[Text]): Text = t"${greeting.or(t"Hello")}, $name"
+
+-         val interface = Mcp.Interface(t"session-1", Pyrus)
++         val interface = Mcp.Interface(t"session-1", Pyrus)
+
+-         interface.`tools/call`(t"greet", t"""{"name": "Hamlet"}""".read[Json], Unset).structuredContent
++         interface.`tools/call`(t"greet", t"""{"name": "Hamlet"}""".read[Json], Unset).structuredContent
+
+-         // {"result": "Hello, Hamlet"}
++         // {"result": "Hello, Hamlet"}
+
+=         // {"result": "Hello, Hamlet"}
+-         ```
++         ```
+
+-         The interface is `Streamable` as server-sent events (`.streamable`), which is how
+-         `Mcp.send` answers a `GET`.
++         L'interfaccia è `Streamable` come eventi server-sent (`.streamable`), ed è così che
++         `Mcp.send` risponde a un `GET`.
+
+-     refer synesthesia.Mcp.Api
++     refer synesthesia.Mcp.Api
+
+=     refer synesthesia.Mcp.Api
+-     refer synesthesia.Mcp.Specification
++     refer synesthesia.Mcp.Specification
+
+-     refer synesthesia.Mcp.send
++     refer synesthesia.Mcp.send
+
+-     entry .apply   the interface for a session id, built over a server or found in the cache
+-         `Mcp.Interface(sessionId, server)` needs a `server.type is Mcp.Specification` in
+-         scope, derived by the macro given in `Mcp.Specification`; the interface is
+-         remembered by id until `Mcp.Server#terminate` forgets it.
+-     entry .streamable   streams the interface's outgoing messages as server-sent events
+-         The `Streamable by Array[Sse]` given `Mcp.send` uses to answer a `GET` with the
+-         session's event stream, needing a `Credit` for metering.
+-     entry #server   the server the interface dispatches to
+-     entry #spec   the derived `Mcp.Specification` of that server
+-     entry #ping   answers a liveness check with nothing
+-     entry #initialize   answers `Initialize` with the protocol version, default capabilities and the server's identity
+-   entry .Client   the client as seen from a tool: logging, elicitation and sampling back to it
++     entry .apply   l'interfaccia per un id di sessione, costruita su un server o trovata nella cache
++         `Mcp.Interface(sessionId, server)` richiede un `server.type is Mcp.Specification`
++         nell'ambito, derivato dalla macro given in `Mcp.Specification`; l'interfaccia viene
++         ricordata per id finché `Mcp.Server#terminate` non la dimentica.
++     entry .streamable   trasmette in streaming i messaggi in uscita dell'interfaccia come eventi server-sent
++         Il given `Streamable by Array[Sse]` che `Mcp.send` usa per rispondere a un `GET` con lo stream
++         di eventi della sessione, che richiede un `Credit` per la misurazione.
++     entry #server   il server a cui l'interfaccia smista
++     entry #spec   la `Mcp.Specification` derivata di quel server
++     entry #ping   risponde a una verifica di vitalità con nulla
++     entry #initialize   risponde `Initialize` con la versione del protocollo, le capacità predefinite e l'identità del server
++   entry .Client   il client visto da uno strumento: logging, elicitazione e campionamento verso di esso
+
+=   entry .Client   the client as seen from a tool: logging, elicitation and sampling back to it
+-     detail
++     detail
+
+-         A tool or prompt method which declares a second parameter list `(using client:
+-         Mcp.Client)` receives the client of the session which called it, and can speak to it
+-         while the call runs. `#log` sends a `notifications/message` the client shows as
+-         progress; `#elicit[Form](message)` asks the user to fill in a form whose fields are
+-         those of a case class, and returns what they submitted as JSON.
++         Un metodo strumento o prompt che dichiara una seconda lista di parametri `(using client:
++         Mcp.Client)` riceve il client della sessione che lo ha chiamato, e può parlargli mentre la
++         chiamata è in corso. `#log` invia un `notifications/message` che il client mostra come
++         avanzamento; `#elicit[Form](message)` chiede all'utente di compilare un modulo i cui campi
++         sono quelli di una case class, e restituisce come JSON ciò che ha inviato.
+
+=         those of a case class, and returns what they submitted as JSON.
+=
+-         ```scala
++         ```scala
+
+=         those of a case class, and returns what they submitted as JSON.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         object Deployer extends Mcp.Server():
++         object Deployer extends Mcp.Server():
+
+=         object Deployer extends Mcp.Server():
+-           class Session() extends Mcp.Session
++           class Session() extends Mcp.Session
+
+=         object Deployer extends Mcp.Server():
+=           class Session() extends Mcp.Session
+-           def initialize(): Session = new Session()
++           def initialize(): Session = new Session()
+
+-           def name: Text = t"deployer"
++           def name: Text = t"deployer"
+
+-           def description: Text = t"Deploys the application"
++           def description: Text = t"Deploys the application"
+
+=           def description: Text = t"Deploys the application"
+-           def version: Semver = v"1.0.0"
++           def version: Semver = v"1.0.0"
+
+=           def description: Text = t"Deploys the application"
+=           def version: Semver = v"1.0.0"
+-           def prompts: List[Mcp.Prompt] = Nil
++           def prompts: List[Mcp.Prompt] = Nil
+
+=           def description: Text = t"Deploys the application"
+=           def version: Semver = v"1.0.0"
+=           def prompts: List[Mcp.Prompt] = Nil
+=
+-           @tool
++           @tool
+
+-           def deploy(target: Text)(using client: Mcp.Client): Text =
++           def deploy(target: Text)(using client: Mcp.Client): Text =
+
+-             client.log(t"Preparing deployment to $target")
++             client.log(t"Preparing deployment to $target")
+
+-             case class Confirmation(proceed: Boolean)
++             case class Confirmation(proceed: Boolean)
+
+-             client.elicit[Confirmation](t"Deploy to production?")
++             client.elicit[Confirmation](t"Deploy to production?")
+
+-             t"deployed to $target"
++             t"deployed to $target"
+
+=             t"deployed to $target"
+-         ```
++         ```
+
+-         The client-side `@rpc` methods it is implemented over (`ping`,
+-         `notifications/message`, `elicitation/create`) are protected; a tool uses the three
+-         public methods.
+-     entry #log   sends a message to the client at `Info` level, as a `notifications/message`
+-         The message is sent under the logger name `updates`, as `{"message": …}`, so the
+-         client shows it as progress while the tool runs.
+-     entry #elicit   asks the user for structured input, as a form described by a type's schema
+-         `client.elicit[Form](message)` sends an `elicitation/create` in `form` mode, with the
+-         JSON schema derived from `Form` (any type which is `Schematic over JsonSchema`, such
+-         as a case class), and returns the client's reply as `Json`.
+-     entry #sample   asks the client's model to generate; not yet implemented
+-         Calling it throws `NotImplementedError`.
+-   entry .Specification   what the macro derives from a server: its listings and its dispatch
++         I metodi `@rpc` lato client su cui è implementato (`ping`, `notifications/message`,
++         `elicitation/create`) sono protetti; uno strumento usa i tre metodi pubblici.
++     entry #log   invia un messaggio al client a livello `Info`, come `notifications/message`
++         Il messaggio viene inviato con il nome di logger `updates`, come `{"message": …}`, così che il
++         client lo mostri come avanzamento mentre lo strumento è in esecuzione.
++     entry #elicit   chiede all'utente un input strutturato, come modulo descritto dallo schema di un tipo
++         `client.elicit[Form](message)` invia un `elicitation/create` in modalità `form`, con lo schema
++         JSON derivato da `Form` (qualsiasi tipo che sia `Schematic over JsonSchema`, come una case
++         class), e restituisce la risposta del client come `Json`.
++     entry #sample   chiede al modello del client di generare; non ancora implementato
++         Chiamarlo lancia `NotImplementedError`.
++   entry .Specification   ciò che la macro deriva da un server: i suoi elenchi e il suo smistamento
+
+=   entry .Specification   what the macro derives from a server: its listings and its dispatch
+-     detail
++     detail
+
+-         A `server.type is Mcp.Specification` is the compiled form of a server's annotations.
+-         `#tools()`, `#resources()` and `#prompts()` are the listings the client discovers,
+-         and `#invokeTool`, `#invokeResource` and `#invokePrompt` dispatch a call by name to
+-         the annotated method, decoding its arguments from JSON and encoding its result. It is
+-         derived by the inline given `.mcpSpecification`, which is in implicit scope for every
+-         `Mcp.Server` subtype and needs a `Tactic[Json.Error]` and a `Tactic[Mcp.Error]` at
+-         the point it is summoned — `Mcp.Server#serve` takes it as a `using` parameter, so a
+-         handler which calls `serve` needs those tactics, which `strategies.throwUnsafely`
+-         supplies.
++         Un `server.type is Mcp.Specification` è la forma compilata delle annotazioni di un server.
++         `#tools()`, `#resources()` e `#prompts()` sono gli elenchi che il client scopre, e
++         `#invokeTool`, `#invokeResource` e `#invokePrompt` smistano una chiamata per nome verso il
++         metodo annotato, decodificandone gli argomenti da JSON e codificandone il risultato. Viene
++         derivato dal given inline `.mcpSpecification`, che è nell'ambito implicito di ogni sottotipo
++         di `Mcp.Server` e richiede un `Tactic[Json.Error]` e un `Tactic[Mcp.Error]` nel punto in cui
++         viene evocato — `Mcp.Server#serve` lo prende come parametro `using`, quindi un handler che
++         chiama `serve` ha bisogno di quelle tattiche, che `strategies.throwUnsafely` fornisce.
+
+=         supplies.
+=
+-         ```scala
++         ```scala
+
+=         supplies.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         supplies.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         supplies.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+-         object Pyrus extends Mcp.Server():
++         object Pyrus extends Mcp.Server():
+
+=         supplies.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+-           class Session() extends Mcp.Session
++           class Session() extends Mcp.Session
+
+=         supplies.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+-           def initialize(): Session = new Session()
++           def initialize(): Session = new Session()
+
+=         supplies.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+-           def name: Text = t"Pyrus"
++           def name: Text = t"Pyrus"
+
+=         supplies.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+=           def name: Text = t"Pyrus"
+-           def description: Text = t"A simple server"
++           def description: Text = t"A simple server"
+
+=         supplies.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+=           def name: Text = t"Pyrus"
+=           def description: Text = t"A simple server"
+-           def version: Semver = v"1.0.0"
++           def version: Semver = v"1.0.0"
+
+=         supplies.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+=           def name: Text = t"Pyrus"
+=           def description: Text = t"A simple server"
+=           def version: Semver = v"1.0.0"
+-           def prompts: List[Mcp.Prompt] = Nil
++           def prompts: List[Mcp.Prompt] = Nil
+
+=         supplies.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         object Pyrus extends Mcp.Server():
+=           class Session() extends Mcp.Session
+=           def initialize(): Session = new Session()
+=           def name: Text = t"Pyrus"
+=           def description: Text = t"A simple server"
+=           def version: Semver = v"1.0.0"
+=           def prompts: List[Mcp.Prompt] = Nil
+=
+-           @tool
++           @tool
+
+-           @about("Greets someone")
++           @about("Greets someone")
+
+-           def greet(@about("whom to greet") name: Text, greeting: Optional[Text], punctuation: Text = "!")
++           def greet(@about("whom to greet") name: Text, greeting: Optional[Text], punctuation: Text = "!")
+
+-           :   Text =
++           :   Text =
+
+-             t"${greeting.or(t"Hello")}, $name$punctuation"
++             t"${greeting.or(t"Hello")}, $name$punctuation"
+
+-         val spec = summon[Pyrus.type is Mcp.Specification]
++         val spec = summon[Pyrus.type is Mcp.Specification]
+
+-         spec.tools().head.inputSchema   // required: List(t"name"); `greeting` and `punctuation` optional
++         spec.tools().head.inputSchema   // required: List(t"name"); `greeting` and `punctuation` optional
+
+=         spec.tools().head.inputSchema   // required: List(t"name"); `greeting` and `punctuation` optional
+-         ```
++         ```
+
+-         What the macro requires of a method, each a compile error when missing: a `@tool`
+-         parameter and result type must each be `Schematic over JsonSchema` (_There was no JSON
+-         schema for `name`_) and the parameter decodable from JSON; a `@resource` method takes
+-         no parameters (_MCP resource methods cannot have any parameters_) and its result must
+-         be `Streamable by Text` or `Streamable by Data`; a `@prompt` method must return
+-         `List[Discourse]`. A method may have one parameter list, or two where the second is
+-         `(using Mcp.Client)`. Annotations on an overridden method are seen through the
+-         override.
++         Ciò che la macro richiede a un metodo, ogni requisito un errore di compilazione se manca: il
++         tipo di un parametro e del risultato di un `@tool` devono essere ciascuno
++         `Schematic over JsonSchema` (_There was no JSON schema for `name`_) e il parametro deve essere
++         decodificabile da JSON; un metodo `@resource` non prende parametri (_MCP resource methods
++         cannot have any parameters_) e il suo risultato deve essere `Streamable by Text` o
++         `Streamable by Data`; un metodo `@prompt` deve restituire `List[Discourse]`. Un metodo può
++         avere una lista di parametri, o due dove la seconda è `(using Mcp.Client)`. Le annotazioni su
++         un metodo sovrascritto sono visibili attraverso l'override.
+
+-         The derivation is capture-clean, so a server object may live in a module compiled with
+-         capture checking.
++         La derivazione è pulita rispetto alle catture, quindi un oggetto server può stare in un modulo
++         compilato con il capture checking.
+
+-     refer synesthesia.Mcp.Server
++     refer synesthesia.Mcp.Server
+
+-     refer synesthesia.Mcp.Interface
++     refer synesthesia.Mcp.Interface
+
+-     entry .mcpSpecification   the inline given which derives a specification for any `Mcp.Server` subtype
+-         In implicit scope through the `Specification` companion, so no import is needed. It
+-         is a macro, expanded where it is summoned, and needs a `Tactic[Json.Error]` and a
+-         `Tactic[Mcp.Error]` there; it halts with _could not find a contextual
+-         `Tactic[Mcp.Error]` instance_ if one is absent.
+-     entry #tools   the server's tools, one `Mcp.Tool` per `@tool` method
+-     entry #resources   the server's resources, one `Mcp.Resource` per `@resource` method
+-     entry #prompts   the server's prompts, one `Mcp.Prompt` per `@prompt` method
+-     entry #invokeTool   calls a tool by name with JSON arguments, returning its result as `{"result": …}`
+-         Raises `Mcp.Error(UnknownMethod)` for a name no `@tool` method has and
+-         `Mcp.Error(MissingParameter)` for a required argument the JSON lacks; an argument
+-         typed `Optional` is `Unset` when absent and one with a default takes it. The tool's
+-         own exception propagates.
+-     entry #invokeResource   reads a resource by URI, as text or a Base64 blob
+-         Raises `Mcp.Error(UnknownResource)` for a URI no `@resource` method declares. A
+-         result which streams as text is a `TextResourceContents`; one which streams as bytes
+-         is a `BlobResourceContents`, Base64-encoded.
+-     entry #invokePrompt   runs a prompt by name with text arguments, returning its `Discourse` messages
+-         Raises `Mcp.Error(UnknownMethod)` for an unknown name and
+-         `Mcp.Error(MissingParameter)` for a required argument not given.
+-   entry .Server   the base of an MCP server: identity, sessions, and the annotated methods which are its capabilities
++     entry .mcpSpecification   il given inline che deriva una specifica per qualsiasi sottotipo di `Mcp.Server`
++         È nell'ambito implicito tramite il compagno di `Specification`, quindi non serve alcun import.
++         È una macro, espansa dove viene evocata, e lì richiede un `Tactic[Json.Error]` e un
++         `Tactic[Mcp.Error]`; si arresta con _could not find a contextual `Tactic[Mcp.Error]`
++         instance_ se ne manca uno.
++     entry #tools   gli strumenti del server, un `Mcp.Tool` per ogni metodo `@tool`
++     entry #resources   le risorse del server, una `Mcp.Resource` per ogni metodo `@resource`
++     entry #prompts   i prompt del server, un `Mcp.Prompt` per ogni metodo `@prompt`
++     entry #invokeTool   chiama uno strumento per nome con argomenti JSON, restituendo il suo risultato come `{"result": …}`
++         Solleva `Mcp.Error(UnknownMethod)` per un nome che nessun metodo `@tool` ha e
++         `Mcp.Error(MissingParameter)` per un argomento obbligatorio che manca nel JSON; un argomento
++         di tipo `Optional` è `Unset` quando è assente e uno con un valore predefinito prende quello.
++         L'eccezione dello strumento stesso si propaga.
++     entry #invokeResource   legge una risorsa per URI, come testo o come blob Base64
++         Solleva `Mcp.Error(UnknownResource)` per un URI che nessun metodo `@resource` dichiara. Un
++         risultato che si trasmette come testo è un `TextResourceContents`; uno che si trasmette come
++         byte è un `BlobResourceContents`, codificato in Base64.
++     entry #invokePrompt   esegue un prompt per nome con argomenti testuali, restituendo i suoi messaggi `Discourse`
++         Solleva `Mcp.Error(UnknownMethod)` per un nome sconosciuto e `Mcp.Error(MissingParameter)` per
++         un argomento obbligatorio non fornito.
++   entry .Server   la base di un server MCP: identità, sessioni e i metodi annotati che sono le sue capacità
+
+=   entry .Server   the base of an MCP server: identity, sessions, and the annotated methods which are its capabilities
+-     detail
++     detail
+
+-         A server is an object (or class) extending `Mcp.Server()` which gives its `#name`,
+-         `#description`, `#version` and `#prompts`, defines its `#Session` type and
+-         `#initialize()` to make one, and marks methods with `@tool`, `@resource` and
+-         `@prompt`. The `Mcp.Specification` macro turns those into the protocol, and `#serve`
+-         answers an HTTP request with it. Watch one grow:
++         Un server è un oggetto (o una classe) che estende `Mcp.Server()` e fornisce i suoi `#name`,
++         `#description`, `#version` e `#prompts`, definisce il suo tipo `#Session` e `#initialize()`
++         per crearne una, e marca i metodi con `@tool`, `@resource` e `@prompt`. La macro
++         `Mcp.Specification` li trasforma nel protocollo, e `#serve` risponde con esso a una richiesta
++         HTTP. Eccone uno che cresce:
+
+=         answers an HTTP request with it. Watch one grow:
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         ```scala fuel
+-         frame
++         frame
+
+-           label A server with nothing to offer
++           label Un server che non ha nulla da offrire
+
+=           label A server with nothing to offer
+-           code
++           code
+
+=           label A server with nothing to offer
+=           code
+-               import soundness.*
++               import soundness.*
+
+=           label A server with nothing to offer
+=           code
+=               import soundness.*
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+=           label A server with nothing to offer
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+-               object Library extends Mcp.Server():
++               object Library extends Mcp.Server():
+
+=           label A server with nothing to offer
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+-                 class Session() extends Mcp.Session
++                 class Session() extends Mcp.Session
+
+=           label A server with nothing to offer
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+-                 def initialize(): Session = new Session()
++                 def initialize(): Session = new Session()
+
+=           label A server with nothing to offer
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+-                 def name: Text = t"library"
++                 def name: Text = t"library"
+
+=           label A server with nothing to offer
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+-                 def description: Text = t"The Globe's library"
++                 def description: Text = t"The Globe's library"
+
+=           label A server with nothing to offer
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+-                 def version: Semver = v"1.0.0"
++                 def version: Semver = v"1.0.0"
+
+=           label A server with nothing to offer
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+-                 def prompts: List[Mcp.Prompt] = Nil
++                 def prompts: List[Mcp.Prompt] = Nil
+
+=                 def prompts: List[Mcp.Prompt] = Nil
+-         frame
++         frame
+
+-           label A tool: its name, parameter and result schemas come from the signature
++           label Uno strumento: il suo nome e gli schemi dei parametri e del risultato vengono dalla firma
+
+=           label A tool: its name, parameter and result schemas come from the signature
+-           code
++           code
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+-               import soundness.*
++               import soundness.*
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+-               object Library extends Mcp.Server():
++               object Library extends Mcp.Server():
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+-                 class Session() extends Mcp.Session
++                 class Session() extends Mcp.Session
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+-                 def initialize(): Session = new Session()
++                 def initialize(): Session = new Session()
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+-                 def name: Text = t"library"
++                 def name: Text = t"library"
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+-                 def description: Text = t"The Globe's library"
++                 def description: Text = t"The Globe's library"
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+-                 def version: Semver = v"1.0.0"
++                 def version: Semver = v"1.0.0"
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+-                 def prompts: List[Mcp.Prompt] = Nil
++                 def prompts: List[Mcp.Prompt] = Nil
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+-                 @tool
++                 @tool
+
+=           label A tool: its name, parameter and result schemas come from the signature
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+-                 @about("Find books by an author")
++                 @about("Find books by an author")
+
+-                 def byAuthor(author: Text): List[Text] = List(t"Hamlet")
++                 def byAuthor(author: Text): List[Text] = List(t"Hamlet")
+
+=                 def byAuthor(author: Text): List[Text] = List(t"Hamlet")
+-         frame
++         frame
+
+-           label An optional and a defaulted parameter are not required
++           label Un parametro opzionale e uno con valore predefinito non sono obbligatori
+
+=           label An optional and a defaulted parameter are not required
+-           code
++           code
+
+=           label An optional and a defaulted parameter are not required
+=           code
+-               import soundness.*
++               import soundness.*
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+-               object Library extends Mcp.Server():
++               object Library extends Mcp.Server():
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+-                 class Session() extends Mcp.Session
++                 class Session() extends Mcp.Session
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+-                 def initialize(): Session = new Session()
++                 def initialize(): Session = new Session()
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+-                 def name: Text = t"library"
++                 def name: Text = t"library"
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+-                 def description: Text = t"The Globe's library"
++                 def description: Text = t"The Globe's library"
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+-                 def version: Semver = v"1.0.0"
++                 def version: Semver = v"1.0.0"
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+-                 def prompts: List[Mcp.Prompt] = Nil
++                 def prompts: List[Mcp.Prompt] = Nil
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+-                 @tool
++                 @tool
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+-                 @about("Find books by an author")
++                 @about("Find books by an author")
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+-                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
++                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+-                 :   List[Text] =
++                 :   List[Text] =
+
+=           label An optional and a defaulted parameter are not required
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+=                 :   List[Text] =
+-                   List(t"Hamlet")
++                   List(t"Hamlet")
+
+=                   List(t"Hamlet")
+-         frame
++         frame
+
+-           label A resource, served at a URI with a MIME type
++           label Una risorsa, servita a un URI con un tipo MIME
+
+=           label A resource, served at a URI with a MIME type
+-           code
++           code
+
+=           label A resource, served at a URI with a MIME type
+=           code
+-               import soundness.*
++               import soundness.*
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+-               object Library extends Mcp.Server():
++               object Library extends Mcp.Server():
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+-                 class Session() extends Mcp.Session
++                 class Session() extends Mcp.Session
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+-                 def initialize(): Session = new Session()
++                 def initialize(): Session = new Session()
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+-                 def name: Text = t"library"
++                 def name: Text = t"library"
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+-                 def description: Text = t"The Globe's library"
++                 def description: Text = t"The Globe's library"
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+-                 def version: Semver = v"1.0.0"
++                 def version: Semver = v"1.0.0"
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+-                 def prompts: List[Mcp.Prompt] = Nil
++                 def prompts: List[Mcp.Prompt] = Nil
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+-                 @tool
++                 @tool
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+-                 @about("Find books by an author")
++                 @about("Find books by an author")
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+-                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
++                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+-                 :   List[Text] =
++                 :   List[Text] =
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+=                 :   List[Text] =
+-                   List(t"Hamlet")
++                   List(t"Hamlet")
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+=                 :   List[Text] =
+=                   List(t"Hamlet")
+=
+-                 @resource("library://rules", mimeType = t"text/markdown")
++                 @resource("library://rules", mimeType = t"text/markdown")
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+=                 :   List[Text] =
+=                   List(t"Hamlet")
+=
+=                 @resource("library://rules", mimeType = t"text/markdown")
+-                 @about("The lending rules")
++                 @about("The lending rules")
+
+=           label A resource, served at a URI with a MIME type
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+=                 :   List[Text] =
+=                   List(t"Hamlet")
+=
+=                 @resource("library://rules", mimeType = t"text/markdown")
+=                 @about("The lending rules")
+-                 def rules: Text = t"# Rules\n\nReturn books within three weeks."
++                 def rules: Text = t"# Rules\n\nReturn books within three weeks."
+
+=                 def rules: Text = t"# Rules\n\nReturn books within three weeks."
+-         frame
++         frame
+
+-           label A prompt, and a tool which talks back to the client
++           label Un prompt, e uno strumento che si rivolge al client
+
+=           label A prompt, and a tool which talks back to the client
+-           code
++           code
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+-               import soundness.*
++               import soundness.*
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+-               object Library extends Mcp.Server():
++               object Library extends Mcp.Server():
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+-                 class Session() extends Mcp.Session
++                 class Session() extends Mcp.Session
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+-                 def initialize(): Session = new Session()
++                 def initialize(): Session = new Session()
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+-                 def name: Text = t"library"
++                 def name: Text = t"library"
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+-                 def description: Text = t"The Globe's library"
++                 def description: Text = t"The Globe's library"
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+-                 def version: Semver = v"1.0.0"
++                 def version: Semver = v"1.0.0"
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+-                 def prompts: List[Mcp.Prompt] = Nil
++                 def prompts: List[Mcp.Prompt] = Nil
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+-                 @tool
++                 @tool
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+-                 @about("Find books by an author")
++                 @about("Find books by an author")
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+-                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
++                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+-                 :   List[Text] =
++                 :   List[Text] =
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+=                 :   List[Text] =
+-                   List(t"Hamlet")
++                   List(t"Hamlet")
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+=                 :   List[Text] =
+=                   List(t"Hamlet")
+=
+-                 @resource("library://rules", mimeType = t"text/markdown")
++                 @resource("library://rules", mimeType = t"text/markdown")
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+=                 :   List[Text] =
+=                   List(t"Hamlet")
+=
+=                 @resource("library://rules", mimeType = t"text/markdown")
+-                 @about("The lending rules")
++                 @about("The lending rules")
+
+=           label A prompt, and a tool which talks back to the client
+=           code
+=               import soundness.*
+=               import strategies.throwUnsafely
+=
+=               object Library extends Mcp.Server():
+=                 class Session() extends Mcp.Session
+=                 def initialize(): Session = new Session()
+=                 def name: Text = t"library"
+=                 def description: Text = t"The Globe's library"
+=                 def version: Semver = v"1.0.0"
+=                 def prompts: List[Mcp.Prompt] = Nil
+=
+=                 @tool
+=                 @about("Find books by an author")
+=                 def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+=                 :   List[Text] =
+=                   List(t"Hamlet")
+=
+=                 @resource("library://rules", mimeType = t"text/markdown")
+=                 @about("The lending rules")
+-                 def rules: Text = t"# Rules\n\nReturn books within three weeks."
++                 def rules: Text = t"# Rules\n\nReturn books within three weeks."
+
+-                 @prompt
++                 @prompt
+
+-                 def recommend(topic: Text): List[Discourse] =
++                 def recommend(topic: Text): List[Discourse] =
+
+-                   List(human"Recommend three books about $topic from the library.")
++                   List(human"Recommend three books about $topic from the library.")
+
+=                   List(human"Recommend three books about $topic from the library.")
+=
+-                 @tool
++                 @tool
+
+-                 def reserve(book: Text)(using client: Mcp.Client): Text =
++                 def reserve(book: Text)(using client: Mcp.Client): Text =
+
+-                   client.log(t"Checking availability of $book")
++                   client.log(t"Checking availability of $book")
+
+-                   case class Confirmation(proceed: Boolean)
++                   case class Confirmation(proceed: Boolean)
+
+-                   client.elicit[Confirmation](t"Reserve $book for a week?")
++                   client.elicit[Confirmation](t"Reserve $book for a week?")
+
+-                   t"reserved $book"
++                   t"reserved $book"
+
+=                   t"reserved $book"
+-         ##
++         ##
+
+=         ##
+-         ```
++         ```
+
+-         A session is made by `#initialize()` the first time a session id is seen and kept in
+-         `#session`; the server keeps per-client state there. `#terminate` forgets a session
+-         and its `Mcp.Interface`, which `#serve` does on a `DELETE`. The server mounts in an
+-         HTTP handler:
++         Una sessione viene creata da `#initialize()` la prima volta che si vede un id di sessione e
++         viene conservata in `#session`; il server vi tiene lo stato per client. `#terminate`
++         dimentica una sessione e il suo `Mcp.Interface`, cosa che `#serve` fa su un `DELETE`. Il
++         server si monta in un handler HTTP:
+
+=         HTTP handler:
+=
+-         ```scala fuel
++         ```scala fuel
+
+-         typecheck
++         typecheck
+
+=         typecheck
+-         ##
++         ##
+
+-         def serve(): Unit = supervise:
++         def serve(): Unit = supervise:
+
+-           SocketServer(8080).handle:
++           SocketServer(8080).handle:
+
+-             request.path match
++             request.path match
+
+-               case % /: t"mcp" => Library.serve
++               case % /: t"mcp" => Library.serve
+
+-               case _           => Http.Response(Http.NotFound)(t"Not found")
++               case _           => Http.Response(Http.NotFound)(t"Not found")
+
+=               case _           => Http.Response(Http.NotFound)(t"Not found")
+-         ```
++         ```
+
+-         A subclass's own member named `terminate` taking one `Text` collides with
+-         `#terminate` and must be renamed or marked `override`.
++         Un membro proprio di una sottoclasse chiamato `terminate` che prende un `Text` entra in
++         collisione con `#terminate` e va rinominato o marcato `override`.
+
+=         `#terminate` and must be renamed or marked `override`.
+-     refer synesthesia.Mcp.Specification
++     refer synesthesia.Mcp.Specification
+
+-     refer synesthesia.Mcp.Client
++     refer synesthesia.Mcp.Client
+
+-     refer synesthesia.Mcp.Session
++     refer synesthesia.Mcp.Session
+
+-     refer synesthesia.tool
++     refer synesthesia.tool
+
+-     refer synesthesia.resource
++     refer synesthesia.resource
+
+-     refer synesthesia.prompt
++     refer synesthesia.prompt
+
+-     entry #Session   the type of this server's per-client state, a subtype of `Mcp.Session`
+-         Each server declares its own, usually `class Session() extends Mcp.Session` with
+-         whatever fields the server keeps for one client.
+-     entry #Origin   the other side of the protocol: `Mcp.Client`
+-     entry #session   the session of an id, created with `initialize()` the first time it is asked for
+-         Sessions are kept in a table keyed by the `Mcp-Session-Id` header's value until
+-         `#terminate` removes them.
+-     entry #terminate   ends a session: forgets its state and its `Mcp.Interface`, answering whether it was known
+-         Evicting the interface ends its event stream, so a client's open `GET` finishes.
+-         `#serve` calls it for a `DELETE` request.
+-     entry #initialize   makes a fresh `Session` for a new client; abstract
+-     entry #serve   answers one HTTP request of the streamable HTTP transport
+-         Needs `this.type is Mcp.Specification` (derived by the macro, given a
+-         `Tactic[Json.Error]` and `Tactic[Mcp.Error]`), a `Monitor`, a `Probate`, an `Online`
+-         and the `Http.Request`, as a handler body has. A `DELETE` with an `Mcp-Session-Id`
+-         naming a known session terminates it and answers `204 No Content`; an unknown id
+-         answers `404 Not Found`, and no id `400 Bad Request`. Every other request takes its
+-         session from the header (or a fresh UUID), finds or builds the session's
+-         `Mcp.Interface`, and hands over to `Mcp.send` with `JsonRpc.serve(interface)` as the
+-         dispatch. A `JsonRpc.Error` escaping the transport answers as an unfulfilled response
+-         with the error's message.
+-     entry #name   the server's name, sent as its `Implementation` on `initialize`; abstract
+-     entry #description   what the server is for, sent as the `instructions` on `initialize`; abstract
+-     entry #version   the server's version, as a `Semver`; abstract
+-     entry #prompts   the server's prompt listing, as `Mcp.Prompt`s; abstract
+-         The derived specification lists `@prompt` methods itself, so a server with none
+-         gives `Nil`.
+-   entry .Session   the marker trait a server's per-client state extends
+-       A server's `Session` type is a subtype of this, made by `Mcp.Server#initialize()` for
+-       each new session id and kept by `Mcp.Server#session` until the session is terminated.
+-   entry .Error   raised when a call names no tool, prompt or resource, or omits a required parameter
++     entry #Session   il tipo dello stato per client di questo server, un sottotipo di `Mcp.Session`
++         Ogni server dichiara il proprio, di solito `class Session() extends Mcp.Session` con i campi
++         che il server tiene per un client.
++     entry #Origin   l'altro lato del protocollo: `Mcp.Client`
++     entry #session   la sessione di un id, creata con `initialize()` la prima volta che viene richiesta
++         Le sessioni sono tenute in una tabella indicizzata dal valore dell'intestazione
++         `Mcp-Session-Id` finché `#terminate` non le rimuove.
++     entry #terminate   termina una sessione: ne dimentica lo stato e il `Mcp.Interface`, rispondendo se era nota
++         Rimuovere l'interfaccia termina il suo stream di eventi, quindi il `GET` aperto di un client
++         si conclude. `#serve` lo chiama per una richiesta `DELETE`.
++     entry #initialize   crea una nuova `Session` per un nuovo client; astratto
++     entry #serve   risponde a una richiesta HTTP del trasporto HTTP streamable
++         Richiede `this.type is Mcp.Specification` (derivato dalla macro, dati un `Tactic[Json.Error]`
++         e un `Tactic[Mcp.Error]`), un `Monitor`, un `Probate`, un `Online` e la `Http.Request`, come
++         ha il corpo di un handler. Un `DELETE` con un `Mcp-Session-Id` che nomina una sessione nota la
++         termina e risponde `204 No Content`; un id sconosciuto risponde `404 Not Found`, e nessun id
++         `400 Bad Request`. Ogni altra richiesta prende la sua sessione dall'intestazione (o da un UUID
++         nuovo), trova o costruisce il `Mcp.Interface` della sessione, e passa a `Mcp.send` con
++         `JsonRpc.serve(interface)` come smistamento. Un `JsonRpc.Error` che sfugge al trasporto
++         risponde come risposta non soddisfatta con il messaggio dell'errore.
++     entry #name   il nome del server, inviato come suo `Implementation` su `initialize`; astratto
++     entry #description   a cosa serve il server, inviato come `instructions` su `initialize`; astratto
++     entry #version   la versione del server, come `Semver`; astratto
++     entry #prompts   l'elenco dei prompt del server, come `Mcp.Prompt`; astratto
++         La specifica derivata elenca da sé i metodi `@prompt`, quindi un server che non ne ha dà
++         `Nil`.
++   entry .Session   il trait marcatore che lo stato per client di un server estende
++       Il tipo `Session` di un server è un sottotipo di questo, creato da `Mcp.Server#initialize()`
++       per ogni nuovo id di sessione e conservato da `Mcp.Server#session` finché la sessione non
++       viene terminata.
++   entry .Error   sollevato quando una chiamata non nomina alcuno strumento, prompt o risorsa, o omette un parametro obbligatorio
+
+=   entry .Error   raised when a call names no tool, prompt or resource, or omits a required parameter
+-     detail
++     detail
+
+-         Error `↯/s.124.1`: _the MCP operation failed because `reason`_. Raised by a derived
+-         `Mcp.Specification`'s dispatch, and answered by `Mcp.send` as the JSON-RPC error
+-         `-32602` under the request's id, so a protocol mistake is distinct from a tool's own
+-         failure (which is a `CallTool` marked `isError`). Deriving a specification needs a
+-         `Tactic[Mcp.Error]` in scope, and `Mcp.Interface` rethrows the error unscoped.
+-     entry .Reason   why the operation failed
++         Errore `↯/s.124.1`: _the MCP operation failed because `reason`_. Sollevato dallo smistamento
++         di una `Mcp.Specification` derivata, e restituito da `Mcp.send` come errore JSON-RPC `-32602`
++         sotto l'id della richiesta, così che un errore di protocollo sia distinto da un fallimento
++         dello strumento stesso (che è un `CallTool` marcato `isError`). Derivare una specifica
++         richiede un `Tactic[Mcp.Error]` nell'ambito, e `Mcp.Interface` rilancia l'errore fuori
++         dall'ambito.
++     entry .Reason   perché l'operazione è fallita
+
+-         `UnknownMethod` (1): _the method name does not match any registered tool or prompt_;
++         `UnknownMethod` (1): _the method name does not match any registered tool or prompt_;
+
+-         `UnknownResource` (2): _the URI does not match any registered resource_;
++         `UnknownResource` (2): _the URI does not match any registered resource_;
+
+-         `MissingParameter` (3): _a required parameter was not present in the input_.
++         `MissingParameter` (3): _a required parameter was not present in the input_.
+
+-     entry .communicable   renders each reason as its message
+-     entry #reason   which of the three failures this was
+-   entry .Icon   an icon's source, MIME type, sizes and theme; re-exported from `Content`
+-       `Mcp.Icon` is `synesthesia.Content.Icon`, whose page has the full account.
+-   entry .Contents   a resource's contents, text or blob; re-exported from `Content`
+-       `Mcp.Contents` is `synesthesia.Content.Contents`, whose page has the full account.
+-   entry .ResourceContents   the base of a resource's contents: URI, MIME type and metadata; re-exported from `Content`
+-       `Mcp.ResourceContents` is `synesthesia.Content.ResourceContents`.
+-   entry .TextResourceContents   a resource's contents as text; re-exported from `Content`
+-       `Mcp.TextResourceContents` is `synesthesia.Content.TextResourceContents`.
+-   entry .BlobResourceContents   a resource's contents as a Base64 blob; re-exported from `Content`
+-       `Mcp.BlobResourceContents` is `synesthesia.Content.BlobResourceContents`.
+-   entry .Annotations   audience, priority and modification hints; re-exported from `Content`
+-       `Mcp.Annotations` is `synesthesia.Content.Annotations`.
+-   entry .Role   who speaks, `User` or `Assistant`; re-exported from `Content`
+-       `Mcp.Role` is `synesthesia.Content.Role`, whose page has the full account.
+-   entry .ContentBlock   a block of content: text, image, audio, resource link or embedded resource; re-exported from `Content`
+-       `Mcp.ContentBlock` is `synesthesia.Content.ContentBlock`, whose page has the full account.
+-   entry .TextContent   a block of text; re-exported from `Content`
+-       `Mcp.TextContent` is `synesthesia.Content.TextContent`.
+-   entry .ImageContent   a Base64 image with its MIME type; re-exported from `Content`
+-       `Mcp.ImageContent` is `synesthesia.Content.ImageContent`.
+-   entry .AudioContent   Base64 audio with its MIME type; re-exported from `Content`
+-       `Mcp.AudioContent` is `synesthesia.Content.AudioContent`.
+-   entry .ResourceLink   a link to a resource by URI; re-exported from `Content`
+-       `Mcp.ResourceLink` is `synesthesia.Content.ResourceLink`.
+-   entry .EmbeddedResource   a resource's contents carried inline; re-exported from `Content`
+-       `Mcp.EmbeddedResource` is `synesthesia.Content.EmbeddedResource`.
++     entry .communicable   rende ogni motivo come il suo messaggio
++     entry #reason   quale dei tre fallimenti si è verificato
++   entry .Icon   la sorgente, il tipo MIME, le dimensioni e il tema di un'icona; riesportato da `Content`
++       `Mcp.Icon` è `synesthesia.Content.Icon`, la cui pagina ha la descrizione completa.
++   entry .Contents   i contenuti di una risorsa, testo o blob; riesportato da `Content`
++       `Mcp.Contents` è `synesthesia.Content.Contents`, la cui pagina ha la descrizione completa.
++   entry .ResourceContents   la base dei contenuti di una risorsa: URI, tipo MIME e metadati; riesportato da `Content`
++       `Mcp.ResourceContents` è `synesthesia.Content.ResourceContents`.
++   entry .TextResourceContents   i contenuti di una risorsa come testo; riesportato da `Content`
++       `Mcp.TextResourceContents` è `synesthesia.Content.TextResourceContents`.
++   entry .BlobResourceContents   i contenuti di una risorsa come blob Base64; riesportato da `Content`
++       `Mcp.BlobResourceContents` è `synesthesia.Content.BlobResourceContents`.
++   entry .Annotations   indicazioni di pubblico, priorità e modifica; riesportato da `Content`
++       `Mcp.Annotations` è `synesthesia.Content.Annotations`.
++   entry .Role   chi parla, `User` o `Assistant`; riesportato da `Content`
++       `Mcp.Role` è `synesthesia.Content.Role`, la cui pagina ha la descrizione completa.
++   entry .ContentBlock   un blocco di contenuto: testo, immagine, audio, collegamento a risorsa o risorsa incorporata; riesportato da `Content`
++       `Mcp.ContentBlock` è `synesthesia.Content.ContentBlock`, la cui pagina ha la descrizione completa.
++   entry .TextContent   un blocco di testo; riesportato da `Content`
++       `Mcp.TextContent` è `synesthesia.Content.TextContent`.
++   entry .ImageContent   un'immagine Base64 con il suo tipo MIME; riesportato da `Content`
++       `Mcp.ImageContent` è `synesthesia.Content.ImageContent`.
++   entry .AudioContent   audio Base64 con il suo tipo MIME; riesportato da `Content`
++       `Mcp.AudioContent` è `synesthesia.Content.AudioContent`.
++   entry .ResourceLink   un collegamento a una risorsa per URI; riesportato da `Content`
++       `Mcp.ResourceLink` è `synesthesia.Content.ResourceLink`.
++   entry .EmbeddedResource   i contenuti di una risorsa trasportati inline; riesportato da `Content`
++       `Mcp.EmbeddedResource` è `synesthesia.Content.EmbeddedResource`.
+
+- entry .Content   the content-block vocabulary MCP and the Agent Client Protocol share
++ entry .Content   il vocabolario dei blocchi di contenuto condiviso da MCP e dall'Agent Client Protocol
+
+= entry .Content   the content-block vocabulary MCP and the Agent Client Protocol share
+-   detail
++   detail
+
+-       The JSON representations of content which both protocols exchange: a `ContentBlock` is
+-       text, an image, audio, a link to a resource or an embedded resource, each a case class
+-       encoded with a `type` discriminator; a resource's contents are `TextResourceContents` or
+-       `BlobResourceContents`, wrapped as `Contents`; and `Icon`, `Annotations` and `Role` are
+-       the records they share. It lives in the `synesthesia.content` source set, which depends
+-       only on JSON, so an ACP client — which spawns agents as subprocesses and has no use for
+-       an HTTP server — can share these types with an MCP server.
++       Le rappresentazioni JSON del contenuto scambiato da entrambi i protocolli: un `ContentBlock` è
++       testo, un'immagine, audio, un link a una risorsa o una risorsa incorporata, ciascuno una case
++       class codificata con un discriminatore `type`; il contenuto di una risorsa è
++       `TextResourceContents` o `BlobResourceContents`, avvolto come `Contents`; e `Icon`,
++       `Annotations` e `Role` sono i record che condividono. Si trova nel source set
++       `synesthesia.content`, che dipende solo da JSON, così che un client ACP — che avvia gli agenti
++       come sottoprocessi e non ha bisogno di un server HTTP — possa condividere questi tipi con un
++       server MCP.
+
+=       an HTTP server — can share these types with an MCP server.
+=
+-       ```scala
++       ```scala
+
+=       an HTTP server — can share these types with an MCP server.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       an HTTP server — can share these types with an MCP server.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val block: Content.ContentBlock = Content.TextContent(t"Hello")
++       val block: Content.ContentBlock = Content.TextContent(t"Hello")
+
+-       block.in[Json].show                         // {"type": "text", "text": "Hello"}
++       block.in[Json].show                         // {"type": "text", "text": "Hello"}
+
+-       t"""{"type": "image", "data": "iVBORw0…", "mimeType": "image/png"}""".read[Json].as[Content.ContentBlock]
++       t"""{"type": "image", "data": "iVBORw0…", "mimeType": "image/png"}""".read[Json].as[Content.ContentBlock]
+
+=       t"""{"type": "image", "data": "iVBORw0…", "mimeType": "image/png"}""".read[Json].as[Content.ContentBlock]
+-       ```
++       ```
+
+-       Every member is re-exported from `Mcp`, so MCP code writes `Mcp.TextContent`; in the
+-       `soundness` umbrella the object itself is spelled `McpContent`, since `Content` there
+-       is gesticulate's media-typed payload. The records' JSON codecs are derived once in their
+-       companions and are in implicit scope; decoding needs a `Tactic[Json.Error]`.
++       Ogni membro è riesportato da `Mcp`, quindi il codice MCP scrive `Mcp.TextContent`; nel
++       modulo ombrello `soundness` l'oggetto stesso si chiama `McpContent`, poiché lì `Content` è il
++       payload con tipo di media di gesticulate. I codec JSON dei record sono derivati una volta nei
++       loro oggetti compagni e si trovano nell'ambito implicito; la decodifica richiede una
++       `Tactic[Json.Error]`.
+
+-   refer synesthesia.Mcp
++   refer synesthesia.Mcp
+
+-   entry .Icon   an icon: its source, MIME type, sizes and theme
++   entry .Icon   un'icona: la sua sorgente, il tipo MIME, le dimensioni e il tema
+
+=   entry .Icon   an icon: its source, MIME type, sizes and theme
+-     detail
++     detail
+
+-         Carried by implementations, tools, resources and prompts to show alongside them. The
+-         companion holds derived JSON codecs.
+-     entry #src   the icon's URI or data URI
+-     entry #mimeType   the icon's MIME type, if given
+-     entry #sizes   the sizes available, as `WxH` texts, if given
+-     entry #theme   the theme the icon suits, `light` or `dark`, if given
+-   entry .Contents   a resource's contents, as text or as a blob
++         Portata da implementazioni, strumenti, risorse e prompt per essere mostrata accanto a
++         essi. L'oggetto compagno contiene codec JSON derivati.
++     entry #src   l'URI o il data URI dell'icona
++     entry #mimeType   il tipo MIME dell'icona, se indicato
++     entry #sizes   le dimensioni disponibili, come testi `WxH`, se indicate
++     entry #theme   il tema a cui l'icona si adatta, `light` o `dark`, se indicato
++   entry .Contents   il contenuto di una risorsa, come testo o come blob
+
+=   entry .Contents   a resource's contents, as text or as a blob
+-     detail
++     detail
+
+-         Wraps a `TextResourceContents | BlobResourceContents`, so that a `ReadResource` can
+-         list either. It encodes as whichever it holds (`.encodable`) and decodes by trying
+-         text first (`.decodable`).
+-     entry .encodable   writes the text or blob contents it holds
+-     entry .decodable   reads text contents, or blob contents if the JSON has no `text`
+-     entry #contents   the contents, `TextResourceContents` or `BlobResourceContents`
+-   entry .ResourceContents   the base of a resource's contents: URI, MIME type and metadata
+-     entry #uri   the resource's URI
+-     entry #mimeType   the resource's MIME type, if known
+-     entry #_meta   protocol metadata, if any
+-   entry .TextResourceContents   a resource's contents as text
++         Avvolge un `TextResourceContents | BlobResourceContents`, così che una `ReadResource`
++         possa elencare l'uno o l'altro. Si codifica come quello che contiene (`.encodable`) e si
++         decodifica provando prima il testo (`.decodable`).
++     entry .encodable   scrive il contenuto testuale o blob che contiene
++     entry .decodable   legge un contenuto testuale, o un contenuto blob se il JSON non ha `text`
++     entry #contents   il contenuto, `TextResourceContents` o `BlobResourceContents`
++   entry .ResourceContents   la base del contenuto di una risorsa: URI, tipo MIME e metadati
++     entry #uri   l'URI della risorsa
++     entry #mimeType   il tipo MIME della risorsa, se noto
++     entry #_meta   metadati del protocollo, se presenti
++   entry .TextResourceContents   il contenuto di una risorsa come testo
+
+=   entry .TextResourceContents   a resource's contents as text
+-     detail
++     detail
+
+-         What a derived `Mcp.Specification` answers for a `@resource` method whose result
+-         streams as `Text`; its `mimeType` is the annotation's, or `text/plain`. The companion
+-         holds derived JSON codecs.
+-     entry #uri   the resource's URI
+-     entry #mimeType   the resource's MIME type, if known
+-     entry #text   the contents
+-     entry #_meta   protocol metadata, if any
+-   entry .BlobResourceContents   a resource's contents as a Base64 blob
++         Ciò che una `Mcp.Specification` derivata risponde per un metodo `@resource` il cui
++         risultato viene trasmesso come stream di `Text`; il suo `mimeType` è quello
++         dell'annotazione, oppure `text/plain`. L'oggetto compagno contiene codec JSON derivati.
++     entry #uri   l'URI della risorsa
++     entry #mimeType   il tipo MIME della risorsa, se noto
++     entry #text   il contenuto
++     entry #_meta   metadati del protocollo, se presenti
++   entry .BlobResourceContents   il contenuto di una risorsa come blob in Base64
+
+=   entry .BlobResourceContents   a resource's contents as a Base64 blob
+-     detail
++     detail
+
+-         What a derived `Mcp.Specification` answers for a `@resource` method whose result
+-         streams as `Data`; its `mimeType` is the annotation's, or `application/octet-stream`.
+-         The companion holds derived JSON codecs.
+-     entry #uri   the resource's URI
+-     entry #mimeType   the resource's MIME type, if known
+-     entry #blob   the contents, Base64-encoded
+-     entry #_meta   protocol metadata, if any
+-   entry .Annotations   hints about content: its audience, priority and last modification
++         Ciò che una `Mcp.Specification` derivata risponde per un metodo `@resource` il cui
++         risultato viene trasmesso come stream di `Data`; il suo `mimeType` è quello
++         dell'annotazione, oppure `application/octet-stream`. L'oggetto compagno contiene codec
++         JSON derivati.
++     entry #uri   l'URI della risorsa
++     entry #mimeType   il tipo MIME della risorsa, se noto
++     entry #blob   il contenuto, codificato in Base64
++     entry #_meta   metadati del protocollo, se presenti
++   entry .Annotations   indicazioni sul contenuto: il pubblico, la priorità e l'ultima modifica
+
+=   entry .Annotations   hints about content: its audience, priority and last modification
+-     detail
++     detail
+
+-         The companion holds derived JSON codecs.
+-     entry #audience   who the content is for, as `Role`s, if given
+-     entry #priority   how important it is, from 0 to 1, if given
+-     entry #lastModified   when it last changed, as an ISO 8601 timestamp, if given
+-   entry .Role   who a message is from: the user or the assistant
++         L'oggetto compagno contiene codec JSON derivati.
++     entry #audience   a chi è destinato il contenuto, come `Role`, se indicato
++     entry #priority   quanto è importante, da 0 a 1, se indicato
++     entry #lastModified   quando è cambiato l'ultima volta, come timestamp ISO 8601, se indicato
++   entry .Role   da chi proviene un messaggio: l'utente o l'assistente
+
+=   entry .Role   who a message is from: the user or the assistant
+-     detail
++     detail
+
+-         `User` and `Assistant`, encoded as `user` and `assistant`; `Mcp.Interface` makes a
+-         `Discourse.Human` prompt message a `User` one and an `Discourse.Agent` message an `Assistant` one.
+-     entry .encodable   writes `user` or `assistant`
+-     entry .decodable   reads `user` or `assistant`, raising `Json.Error` for anything else
+-   entry .ContentBlock   a block of content: text, an image, audio, a resource link or an embedded resource
++         `User` e `Assistant`, codificati come `user` e `assistant`; `Mcp.Interface` rende un
++         messaggio di prompt `Discourse.Human` un messaggio `User` e un messaggio `Discourse.Agent`
++         un messaggio `Assistant`.
++     entry .encodable   scrive `user` o `assistant`
++     entry .decodable   legge `user` o `assistant`, sollevando `Json.Error` per qualsiasi altro valore
++   entry .ContentBlock   un blocco di contenuto: testo, un'immagine, audio, un link a una risorsa o una risorsa incorporata
+
+=   entry .ContentBlock   a block of content: text, an image, audio, a resource link or an embedded resource
+-     detail
++     detail
+
+-         The sealed sum of `TextContent`, `ImageContent`, `AudioContent`, `ResourceLink` and
+-         `EmbeddedResource`, encoded with a `type` discriminator of `text`, `image`, `audio`,
+-         `resource_link` or `resource`. A tool's result and a prompt's messages are lists of
+-         these.
++         La somma sigillata di `TextContent`, `ImageContent`, `AudioContent`, `ResourceLink` ed
++         `EmbeddedResource`, codificata con un discriminatore `type` di valore `text`, `image`,
++         `audio`, `resource_link` o `resource`. Il risultato di uno strumento e i messaggi di un
++         prompt sono liste di questi blocchi.
+
+=         these.
+=
+-         ```scala
++         ```scala
+
+=         these.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val blocks: List[Content.ContentBlock] =
++         val blocks: List[Content.ContentBlock] =
+
+-           List(Content.TextContent(t"Hello"), Content.ResourceLink(t"readme", t"docs://readme"))
++           List(Content.TextContent(t"Hello"), Content.ResourceLink(t"readme", t"docs://readme"))
+
+-         blocks.map:
++         blocks.map:
+
+-           case Content.TextContent(text, _)      => t"text: $text"
++           case Content.TextContent(text, _)      => t"text: $text"
+
+-           case Content.ImageContent(_, mime, _, _) => t"image of $mime"
++           case Content.ImageContent(_, mime, _, _) => t"image of $mime"
+
+-           case Content.AudioContent(_, mime, _)  => t"audio of $mime"
++           case Content.AudioContent(_, mime, _)  => t"audio of $mime"
+
+-           case Content.ResourceLink(name, uri, _, _, _, _, _, _, _) => t"link to $uri"
++           case Content.ResourceLink(name, uri, _, _, _, _, _, _, _) => t"link to $uri"
+
+-           case Content.EmbeddedResource(_, _, _) => t"an embedded resource"
++           case Content.EmbeddedResource(_, _, _) => t"an embedded resource"
+
+=           case Content.EmbeddedResource(_, _, _) => t"an embedded resource"
+-         ```
++         ```
+
+-     entry .encodable   writes a block with its `type` discriminator
+-     entry .decodable   reads a block by its `type`, raising `Json.Error` for an unknown one
+-   entry .TextContent   a block of text, with optional annotations
++     entry .encodable   scrive un blocco con il suo discriminatore `type`
++     entry .decodable   legge un blocco in base al suo `type`, sollevando `Json.Error` per uno sconosciuto
++   entry .TextContent   un blocco di testo, con annotazioni opzionali
+
+=   entry .TextContent   a block of text, with optional annotations
+-     detail
++     detail
+
+-         The companion holds derived JSON codecs.
+-     entry #text   the text
+-     entry #annotations   audience and priority hints, if given
+-   entry .ImageContent   an image as Base64 data with its MIME type
++         L'oggetto compagno contiene codec JSON derivati.
++     entry #text   il testo
++     entry #annotations   indicazioni di pubblico e priorità, se indicate
++   entry .ImageContent   un'immagine come dati Base64 con il suo tipo MIME
+
+=   entry .ImageContent   an image as Base64 data with its MIME type
+-     detail
++     detail
+
+-         The `uri` field is defined by the Agent Client Protocol, not by MCP; being
+-         `Optional`, it is absent from the MCP wire when `Unset`. The companion holds derived
+-         JSON codecs.
+-     entry #data   the image, Base64-encoded
+-     entry #mimeType   the image's MIME type
+-     entry #uri   where the image came from, if given (an ACP field)
+-     entry #annotations   audience and priority hints, if given
+-   entry .AudioContent   audio as Base64 data with its MIME type
++         Il campo `uri` è definito dall'Agent Client Protocol, non da MCP; essendo `Optional`, è
++         assente dalla forma di trasmissione MCP quando è `Unset`. L'oggetto compagno contiene codec
++         JSON derivati.
++     entry #data   l'immagine, codificata in Base64
++     entry #mimeType   il tipo MIME dell'immagine
++     entry #uri   da dove proviene l'immagine, se indicato (un campo ACP)
++     entry #annotations   indicazioni di pubblico e priorità, se indicate
++   entry .AudioContent   audio come dati Base64 con il suo tipo MIME
+
+=   entry .AudioContent   audio as Base64 data with its MIME type
+-     detail
++     detail
+
+-         The companion holds derived JSON codecs.
+-     entry #data   the audio, Base64-encoded
+-     entry #mimeType   the audio's MIME type
+-     entry #annotations   audience and priority hints, if given
+-   entry .ResourceLink   a link to a resource the client may read, by URI
++         L'oggetto compagno contiene codec JSON derivati.
++     entry #data   l'audio, codificato in Base64
++     entry #mimeType   il tipo MIME dell'audio
++     entry #annotations   indicazioni di pubblico e priorità, se indicate
++   entry .ResourceLink   un link, tramite URI, a una risorsa che il client può leggere
+
+=   entry .ResourceLink   a link to a resource the client may read, by URI
+-     detail
++     detail
+
+-         The companion holds derived JSON codecs.
+-     entry #name   the resource's name
+-     entry #uri   the resource's URI
+-     entry #title   a human-readable title, if given
+-     entry #description   a description, if given
+-     entry #icons   icons, if given
+-     entry #mimeType   the resource's MIME type, if known
+-     entry #annotations   audience and priority hints, if given
+-     entry #size   the resource's size in bytes, if known
+-     entry #_meta   protocol metadata, if any
+-   entry .EmbeddedResource   a resource's contents carried inline in a message
++         L'oggetto compagno contiene codec JSON derivati.
++     entry #name   il nome della risorsa
++     entry #uri   l'URI della risorsa
++     entry #title   un titolo leggibile, se indicato
++     entry #description   una descrizione, se indicata
++     entry #icons   le icone, se indicate
++     entry #mimeType   il tipo MIME della risorsa, se noto
++     entry #annotations   indicazioni di pubblico e priorità, se indicate
++     entry #size   la dimensione della risorsa in byte, se nota
++     entry #_meta   metadati del protocollo, se presenti
++   entry .EmbeddedResource   il contenuto di una risorsa portato direttamente in un messaggio
+
+=   entry .EmbeddedResource   a resource's contents carried inline in a message
+-     detail
++     detail
+
+-         The companion holds derived JSON codecs.
+-     entry #resource   the contents, as `Contents`
+-     entry #annotations   audience and priority hints, if given
+-     entry #_meta   protocol metadata, if any
++         L'oggetto compagno contiene codec JSON derivati.
++     entry #resource   il contenuto, come `Contents`
++     entry #annotations   indicazioni di pubblico e priorità, se indicate
++     entry #_meta   metadati del protocollo, se presenti
+
+- entry .about   the `@about("…")` annotation: the description of a tool, resource, prompt or parameter
+-     On a `@tool`, `@resource` or `@prompt` method, `@about` supplies the `description` the
+-     model reads when deciding whether to use it. On a tool's parameter, it becomes that
+-     property's `description` in the input schema; on a prompt's parameter, the
+-     `PromptArgument`'s description. It is defined in the `synesthesia.content` source set,
+-     so the Agent Client Protocol's types may use it too.
++ entry .about   l'annotazione `@about("…")`: la descrizione di uno strumento, una risorsa, un prompt o un parametro
++     Su un metodo `@tool`, `@resource` o `@prompt`, `@about` fornisce la `description` che il
++     modello legge quando decide se usarlo. Sul parametro di uno strumento, diventa la
++     `description` di quella proprietà nello schema di input; sul parametro di un prompt, la
++     descrizione del `PromptArgument`. È definita nel source set `synesthesia.content`, così che
++     anche i tipi dell'Agent Client Protocol possano usarla.
+
+=     so the Agent Client Protocol's types may use it too.
+=
+-     ```scala
++     ```scala
+
+=     so the Agent Client Protocol's types may use it too.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     object Greeter extends Mcp.Server():
++     object Greeter extends Mcp.Server():
+
+=     object Greeter extends Mcp.Server():
+-       class Session() extends Mcp.Session
++       class Session() extends Mcp.Session
+
+=     object Greeter extends Mcp.Server():
+=       class Session() extends Mcp.Session
+-       def initialize(): Session = new Session()
++       def initialize(): Session = new Session()
+
+-       def name: Text = t"greeter"
++       def name: Text = t"greeter"
+
+-       def description: Text = t"Greets people"
++       def description: Text = t"Greets people"
+
+=       def description: Text = t"Greets people"
+-       def version: Semver = v"1.0.0"
++       def version: Semver = v"1.0.0"
+
+=       def description: Text = t"Greets people"
+=       def version: Semver = v"1.0.0"
+-       def prompts: List[Mcp.Prompt] = Nil
++       def prompts: List[Mcp.Prompt] = Nil
+
+=       def description: Text = t"Greets people"
+=       def version: Semver = v"1.0.0"
+=       def prompts: List[Mcp.Prompt] = Nil
+=
+-       @tool
++       @tool
+
+-       @about("Greets someone")
++       @about("Greets someone")
+
+-       def greet(@about("whom to greet") name: Text): Text = t"Hello, $name"
++       def greet(@about("whom to greet") name: Text): Text = t"Hello, $name"
+
+=       def greet(@about("whom to greet") name: Text): Text = t"Hello, $name"
+-     ```
++     ```
+
+- entry .tool   the `@tool` annotation: a method is a tool the client may call
+-     A `@tool` method of an `Mcp.Server` is listed by `tools/list` and called by `tools/call`.
+-     Its name is the method's; its input schema has a property per parameter, derived from the
+-     parameter's type (which must be `Schematic over JsonSchema` and decodable from JSON), and
+-     requires every parameter which is neither `Optional` nor defaulted; its output schema is
+-     an object with the one property `result`, the schema of the result type. The result is
+-     answered as `{"result": …}` in the `CallTool`'s `structuredContent` and as text. A method
+-     may take a second parameter list `(using client: Mcp.Client)` to log to, or elicit input
+-     from, the client while it runs. A tool which throws answers a `CallTool` marked `isError`
+-     with the exception's message.
++ entry .tool   l'annotazione `@tool`: un metodo è uno strumento che il client può chiamare
++     Un metodo `@tool` di un `Mcp.Server` è elencato da `tools/list` e chiamato da `tools/call`.
++     Il suo nome è quello del metodo; il suo schema di input ha una proprietà per parametro,
++     derivata dal tipo del parametro (che deve essere `Schematic over JsonSchema` e decodificabile
++     da JSON), e richiede ogni parametro che non sia né `Optional` né dotato di un valore
++     predefinito; il suo schema di output è un oggetto con l'unica proprietà `result`, lo schema
++     del tipo del risultato. Il risultato viene restituito come `{"result": …}` nello
++     `structuredContent` della `CallTool` e come testo. Un metodo può prendere una seconda lista
++     di parametri `(using client: Mcp.Client)` per scrivere log al client, o per ottenerne input
++     tramite elicitazione, mentre è in esecuzione. Uno strumento che lancia un'eccezione risponde
++     con una `CallTool` contrassegnata `isError` con il messaggio dell'eccezione.
+
+=     with the exception's message.
+=
+-     ```scala
++     ```scala
+
+=     with the exception's message.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     object Runs extends Mcp.Server():
++     object Runs extends Mcp.Server():
+
+=     object Runs extends Mcp.Server():
+-       class Session() extends Mcp.Session
++       class Session() extends Mcp.Session
+
+=     object Runs extends Mcp.Server():
+=       class Session() extends Mcp.Session
+-       def initialize(): Session = new Session()
++       def initialize(): Session = new Session()
+
+-       def name: Text = t"runs"
++       def name: Text = t"runs"
+
+-       def description: Text = t"Lists runs"
++       def description: Text = t"Lists runs"
+
+=       def description: Text = t"Lists runs"
+-       def version: Semver = v"1.0.0"
++       def version: Semver = v"1.0.0"
+
+=       def description: Text = t"Lists runs"
+=       def version: Semver = v"1.0.0"
+-       def prompts: List[Mcp.Prompt] = Nil
++       def prompts: List[Mcp.Prompt] = Nil
+
+=       def description: Text = t"Lists runs"
+=       def version: Semver = v"1.0.0"
+=       def prompts: List[Mcp.Prompt] = Nil
+=
+-       @tool
++       @tool
+
+-       @about(t"Lists recent runs")
++       @about(t"Lists recent runs")
+
+-       def runs(@about(t"only runs in this workspace") workspace: Optional[Text], limit: Int = 20)
++       def runs(@about(t"only runs in this workspace") workspace: Optional[Text], limit: Int = 20)
+
+-       :   List[Text] =
++       :   List[Text] =
+
+-         Nil
++         Nil
+
+=         Nil
+-     ```
++     ```
+
+-     Here `workspace` and `limit` are not required: a client may omit them, and the method
+-     sees `Unset` and `20`. `@title` gives the tool a title and `@ui` names the resource
+-     which is its user interface.
++     Qui `workspace` e `limit` non sono obbligatori: un client può ometterli, e il metodo vede
++     `Unset` e `20`. `@title` dà allo strumento un titolo e `@ui` indica la risorsa che ne è
++     l'interfaccia utente.
+
+- entry .resource   the `@resource("uri")` annotation: a method's result is served at a URI
+-     A `@resource(uri)` method of an `Mcp.Server` takes no parameters and returns anything
+-     `Streamable by Text` or `Streamable by Data`: it is listed by `resources/list` as an
+-     `Mcp.Resource` named after the method and read by `resources/read` with that URI, as
+-     `TextResourceContents` or, Base64-encoded, `BlobResourceContents`. The second parameter,
+-     `mimeType`, gives the type reported; without it, a resource whose URI a tool's `@ui`
+-     names is `text/html;profile=mcp-app`, a text resource `text/plain` and a binary one
+-     `application/octet-stream`.
++ entry .resource   l'annotazione `@resource("uri")`: il risultato di un metodo è servito a un URI
++     Un metodo `@resource(uri)` di un `Mcp.Server` non prende parametri e restituisce qualsiasi
++     cosa sia `Streamable by Text` o `Streamable by Data`: è elencato da `resources/list` come una
++     `Mcp.Resource` che porta il nome del metodo e letto da `resources/read` con quell'URI, come
++     `TextResourceContents` oppure, codificato in Base64, `BlobResourceContents`. Il secondo
++     parametro, `mimeType`, indica il tipo riportato; senza di esso, una risorsa il cui URI è
++     indicato dal `@ui` di uno strumento è `text/html;profile=mcp-app`, una risorsa testuale
++     `text/plain` e una binaria `application/octet-stream`.
+
+=     `application/octet-stream`.
+=
+-     ```scala
++     ```scala
+
+=     `application/octet-stream`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     object Documentation extends Mcp.Server():
++     object Documentation extends Mcp.Server():
+
+=     object Documentation extends Mcp.Server():
+-       class Session() extends Mcp.Session
++       class Session() extends Mcp.Session
+
+=     object Documentation extends Mcp.Server():
+=       class Session() extends Mcp.Session
+-       def initialize(): Session = new Session()
++       def initialize(): Session = new Session()
+
+-       def name: Text = t"documentation"
++       def name: Text = t"documentation"
+
+-       def description: Text = t"The project's documentation"
++       def description: Text = t"The project's documentation"
+
+=       def description: Text = t"The project's documentation"
+-       def version: Semver = v"1.0.0"
++       def version: Semver = v"1.0.0"
+
+=       def description: Text = t"The project's documentation"
+=       def version: Semver = v"1.0.0"
+-       def prompts: List[Mcp.Prompt] = Nil
++       def prompts: List[Mcp.Prompt] = Nil
+
+-       @resource("docs://readme", mimeType = t"text/markdown")
++       @resource("docs://readme", mimeType = t"text/markdown")
+
+-       @about("The project readme")
++       @about("The project readme")
+
+-       def readme: Text = t"# Readme\n\nStart with `make build`."
++       def readme: Text = t"# Readme\n\nStart with `make build`."
+
+=       def readme: Text = t"# Readme\n\nStart with `make build`."
+-     ```
++     ```
+
+-     A method with parameters is a compile error, _MCP resource methods cannot have any
+-     parameters_, and so is a result type which does not stream.
++     Un metodo con parametri è un errore di compilazione, _MCP resource methods cannot have any
++     parameters_, e lo è anche un tipo di risultato che non si può trasmettere come stream.
+
+- entry .prompt   the `@prompt` annotation: a method returns a conversation template
+-     A `@prompt` method of an `Mcp.Server` returns a `List[Discourse]`, written with the
+-     `human"…"` and `agent"…"` interpolators, and is listed by `prompts/list` as an
+-     `Mcp.Prompt` named after it, with a `PromptArgument` per parameter, and run by
+-     `prompts/get` with the arguments as text. Each `Discourse.Human` message becomes a `User`
+-     `PromptMessage` and each `Discourse.Agent` an `Assistant` one.
++ entry .prompt   l'annotazione `@prompt`: un metodo restituisce un modello di conversazione
++     Un metodo `@prompt` di un `Mcp.Server` restituisce una `List[Discourse]`, scritta con gli
++     interpolatori `human"…"` e `agent"…"`, ed è elencato da `prompts/list` come un `Mcp.Prompt`
++     che porta il suo nome, con un `PromptArgument` per parametro, ed eseguito da `prompts/get`
++     con gli argomenti come testo. Ogni messaggio `Discourse.Human` diventa un `PromptMessage`
++     `User` e ogni `Discourse.Agent` un `PromptMessage` `Assistant`.
+
+=     `PromptMessage` and each `Discourse.Agent` an `Assistant` one.
+=
+-     ```scala
++     ```scala
+
+=     `PromptMessage` and each `Discourse.Agent` an `Assistant` one.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     object Reviews extends Mcp.Server():
++     object Reviews extends Mcp.Server():
+
+=     object Reviews extends Mcp.Server():
+-       class Session() extends Mcp.Session
++       class Session() extends Mcp.Session
+
+=     object Reviews extends Mcp.Server():
+=       class Session() extends Mcp.Session
+-       def initialize(): Session = new Session()
++       def initialize(): Session = new Session()
+
+-       def name: Text = t"reviews"
++       def name: Text = t"reviews"
+
+-       def description: Text = t"Review prompts"
++       def description: Text = t"Review prompts"
+
+=       def description: Text = t"Review prompts"
+-       def version: Semver = v"1.0.0"
++       def version: Semver = v"1.0.0"
+
+=       def description: Text = t"Review prompts"
+=       def version: Semver = v"1.0.0"
+-       def prompts: List[Mcp.Prompt] = Nil
++       def prompts: List[Mcp.Prompt] = Nil
+
+-       @prompt
++       @prompt
+
+-       def review(topic: Text): List[Discourse] =
++       def review(topic: Text): List[Discourse] =
+
+-         List(human"Please review the $topic and summarize any problems.")
++         List(human"Please review the $topic and summarize any problems.")
+
+=         List(human"Please review the $topic and summarize any problems.")
+-     ```
++     ```
+
+- entry .title   the `@title("…")` annotation: a human-readable title for a tool, resource, prompt or argument
+-     Becomes the `title` of the listed `Mcp.Tool`, `Mcp.Resource` or `Mcp.Prompt`, or of a
+-     prompt parameter's `PromptArgument`, where `@about` gives the description.
++ entry .title   l'annotazione `@title("…")`: un titolo leggibile per uno strumento, una risorsa, un prompt o un argomento
++     Diventa il `title` del `Mcp.Tool`, della `Mcp.Resource` o del `Mcp.Prompt` elencato, o del
++     `PromptArgument` di un parametro di prompt, dove `@about` fornisce la descrizione.
+
+- entry .ui   the `@ui("uri")` annotation: names the resource which is a tool's user interface
+-     On a `@tool` method, `@ui(uri)` adds `{"ui": {"visibility": ["model", "app"],
+-     "resourceUri": uri}}` to the tool's `_meta`, telling an MCP-apps client which resource
+-     to show for it, and makes the `@resource` with that URI default to the MIME type
+-     `text/html;profile=mcp-app`.
++ entry .ui   l'annotazione `@ui("uri")`: indica la risorsa che è l'interfaccia utente di uno strumento
++     Su un metodo `@tool`, `@ui(uri)` aggiunge `{"ui": {"visibility": ["model", "app"],
++     "resourceUri": uri}}` al `_meta` dello strumento, indicando a un client MCP-apps quale
++     risorsa mostrare per esso, e fa sì che la `@resource` con quell'URI abbia come tipo MIME
++     predefinito `text/html;profile=mcp-app`.
+
+=     `text/html;profile=mcp-app`.
+=
+-     ```scala
++     ```scala
+
+=     `text/html;profile=mcp-app`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import htmlDoms.whatwg
++     import htmlDoms.whatwg
+
+-     import htmlDoms.whatwg.*
++     import htmlDoms.whatwg.*
+
+-     object App extends Mcp.Server():
++     object App extends Mcp.Server():
+
+=     object App extends Mcp.Server():
+-       class Session() extends Mcp.Session
++       class Session() extends Mcp.Session
+
+=     object App extends Mcp.Server():
+=       class Session() extends Mcp.Session
+-       def initialize(): Session = new Session()
++       def initialize(): Session = new Session()
+
+-       def name: Text = t"app"
++       def name: Text = t"app"
+
+-       def description: Text = t"An MCP app"
++       def description: Text = t"An MCP app"
+
+=       def description: Text = t"An MCP app"
+-       def version: Semver = v"1.0.0"
++       def version: Semver = v"1.0.0"
+
+=       def description: Text = t"An MCP app"
+=       def version: Semver = v"1.0.0"
+-       def prompts: List[Mcp.Prompt] = Nil
++       def prompts: List[Mcp.Prompt] = Nil
+
+=       def description: Text = t"An MCP app"
+=       def version: Semver = v"1.0.0"
+=       def prompts: List[Mcp.Prompt] = Nil
+=
+-       @tool
++       @tool
+
+-       @ui("ui://html/content")
++       @ui("ui://html/content")
+
+-       def reverse(text: Text): Text = text.reverse
++       def reverse(text: Text): Text = text.reverse
+
+-       @resource("ui://html/content")
++       @resource("ui://html/content")
+
+-       @title("User interface")
++       @title("User interface")
+
+-       def content: Text = Html(Head(Title("MCP App")), Body(H1("Hello world"))).show
++       def content: Text = Html(Head(Title("MCP App")), Body(H1("Hello world"))).show
+
+=       def content: Text = Html(Head(Title("MCP App")), Body(H1("Hello world"))).show
+-     ```
++     ```
+
+- entry .Discourse   one message of a prompt's conversation: from the human or from the agent
++ entry .Discourse   un messaggio della conversazione di un prompt: dall'umano o dall'agente
+
+= entry .Discourse   one message of a prompt's conversation: from the human or from the agent
+-   detail
++   detail
+
+-       The sealed sum of `Human` and `Agent`, each carrying a `Text` message. A `@prompt` method
+-       returns a `List[Discourse]`, most easily written with the `human"…"` and `agent"…"`
+-       interpolators; `Mcp.Interface` turns each into a `PromptMessage` with the `User` or
+-       `Assistant` role and a `TextContent`.
++       La somma sigillata di `Human` e `Agent`, ciascuno con un messaggio `Text`. Un metodo
++       `@prompt` restituisce una `List[Discourse]`, scritta più facilmente con gli interpolatori
++       `human"…"` e `agent"…"`; `Mcp.Interface` trasforma ciascuno in un `PromptMessage` con il
++       ruolo `User` o `Assistant` e un `TextContent`.
+
+=       `Assistant` role and a `TextContent`.
+=
+-       ```scala
++       ```scala
+
+=       `Assistant` role and a `TextContent`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val conversation: List[Discourse] =
++       val conversation: List[Discourse] =
+
+-         List(human"What is the capital of France?", agent"Paris.", human"And of Spain?")
++         List(human"What is the capital of France?", agent"Paris.", human"And of Spain?")
+
+=         List(human"What is the capital of France?", agent"Paris.", human"And of Spain?")
+-       ```
++       ```
+
+-   entry .Human   a prompt message from the user
+-       `Human(message)`, as `human"…"` makes it. It inspects structurally, as
++   entry .Human   un messaggio di prompt dall'utente
++       `Human(message)`, come lo crea `human"…"`. Si ispeziona strutturalmente, come
+
+-       `Human(message:t"hello")`.
++       `Human(message:t"hello")`.
+
+-   entry .Agent   a prompt message from the assistant
+-       `Agent(message)`, as `agent"…"` makes it.
++   entry .Agent   un messaggio di prompt dall'assistente
++       `Agent(message)`, come lo crea `agent"…"`.
+
+- entry .human   the `human"…"` interpolator: a `Human` message, with substitutions shown as text
+-     Each `$substitution` must be `Showable`, and is rendered with its `Showable`; a value
+-     with no `Showable` is a compile error, _could not find a contextual `T is Showable`
+-     instance_. The result is a `Discourse`.
++ entry .human   l'interpolatore `human"…"`: un messaggio `Human`, con le sostituzioni mostrate come testo
++     Ogni `$substitution` deve essere `Showable`, ed è resa con il suo `Showable`; un valore
++     senza `Showable` è un errore di compilazione, _could not find a contextual `T is Showable`
++     instance_. Il risultato è un `Discourse`.
+
+=     instance_. The result is a `Discourse`.
+=
+-     ```scala
++     ```scala
+
+=     instance_. The result is a `Discourse`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val topic = t"parser"
++     val topic = t"parser"
+
+-     human"Please review the $topic."   // Discourse.Human(t"Please review the parser.")
++     human"Please review the $topic."   // Discourse.Human(t"Please review the parser.")
+
+=     human"Please review the $topic."   // Discourse.Human(t"Please review the parser.")
+-     ```
++     ```
+
+- entry .agent   the `agent"…"` interpolator: an `Agent` message, with substitutions shown as text
+-     As `human"…"`, making an `Discourse.Agent`: the assistant's side of a prompt's conversation.
++ entry .agent   l'interpolatore `agent"…"`: un messaggio `Agent`, con le sostituzioni mostrate come testo
++     Come `human"…"`, ma crea un `Discourse.Agent`: il lato dell'assistente nella conversazione di
++     un prompt.
+
+=     As `human"…"`, making an `Discourse.Agent`: the assistant's side of a prompt's conversation.
+=
+-     ```scala
++     ```scala
+
+=     As `human"…"`, making an `Discourse.Agent`: the assistant's side of a prompt's conversation.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     agent"I have reviewed the parser and found no problems."
++     agent"I have reviewed the parser and found no problems."
+
+=     agent"I have reviewed the parser and found no problems."
+-     ```
++     ```
+
+- entry .internal   the macro implementations behind `human"…"`, `agent"…"` and `Mcp.Specification`
++ entry .internal   le implementazioni delle macro dietro `human"…"`, `agent"…"` e `Mcp.Specification`
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object exists so that the macros have a stable home.
+-   entry .prompt   the macro behind `human"…"` and `agent"…"`
+-       Concatenates the literal parts with each substitution's `Showable` rendering and
+-       splices a `Discourse.Human` or an `Discourse.Agent`.
+-   entry .spec   the macro behind `Mcp.Specification.mcpSpecification`
+-       Reads the `@tool`, `@resource` and `@prompt` methods of a server type (including
+-       annotations on overridden methods), derives their schemas, and splices an
+-       `Mcp.Specification` with the listings and the dispatch.
++       Non per uso diretto: l'oggetto esiste perché le macro abbiano una sede stabile.
++   entry .prompt   la macro dietro `human"…"` e `agent"…"`
++       Concatena le parti letterali con la resa `Showable` di ogni sostituzione e inserisce un
++       `Discourse.Human` o un `Discourse.Agent`.
++   entry .spec   la macro dietro `Mcp.Specification.mcpSpecification`
++       Legge i metodi `@tool`, `@resource` e `@prompt` di un tipo di server (comprese le
++       annotazioni sui metodi sovrascritti), ne deriva gli schemi e inserisce una
++       `Mcp.Specification` con gli elenchi e lo smistamento.

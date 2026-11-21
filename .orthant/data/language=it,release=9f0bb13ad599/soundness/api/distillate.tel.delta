@@ -1,0 +1,100 @@
+orthant 1 language
+
+-   entry .int   decodes an `Int` from decimal text, distinguishing unparseable from out-of-range
+-       Needs a `Tactic[Number.Error]`. Parses with `Integer.parseInt`, so the text must be an
+-       optionally-signed decimal integer with no surrounding space. Text which is not an
+-       integer raises `Number.Error` with `Reason.Unparseable`; an integer outside the range
+-       of an `Int` raises it with `Reason.OutOfRange`.
+-   entry .byte   decodes a `Byte` from decimal text, distinguishing unparseable from out-of-range
+-       Needs a `Tactic[Number.Error]`. Text which is not an integer raises `Number.Error` with
+-       `Reason.Unparseable`; an integer outside −128 to 127 raises it with `Reason.OutOfRange`.
+-   entry .short   decodes a `Short` from decimal text, distinguishing unparseable from out-of-range
+-       Needs a `Tactic[Number.Error]`. Text which is not an integer raises `Number.Error` with
+-       `Reason.Unparseable`; an integer outside the range of a `Short` raises it with
++   entry .int   decodifica un `Int` da testo decimale, distinguendo il non analizzabile dal fuori intervallo
++       Ha bisogno di una `Tactic[Number.Error]`. Analizza con `Integer.parseInt`, quindi il testo
++       deve essere un intero decimale con segno facoltativo e senza spazi attorno. Un testo che
++       non è un intero solleva `Number.Error` con `Reason.Unparseable`; un intero fuori
++       dall'intervallo di un `Int` lo solleva con `Reason.OutOfRange`.
++   entry .byte   decodifica un `Byte` da testo decimale, distinguendo il non analizzabile dal fuori intervallo
++       Ha bisogno di una `Tactic[Number.Error]`. Un testo che non è un intero solleva
++       `Number.Error` con `Reason.Unparseable`; un intero fuori da −128 a 127 lo solleva con
+
+-   entry .long   decodes a `Long` from decimal text, distinguishing unparseable from out-of-range
+-       Needs a `Tactic[Number.Error]`; parses with `java.lang.Long.parseLong`. Text which is
+-       not an integer raises `Number.Error` with `Reason.Unparseable`; an integer outside the
+-       range of a `Long` raises it with `Reason.OutOfRange`.
+-   entry .double   decodes a `Double` from text, raising `Number.Error` if it is unparseable
+-       Needs a `Tactic[Number.Error]`; parses with `java.lang.Double.parseDouble`, so exponents,
+-       `NaN` and `Infinity` are accepted as Java accepts them.
+-   entry .float   decodes a `Float` from text, raising `Number.Error` if it is unparseable
+-       Needs a `Tactic[Number.Error]`; parses with `java.lang.Float.parseFloat`.
+-   entry .char   decodes a `Char` as the first character of the text
+-       Needs no tactic. Any text beyond the first character is ignored, and empty text is not
+-       checked for: prefer `As[Char]`, which matches only text of exactly one character.
+-   entry .boolean   decodes a `Boolean` from any `Truth` spelling in scope, in any case, raising `Truth.Error`
+-       Needs a `Tactic[Truth.Error]` and collects every `Truth` in scope (`Every[Truth]`). The
+-       text is trimmed and lowercased, then offered to each spelling in turn; text which none
+-       recognizes raises `Truth.Error`. `Truth.trueFalse`, in the `Truth` companion, is always
+-       in scope, and each `truths` given imported adds a spelling beside it rather than
+-       replacing it.
++   entry .short   decodifica uno `Short` da testo decimale, distinguendo il non analizzabile dal fuori intervallo
++       Ha bisogno di una `Tactic[Number.Error]`. Un testo che non è un intero solleva
++       `Number.Error` con `Reason.Unparseable`; un intero fuori dall'intervallo di uno `Short` lo
++       solleva con `Reason.OutOfRange`.
++   entry .long   decodifica un `Long` da testo decimale, distinguendo il non analizzabile dal fuori intervallo
++       Ha bisogno di una `Tactic[Number.Error]`; analizza con `java.lang.Long.parseLong`. Un
++       testo che non è un intero solleva `Number.Error` con `Reason.Unparseable`; un intero fuori
++       dall'intervallo di un `Long` lo solleva con `Reason.OutOfRange`.
++   entry .double   decodifica un `Double` dal testo, sollevando `Number.Error` se non è analizzabile
++       Ha bisogno di una `Tactic[Number.Error]`; analizza con `java.lang.Double.parseDouble`,
++       così esponenti, `NaN` e `Infinity` sono accettati come li accetta Java.
++   entry .float   decodifica un `Float` dal testo, sollevando `Number.Error` se non è analizzabile
++       Ha bisogno di una `Tactic[Number.Error]`; analizza con `java.lang.Float.parseFloat`.
++   entry .char   decodifica un `Char` come primo carattere del testo
++       Non ha bisogno di alcuna tattica. Qualsiasi testo oltre il primo carattere viene ignorato,
++       e il testo vuoto non viene controllato: è preferibile `As[Char]`, che corrisponde solo a
++       un testo di esattamente un carattere.
++   entry .boolean   decodifica un `Boolean` da qualsiasi grafia di `Truth` nell'ambito, senza distinguere maiuscole e minuscole, sollevando `Truth.Error`
++       Ha bisogno di una `Tactic[Truth.Error]` e raccoglie ogni `Truth` nell'ambito
++       (`Every[Truth]`). Il testo viene ripulito dagli spazi e portato in minuscolo, poi offerto a
++       ciascuna grafia a turno; un testo che nessuna riconosce solleva `Truth.Error`.
++       `Truth.trueFalse`, nell'oggetto compagno di `Truth`, è sempre nell'ambito, e ogni given di
++       `truths` importato aggiunge una grafia accanto a esso invece di sostituirlo.
+
+-   entry .stringText   converts a `String` to `Text`
+-   entry .irrefutable   a `String` converts with the `Irrefutable` of `Text`, after conversion to `Text`
+-   entry .textString   converts `Text` to a `String`
+-   entry .ident   converts any value to itself
+-   entry .byteShort   widens a `Byte` to a `Short`
+-   entry .byteInt   widens a `Byte` to an `Int`
+-   entry .byteLong   widens a `Byte` to a `Long`
+-   entry .byteFloat   widens a `Byte` to a `Float`
+-   entry .byteDouble   widens a `Byte` to a `Double`
+-   entry .shortInt   widens a `Short` to an `Int`
+-   entry .shortLong   widens a `Short` to a `Long`
+-   entry .shortFloat   widens a `Short` to a `Float`
+-   entry .shortDouble   widens a `Short` to a `Double`
+-   entry .intLong   widens an `Int` to a `Long`
+-   entry .intDouble   widens an `Int` to a `Double`
+-   entry .floatDouble   widens a `Float` to a `Double`
+-   entry #unapply   converts a value; it cannot fail
+-   entry #contramap   an irrefutable conversion from a new type, applying a pure function first
++   entry .stringText   converte una `String` in `Text`
++   entry .irrefutable   una `String` si converte con l'`Irrefutable` di `Text`, dopo la conversione in `Text`
++   entry .textString   converte `Text` in una `String`
++   entry .ident   converte qualsiasi valore in sé stesso
++   entry .byteShort   allarga un `Byte` a uno `Short`
++   entry .byteInt   allarga un `Byte` a un `Int`
++   entry .byteLong   allarga un `Byte` a un `Long`
++   entry .byteFloat   allarga un `Byte` a un `Float`
++   entry .byteDouble   allarga un `Byte` a un `Double`
++   entry .shortInt   allarga uno `Short` a un `Int`
++   entry .shortLong   allarga uno `Short` a un `Long`
++   entry .shortFloat   allarga uno `Short` a un `Float`
++   entry .shortDouble   allarga uno `Short` a un `Double`
++   entry .intLong   allarga un `Int` a un `Long`
++   entry .intDouble   allarga un `Int` a un `Double`
++   entry .floatDouble   allarga un `Float` a un `Double`
++   entry #unapply   converte un valore; non può fallire
++   entry #contramap   una conversione inconfutabile da un nuovo tipo, che applica prima una funzione pura

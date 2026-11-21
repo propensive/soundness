@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.17.6` — Companion has multiple candidate `apply` methods
++ # `↯/s.17.6` — L'oggetto compagno ha più metodi `apply` candidati
+
+- Raised at compile time by Mercator's `identity` macro when the
+- companion has more than one applicable `apply` method.
++ Sollevato a tempo di compilazione dalla macro `identity` di Mercator quando
++ l'oggetto compagno ha più di un metodo `apply` applicabile.
+
+- ## Cause
++ ## Causa
+
+- Mercator cannot pick one over another automatically; ambiguity
+- must be resolved by the user.
++ Mercator non può sceglierne uno al posto di un altro automaticamente; l'ambiguità
++ deve essere risolta dall'utente.
+
+- ## Example message
++ ## Messaggio di esempio
+
+=
+- ```
++ ```
+
+- [↯/s.17.6] the companion object Play has more than one candidate apply method
++ [↯/s.17.6] the companion object Play has more than one candidate apply method
+
+= [↯/s.17.6] the companion object Play has more than one candidate apply method
+- ```
++ ```
+
+- ## Resolution
++ ## Soluzione
+
+- Remove or rename the extra `apply` overloads, or supply an
+- `Identity` instance manually.
++ Rimuovere o rinominare gli overload di `apply` in più, oppure fornire
++ manualmente un'istanza di `Identity`.
+
+- ## See also
++ ## Vedi anche
+
+- - Source: `lib/mercator/src/core/mercator.internal.scala`
++ - Sorgente: `lib/mercator/src/core/mercator.internal.scala`

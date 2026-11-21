@@ -1,0 +1,34 @@
+orthant 1 language
+
+- ### `↯/s.105.2.6` — `BadTag`
++ ### `↯/s.105.2.6` — `BadTag`
+
+- An authenticated cipher's tag did not verify: the ciphertext, the associated data or the
+- nonce is not what was sealed, or the key is not the one it was sealed with.
++ Il tag di un cifrario autenticato non è stato verificato: il testo cifrato, i dati associati o
++ il nonce non sono quelli sigillati, o la chiave non è quella con cui sono stati sigillati.
+
+- **Example.** `[↯/s.105.2.6] could not decrypt the data because the authentication tag did not verify`
++ **Esempio.** `[↯/s.105.2.6] could not decrypt the data because the authentication tag did not verify`
+
+- **Resolution.** Treat the data as forged or corrupt, and do not use any part of it. Confirm
+- that the nonce and the associated data are exactly those given to `seal`.
++ **Soluzione.** Considerare i dati falsificati o corrotti, e non usarne alcuna parte. Verificare
++ che il nonce e i dati associati siano esattamente quelli passati a `seal`.
+
+- ### `↯/s.105.2.7` — `BadWrap`
++ ### `↯/s.105.2.7` — `BadWrap`
+
+- Wrapped key material did not pass the integrity check that key wrapping builds in: it was
+- wrapped under a different key, or has been altered, or is not a whole number of 64-bit blocks.
++ Il materiale di chiave avvolto non ha superato il controllo di integrità integrato nel key
++ wrapping: è stato avvolto con una chiave diversa, è stato alterato, o non è un numero intero di
++ blocchi da 64 bit.
+
+- **Example.** `[↯/s.105.2.7] could not decrypt the data because the wrapped key did not pass its integrity check`
++ **Esempio.** `[↯/s.105.2.7] could not decrypt the data because the wrapped key did not pass its integrity check`
+
+- **Resolution.** Confirm that the key-encryption key is the one the material was wrapped
+- under, and that the wrapped material arrived complete.
++ **Soluzione.** Verificare che la chiave di cifratura delle chiavi sia quella con cui il
++ materiale è stato avvolto, e che il materiale avvolto sia arrivato completo.

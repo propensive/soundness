@@ -1,0 +1,1382 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base dissonance
++ base dissonance
+
+- import soundness
++ import soundness
+
+- info   minimal edit scripts between sequences, as values to apply, invert, align, serialize and redraft
++ info   script di modifica minimi tra sequenze, come valori da applicare, invertire, allineare, serializzare e riformulare
+
+- detail
++ detail
+
+-     _Dissonance_ computes the difference between two sequences as an immutable value. `diff`
+-     runs Myers' algorithm over any two `Sequence`s, with equality or a comparison of the
+-     caller's choosing, and returns a `Diff`: an edit script of insertions (`Diff.Ins`), deletions
+-     (`Diff.Del`) and unchanged elements (`Diff.Par`), each with its positions in the two sequences.
++     _Dissonance_ calcola la differenza tra due sequenze come valore immutabile. `diff` esegue
++     l'algoritmo di Myers su due `Sequence` qualsiasi, con l'uguaglianza o con un confronto scelto
++     dal chiamante, e restituisce un `Diff`: uno script di modifica fatto di inserimenti
++     (`Diff.Ins`), cancellazioni (`Diff.Del`) ed elementi invariati (`Diff.Par`), ciascuno con le
++     sue posizioni nelle due sequenze.
+
+-     A `Diff` can be applied to the original as a patch, inverted with `flip`, grouped into
+-     changed and unchanged runs, refined with `rdiff` into an `RDiff` which pairs deletions with
+-     the insertions that replaced them as substitutions (`Diff.Sub`), serialized in the unix `diff`
+-     format and read back from it. A `Redraft` is the forgiving form of a patch, which names only
+-     the lines to remove and add and finds where they belong, and an `Evolution` follows each
+-     element through many versions rather than two.
++     Un `Diff` si può applicare all'originale come patch, invertire con `flip`, raggruppare in
++     serie modificate e invariate, raffinare con `rdiff` in un `RDiff`, che accoppia le
++     cancellazioni agli inserimenti che le hanno sostituite come sostituzioni (`Diff.Sub`),
++     serializzare nel formato unix `diff` e rileggere da esso. Un `Redraft` è la forma indulgente
++     di una patch, che nomina solo le righe da togliere e da aggiungere e trova dove vanno, e una
++     `Evolution` segue ogni elemento attraverso molte versioni anziché due.
+
+=     element through many versions rather than two.
+=
+-     ```scala
++     ```scala
+
+=     element through many versions rather than two.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     val original = List(t"Lear", t"Fool", t"Kent")
++     val original = List(t"Lear", t"Fool", t"Kent")
+
+-     val changes = diff(Sequence(t"Lear", t"Fool", t"Kent"), Sequence(t"Lear", t"Edgar", t"Kent"))
++     val changes = diff(Sequence(t"Lear", t"Fool", t"Kent"), Sequence(t"Lear", t"Edgar", t"Kent"))
+
+-     changes.patch(original)                      // t"Lear", t"Edgar", t"Kent"
++     changes.patch(original)                      // t"Lear", t"Edgar", t"Kent"
+
+-     changes.serialize.read[Diff[Text]].patch(original)
++     changes.serialize.read[Diff[Text]].patch(original)
+
+=     changes.serialize.read[Diff[Text]].patch(original)
+-     ```
++     ```
+
+-     A diff computed by `diff`, or resolved from a redraft, carries every element in its edits,
+-     and says so in its type: it is a `Diff[element] & Retained`, on which `kept` reads an edit's
+-     value without handling absence. A diff read from the unix format has no values for its
+-     unchanged lines, so it is a plain `Diff`, and cannot be rendered as a redraft.
++     Un diff calcolato da `diff`, o ricavato da un redraft, porta ogni elemento nelle sue
++     modifiche, e lo dichiara nel suo tipo: è un `Diff[element] & Retained`, sul quale `kept`
++     legge il valore di una modifica senza gestirne l'assenza. Un diff letto dal formato unix non
++     ha valori per le righe invariate, quindi è un `Diff` semplice, e non si può rendere come
++     redraft.
+
+-     The library is the single source set `dissonance.core`, which compiles for the JVM, Scala.js
+-     and Scala Native. Everything is exported to the `soundness` umbrella.
++     La libreria è l'unico insieme di sorgenti `dissonance.core`, che compila per la JVM, Scala.js
++     e Scala Native. Tutto è esportato nel modulo ombrello `soundness`.
+
+- refer dissonance.diff
++ refer dissonance.diff
+
+- refer dissonance.Diff
++ refer dissonance.Diff
+
+- refer dissonance.RDiff
++ refer dissonance.RDiff
+
+- refer dissonance.Redraft
++ refer dissonance.Redraft
+
+- entry .diff   the minimal edit script turning one sequence into another, by Myers' algorithm
+-     `diff(left, right)` compares two `Sequence`s and returns the fewest insertions and
+-     deletions which turn `left` into `right`, interleaved with the unchanged elements, as a
+-     `Diff`. A third argument replaces `==` with any comparison, such as a case-insensitive one;
+-     an element of `right` paired with an equal one of `left` is reported as a `Diff.Par` holding the
+-     element from `left`.
++ entry .diff   lo script di modifica minimo che trasforma una sequenza in un'altra, con l'algoritmo di Myers
++     `diff(left, right)` confronta due `Sequence` e restituisce il minor numero di inserimenti e
++     cancellazioni che trasformano `left` in `right`, intercalati con gli elementi invariati, come
++     `Diff`. Un terzo argomento sostituisce `==` con un confronto qualsiasi, per esempio uno che
++     ignora maiuscole e minuscole; un elemento di `right` accoppiato a uno uguale di `left` è
++     riportato come `Diff.Par` che contiene l'elemento di `left`.
+
+=     element from `left`.
+=
+-     ```scala
++     ```scala
+
+=     element from `left`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     diff(Sequence('A', 'C'), Sequence('A', 'B', 'C'))
++     diff(Sequence('A', 'C'), Sequence('A', 'B', 'C'))
+
+-     // Diff(Diff.Par(0, 0, 'A'), Diff.Ins(1, 'B'), Diff.Par(1, 2, 'C'))
++     // Diff(Diff.Par(0, 0, 'A'), Diff.Ins(1, 'B'), Diff.Par(1, 2, 'C'))
+
+-     diff(Sequence(t"Lear", t"Kent"), Sequence(t"lear", t"Kent"), _.lower == _.lower).size  // 0
++     diff(Sequence(t"Lear", t"Kent"), Sequence(t"lear", t"Kent"), _.lower == _.lower).size  // 0
+
+=     diff(Sequence(t"Lear", t"Kent"), Sequence(t"lear", t"Kent"), _.lower == _.lower).size  // 0
+-     ```
++     ```
+
+-     Every edit the algorithm makes holds its element, so the result is a `Diff[element] &
+-     Retained`: it can be rendered as a `Redraft`, and `kept` reads its edits' values directly.
+-     The elements may be of any type.
++     Ogni modifica prodotta dall'algoritmo contiene il suo elemento, quindi il risultato è un
++     `Diff[element] & Retained`: si può rendere come `Redraft`, e `kept` legge direttamente i
++     valori delle sue modifiche. Gli elementi possono essere di qualsiasi tipo.
+
+- entry .Diff   an edit script: the insertions, deletions and unchanged elements between two sequences
++ entry .Diff   uno script di modifica: gli inserimenti, le cancellazioni e gli elementi invariati tra due sequenze
+
+= entry .Diff   an edit script: the insertions, deletions and unchanged elements between two sequences
+-   detail
++   detail
+
+-       A `Diff` is a sequence of `#edits`, each an `Ins`, a `Del` or a `Par`, in the order they
+-       apply. Each carries its position in the left sequence, the right sequence, or both, and,
+-       optionally, its element. It is usually made by `diff`, but may be built by hand or read
+-       from the unix format.
++       Un `Diff` è una sequenza di `#edits`, ciascuna un `Ins`, un `Del` o un `Par`, nell'ordine in
++       cui si applicano. Ciascuna porta la sua posizione nella sequenza sinistra, in quella destra
++       o in entrambe e, facoltativamente, il suo elemento. Di solito si ottiene con `diff`, ma si
++       può costruire a mano o leggere dal formato unix.
+
+=       from the unix format.
+=
+-       ```scala
++       ```scala
+
+=       from the unix format.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val changes = diff(Sequence(t"A", t"B"), Sequence(t"B", t"C", t"D"))
++       val changes = diff(Sequence(t"A", t"B"), Sequence(t"B", t"C", t"D"))
+
+-       // Diff(Diff.Del(0, t"A"), Diff.Par(1, 0, t"B"), Diff.Ins(1, t"C"), Diff.Ins(2, t"D"))
++       // Diff(Diff.Del(0, t"A"), Diff.Par(1, 0, t"B"), Diff.Ins(1, t"C"), Diff.Ins(2, t"D"))
+
+-       changes.size                           // 3
++       changes.size                           // 3
+
+-       changes.patch(List(t"A", t"B"))         // t"B", t"C", t"D"
++       changes.patch(List(t"A", t"B"))         // t"B", t"C", t"D"
+
+-       changes.flip.patch(List(t"B", t"C", t"D"))
++       changes.flip.patch(List(t"B", t"C", t"D"))
+
+=       changes.flip.patch(List(t"B", t"C", t"D"))
+-       ```
++       ```
+
+-       A diff of `Text` lines serializes to the unix `diff` format with `.serialize`, and that
+-       format is read back with `read[Diff[Text]]`, through `.aggregable`. A retained diff of
+-       `Text` renders as a `Redraft` with `.redraft`.
++       Un diff di righe `Text` si serializza nel formato unix `diff` con `.serialize`, e quel
++       formato si rilegge con `read[Diff[Text]]`, tramite `.aggregable`. Un diff conservato di
++       `Text` si rende come `Redraft` con `.redraft`.
+
+-   refer dissonance.diff
++   refer dissonance.diff
+
+-   refer dissonance.RDiff
++   refer dissonance.RDiff
+
+-   refer dissonance.Redraft
++   refer dissonance.Redraft
+
+-   entry .aggregable   reads a `Diff[Text]` from the lines of a unix-format diff, as `read[Diff[Text]]`
+-       The given which makes `Diff[Text]` readable from a stream of `Text` lines in the default
+-       (`diff` with no options) format: command lines such as `2c2,3`, `3d2` and `0a1`, deleted
+-       lines prefixed `< `, inserted lines prefixed `> `, and `---` between them. It needs a
+-       `Tactic[Diff.Error]`, which is raised for a line it cannot read.
++   entry .aggregable   legge un `Diff[Text]` dalle righe di un diff in formato unix, come `read[Diff[Text]]`
++       Il given che rende `Diff[Text]` leggibile da uno stream di righe `Text` nel formato
++       predefinito (`diff` senza opzioni): righe di comando come `2c2,3`, `3d2` e `0a1`, righe
++       cancellate con prefisso `< `, righe inserite con prefisso `> `, e `---` tra le due. Richiede
++       una `Tactic[Diff.Error]`, che viene sollevata per una riga che non riesce a leggere.
+
+=       `Tactic[Diff.Error]`, which is raised for a line it cannot read.
+=
+-       ```scala
++       ```scala
+
+=       `Tactic[Diff.Error]`, which is raised for a line it cannot read.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Tactic[Diff.Error]`, which is raised for a line it cannot read.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       Chain(t"2c2,3", t"< Fool", t"---", t"> Edgar", t"> Regan").read[Diff[Text]]
++       Chain(t"2c2,3", t"< Fool", t"---", t"> Edgar", t"> Regan").read[Diff[Text]]
+
+-       // Diff(Diff.Par(0, 0), Diff.Del(1, t"Fool"), Diff.Ins(1, t"Edgar"), Diff.Ins(2, t"Regan"))
++       // Diff(Diff.Par(0, 0), Diff.Del(1, t"Fool"), Diff.Ins(1, t"Edgar"), Diff.Ins(2, t"Regan"))
+
+=       // Diff(Diff.Par(0, 0), Diff.Del(1, t"Fool"), Diff.Ins(1, t"Edgar"), Diff.Ins(2, t"Regan"))
+-       ```
++       ```
+
+-       The format does not repeat the unchanged lines, so the `Par`s of a parsed diff carry no
+-       values: it patches the original perfectly well, but is a plain `Diff`, not a `Retained`
+-       one, and so cannot be rendered with `.redraft`.
+-   entry .serialize   a diff of text as the lines of a unix-format diff
+-       An extension on `Diff[Text]`, returning a `Chain[Text]`: for each changed region, a
+-       command line (`<left>a<right>`, `<left>d<right>` or `<left>c<right>`, with ranges
+-       written `start,end`), then each deleted line prefixed `< `, a `---` line if the region
+-       both deletes and inserts, and each inserted line prefixed `> `. Unchanged lines are not
+-       written. The lines read back with `read[Diff[Text]]`.
++       Il formato non ripete le righe invariate, quindi i `Par` di un diff analizzato non portano
++       valori: applica la patch all'originale senza problemi, ma è un `Diff` semplice, non uno
++       `Retained`, e quindi non si può rendere con `.redraft`.
++   entry .serialize   un diff di testo come righe di un diff in formato unix
++       Un'estensione su `Diff[Text]`, che restituisce una `Chain[Text]`: per ogni regione
++       modificata, una riga di comando (`<left>a<right>`, `<left>d<right>` o `<left>c<right>`, con
++       gli intervalli scritti `start,end`), poi ogni riga cancellata con prefisso `< `, una riga
++       `---` se la regione sia cancella sia inserisce, e ogni riga inserita con prefisso `> `. Le
++       righe invariate non si scrivono. Le righe si rileggono con `read[Diff[Text]]`.
+
+=       written. The lines read back with `read[Diff[Text]]`.
+=
+-       ```scala
++       ```scala
+
+=       written. The lines read back with `read[Diff[Text]]`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       diff(Sequence(t"a", t"b", t"c", t"d"), Sequence(t"a", t"d")).serialize
++       diff(Sequence(t"a", t"b", t"c", t"d"), Sequence(t"a", t"d")).serialize
+
+-       // t"2,3d1", t"< b", t"< c"
++       // t"2,3d1", t"< b", t"< c"
+
+=       // t"2,3d1", t"< b", t"< c"
+-       ```
++       ```
+
+-   entry .redraft   renders a retained diff of text as a `Redraft`, with as much context as asked for
+-       An extension on `Diff[Text] & Retained`, such as the result of `diff`. The context is a
+-       `Redraft.Context`: `Minimal` (the default) keeps only the unchanged lines needed to place
+-       each change unambiguously, `Full` keeps them all, and `Fixed(n)` keeps those within `n`
+-       lines of a change. A redraft rendered from a diff always applies to the original to give
+-       the diff's target.
++   entry .redraft   rende un diff conservato di testo come `Redraft`, con tutto il contesto richiesto
++       Un'estensione su `Diff[Text] & Retained`, come il risultato di `diff`. Il contesto è un
++       `Redraft.Context`: `Minimal` (il predefinito) tiene solo le righe invariate necessarie a
++       collocare ogni modifica senza ambiguità, `Full` le tiene tutte, e `Fixed(n)` tiene quelle
++       entro `n` righe da una modifica. Un redraft reso da un diff si applica sempre all'originale
++       dando la destinazione del diff.
+
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Minimal
++       alternative Minimal
+
+=       alternative Minimal
+-         code
++         code
+
+=       alternative Minimal
+=         code
+-             val source = Sequence(t"a", t"b", t"c", t"d", t"e")
++             val source = Sequence(t"a", t"b", t"c", t"d", t"e")
+
+=       alternative Minimal
+=         code
+=             val source = Sequence(t"a", t"b", t"c", t"d", t"e")
+-             val target = Sequence(t"a", t"b", t"C", t"d", t"e")
++             val target = Sequence(t"a", t"b", t"C", t"d", t"e")
+
+-             diff(source, target).redraft().serialize
++             diff(source, target).redraft().serialize
+
+-             // t"- c", t"+ C"
++             // t"- c", t"+ C"
+
+-       alternative Fixed
++       alternative Fixed
+
+=       alternative Fixed
+-         code
++         code
+
+=       alternative Fixed
+=         code
+-             val source = Sequence(t"a", t"b", t"c", t"d", t"e")
++             val source = Sequence(t"a", t"b", t"c", t"d", t"e")
+
+=       alternative Fixed
+=         code
+=             val source = Sequence(t"a", t"b", t"c", t"d", t"e")
+-             val target = Sequence(t"a", t"b", t"C", t"d", t"e")
++             val target = Sequence(t"a", t"b", t"C", t"d", t"e")
+
+-             diff(source, target).redraft(Redraft.Context.Fixed(1)).serialize
++             diff(source, target).redraft(Redraft.Context.Fixed(1)).serialize
+
+-             // t"b", t"- c", t"+ C", t"d"
++             // t"b", t"- c", t"+ C", t"d"
+
+-       alternative Full
++       alternative Full
+
+=       alternative Full
+-         code
++         code
+
+=       alternative Full
+=         code
+-             val source = Sequence(t"a", t"b", t"c", t"d", t"e")
++             val source = Sequence(t"a", t"b", t"c", t"d", t"e")
+
+=       alternative Full
+=         code
+=             val source = Sequence(t"a", t"b", t"c", t"d", t"e")
+-             val target = Sequence(t"a", t"b", t"C", t"d", t"e")
++             val target = Sequence(t"a", t"b", t"C", t"d", t"e")
+
+-             diff(source, target).redraft(Redraft.Context.Full).serialize
++             diff(source, target).redraft(Redraft.Context.Full).serialize
+
+-             // t"a", t"b", t"- c", t"+ C", t"d", t"e"
++             // t"a", t"b", t"- c", t"+ C", t"d", t"e"
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       A parsed diff, whose unchanged lines have no values, is not `Retained` and so has no
+-       `redraft`: the type rules out a rendering which could not reproduce the original.
+-   entry .Error   raised when a line of a unix-format diff cannot be read
++       Un diff analizzato, le cui righe invariate non hanno valori, non è `Retained` e quindi non
++       ha `redraft`: il tipo esclude una resa che non potrebbe riprodurre l'originale.
++   entry .Error   sollevato quando una riga di un diff in formato unix non si riesce a leggere
+
+=   entry .Error   raised when a line of a unix-format diff cannot be read
+-     detail
++     detail
+
+-         Error `↯/s.78.1`: _could not read the diff at line `lineNo`: `line`_. Raised by
+-         `Diff.aggregable` (`read[Diff[Text]]`) for a command line whose ranges are not numbers,
+-         or which is not a command at all. A malformed range aborts the read; an unrecognised
+-         command line is raised and then skipped, so under a tactic which recovers, the rest of
+-         the diff is still read.
+-     entry #lineNo   the line number, counting from 1, of the line which could not be read
+-     entry #line     the text of the line which could not be read
+-   entry #edits     the edits, in the order they apply
+-   entry #size      the number of insertions and deletions, not counting unchanged elements
+-       Zero exactly when the two sequences were equal.
+-   entry #flip      the inverse diff, which turns the right sequence back into the left
+-       Every `Ins` becomes a `Del` and every `Del` an `Ins`, and the positions of each `Par` are
+-       swapped. The element type becomes `Optional[element]`, since an inverted insertion is a
+-       deletion whose value is present but typed as optional.
+-   entry #map       applies a function to the element of every edit
+-       Positions are kept; an edit with no value stays without one. The result is a plain
+-       `Diff`, not a `Retained` one: re-mark it with `retained` if every edit still carries its
+-       value.
+-   entry #patch     applies the diff to the original sequence, giving the target
++         Errore `↯/s.78.1`: _could not read the diff at line `lineNo`: `line`_. Sollevato da
++         `Diff.aggregable` (`read[Diff[Text]]`) per una riga di comando i cui intervalli non sono
++         numeri, o che non è affatto un comando. Un intervallo malformato interrompe la lettura; una
++         riga di comando non riconosciuta viene sollevata e poi saltata, quindi con una tattica che
++         recupera il resto del diff viene comunque letto.
++     entry #lineNo   il numero, contando da 1, della riga che non si è riusciti a leggere
++     entry #line     il testo della riga che non si è riusciti a leggere
++   entry #edits     le modifiche, nell'ordine in cui si applicano
++   entry #size      il numero di inserimenti e cancellazioni, senza contare gli elementi invariati
++       Zero esattamente quando le due sequenze erano uguali.
++   entry #flip      il diff inverso, che riporta la sequenza destra a quella sinistra
++       Ogni `Ins` diventa un `Del` e ogni `Del` un `Ins`, e le posizioni di ogni `Par` si
++       scambiano. Il tipo degli elementi diventa `Optional[element]`, poiché un inserimento
++       invertito è una cancellazione il cui valore è presente ma tipizzato come opzionale.
++   entry #map       applica una funzione all'elemento di ogni modifica
++       Le posizioni restano; una modifica senza valore resta senza. Il risultato è un `Diff`
++       semplice, non uno `Retained`: va contrassegnato di nuovo con `retained` se ogni modifica
++       porta ancora il suo valore.
++   entry #patch     applica il diff alla sequenza originale, dando la destinazione
+
+=   entry #patch     applies the diff to the original sequence, giving the target
+-     detail
++     detail
+
+-         `diff.patch(original)` walks the edits over a `List` of the original elements:
+-         insertions are taken from the diff, deletions skip an element, and unchanged elements
+-         are kept. It returns a `Chain`. For a `Par` with a value, an optional second argument
+-         `update(fromDiff, fromOriginal)` chooses what is emitted; by default it is the diff's
+-         own value, and for a `Par` with no value, as in a parsed diff, it is the original's.
++         `diff.patch(original)` percorre le modifiche su una `List` degli elementi originali: gli
++         inserimenti si prendono dal diff, le cancellazioni saltano un elemento e gli elementi
++         invariati si tengono. Restituisce una `Chain`. Per un `Par` con un valore, un secondo
++         argomento facoltativo `update(fromDiff, fromOriginal)` sceglie che cosa emettere; per
++         impostazione predefinita è il valore del diff stesso, e per un `Par` senza valore, come in
++         un diff analizzato, è quello dell'originale.
+
+=         own value, and for a `Par` with no value, as in a parsed diff, it is the original's.
+=
+-         ```scala
++         ```scala
+
+=         own value, and for a `Par` with no value, as in a parsed diff, it is the original's.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val changes =
++         val changes =
+
+-           diff(Sequence(t"Lear", t"Fool", t"Kent"), Sequence(t"Lear", t"Edgar", t"Kent"))
++           diff(Sequence(t"Lear", t"Fool", t"Kent"), Sequence(t"Lear", t"Edgar", t"Kent"))
+
+-         changes.patch(List(t"Lear", t"Fool", t"Kent"))   // t"Lear", t"Edgar", t"Kent"
++         changes.patch(List(t"Lear", t"Fool", t"Kent"))   // t"Lear", t"Edgar", t"Kent"
+
+=         changes.patch(List(t"Lear", t"Fool", t"Kent"))   // t"Lear", t"Edgar", t"Kent"
+-         ```
++         ```
+
+-         A diff which deletes or keeps beyond the end of the sequence it is applied to panics:
+-         it was computed against a different original.
+-   entry #rdiff     pairs each deletion with a similar insertion as a substitution, giving an `RDiff`
++         Un diff che cancella o tiene oltre la fine della sequenza a cui si applica va in panic: è
++         stato calcolato rispetto a un originale diverso.
++   entry #rdiff     accoppia ogni cancellazione a un inserimento simile come sostituzione, dando un `RDiff`
+
+=   entry #rdiff     pairs each deletion with a similar insertion as a substitution, giving an `RDiff`
+-     detail
++     detail
+
+-         `diff.rdiff(similar)` looks at each changed region of the diff (each `Tract.Changed`)
+-         and, where it both deletes and inserts, pairs deletions with insertions as `Sub`s.
+-         Within a region, the pairing is itself a diff of the deleted elements against the
+-         inserted ones, with `similar` as the comparison, so as many similar pairs as possible
+-         are found, in order; those left over stay as plain `Del`s and `Ins`s.
++         `diff.rdiff(similar)` esamina ogni regione modificata del diff (ogni `Tract.Changed`) e,
++         dove essa sia cancella sia inserisce, accoppia cancellazioni e inserimenti come `Sub`.
++         All'interno di una regione, l'accoppiamento è a sua volta un diff degli elementi cancellati
++         rispetto a quelli inseriti, con `similar` come confronto, così si trova il maggior numero
++         possibile di coppie simili, in ordine; quelli che avanzano restano `Del` e `Ins` semplici.
+
+=         are found, in order; those left over stay as plain `Del`s and `Ins`s.
+=
+-         ```scala
++         ```scala
+
+=         are found, in order; those left over stay as plain `Del`s and `Ins`s.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         import proximities.levenshteinProximity
++         import proximities.levenshteinProximity
+
+-         import caseSensitivity.caseSensitive
++         import caseSensitivity.caseSensitive
+
+-         val italian = Sequence(t"zero", t"uno", t"due", t"tre")
++         val italian = Sequence(t"zero", t"uno", t"due", t"tre")
+
+-         val spanish = Sequence(t"cero", t"uno", t"dos", t"tres")
++         val spanish = Sequence(t"cero", t"uno", t"dos", t"tres")
+
+-         diff(italian, spanish).rdiff(_.proximity(_) < 4)
++         diff(italian, spanish).rdiff(_.proximity(_) < 4)
+
+-         // RDiff(Diff.Sub(0, 0, t"zero", t"cero"), Diff.Par(1, 1, t"uno"),
++         // RDiff(Diff.Sub(0, 0, t"zero", t"cero"), Diff.Par(1, 1, t"uno"),
+
+-         //       Diff.Sub(2, 2, t"due", t"dos"), Diff.Sub(3, 3, t"tre", t"tres"))
++         //       Diff.Sub(2, 2, t"due", t"dos"), Diff.Sub(3, 3, t"tre", t"tres"))
+
+=         //       Diff.Sub(2, 2, t"due", t"dos"), Diff.Sub(3, 3, t"tre", t"tres"))
+-         ```
++         ```
+
+-         The second parameter, `subSize` (default `1`), pairs a region outright, without
+-         consulting `similar`, when it has equal numbers of deletions and insertions and no
+-         more than `subSize` of each: at that size the correspondence is obvious even when the
+-         values have nothing in common. An edit with no value, as in a parsed diff, is never
+-         similar to anything.
+-   entry #collate   the edits grouped into alternating runs of unchanged and changed elements
+-       A `List` of `Tract`s: each maximal run of `Par`s is a `Tract.Unchanged`, and each run of
+-       deletions and insertions between them a `Tract.Changed`, holding its deletions and its
+-       insertions separately.
+-   entry #chunks    the changed regions, each with its positions and its deletions and insertions
+-       A `Chain` of `Chunk`s, one for each changed region, as the unix format writes them; the
+-       unchanged elements between them are not represented. `Diff.serialize` is written over
+-       this.
++         Il secondo parametro, `subSize` (predefinito `1`), accoppia direttamente una regione,
++         senza consultare `similar`, quando ha lo stesso numero di cancellazioni e di inserimenti e
++         non più di `subSize` di ciascuno: a quella dimensione la corrispondenza è evidente anche
++         quando i valori non hanno nulla in comune. Una modifica senza valore, come in un diff
++         analizzato, non è mai simile a niente.
++   entry #collate   le modifiche raggruppate in serie alternate di elementi invariati e modificati
++       Una `List` di `Tract`: ogni serie massimale di `Par` è un `Tract.Unchanged`, e ogni serie di
++       cancellazioni e inserimenti tra di esse un `Tract.Changed`, che tiene separate le sue
++       cancellazioni e i suoi inserimenti.
++   entry #chunks    le regioni modificate, ciascuna con le sue posizioni, le sue cancellazioni e i suoi inserimenti
++       Una `Chain` di `Chunk`, uno per ogni regione modificata, come li scrive il formato unix; gli
++       elementi invariati tra di esse non sono rappresentati. `Diff.serialize` è scritto sopra
++       questo.
+
+-   entry .Change   one step of an `RDiff`: an edit, or a substitution of one element for another
++   entry .Change   un passo di un `RDiff`: una modifica, o la sostituzione di un elemento con un altro
+
+=   entry .Change   one step of an `RDiff`: an edit, or a substitution of one element for another
+-     detail
++     detail
+
+-         The sealed supertype of `Edit` (so of `Ins`, `Del` and `Par`) and of `Sub`, the
+-         substitution which `Diff#rdiff` makes from a similar deletion and insertion. A match over
+-         an `RDiff`'s `#changes` has four cases.
++         Il supertipo sealed di `Edit` (quindi di `Ins`, `Del` e `Par`) e di `Sub`, la
++         sostituzione che `Diff#rdiff` ricava da una cancellazione e da un inserimento simili. Un
++         match sui `#changes` di un `RDiff` ha quattro casi.
+
+=         an `RDiff`'s `#changes` has four cases.
+=
+-         ```scala
++         ```scala
+
+=         an `RDiff`'s `#changes` has four cases.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         def describe(change: Diff.Change[Text]): Text = change match
++         def describe(change: Diff.Change[Text]): Text = change match
+
+-           case Diff.Par(_, _, _)       => t"keep"
++           case Diff.Par(_, _, _)       => t"keep"
+
+-           case Diff.Del(_, _)          => t"remove"
++           case Diff.Del(_, _)          => t"remove"
+
+-           case Diff.Ins(_, value)      => t"add $value"
++           case Diff.Ins(_, value)      => t"add $value"
+
+-           case Diff.Sub(_, _, _, _)    => t"change"
++           case Diff.Sub(_, _, _, _)    => t"change"
+
+=           case Diff.Sub(_, _, _, _)    => t"change"
+-         ```
++         ```
+
+-     refer dissonance.Diff.Edit
++     refer dissonance.Diff.Edit
+
+-     refer dissonance.RDiff
++     refer dissonance.RDiff
+
+-     entry #map   applies a function to the element, or elements, of the change, keeping its positions
+-   entry .Chunk   one changed region of a diff: where it is, what it deletes and what it inserts
++     entry #map   applica una funzione all'elemento, o agli elementi, della modifica, mantenendone le posizioni
++   entry .Chunk   una regione modificata di un diff: dove si trova, che cosa cancella e che cosa inserisce
+
+=   entry .Chunk   one changed region of a diff: where it is, what it deletes and what it inserts
+-     detail
++     detail
+
+-         The unit of the unix `diff` format, given by `Diff#chunks`: the region's starting
+-         positions in the left and right sequences, then its deletions and its insertions.
+-     entry #position        the region's starting position in the left sequence
+-     entry #rightPosition   the region's starting position in the right sequence
+-     entry #dels            the region's deletions, in order
+-     entry #inss            the region's insertions, in order
+-   entry .Edit   one step of a `Diff`: an insertion, a deletion or an unchanged element
++         L'unità del formato unix `diff`, fornita da `Diff#chunks`: le posizioni iniziali della
++         regione nella sequenza sinistra e in quella destra, poi le sue cancellazioni e i suoi
++         inserimenti.
++     entry #position        la posizione iniziale della regione nella sequenza sinistra
++     entry #rightPosition   la posizione iniziale della regione nella sequenza destra
++     entry #dels            le cancellazioni della regione, in ordine
++     entry #inss            gli inserimenti della regione, in ordine
++   entry .Edit   un passo di un `Diff`: un inserimento, una cancellazione o un elemento invariato
+
+=   entry .Edit   one step of a `Diff`: an insertion, a deletion or an unchanged element
+-     detail
++     detail
+
+-         The sealed supertype of `Ins`, `Del` and `Par`, the three edits a `Diff` is made of. An
+-         `Edit` is also a `Change`, the wider type of an `RDiff`'s steps, which adds `Sub`.
++         Il supertipo sealed di `Ins`, `Del` e `Par`, le tre modifiche di cui è fatto un `Diff`.
++         Un `Edit` è anche un `Change`, il tipo più ampio dei passi di un `RDiff`, che aggiunge
++         `Sub`.
+
+-         Every edit has a `#value`, which is `Optional`: an `Ins` always has one, but a `Del` or a
+-         `Par` may not, as in a diff read from the unix format. On an edit whose type is
+-         `Retained`, `kept` reads the value as a bare element.
++         Ogni modifica ha un `#value`, che è `Optional`: un `Ins` ne ha sempre uno, ma un `Del` o un
++         `Par` possono non averlo, come in un diff letto dal formato unix. Su una modifica il cui
++         tipo è `Retained`, `kept` legge il valore come elemento nudo.
+
+-     refer dissonance.Diff.Change
++     refer dissonance.Diff.Change
+
+-     refer dissonance.Retained
++     refer dissonance.Retained
+
+-     entry #value   the element the edit concerns, if it is carried
+-     entry #map     applies a function to the edit's element, keeping its positions
+-         The result is an `Edit` of the same kind; the `Retained` mark is not kept, and may be
+-         re-established with `retained`.
+-   entry .Del   a deletion: an element of the left sequence which is not in the right
++     entry #value   l'elemento a cui si riferisce la modifica, se è presente
++     entry #map     applica una funzione all'elemento della modifica, mantenendone le posizioni
++         Il risultato è un `Edit` dello stesso genere; il contrassegno `Retained` non si conserva, e
++         si può ristabilire con `retained`.
++   entry .Del   una cancellazione: un elemento della sequenza sinistra che non è in quella destra
+
+=   entry .Del   a deletion: an element of the left sequence which is not in the right
+-     detail
++     detail
+
+-         `Del(left, value)`: the element at position `left` of the left sequence is removed. The
+-         value is `Optional` and defaults to `Unset`, since a patch needs only the position; a
+-         diff from `diff` always records it, and one read from the unix format does too.
+-     entry #left    the deleted element's position in the left sequence, from zero
+-     entry #value   the deleted element, if it is carried
+-   entry .Ins   an insertion: an element of the right sequence which is not in the left
++         `Del(left, value)`: l'elemento in posizione `left` della sequenza sinistra viene rimosso.
++         Il valore è `Optional` e ha come predefinito `Unset`, poiché a una patch basta la
++         posizione; un diff prodotto da `diff` lo registra sempre, e anche uno letto dal formato
++         unix.
++     entry #left    la posizione dell'elemento cancellato nella sequenza sinistra, da zero
++     entry #value   l'elemento cancellato, se è presente
++   entry .Ins   un inserimento: un elemento della sequenza destra che non è in quella sinistra
+
+=   entry .Ins   an insertion: an element of the right sequence which is not in the left
+-     detail
++     detail
+
+-         `Ins(right, value)`: `value` is inserted at position `right` of the right sequence. An
+-         insertion always carries its value, since a patch could not otherwise produce it.
+-     entry #right   the inserted element's position in the right sequence, from zero
+-     entry #value   the inserted element
+-   entry .Par   an unchanged element, present at a position in each sequence
++         `Ins(right, value)`: `value` viene inserito in posizione `right` della sequenza destra. Un
++         inserimento porta sempre il suo valore, poiché altrimenti una patch non potrebbe produrlo.
++     entry #right   la posizione dell'elemento inserito nella sequenza destra, da zero
++     entry #value   l'elemento inserito
++   entry .Par   un elemento invariato, presente in una posizione di ciascuna sequenza
+
+=   entry .Par   an unchanged element, present at a position in each sequence
+-     detail
++     detail
+
+-         `Par(left, right, value)`: the element at position `left` of the left sequence is the
+-         one at `right` of the right. The value defaults to `Unset`: a diff read from the unix
+-         format, which does not repeat unchanged lines, has none.
+-     entry #left    the element's position in the left sequence, from zero
+-     entry #right   the element's position in the right sequence, from zero
+-     entry #value   the element, if it is carried
+-   entry .Sub   a substitution: an element of the left sequence replaced by a similar one in the right
++         `Par(left, right, value)`: l'elemento in posizione `left` della sequenza sinistra è
++         quello in posizione `right` della destra. Il valore ha come predefinito `Unset`: un diff
++         letto dal formato unix, che non ripete le righe invariate, non ne ha.
++     entry #left    la posizione dell'elemento nella sequenza sinistra, da zero
++     entry #right   la posizione dell'elemento nella sequenza destra, da zero
++     entry #value   l'elemento, se è presente
++   entry .Sub   una sostituzione: un elemento della sequenza sinistra sostituito da uno simile in quella destra
+
+=   entry .Sub   a substitution: an element of the left sequence replaced by a similar one in the right
+-     detail
++     detail
+
+-         Made only by `Diff#rdiff`, from a deletion and an insertion it judged to correspond.
+-         `Sub(left, right, leftValue, rightValue)` says that the element at `left`, `leftValue`,
+-         became the element at `right`, `rightValue`. Both values are `Optional`, as a parsed
+-         diff's deletions may have none. `RDiff#flip` swaps the two sides.
+-     entry #left         the replaced element's position in the left sequence
+-     entry #right        the replacing element's position in the right sequence
+-     entry #leftValue    the element which was replaced, if it is carried
+-     entry #rightValue   the element which replaced it, if it is carried
++         Prodotta solo da `Diff#rdiff`, a partire da una cancellazione e da un inserimento che ha
++         giudicato corrispondenti. `Sub(left, right, leftValue, rightValue)` dice che l'elemento in
++         `left`, `leftValue`, è diventato l'elemento in `right`, `rightValue`. Entrambi i valori
++         sono `Optional`, poiché le cancellazioni di un diff analizzato possono non averne.
++         `RDiff#flip` scambia i due lati.
++     entry #left         la posizione dell'elemento sostituito nella sequenza sinistra
++     entry #right        la posizione dell'elemento sostitutivo nella sequenza destra
++     entry #leftValue    l'elemento che è stato sostituito, se è presente
++     entry #rightValue   l'elemento che lo ha sostituito, se è presente
+
+- entry .RDiff   an aligned diff, in which a similar deletion and insertion are paired as a `Sub`
++ entry .RDiff   un diff allineato, in cui una cancellazione e un inserimento simili sono accoppiati come `Sub`
+
+= entry .RDiff   an aligned diff, in which a similar deletion and insertion are paired as a `Sub`
+-   detail
++   detail
+
+-       The result of `Diff#rdiff`: the same steps as a `Diff`, except that where a deletion
+-       and an insertion correspond, they are one `Diff.Sub`. It suits display — a changed line shown
+-       as a modification of the old one, rather than as a removal and an unrelated addition —
+-       and the comparison of structured records, where a modified record is the same record.
++       Il risultato di `Diff#rdiff`: gli stessi passi di un `Diff`, tranne che dove una
++       cancellazione e un inserimento si corrispondono diventano un unico `Diff.Sub`. È adatto alla
++       visualizzazione — una riga modificata mostrata come modifica di quella vecchia, anziché come
++       una rimozione e un'aggiunta non correlata — e al confronto di record strutturati, dove un
++       record modificato è lo stesso record.
+
+=       and the comparison of structured records, where a modified record is the same record.
+=
+-       ```scala
++       ```scala
+
+=       and the comparison of structured records, where a modified record is the same record.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val aligned = diff(Sequence(t"a", t"b"), Sequence(t"a", t"c")).rdiff(_ == _)
++       val aligned = diff(Sequence(t"a", t"b"), Sequence(t"a", t"c")).rdiff(_ == _)
+
+-       // RDiff(Diff.Par(0, 0, t"a"), Diff.Sub(1, 1, t"b", t"c"))
++       // RDiff(Diff.Par(0, 0, t"a"), Diff.Sub(1, 1, t"b", t"c"))
+
+=       // RDiff(Diff.Par(0, 0, t"a"), Diff.Sub(1, 1, t"b", t"c"))
+-       ```
++       ```
+
+=       ```
+-   refer dissonance.Diff
++   refer dissonance.Diff
+
+-   refer dissonance.Diff.Change
++   refer dissonance.Diff.Change
+
+-   entry #changes   the steps, in order: `Par`, `Del`, `Ins` and `Sub`
+-   entry #flip      the inverse aligned diff, from the right sequence back to the left
+-       Insertions and deletions exchange places, and each `Diff.Par` and `Diff.Sub` has its two positions
+-       (and, for a `Diff.Sub`, its two values) swapped.
+-   entry #map       applies a function to the element, or elements, of every step
++   entry #changes   i passi, in ordine: `Par`, `Del`, `Ins` e `Sub`
++   entry #flip      il diff allineato inverso, dalla sequenza destra a quella sinistra
++       Inserimenti e cancellazioni si scambiano di posto, e ogni `Diff.Par` e `Diff.Sub` ha le sue
++       due posizioni (e, per un `Diff.Sub`, i suoi due valori) scambiate.
++   entry #map       applica una funzione all'elemento, o agli elementi, di ogni passo
+
+- entry .Tract   a run of a diff: either a changed region or a stretch of unchanged elements
++ entry .Tract   una serie di un diff: una regione modificata o un tratto di elementi invariati
+
+= entry .Tract   a run of a diff: either a changed region or a stretch of unchanged elements
+-   detail
++   detail
+
+-       `Diff#collate` divides a diff into alternating `Tract`s. A `Changed` tract holds a
+-       region's deletions and insertions separately, which is what `Diff#rdiff` pairs; an
+-       `Unchanged` one holds the `Diff.Par`s between regions.
++       `Diff#collate` divide un diff in `Tract` alternati. Un tract `Changed` tiene separate le
++       cancellazioni e gli inserimenti di una regione, che è ciò che `Diff#rdiff` accoppia; uno
++       `Unchanged` contiene i `Diff.Par` tra le regioni.
+
+=       `Unchanged` one holds the `Diff.Par`s between regions.
+=
+-       ```scala
++       ```scala
+
+=       `Unchanged` one holds the `Diff.Par`s between regions.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       diff(Sequence(1, 2, 3), Sequence(1, 4, 3)).collate.map:
++       diff(Sequence(1, 2, 3), Sequence(1, 4, 3)).collate.map:
+
+-         case Tract.Unchanged(pars)      => t"${pars.size} kept"
++         case Tract.Unchanged(pars)      => t"${pars.size} kept"
+
+-         case Tract.Changed(dels, inss)  => t"${dels.size} for ${inss.size}"
++         case Tract.Changed(dels, inss)  => t"${dels.size} for ${inss.size}"
+
+=         case Tract.Changed(dels, inss)  => t"${dels.size} for ${inss.size}"
+-       ```
++       ```
+
+-   entry .Changed   a changed region: its deletions and its insertions
+-     entry #deletions    the region's deletions, in order
+-     entry #insertions   the region's insertions, in order
+-   entry .Unchanged   a run of unchanged elements
+-     entry #retentions   the `Par`s of the run, in order
++   entry .Changed   una regione modificata: le sue cancellazioni e i suoi inserimenti
++     entry #deletions    le cancellazioni della regione, in ordine
++     entry #insertions   gli inserimenti della regione, in ordine
++   entry .Unchanged   una serie di elementi invariati
++     entry #retentions   i `Par` della serie, in ordine
+
+- entry .Retained   the type-level proof that every edit of a diff carries its element
+-     `Retained` is a refinement, `Any { type Retain = true }`, which marks an `Diff.Edit` or a
+-     `Diff` whose values are known to be present. `diff` and `Redraft#resolve` return a
+-     `Diff[element] & Retained`; a diff read from the unix format, or built by hand, does
+-     not. Being a refinement rather than a trait, the mark costs nothing at runtime: an
+-     `Diff.Edit[Text] & Retained` is an `Diff.Edit` like any other.
++ entry .Retained   la prova a livello di tipo che ogni modifica di un diff porta il suo elemento
++     `Retained` è un raffinamento, `Any { type Retain = true }`, che contrassegna un `Diff.Edit` o
++     un `Diff` i cui valori sono noti come presenti. `diff` e `Redraft#resolve` restituiscono un
++     `Diff[element] & Retained`; un diff letto dal formato unix, o costruito a mano, no. Essendo un
++     raffinamento e non un trait, il contrassegno non costa nulla a runtime: un
++     `Diff.Edit[Text] & Retained` è un `Diff.Edit` come qualsiasi altro.
+
+-     Two operations need the proof. `kept` reads an edit's value as a bare element instead of
+-     an `Optional`, and `Diff.redraft` renders a diff as a `Redraft`, which must reproduce every
+-     kept and deleted line.
++     Due operazioni richiedono la prova. `kept` legge il valore di una modifica come elemento nudo
++     anziché come `Optional`, e `Diff.redraft` rende un diff come `Redraft`, che deve riprodurre
++     ogni riga tenuta e cancellata.
+
+=     kept and deleted line.
+=
+-     ```scala
++     ```scala
+
+=     kept and deleted line.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val changes: Diff[Char] & Retained = diff(Sequence('a', 'b'), Sequence('b'))
++     val changes: Diff[Char] & Retained = diff(Sequence('a', 'b'), Sequence('b'))
+
+-     changes.retentions.map(_.kept)   // 'a', 'b', each a Char
++     changes.retentions.map(_.kept)   // 'a', 'b', each a Char
+
+=     changes.retentions.map(_.kept)   // 'a', 'b', each a Char
+-     ```
++     ```
+
+-     `retained` marks a value as retained, for a diff or edit known by construction to carry
+-     its values, and `retentions` gives a retained diff's edits with the mark.
++     `retained` contrassegna un valore come conservato, per un diff o una modifica che per
++     costruzione portano i loro valori, e `retentions` fornisce le modifiche di un diff conservato
++     con il contrassegno.
+
+- entry .retained   marks an edit or a diff as `Retained`, where every value is known to be present
+-     An extension on `Diff.Edit` and on `Diff`, returning the receiver typed `& Retained`. It checks
+-     nothing: it is the place where code which has just supplied every value records the fact,
+-     as `diff` and `Redraft#resolve` do. Marking a diff whose edits lack values makes `kept`
+-     return absent values as if they were elements, and a rendered redraft wrong.
++ entry .retained   contrassegna una modifica o un diff come `Retained`, quando ogni valore è noto come presente
++     Un'estensione su `Diff.Edit` e su `Diff`, che restituisce il ricevente tipizzato `& Retained`.
++     Non verifica nulla: è il punto in cui il codice che ha appena fornito ogni valore registra il
++     fatto, come fanno `diff` e `Redraft#resolve`. Contrassegnare un diff le cui modifiche sono
++     prive di valori fa sì che `kept` restituisca valori assenti come se fossero elementi, e che un
++     redraft reso sia sbagliato.
+
+=     return absent values as if they were elements, and a rendered redraft wrong.
+=
+-     ```scala
++     ```scala
+
+=     return absent values as if they were elements, and a rendered redraft wrong.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val changes = Diff(Diff.Par(0, 0, t"a"), Diff.Ins(1, t"b")).retained
++     val changes = Diff(Diff.Par(0, 0, t"a"), Diff.Ins(1, t"b")).retained
+
+-     changes.redraft().serialize   // t"a", t"+ b": the context places the insertion
++     changes.redraft().serialize   // t"a", t"+ b": the context places the insertion
+
+=     changes.redraft().serialize   // t"a", t"+ b": the context places the insertion
+-     ```
++     ```
+
+-     `Diff.Edit#map` and `Diff#map` drop the mark, which must be re-applied with `retained` when the
+-     mapped values are still all present.
++     `Diff.Edit#map` e `Diff#map` eliminano il contrassegno, che va riapplicato con `retained`
++     quando i valori trasformati sono ancora tutti presenti.
+
+- entry .kept   an edit's value: a bare element on a `Retained` edit, and `Optional` otherwise
+-     An extension on any `Diff.Edit`. On an edit whose static type is `Retained`, it is a
+-     `transparent inline` accessor which returns the element itself, so no absence need be
+-     handled; on any other edit, or where the type is not known, it is `#value`, an
++ entry .kept   il valore di una modifica: un elemento nudo su una modifica `Retained`, e `Optional` altrimenti
++     Un'estensione su qualsiasi `Diff.Edit`. Su una modifica il cui tipo statico è `Retained`, è un
++     accessor `transparent inline` che restituisce l'elemento stesso, così non occorre gestire
++     alcuna assenza; su qualsiasi altra modifica, o dove il tipo non è noto, è `#value`, un
+
+-     `Optional[element]`.
++     `Optional[element]`.
+
+=     `Optional[element]`.
+=
+-     ```scala
++     ```scala
+
+=     `Optional[element]`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val edit = Diff.Del(0, t"gone").retained
++     val edit = Diff.Del(0, t"gone").retained
+
+-     val text: Text = edit.kept
++     val text: Text = edit.kept
+
+=     val text: Text = edit.kept
+-     ```
++     ```
+
+- entry .retentions   a retained diff's edits, each typed as `Retained`
+-     An extension on `Diff[element] & Retained`, giving its `#edits` as a `List[Edit[element] &
+-     Retained]`, so that `kept` can be applied to each to read a bare element.
++ entry .retentions   le modifiche di un diff conservato, ciascuna tipizzata come `Retained`
++     Un'estensione su `Diff[element] & Retained`, che fornisce le sue `#edits` come
++     `List[Edit[element] & Retained]`, così che `kept` si possa applicare a ciascuna per leggere un
++     elemento nudo.
+
+- entry .Redraft   a forgiving patch of text lines: only the changes, located by searching the original
++ entry .Redraft   una patch indulgente di righe di testo: solo le modifiche, localizzate cercando nell'originale
+
+= entry .Redraft   a forgiving patch of text lines: only the changes, located by searching the original
+-   detail
++   detail
+
+-       The unix `diff` format states each change's position exactly, and does not apply to a
+-       text which has moved. A `Redraft` states only the lines to remove and the lines to add,
+-       with as few unchanged lines as are needed to place them, and finds where they belong by
+-       searching the original. It is the form in which a person, or a language model, can
+-       propose an edit to a text it has only read.
++       Il formato unix `diff` indica esattamente la posizione di ogni modifica, e non si applica a
++       un testo che si è spostato. Un `Redraft` indica solo le righe da togliere e quelle da
++       aggiungere, con le poche righe invariate necessarie a collocarle, e trova dove vanno cercando
++       nell'originale. È la forma in cui una persona, o un modello linguistico, può proporre una
++       modifica a un testo che ha soltanto letto.
+
+-       A redraft is a sequence of `Redraft.Directive`s, usually parsed from lines of text with
++       Un redraft è una sequenza di `Redraft.Directive`, di solito analizzata da righe di testo con
+
+-       `Redraft.parse`:
++       `Redraft.parse`:
+
+-       - `- line` removes `line`, and `+ line` inserts `line`;
+-       - `< line` and `> line` remove and insert unconditionally;
+-       - any other line is context, which must match a line of the original;
+-       - a line beginning `\` is context with the `\` removed, for a context line which itself
+-         begins with a marker.
++       - `- line` rimuove `line`, e `+ line` inserisce `line`;
++       - `< line` e `> line` rimuovono e inseriscono incondizionatamente;
++       - qualsiasi altra riga è contesto, che deve corrispondere a una riga dell'originale;
++       - una riga che inizia con `\` è contesto con il `\` rimosso, per una riga di contesto che
++         inizia essa stessa con un marcatore.
+
+=         begins with a marker.
+=
+-       ```scala
++       ```scala
+
+=         begins with a marker.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=         begins with a marker.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val source = Sequence(t"line1", t"line2", t"line3")
++       val source = Sequence(t"line1", t"line2", t"line3")
+
+-       Redraft.parse(Chain(t"- line2", t"+ new line 2a")).patch(source)
++       Redraft.parse(Chain(t"- line2", t"+ new line 2a")).patch(source)
+
+-       // t"line1", t"new line 2a", t"line3"
++       // t"line1", t"new line 2a", t"line3"
+
+=       // t"line1", t"new line 2a", t"line3"
+-       ```
++       ```
+
+-       Context and removed lines are matched in order, each against the first matching line
+-       after the one before, so unchanged lines between them need not be written; an insertion
+-       goes after the last line matched. A `- x` or `+ x` line is ambiguous when the original
+-       also has the literal line `- x` or `+ x`, which it might be context for: the ambiguity is
+-       reported, and the unconditional `<`/`>` spellings resolve it. A change which would also
+-       match further down — `- a` against `a`, `b`, `a` — is under-anchored and reported, rather
+-       than applied at a guess; one more context line anchors it.
++       Le righe di contesto e quelle rimosse si confrontano in ordine, ciascuna con la prima riga
++       corrispondente dopo quella precedente, quindi le righe invariate tra di esse non occorre
++       scriverle; un inserimento va dopo l'ultima riga trovata. Una riga `- x` o `+ x` è ambigua
++       quando anche l'originale ha la riga letterale `- x` o `+ x`, di cui potrebbe essere
++       contesto: l'ambiguità viene segnalata, e le grafie incondizionate `<`/`>` la risolvono. Una
++       modifica che corrisponderebbe anche più in basso — `- a` rispetto ad `a`, `b`, `a` — è
++       ancorata in modo insufficiente e viene segnalata, anziché applicata a caso; una riga di
++       contesto in più la ancora.
+
+-       `#patch` applies a redraft, `#resolve` turns it into the `Diff` it describes, and
+-       `#verify` lists its problems without raising. `Diff.redraft` renders a diff as a redraft,
+-       and `#serialize` writes one back as lines.
++       `#patch` applica un redraft, `#resolve` lo trasforma nel `Diff` che descrive, e `#verify`
++       ne elenca i problemi senza sollevare nulla. `Diff.redraft` rende un diff come redraft, e
++       `#serialize` lo riscrive come righe.
+
+=       and `#serialize` writes one back as lines.
+-   refer dissonance.Diff
++   refer dissonance.Diff
+
+-   refer dissonance.Redraft.Error
++   refer dissonance.Redraft.Error
+
+-   entry .parse   reads a redraft from lines of text
+-       Each line becomes one `Redraft.Directive`: `+ ` and `- ` (or a bare `+` or `-`) a `Mark`
+-       inserting or removing the rest of the line, `> ` and `< ` an unconditional `Add` or
+-       `Cut`, a line beginning `\` a `Keep` of the rest, and any other line a `Keep` of itself.
+-       Parsing never fails; whether the redraft applies is checked against an original by
+-       `Redraft#resolve`, `Redraft#patch` or `Redraft#verify`.
++   entry .parse   legge un redraft da righe di testo
++       Ogni riga diventa una `Redraft.Directive`: `+ ` e `- ` (o un `+` o un `-` da soli) un `Mark`
++       che inserisce o rimuove il resto della riga, `> ` e `< ` un `Add` o un `Cut`
++       incondizionato, una riga che inizia con `\` un `Keep` del resto, e qualsiasi altra riga un
++       `Keep` di sé stessa. Il parsing non fallisce mai; se il redraft si applica lo verificano,
++       rispetto a un originale, `Redraft#resolve`, `Redraft#patch` o `Redraft#verify`.
+
+=       `Redraft#resolve`, `Redraft#patch` or `Redraft#verify`.
+=
+-       ```scala
++       ```scala
+
+=       `Redraft#resolve`, `Redraft#patch` or `Redraft#verify`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Redraft.parse(Chain(t"< forced", t"> add", t"\\- escaped"))
++       Redraft.parse(Chain(t"< forced", t"> add", t"\\- escaped"))
+
+-       // Redraft(Cut(t"forced"), Add(t"add"), Keep(t"- escaped"))
++       // Redraft(Cut(t"forced"), Add(t"add"), Keep(t"- escaped"))
+
+=       // Redraft(Cut(t"forced"), Add(t"add"), Keep(t"- escaped"))
+-       ```
++       ```
+
+-   entry .render   renders a retained diff of text as a redraft with the given context
+-       The implementation of `Diff.redraft`, which is the usual way to call it. `Minimal`
+-       context is found greedily: context lines are dropped, furthest from a change first, for
+-       as long as the redraft still applies to the original without ambiguity and gives the
+-       same result. An insertion or removal which would be ambiguous as `+` or `-` is written as
+-       `>` or `<`.
+-   entry .Directive   one line of a redraft: context, an insertion, a removal or an ambiguous mark
++   entry .render   rende un diff conservato di testo come redraft con il contesto indicato
++       L'implementazione di `Diff.redraft`, che è il modo consueto di chiamarla. Il contesto
++       `Minimal` si trova in modo greedy: le righe di contesto si eliminano, a partire dalla più
++       lontana da una modifica, finché il redraft si applica ancora all'originale senza ambiguità
++       e dà lo stesso risultato. Un inserimento o una rimozione che sarebbero ambigui come `+` o
++       `-` si scrivono come `>` o `<`.
++   entry .Directive   una riga di un redraft: contesto, un inserimento, una rimozione o un segno ambiguo
+
+=   entry .Directive   one line of a redraft: context, an insertion, a removal or an ambiguous mark
+-     detail
++     detail
+
+-         What `Redraft.parse` makes of each line, and what `Redraft#serialize` writes back.
+-         `Mark` is the ordinary `+`/`-` form, which is read as an insertion or removal unless
+-         the original has the literal marked line as context; `Add` and `Cut` are the
+-         unconditional `>`/`<` forms.
+-     entry .Keep   a context line, which must match a line of the original
+-       entry #line   the line's text
+-     entry .Add    an unconditional insertion, written `> line`
+-       entry #line   the line to insert
+-     entry .Cut    an unconditional removal, written `< line`, of a line which must be in the original
+-       entry #line   the line to remove
+-     entry .Mark   an insertion or removal, written `+ line` or `- line`
+-       entry #line     the line to insert or remove, without its marker
+-       entry #insert   `true` for an insertion (`+`), `false` for a removal (`-`)
+-   entry .Anomaly   a problem found in applying a redraft: where, what, and why
+-       Returned by `Redraft#verify`, and the substance of a `Redraft.Error`. `line` is the
+-       index, from zero, of the directive at fault, `text` the line it named, and `reason` a
++         Ciò che `Redraft.parse` ricava da ogni riga, e ciò che `Redraft#serialize` riscrive.
++         `Mark` è la forma ordinaria `+`/`-`, letta come inserimento o rimozione a meno che
++         l'originale abbia come contesto la riga letterale con il segno; `Add` e `Cut` sono le forme
++         incondizionate `>`/`<`.
++     entry .Keep   una riga di contesto, che deve corrispondere a una riga dell'originale
++       entry #line   il testo della riga
++     entry .Add    un inserimento incondizionato, scritto `> line`
++       entry #line   la riga da inserire
++     entry .Cut    una rimozione incondizionata, scritta `< line`, di una riga che deve essere nell'originale
++       entry #line   la riga da rimuovere
++     entry .Mark   un inserimento o una rimozione, scritti `+ line` o `- line`
++       entry #line     la riga da inserire o rimuovere, senza il suo segno
++       entry #insert   `true` per un inserimento (`+`), `false` per una rimozione (`-`)
++   entry .Anomaly   un problema riscontrato nell'applicare un redraft: dove, che cosa e perché
++       Restituita da `Redraft#verify`, e sostanza di un `Redraft.Error`. `line` è l'indice, da
++       zero, della direttiva in errore, `text` la riga che nominava, e `reason` un
+
+-       `Redraft.Error.Reason`.
++       `Redraft.Error.Reason`.
+
+=       `Redraft.Error.Reason`.
+=
+-       ```scala
++       ```scala
+
+=       `Redraft.Error.Reason`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Redraft.parse(Chain(t"- a")).verify(Sequence(t"a", t"b", t"a"))
++       Redraft.parse(Chain(t"- a")).verify(Sequence(t"a", t"b", t"a"))
+
+-       // List(Redraft.Anomaly(0, t"a", Redraft.Error.Reason.Unanchored))
++       // List(Redraft.Anomaly(0, t"a", Redraft.Error.Reason.Unanchored))
+
+=       // List(Redraft.Anomaly(0, t"a", Redraft.Error.Reason.Unanchored))
+-       ```
++       ```
+
+-   entry .Context   how much unchanged context a rendered redraft keeps
++   entry .Context   quanto contesto invariato conserva un redraft reso
+
+=   entry .Context   how much unchanged context a rendered redraft keeps
+-     detail
++     detail
+
+-         Passed to `Diff.redraft`. `Minimal` keeps only the context lines without which the
+-         redraft would be ambiguous or would apply elsewhere; `Full` keeps every unchanged
+-         line; `Fixed(lines)` keeps those within `lines` of a change, as a unified diff does.
+-     entry .Fixed   the unchanged lines within a fixed distance of a change
+-       entry #lines   how many lines of context to keep either side of each change
+-   entry .Error   raised when a redraft cannot be applied to the original
++         Si passa a `Diff.redraft`. `Minimal` tiene solo le righe di contesto senza le quali il
++         redraft sarebbe ambiguo o si applicherebbe altrove; `Full` tiene ogni riga invariata;
++         `Fixed(lines)` tiene quelle entro `lines` da una modifica, come fa un diff unificato.
++     entry .Fixed   le righe invariate entro una distanza fissa da una modifica
++       entry #lines   quante righe di contesto tenere da ciascun lato di ogni modifica
++   entry .Error   sollevato quando un redraft non si può applicare all'originale
+
+=   entry .Error   raised when a redraft cannot be applied to the original
+-     detail
++     detail
+
+-         Error `↯/s.78.2`: _the redraft could not be applied at line `line` (`text`) because `reason`_.
+-         Raised by `Redraft#resolve` and `Redraft#patch`, for the first anomaly found; use
+-         `Redraft#verify` to list them all.
++         Errore `↯/s.78.2`: _the redraft could not be applied at line `line` (`text`) because `reason`_.
++         Sollevato da `Redraft#resolve` e `Redraft#patch`, per la prima anomalia trovata; si usi
++         `Redraft#verify` per elencarle tutte.
+
+=         `Redraft#verify` to list them all.
+=
+-         ```scala
++         ```scala
+
+=         `Redraft#verify` to list them all.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val source = Sequence(t"line1", t"line2")
++         val source = Sequence(t"line1", t"line2")
+
+-         capture[Redraft.Error](Redraft.parse(Chain(t"absent", t"- line2")).patch(source))
++         capture[Redraft.Error](Redraft.parse(Chain(t"absent", t"- line2")).patch(source))
+
+-         . reason   // Redraft.Error.Reason.NoMatch
++         . reason   // Redraft.Error.Reason.NoMatch
+
+=         . reason   // Redraft.Error.Reason.NoMatch
+-         ```
++         ```
+
+-     entry .Reason   why a directive of a redraft could not be applied
++     entry .Reason   perché una direttiva di un redraft non si è potuta applicare
+
+-       detail
++       detail
+
+-           `NoMatch` (_no matching line could be found in the original_): a context or removed
+-           line is not in the original after the lines matched before it. `Ambiguous` (_the
+-           change could be interpreted in more than one way_): a `+`/`-` line could be either a
+-           change or a context line for the literal marked line; write it with `>`/`<`, or
+-           escape the context with `\`. `Unanchored` (_there is not enough context to locate the
+-           change unambiguously_): the line would also match further on; add a context line.
+-       entry .communicable   describes each reason as a message
+-       entry #number   the reason's number, the second part of the error's code
+-     entry #line     the index, from zero, of the directive which could not be applied
+-     entry #text     the line of text the directive named
+-     entry #reason   why it could not be applied, as a `Redraft.Error.Reason`
+-   entry #directives   the redraft's directives, in order
+-   entry #serialize    the redraft as lines of text, which `Redraft.parse` reads back
+-       `Mark`s are written `+ ` and `- `, `Add` and `Cut` as `> ` and `< `, and a context line
+-       which begins with a marker or a `\` is escaped with a `\`.
+-   entry #resolve      the `Diff` the redraft describes against an original, or a `Redraft.Error`
+-       Matches the redraft's directives against `original`, with `==` or the given comparison,
+-       and returns a `Diff[Text] & Retained` over every line of the original. It raises a
+-       `Redraft.Error` for the first anomaly, so needs a `Tactic[Redraft.Error]`.
+-   entry #verify       every anomaly the redraft has against an original, without raising
+-       An empty `List` means the redraft applies cleanly.
+-   entry #patch        applies the redraft to an original, giving the edited lines
+-       `#resolve` followed by `Diff#patch`: a `Chain[Text]`, or a `Redraft.Error`, raised
+-       through the `Tactic[Redraft.Error]` in scope.
++           `NoMatch` (_no matching line could be found in the original_): una riga di contesto o
++           rimossa non è nell'originale dopo le righe trovate prima di essa. `Ambiguous` (_the
++           change could be interpreted in more than one way_): una riga `+`/`-` potrebbe essere
++           sia una modifica sia una riga di contesto per la riga letterale con il segno; la si
++           scriva con `>`/`<`, o si protegga il contesto con `\`. `Unanchored` (_there is not
++           enough context to locate the change unambiguously_): la riga corrisponderebbe anche più
++           avanti; si aggiunga una riga di contesto.
++       entry .communicable   descrive ogni motivo come messaggio
++       entry #number   il numero del motivo, la seconda parte del codice dell'errore
++     entry #line     l'indice, da zero, della direttiva che non si è potuta applicare
++     entry #text     la riga di testo nominata dalla direttiva
++     entry #reason   perché non si è potuta applicare, come `Redraft.Error.Reason`
++   entry #directives   le direttive del redraft, in ordine
++   entry #serialize    il redraft come righe di testo, che `Redraft.parse` rilegge
++       I `Mark` si scrivono `+ ` e `- `, `Add` e `Cut` come `> ` e `< `, e una riga di contesto
++       che inizia con un segno o con un `\` viene protetta con un `\`.
++   entry #resolve      il `Diff` che il redraft descrive rispetto a un originale, o un `Redraft.Error`
++       Confronta le direttive del redraft con `original`, con `==` o con il confronto indicato, e
++       restituisce un `Diff[Text] & Retained` su ogni riga dell'originale. Solleva un
++       `Redraft.Error` per la prima anomalia, quindi richiede una `Tactic[Redraft.Error]`.
++   entry #verify       ogni anomalia del redraft rispetto a un originale, senza sollevare nulla
++       Una `List` vuota significa che il redraft si applica senza problemi.
++   entry #patch        applica il redraft a un originale, dando le righe modificate
++       `#resolve` seguito da `Diff#patch`: una `Chain[Text]`, o un `Redraft.Error`, sollevato
++       tramite la `Tactic[Redraft.Error]` nell'ambito.
+
+=       through the `Tactic[Redraft.Error]` in scope.
+=
+-       ```scala
++       ```scala
+
+=       through the `Tactic[Redraft.Error]` in scope.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       through the `Tactic[Redraft.Error]` in scope.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       Redraft.parse(Chain(t"b", t"- a")).patch(Sequence(t"a", t"b", t"a"))   // t"a", t"b"
++       Redraft.parse(Chain(t"b", t"- a")).patch(Sequence(t"a", t"b", t"a"))   // t"a", t"b"
+
+=       Redraft.parse(Chain(t"b", t"- a")).patch(Sequence(t"a", t"b", t"a"))   // t"a", t"b"
+-       ```
++       ```
+
+- entry .evolve   tracks elements through a series of versions, identifying each across them all
+-     `evolve(versions)` diffs each version against the next and merges the results into one
+-     `Evolution`: a single sequence of atoms, each an element with the set of versions it is
+-     present in. An element which disappears and later returns is recognized as the same atom
+-     where the diffs allow it. The optional `similar` comparison makes each step an aligned
+-     diff (`Diff#rdiff`), so that a modified element continues its atom rather than starting a
+-     new one. The element type needs a `ClassTag`.
++ entry .evolve   segue gli elementi attraverso una serie di versioni, identificando ciascuno in tutte
++     `evolve(versions)` confronta ogni versione con la successiva e fonde i risultati in un'unica
++     `Evolution`: una sola sequenza di atomi, ciascuno un elemento con l'insieme delle versioni in
++     cui è presente. Un elemento che scompare e poi ritorna viene riconosciuto come lo stesso atomo
++     dove i diff lo consentono. Il confronto facoltativo `similar` rende ogni passo un diff
++     allineato (`Diff#rdiff`), così che un elemento modificato prosegua il suo atomo anziché
++     iniziarne uno nuovo. Il tipo degli elementi richiede un `ClassTag`.
+
+=     new one. The element type needs a `ClassTag`.
+=
+-     ```scala
++     ```scala
+
+=     new one. The element type needs a `ClassTag`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val versions = List(List('d', 'o', 'g'), List('c', 'a', 't'), List('d', 'o', 'g'))
++     val versions = List(List('d', 'o', 'g'), List('c', 'a', 't'), List('d', 'o', 'g'))
+
+-     val evolution = evolve(versions)
++     val evolution = evolve(versions)
+
+-     evolution(Ter)   // List('d', 'o', 'g'): the third version
++     evolution(Ter)   // List('d', 'o', 'g'): the third version
+
+=     evolution(Ter)   // List('d', 'o', 'g'): the third version
+-     ```
++     ```
+
+- entry .Evolution   a history of many versions, as one sequence of elements tagged with their versions
++ entry .Evolution   una storia di molte versioni, come un'unica sequenza di elementi etichettati con le loro versioni
+
+= entry .Evolution   a history of many versions, as one sequence of elements tagged with their versions
+-   detail
++   detail
+
+-       Made by `evolve`. Its `#sequence` interleaves every element of every version, in an
+-       order consistent with each, and each `Evolution.Atom` records the versions, by
+-       `Ordinal`, in which it appears. Applied to an ordinal, it reconstructs that version
+-       exactly, which is the structure a document history, an undo stack or a series of drafts
+-       wants.
++       Prodotta da `evolve`. La sua `#sequence` intercala ogni elemento di ogni versione, in un
++       ordine coerente con ciascuna, e ogni `Evolution.Atom` registra le versioni, per `Ordinal`,
++       in cui compare. Applicata a un ordinale, ricostruisce esattamente quella versione, che è la
++       struttura di cui hanno bisogno una cronologia di documenti, uno stack di annullamento o una
++       serie di bozze.
+
+-   refer dissonance.evolve
++   refer dissonance.evolve
+
+-   entry .Atom   one element of an evolution, with the versions it is present in
+-     entry #value      the element
+-     entry #presence   the ordinals of the versions in which the element appears
+-     entry #add        the same atom, present also in another version
+-     entry #has        whether the element is present in a version
+-   entry #sequence   every element of every version, in order, each with its versions
+-   entry #apply      reconstructs one version, by its ordinal (`Prim` for the first)
++   entry .Atom   un elemento di un'evoluzione, con le versioni in cui è presente
++     entry #value      l'elemento
++     entry #presence   gli ordinali delle versioni in cui l'elemento compare
++     entry #add        lo stesso atomo, presente anche in un'altra versione
++     entry #has        se l'elemento è presente in una versione
++   entry #sequence   ogni elemento di ogni versione, in ordine, ciascuno con le sue versioni
++   entry #apply      ricostruisce una versione, dato il suo ordinale (`Prim` per la prima)

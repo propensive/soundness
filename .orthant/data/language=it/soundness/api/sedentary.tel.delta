@@ -1,0 +1,2003 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base sedentary
++ base sedentary
+
+- import soundness
++ import soundness
+
+- info   benchmarks, stress tests and profiles: quoted code staged into its own JVM, measured, and reported beside a suite's tests
++ info   benchmark, stress test e profili: codice quotato portato in staging nella propria JVM, misurato e riportato accanto ai test di una suite
+
+- detail
++ detail
+
+-     _Sedentary_ measures code rather than checking it. It offers three kinds of measurement,
+-     each written inside a probably `Suite` alongside its tests and reported in the same report,
+-     with the same names, axes and selection:
++     _Sedentary_ misura il codice invece di verificarlo. Offre tre tipi di misurazione, ciascuno
++     scritto dentro una `Suite` di probably accanto ai suoi test e riportato nello stesso
++     resoconto, con gli stessi nomi, assi e criteri di selezione:
+
+-     - a `Bench` measures **speed**: how long one operation takes when it is repeated serially,
+-       with its spread, its confidence interval, its allocation per operation and, given an
+-       `OperationSize`, its throughput in bytes or characters per second;
+-     - a `Stress` measures **behaviour under load**: the operation run concurrently on many
+-       workers for a wall-clock window, reporting allocation, peak heap, the live set retained,
+-       garbage collection and latency percentiles as a `Strain`, and optionally sweeping or
+-       searching the worker count for the best sustained throughput (`StressSearch`);
+-     - a `Profile` measures **where the time goes**: the operation run under an in-process JFR
+-       recording, its hottest methods reported as `Hotspots`.
++     - un `Bench` misura la **velocità**: quanto dura un'operazione ripetuta in serie, con la sua
++       dispersione, il suo intervallo di confidenza, la sua allocazione per operazione e, dato un
++       `OperationSize`, il suo throughput in byte o caratteri al secondo;
++     - uno `Stress` misura il **comportamento sotto carico**: l'operazione eseguita in modo
++       concorrente su molti worker per una finestra di tempo reale, riportando allocazione, picco
++       dello heap, insieme vivo trattenuto, garbage collection e percentili di latenza come uno
++       `Strain`, e facoltativamente scorrendo o cercando il numero di worker che dà il miglior
++       throughput sostenuto (`StressSearch`);
++     - un `Profile` misura **dove va il tempo**: l'operazione eseguita sotto una registrazione JFR
++       interna al processo, con i metodi più caldi riportati come `Hotspots`.
+
+-     The body of every measurement is a **quoted expression**, `'{ … }`. It is staged through
+-     superlunary: compiled into a JAR with the code under test, deployed to a `BenchmarkDevice`,
+-     and run in a JVM of its own, with a fixed heap, a chosen collector and, optionally, a
+-     limited number of processors, so that nothing else in the suite — its other tests, the
+-     runner's own allocation, a JIT already warmed by something else — distorts the figure.
++     Il corpo di ogni misurazione è un'**espressione quotata**, `'{ … }`. Viene portato in
++     staging tramite superlunary: compilato in un JAR insieme al codice sotto test, distribuito
++     su un `BenchmarkDevice` ed eseguito in una JVM propria, con uno heap fisso, un collector
++     scelto e, facoltativamente, un numero limitato di processori, in modo che nient'altro nella
++     suite — gli altri test, l'allocazione del runner stesso, un JIT già riscaldato da
++     qualcos'altro — alteri il risultato.
+
+-     ```scala fuel
++     ```scala fuel
+
+-     typecheck
++     typecheck
+
+-     ##
++     ##
+
+-     import soundness.*
++     import soundness.*
+
+-     import classloaders.threadContextClassloader
++     import classloaders.threadContextClassloader
+
+-     import environments.javaBaseEnvironment
++     import environments.javaBaseEnvironment
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import superlunary.embeddings.automaticEmbedding
++     import superlunary.embeddings.automaticEmbedding
+
+-     import systems.javaBaseSystem
++     import systems.javaBaseSystem
+
+-     import temporaryDirectories.systemTemporaryDirectory
++     import temporaryDirectories.systemTemporaryDirectory
+
+-     import threads.platformThreads
++     import threads.platformThreads
+
+-     given BenchmarkDevice = LocalhostDevice
++     given BenchmarkDevice = LocalhostDevice
+
+-     object Benchmarks extends Suite(m"Arithmetic benchmarks"):
++     object Benchmarks extends Suite(m"Arithmetic benchmarks"):
+
+-       def run(): Unit =
++       def run(): Unit =
+
+-         val bench = Bench()
++         val bench = Bench()
+
+-         val stress = Stress(heap = t"256m")
++         val stress = Stress(heap = t"256m")
+
+-         val profile = Profile()
++         val profile = Profile()
+
+-         bench(m"sum by formula")(target = 1*Second):
++         bench(m"sum by formula")(target = 1*Second):
+
+=         bench(m"sum by formula")(target = 1*Second):
+-           '{1000L*1001L/2L}
++           '{1000L*1001L/2L}
+
+-         stress(m"sum under load")(target = 2*Second, concurrency = 8):
++         stress(m"sum under load")(target = 2*Second, concurrency = 8):
+
+=         stress(m"sum under load")(target = 2*Second, concurrency = 8):
+-           '{1000L*1001L/2L}
++           '{1000L*1001L/2L}
+
+-         profile(m"where a sum spends its time")(target = 5*Second):
++         profile(m"where a sum spends its time")(target = 5*Second):
+
+-           '{(1L to 1000L).foldLeft(0L)(_ + _)}
++           '{(1L to 1000L).foldLeft(0L)(_ + _)}
+
+-     ```
++     ```
+
+-     Each measurement takes its contextual values from the `Suite` it is written in (a
+-     `Runner`, an `Inclusion` for its kind of result, the `Testable` and the `Codepoint`), and
+-     the rest from imports: a `Classloader` and an `Environment` to build the measurement, a
+-     `System`, a `TemporaryDirectory` and a `Stageable` (superlunary's
+-     `embeddings.automaticEmbedding`) to stage it, a `BenchmarkDevice` to run it on, and
+-     tactics for `Compiler.Error` and `Rig.Error`. A `Stress` also needs a parasite `Threading`,
+-     which selects the kind of thread its workers run on.
++     Ogni misurazione prende i suoi valori contestuali dalla `Suite` in cui
++     è scritta (un `Runner`, una `Inclusion` per il suo tipo di risultato, il `Testable` e il
++     `Codepoint`), e il resto dagli import: un `Classloader` e un `Environment` per costruire la
++     misurazione, un `System`, una `TemporaryDirectory` e uno `Stageable` (lo
++     `embeddings.automaticEmbedding` di superlunary) per portarla in staging, un
++     `BenchmarkDevice` su cui eseguirla, e tattiche per `Compiler.Error` e
++     `Rig.Error`. Uno `Stress` richiede anche un `Threading` di parasite, che sceglie il tipo di
++     thread su cui girano i suoi worker.
+
+-     A measurement which the runner has not selected is skipped **before** it is staged, so it
+-     costs no compilation and no JVM, and every measurement declares an expected duration from
+-     its metadata, so a host can budget a run before it starts. A host's duration multiplier
+-     (fume's `--scale`) lengthens or shortens every declared target alike.
++     Una misurazione che il runner non ha selezionato viene saltata **prima** di essere portata
++     in staging, quindi non costa né compilazione né JVM, e ogni misurazione dichiara nei suoi
++     metadati una durata attesa, così che un host possa preventivare un'esecuzione prima che
++     inizi. Il moltiplicatore di durata di un host (il `--scale` di fume) allunga o accorcia
++     allo stesso modo ogni obiettivo dichiarato.
+
+-     Code in a quoted body is compiled when the measurement is staged, not where it is written,
+-     which has consequences. An inline method which resolves an instance with `summonFrom` or
+-     `summonInline` — a derived decoder, say — sees only the imports written **inside** the
+-     quote, not those at the top of the file: write the import in the body, or bind the
+-     instance to a `val` outside and refer to it. A transparent macro given cannot expand inside
+-     a quote at all, so keep such a call in an ordinary method and call that. Values from
+-     outside the quote are spliced in with `$value` and travel to the measurement JVM through
+-     superlunary's `References`, so cells which differ only in data share one compilation.
++     Il codice in un corpo quotato viene compilato quando la misurazione è portata in staging,
++     non dove è scritto, e questo ha delle conseguenze. Un metodo inline che risolve un'istanza
++     con `summonFrom` o `summonInline` — un decodificatore derivato, per esempio — vede solo gli
++     import scritti **dentro** la quotazione, non quelli in cima al file: scrivi l'import nel
++     corpo, oppure lega l'istanza a una `val` all'esterno e fai riferimento a quella. Un given
++     macro transparent non può espandersi affatto dentro una quotazione, quindi tieni una tale
++     chiamata in un metodo ordinario e chiama quello. I valori esterni alla quotazione vengono
++     inseriti con `$value` e viaggiano verso la JVM di misurazione attraverso i `References` di
++     superlunary, così le celle che differiscono solo nei dati condividono una sola compilazione.
+
+-     The library is one source set, `sedentary.core`, for the JVM only: it needs a JDK 21 or
+-     later (for whole-process allocation accounting), a `java` launcher on the device, and JFR
+-     for `Profile`. Everything is exported to the `soundness` umbrella.
++     La libreria è un unico source set, `sedentary.core`, solo per la JVM: richiede un JDK 21 o
++     successivo (per il conteggio dell'allocazione dell'intero processo), un launcher `java` sul
++     dispositivo, e JFR per `Profile`. Tutto è esportato nel modulo ombrello `soundness`.
+
+- refer sedentary.Bench
++ refer sedentary.Bench
+
+- refer sedentary.Stress
++ refer sedentary.Stress
+
+- refer sedentary.Profile
++ refer sedentary.Profile
+
+- refer sedentary.BenchmarkDevice
++ refer sedentary.BenchmarkDevice
+
+- refer sedentary.OperationSize
++ refer sedentary.OperationSize
+
+- refer probably.Benchmark
++ refer probably.Benchmark
+
+- refer probably.Strain
++ refer probably.Strain
+
+- refer probably.Hotspots
++ refer probably.Hotspots
+
+- refer superlunary.Rig
++ refer superlunary.Rig
+
+- entry .Bench   a benchmark harness: times a quoted operation in its own JVM, singly or across one or two axes
++ entry .Bench   un harness di benchmark: cronometra un'operazione quotata nella propria JVM, singolarmente o su uno o due assi
+
+= entry .Bench   a benchmark harness: times a quoted operation in its own JVM, singly or across one or two axes
+-   detail
++   detail
+
+-       A `Bench` is a superlunary `Rig` which stages quoted code into a JAR, deploys it to the
+-       `BenchmarkDevice` in scope, and times it there. It is constructed once, usually at the
+-       top of a suite's `run()`, and applied to a name and settings to give a `Bench.Plan`, which
+-       is applied in turn to a quoted body, or spread `over` one or two axes:
++       Un `Bench` è un `Rig` di superlunary che porta in staging codice quotato in un JAR, lo
++       distribuisce sul `BenchmarkDevice` nell'ambito e lo cronometra lì. Si costruisce una
++       volta, di solito in cima al `run()` di una suite, e si applica a un nome e a delle
++       impostazioni per ottenere un `Bench.Plan`, che a sua volta si applica a un corpo quotato,
++       oppure si distribuisce `over` uno o due assi:
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+-       import superlunary.embeddings.automaticEmbedding
++       import superlunary.embeddings.automaticEmbedding
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+=       import superlunary.embeddings.automaticEmbedding
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+=       import superlunary.embeddings.automaticEmbedding
+=       import systems.javaBaseSystem
+-       import temporaryDirectories.systemTemporaryDirectory
++       import temporaryDirectories.systemTemporaryDirectory
+
+=       is applied in turn to a quoted body, or spread `over` one or two axes:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+=       import superlunary.embeddings.automaticEmbedding
+=       import systems.javaBaseSystem
+=       import temporaryDirectories.systemTemporaryDirectory
+=
+-       given BenchmarkDevice = LocalhostDevice
++       given BenchmarkDevice = LocalhostDevice
+
+-       enum Summation:
++       enum Summation:
+
+-         case Loop, Formula
++         case Loop, Formula
+
+-       object Benchmarks extends Suite(m"Summation benchmarks"):
++       object Benchmarks extends Suite(m"Summation benchmarks"):
+
+=       object Benchmarks extends Suite(m"Summation benchmarks"):
+-         def run(): Unit =
++         def run(): Unit =
+
+-           val bench = Bench()
++           val bench = Bench()
+
+-           bench(m"sum of the first thousand integers")
++           bench(m"sum of the first thousand integers")
+
+-             ( target = 50*Milli(Second), baseline = Summation.Formula )
++             ( target = 50*Milli(Second), baseline = Summation.Formula )
+
+-           . over(Summation):
++           . over(Summation):
+
+-               case Summation.Loop =>
++               case Summation.Loop =>
+
+-                 ' {
++                 ' {
+
+-                     var i = 1L
++                     var i = 1L
+
+-                     var sum = 0L
++                     var sum = 0L
+
+-                     while i <= 1000L do
++                     while i <= 1000L do
+
+-                       sum += i
++                       sum += i
+
+-                       i += 1L
++                       i += 1L
+
+-                     sum
++                     sum
+
+-                   }
++                   }
+
+-               case Summation.Formula =>
++               case Summation.Formula =>
+
+-                 '{1000L*1001L/2L}
++                 '{1000L*1001L/2L}
+
+=                 '{1000L*1001L/2L}
+-       ```
++       ```
+
+-       Each cell is measured in the same way. The body is bound once as a method of its own,
+-       run ten times untimed, and then run in batches of doubling size until one batch takes at
+-       least `target/iterations`; `warmups` full batches follow, adjusting the batch size towards
+-       that duration, and the median of their rates fixes it. Then `iterations` timed batches
+-       run, with a garbage collection requested between each, and the allocation over them is
+-       read from the JVM's thread-allocation counter. Each operation's result is written to a
+-       sink the JIT cannot see through, so a body whose value is unused is not eliminated; a body
+-       which still measures nothing after 2³⁴ repetitions fails, as suspected dead code. The
+-       result of each cell is a probably `Benchmark`: total and mean time, minimum, maximum,
+-       standard deviation, the confidence interval, bytes allocated per operation and, given an
+-       `OperationSize`, the size and rate of an operation.
++       Ogni cella viene misurata allo stesso modo. Il corpo viene legato una volta come metodo a
++       sé, eseguito dieci volte senza cronometro, e poi eseguito in lotti di dimensione doppia
++       finché un lotto non impiega almeno `target/iterations`; seguono `warmups` lotti completi,
++       che adeguano la dimensione del lotto verso quella durata, e la mediana dei loro ritmi la
++       fissa. Poi vengono eseguiti `iterations` lotti cronometrati, con una garbage collection
++       richiesta tra l'uno e l'altro, e l'allocazione su di essi viene letta dal contatore di
++       allocazione per thread della JVM. Il risultato di ogni operazione viene scritto in un
++       sink che il JIT non riesce a vedere attraverso, così un corpo il cui valore non è usato
++       non viene eliminato; un corpo che ancora non misura nulla dopo 2³⁴ ripetizioni fallisce,
++       come sospetto codice morto. Il risultato di ogni cella è un `Benchmark` di probably: tempo
++       totale e medio, minimo, massimo, deviazione standard, intervallo di confidenza, byte
++       allocati per operazione e, dato un `OperationSize`, la dimensione e il ritmo di
++       un'operazione.
+
+-       The constructor's parameters pin the measurement JVM. `heap` sets both `-Xms` and `-Xmx`
+-       (in `-Xmx` syntax, `t"256m"`; the default is a fixed `1g`); `cpus` limits it to that many
+-       processors (see `BenchmarkDevice#invoke` for what that does on each platform); and `gc`
+-       names the collector in `-XX:+Use<gc>GC` syntax (`t"G1"`, `t"Z"`; the default is
+-       `Serial`, whose single-threaded, deterministic pauses suit microbenchmarks). A body which
+-       runs a fiber runtime or many virtual threads should ask for `gc = t"G1"` and a heap sized
+-       to what a rival's own harness used.
++       I parametri del costruttore fissano la JVM di misurazione. `heap` imposta sia `-Xms` sia
++       `-Xmx` (nella sintassi di `-Xmx`, `t"256m"`; il valore predefinito è un `1g` fisso);
++       `cpus` la limita a quel numero di processori (vedi `BenchmarkDevice#invoke` per cosa
++       comporta su ciascuna piattaforma); e `gc` indica il collector nella sintassi
++       `-XX:+Use<gc>GC` (`t"G1"`, `t"Z"`; il valore predefinito è `Serial`, le cui pause
++       deterministiche e a thread singolo si addicono ai microbenchmark). Un corpo che esegue un
++       runtime a fiber o molti virtual thread dovrebbe chiedere `gc = t"G1"` e uno heap
++       dimensionato su quello usato dall'harness del rivale.
+
+-       A `Bench` needs a `Classloader`, an `Environment` and a `BenchmarkDevice` where it is
+-       constructed. Benchmark rows are the ones fume's `--bench` switch selects.
++       Un `Bench` richiede un `Classloader`, un `Environment` e un `BenchmarkDevice` dove viene
++       costruito. Le righe di benchmark sono quelle che seleziona l'opzione `--bench` di fume.
+
+=       constructed. Benchmark rows are the ones fume's `--bench` switch selects.
+-   refer sedentary.Bench.Plan
++   refer sedentary.Bench.Plan
+
+=   refer sedentary.Bench.Plan
+-   refer sedentary.BenchmarkDevice
++   refer sedentary.BenchmarkDevice
+
+-   refer sedentary.OperationSize
++   refer sedentary.OperationSize
+
+=   refer sedentary.OperationSize
+-   refer probably.Benchmark
++   refer probably.Benchmark
+
+-   entry .Plan   a named, configured benchmark, awaiting its quoted body or the axes to spread it over
++   entry .Plan   un benchmark con nome e configurazione, in attesa del suo corpo quotato o degli assi su cui distribuirlo
+
+=   entry .Plan   a named, configured benchmark, awaiting its quoted body or the axes to spread it over
+-     detail
++     detail
+
+-         A `Plan` is what `Bench#apply` returns: the benchmark's name, tags and settings, with
+-         the `Bench` which will run it. It is used in one of three ways:
++         Un `Plan` è ciò che restituisce `Bench#apply`: il nome, i tag e le impostazioni del
++         benchmark, con il `Bench` che lo eseguirà. Si usa in uno di tre modi:
+
+-         - applied directly to a quoted body, `plan('{ … })`, for a single measurement;
+-         - spread `over` one or two axes, with a body which maps each axis value (or pair of
+-           values) to a quoted body, for one measurement per value — rendered as a row of
+-           cells, or a crosstab for two axes;
+-         - given a per-cell `OperationSize` with `sized` first, and then spread `over`.
++         - applicato direttamente a un corpo quotato, `plan('{ … })`, per una singola
++           misurazione;
++         - distribuito `over` uno o due assi, con un corpo che associa a ogni valore dell'asse (o
++           coppia di valori) un corpo quotato, per una misurazione per valore — resa come una
++           riga di celle, o come una tabella a doppia entrata per due assi;
++         - dotato prima, con `sized`, di un `OperationSize` per cella, e poi distribuito `over`.
+
+-         Watched as a plan grows: a single measurement, then one per implementation, then one
+-         per implementation and input, each cell sized by its input.
++         Ecco un piano che cresce: una singola misurazione, poi una per implementazione, poi una
++         per implementazione e input, con ogni cella dimensionata in base al suo input.
+
+=         per implementation and input, each cell sized by its input.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         per implementation and input, each cell sized by its input.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         typecheck
+-         frame
++         frame
+
+-           label A single measurement
++           label Una singola misurazione
+
+=           label A single measurement
+-           code
++           code
+
+-               bench(m"parse a document")(target = 1*Second):
++               bench(m"parse a document")(target = 1*Second):
+
+-                 '{ Parser.parse(Corpus.small) }
++                 '{ Parser.parse(Corpus.small) }
+
+=                 '{ Parser.parse(Corpus.small) }
+-         frame
++         frame
+
+-           label One measurement per implementation, against a baseline
++           label Una misurazione per implementazione, rispetto a una baseline
+
+=           label One measurement per implementation, against a baseline
+-           code
++           code
+
+=           label One measurement per implementation, against a baseline
+=           code
+-               bench(m"parse a document")(target = 1*Second, baseline = Implementation.Ours)
++               bench(m"parse a document")(target = 1*Second, baseline = Implementation.Ours)
+
+-               . over(Implementation):
++               . over(Implementation):
+
+-                   case Implementation.Ours  => '{ Parser.parse(Corpus.small) }
++                   case Implementation.Ours  => '{ Parser.parse(Corpus.small) }
+
+-                   case Implementation.Rival => '{ RivalParser.parse(Corpus.small) }
++                   case Implementation.Rival => '{ RivalParser.parse(Corpus.small) }
+
+=                   case Implementation.Rival => '{ RivalParser.parse(Corpus.small) }
+-         frame
++         frame
+
+-           label One per implementation and document, each sized by its document
++           label Una per implementazione e documento, ciascuna dimensionata dal suo documento
+
+=           label One per implementation and document, each sized by its document
+-           code
++           code
+
+=           label One per implementation and document, each sized by its document
+=           code
+-               bench(m"parse a document")(target = 1*Second, baseline = Implementation.Ours)
++               bench(m"parse a document")(target = 1*Second, baseline = Implementation.Ours)
+
+-               . sized: (_: Implementation, document: Document) =>
++               . sized: (_: Implementation, document: Document) =>
+
+-                   val size: OperationSize = Corpus.text(document).length*Byte
++                   val size: OperationSize = Corpus.text(document).length*Byte
+
+-                   size
++                   size
+
+-               . over(Axis(Implementation), Axis(Document)):
++               . over(Axis(Implementation), Axis(Document)):
+
+-                   case (Implementation.Ours, document) =>
++                   case (Implementation.Ours, document) =>
+
+=                   case (Implementation.Ours, document) =>
+-                     val text: Text = Corpus.text(document)
++                     val text: Text = Corpus.text(document)
+
+-                     '{ Parser.parse($text) }
++                     '{ Parser.parse($text) }
+
+-                   case (Implementation.Rival, document) =>
++                   case (Implementation.Rival, document) =>
+
+=                   case (Implementation.Rival, document) =>
+-                     val text: Text = Corpus.text(document)
++                     val text: Text = Corpus.text(document)
+
+-                     '{ RivalParser.parse($text) }
++                     '{ RivalParser.parse($text) }
+
+=                     '{ RivalParser.parse($text) }
+-         ##
++         ##
+
+=         ##
+-         ```
++         ```
+
+-         Every cell of a plan is staged and dispatched on its own, but cells whose staged trees
+-         coincide — those differing only in a value spliced in with `$` — share one
+-         compilation, and each distinct implementation compiles once. A value spliced into the
+-         body travels through superlunary's `References`, and is extracted once per run.
+-     entry .Uniaxial   a plan whose cells over one axis are each given their own `OperationSize`
++         Ogni cella di un piano viene portata in staging e smistata per conto proprio, ma le
++         celle i cui alberi in staging coincidono — quelle che differiscono solo per un valore
++         inserito con `$` — condividono una sola compilazione, e ogni implementazione distinta
++         viene compilata una volta. Un valore inserito nel corpo viaggia attraverso i
++         `References` di superlunary, e viene estratto una volta per esecuzione.
++     entry .Uniaxial   un piano le cui celle su un asse ricevono ciascuna il proprio `OperationSize`
+
+=     entry .Uniaxial   a plan whose cells over one axis are each given their own `OperationSize`
+-       detail
++       detail
+
+-           What `Plan#sized` returns for a function of one value. Its `#over` measures every
+-           defined value of an axis, sizing each cell by `#size`; a cell for which the function
+-           answers `Unset` falls back to the plan's own `operationSize`.
+-       entry #plan   the plan whose settings each cell takes
+-       entry #size   the size of the cell for an axis value, or `Unset` for the plan's own
+-       entry #over   one measurement per defined value of an axis, each sized by `#size`
+-           As `Bench.Plan#over` for one axis. The body is a partial function from the axis value
+-           to a quoted body: a value for which it is not defined is a gap in the row, probed
+-           without staging anything. If the plan has a `baseline` among the axis's values, that
+-           cell is reported as the anchor the others are compared against.
+-     entry .Biaxial   a plan whose crosstab cells are each given their own `OperationSize`
++           Ciò che restituisce `Plan#sized` per una funzione di un valore. Il suo `#over` misura
++           ogni valore definito di un asse, dimensionando ogni cella con `#size`; una cella per
++           cui la funzione risponde `Unset` ripiega sull'`operationSize` del piano stesso.
++       entry #plan   il piano da cui ogni cella prende le impostazioni
++       entry #size   la dimensione della cella per un valore dell'asse, o `Unset` per quella del piano
++       entry #over   una misurazione per ogni valore definito di un asse, ciascuna dimensionata con `#size`
++           Come `Bench.Plan#over` per un asse. Il corpo è una funzione parziale dal valore
++           dell'asse a un corpo quotato: un valore per cui non è definita è un vuoto nella riga,
++           sondato senza portare nulla in staging. Se il piano ha una `baseline` tra i valori
++           dell'asse, quella cella viene riportata come l'àncora con cui si confrontano le altre.
++     entry .Biaxial   un piano le cui celle della tabella a doppia entrata ricevono ciascuna il proprio `OperationSize`
+
+=     entry .Biaxial   a plan whose crosstab cells are each given their own `OperationSize`
+-       detail
++       detail
+
+-           What `Plan#sized` returns for a function of two values. Its `#over` measures every
+-           defined combination of two axes, sizing each cell by `#size`, with the plan's own
+-           `operationSize` wherever the function answers `Unset`.
+-       entry #plan   the plan whose settings each cell takes
+-       entry #size   the size of the cell for a pair of axis values, or `Unset` for the plan's own
+-       entry #over   one measurement per defined combination of two axes, each sized by `#size`
+-           As `Bench.Plan#over` for two axes. The body is a partial function from a pair of axis
+-           values to a quoted body, so a combination which makes no sense is left as a gap. A
+-           `baseline` is looked for among the first axis's values, and then the second's.
+-     entry #bench   the `Bench` which stages and runs the plan's measurements
+-     entry #name   the benchmark's name, as a `Message`
+-     entry #tags   the tags which label the benchmark for selection and exclusion, such as `slow`
+-     entry #target   the target measuring time, as a `Long` count of nanoseconds
+-         The `target` given to `Bench#apply`, as the generic duration. It is divided among the
+-         timed batches, and scaled by the runner's duration multiplier before it is used.
+-     entry #operationSize   the size of one operation, for a throughput rate, or `Unset`
+-     entry #iterations   how many timed batches each cell runs: five unless set
+-     entry #warmups   how many full calibration batches precede the timed ones: as many as `#iterations` unless set
+-     entry #confidence   the percentile of the reported confidence interval: 95 unless set
+-     entry #anchor   the axis value whose cell the others are compared against, or `Unset`
+-     entry #comparison   how the other cells are compared with the anchor: a probably `Baseline`
+-         Which statistic is compared (`Min`, `Mean` or `Max`), as a rate or a time, and whether
+-         the comparison is geometric or arithmetic; `Baseline()` compares geometric mean rates.
+-     entry #apply   a single measurement of a quoted body
+-         `plan('{ … })` stages the body, runs it on the plan's device and includes one
+-         `Benchmark` in the report, unless the runner has not selected it, in which case
+-         nothing is staged. The body is a quoted expression of any type, built with superlunary's
+-         `References` and the staging `Quotes` in context.
++           Ciò che restituisce `Plan#sized` per una funzione di due valori. Il suo `#over` misura
++           ogni combinazione definita di due assi, dimensionando ogni cella con `#size`, con
++           l'`operationSize` del piano stesso dovunque la funzione risponda `Unset`.
++       entry #plan   il piano da cui ogni cella prende le impostazioni
++       entry #size   la dimensione della cella per una coppia di valori degli assi, o `Unset` per quella del piano
++       entry #over   una misurazione per ogni combinazione definita di due assi, ciascuna dimensionata con `#size`
++           Come `Bench.Plan#over` per due assi. Il corpo è una funzione parziale da una coppia di
++           valori degli assi a un corpo quotato, così una combinazione priva di senso resta un
++           vuoto. Una `baseline` si cerca tra i valori del primo asse, e poi tra quelli del
++           secondo.
++     entry #bench   il `Bench` che porta in staging ed esegue le misurazioni del piano
++     entry #name   il nome del benchmark, come `Message`
++     entry #tags   i tag che etichettano il benchmark per la selezione e l'esclusione, come `slow`
++     entry #target   il tempo di misurazione obiettivo, come conteggio `Long` di nanosecondi
++         Il `target` passato a `Bench#apply`, come durata generica. Viene ripartito tra i lotti
++         cronometrati, e scalato dal moltiplicatore di durata del runner prima di essere usato.
++     entry #operationSize   la dimensione di un'operazione, per un ritmo di throughput, o `Unset`
++     entry #iterations   quanti lotti cronometrati esegue ogni cella: cinque se non impostato
++     entry #warmups   quanti lotti completi di calibrazione precedono quelli cronometrati: quanti `#iterations` se non impostato
++     entry #confidence   il percentile dell'intervallo di confidenza riportato: 95 se non impostato
++     entry #anchor   il valore dell'asse la cui cella è il termine di confronto per le altre, o `Unset`
++     entry #comparison   come le altre celle vengono confrontate con l'àncora: una `Baseline` di probably
++         Quale statistica si confronta (`Min`, `Mean` o `Max`), come ritmo o come tempo, e se il
++         confronto è geometrico o aritmetico; `Baseline()` confronta i ritmi medi geometrici.
++     entry #apply   una singola misurazione di un corpo quotato
++         `plan('{ … })` porta il corpo in staging, lo esegue sul dispositivo del piano e include
++         un `Benchmark` nel resoconto, a meno che il runner non l'abbia selezionato, nel qual
++         caso nulla viene portato in staging. Il corpo è un'espressione quotata di qualsiasi
++         tipo, costruita con i `References` di superlunary e le `Quotes` di staging nel contesto.
+
+=         `References` and the staging `Quotes` in context.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         `References` and the staging `Quotes` in context.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         `References` and the staging `Quotes` in context.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+-         bench(m"decode directly")(target = 1*Second, operationSize = 1000*Byte):
++         bench(m"decode directly")(target = 1*Second, operationSize = 1000*Byte):
+
+-           '{ Benchmarks.decodeUsersDirect() }
++           '{ Benchmarks.decodeUsersDirect() }
+
+=           '{ Benchmarks.decodeUsersDirect() }
+-         ```
++         ```
+
+-     entry #sized   gives each cell its own `OperationSize`, by its axis value or values
+-         `plan.sized((value: A) => …)` returns a `Bench.Plan.Uniaxial`, and `plan.sized((left:
+-         A, right: B) => …)` a `Bench.Plan.Biaxial`, whose `over` then measures the axes. A
+-         parser measured over documents of different lengths reports each document's size, so
+-         that the cells' rates are comparable where their times are not. A cell for which the
+-         function answers `Unset` uses the plan's `operationSize`. The lambda's parameter types
+-         must be written, so that the overload is chosen.
+-     entry #over   one measurement per defined value of an axis, or per combination of two
+-         `plan.over(axis)(body)` takes an `Axis` (`Axis(t"limit")(1000, 4000)`) and a partial
+-         function from each of its values to a quoted body; `plan.over(first, second)(body)`
+-         takes two axes and a partial function of pairs, and renders a crosstab. An enumeration's
+-         companion may stand for an axis of all its cases — `plan.over(Summation)` — in either
+-         position. A value or pair for which the body is not defined leaves a gap, found without
+-         staging anything, and a cell the runner has not selected is skipped before it is staged.
++     entry #sized   assegna a ogni cella il proprio `OperationSize`, in base al suo valore o ai suoi valori degli assi
++         `plan.sized((value: A) => …)` restituisce un `Bench.Plan.Uniaxial`, e `plan.sized((left:
++         A, right: B) => …)` un `Bench.Plan.Biaxial`, il cui `over` misura poi gli assi. Un
++         parser misurato su documenti di lunghezze diverse riporta la dimensione di ciascun
++         documento, così che i ritmi delle celle siano confrontabili dove i loro tempi non lo
++         sono. Una cella per cui la funzione risponde `Unset` usa l'`operationSize` del piano. I
++         tipi dei parametri della lambda vanno scritti, perché venga scelto l'overload giusto.
++     entry #over   una misurazione per ogni valore definito di un asse, o per ogni combinazione di due
++         `plan.over(axis)(body)` prende un `Axis` (`Axis(t"limit")(1000, 4000)`) e una funzione
++         parziale da ciascuno dei suoi valori a un corpo quotato; `plan.over(first,
++         second)(body)` prende due assi e una funzione parziale di coppie, e rende una tabella a
++         doppia entrata. L'oggetto compagno di un'enumerazione può fare le veci di un asse di
++         tutti i suoi casi — `plan.over(Summation)` — in entrambe le posizioni. Un valore o una
++         coppia per cui il corpo non è definito lascia un vuoto, trovato senza portare nulla in
++         staging, e una cella che il runner non ha selezionato viene saltata prima di essere
++         portata in staging.
+
+=         staging anything, and a cell the runner has not selected is skipped before it is staged.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         staging anything, and a cell the runner has not selected is skipped before it is staged.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         staging anything, and a cell the runner has not selected is skipped before it is staged.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+-         bench(m"count up to a limit")(target = 50*Milli(Second))
++         bench(m"count up to a limit")(target = 50*Milli(Second))
+
+-         . over(Axis(t"limit")(1000, 4000)): limit =>
++         . over(Axis(t"limit")(1000, 4000)): limit =>
+
+-             ' {
++             ' {
+
+-                 var i = 0
++                 var i = 0
+
+-                 while i < $limit do i += 1
++                 while i < $limit do i += 1
+
+-                 i
++                 i
+
+-               }
++               }
+
+=               }
+-         ```
++         ```
+
+-         Here both cells share one compilation, since they differ only in the spliced `limit`.
+-         Every cell shares the plan's `operationSize`; `#sized` gives each its own.
+-   entry .Error   raised when a benchmark device cannot deploy, run or remove a measurement
++         Qui entrambe le celle condividono una sola compilazione, poiché differiscono solo per il
++         `limit` inserito. Ogni cella condivide l'`operationSize` del piano; `#sized` ne dà a
++         ciascuna uno proprio.
++   entry .Error   sollevato quando un dispositivo di benchmark non riesce a distribuire, eseguire o rimuovere una misurazione
+
+=   entry .Error   raised when a benchmark device cannot deploy, run or remove a measurement
+-     detail
++     detail
+
+-         Error `↯/s.10.1`: _unable to run benchmarks_. Raised by a `BenchmarkDevice` when copying the
+-         staged JAR to the device, launching the measurement JVM, or removing the JAR fails, or
+-         when the measurement JVM exits with a nonzero status. `Bench`, `Stress` and `Profile`
+-         convert it to superlunary's `Rig.Error`, with the reason `Staging` or `Invocation`, so a
+-         suite sees a `Rig.Error`.
++         Errore `↯/s.10.1`: _unable to run benchmarks_. Sollevato da un `BenchmarkDevice` quando
++         falliscono la copia del JAR in staging sul dispositivo, l'avvio della JVM di misurazione
++         o la rimozione del JAR, oppure quando la JVM di misurazione termina con uno stato
++         diverso da zero. `Bench`, `Stress` e `Profile` lo convertono nel `Rig.Error` di
++         superlunary, con il motivo `Staging` o `Invocation`, così una suite vede un `Rig.Error`.
+
+-         `LocalhostDevice` passes the staged input to the measurement JVM as a command-line
+-         argument, so a body which splices in a very large value (a corpus of a megabyte or
+-         more) can exceed the operating system's argument-length limit and fail with this error.
+-   entry #heap   the measurement JVM's fixed heap size, as `-Xmx` text, or `Unset` for `1g`
+-   entry #cpus   how many processors the measurement JVM may use, or `Unset` for all of them
+-   entry #gc   the measurement JVM's collector, as in `-XX:+Use<gc>GC`, or `Unset` for `Serial`
+-   entry #Result   the result type of a staged invocation: the output itself
+-   entry #Form   the form staged inputs and outputs travel in: `Text`
+-   entry #Target   what staging produces: the `Path on Linux` of the deployed JAR
+-   entry #Transport   how spliced values are encoded for the measurement JVM: `Json`
+-   entry #apply   names and configures a benchmark, returning a `Bench.Plan` to apply to a body
++         `LocalhostDevice` passa l'input in staging alla JVM di misurazione come argomento da
++         riga di comando, quindi un corpo che inserisce un valore molto grande (un corpus di un
++         megabyte o più) può superare il limite di lunghezza degli argomenti del sistema
++         operativo e fallire con questo errore.
++   entry #heap   la dimensione fissa dello heap della JVM di misurazione, come testo `-Xmx`, o `Unset` per `1g`
++   entry #cpus   quanti processori può usare la JVM di misurazione, o `Unset` per tutti
++   entry #gc   il collector della JVM di misurazione, come in `-XX:+Use<gc>GC`, o `Unset` per `Serial`
++   entry #Result   il tipo del risultato di un'invocazione in staging: l'output stesso
++   entry #Form   la forma in cui viaggiano input e output in staging: `Text`
++   entry #Target   ciò che produce lo staging: il `Path on Linux` del JAR distribuito
++   entry #Transport   come vengono codificati per la JVM di misurazione i valori inseriti: `Json`
++   entry #apply   dà un nome a un benchmark e lo configura, restituendo un `Bench.Plan` da applicare a un corpo
+
+-       `bench(name, tags*)(target, operationSize, iterations, warmups, confidence, baseline,
++       `bench(name, tags*)(target, operationSize, iterations, warmups, confidence, baseline,
+
+-       comparison)`:
++       comparison)`:
+
+-       - `name` is a `Message`, `m"…"`, and `tags` label the benchmark for selection
+-         (`n"slow"`, which needs the tag plane's `Nominative` imported by name:
++       - `name` è un `Message`, `m"…"`, e `tags` etichettano il benchmark per la selezione
++         (`n"slow"`, che richiede il `Nominative` del piano dei tag importato per nome:
+
+-         `import soundness.{nominative, taggingNominative}`);
++         `import soundness.{nominative, taggingNominative}`);
+
+-       - `target` is the measuring time, any duration (`1*Second`, `50*Milli(Second)`);
+-       - `operationSize` the size of one operation, usually a quantity such as `4096*Byte`,
+-         converted by `OperationSize.conversion`, for a throughput figure;
+-       - `iterations` the number of timed batches (five by default), and `warmups` the number
+-         of calibration batches (as many as `iterations` by default);
+-       - `confidence` the percentile of the confidence interval: 80, 85, 90, 95 (the default),
+-         96, 97, 98 or 99;
+-       - `baseline` an axis value whose cell anchors a comparison, for a plan spread `over` an
+-         axis, and `comparison` how the comparison is made, a probably `Baseline`.
+-   entry #stage   builds the code under measurement into a JAR and deploys it to the device
+-       Bundles the staged code with superlunary's executor as its entry point, names the JAR by
+-       a fresh UUID, and calls the device's `deploy`. A failure to build or deploy is raised as
+-       a `Rig.Error` with the reason `Staging`. `Bench`, `Stress` and `Profile` all stage the same
+-       way; a suite never calls this itself.
++       - `target` è il tempo di misurazione, una durata qualsiasi (`1*Second`,
++         `50*Milli(Second)`);
++       - `operationSize` è la dimensione di un'operazione, di solito una grandezza come
++         `4096*Byte`, convertita da `OperationSize.conversion`, per un dato di throughput;
++       - `iterations` è il numero di lotti cronometrati (cinque per impostazione predefinita), e
++         `warmups` il numero di lotti di calibrazione (quanti `iterations` per impostazione
++         predefinita);
++       - `confidence` è il percentile dell'intervallo di confidenza: 80, 85, 90, 95 (il valore
++         predefinito), 96, 97, 98 o 99;
++       - `baseline` è un valore dell'asse la cui cella fa da àncora a un confronto, per un piano
++         distribuito `over` un asse, e `comparison` il modo in cui si fa il confronto, una
++         `Baseline` di probably.
++   entry #stage   compila il codice da misurare in un JAR e lo distribuisce sul dispositivo
++       Impacchetta il codice in staging con l'executor di superlunary come punto di ingresso,
++       dà al JAR il nome di un UUID nuovo, e chiama il `deploy` del dispositivo. Un fallimento
++       nella compilazione o nella distribuzione viene sollevato come `Rig.Error` con il motivo
++       `Staging`. `Bench`, `Stress` e `Profile` vanno tutti in staging allo stesso modo; una
++       suite non lo chiama mai direttamente.
+
+- entry .Stress   a stress test: a quoted operation run concurrently for a window, reporting memory, GC and latency
++ entry .Stress   uno stress test: un'operazione quotata eseguita in modo concorrente per una finestra, che riporta memoria, GC e latenza
+
+= entry .Stress   a stress test: a quoted operation run concurrently for a window, reporting memory, GC and latency
+-   detail
++   detail
+
+-       Where a `Bench` times one operation repeated on a single thread, a `Stress` runs the
+-       operation on `concurrency` workers at once, each repeating it until a wall-clock window
+-       closes, and reports what a throughput figure hides, as a probably `Strain`: the worker
+-       count, the operations completed and the time taken, total allocation (and so allocation
+-       per operation), peak heap, the live set retained after a garbage collection, the number
+-       and duration of collections, and the 50th, 90th, 99th and 99.9th percentile latencies
+-       of an operation, from a log-linear histogram accurate to about 3%.
++       Mentre un `Bench` cronometra un'operazione ripetuta su un singolo thread, uno `Stress`
++       esegue l'operazione su `concurrency` worker contemporaneamente, ciascuno dei quali la
++       ripete finché non si chiude una finestra di tempo reale, e riporta ciò che un dato di
++       throughput nasconde, come uno `Strain` di probably: il numero di worker, le operazioni
++       completate e il tempo impiegato, l'allocazione totale (e quindi l'allocazione per
++       operazione), il picco dello heap, l'insieme vivo trattenuto dopo una garbage collection,
++       il numero e la durata delle collection, e i percentili di latenza 50°, 90°, 99° e 99,9°
++       di un'operazione, da un istogramma log-lineare preciso a circa il 3%.
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+-       import superlunary.embeddings.automaticEmbedding
++       import superlunary.embeddings.automaticEmbedding
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+=       import superlunary.embeddings.automaticEmbedding
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+=       of an operation, from a log-linear histogram accurate to about 3%.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+=       import superlunary.embeddings.automaticEmbedding
+=       import systems.javaBaseSystem
+-       import temporaryDirectories.systemTemporaryDirectory
++       import temporaryDirectories.systemTemporaryDirectory
+
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+=       import threads.virtualThreads
+=
+-       given BenchmarkDevice = LocalhostDevice
++       given BenchmarkDevice = LocalhostDevice
+
+-       object Benchmarks extends Suite(m"Hand-off benchmarks"):
++       object Benchmarks extends Suite(m"Hand-off benchmarks"):
+
+=       object Benchmarks extends Suite(m"Hand-off benchmarks"):
+-         def run(): Unit =
++         def run(): Unit =
+
+-           val stress = Stress()
++           val stress = Stress()
+
+-           val constrained = Stress(heap = t"128m")
++           val constrained = Stress(heap = t"128m")
+
+-           stress(m"cross-thread hand-off")(target = 2*Second, concurrency = 16):
++           stress(m"cross-thread hand-off")(target = 2*Second, concurrency = 16):
+
+=           stress(m"cross-thread hand-off")(target = 2*Second, concurrency = 16):
+-             '{ Pipeline.handOff() }
++             '{ Pipeline.handOff() }
+
+-           constrained(m"hand-off in a small heap")(target = 1*Second, sweep = 1024):
++           constrained(m"hand-off in a small heap")(target = 1*Second, sweep = 1024):
+
+=           constrained(m"hand-off in a small heap")(target = 1*Second, sweep = 1024):
+-             '{ Pipeline.handOff() }
++             '{ Pipeline.handOff() }
+
+=             '{ Pipeline.handOff() }
+-       ```
++       ```
+
+-       A single window is one measurement. Three settings of `#apply` turn it into a search
+-       over the worker count, each window's count chosen by a `StressSearch` from the outcome of
+-       the windows before it, and every window reported as a cell on the test's `N` axis, so a
+-       search reads as a curve against `N` in one test rather than as many tests:
++       Una singola finestra è una misurazione. Tre impostazioni di `#apply` la trasformano in una
++       ricerca sul numero di worker, in cui il numero di ogni finestra è scelto da uno
++       `StressSearch` in base all'esito delle finestre precedenti, e ogni finestra è riportata
++       come una cella sull'asse `N` del test, così una ricerca si legge come una curva rispetto a
++       `N` in un solo test anziché come tanti test:
+
+-       - `sweep` doubles the worker count from `concurrency` (one, by default) up to `sweep`,
+-         stopping early at a window which ran out of memory or spent more than half its time
+-         collecting garbage — so in a constrained heap the last row is the most concurrency
+-         that heap sustains;
+-       - `threshold` and `compliance`, given together, search for **capacity**: the largest
+-         worker count at which at least `compliance` percent of operations complete within
+-         `threshold`, binary-searched to about 12% and then confirmed over a window three times
+-         longer, the confirmed row flagged `sustained`;
+-       - `refine` looks for the **optimum** count rather than a power of two or the largest
+-         compliant count: the smallest whose throughput is within 5% of the best — the peak of
+-         a peaked curve, or the knee of one which flattens out — re-measured over extended
+-         windows and flagged `sustained`.
++       - `sweep` raddoppia il numero di worker da `concurrency` (uno, per impostazione
++         predefinita) fino a `sweep`, fermandosi prima a una finestra che ha esaurito la memoria
++         o ha passato più di metà del suo tempo a raccogliere garbage — così, in uno heap
++         limitato, l'ultima riga è la massima concorrenza che quello heap sostiene;
++       - `threshold` e `compliance`, dati insieme, cercano la **capacità**: il massimo numero di
++         worker al quale almeno il `compliance` per cento delle operazioni si completa entro
++         `threshold`, cercato per bisezione fino a circa il 12% e poi confermato su una finestra
++         tre volte più lunga, con la riga confermata contrassegnata `sustained`;
++       - `refine` cerca il numero **ottimale** anziché una potenza di due o il massimo numero
++         conforme: il più piccolo il cui throughput è entro il 5% del migliore — il picco di una
++         curva con un picco, o il ginocchio di una che si appiattisce — rimisurato su finestre
++         estese e contrassegnato `sustained`.
+
+-       The workers' threads are the kind the `Threading` in scope forks: under
+-       `threads.virtualThreads`, a high-concurrency measurement multiplexes its workers over the
+-       carrier pool, as a massively concurrent application would. Allocation is still fully
+-       accounted either way. A worker whose operation throws fails its window, reported once
+-       on the standard error, rather than printing a trace per worker.
++       I thread dei worker sono del tipo che crea il `Threading` nell'ambito: con
++       `threads.virtualThreads`, una misurazione ad alta concorrenza multiplexa i suoi worker sul
++       pool dei portatori, come farebbe un'applicazione massicciamente concorrente.
++       L'allocazione viene comunque conteggiata per intero in entrambi i casi. Un worker la cui
++       operazione lancia un'eccezione fa fallire la sua finestra, riportata una sola volta sullo
++       standard error, invece di stampare una traccia per ogni worker.
+
+-       The constructor's `heap`, `cpus` and `gc` pin the measurement JVM as for `Bench`; a
+-       saturated multi-threaded workload measuring tail latency should select `gc = t"G1"`, so
+-       that the Serial collector's stop-the-world pauses do not dominate the 99th percentile.
+-       Stress rows are selected with fume's `--stress` switch, not `--bench`.
++       I parametri `heap`, `cpus` e `gc` del costruttore fissano la JVM di misurazione come per
++       `Bench`; un carico multi-thread saturo che misura la latenza di coda dovrebbe scegliere
++       `gc = t"G1"`, così che le pause stop-the-world del collector Serial non dominino il 99°
++       percentile. Le righe di stress si selezionano con l'opzione `--stress` di fume, non con
++       `--bench`.
+
+-   refer sedentary.StressSearch
++   refer sedentary.StressSearch
+
+-   refer probably.Strain
++   refer probably.Strain
+
+=   refer probably.Strain
+-   refer sedentary.Bench
++   refer sedentary.Bench
+
+-   entry #heap   the measurement JVM's fixed heap size, as `-Xmx` text, or `Unset` for `1g`
+-   entry #cpus   how many processors the measurement JVM may use, or `Unset` for all of them
+-   entry #gc   the measurement JVM's collector, as in `-XX:+Use<gc>GC`, or `Unset` for `Serial`
+-   entry #Result   the result type of a staged invocation: the output itself
+-   entry #Form   the form staged inputs and outputs travel in: `Text`
+-   entry #Target   what staging produces: the `Path on Linux` of the deployed JAR
+-   entry #Transport   how spliced values are encoded for the measurement JVM: `Json`
+-   entry #apply   runs a stress test of a quoted body: one window, a sweep, a capacity search or a refinement
++   entry #heap   la dimensione fissa dello heap della JVM di misurazione, come testo `-Xmx`, o `Unset` per `1g`
++   entry #cpus   quanti processori può usare la JVM di misurazione, o `Unset` per tutti
++   entry #gc   il collector della JVM di misurazione, come in `-XX:+Use<gc>GC`, o `Unset` per `Serial`
++   entry #Result   il tipo del risultato di un'invocazione in staging: l'output stesso
++   entry #Form   la forma in cui viaggiano input e output in staging: `Text`
++   entry #Target   ciò che produce lo staging: il `Path on Linux` del JAR distribuito
++   entry #Transport   come vengono codificati per la JVM di misurazione i valori inseriti: `Json`
++   entry #apply   esegue uno stress test di un corpo quotato: una finestra, uno sweep, una ricerca di capacità o un affinamento
+
+-       `stress(name, tags*)(target, concurrency, sweep, threshold, compliance, refine)(body)`:
++       `stress(name, tags*)(target, concurrency, sweep, threshold, compliance, refine)(body)`:
+
+-       - `target` is the length of each window, any duration, scaled by the runner's duration
+-         multiplier; `threshold`, a latency criterion rather than a length of time, is not;
+-       - `concurrency` is the worker count, or the first count of a search (one by default);
+-       - `sweep` is the largest worker count a search may reach (1024 for a capacity search
+-         without one);
+-       - `threshold` and `compliance` (a percentage) together set a latency objective; giving
+-         only one of them is a programming error, and panics;
+-       - `refine` searches for the optimum worker count.
++       - `target` è la lunghezza di ogni finestra, una durata qualsiasi, scalata dal
++         moltiplicatore di durata del runner; `threshold`, che è un criterio di latenza e non una
++         lunghezza di tempo, non lo è;
++       - `concurrency` è il numero di worker, o il primo numero di una ricerca (uno per
++         impostazione predefinita);
++       - `sweep` è il massimo numero di worker che una ricerca può raggiungere (1024 per una
++         ricerca di capacità che non lo specifica);
++       - `threshold` e `compliance` (una percentuale) insieme fissano un obiettivo di latenza;
++         darne solo uno è un errore di programmazione, e provoca un panic;
++       - `refine` cerca il numero ottimale di worker.
+
+-       The body is a quoted expression, as for `Bench.Plan#apply`. The test declares its `N`
+-       axis, bounded by `concurrency` and `sweep`, before anything runs, so a host can offer
+-       `N` constraints in a listing, and its expected duration is one window for a single
+-       measurement and roughly logarithmic in `sweep` for a search. A window which ran out of
+-       memory is not reported; every other window is, including a failed confirmation.
++       Il corpo è un'espressione quotata, come per `Bench.Plan#apply`. Il test dichiara il suo
++       asse `N`, delimitato da `concurrency` e `sweep`, prima che qualcosa venga eseguito, così
++       un host può offrire vincoli su `N` in un elenco, e la sua durata attesa è una finestra
++       per una singola misurazione e approssimativamente logaritmica in `sweep` per una
++       ricerca. Una finestra che ha esaurito la memoria non viene riportata; ogni altra finestra
++       sì, inclusa una conferma fallita.
+
+=       memory is not reported; every other window is, including a failed confirmation.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       memory is not reported; every other window is, including a failed confirmation.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       memory is not reported; every other window is, including a failed confirmation.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       stress(m"requests within 5 ms")
++       stress(m"requests within 5 ms")
+
+-         ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99, refine = true ):
++         ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99, refine = true ):
+
+-         '{ Server.roundtrip() }
++         '{ Server.roundtrip() }
+
+=         '{ Server.roundtrip() }
+-       ```
++       ```
+
+=       ```
+-   entry #stage   builds the code under measurement into a JAR and deploys it to the device
+-       As `Bench#stage`: a failure is a `Rig.Error` with the reason `Staging`.
++   entry #stage   compila il codice da misurare in un JAR e lo distribuisce sul dispositivo
++       Come `Bench#stage`: un fallimento è un `Rig.Error` con il motivo `Staging`.
+
+- entry .StressSearch   chooses the worker count of each window of a `Stress` search, from the windows before it
++ entry .StressSearch   sceglie il numero di worker di ogni finestra di una ricerca `Stress`, in base alle finestre precedenti
+
+= entry .StressSearch   chooses the worker count of each window of a `Stress` search, from the windows before it
+-   detail
++   detail
+
+-       The search a `Stress` with `sweep`, `threshold` and `compliance`, or `refine` performs. It
+-       runs inside the measurement JVM, called from the staged loop, but is an ordinary class,
+-       so a search can be tested against a simulated workload without staging anything:
++       La ricerca che esegue uno `Stress` con `sweep`, `threshold` e `compliance`, oppure con
++       `refine`. Gira dentro la JVM di misurazione, chiamata dal ciclo in staging, ma è una
++       classe ordinaria, quindi una ricerca si può testare su un carico simulato senza portare
++       nulla in staging:
+
+=       so a search can be tested against a simulated workload without staging anything:
+=
+-       ```scala
++       ```scala
+
+=       so a search can be tested against a simulated workload without staging anything:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val search = StressSearch(1, 64, false, false)
++       val search = StressSearch(1, 64, false, false)
+
+-       var counts: List[Int] = Nil
++       var counts: List[Int] = Nil
+
+-       while !search.done do
++       while !search.done do
+
+-         counts = counts :+ search.current
++         counts = counts :+ search.current
+
+-         search.record(search.current.toDouble, true, false)
++         search.record(search.current.toDouble, true, false)
+
+-       counts   // List(1, 2, 4, 8, 16, 32, 64)
++       counts   // List(1, 2, 4, 8, 16, 32, 64)
+
+=       counts   // List(1, 2, 4, 8, 16, 32, 64)
+-       ```
++       ```
+
+-       The constructor takes the first worker count, the largest, whether there is a latency
+-       objective (an SLO), and whether to refine. Every search begins with an **ascent**,
+-       doubling the count, landing exactly on the cap even when it is not a power of two:
++       Il costruttore prende il primo numero di worker, il massimo, se c'è un obiettivo di
++       latenza (uno SLO), e se affinare. Ogni ricerca inizia con una **salita**, che raddoppia il
++       numero, atterrando esattamente sul tetto anche quando non è una potenza di due:
+
+-       - Without an SLO, the ascent is the whole of a plain sweep, stopping at the cap or at a
+-         window which exhausted memory or thrashed. A plain sweep has no winner.
+-       - With an SLO, the ascent stops at the first window which misses the objective, and the
+-         boundary between the largest compliant and the smallest non-compliant count is
+-         binary-searched to about 12%. The largest compliant count is confirmed over an extended
+-         window, stepping down about 12% at a time, up to three times, if the confirmation fails.
+-         If even the first window misses, the search stops there, with no winner.
+-       - With `refine`, after the ascent (and any boundary search) it probes halfway across
+-         the gaps around the fastest feasible count until they are within about 6% — first
+-         the **peak**, then the **knee**, the smallest count within `.Plateau` of the fastest —
+-         and re-measures the knee, the count below it and the peak over extended windows. The
+-         smallest of them within 5% of the fastest re-measurement wins. If the peak's
+-         re-measurement falls more than 5% short, the peak was a lucky window: the
+-         re-measurements replace the first ones and the search starts again, up to `.Restarts`
+-         times. A window which failed or missed the SLO bounds the probing but is never a
+-         candidate.
++       - Senza SLO, la salita è l'intero sweep semplice, che si ferma al tetto o a una finestra
++         che ha esaurito la memoria o è andata in thrashing. Uno sweep semplice non ha vincitore.
++       - Con uno SLO, la salita si ferma alla prima finestra che manca l'obiettivo, e il confine
++         tra il massimo numero conforme e il minimo non conforme viene cercato per bisezione fino
++         a circa il 12%. Il massimo numero conforme viene confermato su una finestra estesa,
++         scendendo di circa il 12% alla volta, fino a tre volte, se la conferma fallisce. Se
++         persino la prima finestra manca l'obiettivo, la ricerca si ferma lì, senza vincitore.
++       - Con `refine`, dopo la salita (e l'eventuale ricerca del confine) sonda a metà degli
++         intervalli attorno al numero ammissibile più veloce finché non rientrano in circa il 6%
++         — prima il **picco**, poi il **ginocchio**, il numero più piccolo entro `.Plateau` dal
++         più veloce — e rimisura il ginocchio, il numero sotto di esso e il picco su finestre
++         estese. Vince il più piccolo di essi entro il 5% dalla rimisurazione più veloce. Se la
++         rimisurazione del picco resta indietro di più del 5%, il picco era una finestra
++         fortunata: le rimisurazioni sostituiscono le prime e la ricerca ricomincia, fino a
++         `.Restarts` volte. Una finestra che è fallita o ha mancato lo SLO delimita il
++         sondaggio ma non è mai una candidata.
+
+-   refer sedentary.Stress
++   refer sedentary.Stress
+
+-   entry .MaxProbes   the most windows spent probing around the peak, and again around the knee: 12
+-   entry .Plateau   the fraction of the best throughput within which a count is as good as the best: 0.05
+-   entry .Restarts   how many times a refined search starts again after finding a lucky peak: 2
+-   entry .Phase   the stage a search is in, from its ascent to done
+-       `Ascent` doubles the count; `Boundary` binary-searches the SLO boundary; `Peak` and
+-       `Knee` probe for the optimum in a refined search; `Confirmation` re-measures candidates
+-       over extended windows; `StepDown` retreats about 12% at a time from a failed
+-       confirmation; and `Done` ends the search.
+-   entry #done   whether the search has finished, so no further window should run
+-   entry #current   the worker count the next window should run at
+-   entry #extended   whether the next window is a confirmation, run three times longer than the target
+-   entry #winner   the ordinal of the winning window, counting every recorded window from zero, or -1
+-       A plain sweep, and a search in which no confirmation held, have no winner. A `Stress`
+-       flags the winning window's row `sustained`.
+-   entry #record   records the outcome of the window just run at `#current` workers
+-       `record(throughput, ok, exhausted)`: the window's throughput in operations per
+-       nanosecond; whether it was feasible — no failure, no memory exhaustion, no thrashing,
+-       and within the SLO if there is one; and whether it ran out of memory or thrashed, which
+-       ends a plain sweep's ascent. The search then chooses the next `#current`, or finishes.
++   entry .MaxProbes   il massimo di finestre spese a sondare attorno al picco, e di nuovo attorno al ginocchio: 12
++   entry .Plateau   la frazione del throughput migliore entro cui un numero vale quanto il migliore: 0.05
++   entry .Restarts   quante volte una ricerca affinata ricomincia dopo aver trovato un picco fortunato: 2
++   entry .Phase   la fase in cui si trova una ricerca, dalla salita alla conclusione
++       `Ascent` raddoppia il numero; `Boundary` cerca per bisezione il confine dello SLO; `Peak`
++       e `Knee` sondano l'ottimo in una ricerca affinata; `Confirmation` rimisura i candidati su
++       finestre estese; `StepDown` arretra di circa il 12% alla volta da una conferma fallita; e
++       `Done` conclude la ricerca.
++   entry #done   se la ricerca è finita, così che non vada eseguita nessun'altra finestra
++   entry #current   il numero di worker con cui dovrebbe girare la prossima finestra
++   entry #extended   se la prossima finestra è una conferma, eseguita per un tempo tre volte più lungo dell'obiettivo
++   entry #winner   l'ordinale della finestra vincente, contando da zero ogni finestra registrata, o -1
++       Uno sweep semplice, e una ricerca in cui nessuna conferma ha tenuto, non hanno vincitore.
++       Uno `Stress` contrassegna la riga della finestra vincente come `sustained`.
++   entry #record   registra l'esito della finestra appena eseguita con `#current` worker
++       `record(throughput, ok, exhausted)`: il throughput della finestra in operazioni per
++       nanosecondo; se era ammissibile — nessun fallimento, nessun esaurimento della memoria,
++       nessun thrashing, ed entro lo SLO se ce n'è uno; e se ha esaurito la memoria o è andata
++       in thrashing, il che conclude la salita di uno sweep semplice. La ricerca sceglie poi il
++       prossimo `#current`, oppure finisce.
+
+- entry .Profile   a profile: a quoted operation run under JFR, reporting its hottest methods as a histogram
++ entry .Profile   un profilo: un'operazione quotata eseguita sotto JFR, che riporta i suoi metodi più caldi come un istogramma
+
+= entry .Profile   a profile: a quoted operation run under JFR, reporting its hottest methods as a histogram
+-   detail
++   detail
+
+-       Where a `Bench` measures how fast an operation runs and a `Stress` how it scales, a
+-       `Profile` measures where its time goes. The body runs repeatedly on one thread for the
+-       target duration while an in-process JFR recording samples execution every millisecond,
+-       recording native-method samples alongside, so a pipeline bound by native code (zlib, say)
+-       is not invisible. Each sample's top frame — the method actually executing, its **self
+-       time** — is counted, and the hottest methods are reported as a probably `Hotspots`,
+-       rendered as a histogram with methods coloured by package.
++       Mentre un `Bench` misura quanto velocemente gira un'operazione e uno `Stress` come scala,
++       un `Profile` misura dove va il suo tempo. Il corpo viene eseguito ripetutamente su un
++       thread per la durata obiettivo mentre una registrazione JFR interna al processo campiona
++       l'esecuzione ogni millisecondo, registrando anche campioni dei metodi nativi, così una
++       pipeline vincolata dal codice nativo (zlib, per esempio) non è invisibile. Viene contato
++       il frame in cima a ogni campione — il metodo effettivamente in esecuzione, il suo **tempo
++       proprio** — e i metodi più caldi vengono riportati come un `Hotspots` di probably, reso
++       come un istogramma con i metodi colorati per package.
+
+=       rendered as a histogram with methods coloured by package.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+-       import environments.javaBaseEnvironment
++       import environments.javaBaseEnvironment
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+-       import superlunary.embeddings.automaticEmbedding
++       import superlunary.embeddings.automaticEmbedding
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+=       import superlunary.embeddings.automaticEmbedding
+-       import systems.javaBaseSystem
++       import systems.javaBaseSystem
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+=       import superlunary.embeddings.automaticEmbedding
+=       import systems.javaBaseSystem
+-       import temporaryDirectories.systemTemporaryDirectory
++       import temporaryDirectories.systemTemporaryDirectory
+
+=       rendered as a histogram with methods coloured by package.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import classloaders.threadContextClassloader
+=       import environments.javaBaseEnvironment
+=       import strategies.throwUnsafely
+=       import superlunary.embeddings.automaticEmbedding
+=       import systems.javaBaseSystem
+=       import temporaryDirectories.systemTemporaryDirectory
+=
+-       given BenchmarkDevice = LocalhostDevice
++       given BenchmarkDevice = LocalhostDevice
+
+-       object Benchmarks extends Suite(m"Pipeline profiles"):
++       object Benchmarks extends Suite(m"Pipeline profiles"):
+
+=       object Benchmarks extends Suite(m"Pipeline profiles"):
+-         def run(): Unit =
++         def run(): Unit =
+
+-           val profile = Profile()
++           val profile = Profile()
+
+-           profile(m"pipeline hotspots")(target = 5*Second):
++           profile(m"pipeline hotspots")(target = 5*Second):
+
+=           profile(m"pipeline hotspots")(target = 5*Second):
+-             '{ Pipeline.run() }
++             '{ Pipeline.run() }
+
+-           profile(m"pipeline costs, inclusive")(target = 5*Second, frames = 60, inclusive = true):
++           profile(m"pipeline costs, inclusive")(target = 5*Second, frames = 60, inclusive = true):
+
+=           profile(m"pipeline costs, inclusive")(target = 5*Second, frames = 60, inclusive = true):
+-             '{ Pipeline.run() }
++             '{ Pipeline.run() }
+
+=             '{ Pipeline.run() }
+-       ```
++       ```
+
+-       JFR's execution sampler observes only runnable threads, so this is a CPU profile: time
+-       spent parked or waiting does not appear. It samples every thread, though, so the threads
+-       a body spawns are profiled with it. The constructor's `heap` and `cpus` pin the
+-       measurement JVM as for `Bench`; a profile always uses the device's default collector.
+-       Profile rows are selected with fume's `--profile` switch: `--bench` alone does not run
+-       them.
++       Il campionatore di esecuzione di JFR osserva solo i thread eseguibili, quindi questo è
++       un profilo della CPU: il tempo passato parcheggiato o in attesa non compare. Campiona
++       però ogni thread, così i thread che un corpo genera vengono profilati insieme a lui. I
++       parametri `heap` e `cpus` del costruttore fissano la JVM di misurazione come per `Bench`;
++       un profilo usa sempre il collector predefinito del dispositivo. Le righe di profilo si
++       selezionano con l'opzione `--profile` di fume: `--bench` da sola non le esegue.
+
+-   refer probably.Hotspots
++   refer probably.Hotspots
+
+=   refer probably.Hotspots
+-   refer sedentary.Bench
++   refer sedentary.Bench
+
+-   entry #heap   the measurement JVM's fixed heap size, as `-Xmx` text, or `Unset` for `1g`
+-   entry #cpus   how many processors the measurement JVM may use, or `Unset` for all of them
+-   entry #Result   the result type of a staged invocation: the output itself
+-   entry #Form   the form staged inputs and outputs travel in: `Text`
+-   entry #Target   what staging produces: the `Path on Linux` of the deployed JAR
+-   entry #Transport   how spliced values are encoded for the measurement JVM: `Json`
+-   entry #apply   profiles a quoted body for a target duration, reporting its hottest methods
+-       `profile(name, tags*)(target, frames, inclusive)(body)`: `target` is how long to record
+-       for, any duration, scaled by the runner's duration multiplier; `frames` caps how many
+-       methods are reported (25 by default); and `inclusive` counts a sample for every distinct
+-       method on its stack rather than its top frame alone.
++   entry #heap   la dimensione fissa dello heap della JVM di misurazione, come testo `-Xmx`, o `Unset` per `1g`
++   entry #cpus   quanti processori può usare la JVM di misurazione, o `Unset` per tutti
++   entry #Result   il tipo del risultato di un'invocazione in staging: l'output stesso
++   entry #Form   la forma in cui viaggiano input e output in staging: `Text`
++   entry #Target   ciò che produce lo staging: il `Path on Linux` del JAR distribuito
++   entry #Transport   come vengono codificati per la JVM di misurazione i valori inseriti: `Json`
++   entry #apply   profila un corpo quotato per una durata obiettivo, riportando i suoi metodi più caldi
++       `profile(name, tags*)(target, frames, inclusive)(body)`: `target` è per quanto tempo
++       registrare, una durata qualsiasi, scalata dal moltiplicatore di durata del runner;
++       `frames` limita quanti metodi vengono riportati (25 per impostazione predefinita); e
++       `inclusive` conta un campione per ogni metodo distinto sul suo stack anziché per il solo
++       frame in cima.
+
+-       An inclusive profile gives each method's share of the time spent in it **or anything it
+-       called**, which finds a cost hidden inside a callee or spread across several — a string
+-       constructor inlined into a generated loop, say — that the self-time histogram attributes
+-       elsewhere. The shares then sum to more than the whole, and the outermost frames show
+-       near 100%. Method and class names are reported in their source form, with compiler
+-       mangling undone.
+-   entry #stage   builds the code under measurement into a JAR and deploys it to the device
+-       As `Bench#stage`: a failure is a `Rig.Error` with the reason `Staging`.
++       Un profilo inclusivo dà a ogni metodo la sua quota del tempo passato in esso **o in
++       qualunque cosa abbia chiamato**, il che scova un costo nascosto dentro un metodo chiamato
++       o sparso tra diversi — un costruttore di stringhe reso inline in un ciclo generato, per
++       esempio — che l'istogramma del tempo proprio attribuisce altrove. Le quote allora sommano
++       a più del totale, e i frame più esterni mostrano quasi il 100%. I nomi di metodi e
++       classi vengono riportati nella loro forma sorgente, con il mangling del compilatore
++       annullato.
++   entry #stage   compila il codice da misurare in un JAR e lo distribuisce sul dispositivo
++       Come `Bench#stage`: un fallimento è un `Rig.Error` con il motivo `Staging`.
+
+- entry .BenchmarkDevice   where a measurement JVM runs: the local machine, or a host reached over SSH
++ entry .BenchmarkDevice   dove gira una JVM di misurazione: la macchina locale, o un host raggiunto via SSH
+
+= entry .BenchmarkDevice   where a measurement JVM runs: the local machine, or a host reached over SSH
+-   detail
++   detail
+
+-       A `BenchmarkDevice` deploys a staged JAR, launches a JVM to run it with a given input,
+-       returns its output, and removes the JAR. `Bench`, `Stress` and `Profile` each take one as
+-       a contextual value when they are constructed, so a suite chooses its device once, as a
+-       given:
++       Un `BenchmarkDevice` distribuisce un JAR in staging, avvia una JVM per eseguirlo con un
++       dato input, ne restituisce l'output e rimuove il JAR. `Bench`, `Stress` e `Profile` ne
++       prendono ciascuno uno come valore contestuale quando vengono costruiti, così una suite
++       sceglie il suo dispositivo una volta, come given:
+
+=       given:
+=
+-       ```scala
++       ```scala
+
+=       given:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       given:
+=
+=       ```scala
+=       import soundness.*
+=
+-       given BenchmarkDevice = LocalhostDevice
++       given BenchmarkDevice = LocalhostDevice
+
+=       given:
+=
+=       ```scala
+=       import soundness.*
+=
+=       given BenchmarkDevice = LocalhostDevice
+-       ```
++       ```
+
+-       `LocalhostDevice` runs the JVM on the local machine; a `NetworkDevice` copies the JAR to
+-       a remote host with `scp` and runs it with `ssh`, and its `session` multiplexes every
+-       operation over one SSH connection. A device on a quiet, dedicated Linux machine gives
+-       the steadiest figures, and is the only kind on which `cpus` pins the process to cores.
+-       Every operation raises `Bench.Error` when it fails.
++       `LocalhostDevice` esegue la JVM sulla macchina locale; un `NetworkDevice` copia il JAR su
++       un host remoto con `scp` e lo esegue con `ssh`, e la sua `session` multiplexa ogni
++       operazione su un'unica connessione SSH. Un dispositivo su una macchina Linux tranquilla e
++       dedicata dà i risultati più stabili, ed è l'unico tipo su cui `cpus` vincola il processo
++       a dei core. Ogni operazione solleva `Bench.Error` quando fallisce.
+
+-       The measurement JVM is launched with a fixed heap (`-Xms` and `-Xmx` both `1g` unless a
+-       `heap` is given), its heap pre-touched, two JIT compiler threads, and the Serial
+-       collector unless a `gc` is given.
++       La JVM di misurazione viene avviata con uno heap fisso (`-Xms` e `-Xmx` entrambi `1g` a
++       meno che non sia dato un `heap`), con lo heap pre-toccato, due thread del compilatore
++       JIT, e il collector Serial a meno che non sia dato un `gc`.
+
+-   refer sedentary.LocalhostDevice
++   refer sedentary.LocalhostDevice
+
+=   refer sedentary.LocalhostDevice
+-   refer sedentary.NetworkDevice
++   refer sedentary.NetworkDevice
+
+-   refer sedentary.Bench.Error
++   refer sedentary.Bench.Error
+
+-   entry #deploy   makes a staged JAR available on the device, under a name from its UUID
+-       Raises `Bench.Error` if the JAR cannot be copied there.
+-   entry #invoke   runs a staged JAR in a fresh JVM on the device with one input, and returns its output
+-       `invoke(path, input, heap, cpus, gc)` raises `Bench.Error` if the JVM cannot be launched
+-       or exits with a nonzero status.
++   entry #deploy   rende disponibile sul dispositivo un JAR in staging, con un nome ricavato dal suo UUID
++       Solleva `Bench.Error` se il JAR non può essere copiato lì.
++   entry #invoke   esegue un JAR in staging in una JVM nuova sul dispositivo con un input, e ne restituisce l'output
++       `invoke(path, input, heap, cpus, gc)` solleva `Bench.Error` se la JVM non può essere
++       avviata o termina con uno stato diverso da zero.
+
+-       - `heap` overrides the fixed heap size, in `-Xmx` syntax (`t"256m"`), for both `-Xms`
+-         and `-Xmx`; unset, it is `1g`. A constrained heap shows what a workload sustains in a
+-         small, pinned amount of memory.
+-       - `cpus` limits the JVM to that many processors with `-XX:ActiveProcessorCount`, which
+-         sizes the GC and JIT threads and every pool derived from the available-processor
+-         count. On a Linux `NetworkDevice` the process is additionally pinned to that many
+-         cores with `taskset`; elsewhere, including on a macOS `LocalhostDevice`, platform
+-         threads still schedule across every core, so the limit is advisory.
+-       - `gc` names the collector in `-XX:+Use<gc>GC` syntax (`t"G1"`, `t"Parallel"`, `t"Z"`);
+-         unset, it is `Serial`.
+-   entry #undeploy   removes a staged JAR from the device
+-       Raises `Bench.Error` if the JAR cannot be removed.
++       - `heap` sostituisce la dimensione fissa dello heap, nella sintassi di `-Xmx`
++         (`t"256m"`), sia per `-Xms` sia per `-Xmx`; se non è impostato, vale `1g`. Uno heap
++         limitato mostra cosa sostiene un carico in una quantità di memoria piccola e fissata.
++       - `cpus` limita la JVM a quel numero di processori con `-XX:ActiveProcessorCount`, che
++         dimensiona i thread del GC e del JIT e ogni pool ricavato dal numero di processori
++         disponibili. Su un `NetworkDevice` Linux il processo viene inoltre vincolato a quel
++         numero di core con `taskset`; altrove, compreso un `LocalhostDevice` su macOS, i
++         platform thread vengono comunque schedulati su tutti i core, quindi il limite è solo
++         indicativo.
++       - `gc` indica il collector nella sintassi `-XX:+Use<gc>GC` (`t"G1"`, `t"Parallel"`,
++         `t"Z"`); se non è impostato, vale `Serial`.
++   entry #undeploy   rimuove un JAR in staging dal dispositivo
++       Solleva `Bench.Error` se il JAR non può essere rimosso.
+
+- entry .LocalhostDevice   the benchmark device which runs each measurement JVM on the local machine
++ entry .LocalhostDevice   il dispositivo di benchmark che esegue ogni JVM di misurazione sulla macchina locale
+
+= entry .LocalhostDevice   the benchmark device which runs each measurement JVM on the local machine
+-   detail
++   detail
+
+-       Deploying and removing a JAR are no-ops, since the staged JAR is already on the local
+-       filesystem, and `invoke` launches the `java` on the path directly. The measurement JVM's
+-       standard error is inherited, so its diagnostics — a failed worker's stack trace — appear
+-       as they happen, and cannot fill an undrained pipe and stall the harness.
++       Distribuire e rimuovere un JAR non fanno nulla, poiché il JAR in staging è già sul
++       filesystem locale, e `invoke` avvia direttamente il `java` presente nel path. Lo standard
++       error della JVM di misurazione viene ereditato, così la sua diagnostica — lo stack trace
++       di un worker fallito — compare man mano che accade, e non può riempire una pipe non
++       svuotata e bloccare l'harness.
+
+=       as they happen, and cannot fill an undrained pipe and stall the harness.
+=
+-       ```scala
++       ```scala
+
+=       as they happen, and cannot fill an undrained pipe and stall the harness.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       as they happen, and cannot fill an undrained pipe and stall the harness.
+=
+=       ```scala
+=       import soundness.*
+=
+-       given BenchmarkDevice = LocalhostDevice
++       given BenchmarkDevice = LocalhostDevice
+
+=       as they happen, and cannot fill an undrained pipe and stall the harness.
+=
+=       ```scala
+=       import soundness.*
+=
+=       given BenchmarkDevice = LocalhostDevice
+-       ```
++       ```
+
+-       The staged input reaches the JVM as a command-line argument, so a body which splices in
+-       a value of a megabyte or more may exceed the operating system's argument-length limit,
+-       and fail with `Bench.Error`. A `cpus` limit is advisory on macOS, which has no
+-       equivalent of `taskset`.
++       L'input in staging raggiunge la JVM come argomento da riga di comando, quindi un corpo
++       che inserisce un valore di un megabyte o più può superare il limite di lunghezza degli
++       argomenti del sistema operativo, e fallire con `Bench.Error`. Un limite `cpus` è solo
++       indicativo su macOS, che non ha un equivalente di `taskset`.
+
+=       equivalent of `taskset`.
+-   refer sedentary.BenchmarkDevice
++   refer sedentary.BenchmarkDevice
+
+-   entry .deploy   does nothing: the staged JAR is already local
+-   entry .invoke   runs the staged JAR with `java` on the local machine and returns its standard output
+-       Raises `Bench.Error` if the JVM cannot be started or exits with a nonzero status. See
+-       `BenchmarkDevice#invoke` for `heap`, `cpus` and `gc`.
+-   entry .undeploy   does nothing: the staged JAR is left where staging wrote it
++   entry .deploy   non fa nulla: il JAR in staging è già locale
++   entry .invoke   esegue il JAR in staging con `java` sulla macchina locale e ne restituisce lo standard output
++       Solleva `Bench.Error` se la JVM non può essere avviata o termina con uno stato diverso da
++       zero. Vedi `BenchmarkDevice#invoke` per `heap`, `cpus` e `gc`.
++   entry .undeploy   non fa nulla: il JAR in staging resta dove lo staging lo ha scritto
+
+- entry .NetworkDevice   a benchmark device on a remote host, reached as a user over SSH
++ entry .NetworkDevice   un dispositivo di benchmark su un host remoto, raggiunto come utente via SSH
+
+= entry .NetworkDevice   a benchmark device on a remote host, reached as a user over SSH
+-   detail
++   detail
+
+-       `NetworkDevice(user, host)` copies each staged JAR to the user's home directory on
+-       `host` with `scp`, runs it there with `ssh` and `java`, and removes it afterwards. It
+-       relies on the local `ssh` and `scp` commands and the user's SSH configuration and keys:
+-       the connection must authenticate without a prompt.
++       `NetworkDevice(user, host)` copia ogni JAR in staging nella home directory dell'utente su
++       `host` con `scp`, lo esegue lì con `ssh` e `java`, e poi lo rimuove. Si affida ai comandi
++       locali `ssh` e `scp` e alla configurazione e alle chiavi SSH dell'utente: la connessione
++       deve autenticarsi senza alcuna richiesta interattiva.
+
+-       A remote Linux machine is the device to use for figures which must not be disturbed by
+-       the developer's own machine, and the only one on which a `cpus` limit pins the
+-       measurement JVM to cores, with `taskset`. Each operation pays an SSH handshake; a
+-       `session` pays it once:
++       Una macchina Linux remota è il dispositivo da usare per risultati che non devono essere
++       disturbati dalla macchina dello sviluppatore, ed è l'unica su cui un limite `cpus`
++       vincola la JVM di misurazione a dei core, con `taskset`. Ogni operazione paga un
++       handshake SSH; una `session` lo paga una volta sola:
+
+=       `session` pays it once:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       `session` pays it once:
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       `session` pays it once:
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       `session` pays it once:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val device = NetworkDevice(t"bench", host"bench.example.com")
++       val device = NetworkDevice(t"bench", host"bench.example.com")
+
+-       device.session: session ?=>
++       device.session: session ?=>
+
+-         given BenchmarkDevice = session
++         given BenchmarkDevice = session
+
+-         Bench()
++         Bench()
+
+=         Bench()
+-       ```
++       ```
+
+-       The `NetworkDevice.sessional` given, in the companion, makes this possible, and needs a
+-       `Tactic[Bench.Error]` in scope for the opening of the connection.
++       Il given `NetworkDevice.sessional`, nell'oggetto compagno, rende possibile tutto questo,
++       e richiede nell'ambito una `Tactic[Bench.Error]` per l'apertura della connessione.
+
+-   refer sedentary.NetworkDevice.Session
++   refer sedentary.NetworkDevice.Session
+
+-   refer sedentary.NetworkDeviceSessional
++   refer sedentary.NetworkDeviceSessional
+
+=   refer sedentary.NetworkDeviceSessional
+-   refer sedentary.BenchmarkDevice
++   refer sedentary.BenchmarkDevice
+
+-   entry .sessional   lets `device.session` open one multiplexed SSH connection to a `NetworkDevice`
+-       The `Sessional` instance for `NetworkDevice`, in implicit scope: a
+-       `NetworkDeviceSessional`, built with the `Tactic[Bench.Error]` in scope, which raises if
+-       the master connection cannot be opened.
+-   entry .Session   a benchmark device multiplexing every operation over one OpenSSH ControlMaster connection
++   entry .sessional   permette a `device.session` di aprire un'unica connessione SSH multiplexata verso un `NetworkDevice`
++       L'istanza di `Sessional` per `NetworkDevice`, nell'ambito implicito: un
++       `NetworkDeviceSessional`, costruito con la `Tactic[Bench.Error]` nell'ambito, che solleva
++       un errore se la connessione master non può essere aperta.
++   entry .Session   un dispositivo di benchmark che multiplexa ogni operazione su un'unica connessione ControlMaster di OpenSSH
+
+=   entry .Session   a benchmark device multiplexing every operation over one OpenSSH ControlMaster connection
+-     detail
++     detail
+
+-         The device a `NetworkDevice`'s `session` lends to its block. It deploys, runs and
+-         removes JARs on the same host as its `NetworkDevice`, but through the control socket
+-         of a master connection opened once, so no operation pays an SSH handshake of its own.
+-         It is not constructed directly: the session opens the connection, lends the device,
+-         and closes the connection when the block ends, whether it returns or throws.
+-     entry #deploy   copies a staged JAR to the host over the shared connection
+-         Raises `Bench.Error` if the copy fails.
+-     entry #invoke   runs a staged JAR on the host over the shared connection, and returns its output
+-         As `NetworkDevice#invoke`, with no handshake of its own. Raises `Bench.Error`.
+-     entry #undeploy   removes a staged JAR from the host over the shared connection
+-         Raises `Bench.Error` if the removal fails.
+-   entry #user   the user name to log in to the host as
+-   entry #host   the remote host, as a `Hostname`
+-   entry #deploy   copies a staged JAR to the user's home directory on the host, with `scp`
+-       Raises `Bench.Error` if the copy fails.
+-   entry #invoke   runs a staged JAR on the host with `ssh` and `java`, and returns its output
+-       Raises `Bench.Error` if the connection fails or the JVM exits with a nonzero status. On
+-       the host, a `cpus` limit both sets the JVM's processor count and pins the process to
+-       that many cores with `taskset`, so the host must have it. See `BenchmarkDevice#invoke`.
+-   entry #undeploy   removes a staged JAR from the host, with `ssh`
+-       Raises `Bench.Error` if the removal fails.
++         Il dispositivo che la `session` di un `NetworkDevice` presta al suo blocco. Distribuisce,
++         esegue e rimuove JAR sullo stesso host del suo `NetworkDevice`, ma attraverso il socket
++         di controllo di una connessione master aperta una volta sola, così nessuna operazione
++         paga un handshake SSH proprio. Non si costruisce direttamente: la sessione apre la
++         connessione, presta il dispositivo, e chiude la connessione quando il blocco termina,
++         sia che restituisca un valore sia che lanci un'eccezione.
++     entry #deploy   copia un JAR in staging sull'host attraverso la connessione condivisa
++         Solleva `Bench.Error` se la copia fallisce.
++     entry #invoke   esegue un JAR in staging sull'host attraverso la connessione condivisa, e ne restituisce l'output
++         Come `NetworkDevice#invoke`, senza un handshake proprio. Solleva `Bench.Error`.
++     entry #undeploy   rimuove un JAR in staging dall'host attraverso la connessione condivisa
++         Solleva `Bench.Error` se la rimozione fallisce.
++   entry #user   il nome utente con cui accedere all'host
++   entry #host   l'host remoto, come `Hostname`
++   entry #deploy   copia un JAR in staging nella home directory dell'utente sull'host, con `scp`
++       Solleva `Bench.Error` se la copia fallisce.
++   entry #invoke   esegue un JAR in staging sull'host con `ssh` e `java`, e ne restituisce l'output
++       Solleva `Bench.Error` se la connessione fallisce o la JVM termina con uno stato diverso da
++       zero. Sull'host, un limite `cpus` imposta il numero di processori della JVM e vincola
++       anche il processo a quel numero di core con `taskset`, quindi l'host deve averlo. Vedi
++       `BenchmarkDevice#invoke`.
++   entry #undeploy   rimuove un JAR in staging dall'host, con `ssh`
++       Solleva `Bench.Error` se la rimozione fallisce.
+
+- entry .NetworkDeviceSessional   the `Sessional` instance which opens a scoped SSH session on a `NetworkDevice`
++ entry .NetworkDeviceSessional   l'istanza di `Sessional` che apre una sessione SSH con ambito su un `NetworkDevice`
+
+= entry .NetworkDeviceSessional   the `Sessional` instance which opens a scoped SSH session on a `NetworkDevice`
+-   detail
++   detail
+
+-       A named instance class, not usually written by hand: `NetworkDevice.sessional` provides
+-       it, and `device.session` uses it. Its `#session` opens an OpenSSH ControlMaster
+-       connection to the host (authenticated once, with a control socket under `/tmp`), lends a
+-       `NetworkDevice.Session` to the block, and closes the master connection when the block
+-       ends, whether it returns or throws. It takes a `Tactic[Bench.Error]`, which is raised if
+-       the connection cannot be opened; a failure to close it is ignored.
++       Una classe di istanza con nome, di solito non scritta a mano: la fornisce
++       `NetworkDevice.sessional`, e la usa `device.session`. Il suo `#session` apre una
++       connessione ControlMaster di OpenSSH verso l'host (autenticata una volta, con un socket di
++       controllo sotto `/tmp`), presta una `NetworkDevice.Session` al blocco, e chiude la
++       connessione master quando il blocco termina, sia che restituisca un valore sia che lanci
++       un'eccezione. Prende una `Tactic[Bench.Error]`, che viene sollevata se la connessione non
++       può essere aperta; un fallimento nel chiuderla viene ignorato.
+
+=       the connection cannot be opened; a failure to close it is ignored.
+-   refer sedentary.NetworkDevice
++   refer sedentary.NetworkDevice
+
+-   entry #Self   the target of a session: `NetworkDevice`
+-   entry #Result   what a session lends its block: a `NetworkDevice.Session`
+-   entry #session   opens a master connection, lends a `NetworkDevice.Session` to the block, and closes it
+-       Called through the `session` extension, `device.session: session ?=> …`, rather than
+-       directly. The block's result may leave the session; the session device itself should
+-       not, since its connection is closed when the block ends.
++   entry #Self   il bersaglio di una sessione: `NetworkDevice`
++   entry #Result   ciò che una sessione presta al suo blocco: una `NetworkDevice.Session`
++   entry #session   apre una connessione master, presta una `NetworkDevice.Session` al blocco, e la chiude
++       Si chiama attraverso l'estensione `session`, `device.session: session ?=> …`, anziché
++       direttamente. Il risultato del blocco può uscire dalla sessione; il dispositivo di
++       sessione stesso non dovrebbe, poiché la sua connessione viene chiusa quando il blocco
++       termina.
+
+- entry .OperationSize   the size of one benchmarked operation, which turns a time into a throughput rate
++ entry .OperationSize   la dimensione di un'operazione misurata, che trasforma un tempo in un ritmo di throughput
+
+= entry .OperationSize   the size of one benchmarked operation, which turns a time into a throughput rate
+-   detail
++   detail
+
+-       A benchmark which processes data reports its rate — megabytes or characters per second
+-       — as well as its time per operation, when it is told how much each operation processes.
+-       The size is usually given as a quantity, which `.conversion` turns into an
++       Un benchmark che elabora dati riporta il suo ritmo — megabyte o caratteri al secondo —
++       oltre al suo tempo per operazione, quando gli si dice quanto elabora ogni operazione. La
++       dimensione di solito si dà come grandezza, che `.conversion` trasforma in un
+
+-       `OperationSize`:
++       `OperationSize`:
+
+=       `OperationSize`:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       `OperationSize`:
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       `OperationSize`:
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+-       bench(m"gzip 4 MB")(target = 1*Second, operationSize = 4194304*Byte):
++       bench(m"gzip 4 MB")(target = 1*Second, operationSize = 4194304*Byte):
+
+-         '{ Compression.gzip(Corpus.large) }
++         '{ Compression.gzip(Corpus.large) }
+
+=         '{ Compression.gzip(Corpus.large) }
+-       ```
++       ```
+
+-       The size renders with a metric prefix (`4.2 MB`), and the rate likewise (`MB/s`). Per-cell
+-       sizes are given with `Bench.Plan#sized`, for a benchmark whose cells process different
+-       amounts of data, so that their rates are comparable where their times are not.
++       La dimensione si rende con un prefisso metrico (`4.2 MB`), e il ritmo allo stesso modo
++       (`MB/s`). Le dimensioni per cella si danno con `Bench.Plan#sized`, per un benchmark le cui
++       celle elaborano quantità diverse di dati, così che i loro ritmi siano confrontabili dove
++       i loro tempi non lo sono.
+
+=       amounts of data, so that their rates are comparable where their times are not.
+-   refer sedentary.Bench.Plan
++   refer sedentary.Bench.Plan
+
+=   refer sedentary.Bench.Plan
+-   refer probably.Benchmark
++   refer probably.Benchmark
+
+-   entry .conversion   converts a `Quantity` into an `OperationSize`, for `Bench#apply`'s `operationSize`
+-       Any `Quantity` of a measure converts, with the `Decimalizer` in scope rendering both the
+-       size and, once the mean time is known, the rate, in the quantity's units per second. The
+-       given is `inline`, so the rendering is elaborated where the quantity is passed, with the
+-       caller's unit and prefix givens visible: a non-inline conversion would render `4194304*Byte`
+-       without its unit or prefix.
+-   entry #sizeText   the size of an operation, rendered for reading: `4.2 MB`
+-   entry #rateText   renders the rate, given the mean time of an operation in seconds: `120 MB/s`
+-   entry #value   the size as a number in its base unit (bytes or characters), for charting
++   entry .conversion   converte una `Quantity` in un `OperationSize`, per l'`operationSize` di `Bench#apply`
++       Si converte qualsiasi `Quantity` di una misura, con il `Decimalizer` nell'ambito che rende
++       sia la dimensione sia, una volta noto il tempo medio, il ritmo, nelle unità della
++       grandezza al secondo. Il given è `inline`, quindi la resa viene elaborata dove la
++       grandezza viene passata, con visibili i given di unità e prefisso del chiamante: una
++       conversione non inline renderebbe `4194304*Byte` senza la sua unità o il suo prefisso.
++   entry #sizeText   la dimensione di un'operazione, resa per la lettura: `4.2 MB`
++   entry #rateText   rende il ritmo, dato il tempo medio di un'operazione in secondi: `120 MB/s`
++   entry #value   la dimensione come numero nella sua unità di base (byte o caratteri), per i grafici

@@ -1,0 +1,722 @@
+orthant 1 language
+
+- ## Containers
++ ## Container
+
+- ### About
++ ### Panoramica
+
+- An [OCI](https://opencontainers.org/) container image is assembled in memory from filesystem
+- layers and a configuration, and rendered as a standard OCI archive which any container runtime
+- can load, with its content digests computed correctly. A separate client speaks to a running
+- [containerd](https://containerd.io/) daemon over gRPC. It lists and creates containers, images
+- and namespaces, and starts and stops the tasks which run inside containers.
++ Un'immagine container [OCI](https://opencontainers.org/) si assembla in memoria a partire da layer
++ del filesystem e da una configurazione, e si rende come un archivio OCI standard che qualsiasi
++ runtime di container può caricare, con i digest del suo contenuto calcolati correttamente. Un
++ client separato comunica con un demone [containerd](https://containerd.io/) in esecuzione tramite
++ gRPC. Elenca e crea container, immagini e namespace, e avvia e ferma i task che vengono eseguiti
++ all'interno dei container.
+
+- An image and everything in it, its layers, its manifest and its configuration, are [immutable]
+- typed values. Each container, task and namespace on the daemon is a typed value too, and not a
+- bag of JSON. The two halves are independent. An image can be built without a daemon, and a
+- daemon can be managed without building an image.
++ Un'immagine e tutto ciò che contiene, i suoi layer, il suo manifest e la sua configurazione, sono
++ valori tipizzati [immutabili][immutabile]. Anche ogni container, task e namespace sul demone è un
++ valore tipizzato, e non un sacco di JSON. Le due metà sono indipendenti. Un'immagine si può
++ costruire senza un demone, e un demone si può gestire senza costruire un'immagine.
+
+- ### On containers
++ ### Sui container
+
+- A container image is not a single file. It is a stack of filesystem
+- [layers](https://en.wikipedia.org/wiki/OverlayFS), plus a configuration which says how to run
+- them. Each piece is addressed by the
+- [digest](https://en.wikipedia.org/wiki/Content-addressable_storage) of its bytes. The format is
+- exact. A layer has one digest for its uncompressed tar and another for its compressed blob, and
+- a manifest ties them together by those digests. Get a digest wrong, and the image is silently
+- invalid.
++ Un'immagine container non è un singolo file. È una pila di
++ [layer](https://en.wikipedia.org/wiki/OverlayFS) del filesystem, più una configurazione che dice
++ come eseguirli. Ogni pezzo è indirizzato dal
++ [digest](https://en.wikipedia.org/wiki/Content-addressable_storage) dei suoi byte. Il formato è
++ esatto. Un layer ha un digest per il suo tar non compresso e un altro per il suo blob compresso, e
++ un manifest li lega insieme tramite quei digest. Basta sbagliare un digest perché l'immagine sia
++ non valida, in silenzio.
+
+- Running such an image is the job of a daemon. containerd, the runtime beneath Docker and
+- Kubernetes, is driven over a gRPC protocol on a local socket.
++ Eseguire un'immagine del genere è compito di un demone. containerd, il runtime sotto Docker e
++ Kubernetes, si pilota tramite un protocollo gRPC su un socket locale.
+
+- Here the image format is a set of values whose digests are computed for you, and the protocol of
+- the daemon is a set of methods which exchange typed values. Building an image as a value, and not
+- by running a tool, is [direct style](../../philosophy/direct-style.md): the steps are ordinary code,
+- checked as it compiles.
++ Qui il formato dell'immagine è un insieme di valori i cui digest vengono calcolati per te, e il
++ protocollo del demone è un insieme di metodi che scambiano valori tipizzati. Costruire
++ un'immagine come valore, e non eseguendo uno strumento, è [stile diretto](../../philosophy/direct-style.md):
++ i passi sono codice ordinario, verificato mentre compila.
+
+- Building an image draws on [archives](archives.md) for its tar layers. Everything comes from the
+- `soundness` package, and the last import lets the samples print their results:
++ Per i suoi layer tar, la costruzione di un'immagine si appoggia agli [archivi](archives.md).
++ Tutto proviene dal package `soundness`, e l'ultimo import permette agli esempi di stampare i loro
++ risultati:
+
+= `soundness` package, and the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import alphabets.hexLowerCase
++ import alphabets.hexLowerCase
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import formatting.compactJsonFormatting
++ import formatting.compactJsonFormatting
+
+- import providers.javaBaseProvider
++ import providers.javaBaseProvider
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Building an image
++ ### Costruire un'immagine
+
+- A layer is a tar archive of files. Given a `Tarfile`, `Oci.Layer` wraps it and computes the
+- digests which the format requires:
++ Un layer è un archivio tar di file. Dato un `Tarfile`, `Oci.Layer` lo avvolge e calcola i digest
++ che il formato richiede:
+
+= digests which the format requires:
+=
+- ```scala
++ ```scala
+
+- def entry(name: Text, content: Text): Tar.Entry =
++ def entry(name: Text, content: Text): Tar.Entry =
+
+-   Tar.Entry.File
++   Tar.Entry.File
+
+-    ( path  = name.as[Relative on Tar],
++    ( path  = name.as[Relative on Tar],
+
+-      mode  = UnixMode(),
++      mode  = UnixMode(),
+
+-      user  = UnixUser(0),
++      user  = UnixUser(0),
+
+-      group = UnixGroup(0),
++      group = UnixGroup(0),
+
+-      mtime = 0.bits.u32,
++      mtime = 0.bits.u32,
+
+-      data  = Archive.Body(content.in[Data]) )
++      data  = Archive.Body(content.in[Data]) )
+
+- val layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
++ val layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+
+= val layer = Oci.Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
+- ```
++ ```
+
+- An `Oci.Image` assembles one or more layers with a configuration, which holds the command to
+- run, the environment and the working directory:
++ Un `Oci.Image` assembla uno o più layer con una configurazione, che contiene il comando da
++ eseguire, l'ambiente e la directory di lavoro:
+
+= run, the environment and the working directory:
+=
+- ```scala
++ ```scala
+
+- val image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
++ val image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
+
+= val image = Oci.Image(List(layer), config = Oci.ContainerConfig(Cmd = List(t"/bin/sh")))
+- ```
++ ```
+
+- ### What an image contains
++ ### Che cosa contiene un'immagine
+
+- The assembled image exposes each part which the format defines. A layer reports both of its
+- digests. `diffId` is the digest of the uncompressed tar, and `digest` is the digest of the
+- compressed blob:
++ L'immagine assemblata espone ogni parte che il formato definisce. Un layer riporta entrambi i suoi
++ digest. `diffId` è il digest del tar non compresso, e `digest` è il digest del blob compresso:
+
+= compressed blob:
+=
+- ```scala fuel
++ ```scala fuel
+
+= compressed blob:
+=
+= ```scala fuel
+- run
++ run
+
+= compressed blob:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(layer.diffId.show)
++ Out.println(layer.diffId.show)
+
+- Out.println(layer.digest.show)
++ Out.println(layer.digest.show)
+
+= Out.println(layer.digest.show)
+- ```
++ ```
+
+- The image carries the manifest which references them, with the media type of each layer and of
+- the configuration:
++ L'immagine porta con sé il manifest che li referenzia, con il tipo di media di ciascun layer e
++ della configurazione:
+
+= the configuration:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the configuration:
+=
+= ```scala fuel
+- run
++ run
+
+= the configuration:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- image.manifest.layers.each(descriptor => Out.println(descriptor.mediaType.show))
++ image.manifest.layers.each(descriptor => Out.println(descriptor.mediaType.show))
+
+- Out.println(image.manifest.config.mediaType.show)
++ Out.println(image.manifest.config.mediaType.show)
+
+= Out.println(image.manifest.config.mediaType.show)
+- ```
++ ```
+
+- `image.archive` is the whole image as an OCI tar layout, which is the form a runtime imports.
+- Read as bytes and written to a file, it produces an image which `docker load` or containerd
+- will accept.
++ `image.archive` è l'intera immagine come layout tar OCI, che è la forma che un runtime importa.
++ Letta come byte e scritta su un file, produce un'immagine che `docker load` o containerd
++ accetteranno.
+
+- ### WebAssembly workloads
++ ### Carichi di lavoro WebAssembly
+
+- A container image describes a filesystem, but `runc`, which unpacks and runs one, is not the
+- only way to run a workload. A [Wasm](https://webassembly.org/) component needs no root
+- filesystem at all. A runtime such as [wasmtime](https://wasmtime.dev/), reached through a
+- containerd shim like `io.containerd.wasmtime.v1`, instantiates it directly. What changes is
+- not the distribution format, but what the configuration says the artifact *is*.
++ Un'immagine container descrive un filesystem, ma `runc`, che ne spacchetta ed esegue uno, non è
++ l'unico modo di eseguire un carico di lavoro. Un componente [Wasm](https://webassembly.org/) non ha
++ bisogno affatto di un filesystem radice. Un runtime come [wasmtime](https://wasmtime.dev/),
++ raggiunto attraverso uno shim di containerd come `io.containerd.wasmtime.v1`, lo istanzia
++ direttamente. Ciò che cambia non è il formato di distribuzione, ma ciò che la configurazione dice
++ che l'artefatto *è*.
+
+- `Oci.Image.wasm` assembles that form, a
++ `Oci.Image.wasm` assembla questa forma, un
+
+- [Wasm OCI Artifact](https://tag-runtime.cncf.io/wgs/wasm/deliverables/wasm-oci-artifact/):
++ [Wasm OCI Artifact](https://tag-runtime.cncf.io/wgs/wasm/deliverables/wasm-oci-artifact/):
+
+= [Wasm OCI Artifact](https://tag-runtime.cncf.io/wgs/wasm/deliverables/wasm-oci-artifact/):
+=
+- ```scala
++ ```scala
+
+- val component: Data = hex"0061736d01000000"
++ val component: Data = hex"0061736d01000000"
+
+- val artifact =
++ val artifact =
+
+-   Oci.Image.wasm
++   Oci.Image.wasm
+
+-    ( component,
++    ( component,
+
+-      exports = List(t"wasi:http/incoming-handler@0.2.0"),
++      exports = List(t"wasi:http/incoming-handler@0.2.0"),
+
+-      imports = List(t"wasi:io/streams@0.2.0"),
++      imports = List(t"wasi:io/streams@0.2.0"),
+
+-      target  = t"wasi:http/proxy@0.2.0" )
++      target  = t"wasi:http/proxy@0.2.0" )
+
+=      target  = t"wasi:http/proxy@0.2.0" )
+- ```
++ ```
+
+- The manifest, index and archive are the ordinary ones, so the same registries and tools carry
+- it. Only two things differ:
++ Il manifest, l'indice e l'archivio sono quelli ordinari, così gli stessi registri e strumenti lo
++ trasportano. Solo due cose differiscono:
+
+= it. Only two things differ:
+=
+- ```tabular
++ ```tabular
+
+- column  Part
+- column  Container image
+- column  Wasm artifact
+- row  config  a filesystem's run configuration  `application/vnd.wasm.config.v0+json`, describing a component
+- row  layers  compressed tars, one or more  the component itself, `application/wasm`
+- row  layer digests  `diffId` and `digest` differ  `diffId` and `digest` coincide, since it is stored uncompressed
++ column  Parte
++ column  Immagine container
++ column  Artefatto Wasm
++ row  config  la configurazione di esecuzione di un filesystem  `application/vnd.wasm.config.v0+json`, che descrive un componente
++ row  layers  tar compressi, uno o più  il componente stesso, `application/wasm`
++ row  digest dei layer  `diffId` e `digest` differiscono  `diffId` e `digest` coincidono, poiché è memorizzato non compresso
+
+= row  layer digests  `diffId` and `digest` differ  `diffId` and `digest` coincide, since it is stored uncompressed
+- ```
++ ```
+
+- The configuration describes the component, with the WASI generation as its `os`:
++ La configurazione descrive il componente, con la generazione WASI come suo `os`:
+
+= The configuration describes the component, with the WASI generation as its `os`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The configuration describes the component, with the WASI generation as its `os`:
+=
+= ```scala fuel
+- run
++ run
+
+= The configuration describes the component, with the WASI generation as its `os`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(artifact.wasmConfig.let(_.os).inspect)
++ Out.println(artifact.wasmConfig.let(_.os).inspect)
+
+- Out.println(artifact.wasmConfig.let(_.architecture).inspect)
++ Out.println(artifact.wasmConfig.let(_.architecture).inspect)
+
+= Out.println(artifact.wasmConfig.let(_.architecture).inspect)
+- ```
++ ```
+
+- The `exports` and `imports` are the Component Model interfaces which the workload offers and
+- needs. Recording them makes the image self-describing. A host can tell whether it can satisfy
+- the workload's capabilities before fetching the component.
++ Gli `exports` e gli `imports` sono le interfacce del Component Model che il carico di lavoro offre
++ e di cui ha bisogno. Registrarli rende l'immagine autodescrittiva. Un host può capire se è in
++ grado di soddisfare le capability del carico di lavoro prima di scaricare il componente.
+
+- They are usually not written by hand, but read from the WIT world which the component was linked
+- against, which is the authoritative statement of the same contract:
++ Di solito non si scrivono a mano, ma si leggono dal mondo WIT con cui il componente è stato
++ collegato, che è la dichiarazione autorevole dello stesso contratto:
+
+= against, which is the authoritative statement of the same contract:
+=
+- ```scala
++ ```scala
+
+- val wit = t"""package example:service;
++ val wit = t"""package example:service;
+
+- world http {
++ world http {
+
+-   import wasi:io/streams@0.2.0;
++   import wasi:io/streams@0.2.0;
+
+-   export wasi:http/incoming-handler@0.2.0;
++   export wasi:http/incoming-handler@0.2.0;
+
+- }"""
++ }"""
+
+- WitDialect.worlds(wit)(t"http").let: world =>
++ WitDialect.worlds(wit)(t"http").let: world =>
+
+-   Oci.Image.wasm(component, exports = world.exports, imports = world.imports)
++   Oci.Image.wasm(component, exports = world.exports, imports = world.imports)
+
+=   Oci.Image.wasm(component, exports = world.exports, imports = world.imports)
+- ```
++ ```
+
+- The [compiler](compiler.md#wasi-components) does exactly this on its edge which produces an OCI
+- image. A compilation can go from source to a distributable artifact along one path, and nothing
+- states the contract twice.
++ Il [compilatore](compiler.md#wasi-components) fa esattamente questo nel suo arco che produce
++ un'immagine OCI. Una compilazione può andare dal sorgente a un artefatto distribuibile lungo un
++ solo percorso, e nulla dichiara il contratto due volte.
+
+- ### Reading an image
++ ### Leggere un'immagine
+
+- An existing OCI archive, which is a file or a block of bytes, is read by *opening* it. Its
+- contents are available for the duration of a scope, and no longer:
++ Un archivio OCI esistente, che sia un file o un blocco di byte, si legge *aprendolo*. Il suo
++ contenuto è disponibile per la durata di un ambito, e non oltre:
+
+= contents are available for the duration of a scope, and no longer:
+=
+- ```scala
++ ```scala
+
+- val archive: Data = image.archive.source[Data].memoize
++ val archive: Data = image.archive.source[Data].memoize
+
+= val archive: Data = image.archive.source[Data].memoize
+- ```
++ ```
+
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= ##
+- archive.open[Oci.Image](): handle ?=>
++ archive.open[Oci.Image](): handle ?=>
+
+-   handle.index.manifests.each(descriptor => Out.println(descriptor.mediaType.show))
++   handle.index.manifests.each(descriptor => Out.println(descriptor.mediaType.show))
+
+-   handle.manifest.layers.each(descriptor => Out.println(descriptor.digest.show))
++   handle.manifest.layers.each(descriptor => Out.println(descriptor.digest.show))
+
+-   Out.println(handle.imageConfig.config.let(_.Cmd).inspect)
++   Out.println(handle.imageConfig.config.let(_.Cmd).inspect)
+
+=   Out.println(handle.imageConfig.config.let(_.Cmd).inspect)
+- ```
++ ```
+
+- `handle.verified(descriptor)` reads a layer and checks its digest. The three ways to reach a
+- layer make the cost explicit:
++ `handle.verified(descriptor)` legge un layer e ne verifica il digest. I tre modi di raggiungere un
++ layer rendono esplicito il costo:
+
+= layer make the cost explicit:
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Yields
+- column  Checks the digest
+- row  `compressed`  the stored bytes, untouched, as a stream  no
+- row  `layer`  the uncompressed tar, as a stream  no
+- row  `verified`  the stored bytes, gathered eagerly  yes, and the size
++ column  Metodo
++ column  Produce
++ column  Verifica il digest
++ row  `compressed`  i byte memorizzati, intatti, come stream  no
++ row  `layer`  il tar non compresso, come stream  no
++ row  `verified`  i byte memorizzati, raccolti in modo anticipato  sì, e la dimensione
+
+= row  `verified`  the stored bytes, gathered eagerly  yes, and the size
+- ```
++ ```
+
+- `verified` raises an `Oci.Error` if the bytes disagree with the digest or the size which the
+- manifest declares. Checking a stream would mean draining it, which is why `verified` gathers
+- the bytes first.
++ `verified` solleva un `Oci.Error` se i byte non corrispondono al digest o alla dimensione che il
++ manifest dichiara. Verificare uno stream significherebbe svuotarlo, ed è per questo che
++ `verified` raccoglie prima i byte.
+
+- A reader which does not already know which kind of artifact it has opened asks for `config`. It
+- dispatches on the media type of the config descriptor. Telling a component from a filesystem is
+- a question which the archive answers, and not one the caller has to have known:
++ Un lettore che non sa già che tipo di artefatto ha aperto chiede `config`. Questo smista in base
++ al tipo di media del descrittore della configurazione. Distinguere un componente da un filesystem
++ è una domanda a cui risponde l'archivio, e non una di cui il chiamante debba già conoscere la
++ risposta:
+
+= a question which the archive answers, and not one the caller has to have known:
+=
+- ```scala
++ ```scala
+
+= ```scala
+- archive.open[Oci.Image](): handle ?=>
++ archive.open[Oci.Image](): handle ?=>
+
+-   handle.config match
++   handle.config match
+
+-     case config: Oci.WasmConfig   => config.component
++     case config: Oci.WasmConfig   => config.component
+
+-     case config: Oci.Image.Config => config.rootfs
++     case config: Oci.Image.Config => config.rootfs
+
+=     case config: Oci.Image.Config => config.rootfs
+- ```
++ ```
+
+- ### Connecting to a daemon
++ ### Connettersi a un demone
+
+- The rest of this page needs a running daemon, so its samples are compiled but not run.
++ Il resto di questa pagina richiede un demone in esecuzione, quindi i suoi esempi vengono
++ compilati ma non eseguiti.
+
+- A `Containerd` client connects to a daemon over an HTTP/2 endpoint on its socket, bound to a
+- namespace. The connection holds background work, so it lives inside a supervised scope:
++ Un client `Containerd` si connette a un demone attraverso un endpoint HTTP/2 sul suo socket,
++ legato a un namespace. La connessione mantiene del lavoro in background, quindi vive all'interno
++ di un ambito supervisionato:
+
+= namespace. The connection holds background work, so it lives inside a supervised scope:
+=
+- ```scala
++ ```scala
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- def report[endpoint](endpoint: Http2.Endpoint[endpoint]): Unit = supervise:
++ def report[endpoint](endpoint: Http2.Endpoint[endpoint]): Unit = supervise:
+
+-   val client = Containerd(endpoint, t"default")
++   val client = Containerd(endpoint, t"default")
+
+-   client.version()
++   client.version()
+
+=   client.version()
+- ```
++ ```
+
+- Here `endpoint` is an HTTP/2 endpoint over containerd's Unix socket, established through the
+- HTTP/2 and [socket](sockets.md) support, which the client speaks [gRPC](rpc.md) over. Every
+- call to the daemon may fail, in the socket, the protocol or the request itself, so the calls
+- draw on the error [strategy] in scope.
++ Qui `endpoint` è un endpoint HTTP/2 sul socket Unix di containerd, stabilito attraverso il
++ supporto per HTTP/2 e per i [socket](sockets.md), sopra il quale il client parla [gRPC](rpc.md).
++ Ogni chiamata al demone può fallire, nel socket, nel protocollo o nella richiesta stessa, così le
++ chiamate si affidano alla [strategia] per gli errori nell'ambito.
+
+- ### Containers, images and namespaces
++ ### Container, immagini e namespace
+
+- The client lists and inspects what the daemon holds, and creates and deletes it. Each result is
+- a typed record:
++ Il client elenca e ispeziona ciò che il demone contiene, e lo crea e lo elimina. Ogni risultato è
++ un record tipizzato:
+
+= a typed record:
+=
+- ```scala
++ ```scala
+
+- def inspect(client: Containerd)(using Monitor): Unit =
++ def inspect(client: Containerd)(using Monitor): Unit =
+
+-   val containers = client.containers()
++   val containers = client.containers()
+
+-   val one = client.container(t"web")
++   val one = client.container(t"web")
+
+-   (one.id, one.image, one.labels)
++   (one.id, one.image, one.labels)
+
+-   client.images()
++   client.images()
+
+-   client.namespaces()
++   client.namespaces()
+
+=   client.namespaces()
+- ```
++ ```
+
+- These are the methods for each kind of resource:
++ Questi sono i metodi per ciascun tipo di risorsa:
+
+= These are the methods for each kind of resource:
+=
+- ```tabular
++ ```tabular
+
+- column  Resource
+- column  List
+- column  Inspect
+- column  Create
+- column  Delete
++ column  Risorsa
++ column  Elencare
++ column  Ispezionare
++ column  Creare
++ column  Eliminare
+
+- row  container  `containers()`  `container(id)`  `createContainer(container)`  `deleteContainer(id)`
++ row  container  `containers()`  `container(id)`  `createContainer(container)`  `deleteContainer(id)`
+
+= row  container  `containers()`  `container(id)`  `createContainer(container)`  `deleteContainer(id)`
+- row
++ row
+
+-   cell  namespace
++   cell  namespace
+
+-   cell  `namespaces()`
++   cell  `namespaces()`
+
+=   cell  `namespaces()`
+-   cell
++   cell
+
+-   cell  `createNamespace(namespace)`
++   cell  `createNamespace(namespace)`
+
+-   cell  `deleteNamespace(name)`
++   cell  `deleteNamespace(name)`
+
+=   cell  `deleteNamespace(name)`
+- row
++ row
+
+-   cell  image
++   cell  immagine
+
+-   cell  `images()`
++   cell  `images()`
+
+-   cell  `image(name)`
++   cell  `image(name)`
+
+=   cell  `image(name)`
+-   cell
++   cell
+
+-   cell  `deleteImage(name)`
++   cell  `deleteImage(name)`
+
+- row  task  `tasks()`  `task(id)`  `createTask(id, rootfs)`  `deleteTask(id)`
++ row  task  `tasks()`  `task(id)`  `createTask(id, rootfs)`  `deleteTask(id)`
+
+= row  task  `tasks()`  `task(id)`  `createTask(id, rootfs)`  `deleteTask(id)`
+- ```
++ ```
+
+- ### Tasks
++ ### Task
+
+- A container is a definition. A *task* is a running instance of one. A task is created from a
+- container with the root filesystem to mount, then started, waited on and killed:
++ Un container è una definizione. Un *task* ne è un'istanza in esecuzione. Un task si crea da un
++ container con il filesystem radice da montare, poi si avvia, se ne attende la fine e lo si
++ termina:
+
+= container with the root filesystem to mount, then started, waited on and killed:
+=
+- ```scala
++ ```scala
+
+- def run(client: Containerd)(using Monitor): Unit =
++ def run(client: Containerd)(using Monitor): Unit =
+
+-   val rootfs = List(Containerd.Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
++   val rootfs = List(Containerd.Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
+
+-   client.createTask(t"web", rootfs)
++   client.createTask(t"web", rootfs)
+
+-   val pid = client.startTask(t"web")
++   val pid = client.startTask(t"web")
+
+-   client.waitTask(t"web")
++   client.waitTask(t"web")
+
+-   client.killTask(t"web", signal = 15)
++   client.killTask(t"web", signal = 15)
+
+=   client.killTask(t"web", signal = 15)
+- ```
++ ```
+
+- `client.task(t"web")` returns the current `Workload` of the task, whose `state` reports whether
+- it is created, running, stopped or paused.
++ `client.task(t"web")` restituisce il `Workload` corrente del task, il cui `state` riporta se è
++ creato, in esecuzione, fermato o in pausa.
+
+- ### Related
++ ### Correlati
+
+- - [Archives](archives.md) describes the tar archives which layers are made of.
+- - [Compiler](compiler.md#wasi-components) produces the WASI components and OCI images which a
+-   toolchain links.
+- - [Hashing](hashing.md) describes the digests which address every part of an image.
+- - [RPC](rpc.md) describes the gRPC which the client speaks to containerd.
+- - [Sockets](sockets.md) describes the Unix socket which the daemon listens on.
+- - [Concurrency](concurrency.md) describes `supervise`, which the client lives inside.
+- - [Compression](compression.md) describes the gzip which layers are compressed with, and [processes](processes.md) the commands a task runs.
++ - [Archivi](archives.md) descrive gli archivi tar di cui sono fatti i layer.
++ - [Compilazione](compiler.md#wasi-components) produce i componenti WASI e le immagini OCI che una
++   toolchain collega.
++ - [Hashing](hashing.md) descrive i digest che indirizzano ogni parte di un'immagine.
++ - [RPC](rpc.md) descrive il gRPC che il client parla con containerd.
++ - [Socket](sockets.md) descrive il socket Unix su cui il demone è in ascolto.
++ - [Concorrenza](concurrency.md) descrive `supervise`, all'interno del quale il client vive.
++ - [Compressione](compression.md) descrive il gzip con cui sono compressi i layer, e [processi](processes.md) i comandi che un task esegue.
