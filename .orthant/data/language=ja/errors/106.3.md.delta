@@ -1,0 +1,62 @@
+orthant 1 language
+
+- # `↯/s.106.3` — `Json.Provider.Error`
++ # `↯/s.106.3` — `Json.Provider.Error`
+
+- Raised when a JSON value does not satisfy the schema it is being
+- validated against.
++ JSON の値が、検証に使われているスキーマを満たさないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Jacinta's `Json.Provider` validates JSON values against a schema as a record's fields are read,
+- and reports each mismatch via this error, through the `Tactic` of the code reading the field, so
+- that a validating reader can collect them all. The message is `the
+- JSON was not valid according to the schema because $reason`.
++ Jacinta の `Json.Provider` は、レコードのフィールドが読まれるときに JSON の値をスキーマに照らして検証し、不一致のそれぞれを、フィールドを読むコードの `Tactic` を通じてこのエラーで報告する。そのため検証を行うリーダーはそれらをすべて集められる。
++ メッセージは `the JSON was not valid according to the schema because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Meaning
+- column  Message
+- column  Resolution
+- row  `↯/s.106.3.1`  `JsonType`  The value's type does not match what the schema requires.  `[↯/s.106.3.1] the JSON was not valid according to the schema because expected JSON type number, but found string`  Provide a value of the type the schema requires, or relax the schema if the type is genuinely flexible.
+- row  `↯/s.106.3.2`  `MissingValue`  A required value is absent from the JSON. The reason names the missing field where it is known.  `[↯/s.106.3.2] the JSON was not valid according to the schema because the value of locality was missing`  Add the missing field, or mark it optional in the schema.
+- row  `↯/s.106.3.3`  `IntOutOfRange`  An integer value falls outside the `minimum`/`maximum` allowed by the schema. Raised by the `"integer!"` provider type; an absent bound is `Unset` rather than a sentinel.  `[↯/s.106.3.3] the JSON was not valid according to the schema because the value was not between 1 and 99`  Constrain the value to the schema's permitted range.
+- row  `↯/s.106.3.4`  `PatternMismatch`  A string value does not match the regular expression in the schema's `pattern`.  `[↯/s.106.3.4] the JSON was not valid according to the schema because the value did not conform to the regular expression [a-z]+`  Adjust the value to match the schema's pattern, or loosen the pattern.
+- row  `↯/s.106.3.5`  `NumberOutOfRange`  A number falls outside the `minimum`/`maximum` (or exclusive bounds) the schema declares. Raised by the `"number!"` provider type.  `[↯/s.106.3.5] the JSON was not valid according to the schema because the number was not between -90.0 and 90.0`  Constrain the value to the schema's permitted range.
+- row  `↯/s.106.3.6`  `LengthOutOfRange`  A string's length falls outside the schema's `minLength`/`maxLength`. Raised by the `"string!"` provider type.  `[↯/s.106.3.6] the JSON was not valid according to the schema because the string's length was not between 1 and 214`  Shorten or lengthen the value to fit the schema.
+- row  `↯/s.106.3.7`  `NotPermitted`  A string is not one of the schema's `enum` values (or its `const`). Raised by the `"enum"` provider type.  `[↯/s.106.3.7] the JSON was not valid according to the schema because the value Polygon was not one of Point`  Use one of the listed values, or extend the schema's `enum`.
+- row  `↯/s.106.3.8`  `UnexpectedKind`  A value is of a JSON kind which none of the alternatives of its union (`anyOf`, `oneOf`, or a `type` naming several) accepts.  `[↯/s.106.3.8] the JSON was not valid according to the schema because the value was a JSON boolean, which is not one of string, number`  Give a value of one of the kinds the schema lists.
+- row  `↯/s.106.3.9`  `Unparsable`  A string's text is not valid for its `format`: a `json-pointer` or a `regex` which does not parse.  `[↯/s.106.3.9] the JSON was not valid according to the schema because the value a[ is not a valid regex`  Correct the value so that it parses in its format.
++ column  コード
++ column  理由
++ column  意味
++ column  メッセージ
++ column  解決方法
++ row  `↯/s.106.3.1`  `JsonType`  値の型が、スキーマが求めるものと一致しない。  `[↯/s.106.3.1] the JSON was not valid according to the schema because expected JSON type number, but found string`  スキーマが求める型の値を与える。型が本当に柔軟であるなら、スキーマを緩める。
++ row  `↯/s.106.3.2`  `MissingValue`  必須の値が JSON にない。分かっている場合、理由は欠けたフィールドを名指す。  `[↯/s.106.3.2] the JSON was not valid according to the schema because the value of locality was missing`  欠けたフィールドを追加するか、スキーマでそれをオプショナルにする。
++ row  `↯/s.106.3.3`  `IntOutOfRange`  整数の値が、スキーマが許す `minimum`/`maximum` の範囲の外にある。`"integer!"` のプロバイダーの型によって発生する。存在しない境界は番兵ではなく `Unset` である。  `[↯/s.106.3.3] the JSON was not valid according to the schema because the value was not between 1 and 99`  値をスキーマが許す範囲に収める。
++ row  `↯/s.106.3.4`  `PatternMismatch`  文字列の値が、スキーマの `pattern` にある正規表現に一致しない。  `[↯/s.106.3.4] the JSON was not valid according to the schema because the value did not conform to the regular expression [a-z]+`  値をスキーマのパターンに一致するように直すか、パターンを緩める。
++ row  `↯/s.106.3.5`  `NumberOutOfRange`  数が、スキーマが宣言する `minimum`/`maximum`（または排他的な境界）の外にある。`"number!"` のプロバイダーの型によって発生する。  `[↯/s.106.3.5] the JSON was not valid according to the schema because the number was not between -90.0 and 90.0`  値をスキーマが許す範囲に収める。
++ row  `↯/s.106.3.6`  `LengthOutOfRange`  文字列の長さが、スキーマの `minLength`/`maxLength` の外にある。`"string!"` のプロバイダーの型によって発生する。  `[↯/s.106.3.6] the JSON was not valid according to the schema because the string's length was not between 1 and 214`  値を短くするか長くして、スキーマに合わせる。
++ row  `↯/s.106.3.7`  `NotPermitted`  文字列が、スキーマの `enum` の値（またはその `const`）のどれでもない。`"enum"` のプロバイダーの型によって発生する。  `[↯/s.106.3.7] the JSON was not valid according to the schema because the value Polygon was not one of Point`  列挙された値の一つを使うか、スキーマの `enum` を拡張する。
++ row  `↯/s.106.3.8`  `UnexpectedKind`  値の JSON の種類が、その合併（`anyOf`、`oneOf`、または複数を名指す `type`）のどの選択肢にも受け付けられない。  `[↯/s.106.3.8] the JSON was not valid according to the schema because the value was a JSON boolean, which is not one of string, number`  スキーマが列挙する種類の一つの値を与える。
++ row  `↯/s.106.3.9`  `Unparsable`  文字列のテキストが、その `format` として有効でない。パースできない `json-pointer` や `regex` である。  `[↯/s.106.3.9] the JSON was not valid according to the schema because the value a[ is not a valid regex`  その形式でパースできるように値を直す。
+
+- ```
++ ```
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/jacinta/src/core/jacinta.Json4.scala`
++ - ソース：`lib/jacinta/src/core/jacinta.Json4.scala`

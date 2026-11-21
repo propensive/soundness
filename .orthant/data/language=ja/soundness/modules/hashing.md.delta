@@ -1,0 +1,759 @@
+orthant 1 language
+
+- ## Hashing
++ ## ハッシュ
+
+- ### About
++ ### 概要
+
+- A [hash](https://en.wikipedia.org/wiki/Hash_function) reduces data of any size to a short
+- fingerprint of fixed length. The digest of any value can be computed, whether a case class, a
+- collection or a stream of bytes, with the algorithm named as a type: `Sha2[256]`, `Sha1`, `Md5`
+- or `Blake3`.
++ [ハッシュ](https://en.wikipedia.org/wiki/Hash_function)は、任意の大きさのデータを固定長の短いフィンガープリントに縮める。
++ ケースクラスでも、コレクションでも、バイトのストリームでも、どんな値のダイジェストも計算できる。
++ アルゴリズムは `Sha2[256]`、`Sha1`、`Md5`、`Blake3` のように型として名指す。
+
+- Anything which describes how to feed its bytes into a hash can be digested. A case class does
+- so automatically, [derived][derivation] from its fields, so hashing a structured value needs no
+- manual serialization. A digest is a value, and its bytes are written in hexadecimal or Base64
+- through the same [base encoding](base-encoding.md) used everywhere else.
++ 自分のバイトをハッシュにどう流し込むかを記述するものは、何でもダイジェストできる。
++ ケースクラスはそれを自動的に行い、そのフィールドから[導出]されるので、構造を持つ値のハッシュに手作業の直列化は要らない。
++ ダイジェストは値であり、そのバイトは他のあらゆる場所で使われるのと同じ[基数エンコーディング](base-encoding.md)によって、16 進数や Base64 で書き出される。
+
+- The checksums `Crc32`, `Crc64` and `Adler32` are computed through exactly the same API. The
+- algorithms which are known to be weak, MD5 and SHA-1, can be used only where their use is
+- explicitly permitted. So can the checksums, which are not weak hashes but not hashes at all: a
+- checksum detects accidental corruption, and nothing more.
++ チェックサム `Crc32`、`Crc64`、`Adler32` も、まったく同じ API で計算される。
++ 弱いことが知られているアルゴリズム、MD5 と SHA-1 は、その使用が明示的に許可された場所でしか使えない。
++ チェックサムも同様である。
++ チェックサムは弱いハッシュではなく、そもそもハッシュではない。チェックサムは偶発的な破損を検出するだけで、それ以上のことはしない。
+
+- ### On hashing
++ ### ハッシュについて
+
+- The usual hashing API takes a byte array, and an algorithm named by a string, and hands back
+- another byte array:
++ 通常のハッシュ API はバイト配列と、文字列で名指したアルゴリズムを受け取り、別のバイト配列を返す。
+
+- - The algorithm is unchecked, so a typo is a failure at [runtime].
+- - The input must be serialized to bytes by hand before it is hashed.
+- - The output must be written as text by hand afterwards.
+- - Nothing discourages reaching for a broken algorithm.
++ - アルゴリズムは検査されないので、綴りの誤りは[実行時]の失敗になる。
++ - 入力はハッシュする前に、手作業でバイトに直列化しなければならない。
++ - 出力は後から、手作業でテキストとして書き出さなければならない。
++ - 壊れたアルゴリズムに手を伸ばすことを妨げるものは何もない。
+
+- Here each of these is fixed. The algorithm is a type, checked where it is used, so a digest of
+- one algorithm cannot be confused with another's, which is
+- [safety by construction](../../philosophy/safety-by-construction.md). Any value with a
+- `Digestible` instance is hashed directly. The result is written through the base encodings. And
+- a weak algorithm sits behind a permission which a program must opt into.
++ ここでは、そのそれぞれが解決されている。
++ アルゴリズムは型であり、使われる場所で検査されるので、あるアルゴリズムのダイジェストを別のアルゴリズムのものと取り違えることはない。
++ これは[構築による安全性](../../philosophy/safety-by-construction.md)である。
++ `Digestible` インスタンスを持つ値は、直接ハッシュされる。
++ 結果は基数エンコーディングを通じて書き出される。
++ そして弱いアルゴリズムは、プログラムが明示的に選び取らなければならない許可の向こうにある。
+
+- Everything comes from the `soundness` package. A provider of hash algorithms and an alphabet
+- are in scope, and the last import lets the samples print their results:
++ すべては `soundness` パッケージから来る。
++ ハッシュアルゴリズムのプロバイダーとアルファベットがスコープにあり、最後のインポートによってサンプルは結果を出力できる。
+
+= are in scope, and the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import alphabets.hexLowerCase
++ import alphabets.hexLowerCase
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import providers.javaBaseProvider
++ import providers.javaBaseProvider
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Hashing a value
++ ### 値のハッシュ
+
+- `digest` computes the digest of a value, in a named algorithm, and `serialize` writes it out:
++ `digest` は名指したアルゴリズムで値のダイジェストを計算し、`serialize` はそれを書き出す。
+
+= `digest` computes the digest of a value, in a named algorithm, and `serialize` writes it out:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `digest` computes the digest of a value, in a named algorithm, and `serialize` writes it out:
+=
+= ```scala fuel
+- run
++ run
+
+= `digest` computes the digest of a value, in a named algorithm, and `serialize` writes it out:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"Hello world".digest[Sha2[256]].serialize[Hex])
++ Out.println(t"Hello world".digest[Sha2[256]].serialize[Hex])
+
+= Out.println(t"Hello world".digest[Sha2[256]].serialize[Hex])
+- ```
++ ```
+
+- The provider in scope supplies the algorithms. These are the algorithms, the permit each
+- needs, and the providers which offer each on the JVM:
++ スコープにあるプロバイダーがアルゴリズムを供給する。
++ 以下は、アルゴリズム、それぞれが必要とする許可、そして JVM 上でそれぞれを提供するプロバイダーである。
+
+= needs, and the providers which offer each on the JVM:
+=
+- ```tabular
++ ```tabular
+
+- column  Algorithm
+- column  Kind
+- column  Permit
+- column  Providers
+- column  Bits
+- row  `Sha2[224]`, `Sha2[256]`, `Sha2[384]`, `Sha2[512]`  hash  none  `javaBaseProvider`, `soundnessProvider`  224–512
+- row  `Blake3`  hash  none  `soundnessProvider`  256
+- row  `Sha1`  weak hash  `permitDeprecatedCrypto`  `javaBaseProvider`, `soundnessProvider`  160
+- row  `Md5`  weak hash  `permitDisallowedCrypto`  `javaBaseProvider`, `soundnessProvider`  128
+- row  `Murmur3`  fast hash  `permitNonCryptographicHashes`  `soundnessProvider`  128
+- row  `Crc32`  checksum  `permitNonCryptographicHashes`  `javaBaseProvider`, `soundnessProvider`  32
+- row  `Crc64`  checksum  `permitNonCryptographicHashes`  `soundnessProvider`  64
+- row  `Adler32`  checksum  `permitNonCryptographicHashes`  `javaBaseProvider`, `soundnessProvider`  32
++ column  アルゴリズム
++ column  種類
++ column  許可
++ column  プロバイダー
++ column  ビット数
++ row  `Sha2[224]`, `Sha2[256]`, `Sha2[384]`, `Sha2[512]`  ハッシュ  不要  `javaBaseProvider`, `soundnessProvider`  224–512
++ row  `Blake3`  ハッシュ  不要  `soundnessProvider`  256
++ row  `Sha1`  弱いハッシュ  `permitDeprecatedCrypto`  `javaBaseProvider`, `soundnessProvider`  160
++ row  `Md5`  弱いハッシュ  `permitDisallowedCrypto`  `javaBaseProvider`, `soundnessProvider`  128
++ row  `Murmur3`  高速ハッシュ  `permitNonCryptographicHashes`  `soundnessProvider`  128
++ row  `Crc32`  チェックサム  `permitNonCryptographicHashes`  `javaBaseProvider`, `soundnessProvider`  32
++ row  `Crc64`  チェックサム  `permitNonCryptographicHashes`  `soundnessProvider`  64
++ row  `Adler32`  チェックサム  `permitNonCryptographicHashes`  `javaBaseProvider`, `soundnessProvider`  32
+
+= row  `Adler32`  checksum  `permitNonCryptographicHashes`  `javaBaseProvider`, `soundnessProvider`  32
+- ```
++ ```
+
+- The permits are imported from the package `cryptoPermits`.
++ 許可はパッケージ `cryptoPermits` からインポートする。
+
+- `javaBaseProvider` uses the JDK's `MessageDigest` where there is one. Off the JVM there is
+- not, and the same import then selects pure-Scala implementations of MD5, SHA-1, SHA-2 and
+- CRC-32, which are validated byte for byte against the JDK's. Code which hashes therefore reads
+- the same, and produces the same digests, on the JVM, in a browser and inside a WebAssembly
+- component.
++ `javaBaseProvider` は、JDK の `MessageDigest` があればそれを使う。
++ JVM の外にはそれがなく、そのとき同じインポートは MD5、SHA-1、SHA-2、CRC-32 の純粋な Scala 実装を選ぶ。これらは JDK のものとバイト単位で照合して検証されている。
++ したがってハッシュするコードは、JVM 上でも、ブラウザの中でも、WebAssembly コンポーネントの中でも同じに読め、同じダイジェストを生成する。
+
+- ### The algorithm in the type
++ ### 型の中のアルゴリズム
+
+- A digest has its algorithm in its type, as in `Digest in Sha2[256]`. Where the expected type
+- already says which algorithm is wanted, `digest` need not name it. A field declared with the
+- type fixes what `digest` computes:
++ ダイジェストは、`Digest in Sha2[256]` のように、そのアルゴリズムを型の中に持つ。
++ 期待される型がどのアルゴリズムが欲しいかをすでに述べている場所では、`digest` はそれを名指す必要がない。
++ その型で宣言されたフィールドが、`digest` が何を計算するかを決める。
+
+= type fixes what `digest` computes:
+=
+- ```scala
++ ```scala
+
+- case class Block(digest: Digest in Sha2[256], payload: Text)
++ case class Block(digest: Digest in Sha2[256], payload: Text)
+
+- val payload = t"""{"amount": 100}"""
++ val payload = t"""{"amount": 100}"""
+
+- val block = Block(payload.digest, payload)
++ val block = Block(payload.digest, payload)
+
+= val block = Block(payload.digest, payload)
+- ```
++ ```
+
+= val block = Block(payload.digest, payload)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val block = Block(payload.digest, payload)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val block = Block(payload.digest, payload)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(block.digest.serialize[Hex])
++ Out.println(block.digest.serialize[Hex])
+
+= Out.println(block.digest.serialize[Hex])
+- ```
++ ```
+
+- That is the pattern throughout. Digests, HMACs, keys and signatures are all bytes with a type
+- parameter for the algorithm which produced them. A value from one algorithm cannot be passed
+- where another is expected, and the algorithm rarely has to be written twice:
++ これは全体を通じたパターンである。
++ ダイジェスト、HMAC、鍵、署名はすべて、それを生成したアルゴリズムを表す型パラメーターを持つバイトである。
++ あるアルゴリズムの値を、別のアルゴリズムが期待される場所に渡すことはできず、アルゴリズムを二度書かなければならないことはほとんどない。
+
+= where another is expected, and the algorithm rarely has to be written twice:
+=
+- ```scala fuel
++ ```scala fuel
+
+= where another is expected, and the algorithm rarely has to be written twice:
+=
+= ```scala fuel
+- compile
++ compile
+
+= where another is expected, and the algorithm rarely has to be written twice:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= where another is expected, and the algorithm rarely has to be written twice:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Block(payload.digest[Sha2[512]], payload)
++ Block(payload.digest[Sha2[512]], payload)
+
+= Block(payload.digest[Sha2[512]], payload)
+- ```
++ ```
+
+- [Cryptography](cryptography.md) covers HMACs, keys and signatures.
++ HMAC、鍵、署名については[暗号](cryptography.md)で扱う。
+
+- ### Hashing your own types
++ ### 自分の型のハッシュ
+
+- Any value which can be reduced to bytes is digestible. A case class derives that from its
+- fields, so a structured value is hashed as one:
++ バイトに還元できる値は、どれもダイジェスト可能である。
++ ケースクラスはそれをフィールドから導出するので、構造を持つ値は一つのものとしてハッシュされる。
+
+= fields, so a structured value is hashed as one:
+=
+- ```scala
++ ```scala
+
+- case class Person(name: Text, age: Int)
++ case class Person(name: Text, age: Int)
+
+= case class Person(name: Text, age: Int)
+- ```
++ ```
+
+= case class Person(name: Text, age: Int)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Person(name: Text, age: Int)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Person(name: Text, age: Int)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Person(t"Hamlet", 30).digest[Sha2[256]].serialize[Hex])
++ Out.println(Person(t"Hamlet", 30).digest[Sha2[256]].serialize[Hex])
+
+- Out.println(Person(t"Hamlet", 31).digest[Sha2[256]].serialize[Hex])
++ Out.println(Person(t"Hamlet", 31).digest[Sha2[256]].serialize[Hex])
+
+= Out.println(Person(t"Hamlet", 31).digest[Sha2[256]].serialize[Hex])
+- ```
++ ```
+
+- A digest is itself digestible, so a hash can be combined into a larger structure, and hashed
+- again.
++ ダイジェスト自体もダイジェスト可能なので、ハッシュをより大きな構造に組み込み、もう一度ハッシュできる。
+
+- ### Hashing a stream
++ ### ストリームのハッシュ
+
+- Data which is too large to hold is hashed as it passes. The digest accumulates over successive
+- chunks, and carries partial blocks across the boundaries between them. The result is therefore
+- identical whatever sizes the chunks happen to arrive in, and is the digest of the whole text
+- above:
++ 保持するには大きすぎるデータは、通り過ぎるうちにハッシュされる。
++ ダイジェストは連続するチャンクにわたって蓄積され、その境界をまたいで不完全なブロックを持ち越す。
++ したがって結果は、チャンクがどんな大きさで届いても同一であり、上のテキスト全体のダイジェストになる。
+
+= above:
+=
+- ```scala
++ ```scala
+
+- val chunks = Chain(t"Hello ".in[Data], t"wor".in[Data], t"ld".in[Data])
++ val chunks = Chain(t"Hello ".in[Data], t"wor".in[Data], t"ld".in[Data])
+
+= val chunks = Chain(t"Hello ".in[Data], t"wor".in[Data], t"ld".in[Data])
+- ```
++ ```
+
+= val chunks = Chain(t"Hello ".in[Data], t"wor".in[Data], t"ld".in[Data])
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val chunks = Chain(t"Hello ".in[Data], t"wor".in[Data], t"ld".in[Data])
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val chunks = Chain(t"Hello ".in[Data], t"wor".in[Data], t"ld".in[Data])
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(chunks.checksum[Sha2[256]].serialize[Hex])
++ Out.println(chunks.checksum[Sha2[256]].serialize[Hex])
+
+= Out.println(chunks.checksum[Sha2[256]].serialize[Hex])
+- ```
++ ```
+
+- This is what makes a digest computable over a [stream](streams.md) with bounded memory. It is
+- why hashing composes with [compression](compression.md) and
+- [encryption](cryptography.md) in one pipeline, without the data being held between them.
++ これによって、[ストリーム](streams.md)上のダイジェストを有界なメモリで計算できる。
++ ハッシュが[圧縮](compression.md)や[暗号化](cryptography.md)と一つのパイプラインの中で、その間にデータを保持することなく組み合わさるのは、このためである。
+
+- `checksum` digests what is *behind* a value: a stream's bytes and, for a
+- [filesystem](filesystem.md) path, the content of a file or of a directory. A directory's
+- checksum covers its regular files, in the order of their paths relative to it, and each
+- contributes its relative path and its content. So:
++ `checksum` は値の*背後*にあるものをダイジェストする。ストリームならそのバイトであり、[ファイルシステム](filesystem.md)のパスならファイルまたはディレクトリの内容である。
++ ディレクトリのチェックサムはその通常ファイルを、ディレクトリからの相対パスの順に対象とし、各ファイルはその相対パスと内容を寄与する。
++ したがって、
+
+- - a rename, a move or an edit changes the checksum;
+- - two directories which hold the same files have the same checksum, wherever they are;
+- - an empty directory has a checksum too.
++ - 名前の変更、移動、編集はチェックサムを変える。
++ - 同じファイルを持つ二つのディレクトリは、どこにあっても同じチェックサムを持つ。
++ - 空のディレクトリにもチェックサムがある。
+
+- That is the identity a build keys its caches by:
++ これが、ビルドがキャッシュのキーにする同一性である。
+
+= That is the identity a build keys its caches by:
+=
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+= typecheck
+- ##
++ ##
+
+- import filesystemBackends.javaBaseFilesystem
++ import filesystemBackends.javaBaseFilesystem
+
+- import filesystemOptions.dereferenceSymlinks
++ import filesystemOptions.dereferenceSymlinks
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLinux
+
+- import temporaryDirectories.javaBaseTemporaryDirectory
++ import temporaryDirectories.javaBaseTemporaryDirectory
+
+- val directory = temporaryDirectory[Path on Linux] / "hashing"
++ val directory = temporaryDirectory[Path on Linux] / "hashing"
+
+- directory.create[Directory](CreateFlag.Replace)
++ directory.create[Directory](CreateFlag.Replace)
+
+- val identity: Digest in Sha2[256] = directory.checksum[Sha2[256]]
++ val identity: Digest in Sha2[256] = directory.checksum[Sha2[256]]
+
+= val identity: Digest in Sha2[256] = directory.checksum[Sha2[256]]
+- ```
++ ```
+
+- ### Rendering a digest
++ ### ダイジェストの描画
+
+- A digest's bytes are written in any base encoding: hexadecimal for display, or Base64 where
+- they must be compact:
++ ダイジェストのバイトは、どの基数エンコーディングでも書き出せる。表示には 16 進数、コンパクトでなければならない場所では Base64 である。
+
+= they must be compact:
+=
+- ```scala fuel
++ ```scala fuel
+
+= they must be compact:
+=
+= ```scala fuel
+- run
++ run
+
+= they must be compact:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= they must be compact:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import alphabets.base64Standard
++   import alphabets.base64Standard
+
+-   Out.println(t"Hello world".digest[Sha2[256]].serialize[Base64])
++   Out.println(t"Hello world".digest[Sha2[256]].serialize[Base64])
+
+=   Out.println(t"Hello world".digest[Sha2[256]].serialize[Base64])
+- ```
++ ```
+
+- ### Self-describing digests
++ ### 自己記述的なダイジェスト
+
+- A digest's bytes say nothing about the algorithm which produced them. A digest which is stored
+- or sent alone can be checked only by something which already knows how it was made. A
+- [Multihash](https://multiformats.io/multihash/) prefixes the digest with a code for its
+- algorithm and its length, so it describes itself. Content-addressed storage, and the
+- distributed protocols built on it, exchange multihashes:
++ ダイジェストのバイトは、それを生成したアルゴリズムについて何も語らない。
++ 単独で保存されたり送られたりするダイジェストは、それがどう作られたかをすでに知っているものにしか検査できない。
++ [Multihash](https://multiformats.io/multihash/) はダイジェストの前にそのアルゴリズムと長さを表すコードを付けるので、自分自身を記述する。
++ 内容アドレス方式のストレージと、その上に築かれた分散プロトコルは、multihash をやり取りする。
+
+= distributed protocols built on it, exchange multihashes:
+=
+- ```scala fuel
++ ```scala fuel
+
+= distributed protocols built on it, exchange multihashes:
+=
+= ```scala fuel
+- run
++ run
+
+= distributed protocols built on it, exchange multihashes:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Multihash(t"Hello world".digest[Sha2[256]]).serialize.serialize[Hex])
++ Out.println(Multihash(t"Hello world".digest[Sha2[256]]).serialize.serialize[Hex])
+
+= Out.println(Multihash(t"Hello world".digest[Sha2[256]]).serialize.serialize[Hex])
+- ```
++ ```
+
+- The two bytes `12` and `20` say that a SHA-256 digest of thirty-two bytes follows. The
+- algorithm's code comes from the digest's type, so a multihash cannot claim an algorithm other
+- than the one which computed it.
++ 二つのバイト `12` と `20` は、32 バイトの SHA-256 ダイジェストが後に続くことを示す。
++ アルゴリズムのコードはダイジェストの型から来るので、multihash がそれを計算したもの以外のアルゴリズムを名乗ることはできない。
+
+- ### Weak algorithms
++ ### 弱いアルゴリズム
+
+- MD5 and SHA-1 are broken for the purposes of security, and remain only for compatibility.
+- Without a permission in scope, neither compiles:
++ MD5 と SHA-1 はセキュリティの目的では壊れており、互換性のためだけに残っている。
++ スコープに許可がなければ、どちらもコンパイルされない。
+
+= Without a permission in scope, neither compiles:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Without a permission in scope, neither compiles:
+=
+= ```scala fuel
+- compile
++ compile
+
+= Without a permission in scope, neither compiles:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= Without a permission in scope, neither compiles:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- t"Hello world".digest[Md5]
++ t"Hello world".digest[Md5]
+
+= t"Hello world".digest[Md5]
+- ```
++ ```
+
+- Importing the permission makes the choice visible and deliberate:
++ 許可をインポートすると、その選択は目に見える、意図的なものになる。
+
+= Importing the permission makes the choice visible and deliberate:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Importing the permission makes the choice visible and deliberate:
+=
+= ```scala fuel
+- run
++ run
+
+= Importing the permission makes the choice visible and deliberate:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= Importing the permission makes the choice visible and deliberate:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import cryptoPermits.permitDisallowedCrypto
++   import cryptoPermits.permitDisallowedCrypto
+
+-   Out.println(t"Hello world".digest[Md5].serialize[Hex])
++   Out.println(t"Hello world".digest[Md5].serialize[Hex])
+
+=   Out.println(t"Hello world".digest[Md5].serialize[Hex])
+- ```
++ ```
+
+- The strong algorithms need no permission.
++ 強いアルゴリズムには許可は要らない。
+
+- ### Checksums
++ ### チェックサム
+
+- `Crc32`, `Crc64` and `Adler32` are not hashes but checksums. They detect accidental
+- corruption, and defend against nothing. They sit behind a permit of their own, which concedes
+- only that no adversary is being defended against:
++ `Crc32`、`Crc64`、`Adler32` はハッシュではなくチェックサムである。
++ 偶発的な破損を検出するが、何からも守らない。
++ これらは独自の許可の向こうにあり、その許可が認めるのは、敵対者から守っているわけではないということだけである。
+
+= only that no adversary is being defended against:
+=
+- ```scala
++ ```scala
+
+- import cryptoPermits.permitNonCryptographicHashes
++ import cryptoPermits.permitNonCryptographicHashes
+
+= import cryptoPermits.permitNonCryptographicHashes
+- ```
++ ```
+
+= import cryptoPermits.permitNonCryptographicHashes
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import cryptoPermits.permitNonCryptographicHashes
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import cryptoPermits.permitNonCryptographicHashes
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"123456789".digest[Crc32].serialize[Hex])
++ Out.println(t"123456789".digest[Crc32].serialize[Hex])
+
+= Out.println(t"123456789".digest[Crc32].serialize[Hex])
+- ```
++ ```
+
+- A source of bytes, such as a file or a download, is checksummed without being held in memory,
+- by digesting its stream as it flows, exactly as `checksum` did above.
++ ファイルやダウンロードのようなバイトの供給源は、メモリに保持されることなく、流れていくストリームをダイジェストすることでチェックサムが計算される。上の `checksum` とまったく同じである。
+
+- ### Fast hashing
++ ### 高速なハッシュ
+
+- `Murmur3` is MurmurHash3 in its 128-bit form. It is not a checksum, but it is not
+- cryptographic either. It is a hash made for hash tables, [Bloom filters](bloom-filters.md) and
+- sharding, where the input is not adversarial, and the rounds of a cryptographic digest would
+- be several times the work for no benefit. It sits behind the same permit as the checksums, and
+- its output is byte for byte what Guava's `murmur3_128()` produces:
++ `Murmur3` は 128 ビット形式の MurmurHash3 である。
++ チェックサムではないが、暗号学的でもない。
++ ハッシュテーブル、[Bloom フィルター](bloom-filters.md)、シャーディングのために作られたハッシュであり、そこでは入力は敵対的ではなく、暗号学的ダイジェストのラウンドは何の利益もなく数倍の手間になる。
++ チェックサムと同じ許可の向こうにあり、その出力は Guava の `murmur3_128()` が生成するものとバイト単位で一致する。
+
+= its output is byte for byte what Guava's `murmur3_128()` produces:
+=
+- ```scala fuel
++ ```scala fuel
+
+= its output is byte for byte what Guava's `murmur3_128()` produces:
+=
+= ```scala fuel
+- run
++ run
+
+= its output is byte for byte what Guava's `murmur3_128()` produces:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= its output is byte for byte what Guava's `murmur3_128()` produces:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import providers.soundnessProvider
++   import providers.soundnessProvider
+
+-   Out.println(t"hello".digest[Murmur3].serialize[Hex])
++   Out.println(t"hello".digest[Murmur3].serialize[Hex])
+
+=   Out.println(t"hello".digest[Murmur3].serialize[Hex])
+- ```
++ ```
+
+- ### BLAKE3
++ ### BLAKE3
+
+- `Blake3` is implemented in pure Scala, by `soundnessProvider`, and offers the algorithm's three
+- modes:
++ `Blake3` は `soundnessProvider` によって純粋な Scala で実装されており、このアルゴリズムの三つのモードを提供する。
+
+= modes:
+=
+- ```tabular
++ ```tabular
+
+- column  Mode
+- column  Input
+- column  Use
+- row  hash  the data  an ordinary digest
+- row  keyed hash  a key and the data  message authentication
+- row  key derivation  a context string and key material  deriving keys
++ column  モード
++ column  入力
++ column  用途
++ row  ハッシュ  データ  通常のダイジェスト
++ row  鍵付きハッシュ  鍵とデータ  メッセージ認証
++ row  鍵導出  コンテキスト文字列と鍵の素材  鍵の導出
+
+= row  key derivation  a context string and key material  deriving keys
+- ```
++ ```
+
+- All three are checked against the official test data, at every input length which that data
+- covers, so the implementation is verified, and not merely tested for consistency with itself.
++ 三つすべてが公式のテストデータと、そのデータが対象とするすべての入力長で照合されているので、実装は検証済みであり、単に自分自身との一貫性をテストされているだけではない。
+
+- Its output is extendable. A BLAKE3 digest may be taken at any length, not only at 256 bits,
+- which is what makes it usable for deriving keys as well as for hashing.
++ その出力は伸長可能である。
++ BLAKE3 のダイジェストは 256 ビットに限らず任意の長さで取り出せ、そのおかげでハッシュだけでなく鍵の導出にも使える。
+
+- ### Related
++ ### 関連
+
+- - [UUIDs](uuid.md), [packaging](packaging.md) and [containers](docker.md) identify values by their digests.
++ - [UUID](uuid.md)、[パッケージング](packaging.md)、[コンテナー](docker.md)は、値をそのダイジェストによって識別する。

@@ -1,0 +1,7 @@
+orthant 1 language
+
+- Nesting is deterministic too, but a nested scope does not continue the sequence of the scope
+- enclosing it. Each scope starts afresh from the `Randomization` in scope, so under the same seed
+- an inner scope repeats the first draws of the outer one.
++ 入れ子も決定的であるが、入れ子のスコープはそれを囲むスコープの列を引き継がない。
++ 各スコープはスコープ内の `Randomization` から新たに始まるので、同じシードのもとでは、内側のスコープは外側のスコープが最初に引いた値を繰り返す。

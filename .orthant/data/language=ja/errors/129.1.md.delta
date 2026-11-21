@@ -1,0 +1,50 @@
+orthant 1 language
+
+- # `↯/s.129.1` — `Mathml.Error`
++ # `↯/s.129.1` — `Mathml.Error`
+
+- Raised when MathML content cannot be read as the typed elements Archimedes models.
++ MathML の内容を、Archimedes がモデル化する型付きの要素として読めないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Archimedes represents MathML as typed elements, so an element or attribute outside the
+- subset it models cannot be constructed or parsed.
++ Archimedes は MathML を型付きの要素として表すので、それがモデル化する部分集合の外にある要素や属性は、構築することもパースすることもできない。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  コード
++ column  理由
++ column  メッセージ
+
+- row  `↯/s.129.1.1`  `NotMathml`  `[↯/s.129.1.1] the root element was <<label>> instead of <math>`
++ row  `↯/s.129.1.1`  `NotMathml`  `[↯/s.129.1.1] the root element was <<label>> instead of <math>`
+
+- row  `↯/s.129.1.2`  `UnknownElement`  `[↯/s.129.1.2] the element <<label>> is not a known MathML element`
++ row  `↯/s.129.1.2`  `UnknownElement`  `[↯/s.129.1.2] the element <<label>> is not a known MathML element`
+
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Check the element against the MathML specification and against what Archimedes models.
+- Presentation MathML is covered more fully than content MathML.
++ 要素を、MathML の仕様と、Archimedes がモデル化するものに照らして確かめる。
++ プレゼンテーション MathML は、コンテンツ MathML よりも完全に扱われている。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/archimedes/src/core/archimedes.Mathml.scala`
++ - ソース：`lib/archimedes/src/core/archimedes.Mathml.scala`

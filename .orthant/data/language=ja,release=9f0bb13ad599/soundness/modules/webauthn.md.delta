@@ -1,0 +1,394 @@
+orthant 1 language
+
+- ## WebAuthn: passwordless sign-in
++ ## WebAuthn：パスワードなしのサインイン
+
+- ### About
++ ### 概要
+
+- [Web Authentication](https://www.w3.org/TR/webauthn-2/) lets a user sign in to a site with a
+- key instead of a password. An *authenticator*, which may be a security key, a phone or the
+- secure hardware of a laptop, makes a key pair for the site, keeps the private key, and signs a
+- challenge with it each time the user signs in. A credential of this kind which is synchronized
+- between a user's devices is a *passkey*.
++ [Web Authentication](https://www.w3.org/TR/webauthn-2/) は、ユーザーがパスワードの代わりに鍵でサイトにサインインできるようにする。
++ *認証器*（セキュリティキー、スマートフォン、ノートパソコンのセキュアなハードウェアのいずれでもよい）は、サイトのために鍵ペアを作り、秘密鍵を保持し、ユーザーがサインインするたびにそれでチャレンジに署名する。
++ この種の資格情報のうち、ユーザーのデバイス間で同期されるものが*パスキー*である。
+
+- The server's side, which the standard calls the *relying party*, is provided here. It makes
+- the options a page passes to the browser, and checks what the browser sends back. The keys
+- and certificates are those of [cryptography](cryptography.md).
++ ここで提供されるのは、標準が*リライングパーティー*と呼ぶサーバー側である。
++ ページがブラウザに渡すオプションを作り、ブラウザが送り返すものを検査する。
++ 鍵と証明書は[暗号](cryptography.md)のものである。
+
+- ### On ceremonies
++ ### セレモニーについて
+
+- There is nothing for a server to remember but a public key, and nothing a user can be
+- tricked into typing. What takes care is the checking. An answer must be to the challenge
+- which was sent, and not an old one. It must come from the site's own origin, and not from a
+- page which resembles it. It must be made for this relying party, with the user present. The
+- signature must be the credential's.
++ サーバーが覚えておくべきものは公開鍵のほかに何もなく、ユーザーがだまされて入力させられるものも何もない。
++ 注意を要するのは検査である。
++ 応答は送ったチャレンジに対するものでなければならず、古いものであってはならない。
++ サイト自身のオリジンから来なければならず、それに似たページから来てはならない。
++ このリライングパーティーのために、ユーザーがいる状態で作られなければならない。
++ 署名はその資格情報のものでなければならない。
+
+- Each of the two *ceremonies* is one call to make the options and one to check the answer,
+- and the second makes every check the standard requires.
++ 二つの*セレモニー*はそれぞれ、オプションを作る一回の呼び出しと応答を検査する一回の呼び出しからなり、後者は標準が要求するすべての検査を行う。
+
+- Everything comes from the `soundness` package. A provider of algorithms is in scope, as it
+- is for any cryptography:
++ すべては `soundness` パッケージから来る。
++ どの暗号でもそうであるように、アルゴリズムのプロバイダーがスコープにある。
+
+= is for any cryptography:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import providers.javaBaseProvider
++ import providers.javaBaseProvider
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+= import strategies.throwUnsafely
+- ```
++ ```
+
+- A relying party is identified by a domain, and names the origins its pages are served from:
++ リライングパーティーはドメインで識別され、そのページが提供されるオリジンを名指す。
+
+= A relying party is identified by a domain, and names the origins its pages are served from:
+=
+- ```scala
++ ```scala
+
+- val globe = WebAuthn.RelyingParty(t"globe.example", t"The Globe", List(t"https://globe.example"))
++ val globe = WebAuthn.RelyingParty(t"globe.example", t"The Globe", List(t"https://globe.example"))
+
+= val globe = WebAuthn.RelyingParty(t"globe.example", t"The Globe", List(t"https://globe.example"))
+- ```
++ ```
+
+- ### Registration
++ ### 登録
+
+- A credential is registered to an account, which is a `WebAuthn.User`. Its `id` is a handle
+- of up to 64 bytes which identifies the account. An authenticator stores it, so it should say
+- nothing about the person:
++ 資格情報はアカウントに登録され、アカウントは `WebAuthn.User` である。
++ その `id` は、アカウントを識別する最大 64 バイトのハンドルである。
++ 認証器がそれを保存するので、それは人物について何も語るべきではない。
+
+= nothing about the person:
+=
+- ```scala
++ ```scala
+
+- val burbage = WebAuthn.User(t"account-1567".in[Data], t"burbage", t"Richard Burbage")
++ val burbage = WebAuthn.User(t"account-1567".in[Data], t"burbage", t"Richard Burbage")
+
+= val burbage = WebAuthn.User(t"account-1567".in[Data], t"burbage", t"Richard Burbage")
+- ```
++ ```
+
+- A ceremony begins with a fresh `WebAuthn.Challenge`, which the server keeps until the answer
+- arrives. `WebAuthn.registration` makes the options, as the JSON a page passes to
+- `PublicKeyCredential.parseCreationOptionsFromJSON` and then to `navigator.credentials.create`:
++ セレモニーは新しい `WebAuthn.Challenge` で始まり、サーバーは応答が届くまでそれを保持する。
++ `WebAuthn.registration` はオプションを、ページが `PublicKeyCredential.parseCreationOptionsFromJSON` に、次いで `navigator.credentials.create` に渡す JSON として作る。
+
+= `PublicKeyCredential.parseCreationOptionsFromJSON` and then to `navigator.credentials.create`:
+=
+- ```scala
++ ```scala
+
+- val challenge = WebAuthn.Challenge()
++ val challenge = WebAuthn.Challenge()
+
+- val options: Json = WebAuthn.registration(globe, burbage, challenge)
++ val options: Json = WebAuthn.registration(globe, burbage, challenge)
+
+= val options: Json = WebAuthn.registration(globe, burbage, challenge)
+- ```
++ ```
+
+- The page sends back the credential's `toJSON()`, and `WebAuthn.register` checks it. What it
+- returns is the `WebAuthn.Credential` to store for the account:
++ ページは資格情報の `toJSON()` を送り返し、`WebAuthn.register` がそれを検査する。
++ 返されるのは、アカウントのために保存する `WebAuthn.Credential` である。
+
+= returns is the `WebAuthn.Credential` to store for the account:
+=
+- ```scala fuel
++ ```scala fuel
+
+= returns is the `WebAuthn.Credential` to store for the account:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= returns is the `WebAuthn.Credential` to store for the account:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- def enrol(answer: Json): WebAuthn.Credential =
++ def enrol(answer: Json): WebAuthn.Credential =
+
+-   WebAuthn.register(answer, challenge, globe)
++   WebAuthn.register(answer, challenge, globe)
+
+=   WebAuthn.register(answer, challenge, globe)
+- ```
++ ```
+
+- A credential has an `id`, by which it is found again, the public `key`, and a signature
+- `counter`. Two things are left to the caller, because only the caller has the data: checking
+- that the `id` is not already registered to another account, and storing the credential.
++ 資格情報は、再びそれを見つけるための `id`、公開鍵 `key`、そして署名の `counter` を持つ。
++ 二つのことは呼び出し側に任される。データを持っているのは呼び出し側だけだからである。
++ `id` がすでに別のアカウントに登録されていないことの検査と、資格情報の保存である。
+
+- `registration` takes further parameters, each with a default:
++ `registration` はさらにパラメーターを取り、それぞれにデフォルトがある。
+
+= `registration` takes further parameters, each with a default:
+=
+- ```tabular
++ ```tabular
+
+- column  Parameter
+- column  Default
+- column  Meaning
+- row  `existing`  none  the identifiers of credentials the account already has, so that one authenticator is not registered twice
+- row  `algorithms`  `WebAuthn.Algorithms`  the COSE algorithms accepted, in order of preference: ES256, EdDSA and RS256
+- row  `verification`  `false`  whether the user must be verified, by a PIN or a fingerprint, and not merely present
+- row  `attestation`  `none`  the attestation conveyance asked of the authenticator
++ column  パラメーター
++ column  デフォルト
++ column  意味
++ row  `existing`  なし  アカウントがすでに持つ資格情報の識別子。一つの認証器が二度登録されないようにする
++ row  `algorithms`  `WebAuthn.Algorithms`  受け付ける COSE アルゴリズム。優先順に ES256、EdDSA、RS256
++ row  `verification`  `false`  ユーザーが単にいるだけでなく、PIN や指紋で検証されなければならないかどうか
++ row  `attestation`  `none`  認証器に求めるアテステーションの伝達方式
+
+= row  `attestation`  `none`  the attestation conveyance asked of the authenticator
+- ```
++ ```
+
+- What is asked for in `verification` and `algorithms` must be given to `register` as well,
+- which is what enforces it.
++ `verification` と `algorithms` で求めたものは `register` にも与えなければならず、それを強制するのは `register` である。
+
+- ### Authentication
++ ### 認証
+
+- `WebAuthn.authentication` makes the options for signing in, for
+- `navigator.credentials.get`. The identifiers of the account's credentials are passed where
+- the account is already known, and left out where the authenticator is to offer whichever
+- credentials it holds for the site:
++ `WebAuthn.authentication` は、`navigator.credentials.get` のためのサインインのオプションを作る。
++ アカウントがすでにわかっている場合はアカウントの資格情報の識別子を渡し、認証器がそのサイトのために持っている資格情報のどれかを提示させる場合は省く。
+
+= credentials it holds for the site:
+=
+- ```scala
++ ```scala
+
+- val signInChallenge = WebAuthn.Challenge()
++ val signInChallenge = WebAuthn.Challenge()
+
+- val signInOptions: Json = WebAuthn.authentication(globe, signInChallenge)
++ val signInOptions: Json = WebAuthn.authentication(globe, signInChallenge)
+
+= val signInOptions: Json = WebAuthn.authentication(globe, signInChallenge)
+- ```
++ ```
+
+- The answer names the credential it is from. `WebAuthn.identifier` reads that name, so the
+- stored credential can be found, and `WebAuthn.authenticate` checks the answer against it:
++ 応答は、それがどの資格情報からのものかを名指す。
++ `WebAuthn.identifier` はその名前を読むので、保存された資格情報を見つけることができ、`WebAuthn.authenticate` は応答をそれと照合する。
+
+= stored credential can be found, and `WebAuthn.authenticate` checks the answer against it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= stored credential can be found, and `WebAuthn.authenticate` checks the answer against it:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= stored credential can be found, and `WebAuthn.authenticate` checks the answer against it:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- def signIn(answer: Json, find: Data => WebAuthn.Credential): WebAuthn.Credential =
++ def signIn(answer: Json, find: Data => WebAuthn.Credential): WebAuthn.Credential =
+
+-   val stored = find(WebAuthn.identifier(answer))
++   val stored = find(WebAuthn.identifier(answer))
+
+-   WebAuthn.authenticate(answer, signInChallenge, globe, stored)
++   WebAuthn.authenticate(answer, signInChallenge, globe, stored)
+
+=   WebAuthn.authenticate(answer, signInChallenge, globe, stored)
+- ```
++ ```
+
+- The credential which is returned has its counter advanced, and is stored in place of the
+- old one. A counter which has *not* advanced means the private key is in two places, so the
+- answer is refused. An authenticator which does not count reports zero every time, which is
+- accepted for as long as the stored counter is zero as well.
++ 返される資格情報はカウンターが進められており、古いものの代わりに保存される。
++ カウンターが進んで*いない*ことは秘密鍵が二か所にあることを意味するので、その応答は拒否される。
++ カウントしない認証器は毎回ゼロを報告し、これは保存されたカウンターもゼロである限り受け付けられる。
+
+- Every refusal is a `WebAuthn.Error`, whose reason says which check failed. A challenge is for
+- one ceremony, and is discarded whether the answer is accepted or not.
++ 拒否はすべて `WebAuthn.Error` であり、その理由がどの検査に失敗したかを述べる。
++ チャレンジは一つのセレモニーのためのものであり、応答が受け付けられてもそうでなくても破棄される。
+
+- ### In a web application
++ ### Web アプリケーションで
+
+- A challenge has to be kept from the request which makes a ceremony's options to the request
+- which brings its answer. `Ceremonies` is a store for that, keyed by the user's `Session`.
+- `begin` makes a session's challenge and remembers it. `conclude` gives it back, once, and
+- forgets it:
++ チャレンジは、セレモニーのオプションを作るリクエストから、その応答を運ぶリクエストまで保持しておかなければならない。
++ `Ceremonies` はそのためのストアであり、ユーザーの `Session` をキーとする。
++ `begin` はセッションのチャレンジを作って記憶する。
++ `conclude` はそれを一度だけ返し、忘れる。
+
+= forgets it:
+=
+- ```scala
++ ```scala
+
+- val ceremonies = Ceremonies()
++ val ceremonies = Ceremonies()
+
+= val ceremonies = Ceremonies()
+- ```
++ ```
+
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= ```
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- def start(session: Session): Json =
++ def start(session: Session): Json =
+
+-   WebAuthn.authentication(globe, ceremonies.begin(session))
++   WebAuthn.authentication(globe, ceremonies.begin(session))
+
+- def finish(session: Session, answer: Json, stored: WebAuthn.Credential): WebAuthn.Credential =
++ def finish(session: Session, answer: Json, stored: WebAuthn.Credential): WebAuthn.Credential =
+
+-   val pending = ceremonies.conclude(session).or(abort(WebAuthn.Error(WebAuthn.Error.Reason.Challenge)))
++   val pending = ceremonies.conclude(session).or(abort(WebAuthn.Error(WebAuthn.Error.Reason.Challenge)))
+
+-   WebAuthn.authenticate(answer, pending, globe, stored)
++   WebAuthn.authenticate(answer, pending, globe, stored)
+
+=   WebAuthn.authenticate(answer, pending, globe, stored)
+- ```
++ ```
+
+- Since `conclude` gives a challenge back only once, an answer which is offered a second time
+- finds no ceremony in progress, and is refused.
++ `conclude` はチャレンジを一度しか返さないので、二度目に提示された応答は進行中のセレモニーを見つけられず、拒否される。
+
+- ### Attestation
++ ### アテステーション
+
+- An authenticator may *attest* the credential it makes, which is a statement about the
+- authenticator itself. A credential's `attestation` says what was established:
++ 認証器は、自分が作る資格情報を*アテスト*することがある。
++ これは認証器そのものについての表明である。
++ 資格情報の `attestation` は、何が確立されたかを述べる。
+
+= authenticator itself. A credential's `attestation` says what was established:
+=
+- ```tabular
++ ```tabular
+
+- column  Attestation
+- column  Meaning
+- row  `Unattested`  the authenticator made no statement
+- row  `Self`  the statement was signed with the credential's own key, and proves nothing about the authenticator
+- row  `Certified`  the statement was signed with a key which a certificate chain certifies
++ column  アテステーション
++ column  意味
++ row  `Unattested`  認証器は何の表明もしなかった
++ row  `Self`  表明は資格情報自身の鍵で署名されており、認証器については何も証明しない
++ row  `Certified`  表明は証明書チェーンが証明する鍵で署名された
+
+= row  `Certified`  the statement was signed with a key which a certificate chain certifies
+- ```
++ ```
+
+- Most relying parties accept any authenticator, and ask for no attestation. One which
+- restricts the models it accepts asks for `direct` conveyance, and gives `register` the roots
+- it trusts as `anchors`. A `Certified` attestation is then accepted only if its chain leads to
+- one of them, and its `trusted` member is `true`. With no anchors, the chain is reported and
+- not validated.
++ ほとんどのリライングパーティーはどの認証器でも受け付け、アテステーションを求めない。
++ 受け付ける機種を制限するものは `direct` の伝達方式を求め、信頼するルートを `anchors` として `register` に与える。
++ そうすると `Certified` のアテステーションは、そのチェーンがそのどれかに至る場合にだけ受け付けられ、その `trusted` メンバーは `true` になる。
++ アンカーがなければ、チェーンは報告されるが検証されない。
+
+- The `none` and `packed` formats are understood. Any other format raises a `WebAuthn.Error`.
++ `none` と `packed` の形式が理解される。
++ それ以外の形式は `WebAuthn.Error` を発生させる。
+
+- ### Related
++ ### 関連
+
+- - [Cryptography](cryptography.md) provides the keys and certificates.
+- - [JOSE](jose.md) provides tokens, for the session which follows a sign-in.
+- - [OAuth 2](oauth.md) delegates sign-in to another party.
+- - [HTTP server](http-server.md) serves the pages and receives the answers.
++ - [暗号](cryptography.md)は、鍵と証明書を提供する。
++ - [JOSE](jose.md) は、サインインに続くセッションのためのトークンを提供する。
++ - [OAuth 2](oauth.md) は、サインインを別の当事者に委ねる。
++ - [HTTP サーバー](http-server.md)は、ページを提供し、応答を受け取る。

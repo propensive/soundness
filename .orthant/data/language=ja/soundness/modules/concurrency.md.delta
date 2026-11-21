@@ -1,0 +1,1295 @@
+orthant 1 language
+
+- ## Concurrency
++ ## 並行性
+
+- ### About
++ ### 概要
+
+- Concurrency is structured. A task is spawned inside a supervised scope, which owns it, and
+- the scope does not complete until its tasks have:
++ 並行性は構造化されている。
++ タスクは、それを所有する監督されたスコープの中で生成され、スコープはそのタスクが完了するまで完了しない。
+
+- - A task runs a computation on a thread, and gives a result, which is awaited.
+- - A failure in a task propagates to the scope. It does not vanish.
+- - Canceling a scope cancels everything beneath it.
++ - タスクは計算をスレッド上で実行し、結果を与え、その結果は待機される。
++ - タスクの失敗はスコープへ伝播する。消えてしまうことはない。
++ - スコープをキャンセルすると、その下のすべてがキャンセルされる。
+
+- Whether tasks run on the JVM's platform threads, or on its lightweight virtual threads, is a
+- choice which is made in scope.
+- [Structured concurrency](../../philosophy/structured-concurrency.md) sets out the reasoning
+- behind this shape.
++ タスクを JVM のプラットフォームスレッドで実行するか、軽量な仮想スレッドで実行するかは、スコープ内で行う選択である。
++ [構造化された並行性](../../philosophy/structured-concurrency.md)が、この形の背後にある理由を述べている。
+
+- ### On concurrency
++ ### 並行性について
+
+- Unstructured concurrency leaks. A thread which is started with no owner can outlive the code
+- which started it. An exception which is thrown on it disappears, unless someone thought to
+- catch it. Canceling a piece of work means tracking down every thread which it spawned. The
+- lifetimes of concurrent tasks bear no relation to the structure of the code, so it is hard
+- to reason about what is still running, and what happened to it.
++ 構造化されていない並行性は漏れる。
++ 所有者なしに開始されたスレッドは、それを開始したコードより長く生き延びうる。
++ その上で投げられた例外は、誰かが捕らえようと考えていない限り消えてしまう。
++ 作業をキャンセルするには、それが生成したすべてのスレッドを突き止めなければならない。
++ 並行タスクの寿命はコードの構造と何の関係もないので、何がまだ実行中で、それに何が起きたのかを推論するのは難しい。
+
+- Here concurrent work has the same shape as ordinary blocks. Every task is a child of the
+- scope which spawned it, and a scope waits for its children before it finishes, so no task
+- outlives its scope. A failure travels up to the scope, and canceling the scope cancels its
+- children. A concurrent program therefore nests, and its structure is visible.
++ ここでは、並行の作業は通常のブロックと同じ形を持つ。
++ すべてのタスクはそれを生成したスコープの子であり、スコープは終わる前に子を待つので、どのタスクもスコープより長く生き延びない。
++ 失敗はスコープまで伝わり、スコープをキャンセルするとその子がキャンセルされる。
++ したがって並行プログラムは入れ子になり、その構造が目に見える。
+
+- Everything comes from the `soundness` package. A thread model, and a policy for unfinished
+- tasks, are in scope, and the last import lets the samples print their results:
++ すべては `soundness` パッケージから来る。
++ スレッドモデルと、未完了のタスクに対するポリシーをスコープに入れ、最後のインポートでサンプルが結果を印字できるようになる。
+
+= tasks, are in scope, and the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import probates.cancelProbate
++ import probates.cancelProbate
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### A supervised scope
++ ### 監督されたスコープ
+
+- `supervise` opens a scope, which owns the tasks that are spawned within it. It does not
+- return until those tasks have settled, so concurrent work has a clear boundary. Outside one,
+- no task can be spawned:
++ `supervise` はスコープを開き、そのスコープは中で生成されたタスクを所有する。
++ それらのタスクが決着するまで戻らないので、並行の作業には明確な境界がある。
++ その外では、タスクを生成できない。
+
+= no task can be spawned:
+=
+- ```scala fuel
++ ```scala fuel
+
+= no task can be spawned:
+=
+= ```scala fuel
+- compile
++ compile
+
+= no task can be spawned:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= no task can be spawned:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- async(1 + 1)
++ async(1 + 1)
+
+= async(1 + 1)
+- ```
++ ```
+
+- ### Spawning a task
++ ### タスクの生成
+
+- `async` spawns a task, which runs concurrently. `await` waits for the task, and gives its
+- result:
++ `async` は並行に実行されるタスクを生成する。
++ `await` はタスクを待ち、その結果を与える。
+
+= `async` spawns a task, which runs concurrently. `await` waits for the task, and gives its
+= result:
+=
+- ```scala
++ ```scala
+
+- def expensiveComputation(): Int = (1 to 1000000).sum
++ def expensiveComputation(): Int = (1 to 1000000).sum
+
+- val sum = supervise:
++ val sum = supervise:
+
+-   val task = async(expensiveComputation())
++   val task = async(expensiveComputation())
+
+-   task.await()
++   task.await()
+
+=   task.await()
+- ```
++ ```
+
+=   task.await()
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   task.await()
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   task.await()
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(sum.show)
++ Out.println(sum.show)
+
+= Out.println(sum.show)
+- ```
++ ```
+
+- The task belongs to the enclosing scope, so the scope accounts for it, whether or not it is
+- explicitly awaited.
++ タスクは外側のスコープに属するので、明示的に待機されるかどうかにかかわらず、スコープがそれを管理する。
+
+- Parenthood travels through a `Monitor`. Both `supervise` and `async` introduce one into
+- their bodies, but `async` also *consumes* one, and `supervise` does not. That is what makes
+- `supervise` the root of a hierarchy, and `async` a branch beneath it, and it is why every
+- `async` must ultimately stem from a `supervise`. Where several monitors are in scope, the
+- innermost wins, so a task which is nested three deep is a child of the task which
+- immediately encloses it, not of the scope at the top.
++ 親子関係は `Monitor` を通じて伝わる。
++ `supervise` と `async` はどちらも本体に一つを導入するが、`async` は一つを*消費*もし、`supervise` はしない。
++ それが `supervise` を階層の根にし、`async` をその下の枝にしているものであり、すべての `async` が最終的に `supervise` から生じなければならない理由である。
++ 複数のモニターがスコープ内にある場合は最も内側のものが勝つので、三段深く入れ子になったタスクは、最上位のスコープではなく、それを直接囲むタスクの子である。
+
+- ### Why a parent waits
++ ### 親が待つ理由
+
+- A task may not finish, whether by producing a result or by being canceled, until its
+- children have finished. That is what makes a completed task safe to reason about. Consider a
+- parent which returns almost immediately, while a child goes on counting. What becomes of the
+- child is decided by the [probate](#cancellation-in-both-directions) in scope, and under
+- `awaitProbate` the parent waits for it:
++ タスクは、結果を生むことによってもキャンセルされることによっても、その子が終わるまで終われない。
++ それが、完了したタスクを安全に推論できるようにしている。
++ 子が数え続けている間に、ほとんどすぐに戻る親を考える。
++ 子がどうなるかはスコープ内の[検認](#cancellation-in-both-directions)によって決まり、`awaitProbate` のもとでは親はそれを待つ。
+
+= `awaitProbate` the parent waits for it:
+=
+- ```scala
++ ```scala
+
+- var written = 0
++ var written = 0
+
+- def outcome(): Text =
++ def outcome(): Text =
+
+-   import probates.awaitProbate
++   import probates.awaitProbate
+
+-   supervise:
++   supervise:
+
+-     val parent = async:
++     val parent = async:
+
+-       async:
++       async:
+
+-         for i <- 0 to 10 do
++         for i <- 0 to 10 do
+
+-           snooze(0.01*Second)
++           snooze(0.01*Second)
+
+-           written += 1
++           written += 1
+
+-       t"complete"
++       t"complete"
+
+-     parent.await()
++     parent.await()
+
+=     parent.await()
+- ```
++ ```
+
+- Nothing stands between the parent and its result. Were `await` to return at once, `written`
+- would be read while the child was still counting. Instead, `parent.await()` does not return
+- until the child has settled. Under `awaitProbate` that means all eleven increments have been
+- made. Under `cancelProbate`, the child is canceled instead, and the parent still does not
+- finish until that has happened.
++ 親とその結果の間を隔てるものは何もない。
++ もし `await` がすぐに戻るなら、子がまだ数えている間に `written` が読まれることになる。
++ そうではなく、`parent.await()` は子が決着するまで戻らない。
++ `awaitProbate` のもとでは、それは十一回の増分がすべて行われたことを意味する。
++ `cancelProbate` のもとでは、子は代わりにキャンセルされ、親はやはりそれが起きるまで終わらない。
+
+- That is the invariant in general. Once a task has been awaited, no further execution can
+- take place on the resources which were captured in its body, including any which escaped
+- through a child.
++ それが一般的な不変条件である。
++ タスクがいったん待機されたら、その本体で捕捉されたリソース（子を通じて漏れ出したものを含む）の上で、それ以上の実行は起こりえない。
+
+- ### Combining tasks
++ ### タスクの組み合わせ
+
+- Tasks compose. A collection of tasks is awaited together with `sequence`. The first to
+- finish is taken with `race`. `map` and `bind` derive one task from another:
++ タスクは合成できる。
++ タスクのコレクションは `sequence` でまとめて待機する。
++ 最初に終わったものは `race` で取る。
++ `map` と `bind` は、あるタスクから別のタスクを導く。
+
+= finish is taken with `race`. `map` and `bind` derive one task from another:
+=
+- ```scala
++ ```scala
+
+- val together = supervise(List(async(1), async(2), async(3)).sequence.await())
++ val together = supervise(List(async(1), async(2), async(3)).sequence.await())
+
+- val chained = supervise(async(3).bind(n => async(n + 4)).await())
++ val chained = supervise(async(3).bind(n => async(n + 4)).await())
+
+= val chained = supervise(async(3).bind(n => async(n + 4)).await())
+- ```
++ ```
+
+= val chained = supervise(async(3).bind(n => async(n + 4)).await())
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val chained = supervise(async(3).bind(n => async(n + 4)).await())
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val chained = supervise(async(3).bind(n => async(n + 4)).await())
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(together.inspect)
++ Out.println(together.inspect)
+
+- Out.println(chained.show)
++ Out.println(chained.show)
+
+= Out.println(chained.show)
+- ```
++ ```
+
+- `sequence` runs its tasks in parallel, and collects the results *in order*, so the order of
+- the results says nothing about the order in which the tasks finished. `race` gives the
+- result of the first to finish, and the rest are canceled, since their results were not
+- wanted.
++ `sequence` はそのタスクを並列に実行し、結果を*順番どおりに*集めるので、結果の順序はタスクが終わった順序について何も語らない。
++ `race` は最初に終わったものの結果を与え、残りは結果が求められていないのでキャンセルされる。
+
+- ### Bounded parallelism
++ ### 並列度の制限
+
+- A task is a thread, and starting one costs a few microseconds, so a thousand cheap jobs
+- should not become a thousand tasks. `concurrently` runs numbered jobs across a fixed number
+- of tasks. Each task takes the next job from a shared counter, and the results are returned
+- in the order of the jobs, once every task has finished:
++ タスクはスレッドであり、一つを開始するには数マイクロ秒かかるので、千個の安価なジョブを千個のタスクにすべきではない。
++ `concurrently` は番号付きのジョブを固定数のタスクにまたがって実行する。
++ 各タスクは共有のカウンターから次のジョブを取り、すべてのタスクが終わると、結果はジョブの順序で返される。
+
+= in the order of the jobs, once every task has finished:
+=
+- ```scala
++ ```scala
+
+- val squares = supervise(concurrently(1000, 8)(i => i*i))
++ val squares = supervise(concurrently(1000, 8)(i => i*i))
+
+= val squares = supervise(concurrently(1000, 8)(i => i*i))
+- ```
++ ```
+
+= val squares = supervise(concurrently(1000, 8)(i => i*i))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val squares = supervise(concurrently(1000, 8)(i => i*i))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val squares = supervise(concurrently(1000, 8)(i => i*i))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(squares.to[List].excerpt(0, 5).inspect)
++ Out.println(squares.to[List].excerpt(0, 5).inspect)
+
+= Out.println(squares.to[List].excerpt(0, 5).inspect)
+- ```
++ ```
+
+- The cost of spawning is paid eight times, not a thousand. No job runs before an earlier one
+- has been claimed, so the load balances itself: a slow job simply holds its task, while the
+- others continue through the rest. An exception in a job fails the task which it ran on, and
+- is thrown again when the tasks are joined.
++ 生成のコストは千回ではなく八回支払われる。
++ どのジョブも、それより前のジョブが取られる前には実行されないので、負荷は自ずと均衡する。遅いジョブは単にそのタスクを占有し、他のタスクは残りを進め続ける。
++ ジョブの中の例外は、それが実行されていたタスクを失敗させ、タスクが合流されるときに再び投げられる。
+
+- ### Naming tasks
++ ### タスクの命名
+
+- `task` is `async` with a name. The name is checked at [compiletime] against the rules for a
+- task's [name](names.md). It has no path separators, since names compose into a hierarchy
+- which mirrors the tree of scopes. Inside the task, `monitor.name` is the task's own name,
+- and `monitor.stack` is the full path:
++ `task` は名前付きの `async` である。
++ 名前は、タスクの[名前](names.md)の規則に照らして[コンパイル時]に検査される。
++ 名前はスコープの木を映す階層に合成されるので、パスの区切り文字を持たない。
++ タスクの中では、`monitor.name` はタスク自身の名前であり、`monitor.stack` は完全なパスである。
+
+= and `monitor.stack` is the full path:
+=
+- ```scala
++ ```scala
+
+- import Async.nominative
++ import Async.nominative
+
+- val worker = supervise(task(n"worker")(monitor.name).await())
++ val worker = supervise(task(n"worker")(monitor.name).await())
+
+= val worker = supervise(task(n"worker")(monitor.name).await())
+- ```
++ ```
+
+= val worker = supervise(task(n"worker")(monitor.name).await())
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val worker = supervise(task(n"worker")(monitor.name).await())
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val worker = supervise(task(n"worker")(monitor.name).await())
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(worker.inspect)
++ Out.println(worker.inspect)
+
+= Out.println(worker.inspect)
+- ```
++ ```
+
+- Named tasks make a running program legible. A [stack trace](stack-traces.md), a dump of the
+- monitors or a [debugger](debugging.md) shows `server/connection-4/reader`, not an anonymous
+- thread number.
++ 名前付きのタスクは、実行中のプログラムを読み取れるものにする。
++ [スタックトレース](stack-traces.md)、モニターのダンプ、[デバッガー](debugging.md)は、匿名のスレッド番号ではなく `server/connection-4/reader` を示す。
+
+- ### Cancellation
++ ### キャンセル
+
+- A task is canceled with `cancel`. A task which can be canceled cooperates, by pausing at
+- points where it can be interrupted. A `snooze` is such a point, so a task which is sleeping
+- in one wakes to its cancellation, and does not run on:
++ タスクは `cancel` でキャンセルされる。
++ キャンセル可能なタスクは、中断できる地点で一時停止することによって協力する。
++ `snooze` はそのような地点なので、その中で眠っているタスクはキャンセルによって目覚め、それ以上実行を続けない。
+
+= in one wakes to its cancellation, and does not run on:
+=
+- ```scala
++ ```scala
+
+- val interrupted = supervise:
++ val interrupted = supervise:
+
+= val interrupted = supervise:
+-   val task = async:
++   val task = async:
+
+-     snooze(10.0*Second)
++     snooze(10.0*Second)
+
+-     expensiveComputation()
++     expensiveComputation()
+
+=     expensiveComputation()
+=
+-   task.cancel()
++   task.cancel()
+
+-   t"canceled without waiting ten seconds"
++   t"canceled without waiting ten seconds"
+
+=   t"canceled without waiting ten seconds"
+- ```
++ ```
+
+=   t"canceled without waiting ten seconds"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   t"canceled without waiting ten seconds"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   t"canceled without waiting ten seconds"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(interrupted)
++ Out.println(interrupted)
+
+= Out.println(interrupted)
+- ```
++ ```
+
+- Work which does not pause has to volunteer its own cancellation points. `relent()` is such a
+- point. While the task is running normally, it does nothing. If the task has been canceled,
+- it stops there, without producing a value. A task whose body never calls `relent()`, and
+- never pauses, cannot be canceled at all, and must run to completion.
++ 一時停止しない作業は、自身のキャンセル地点を自ら提供しなければならない。
++ `relent()` はそのような地点である。
++ タスクが通常どおり実行されている間は何もしない。
++ タスクがキャンセルされていれば、値を生まずにそこで止まる。
++ 本体が一度も `relent()` を呼ばず、一度も一時停止しないタスクはまったくキャンセルできず、完了まで実行しなければならない。
+
+= never pauses, cannot be canceled at all, and must run to completion.
+=
+- ```scala fuel
++ ```scala fuel
+
+= never pauses, cannot be canceled at all, and must run to completion.
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= never pauses, cannot be canceled at all, and must run to completion.
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+= never pauses, cannot be canceled at all, and must run to completion.
+=
+= ```scala fuel
+= typecheck
+= ##
+- supervise:
++ supervise:
+
+= supervise:
+-   val task = async:
++   val task = async:
+
+-     for i <- 0 to 10 do
++     for i <- 0 to 10 do
+
+-       sleep(0.1*Second)
++       sleep(0.1*Second)
+
+-       relent()
++       relent()
+
+-       written += 1
++       written += 1
+
+=       written += 1
+=
+-   task.cancel()
++   task.cancel()
+
+=   task.cancel()
+- ```
++ ```
+
+- A task which is canceled at the `relent()` never reaches the increment on the next line. It
+- does still wait out the pause first, because `sleep` cannot be interrupted, which is the
+- distinction that the next section is about.
++ `relent()` でキャンセルされたタスクは、次の行の増分に到達しない。
++ それでも先に一時停止を待ち終える。`sleep` は中断できないからであり、それが次の節で扱う区別である。
+
+- ### Pausing
++ ### 一時停止
+
+- Two methods stop the current task temporarily. They differ in one way: whether the pause can
+- end early, because the task was canceled.
++ 現在のタスクを一時的に止めるメソッドが二つある。
++ それらは一点で異なる。タスクがキャンセルされたために一時停止が早く終わりうるかどうかである。
+
+= end early, because the task was canceled.
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  When the task is canceled during the pause
+- row  `snooze`  the task wakes at once: it is a cancellation point
+- row  `sleep`  the pause continues for the time which remains, so it always lasts its full length
++ column  メソッド
++ column  一時停止中にタスクがキャンセルされたとき
++ row  `snooze`  タスクはすぐに目覚める。これはキャンセル地点である
++ row  `sleep`  一時停止は残りの時間続くので、常に全期間続く
+
+= row  `sleep`  the pause continues for the time which remains, so it always lasts its full length
+- ```
++ ```
+
+- The names are chosen to be remembered, not looked up. A *snooze* is the button on an alarm
+- clock, and can be cut short by a second alarm, while a *sleep* is slept through.
++ 名前は、調べるためではなく覚えるために選ばれている。
++ *snooze* は目覚まし時計のボタンであり、二度目のアラームで短く切り上げられうるが、*sleep* は眠り通される。
+
+- Each takes either a *duration* or an *instant*, and the type of the argument says which is
+- meant. A duration pauses for that long, and an instant pauses until it arrives:
++ それぞれは*継続時間*か*時点*を取り、引数の型がどちらを意図するかを示す。
++ 継続時間はその長さだけ一時停止し、時点はそれが到来するまで一時停止する。
+
+= meant. A duration pauses for that long, and an instant pauses until it arrives:
+=
+- ```scala fuel
++ ```scala fuel
+
+= meant. A duration pauses for that long, and an instant pauses until it arrives:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= meant. A duration pauses for that long, and an instant pauses until it arrives:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+= meant. A duration pauses for that long, and an instant pauses until it arrives:
+=
+= ```scala fuel
+= typecheck
+= ##
+- supervise:
++ supervise:
+
+-   snooze(2.0*Second)
++   snooze(2.0*Second)
+
+-   snooze(now() + 2.0*Second)
++   snooze(now() + 2.0*Second)
+
+-   sleep(2.0*Second)
++   sleep(2.0*Second)
+
+-   sleep(now() + 2.0*Second)
++   sleep(now() + 2.0*Second)
+
+=   sleep(now() + 2.0*Second)
+- ```
++ ```
+
+- The bound which both share is `Schedulable`, which any type that is
+- `Abstractable across Durations` or `Abstractable across Instants` satisfies. A
+- [quantity](quantities.md) of time, a [`Timespan`](time.md#durations-and-timespans) and an
+- [`Instant`](time.md#instants) are therefore all accepted without conversion.
++ 両者が共有する境界は `Schedulable` であり、`Abstractable across Durations` または `Abstractable across Instants` である任意の型がこれを満たす。
++ したがって、時間の[量](quantities.md)、[`Timespan`](time.md#durations-and-timespans)、[`Instant`](time.md#instants) はどれも変換なしで受け付けられる。
+
+- #### Units
++ #### 単位
+
+- Both take a *typed* duration or instant, such as `0.2*Second` or `10*Minute`, and a typed
+- value cannot be misread. A bare `Long` can, so nothing interprets one until a unit has been
+- chosen by name:
++ どちらも `0.2*Second` や `10*Minute` のような*型付きの*継続時間や時点を取り、型付きの値は誤読されえない。
++ 裸の `Long` は誤読されうるので、単位が名前で選ばれるまで、何もそれを解釈しない。
+
+= chosen by name:
+=
+- ```scala fuel
++ ```scala fuel
+
+= chosen by name:
+=
+= ```scala fuel
+- compile
++ compile
+
+= chosen by name:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= chosen by name:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+= errors show
+= ##
+- supervise:
++ supervise:
+
+= errors show
+= ##
+= supervise:
+-   snooze(200L)
++   snooze(200L)
+
+=   snooze(200L)
+- ```
++ ```
+
+- The package `abstractables` has four readings of a `Long`:
++ パッケージ `abstractables` には `Long` の四つの読み方がある。
+
+= The package `abstractables` has four readings of a `Long`:
+=
+- ```tabular
++ ```tabular
+
+- column  Given
+- column  Reads a `Long` as
+- row  `nanosecondsAbstractable`  a duration in nanoseconds
+- row  `microsecondsAbstractable`  a duration in microseconds
+- row  `millisecondsAbstractable`  a duration in milliseconds
+- row  `epochMillisecondsAbstractable`  an instant, in milliseconds since the epoch
++ column  given
++ column  `Long` を何として読むか
++ row  `nanosecondsAbstractable`  ナノ秒単位の継続時間
++ row  `microsecondsAbstractable`  マイクロ秒単位の継続時間
++ row  `millisecondsAbstractable`  ミリ秒単位の継続時間
++ row  `epochMillisecondsAbstractable`  エポックからのミリ秒による時点
+
+= row  `epochMillisecondsAbstractable`  an instant, in milliseconds since the epoch
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- import abstractables.millisecondsAbstractable
++ import abstractables.millisecondsAbstractable
+
+= import abstractables.millisecondsAbstractable
+- ```
++ ```
+
+= import abstractables.millisecondsAbstractable
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import abstractables.millisecondsAbstractable
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import abstractables.millisecondsAbstractable
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= run
+= ##
+- supervise:
++ supervise:
+
+= run
+= ##
+= supervise:
+-   snooze(200L)
++   snooze(200L)
+
+-   Out.println(t"paused for 200 milliseconds")
++   Out.println(t"paused for 200 milliseconds")
+
+=   Out.println(t"paused for 200 milliseconds")
+- ```
++ ```
+
+- The three readings as a duration share a type, so exactly one of them may be imported into
+- a file. The package `instantiables` mirrors all four, for the opposite direction. A reading
+- as a duration and the reading as an instant may not both be in scope where a bare `Long` is
+- passed, because nothing at the call could then say which was meant, and the two are reported
+- as ambiguous.
++ 継続時間としての三つの読み方は型を共有するので、一つのファイルにインポートできるのはそのうちちょうど一つである。
++ パッケージ `instantiables` は、逆方向のために四つすべてを反映している。
++ 裸の `Long` が渡される場所に、継続時間としての読み方と時点としての読み方が両方スコープにあってはならない。呼び出しの側でどちらが意図されたかを示すものが何もなくなるからであり、両者は曖昧であると報告される。
+
+- The distinction matters, because the underlying representation of a duration is
+- *nanoseconds*. An unqualified `snooze(200L)`, read in nanoseconds, returns almost
+- immediately, and a loop around it is a busy loop, with nothing at the call to say so.
++ この区別は重要である。継続時間の基礎となる表現は*ナノ秒*だからである。
++ 修飾のない `snooze(200L)` はナノ秒で読まれるとほとんどすぐに戻り、それを囲むループはビジーループになるが、呼び出しの側にはそれを示すものが何もない。
+
+- ### Retrying
++ ### 再試行
+
+- Work which fails for a transient reason should be tried again. The *schedule* on which it is
+- retried is a value, not a loop written at each use. `retry` runs a block under the
+- `Tenacity` in scope, which decides how long to wait before each attempt, and when to stop.
+- The block is lent two operations: `persevere()` asks for another attempt, and `surrender()`
+- gives up at once.
++ 一時的な理由で失敗する作業は、もう一度試すべきである。
++ それを再試行する*スケジュール*は値であり、使うたびに書くループではない。
++ `retry` はスコープ内の `Tenacity` のもとでブロックを実行し、`Tenacity` は各試行の前にどれだけ待つか、いつやめるかを決める。
++ ブロックには二つの操作が貸し出される。`persevere()` はもう一度の試行を求め、`surrender()` はすぐに諦める。
+
+= gives up at once.
+=
+- ```scala
++ ```scala
+
+- import retryTenacities.exponentialTenTimesTenacity
++ import retryTenacities.exponentialTenTimesTenacity
+
+- var attempts = 0
++ var attempts = 0
+
+- def fetchRemoteValue(): Optional[Text] =
++ def fetchRemoteValue(): Optional[Text] =
+
+-   attempts += 1
++   attempts += 1
+
+-   if attempts < 3 then Unset else t"payload"
++   if attempts < 3 then Unset else t"payload"
+
+- val fetched = supervise:
++ val fetched = supervise:
+
+-   retry: (surrender, persevere) ?=>
++   retry: (surrender, persevere) ?=>
+
+-     fetchRemoteValue().or(persevere())
++     fetchRemoteValue().or(persevere())
+
+=     fetchRemoteValue().or(persevere())
+- ```
++ ```
+
+=     fetchRemoteValue().or(persevere())
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=     fetchRemoteValue().or(persevere())
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=     fetchRemoteValue().or(persevere())
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(fetched)
++ Out.println(fetched)
+
+- Out.println(attempts.show)
++ Out.println(attempts.show)
+
+= Out.println(attempts.show)
+- ```
++ ```
+
+- The schedules which are provided, in the package `retryTenacities`, cover the usual choices:
++ パッケージ `retryTenacities` で提供されるスケジュールは、通常の選択肢を網羅している。
+
+= The schedules which are provided, in the package `retryTenacities`, cover the usual choices:
+=
+- ```tabular
++ ```tabular
+
+- column  Given
+- column  Delay before a retry
+- column  Attempts
+- row  `exponentialForeverTenacity`  10ms, growing by a factor of 1.2 each time  unlimited
+- row  `exponentialFiveTimesTenacity`  10ms, growing by a factor of 1.2 each time  5
+- row  `exponentialTenTimesTenacity`  10ms, growing by a factor of 1.2 each time  10
+- row  `fixedNoDelayForeverTenacity`  none  unlimited
+- row  `fixedNoDelayFiveTimesTenacity`  none  5
+- row  `fixedNoDelayTenTimesTenacity`  none  10
++ column  given
++ column  再試行の前の遅延
++ column  試行回数
++ row  `exponentialForeverTenacity`  10ms で、毎回 1.2 倍に増える  無制限
++ row  `exponentialFiveTimesTenacity`  10ms で、毎回 1.2 倍に増える  5
++ row  `exponentialTenTimesTenacity`  10ms で、毎回 1.2 倍に増える  10
++ row  `fixedNoDelayForeverTenacity`  なし  無制限
++ row  `fixedNoDelayFiveTimesTenacity`  なし  5
++ row  `fixedNoDelayTenTimesTenacity`  なし  10
+
+= row  `fixedNoDelayTenTimesTenacity`  none  10
+- ```
++ ```
+
+- `Tenacity.exponential` and `Tenacity.fixed`, with `limit`, build others. Running out of
+- attempts raises a `Tenacity.Error`, which names how many were made.
++ `Tenacity.exponential` と `Tenacity.fixed` は、`limit` とともに、他のスケジュールを作る。
++ 試行回数を使い果たすと `Tenacity.Error` が発生し、それは何回試行されたかを示す。
+
+- A body therefore tells a failure which is worth retrying from one which never will be, and
+- the schedule decides the rest.
++ したがって、本体は再試行する価値のある失敗と決して成功しない失敗を区別し、残りはスケジュールが決める。
+
+- ### Promises
++ ### プロミス
+
+- A `Promise` is a value which will be supplied later, perhaps by another thread. One side
+- awaits it, and the other fulfills it, which is how work which runs elsewhere hands back a
+- result:
++ `Promise` は、後で（おそらく別のスレッドによって）供給される値である。
++ 一方がそれを待ち、もう一方がそれを履行する。それが、別の場所で実行される作業が結果を返す方法である。
+
+= awaits it, and the other fulfills it, which is how work which runs elsewhere hands back a
+= result:
+=
+- ```scala
++ ```scala
+
+- val promised = supervise:
++ val promised = supervise:
+
+-   val promise = Promise[Int]()
++   val promise = Promise[Int]()
+
+-   daemon(promise.fulfill(7))
++   daemon(promise.fulfill(7))
+
+-   promise.await()
++   promise.await()
+
+=   promise.await()
+- ```
++ ```
+
+=   promise.await()
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   promise.await()
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   promise.await()
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(promised.show)
++ Out.println(promised.show)
+
+= Out.println(promised.show)
+- ```
++ ```
+
+- ### Daemons
++ ### デーモン
+
+- A `daemon` is work which is started and then left: a background loop, or a listener. The
+- scope does not wait for it, and cancels it when the scope ends. It runs for the life of its
+- scope, and no longer.
++ `daemon` は開始したら放っておく作業である。バックグラウンドのループやリスナーがそうである。
++ スコープはそれを待たず、スコープが終わるとそれをキャンセルする。
++ それはスコープの寿命の間だけ実行され、それより長くは実行されない。
+
+- A daemon's body is *hygienic*: it cannot capture an error handler from the code which
+- spawned it. That is deliberate. The spawning code has already moved on, so a handler there
+- does not, in any meaningful sense, enclose the daemon, and delivering an error to it would
+- mean resuming a computation which has finished. A daemon which fails therefore escalates as
+- a `Fault`, which a program intercepts where it handles the unexpected. It never silently
+- reaches a handler which was not intended for it.
++ デーモンの本体は*衛生的*である。それを生成したコードからエラーハンドラを捕捉できない。
++ これは意図的である。
++ 生成したコードはすでに先へ進んでいるので、そこにあるハンドラは意味のある意味でデーモンを囲んでおらず、それにエラーを届けることは終わった計算を再開することを意味する。
++ したがって、失敗したデーモンは `Fault` として上位に伝わり、プログラムはそれを予期しないものを扱う場所で捕らえる。
++ それは、自身のために意図されていないハンドラに黙って届くことは決してない。
+
+- A long-lived service is a different thing, which [Daemons](daemons.md) describes.
++ 長寿命のサービスは別物であり、[デーモン](daemons.md)が説明している。
+
+- ### Timeouts
++ ### タイムアウト
+
+- An `await` may be given a duration, after which it raises an `Async.Error` instead of
+- waiting on. A task which has taken too long is thereby abandoned, at a point which the code
+- chooses:
++ `await` には継続時間を与えることができ、それを過ぎると待ち続ける代わりに `Async.Error` を発生させる。
++ これにより、時間がかかりすぎたタスクは、コードが選ぶ地点で放棄される。
+
+= chooses:
+=
+- ```scala
++ ```scala
+
+- def abandoned(): Optional[Unit] = supervise:
++ def abandoned(): Optional[Unit] = supervise:
+
+-   val slow = async(sleep(10.0*Second))
++   val slow = async(sleep(10.0*Second))
+
+-   safely(slow.await(0.1*Second))
++   safely(slow.await(0.1*Second))
+
+=   safely(slow.await(0.1*Second))
+- ```
++ ```
+
+- `safely` turns the error into `Unset`, so the caller sees an absent result when the deadline
+- passes before the task finishes.
++ `safely` はエラーを `Unset` に変えるので、タスクが終わる前に期限が過ぎると、呼び出し側には存在しない結果が見える。
+
+- ### Cancellation in both directions
++ ### 両方向のキャンセル
+
+- Canceling a scope cancels its children. The *probate* decides what happens to a child which
+- is still running when the body of its parent completes:
++ スコープをキャンセルするとその子がキャンセルされる。
++ *検認*は、親の本体が完了したときにまだ実行中の子に何が起こるかを決める。
+
+= is still running when the body of its parent completes:
+=
+- ```tabular
++ ```tabular
+
+- column  Probate
+- column  An unfinished child
+- row  `cancelProbate`  is canceled
+- row  `awaitProbate`  is waited for
+- row  `failProbate`  makes the parent's `await` raise a checked `Async.Error`
+- row  `panicProbate`  makes the parent's `await` panic
++ column  検認
++ column  未完了の子
++ row  `cancelProbate`  キャンセルされる
++ row  `awaitProbate`  待たれる
++ row  `failProbate`  親の `await` に検査例外の `Async.Error` を発生させる
++ row  `panicProbate`  親の `await` をパニックさせる
+
+= row  `panicProbate`  makes the parent's `await` panic
+- ```
++ ```
+
+- Which to choose follows from what the children do:
++ どれを選ぶかは、子が何をするかから決まる。
+
+- - Work which changes state wants `awaitProbate`, so that every child runs to its end.
+-   Writing to a disk is an example, where a write which is half finished leaves things
+-   inconsistent.
+- - Pure work, with no side effects, can take `cancelProbate`, and stop wherever it happens to
+-   be, since nothing observes the difference.
+- - Code whose design is to await every task which it spawns wants a forgotten `await` to be
+-   an error, not a silent wait. That is what `failProbate` and `panicProbate` are for,
+-   checked or unchecked, according to how the program handles the unexpected.
++ - 状態を変える作業は、すべての子が最後まで実行されるように `awaitProbate` を求める。ディスクへの書き込みがその例であり、半分終わった書き込みは物事を不整合のままにする。
++ - 副作用のない純粋な作業は `cancelProbate` を取り、たまたまいる場所で止まってよい。何もその違いを観察しないからである。
++ - 生成したすべてのタスクを待つように設計されたコードは、忘れられた `await` が黙った待機ではなくエラーになることを求める。それが `failProbate` と `panicProbate` の目的であり、プログラムが予期しないものをどう扱うかに応じて、検査されるものと検査されないものがある。
+
+- Cancellation also runs upward. A task which fails propagates its failure to the scope which
+- owns it, and the scope cancels its other children. Work which has become pointless therefore
+- stops, and does not go on consuming resources on behalf of a computation which has already
+- failed.
++ キャンセルは上向きにも働く。
++ 失敗したタスクはその失敗を自身を所有するスコープに伝播させ、スコープは他の子をキャンセルする。
++ したがって、無意味になった作業は止まり、すでに失敗した計算のためにリソースを消費し続けることはない。
+
+- ### Threads
++ ### スレッド
+
+- The thread model is chosen by import, from the package `threads`:
++ スレッドモデルは、パッケージ `threads` からのインポートによって選ぶ。
+
+= The thread model is chosen by import, from the package `threads`:
+=
+- ```tabular
++ ```tabular
+
+- column  Thread model
+- column  Runs each task on
+- row  `platformThreads`  a platform thread of its own
+- row  `virtualThreads`  a virtual thread of its own; fails at runtime before Java 21
+- row  `adaptiveThreads`  a virtual thread where they exist, and a platform thread where they do not
+- row  `pooledThreads`  a reusable carrier thread: virtual on the JVM, platform on Scala Native
+- row  `javascriptThreads`  the Scala.js event loop
++ column  スレッドモデル
++ column  各タスクを何の上で実行するか
++ row  `platformThreads`  専用のプラットフォームスレッド
++ row  `virtualThreads`  専用の仮想スレッド。Java 21 より前では実行時に失敗する
++ row  `adaptiveThreads`  仮想スレッドがあればそれ、なければプラットフォームスレッド
++ row  `pooledThreads`  再利用可能なキャリアスレッド。JVM では仮想、Scala Native ではプラットフォーム
++ row  `javascriptThreads`  Scala.js のイベントループ
+
+= row  `javascriptThreads`  the Scala.js event loop
+- ```
++ ```
+
+- Virtual threads are cheap enough to spawn in great numbers. `adaptiveThreads` is what an
+- application which cannot dictate its JVM should import. Under `javascriptThreads`, where
+- there are no threads at all, the same code, with `supervise`, `async` and `await`, runs
+- unchanged.
++ 仮想スレッドは大量に生成できるほど安価である。
++ `adaptiveThreads` は、自身の JVM を指定できないアプリケーションがインポートすべきものである。
++ スレッドがまったくない `javascriptThreads` のもとでも、`supervise`、`async`、`await` を使った同じコードがそのまま実行される。
+
+- `pooledThreads` hands each new task to an idle carrier, where one is waiting, and starts
+- another only where none is. Handing a task over costs a few hundred nanoseconds, where
+- starting and joining a thread costs a few microseconds, so it suits fine-grained work: a
+- task for each element, or a spawn and a join inside a loop. A task which blocks keeps its
+- carrier, and the pool grows, so it can never starve, and cancellation is delivered to the
+- task, not to the carrier. The price is that a task no longer has a thread of its own.
+- Thread-locals persist across the tasks which a carrier runs, and a thread dump shows
+- carriers, where the tree of monitors shows tasks.
++ `pooledThreads` は、待機中のキャリアがあれば各新しいタスクをそのアイドルなキャリアに渡し、なければ別のキャリアを開始する。
++ タスクを渡すのにかかるのは数百ナノ秒であり、スレッドの開始と合流には数マイクロ秒かかるので、細粒度の作業に適している。要素ごとのタスクや、ループの中での生成と合流である。
++ ブロックしたタスクはそのキャリアを保持し、プールは大きくなるので、決して枯渇せず、キャンセルはキャリアではなくタスクに届けられる。
++ その代価は、タスクが専用のスレッドを持たなくなることである。
++ スレッドローカルはキャリアが実行するタスクをまたいで持続し、モニターの木はタスクを示すのに対して、スレッドダンプはキャリアを示す。
+
+- ### Intercepting the VM
++ ### VM の割り込み
+
+- Some events belong to no scope: the VM shutting down, an exception escaping from a thread
+- which nothing owns, the garbage collector running. These are intercepted on `Vm`, which
+- stands for the running virtual machine. The action runs each time the event occurs, until
+- the `Hook` which is returned is canceled:
++ どのスコープにも属さないイベントがある。VM のシャットダウン、何も所有していないスレッドから漏れ出した例外、ガベージコレクターの実行である。
++ これらは、実行中の仮想マシンを表す `Vm` で割り込む。
++ アクションは、返された `Hook` がキャンセルされるまで、イベントが起こるたびに実行される。
+
+= the `Hook` which is returned is canceled:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the `Hook` which is returned is canceled:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= the `Hook` which is returned is canceled:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val hook = Vm.intercept[Fault]:
++ val hook = Vm.intercept[Fault]:
+
+-   Out.println(t"A thread died")
++   Out.println(t"A thread died")
+
+- hook.cancel()
++ hook.cancel()
+
+= hook.cancel()
+- ```
++ ```
+
+- `Vm.intercept[Shutdown]` runs its action once, when the VM exits, whether through
+- `System.exit`, through the last non-daemon thread ending, or on a `SIGINT` or `SIGTERM`.
+- That is where a server removes the socket file which it listened on, so that a stale one
+- never greets the next process. Shutdown actions run on threads of their own, concurrently,
+- and in no particular order. An exception in one is swallowed, so that it cannot prevent the
+- others from running:
++ `Vm.intercept[Shutdown]` は、VM が終了するときに、`System.exit` によるものでも、最後の非デーモンスレッドの終了によるものでも、`SIGINT` や `SIGTERM` によるものでも、そのアクションを一度実行する。
++ そこは、サーバーが待ち受けていたソケットファイルを削除する場所であり、そうすれば古いものが次のプロセスを出迎えることはない。
++ シャットダウンのアクションは、それぞれ専用のスレッドで、並行に、特定の順序なく実行される。
++ その一つで起きた例外は握りつぶされるので、他のアクションの実行を妨げることはない。
+
+= others from running:
+=
+- ```scala fuel
++ ```scala fuel
+
+= others from running:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= others from running:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- Vm.intercept[Shutdown]:
++ Vm.intercept[Shutdown]:
+
+-   Out.println(t"Exiting")
++   Out.println(t"Exiting")
+
+=   Out.println(t"Exiting")
+- ```
++ ```
+
+- [Environment](environment.md#the-machine) describes the other facts about the machine.
++ [環境](environment.md#the-machine)が、マシンに関するその他の事実を説明している。
+
+- ### Suspension as an effect
++ ### 作用としての中断
+
+- Waiting is not free, and it is not invisible. Awaiting a task or a promise, sleeping, and
+- yielding all *suspend* the running task, and each demands a `Monitor` [capability] in scope.
+- A method which can block therefore says so in its signature, exactly as a method which can
+- fail says so with [`raises`][raises].
++ 待つことは無料ではなく、目に見えないものでもない。
++ タスクやプロミスの待機、スリープ、yield はすべて実行中のタスクを*中断*し、それぞれがスコープ内に `Monitor` [ケイパビリティ]を要求する。
++ したがって、ブロックしうるメソッドは、失敗しうるメソッドが [`raises`][raises] でそう述べるのとまったく同じく、そのことをシグネチャで述べる。
+
+- That suspension is allowed to be *blocking* is itself a decision of design which is worth
+- defending, since blocking has a poor reputation. It began as a convenience: if a value is
+- not ready, wait for it, instead of failing, or writing out both the ready case and the
+- unready one. The convenience is real. Code which blocks is code written in terms of values,
+- not callbacks, which is [direct style](../../philosophy/direct-style.md).
++ 中断が*ブロッキング*であってよいということ自体が、擁護する価値のある設計上の決定である。ブロッキングは評判が悪いからである。
++ それは便利さとして始まった。値の準備ができていなければ、失敗したり、準備ができた場合とできていない場合の両方を書き出したりする代わりに、それを待つのである。
++ その便利さは本物である。
++ ブロックするコードは、コールバックではなく値によって書かれたコードであり、それが[ダイレクトスタイル](../../philosophy/direct-style.md)である。
+
+- What earned blocking its reputation was the cost. A platform thread which is waiting is a
+- thread which is not working, and an application which holds thousands of them spends more of
+- its capacity waiting than computing.
++ ブロッキングがその評判を得たのは、コストのためだった。
++ 待機しているプラットフォームスレッドは働いていないスレッドであり、それを何千も抱えるアプリケーションは、その能力の多くを計算よりも待機に費やす。
+
+- Virtual threads change that arithmetic. Orders of magnitude more calls can sit in a blocking
+- state at once, without meaningful overhead. The convenience can therefore be had at the
+- price which the alternatives based on callbacks were invented to avoid. Blocking where it
+- reads most clearly, on threads which are cheap enough that blocking does not matter, is the
+- shape of everything here. It is the shape of [streaming](streams.md) too, which pulls on the
+- consumer's own thread for the same reason.
++ 仮想スレッドはその計算を変える。
++ 桁違いに多くの呼び出しが、意味のあるオーバーヘッドなしに、同時にブロッキング状態にとどまれる。
++ したがって、その便利さは、コールバックに基づく代替手段が避けるために発明された代価で手に入る。
++ 最も明快に読める場所で、ブロッキングが問題にならないほど安価なスレッドの上でブロックすることが、ここにあるすべてのものの形である。
++ それは[ストリーミング](streams.md)の形でもあり、ストリーミングは同じ理由で利用者自身のスレッドの上で引き出す。
+
+- Underneath, the unit of execution is a `Strand`, not a thread. A strand is an abstraction
+- with the four operations which suspension needs: interrupt, join, park and unpark. A
+- supervisor supplies strands, and a supervisor is a value. A scheduler which is not built on
+- threads at all, such as an event loop over WebAssembly's waitable sets, is therefore plugged
+- in as a supervisor, without any change to the code which spawns and awaits.
++ その下では、実行の単位はスレッドではなく `Strand` である。
++ ストランドは、中断が必要とする四つの操作、つまり割り込み、合流、パーク、アンパークを持つ抽象である。
++ スーパーバイザーがストランドを供給し、スーパーバイザーは値である。
++ したがって、WebAssembly の待機可能な集合の上のイベントループのような、スレッドにまったく基づかないスケジューラーは、生成と待機を行うコードを何も変えずに、スーパーバイザーとして差し込める。
+
+- ### Related
++ ### 関連
+
+- - [Streams](streams.md#combining-and-replicating-streams) merges and replicates streams
+-   across tasks.
+- - [HTTP server](http-server.md) handles each connection on a task.
+- - [Errors](errors.md) describes how a failure in a task is handled.
+- - [Daemons](daemons.md) keeps a program running as a service.
+- - [Caching](caching.md#an-expiring-value) computes a value once for many concurrent callers.
++ - [ストリーム](streams.md#combining-and-replicating-streams)は、タスクをまたいでストリームを併合し複製する。
++ - [HTTP サーバー](http-server.md)は、各接続をタスクの上で扱う。
++ - [エラー](errors.md)は、タスクの失敗がどう扱われるかを説明している。
++ - [デーモン](daemons.md)は、プログラムをサービスとして実行し続ける。
++ - [キャッシュ](caching.md#an-expiring-value)は、多くの並行な呼び出し側のために値を一度だけ計算する。

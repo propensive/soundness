@@ -1,0 +1,927 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base adversaria
++ base adversaria
+
+- import soundness
++ import soundness
+
+- info   static annotations read back as typeclass instances, and fields reached by name, all resolved at compile time
++ info   型クラスのインスタンスとして読み戻す静的アノテーションと、名前で到達するフィールド。すべてコンパイル時に解決される
+
+- detail
++ detail
+
+-     _Adversaria_ reads Scala's static annotations without the consumer writing a macro.
+-     Summoning `Annotated` for a type yields the annotations on the type itself, on its fields,
+-     or on the variants of a sealed hierarchy, computed while the code compiles, with no runtime
+-     reflection; the query is written in the prepositional style, narrowing by annotation type
+-     with `by`, by field with `on`, and to the variants of a sum type with `under`.
++     _Adversaria_ は、利用者がマクロを書かずに Scala の静的アノテーションを読めるようにする。
++     型に対して `Annotated` を召喚すると、型そのもの、そのフィールド、またはシールされた階層のバリアントに付いたアノテーションが得られる。これはコードのコンパイル中に計算され、実行時のリフレクションは使わない。
++     問い合わせは前置詞スタイルで書き、`by` でアノテーション型によって、`on` でフィールドによって、`under` で直和型のバリアントへと絞り込む。
+
+=     with `by`, by field with `on`, and to the variants of a sum type with `under`.
+=
+-     ```scala
++     ```scala
+
+=     with `by`, by field with `on`, and to the variants of a sum type with `under`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     final case class ident() extends StaticAnnotation
++     final case class ident() extends StaticAnnotation
+
+-     final case class primary() extends StaticAnnotation
++     final case class primary() extends StaticAnnotation
+
+-     case class Sonnet(firstLine: Text, @ident @primary number: Long)
++     case class Sonnet(firstLine: Text, @ident @primary number: Long)
+
+-     summon[Sonnet is Annotated on "number"]()          // Set(ident(), primary())
++     summon[Sonnet is Annotated on "number"]()          // Set(ident(), primary())
+
+-     summon[Sonnet is Annotated by ident].field         // "number"
++     summon[Sonnet is Annotated by ident].field         // "number"
+
+=     summon[Sonnet is Annotated by ident].field         // "number"
+-     ```
++     ```
+
+-     The library also defines `@name`, the annotation every Soundness serialization format
+-     honours to rename a field or a variant on the wire, with `relabelling` and
+-     `variantRelabelling`, which format derivations read; and `Dereferenceable`, which reaches
+-     a record's fields by name at runtime through a table of accessors generated as the code
+-     compiles, each one a panopticon `Lens`.
++     このライブラリは `@name` も定義する。これはすべての Soundness の直列化形式が、ワイヤ上でフィールドやバリアントの名前を変えるために尊重するアノテーションであり、形式の導出が読む `relabelling` と `variantRelabelling` を伴う。
++     また `Dereferenceable` も定義する。これは、コードのコンパイル時に生成されるアクセサーの表を通して、実行時にレコードのフィールドに名前で到達するもので、各アクセサーは panopticon の `Lens` である。
+
+-     The library has a single source set, `adversaria.core`, for every platform; the
+-     `adversaria.examples` component holds test fixtures and is not published. Everything is
+-     exported to the `soundness` umbrella, and the instances are given in the typeclasses'
+-     companions, so no import beyond `soundness.*` is needed.
++     このライブラリのソースセットは、すべてのプラットフォームのための `adversaria.core` 一つである。`adversaria.examples` コンポーネントはテストのフィクスチャを持ち、公開されない。
++     すべてが `soundness` アンブレラにエクスポートされ、インスタンスは型クラスのコンパニオンで与えられるので、`soundness.*` 以外のインポートは要らない。
+
+- refer adversaria.Annotated
++ refer adversaria.Annotated
+
+- refer adversaria.Dereferenceable
++ refer adversaria.Dereferenceable
+
+- refer adversaria.name
++ refer adversaria.name
+
+- refer adversaria.relabelling
++ refer adversaria.relabelling
+
+- refer adversaria.fieldAnnotations
++ refer adversaria.fieldAnnotations
+
+- refer adversaria.annotatedFields
++ refer adversaria.annotatedFields
+
+- refer adversaria.typeAnnotation
++ refer adversaria.typeAnnotation
+
+- entry .Annotated   a typeclass whose instances hold the static annotations on a type, its fields or its variants
++ entry .Annotated   型、そのフィールド、またはそのバリアントに付いた静的アノテーションをインスタンスが持つ型クラス
+
+= entry .Annotated   a typeclass whose instances hold the static annotations on a type, its fields or its variants
+-   detail
++   detail
+
+-       `Annotated` instances are never written by hand: `.annotations`, a transparent inline
+-       given in the companion, generates one for whatever is asked. The request is a
+-       prepositional type:
++       `Annotated` のインスタンスを手で書くことはない。
++       コンパニオンにある transparent inline の given `.annotations` が、求められたものに応じて生成する。
++       要求は前置詞を使った型である。
+
+-       - `T is Annotated` — every annotation on the type `T` itself, and on its fields;
+-       - `T is Annotated by A` — only those of annotation type `A` (a subtype check, so
+-         `by marker[Person]` excludes a `marker[Play]`);
+-       - `T is Annotated on "field"` — only the field named, whose name is checked against
+-         `T`'s primary constructor;
+-       - `Annotated under S` — the annotations on each variant of the sealed type or enum `S`.
++       - `T is Annotated`：型 `T` そのものと、そのフィールドに付いたすべてのアノテーション。
++       - `T is Annotated by A`：アノテーション型 `A` のものだけ（部分型の検査なので、
++         `by marker[Person]` は `marker[Play]` を除外する）。
++       - `T is Annotated on "field"`：名指したフィールドのものだけ。その名前は
++         `T` の主コンストラクターに照らして検査される。
++       - `Annotated under S`：シールされた型または enum `S` の各バリアントに付いたアノテーション。
+
+-       The instance's precise type depends on the answer, which is why the given is
+-       transparent: a query on fields gives an `Annotated.Fields` with `fields`, `annotations`
+-       and `apply()`; one which matches exactly one field gives an `Annotated.Field`, which
+-       also knows that field's name and offers a lens onto it; and an `under` query gives an
+-       `Annotated.Subtypes`.
++       インスタンスの正確な型は答えに依存するので、given は transparent である。
++       フィールドに対する問い合わせは `fields`、`annotations`、`apply()` を持つ `Annotated.Fields` を与え、ちょうど一つのフィールドに一致する問い合わせは、そのフィールドの名前も知っていてそれへのレンズを与える `Annotated.Field` を与え、`under` の問い合わせは `Annotated.Subtypes` を与える。
+
+-       The narrowing is best watched one preposition at a time:
++       絞り込みは、前置詞を一つずつ見ていくのが分かりやすい。
+
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label Every annotation on the type and its fields
++         label 型とそのフィールドに付いたすべてのアノテーション
+
+=         label Every annotation on the type and its fields
+-         code
++         code
+
+-             summon[Sonnet is Annotated].fields
++             summon[Sonnet is Annotated].fields
+
+-             // Map("number" -> Set(ident(), primary()))
++             // Map("number" -> Set(ident(), primary()))
+
+=             // Map("number" -> Set(ident(), primary()))
+-       frame
++       frame
+
+-         label `on`: the annotations of one field
++         label `on`：一つのフィールドのアノテーション
+
+=         label `on`: the annotations of one field
+-         code
++         code
+
+-             summon[Sonnet is Annotated on "number"]()
++             summon[Sonnet is Annotated on "number"]()
+
+-             // Set(ident(), primary())
++             // Set(ident(), primary())
+
+=             // Set(ident(), primary())
+-       frame
++       frame
+
+-         label `by`: only one annotation type, on that field
++         label `by`：そのフィールドの、一つのアノテーション型のものだけ
+
+=         label `by`: only one annotation type, on that field
+-         code
++         code
+
+-             summon[Sonnet is Annotated by ident on "number"]()
++             summon[Sonnet is Annotated by ident on "number"]()
+
+-             // Set(ident())
++             // Set(ident())
+
+=             // Set(ident())
+-       frame
++       frame
+
+-         label `by` alone: the one field so annotated, and a lens onto it
++         label `by` だけ：そのアノテーションを持つ唯一のフィールドと、それへのレンズ
+
+=         label `by` alone: the one field so annotated, and a lens onto it
+-         code
++         code
+
+-             summon[Sonnet is Annotated by ident].field
++             summon[Sonnet is Annotated by ident].field
+
+-             // "number"
++             // "number"
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       Annotations are rebuilt in the generated code from their trees, so an annotation's
+-       arguments should be literals, references to stable values, or nested constructor
+-       calls; an annotation whose arguments cannot be rebuilt is silently left out.
++       アノテーションは生成されたコードの中でその木から組み立て直されるので、アノテーションの引数はリテラル、安定した値への参照、または入れ子のコンストラクター呼び出しであるべきである。
++       引数を組み立て直せないアノテーションは、黙って除外される。
+
+-   refer adversaria.fieldAnnotations
++   refer adversaria.fieldAnnotations
+
+-   refer adversaria.subtypeAnnotations
++   refer adversaria.subtypeAnnotations
+
+-   refer adversaria.Annotated.Field
++   refer adversaria.Annotated.Field
+
+-   entry .annotations   generates the `Annotated` instance for any request, as the code compiles
+-       A transparent inline given in the companion, so in implicit scope: `summon[T is
+-       Annotated by A on "field"]` expands it with the annotation type (`StaticAnnotation`
+-       when no `by` is given), the subject, the field (the `Plane`) and the variant root (the
+-       `Limit`). Its result type is the most precise of `Annotated.Fields`,
+-       `Annotated.Field` and `Annotated.Subtypes` that fits the answer.
+-   entry .Fields   the instance for a query on a type and its fields: their annotations, by field name
++   entry .annotations   コードのコンパイル時に、あらゆる要求に対する `Annotated` インスタンスを生成する
++       コンパニオンにある transparent inline の given なので、暗黙のスコープにある。
++       `summon[T is Annotated by A on "field"]` はこれを、アノテーション型（`by` がなければ `StaticAnnotation`）、対象、フィールド（`Plane`）、バリアントの根（`Limit`）とともに展開する。
++       その結果の型は、`Annotated.Fields`、`Annotated.Field`、`Annotated.Subtypes` のうち答えに合う最も正確なものである。
++   entry .Fields   型とそのフィールドに対する問い合わせのインスタンス：フィールド名ごとのアノテーション
+
+=   entry .Fields   the instance for a query on a type and its fields: their annotations, by field name
+-     detail
++     detail
+
+-         What `summon[T is Annotated]` or `summon[T is Annotated by A]` gives when the answer
+-         is not a single field. `#fields` maps each field carrying an annotation of *any* type
+-         to its annotations of the requested type, so a field with only other annotations
+-         appears with an empty set; `fieldAnnotations` filters those out.
++         答えが単一のフィールドでないときに、`summon[T is Annotated]` や `summon[T is Annotated by A]` が与えるものである。
++         `#fields` は、*いずれかの*型のアノテーションを持つ各フィールドを、要求された型のアノテーションに対応付けるので、ほかのアノテーションしか持たないフィールドは空の集合とともに現れる。`fieldAnnotations` はそれらを除く。
+
+=         appears with an empty set; `fieldAnnotations` filters those out.
+=
+-         ```scala
++         ```scala
+
+=         appears with an empty set; `fieldAnnotations` filters those out.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         final case class ref(x: Int) extends StaticAnnotation
++         final case class ref(x: Int) extends StaticAnnotation
+
+-         case class Letters(@ref(1) alpha: Int, @ref(2) @ref(3) beta: Int, gamma: Int)
++         case class Letters(@ref(1) alpha: Int, @ref(2) @ref(3) beta: Int, gamma: Int)
+
+-         summon[Letters is Annotated].fields
++         summon[Letters is Annotated].fields
+
+-         // Map("alpha" -> Set(ref(1)), "beta" -> Set(ref(2), ref(3)))
++         // Map("alpha" -> Set(ref(1)), "beta" -> Set(ref(2), ref(3)))
+
+=         // Map("alpha" -> Set(ref(1)), "beta" -> Set(ref(2), ref(3)))
+-         ```
++         ```
+
+-     entry #fields   each annotated field's name, with its annotations of the requested type
+-   entry .AnnotatedFields   the concrete `Annotated.Fields` the macro builds
++     entry #fields   アノテーションを持つ各フィールドの名前と、要求された型のそのアノテーション
++   entry .AnnotatedFields   マクロが作る具体的な `Annotated.Fields`
+
+=   entry .AnnotatedFields   the concrete `Annotated.Fields` the macro builds
+-     detail
++     detail
+
+-         Holds the type's own annotations and the fields' annotations, as the macro found
+-         them. It is what `summon[T is Annotated]` returns, so its members are the ones a
+-         caller uses.
+-     entry #fields   each annotated field's name, with its annotations of the requested type
+-     entry #annotations   the annotations of the requested type on the type itself
+-         `summon[Play is Annotated by unique].annotations` is the empty set if `Play`
+-         carries no `unique`, whatever its fields carry.
+-     entry #apply   the annotations: on the type itself, or on the field named with `on`
+-         `summon[Play is Annotated]()` gives the type's own annotations; for a query with
+-         `on "field"`, or one matching exactly one field, it gives that field's.
+-   entry .Field   the instance for a query which matched exactly one field: its name, and a lens onto it
++         型自身のアノテーションとフィールドのアノテーションを、マクロが見つけたとおりに保持する。
++         `summon[T is Annotated]` が返すのはこれなので、そのメンバーは呼び出し側が使うものである。
++     entry #fields   アノテーションを持つ各フィールドの名前と、要求された型のそのアノテーション
++     entry #annotations   型そのものに付いた、要求された型のアノテーション
++         `Play` が `unique` を持たなければ、フィールドが何を持っていても、`summon[Play is Annotated by unique].annotations` は空の集合である。
++     entry #apply   アノテーション：型そのもののもの、または `on` で名指したフィールドのもの
++         `summon[Play is Annotated]()` は型自身のアノテーションを与える。`on "field"` を伴う問い合わせ、またはちょうど一つのフィールドに一致する問い合わせでは、そのフィールドのものを与える。
++   entry .Field   ちょうど一つのフィールドに一致した問い合わせのインスタンス：その名前と、それへのレンズ
+
+=   entry .Field   the instance for a query which matched exactly one field: its name, and a lens onto it
+-     detail
++     detail
+
+-         When the requested annotations sit on exactly one field — `summon[T is Annotated by
+-         A]` where only one field carries an `A`, or any query naming a field with `on` —
+-         the instance is a `Field`, which knows the field's name and type. Finding "the field
+-         marked as the identifier" is usually the prelude to reading or writing it, so it
+-         offers a lens:
++         要求されたアノテーションがちょうど一つのフィールドにあるとき（一つのフィールドだけが `A` を持つ場合の `summon[T is Annotated by A]`、または `on` でフィールドを名指すあらゆる問い合わせ）、インスタンスは `Field` であり、フィールドの名前と型を知っている。
++         「識別子として印を付けたフィールド」を見つけるのは、たいていそれを読み書きする前段階なので、レンズを与える。
+
+=         offers a lens:
+=
+-         ```scala
++         ```scala
+
+=         offers a lens:
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         final case class ident() extends StaticAnnotation
++         final case class ident() extends StaticAnnotation
+
+-         case class Person(name: Text, @ident email: Text)
++         case class Person(name: Text, @ident email: Text)
+
+-         val person = Person(t"Romeo", t"romeo@example.com")
++         val person = Person(t"Romeo", t"romeo@example.com")
+
+-         summon[Person is Annotated by ident].field                                   // "email"
++         summon[Person is Annotated by ident].field                                   // "email"
+
+-         summon[Person is Annotated by ident].lens(person)                            // t"romeo@example.com"
++         summon[Person is Annotated by ident].lens(person)                            // t"romeo@example.com"
+
+-         summon[Person is Annotated by ident].lens.update(person, t"montague@example.com")
++         summon[Person is Annotated by ident].lens.update(person, t"montague@example.com")
+
+=         summon[Person is Annotated by ident].lens.update(person, t"montague@example.com")
+-         ```
++         ```
+
+-         If several fields carry the annotation, the instance is only an `Annotated.Fields`,
+-         and `field` and `lens` do not compile: the instance's type records whether the match
+-         was unique.
+-     entry #field   the name of the one annotated field
+-     entry #lens   a panopticon `Lens` onto the annotated field, to read or update it
+-         Summoned at the use site, where the subject is known to be a product: the field's
+-         name, as a literal type, is resolved against it by panopticon. `lens(value)` reads
+-         the field; `lens.update(value, replacement)` returns a copy with it replaced.
+-   entry .AnnotatedField   the concrete `Annotated.Field` the macro builds when one field matched
++         複数のフィールドがそのアノテーションを持つなら、インスタンスは `Annotated.Fields` にすぎず、`field` と `lens` はコンパイルされない。インスタンスの型は、一致が一意であったかどうかを記録している。
++     entry #field   アノテーションを持つ唯一のフィールドの名前
++     entry #lens   アノテーションを持つフィールドへの panopticon の `Lens`。それを読んだり更新したりする
++         対象が直積だと分かっている使用場所で召喚され、リテラル型としてのフィールドの名前が panopticon によってそれに照らして解決される。
++         `lens(value)` はフィールドを読み、`lens.update(value, replacement)` はそれを置き換えたコピーを返す。
++   entry .AnnotatedField   一つのフィールドが一致したときにマクロが作る具体的な `Annotated.Field`
+
+=   entry .AnnotatedField   the concrete `Annotated.Field` the macro builds when one field matched
+-     detail
++     detail
+
+-         An `Annotated.AnnotatedFields` whose `Unique` type is `true`, whose `Topic` is the
+-         field's type and whose `Target` is its name as a literal type.
+-     entry #field   the name of the one annotated field
+-   entry .Subtypes   the instance for an `under` query: the annotations on each variant of a sealed type
++         `Unique` 型が `true` であり、`Topic` がフィールドの型、`Target` がリテラル型としてのその名前である `Annotated.AnnotatedFields` である。
++     entry #field   アノテーションを持つ唯一のフィールドの名前
++   entry .Subtypes   `under` の問い合わせのインスタンス：シールされた型の各バリアントに付いたアノテーション
+
+=   entry .Subtypes   the instance for an `under` query: the annotations on each variant of a sealed type
+-     detail
++     detail
+
+-         `summon[Annotated under S]` maps the name of each direct subtype of the sealed trait
+-         or enum `S` to its annotations of the requested type.
++         `summon[Annotated under S]` は、シールされたトレイトまたは enum `S` の直接の部分型それぞれの名前を、要求された型のそのアノテーションに対応付ける。
+
+=         or enum `S` to its annotations of the requested type.
+=
+-         ```scala
++         ```scala
+
+=         or enum `S` to its annotations of the requested type.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         final case class number(number: Int) extends StaticAnnotation
++         final case class number(number: Int) extends StaticAnnotation
+
+-         final case class primary() extends StaticAnnotation
++         final case class primary() extends StaticAnnotation
+
+-         sealed trait Colored
++         sealed trait Colored
+
+-         @number(3) case class Hsv(hue: Double, saturation: Double, value: Double) extends Colored
++         @number(3) case class Hsv(hue: Double, saturation: Double, value: Double) extends Colored
+
+-         @primary() case class Rgb(red: Int, green: Int, blue: Int) extends Colored
++         @primary() case class Rgb(red: Int, green: Int, blue: Int) extends Colored
+
+-         summon[Annotated under Colored].subtypes
++         summon[Annotated under Colored].subtypes
+
+-         // Map("Hsv" -> Set(number(3)), "Rgb" -> Set(primary()))
++         // Map("Hsv" -> Set(number(3)), "Rgb" -> Set(primary()))
+
+=         // Map("Hsv" -> Set(number(3)), "Rgb" -> Set(primary()))
+-         ```
++         ```
+
+-     entry #subtypes   each variant's name, with its annotations of the requested type
+-     entry #apply   each variant's name, with its annotations: the same map as `#subtypes`
+-   entry .AnnotatedSubtypes   the concrete `Annotated.Subtypes` the macro builds
+-     entry #subtypes   each variant's name, with its annotations of the requested type
+-     entry #apply   each variant's name, with its annotations
+-   entry #Operand   the annotation type the query asked for, `StaticAnnotation` when it named none
+-   entry #Unique   whether the query matched exactly one field, as a literal Boolean type
++     entry #subtypes   各バリアントの名前と、要求された型のそのアノテーション
++     entry #apply   各バリアントの名前とそのアノテーション：`#subtypes` と同じマップ
++   entry .AnnotatedSubtypes   マクロが作る具体的な `Annotated.Subtypes`
++     entry #subtypes   各バリアントの名前と、要求された型のそのアノテーション
++     entry #apply   各バリアントの名前とそのアノテーション
++   entry #Operand   問い合わせが求めたアノテーション型。何も名指さなかったときは `StaticAnnotation`
++   entry #Unique   問い合わせがちょうど一つのフィールドに一致したかどうか。リテラルの Boolean 型として
+
+- entry .Dereferenceable   a typeclass for reaching a record's fields by name, as values of one type
++ entry .Dereferenceable   レコードのフィールドに、一つの型の値として名前で到達するための型クラス
+
+= entry .Dereferenceable   a typeclass for reaching a record's fields by name, as values of one type
+-   detail
++   detail
+
+-       `entity is Dereferenceable to value` lists the fields of `entity` whose type conforms to
+-       `value`, and reads, updates or modifies one by name, through a table of accessors
+-       generated as the code compiles rather than by runtime reflection. The instance is an
+-       inline given in the companion, so in implicit scope for any type. A record whose fields
+-       are all `Int` dereferences `to Int`; any record dereferences `to Any`, covering every
+-       field.
++       `entity is Dereferenceable to value` は、型が `value` に適合する `entity` のフィールドを列挙し、その一つを名前で読み、更新し、変更する。これは実行時のリフレクションではなく、コードのコンパイル時に生成されるアクセサーの表を通して行う。
++       インスタンスはコンパニオンにある inline の given なので、あらゆる型に対して暗黙のスコープにある。
++       フィールドがすべて `Int` であるレコードは `to Int` で参照解決でき、あらゆるレコードはすべてのフィールドを扱う `to Any` で参照解決できる。
+
+=       field.
+=
+-       ```scala
++       ```scala
+
+=       field.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Letters(alpha: Int, beta: Int, gamma: Int)
++       case class Letters(alpha: Int, beta: Int, gamma: Int)
+
+-       val letters = Letters(1, 2, 3)
++       val letters = Letters(1, 2, 3)
+
+-       val fields = summon[Letters is Dereferenceable to Int]
++       val fields = summon[Letters is Dereferenceable to Int]
+
+-       fields.names(letters)                 // List(t"alpha", t"beta", t"gamma")
++       fields.names(letters)                 // List(t"alpha", t"beta", t"gamma")
+
+-       fields.select(letters, t"beta")       // 2
++       fields.select(letters, t"beta")       // 2
+
+-       fields.update(letters, t"beta", 20)   // Letters(1, 20, 3)
++       fields.update(letters, t"beta", 20)   // Letters(1, 20, 3)
+
+=       fields.update(letters, t"beta", 20)   // Letters(1, 20, 3)
+-       ```
++       ```
+
+-       Reading covers every field member of the right type, including an object's `val`s.
+-       Writing needs a lens, and there is one only for a primary-constructor parameter whose
+-       type accepts every value of the instance's `Result` type: a `val` computed in a body has
+-       nothing to write, and a `Long` field of a record dereferenced `to Any` cannot accept an
+-       arbitrary `Any`, so both are readable but `#lens`, `#update` and `#modify` give `Unset`
+-       for them.
++       読み取りは、オブジェクトの `val` も含め、正しい型のすべてのフィールドメンバーを扱う。
++       書き込みにはレンズが必要であり、レンズがあるのは、型がインスタンスの `Result` 型のすべての値を受け付ける主コンストラクターのパラメーターだけである。本体で計算される `val` には書き込むものがなく、`to Any` で参照解決されるレコードの `Long` フィールドは任意の `Any` を受け付けられないので、どちらも読めるが、それらに対しては `#lens`、`#update`、`#modify` は `Unset` を与える。
+
+-   refer adversaria.membersOfType
++   refer adversaria.membersOfType
+
+-   entry #names   the names of the fields whose type conforms to the instance's `Result`
+-   entry #select   the value of the field named
+-       `select(entity, name)` reads the field through its generated accessor. The name must be
+-       one of `#names`; any other fails at runtime with a missing key, so check `#names` (or
+-       use `#members`) for a name from outside the program.
+-   entry #values   the values of every such field, in declaration order
+-   entry #lens   a panopticon `Lens` onto the field named, or `Unset` if it cannot be written
+-       `Unset` where the name is not a field, is not a parameter of the primary constructor,
+-       or has a type narrower than `Result`. The lens rebuilds the record with the primary
+-       constructor, replacing one field. Being an optic, it composes with any other.
+-   entry #update   a copy of the record with the field named replaced, or `Unset` if it cannot be written
+-       `update(entity, name, value)` is `lens(name)` applied, so it is `Unset` in the same
+-       cases as `#lens`.
+-   entry #modify   a copy of the record with a function applied to the field named, or `Unset`
+-       `modify(entity, name)(lambda)`: `numbers.modify(letters, t"gamma")(_*10)`. `Unset` in
+-       the same cases as `#lens`.
+-   entry #members   every such field, as a map from its name to its value
++   entry #names   型がインスタンスの `Result` に適合するフィールドの名前
++   entry #select   名指したフィールドの値
++       `select(entity, name)` は、生成されたアクセサーを通してフィールドを読む。
++       名前は `#names` の一つでなければならない。それ以外は実行時にキーがないことで失敗するので、プログラムの外から来た名前については `#names` を確認する（または `#members` を使う）。
++   entry #values   そのようなすべてのフィールドの値。宣言順で
++   entry #lens   名指したフィールドへの panopticon の `Lens`。書き込めなければ `Unset`
++       名前がフィールドでない場合、主コンストラクターのパラメーターでない場合、または型が `Result` より狭い場合は `Unset` である。
++       レンズは、一つのフィールドを置き換えて主コンストラクターでレコードを組み立て直す。
++       オプティクスなので、ほかのどのオプティクスとも合成できる。
++   entry #update   名指したフィールドを置き換えたレコードのコピー。書き込めなければ `Unset`
++       `update(entity, name, value)` は `lens(name)` を適用したものなので、`#lens` と同じ場合に `Unset` になる。
++   entry #modify   名指したフィールドに関数を適用したレコードのコピー。または `Unset`
++       `modify(entity, name)(lambda)`：`numbers.modify(letters, t"gamma")(_*10)`。
++       `#lens` と同じ場合に `Unset` になる。
++   entry #members   そのようなすべてのフィールド。名前から値へのマップとして
+
+=   entry #members   every such field, as a map from its name to its value
+-       ```scala
++       ```scala
+
+=   entry #members   every such field, as a map from its name to its value
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Play(title: Text, year: Long)
++       case class Play(title: Text, year: Long)
+
+-       summon[Play is Dereferenceable to Any].members(Play(t"Hamlet", 1603L))
++       summon[Play is Dereferenceable to Any].members(Play(t"Hamlet", 1603L))
+
+-       // Map(t"title" -> t"Hamlet", t"year" -> 1603L)
++       // Map(t"title" -> t"Hamlet", t"year" -> 1603L)
+
+=       // Map(t"title" -> t"Hamlet", t"year" -> 1603L)
+-       ```
++       ```
+
+- entry .membersOfType   the values of every field of a record which have the type asked for
+-     An extension on any value: `record.membersOfType[Int]` is the `values` of its
+-     `Dereferenceable to Int` instance, in declaration order. It lets a generic renderer or a
+-     template engine read a value's fields of one type without casting.
++ entry .membersOfType   レコードのフィールドのうち、求められた型を持つすべてのものの値
++     あらゆる値に対する拡張である。`record.membersOfType[Int]` は、その `Dereferenceable to Int` インスタンスの `values` であり、宣言順に並ぶ。
++     汎用のレンダラーやテンプレートエンジンが、キャストせずに値の一つの型のフィールドを読めるようにする。
+
+=     template engine read a value's fields of one type without casting.
+=
+-     ```scala
++     ```scala
+
+=     template engine read a value's fields of one type without casting.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     object Settings:
++     object Settings:
+
+-       val width: Int = 80
++       val width: Int = 80
+
+-       val name: Text = t"main"
++       val name: Text = t"main"
+
+-       val height: Int = 24
++       val height: Int = 24
+
+-     Settings.membersOfType[Int]   // List(80, 24)
++     Settings.membersOfType[Int]   // List(80, 24)
+
+=     Settings.membersOfType[Int]   // List(80, 24)
+-     ```
++     ```
+
+- entry .fieldAnnotations   the annotations of one type on each field of a type, omitting fields without one
+-     `fieldAnnotations[T, A]` is the `fields` of `T is Annotated by A`, with the fields which
+-     carry no `A` removed, keyed by field name as `Text`. It returns an empty map for a type
+-     whose instance is not field-based, so a caller need not match on the instance's kind.
++ entry .fieldAnnotations   型の各フィールドに付いた一つの型のアノテーション。それを持たないフィールドは除く
++     `fieldAnnotations[T, A]` は、`A` を持たないフィールドを除いた `T is Annotated by A` の `fields` であり、`Text` としてのフィールド名をキーとする。
++     インスタンスがフィールドに基づかない型に対しては空のマップを返すので、呼び出し側はインスタンスの種類でマッチする必要がない。
+
+=     whose instance is not field-based, so a caller need not match on the instance's kind.
+=
+-     ```scala
++     ```scala
+
+=     whose instance is not field-based, so a caller need not match on the instance's kind.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     final case class marker[topic](id: Int) extends StaticAnnotation
++     final case class marker[topic](id: Int) extends StaticAnnotation
+
+-     case class Tagged(@marker(1) bare: Int, @marker[Text](2) specific: Int, plain: Int)
++     case class Tagged(@marker(1) bare: Int, @marker[Text](2) specific: Int, plain: Int)
+
+-     fieldAnnotations[Tagged, marker[Any]]    // Map(t"bare" -> Set(marker(1)))
++     fieldAnnotations[Tagged, marker[Any]]    // Map(t"bare" -> Set(marker(1)))
+
+-     fieldAnnotations[Tagged, marker[Text]]   // Map(t"specific" -> Set(marker[Text](2)))
++     fieldAnnotations[Tagged, marker[Text]]   // Map(t"specific" -> Set(marker[Text](2)))
+
+=     fieldAnnotations[Tagged, marker[Text]]   // Map(t"specific" -> Set(marker[Text](2)))
+-     ```
++     ```
+
+-     A bare annotation infers its type argument as `Any`, so a `marker[Any]` query sees it and
+-     a `marker[Text]` query does not.
++     型引数のないアノテーションはその型引数を `Any` と推論するので、`marker[Any]` の問い合わせはそれを見つけ、`marker[Text]` の問い合わせは見つけない。
+
+- entry .subtypeAnnotations   the annotations of one type on each variant of a sealed type, omitting variants without one
+-     `subtypeAnnotations[S, A]` is the `subtypes` of `Annotated by A under S`, with the variants
+-     which carry no `A` removed, keyed by variant name. It is what renaming the cases of a sum
+-     type is built on.
++ entry .subtypeAnnotations   シールされた型の各バリアントに付いた一つの型のアノテーション。それを持たないバリアントは除く
++     `subtypeAnnotations[S, A]` は、`A` を持たないバリアントを除いた `Annotated by A under S` の `subtypes` であり、バリアント名をキーとする。
++     直和型のケースの名前を変える仕組みは、これの上に作られている。
+
+=     type is built on.
+=
+-     ```scala
++     ```scala
+
+=     type is built on.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     type is built on.
+=
+=     ```scala
+=     import soundness.*
+=
+-     sealed trait Decision
++     sealed trait Decision
+
+=     type is built on.
+=
+=     ```scala
+=     import soundness.*
+=
+=     sealed trait Decision
+-     @name[Json](t"yes") case object Accept extends Decision
++     @name[Json](t"yes") case object Accept extends Decision
+
+=     type is built on.
+=
+=     ```scala
+=     import soundness.*
+=
+=     sealed trait Decision
+=     @name[Json](t"yes") case object Accept extends Decision
+-     @name(t"no") case object Reject extends Decision
++     @name(t"no") case object Reject extends Decision
+
+=     type is built on.
+=
+=     ```scala
+=     import soundness.*
+=
+=     sealed trait Decision
+=     @name[Json](t"yes") case object Accept extends Decision
+=     @name(t"no") case object Reject extends Decision
+-     case object Defer extends Decision
++     case object Defer extends Decision
+
+-     subtypeAnnotations[Decision, name[Json]]   // Map(t"Accept" -> Set(name[Json](t"yes")))
++     subtypeAnnotations[Decision, name[Json]]   // Map(t"Accept" -> Set(name[Json](t"yes")))
+
+=     subtypeAnnotations[Decision, name[Json]]   // Map(t"Accept" -> Set(name[Json](t"yes")))
+-     ```
++     ```
+
+- entry .relabelling   the serialized names of a type's fields for one format, from its `@name` annotations
+-     `relabelling[T, Format]` maps each `@name`-annotated field of `T` to the name it takes in
+-     `Format`: a `@name[Format](…)` overrides a bare `@name(…)`, which applies to every format.
+-     Fields without a `@name` are absent, and keep their own names. Each Soundness format's
+-     derivation reads it, so one annotation serves JSON, XML, YAML and the rest alike.
++ entry .relabelling   一つの形式における型のフィールドの直列化された名前。その `@name` アノテーションから
++     `relabelling[T, Format]` は、`@name` アノテーションを持つ `T` の各フィールドを、`Format` でそれが取る名前に対応付ける。`@name[Format](…)` は、すべての形式に適用される型引数のない `@name(…)` に優先する。
++     `@name` のないフィールドは含まれず、自身の名前を保つ。
++     Soundness の各形式の導出がこれを読むので、一つのアノテーションが JSON、XML、YAML などに等しく役立つ。
+
+=     derivation reads it, so one annotation serves JSON, XML, YAML and the rest alike.
+=
+-     ```scala
++     ```scala
+
+-     case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
++     case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+
+=     case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+-     ```
++     ```
+
+-     Under JSON the JSON-specific rename and the bare one both apply; under XML, only the bare
+-     one:
++     JSON では JSON 固有の名前変更と型引数のないものの両方が適用され、XML では型引数のないものだけが適用される。
+
+-     ```scala fuel
++     ```scala fuel
+
+-     alternative JSON
++     alternative JSON
+
+=     alternative JSON
+-       code
++       code
+
+-           relabelling[Record, Json]   // Map(t"firstName" -> t"first_name", t"year" -> t"yob")
++           relabelling[Record, Json]   // Map(t"firstName" -> t"first_name", t"year" -> t"yob")
+
+-     alternative XML
++     alternative XML
+
+=     alternative XML
+-       code
++       code
+
+-           relabelling[Record, Xml]    // Map(t"year" -> t"yob")
++           relabelling[Record, Xml]    // Map(t"year" -> t"yob")
+
+-     ##
++     ##
+
+=     ##
+-     ```
++     ```
+
+- entry .variantRelabelling   the serialized names of a sum type's variants for one format, from their `@name` annotations
+-     As `relabelling`, for the cases of an enum or the subtypes of a sealed trait: each renamed
+-     variant's name maps to its discriminator in `Format`, a `@name[Format](…)` overriding a
+-     bare `@name(…)`.
++ entry .variantRelabelling   一つの形式における直和型のバリアントの直列化された名前。その `@name` アノテーションから
++     `relabelling` と同様だが、enum のケースやシールされたトレイトの部分型のためのものである。名前を変えた各バリアントの名前は `Format` でのその判別子に対応付けられ、`@name[Format](…)` は型引数のない `@name(…)` に優先する。
+
+=     bare `@name(…)`.
+=
+-     ```scala
++     ```scala
+
+=     bare `@name(…)`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     bare `@name(…)`.
+=
+=     ```scala
+=     import soundness.*
+=
+-     sealed trait Decision
++     sealed trait Decision
+
+=     bare `@name(…)`.
+=
+=     ```scala
+=     import soundness.*
+=
+=     sealed trait Decision
+-     @name[Json](t"yes") case object Accept extends Decision
++     @name[Json](t"yes") case object Accept extends Decision
+
+=     bare `@name(…)`.
+=
+=     ```scala
+=     import soundness.*
+=
+=     sealed trait Decision
+=     @name[Json](t"yes") case object Accept extends Decision
+-     @name(t"no") case object Reject extends Decision
++     @name(t"no") case object Reject extends Decision
+
+=     bare `@name(…)`.
+=
+=     ```scala
+=     import soundness.*
+=
+=     sealed trait Decision
+=     @name[Json](t"yes") case object Accept extends Decision
+=     @name(t"no") case object Reject extends Decision
+-     case object Defer extends Decision
++     case object Defer extends Decision
+
+-     variantRelabelling[Decision, Json]   // Map(t"Accept" -> t"yes", t"Reject" -> t"no")
++     variantRelabelling[Decision, Json]   // Map(t"Accept" -> t"yes", t"Reject" -> t"no")
+
+=     variantRelabelling[Decision, Json]   // Map(t"Accept" -> t"yes", t"Reject" -> t"no")
+-     ```
++     ```
+
+- entry .annotatedFields   the names of the fields of a type which carry one annotation
+-     `annotatedFields[T, A]` is the `Set` of names of the fields of `T` annotated with an `A`, as
+-     a literal built when the derivation compiles. It is the form a derivation wants when it only
+-     needs to know *which* fields are marked — xylophone's `@attribute` and `@unqualified` — and
+-     constructs no annotation instance, where `fieldAnnotations` builds each field's annotations
+-     into a `Set` inside a `Map`.
++ entry .annotatedFields   一つのアノテーションを持つ、型のフィールドの名前
++     `annotatedFields[T, A]` は、`A` のアノテーションが付いた `T` のフィールドの名前の `Set` であり、導出のコンパイル時に作られるリテラルである。
++     導出が、*どの*フィールドに印が付いているかだけを知る必要があるとき（xylophone の `@attribute` と `@unqualified`）に求める形であり、アノテーションのインスタンスを一つも構築しない。一方、`fieldAnnotations` は各フィールドのアノテーションを `Map` の中の `Set` に組み立てる。
+
+=     into a `Set` inside a `Map`.
+=
+-     ```scala
++     ```scala
+
+=     into a `Set` inside a `Map`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     case class Book(title: Text, @Xml.attribute isbn: Text)
++     case class Book(title: Text, @Xml.attribute isbn: Text)
+
+-     annotatedFields[Book, Xml.attribute]   // Set(t"isbn")
++     annotatedFields[Book, Xml.attribute]   // Set(t"isbn")
+
+=     annotatedFields[Book, Xml.attribute]   // Set(t"isbn")
+-     ```
++     ```
+
+- entry .typeAnnotation   the annotation of one type on a type itself, if it has one
+-     `typeAnnotation[T, A]` is the `A` annotating the type `T` — not its fields — rebuilt once,
+-     where it is asked for, or `Unset`. It reads the payload of an annotation on a class, such as
+-     xylophone's `@xmlns("urn:x")`.
++ entry .typeAnnotation   型そのものに付いた一つの型のアノテーション。あれば
++     `typeAnnotation[T, A]` は、型 `T`（そのフィールドではなく）に付いた `A` であり、求められた場所で一度だけ組み立て直される。なければ `Unset` である。
++     xylophone の `@xmlns("urn:x")` のような、クラスに付いたアノテーションのペイロードを読む。
+
+=     xylophone's `@xmlns("urn:x")`.
+=
+-     ```scala
++     ```scala
+
+=     xylophone's `@xmlns("urn:x")`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     @Xml.xmlns(t"urn:example") case class Order(id: Int)
++     @Xml.xmlns(t"urn:example") case class Order(id: Int)
+
+-     typeAnnotation[Order, Xml.xmlns].let(_.uri)   // t"urn:example"
++     typeAnnotation[Order, Xml.xmlns].let(_.uri)   // t"urn:example"
+
+=     typeAnnotation[Order, Xml.xmlns].let(_.uri)   // t"urn:example"
+-     ```
++     ```
+
+- entry .name   `@name(t"…")`: renames a field or variant in serialization, for every format or for one
++ entry .name   `@name(t"…")`：すべての形式またはある一つの形式において、直列化でのフィールドやバリアントの名前を変える
+
+= entry .name   `@name(t"…")`: renames a field or variant in serialization, for every format or for one
+-   detail
++   detail
+
+-       A static annotation. `@name(t"first_name")` (inferred as `name[Any]`) renames the field
+-       or variant in every serialization format; `@name[Json](t"first_name")` only in JSON.
+-       Several `@name`s with different formats may sit on one field, and a format-specific one
+-       overrides the bare one for its format. Derivations read them through `relabelling` and
+-       `variantRelabelling`.
++       静的アノテーションである。
++       `@name(t"first_name")`（`name[Any]` と推論される）は、すべての直列化形式でフィールドやバリアントの名前を変え、`@name[Json](t"first_name")` は JSON でだけ変える。
++       一つのフィールドに形式の異なる複数の `@name` を付けてよく、形式固有のものはその形式において型引数のないものに優先する。
++       導出は `relabelling` と `variantRelabelling` を通してそれらを読む。
+
+=       `variantRelabelling`.
+=
+-       ```scala
++       ```scala
+
+=       `variantRelabelling`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Book(@name[Xml](t"Title") title: Text, @name(t"pub") published: Int)
++       case class Book(@name[Xml](t"Title") title: Text, @name(t"pub") published: Int)
+
+=       case class Book(@name[Xml](t"Title") title: Text, @name(t"pub") published: Int)
+-       ```
++       ```
+
+-   entry #name   the name the field or variant takes in serialization
++   entry #name   直列化においてフィールドやバリアントが取る名前
+
+- entry .internal   the macros which build `Annotated` and `Dereferenceable` instances
++ entry .internal   `Annotated` と `Dereferenceable` のインスタンスを作るマクロ
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object houses the macro implementations behind
+-       `Annotated.annotations` and the `Dereferenceable` given.
+-   entry .general   the macro behind `Annotated`: collects the annotations a query asks for
+-   entry .dereferenceable   the macro behind `Dereferenceable`: generates the accessor and lens tables
++       直接使うものではない。このオブジェクトは、`Annotated.annotations` と `Dereferenceable` の given の背後にあるマクロの実装を収める。
++   entry .general   `Annotated` の背後にあるマクロ：問い合わせが求めるアノテーションを集める
++   entry .dereferenceable   `Dereferenceable` の背後にあるマクロ：アクセサーとレンズの表を生成する

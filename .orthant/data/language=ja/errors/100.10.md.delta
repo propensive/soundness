@@ -1,0 +1,87 @@
+orthant 1 language
+
+- # `↯/s.100.10` — `Hostname.Error`
++ # `↯/s.100.10` — `Hostname.Error`
+
+- Raised when a value cannot be parsed as a valid DNS hostname.
++ 値を有効な DNS のホスト名としてパースできないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Urticose validates hostnames per the DNS rules: total length ≤ 253,
+- each label ≤ 63 characters, only `A`-`Z`, `a`-`z`, `0`-`9`, and `-`
+- allowed (and `-` not at the start of a label). The message is `the
+- hostname is not valid because $reason`.
++ Urticose はホスト名を DNS の規則に従って検証する。全体の長さは 253 以下、各ラベルは 63 文字以下で、使えるのは `A`-`Z`、`a`-`z`、`0`-`9`、`-` だけである（そして `-` はラベルの先頭に置けない）。
++ メッセージは `the hostname is not valid because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- ### `↯/s.100.10.1` — `LongDnsLabel`
++ ### `↯/s.100.10.1` — `LongDnsLabel`
+
+- A single DNS label is longer than 63 characters.
++ 一つの DNS ラベルが 63 文字より長い。
+
+- **Example.** `[↯/s.100.10.1] the hostname is not valid because the DNS label tomorrowandtomorrowandtomorrow... is longer than 63 characters`
++ **例。** `[↯/s.100.10.1] the hostname is not valid because the DNS label tomorrowandtomorrowandtomorrow... is longer than 63 characters`
+
+- **Resolution.** Shorten the offending label.
++ **解決方法。** 問題のラベルを短くする。
+
+- ### `↯/s.100.10.2` — `LongHostname`
++ ### `↯/s.100.10.2` — `LongHostname`
+
+- The hostname as a whole exceeds 253 characters.
++ ホスト名全体が 253 文字を超えている。
+
+- **Example.** `[↯/s.100.10.2] the hostname is not valid because the hostname is longer than 253 characters`
++ **例。** `[↯/s.100.10.2] the hostname is not valid because the hostname is longer than 253 characters`
+
+- **Resolution.** Use a shorter fully-qualified domain name.
++ **解決方法。** より短い完全修飾ドメイン名を使う。
+
+- ### `↯/s.100.10.3` — `InvalidChar`
++ ### `↯/s.100.10.3` — `InvalidChar`
+
+- A character that is not permitted in a DNS hostname appears.
++ DNS のホスト名に許されない文字が現れている。
+
+- **Example.** `[↯/s.100.10.3] the hostname is not valid because the character _ is not allowed in a hostname`
++ **例。** `[↯/s.100.10.3] the hostname is not valid because the character _ is not allowed in a hostname`
+
+- **Resolution.** Remove or replace the offending character.
++ **解決方法。** 問題の文字を取り除くか置き換える。
+
+- ### `↯/s.100.10.4` — `EmptyDnsLabel`
++ ### `↯/s.100.10.4` — `EmptyDnsLabel`
+
+- A label is empty — typically caused by `..` in the input or a leading
+- or trailing dot.
++ ラベルが空である。ふつうは入力の中の `..`、または先頭や末尾のドットが原因である。
+
+- **Example.** `[↯/s.100.10.4] the hostname is not valid because a DNS label cannot be empty`
++ **例。** `[↯/s.100.10.4] the hostname is not valid because a DNS label cannot be empty`
+
+- **Resolution.** Remove the empty label.
++ **解決方法。** 空のラベルを取り除く。
+
+- ### `↯/s.100.10.5` — `InitialDash`
++ ### `↯/s.100.10.5` — `InitialDash`
+
+- A label starts with `-`, which DNS does not allow.
++ ラベルが `-` で始まっているが、DNS はそれを許さない。
+
+- **Example.** `[↯/s.100.10.5] the hostname is not valid because the DNS label -elsinore begins with a dash which is not allowed`
++ **例。** `[↯/s.100.10.5] the hostname is not valid because the DNS label -elsinore begins with a dash which is not allowed`
+
+- **Resolution.** Remove or relocate the leading dash.
++ **解決方法。** 先頭のダッシュを取り除くか、別の位置に移す。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/urticose/src/core/urticose.Hostname.scala`
++ - ソース：`lib/urticose/src/core/urticose.Hostname.scala`

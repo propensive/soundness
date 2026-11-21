@@ -1,0 +1,82 @@
+orthant 1 language
+
+- # `↯/s.97.1` — `Semver.Error`
++ # `↯/s.97.1` — `Semver.Error`
+
+- Raised when a value is not a valid semantic version.
++ 値が正当なセマンティックバージョンでないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Revolution validates input strings against the SemVer 2.0
+- grammar: `MAJOR.MINOR.PATCH[-prerelease][+build]`. The constructor
+- records the offending `version` and a `reason: Reason`; the
+- rendered message is `$version is not a valid semantic version
+- because $reason`.
++ Revolution は、入力の文字列を SemVer 2.0 の文法 `MAJOR.MINOR.PATCH[-prerelease][+build]` に照らして検証する。
++ コンストラクターは問題の `version` と `reason: Reason` を記録し、描画されるメッセージは `$version is not a valid semantic version because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- ### `↯/s.97.1.1` — `BadFormat`
++ ### `↯/s.97.1.1` — `BadFormat`
+
+- The string did not match the SemVer grammar at all (e.g. fewer
+- than three numeric components, or unrecognised separators).
++ 文字列が SemVer の文法にまったくマッチしなかった（たとえば、数値の成分が三つより少ない、あるいは認識されない区切り文字がある）。
+
+- **Example.** `[↯/s.97.1.1] 1.2 is not a valid semantic version because the string did not match the SemVer 2.0 grammar`
++ **例。** `[↯/s.97.1.1] 1.2 is not a valid semantic version because the string did not match the SemVer 2.0 grammar`
+
+- **Resolution.** Provide a fully-formed `MAJOR.MINOR.PATCH` string,
+- optionally followed by `-prerelease` and `+build`.
++ **解決方法。** 完全な形の `MAJOR.MINOR.PATCH` の文字列を与える。その後に `-prerelease` と `+build` を続けてもよい。
+
+- ### `↯/s.97.1.2` — `EmptyIdentifier`
++ ### `↯/s.97.1.2` — `EmptyIdentifier`
+
+- The string contained a `-` or `+` separator with nothing after it
+- — an empty prerelease or build identifier.
++ 文字列が、後ろに何もない `-` や `+` の区切り文字を含んでいた。つまり空のプレリリースやビルドの識別子である。
+
+- **Example.** `[↯/s.97.1.2] 1.2.3- is not a valid semantic version because a prerelease or build identifier was empty`
++ **例。** `[↯/s.97.1.2] 1.2.3- is not a valid semantic version because a prerelease or build identifier was empty`
+
+- **Resolution.** Either remove the trailing separator or supply a
+- non-empty identifier after it.
++ **解決方法。** 末尾の区切り文字を取り除くか、その後に空でない識別子を与える。
+
+- ### `↯/s.97.1.3` — `LeadingZero`
++ ### `↯/s.97.1.3` — `LeadingZero`
+
+- A numeric identifier (one of `MAJOR`, `MINOR`, `PATCH`, or a
+- numeric prerelease segment) had a leading zero, which SemVer
+- forbids.
++ 数値の識別子（`MAJOR`、`MINOR`、`PATCH` のいずれか、または数値のプレリリースの部分）に、SemVer が禁じる先頭のゼロがあった。
+
+- **Example.** `[↯/s.97.1.3] 01.2.3 is not a valid semantic version because a numeric identifier had a leading zero`
++ **例。** `[↯/s.97.1.3] 01.2.3 is not a valid semantic version because a numeric identifier had a leading zero`
+
+- **Resolution.** Strip leading zeros from numeric identifiers.
++ **解決方法。** 数値の識別子から先頭のゼロを取り除く。
+
+- ### `↯/s.97.1.4` — `InvalidCharacter`
++ ### `↯/s.97.1.4` — `InvalidCharacter`
+
+- A prerelease or build identifier contained a character outside
+- the allowed set `[0-9A-Za-z-]`.
++ プレリリースやビルドの識別子が、許される集合 `[0-9A-Za-z-]` の外の文字を含んでいた。
+
+- **Example.** `[↯/s.97.1.4] 1.2.3-alpha! is not a valid semantic version because an identifier contained a character outside [0-9A-Za-z-]`
++ **例。** `[↯/s.97.1.4] 1.2.3-alpha! is not a valid semantic version because an identifier contained a character outside [0-9A-Za-z-]`
+
+- **Resolution.** Remove or escape the invalid character.
++ **解決方法。** 不正な文字を取り除くか、エスケープする。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/revolution/src/core/revolution.Semver.scala`
++ - ソース：`lib/revolution/src/core/revolution.Semver.scala`

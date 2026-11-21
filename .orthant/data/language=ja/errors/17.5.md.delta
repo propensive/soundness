@@ -1,0 +1,41 @@
+orthant 1 language
+
+- # `↯/s.17.5` — Missing `Functor` for monad derivation
++ # `↯/s.17.5` — モナドの導出に必要な `Functor` がない
+
+- Raised at compile time by Mercator's `monad` macro when no
+- `Functor` instance can be summoned for the type.
++ 型に対する `Functor` のインスタンスを召喚できないとき、Mercator の `monad` マクロによってコンパイル時に発生する。
+
+- ## Cause
++ ## 原因
+
+- Mercator's `Monad` derivation depends on an underlying `Functor`
+- instance.
++ Mercator の `Monad` の導出は、下にある `Functor` のインスタンスに依存する。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.17.5] could not find Functor value for Play
++ [↯/s.17.5] could not find Functor value for Play
+
+= [↯/s.17.5] could not find Functor value for Play
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Bring or derive a `Functor` instance first.
++ 先に `Functor` のインスタンスを持ち込むか導出する。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/mercator/src/core/mercator.internal.scala`
++ - ソース：`lib/mercator/src/core/mercator.internal.scala`

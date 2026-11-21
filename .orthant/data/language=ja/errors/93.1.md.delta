@@ -1,0 +1,84 @@
+orthant 1 language
+
+- # `↯/s.93.1` — `Tar.Error`
++ # `↯/s.93.1` — `Tar.Error`
+
+- Raised when a tar archive cannot be read or written.
++ tar アーカイブを読み書きできないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Bitumen parses tar entries lazily from a byte stream, so a fault is reported when the
+- malformed structure is reached rather than when the archive is opened.
++ Bitumen は tar のエントリーをバイトストリームから遅延的にパースするので、誤りはアーカイブを開いたときではなく、不正な構造に達したときに報告される。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  コード
++ column  理由
++ column  メッセージ
+
+- row  `↯/s.93.1.1`  `NameTooLong`  the <field> field is <length> bytes, exceeding the USTAR limit of <maximum> bytes
++ row  `↯/s.93.1.1`  `NameTooLong`  the <field> field is <length> bytes, exceeding the USTAR limit of <maximum> bytes
+
+- row  `↯/s.93.1.2`  `BadMagic`  the USTAR magic bytes are not valid (got <actual> bytes)
++ row  `↯/s.93.1.2`  `BadMagic`  the USTAR magic bytes are not valid (got <actual> bytes)
+
+- row  `↯/s.93.1.3`  `BadChecksum`  the header checksum did not match (header recorded <expected> but the recomputed value is <actual>)
++ row  `↯/s.93.1.3`  `BadChecksum`  the header checksum did not match (header recorded <expected> but the recomputed value is <actual>)
+
+- row  `↯/s.93.1.4`  `UnknownTypeFlag`  the entry type flag <code> is not recognised
++ row  `↯/s.93.1.4`  `UnknownTypeFlag`  the entry type flag <code> is not recognised
+
+- row  `↯/s.93.1.5`  `TruncatedStream`  the archive stream ended unexpectedly (needed <needed> bytes, got <got>)
++ row  `↯/s.93.1.5`  `TruncatedStream`  the archive stream ended unexpectedly (needed <needed> bytes, got <got>)
+
+- row  `↯/s.93.1.6`  `BadOctal`  the <field> field did not contain a valid octal value
++ row  `↯/s.93.1.6`  `BadOctal`  the <field> field did not contain a valid octal value
+
+- row  `↯/s.93.1.7`  `BadPaxRecord`  a PAX extended-header record could not be parsed
++ row  `↯/s.93.1.7`  `BadPaxRecord`  a PAX extended-header record could not be parsed
+
+- row  `↯/s.93.1.8`  `BadName`  the entry name <text> is not a valid POSIX relative path
++ row  `↯/s.93.1.8`  `BadName`  the entry name <text> is not a valid POSIX relative path
+
+- row  `↯/s.93.1.9`  `BadSparseMap`  the GNU sparse map <text> could not be parsed
++ row  `↯/s.93.1.9`  `BadSparseMap`  the GNU sparse map <text> could not be parsed
+
+- row  `↯/s.93.1.10`  `DeviceCreationUnsupported`  the special device entry at <path> could not be created on this filesystem
++ row  `↯/s.93.1.10`  `DeviceCreationUnsupported`  the special device entry at <path> could not be created on this filesystem
+
+- row  `↯/s.93.1.11`  `WriteUnsupported`  TAR archives cannot yet be opened for writing
++ row  `↯/s.93.1.11`  `WriteUnsupported`  TAR archives cannot yet be opened for writing
+
+- row  `↯/s.93.1.12`  `AlreadyExists`  an archive already exists at this path
++ row  `↯/s.93.1.12`  `AlreadyExists`  an archive already exists at this path
+
+- row  `↯/s.93.1.13`  `CannotWrite`  the archive could not be written: <detail>
++ row  `↯/s.93.1.13`  `CannotWrite`  the archive could not be written: <detail>
+
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- A truncated archive usually means an incomplete download or a stream that ended early; a
+- checksum failure means a corrupt header. Writing errors generally reflect a value the
+- format cannot represent — a name too long for the chosen long-name format, say.
++ 途中で切れたアーカイブは、たいていダウンロードが不完全であるか、ストリームが早く終わったことを意味する。チェックサムの失敗は、ヘッダーが壊れていることを意味する。
++ 書き込みのエラーは一般に、形式が表現できない値を反映している。たとえば、選ばれた長い名前の形式には長すぎる名前である。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/bitumen/src/core/bitumen.Tar.scala`
++ - ソース：`lib/bitumen/src/core/bitumen.Tar.scala`

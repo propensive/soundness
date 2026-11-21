@@ -1,0 +1,57 @@
+orthant 1 language
+
+- # `↯/s.134.2` — `YamlPath.Error`
++ # `↯/s.134.2` — `YamlPath.Error`
+
+- Raised when a YAML path expression is malformed.
++ YAML のパス式が不正な形式であるときに発生する。
+
+- ## Cause
++ ## 原因
+
+- A YAML path names a location within a document. Its syntax is checked when written as a
+- literal and when parsed at runtime, by the same parser.
++ YAML のパスはドキュメントの中の位置を名指す。
++ その構文は、リテラルとして書いたときにも、実行時にパースするときにも、同じパーサーによって検査される。
+
+- ## Variants
+- (`↯/s.134.2.1`, `UnknownDocument`, was retired when `YamlPath` lost its never-populated document URL
+- and `YamlPath.Registry`; the remaining numbers are unchanged.)
++ ## バリアント
++ （`↯/s.134.2.1`、`UnknownDocument` は、`YamlPath` が一度も値の入らなかったドキュメントの URL と `YamlPath.Registry` を失ったときに廃止された。残りの番号は変わっていない。）
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  コード
++ column  理由
++ column  メッセージ
+
+- row  `↯/s.134.2.2`  `ExpectedHash`  `[↯/s.134.2.2] a YAML path must begin with '#'`
++ row  `↯/s.134.2.2`  `ExpectedHash`  `[↯/s.134.2.2] a YAML path must begin with '#'`
+
+- row  `↯/s.134.2.3`  `ExpectedSlash`  `[↯/s.134.2.3] a YAML path fragment must begin with '/'`
++ row  `↯/s.134.2.3`  `ExpectedSlash`  `[↯/s.134.2.3] a YAML path fragment must begin with '/'`
+
+- row  `↯/s.134.2.4`  `BadEscape`  `[↯/s.134.2.4] a '~' in a YAML path must be followed by '0' or '1'`
++ row  `↯/s.134.2.4`  `BadEscape`  `[↯/s.134.2.4] a '~' in a YAML path must be followed by '0' or '1'`
+
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- The reason names the character or construct at fault. A path must begin at the root, and
+- each step must be a key or an index.
++ 理由は、問題のある文字または構文要素を名指す。
++ パスはルートから始まらなければならず、各ステップはキーかインデックスでなければならない。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/ypsiloid/src/core/ypsiloid.YamlPath.scala`
++ - ソース：`lib/ypsiloid/src/core/ypsiloid.YamlPath.scala`

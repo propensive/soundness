@@ -1,0 +1,26 @@
+orthant 1 language
+
+-         The opaque type over `Long`. Its page under the `vexillology` package has the full
+-         account.
+-     entry .apply   the empty set of flags over an enumeration, with no bit set, `Flags[Color]()`
+-   entry .apply   whether a case is set in some flags, `flags(case)`
+-       Needs the enumeration to be `Enumerable`, to find the case's ordinal.
+-   entry .update   a copy of some flags with a case set or cleared, `flags(case) = enabled`
+-       Returns the new `Flags` rather than changing the receiver, so a variable holding the
+-       flags is reassigned: `flags = flags(Orange) = true`.
+-   entry .bits   the flags as their underlying bits, a `B64`: the case of index `n` owns bit `n`
+-       Needs no `Enumerable`. A `B64` converts to a `Long` with `.long`.
+-   entry .set   the cases set in some flags, as a `Set` of the enumeration
+-       Visits only the set bits, lowest first.
++         `Long` の上の不透明型である。
++         その説明は `vexillology` パッケージの下のページにある。
++     entry .apply   列挙型に対する、ビットが一つも立っていない空のフラグの集合。`Flags[Color]()`
++   entry .apply   フラグの中でケースが立っているかどうか。`flags(case)`
++       ケースの序数を見つけるため、列挙型が `Enumerable` であることが必要である。
++   entry .update   ケースを立てた、あるいは消したフラグのコピー。`flags(case) = enabled`
++       レシーバを変更するのではなく新しい `Flags` を返すので、フラグを保持する変数は再代入される。`flags = flags(Orange) = true` である。
++   entry .bits   フラグをその下にあるビットとして表した `B64`：インデックス `n` のケースがビット `n` を持つ
++       `Enumerable` を必要としない。
++       `B64` は `.long` で `Long` に変換される。
++   entry .set   フラグの中で立っているケースを、列挙型の `Set` として返す
++       立っているビットだけを、低いほうから順に訪れる。

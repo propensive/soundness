@@ -1,0 +1,654 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base prepositional
++ base prepositional
+
+- import soundness
++ import soundness
+
+- info   the prepositions which refine a typeclass's type members, so that a type reads as a phrase
++ info   型クラスの型メンバーを細分化し、型を句として読めるようにする前置詞
+
+- detail
++ detail
+
+-     _Prepositional_ supplies the vocabulary that lets a Soundness type be written as a
+-     phrase — `Path on Linux`, `Text is Decodable in Json`, `Quantity is Multiplicable by
+-     Duration` — instead of a type constructor applied to positional arguments. Each
+-     preposition is an infix type alias which refines exactly one abstract type member of
+-     the type to its left: `in` sets `Form`, `on` sets `Plane`, `by` sets `Operand`, `to`
+-     sets `Result`, and so on. Because each refines a *different* member, prepositions are
+-     applied in succession without nesting, in any order, and only the members a signature
+-     cares about need be mentioned: `Text is Decodable` is a complete type, which `in Json`
+-     narrows.
++     _Prepositional_ は、Soundness の型を、位置による引数に適用した型コンストラクターとしてではなく、句（`Path on Linux`、`Text is Decodable in Json`、`Quantity is Multiplicable by Duration`）として書けるようにする語彙を提供する。
++     各前置詞は中置の型の別名であり、その左にある型の抽象型メンバーをちょうど一つ細分化する：`in` は `Form` を、`on` は `Plane` を、`by` は `Operand` を、`to` は `Result` を設定する、という具合である。
++     それぞれが*異なる*メンバーを細分化するので、前置詞は入れ子にすることなく、任意の順序で続けて適用でき、シグネチャが関心を持つメンバーだけを書けばよい：`Text is Decodable` はそれだけで完全な型であり、`in Json` はそれを絞り込む。
+
+-     The library has two halves. Twelve one-member **traits** declare the members the
+-     prepositions refine: `Formal` (`Form`), `Planar` (`Plane`), `Operable` (`Operand`),
+-     `Resultant` (`Result`), `Topical` (`Topic`), `Original` (`Origin`), `Domainal`
+-     (`Domain`), `Transportive` (`Transport`), `Targetable` (`Target`), `Contrastive`
+-     (`Contrast`), `Limited` (`Limit`) and `Locative` (`Locus`). A typeclass mixes in the
+-     ones it needs. Twelve **prepositions** then refine them: `in`, `on`, `by`, `to`, `of`,
+-     `from`, `across`, `over`, `onto`, `against`, `under` and `at`. Each is bounded so that it
+-     applies only to a type which declares the member, so a preposition cannot be attached
+-     to a type that has no place for it; the two exceptions are `in`, whose form may be a
+-     type constructor of any kind, and `over`, which carry no bound and attach to any type.
++     このライブラリには二つの半分がある。
++     メンバーが一つの十二の**トレイト**が、前置詞が細分化するメンバーを宣言する：`Formal`（`Form`）、`Planar`（`Plane`）、`Operable`（`Operand`）、`Resultant`（`Result`）、`Topical`（`Topic`）、`Original`（`Origin`）、`Domainal`（`Domain`）、`Transportive`（`Transport`）、`Targetable`（`Target`）、`Contrastive`（`Contrast`）、`Limited`（`Limit`）、`Locative`（`Locus`）。
++     型クラスは必要なものをミックスインする。
++     そして十二の**前置詞**がそれらを細分化する：`in`、`on`、`by`、`to`、`of`、`from`、`across`、`over`、`onto`、`against`、`under`、`at`。
++     それぞれには上限があり、そのメンバーを宣言する型にだけ適用できるので、前置詞をそれの置き場所のない型に付けることはできない。例外は二つで、形式が任意のカインドの型コンストラクターでよい `in` と、`over` であり、これらは上限を持たず、任意の型に付く。
+
+-     The third piece is `Typeclass`, the base of every Soundness typeclass. It declares
+-     `Self`, the type the instance is *for*, which the prelude's `is` refines: `Text is
+-     Decodable` is `Decodable { type Self = Text }`. `Typeclass.Pure` is the subset whose
+-     instances the compiler has verified hold no capability.
++     三つ目の部品は、すべての Soundness の型クラスの基底である `Typeclass` である。
++     これは、インスタンスが*対象とする*型である `Self` を宣言し、プレリュードの `is` がそれを細分化する：`Text is Decodable` は `Decodable { type Self = Text }` である。
++     `Typeclass.Pure` は、インスタンスがケイパビリティを保持しないことをコンパイラが検証した部分集合である。
+
+=     instances the compiler has verified hold no capability.
+=
+-     ```scala
++     ```scala
+
+=     instances the compiler has verified hold no capability.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     trait Serialisable extends Typeclass, Formal, Resultant:
++     trait Serialisable extends Typeclass, Formal, Resultant:
+
+-       def serialise(value: Self): Result
++       def serialise(value: Self): Result
+
+-     given Int is Serialisable in Json to Text = (value: Int) => value.show
++     given Int is Serialisable in Json to Text = (value: Int) => value.show
+
+-     def stringify[value](value: value)(using serialisable: value is Serialisable in Json to Text)
++     def stringify[value](value: value)(using serialisable: value is Serialisable in Json to Text)
+
+-     :   Text =
++     :   Text =
+
+-       serialisable.serialise(value)
++       serialisable.serialise(value)
+
+=       serialisable.serialise(value)
+-     ```
++     ```
+
+-     `is`, `Self` and the preposition names are all that a typeclass's user sees; the
+-     traits matter to its author, who chooses which members to declare. A typeclass's
+-     *definition* mixes in the traits; its *uses* read as prose. The compiler, however,
+-     reports the desugared form — a mismatch is described as `{ type Form = Json }` rather
+-     than `in Json` — which is the one place the translation runs the other way.
++     型クラスの利用者に見えるのは、`is`、`Self`、そして前置詞の名前だけである。トレイトが重要なのは、どのメンバーを宣言するかを選ぶ型クラスの作者にとってである。
++     型クラスの*定義*はトレイトをミックスインし、その*使用*は散文として読める。
++     しかしコンパイラは脱糖した形を報告する（不一致は `in Json` ではなく `{ type Form = Json }` と記述される）。ここが、変換が逆向きに行われる唯一の場所である。
+
+-     A type is built up one clause at a time, and each clause is a refinement the previous
+-     type already admits. The same given is found at every step; what changes is how much
+-     the caller knows about it:
++     型は一度に一つの節ずつ組み立てられ、各節は前の型がすでに認める細分化である。
++     どの段階でも同じ given が見つかる。変わるのは、呼び出し側がそれについてどれだけ知っているかである：
+
+-     ```scala fuel
++     ```scala fuel
+
+=     ```scala fuel
+-     frame
++     frame
+
+-       label The bare typeclass: an instance, with every member still abstract
++       label むき出しの型クラス：すべてのメンバーがまだ抽象的なインスタンス
+
+=       label The bare typeclass: an instance, with every member still abstract
+-       code
++       code
+
+-           val anySerialiser: Serialisable = infer
++           val anySerialiser: Serialisable = infer
+
+=           val anySerialiser: Serialisable = infer
+-     frame
++     frame
+
+-       label `is` fixes the subject: an instance for `Int`
++       label `is` は対象を固定する：`Int` のためのインスタンス
+
+=       label `is` fixes the subject: an instance for `Int`
+-       code
++       code
+
+-           val forInt: Int is Serialisable = infer
++           val forInt: Int is Serialisable = infer
+
+=           val forInt: Int is Serialisable = infer
+-     frame
++     frame
+
+-       label `in` fixes the form: an instance for `Int`, in JSON
++       label `in` は形式を固定する：JSON での `Int` のためのインスタンス
+
+=       label `in` fixes the form: an instance for `Int`, in JSON
+-       code
++       code
+
+-           val forIntInJson: Int is Serialisable in Json = infer
++           val forIntInJson: Int is Serialisable in Json = infer
+
+=           val forIntInJson: Int is Serialisable in Json = infer
+-     frame
++     frame
+
+-       label `to` fixes the result, and the phrase is complete
++       label `to` は結果を固定し、句が完成する
+
+=       label `to` fixes the result, and the phrase is complete
+-       code
++       code
+
+-           val complete: Int is Serialisable in Json to Text = infer
++           val complete: Int is Serialisable in Json to Text = infer
+
+-           val rendered: Text = complete.serialise(42)
++           val rendered: Text = complete.serialise(42)
+
+-     ##
++     ##
+
+=     ##
+-     ```
++     ```
+
+-     Only in the last frame is `serialise`'s result known to be a `Text`: through
+-     `anySerialiser`, it is the abstract `Result`.
++     `serialise` の結果が `Text` であると分かるのは、最後のフレームだけである：`anySerialiser` を通じては、それは抽象的な `Result` である。
+
+-     The library is a single source set, `prepositional.core`, with no dependencies beyond
+-     `beneficence` (for `Findable`) and no platform-specific parts; it compiles for the JVM,
+-     Scala.js and Scala Native. Everything is exported to the `soundness` umbrella, and
+-     because every Soundness module compiles with `-Yimports:java.lang,proscenium`, the
+-     `is` that joins a subject to its typeclass is always in scope without an import.
++     このライブラリは単一のソースセット `prepositional.core` であり、`beneficence`（`Findable` のため）以外の依存を持たず、プラットフォーム固有の部分もない。JVM、Scala.js、Scala Native 向けにコンパイルされる。
++     すべては `soundness` アンブレラにエクスポートされ、すべての Soundness のモジュールは `-Yimports:java.lang,proscenium` でコンパイルされるので、対象をその型クラスに結び付ける `is` は、インポートなしで常にスコープにある。
+
+- refer prepositional.Typeclass
++ refer prepositional.Typeclass
+
+- refer prepositional.in
++ refer prepositional.in
+
+- refer prepositional.on
++ refer prepositional.on
+
+- refer prepositional.by
++ refer prepositional.by
+
+- refer prepositional.to
++ refer prepositional.to
+
+- entry .Typeclass   the base of every Soundness typeclass: an instance for a `Self` type
++ entry .Typeclass   すべての Soundness の型クラスの基底：ある `Self` 型のためのインスタンス
+
+= entry .Typeclass   the base of every Soundness typeclass: an instance for a `Self` type
+-   detail
++   detail
+
+-       A `Typeclass` declares one abstract type member, `#Self`, the type its instance is
+-       *for*. The prelude's infix `is` refines it, so `Text is Decodable` is the type
+-       `Decodable { type Self = Text }`, and a context bound `[value: Decodable in Json]`
+-       asks for an instance whose `Self` is `value` and whose `Form` is `Json`. Every
+-       Soundness typeclass — `Showable`, `Encodable`, `Comparable`, `Traversable` — extends
+-       it, together with the prepositional traits for whichever other members it needs.
++       `Typeclass` は抽象型メンバーを一つ、`#Self` を宣言する。これはそのインスタンスが*対象とする*型である。
++       プレリュードの中置の `is` がそれを細分化するので、`Text is Decodable` は型 `Decodable { type Self = Text }` であり、コンテキスト境界 `[value: Decodable in Json]` は、`Self` が `value` で `Form` が `Json` であるインスタンスを求める。
++       すべての Soundness の型クラス（`Showable`、`Encodable`、`Comparable`、`Traversable`）は、それが必要とする他のメンバーのための前置詞のトレイトとともに、これを継承する。
+
+=       it, together with the prepositional traits for whichever other members it needs.
+=
+-       ```scala
++       ```scala
+
+=       it, together with the prepositional traits for whichever other members it needs.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       trait Greetable extends Typeclass:
++       trait Greetable extends Typeclass:
+
+-         def greet(value: Self): Text
++         def greet(value: Self): Text
+
+-       given Text is Greetable = (name: Text) => t"Hello, $name"
++       given Text is Greetable = (name: Text) => t"Hello, $name"
+
+-       def welcome[value](value: value)(using greetable: value is Greetable): Text =
++       def welcome[value](value: value)(using greetable: value is Greetable): Text =
+
+-         greetable.greet(value)
++         greetable.greet(value)
+
+-       welcome(t"Hamlet")   // t"Hello, Hamlet"
++       welcome(t"Hamlet")   // t"Hello, Hamlet"
+
+=       welcome(t"Hamlet")   // t"Hello, Hamlet"
+-       ```
++       ```
+
+-       A `Typeclass` is *not* a pure type: many instances are built from capabilities — a
+-       `Tactic` for raising errors, an encoder, a backend — and retain them, so their
+-       captures are tracked rather than assumed away. An instance which holds only data and
+-       logic should extend `.Pure` instead, which the compiler verifies. Nor is it a
+-       capability class, so holding an instance in a companion or a `given` does not make
+-       the holder a capability.
++       `Typeclass` は純粋な型*ではない*：多くのインスタンスはケイパビリティ（エラーを発生させるための `Tactic`、エンコーダー、バックエンド）から構築され、それらを保持するので、そのキャプチャは無いものと仮定されるのではなく追跡される。
++       データとロジックだけを保持するインスタンスは、代わりに `.Pure` を継承すべきであり、コンパイラがそれを検証する。
++       また、これはケイパビリティのクラスでもないので、コンパニオンや `given` でインスタンスを保持しても、保持するものがケイパビリティになることはない。
+
+-       `Typeclass` extends `Findable`, beneficence's marker trait for a type whose values
+-       are supplied as contextual values (`System`, `Environment` and `Calendar` wear it
+-       too), so a typeclass instance is recognised as something to be found rather than
+-       constructed.
++       `Typeclass` は、値がコンテキスト値として供給される型に対する beneficence のマーカートレイトである `Findable` を継承する（`System`、`Environment`、`Calendar` もこれを持つ）。そのため、型クラスのインスタンスは、構築するものではなく見つけるものとして認識される。
+
+-   refer prepositional.Typeclass.Pure
++   refer prepositional.Typeclass.Pure
+
+-   entry .Pure   the typeclasses whose instances the compiler has verified hold no capability
+-       `Typeclass.Pure` extends `Typeclass` and `scala.caps.Pure`, so an instance whose body
+-       references a capability is rejected where it is defined: purity here is a checked
+-       fact, not an assertion. The typeclasses of comparison, arithmetic, hashing and
+-       collection traversal — anything that computes with its argument and nothing else —
+-       extend it; a typeclass whose instances may legitimately retain a `Tactic`, a
+-       filesystem or an encoder stays on plain `Typeclass`. A pure instance which must
+-       nonetheless hold one resolution-scoped capability names it in a single field marked
+-       `@caps.unsafe.untrackedCaptures`, which is narrower and more greppable than giving up
+-       purity for the whole instance.
++   entry .Pure   インスタンスがケイパビリティを保持しないことをコンパイラが検証した型クラス
++       `Typeclass.Pure` は `Typeclass` と `scala.caps.Pure` を継承するので、本体がケイパビリティを参照するインスタンスは、定義された場所で拒否される：ここでの純粋性は表明ではなく、検査された事実である。
++       比較、算術、ハッシュ、コレクションの走査の型クラス（引数を使って計算し、それ以外に何もしないもの）はこれを継承する。インスタンスが正当に `Tactic`、ファイルシステム、エンコーダーを保持しうる型クラスは、ただの `Typeclass` のままである。
++       それでも解決にスコープを持つケイパビリティを一つ保持しなければならない純粋なインスタンスは、それを `@caps.unsafe.untrackedCaptures` を付けた一つのフィールドで名指す。これは、インスタンス全体で純粋性をあきらめるよりも範囲が狭く、grep で見つけやすい。
+
+=       purity for the whole instance.
+=
+-       ```scala
++       ```scala
+
+=       purity for the whole instance.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       trait Doublable extends Typeclass.Pure:
++       trait Doublable extends Typeclass.Pure:
+
+-         def double(value: Self): Self
++         def double(value: Self): Self
+
+-       given Int is Doublable = (value: Int) => value*2
++       given Int is Doublable = (value: Int) => value*2
+
+=       given Int is Doublable = (value: Int) => value*2
+-       ```
++       ```
+
+-   entry #Self   the type the typeclass instance is for; refined by `is`
++   entry #Self   型クラスのインスタンスが対象とする型。`is` によって細分化される
+
+- entry .Formal   declares the `Form` member, which `in` refines
++ entry .Formal   `in` が細分化する `Form` メンバーを宣言する
+
+= entry .Formal   declares the `Form` member, which `in` refines
+-   detail
++   detail
+
+-       A typeclass extends `Formal` when its instances are specific to a *form* — a
+-       format, a representation, or a shape — chosen with `in`: `Text is Decodable in Json`,
+-       `Int is Encodable in Tel`, `Ordinal in xs.type`. The member may be declared
+-       `<: AnyKind`, in which case `in` can apply an unapplied type constructor
+-       (`self is Convertible in Map`).
+-   entry #Form   the form, format or representation an instance is specific to
++       型クラスは、そのインスタンスが `in` で選ばれる*形式*（フォーマット、表現、または形）に固有であるとき、`Formal` を継承する：`Text is Decodable in Json`、`Int is Encodable in Tel`、`Ordinal in xs.type`。
++       メンバーは `<: AnyKind` と宣言してもよく、その場合 `in` は適用されていない型コンストラクターを適用できる（`self is Convertible in Map`）。
++   entry #Form   インスタンスが固有である形式、フォーマット、または表現
+
+- entry .Planar   declares the `Plane` member, which `on` refines
++ entry .Planar   `on` が細分化する `Plane` メンバーを宣言する
+
+= entry .Planar   declares the `Plane` member, which `on` refines
+-   detail
++   detail
+
+-       A *plane* is the space a value lives on: a filesystem for a path (`Path on Linux`,
+-       `Path on Classpath`), a classloader's search space, or the nodes a graph is drawn
+-       over. A typeclass or a value type extends `Planar` so that `on` can name the plane,
+-       and galilei's filesystem policies (`CreateNonexistentParents`, `DeleteRecursively`)
+-       are `Planar` so that one policy is chosen per filesystem.
+-   entry #Plane   the space, such as a filesystem or a classpath, a value is located on
++       *プレーン*とは、値が存在する空間である：パスにとってのファイルシステム（`Path on Linux`、`Path on Classpath`）、クラスローダーの探索空間、あるいはグラフが描かれるノード。
++       型クラスや値の型は、`on` でプレーンを名指せるように `Planar` を継承する。galilei のファイルシステムのポリシー（`CreateNonexistentParents`、`DeleteRecursively`）は、ファイルシステムごとに一つのポリシーが選ばれるように `Planar` である。
++   entry #Plane   ファイルシステムやクラスパスなど、値が位置する空間
+
+- entry .Operable   declares the `Operand` member, which `by` refines
++ entry .Operable   `by` が細分化する `Operand` メンバーを宣言する
+
+= entry .Operable   declares the `Operand` member, which `by` refines
+-   detail
++   detail
+
+-       The *operand* is the other type an operation takes: the right-hand side of a binary
+-       operator (`Quantity is Multiplicable by Duration`), the element type of a collection
+-       (`List[Int] is Traversable by Int`), or the argument of a lookup. It is the most
+-       widely used of the members, extended by over forty typeclasses.
+-   entry #Operand   the other type an operation takes: a right operand, an element, an argument
++       *オペランド*とは、操作が受け取るもう一つの型である：二項演算子の右辺（`Quantity is Multiplicable by Duration`）、コレクションの要素の型（`List[Int] is Traversable by Int`）、あるいは検索の引数。
++       メンバーの中で最も広く使われており、四十を超える型クラスが継承している。
++   entry #Operand   操作が受け取るもう一つの型：右オペランド、要素、引数
+
+- entry .Resultant   declares the `Result` member, which `to` refines
++ entry .Resultant   `to` が細分化する `Result` メンバーを宣言する
+
+= entry .Resultant   declares the `Result` member, which `to` refines
+-   detail
++   detail
+
+-       The *result* is what an operation produces: `Quantity is Multiplicable by Duration to
+-       Quantity`, `self is Mandatable to result`, `Text is Decodable in Json to Record`. A
+-       typeclass whose operation returns a type that depends on the instance declares
+-       `Result` and the caller selects or reads it with `to`.
+-   entry #Result   the type an operation yields
++       *結果*とは、操作が生成するものである：`Quantity is Multiplicable by Duration to Quantity`、`self is Mandatable to result`、`Text is Decodable in Json to Record`。
++       操作がインスタンスに依存する型を返す型クラスは `Result` を宣言し、呼び出し側は `to` でそれを選ぶか読み取る。
++   entry #Result   操作がもたらす型
+
+- entry .Topical   declares the `Topic` member, which `of` refines
++ entry .Topical   `of` が細分化する `Topic` メンバーを宣言する
+
+= entry .Topical   declares the `Topic` member, which `of` refines
+-   detail
++   detail
+
+-       The *topic* is what a value is *about* or *of*: the tag of an HTML element (`Html of
+-       "br"`), the property an `ambience.Property` instance reads, the event a `Recurrent`
+-       describes, the field an `Annotated` instance was found on. It is the member for a
+-       literal or a phantom type that classifies a value without being contained in it.
+-   entry #Topic   what a value is about: a tag, a name, a classification
++       *トピック*とは、値が*何について*のものか、*何の*ものかである：HTML 要素のタグ（`Html of "br"`）、`ambience.Property` インスタンスが読むプロパティ、`Recurrent` が記述するイベント、`Annotated` インスタンスが見つかったフィールド。
++       値の中に含まれることなく値を分類するリテラル型や幻の型のためのメンバーである。
++   entry #Topic   値が何についてのものか：タグ、名前、分類
+
+- entry .Original   declares the `Origin` member, which `from` refines
++ entry .Original   `from` が細分化する `Origin` メンバーを宣言する
+
+= entry .Original   declares the `Origin` member, which `from` refines
+-   detail
++   detail
+
+-       The *origin* is where a value or a proof comes from: `self is Distinct from (Int |
+-       String)` (vacuous), a polyvinyl `Record` built from a `Specification`, an
+-       `Intensional` record whose fields derive from another type.
+-   entry #Origin   the type a value or a proof derives from
++       *起源*とは、値や証明がどこから来るかである：`self is Distinct from (Int | String)`（vacuous）、`Specification` から構築される polyvinyl の `Record`、フィールドが別の型から導かれる `Intensional` なレコード。
++   entry #Origin   値や証明が導かれる元の型
+
+- entry .Domainal   declares the `Domain` member, which `across` refines
++ entry .Domainal   `across` が細分化する `Domain` メンバーを宣言する
+
+= entry .Domainal   declares the `Domain` member, which `across` refines
+-   detail
++   detail
+
+-       The *domain* is the whole space a value ranges over: `Abstractable across Paths to
+-       Text` makes any path type abstract across the whole family of paths, and
+-       cacophony's `Pcm` and `Recording` are `Domainal` in the signal's domain. The
+-       preposition reads as "across the domain of".
+-   entry #Domain   the family or space a value ranges across
++       *ドメイン*とは、値が範囲とする空間全体である：`Abstractable across Paths to Text` は、任意のパスの型を、パスの族全体にわたって抽象的にする。cacophony の `Pcm` と `Recording` は、信号のドメインにおいて `Domainal` である。
++       この前置詞は「〜のドメインにわたって」と読む。
++   entry #Domain   値が範囲とする族または空間
+
+- entry .Transportive   declares the `Transport` member, which `over` refines
++ entry .Transportive   `over` が細分化する `Transport` メンバーを宣言する
+
+= entry .Transportive   declares the `Transport` member, which `over` refines
+-   detail
++   detail
+
+-       The *transport* is what a value is carried by or measured against: a stream's credit
+-       (`Streamable by Data over Credit`), a timeline (`Instant over Unix`), the format a
+-       `Parsable` reads over, the stage a superlunary `Stageable` value crosses. `over` is,
+-       with `in`, one of the two prepositions with no bound on the type it refines, so it
+-       attaches to any type; a type meant to be used with it extends `Transportive`.
+-   entry #Transport   what a value is carried over: a credit, a timeline, a format
++       *運搬*とは、値がそれによって運ばれる、またはそれに対して測られるものである：ストリームのクレジット（`Streamable by Data over Credit`）、時刻系（`Instant over Unix`）、`Parsable` が読む対象のフォーマット、superlunary の `Stageable` な値が越えるステージ。
++       `over` は、`in` とともに、細分化する型に上限を持たない二つの前置詞の一つなので、任意の型に付く。これとともに使うことを意図した型は `Transportive` を継承する。
++   entry #Transport   値が運ばれる媒体：クレジット、時刻系、フォーマット
+
+- entry .Targetable   declares the `Target` member, which `onto` refines
++ entry .Targetable   `onto` が細分化する `Target` メンバーを宣言する
+
+= entry .Targetable   declares the `Target` member, which `onto` refines
+-   detail
++   detail
+
+-       The *target* is what an operation lands on: the host-and-path target a telekinesis
+-       `Fetchable` URL resolves to, the registry a parasite `Interceptable` signal is routed
+-       onto, the response an obligatory `Associable` session is associated with. It differs
+-       from `Result` in being a destination rather than a product.
+-   entry #Target   the destination an operation lands on
++       *ターゲット*とは、操作が行き着く先である：telekinesis の `Fetchable` な URL が解決されるホストとパスのターゲット、parasite の `Interceptable` なシグナルが送られるレジストリ、obligatory の `Associable` なセッションが関連付けられるレスポンス。
++       生成物ではなく行き先である点で、`Result` とは異なる。
++   entry #Target   操作が行き着く行き先
+
+- entry .Contrastive   declares the `Contrast` member, which `against` refines
++ entry .Contrastive   `against` が細分化する `Contrast` メンバーを宣言する
+
+= entry .Contrastive   declares the `Contrast` member, which `against` refines
+-   detail
++   detail
+
+-       The *contrast* is what a value is compared against: hypotenuse's `Commensurable`
+-       has `Int is Commensurable against Double`, the typeclass of comparing two different
+-       numeric types.
+-   entry #Contrast   the type a value is compared against
++       *対照*とは、値が比較される相手である：hypotenuse の `Commensurable` には、異なる二つの数値型を比較する型クラスである `Int is Commensurable against Double` がある。
++   entry #Contrast   値が比較される相手の型
+
+- entry .Limited   declares the `Limit` member, which `under` refines
++ entry .Limited   `under` が細分化する `Limit` メンバーを宣言する
+
+= entry .Limited   declares the `Limit` member, which `under` refines
+-   detail
++   detail
+
+-       The *limit* is a bound a value is held under: nomenclature's `Nominative` names a
+-       value under a set of rules (`plane is Nominative under Rules`), and an adversaria `Annotated` field
+-       is found under its enclosing type.
+-   entry #Limit   a bound, a rule set or an enclosure a value is held under
++       *制限*とは、値がその下に置かれる限界である：nomenclature の `Nominative` は規則の集合の下で値に名前を付け（`plane is Nominative under Rules`）、adversaria の `Annotated` なフィールドは、それを囲む型の下で見つかる。
++   entry #Limit   値がその下に置かれる限界、規則の集合、または囲み
+
+- entry .Locative   declares the `Locus` member, which `at` refines
++ entry .Locative   `at` が細分化する `Locus` メンバーを宣言する
+
+= entry .Locative   declares the `Locus` member, which `at` refines
+-   detail
++   detail
+
+-       The *locus* is the place a value is at: the path an apoplexy `Api` is served at
+-       (`Api at "/"`), the location a distillate `Decodable` instance decodes at, the
+-       position a phoenicia `Typesettable` text is set at.
+-   entry #Locus   the place, position or address a value is at
++       *所在*とは、値がある場所である：apoplexy の `Api` が提供されるパス（`Api at "/"`）、distillate の `Decodable` インスタンスがデコードする場所、phoenicia の `Typesettable` なテキストが組まれる位置。
++   entry #Locus   値がある場所、位置、またはアドレス
+
+- entry .in   `refined in form`: refines the `Form` member
+-     `refined in form` is `refined { type Form = form }`, the preposition for a format or
+-     representation: `Text is Decodable in Json`, `value is Encodable in Tel`, `Ordinal in
+-     xs.type` (denominative's confined index). It is deliberately unbounded, and its `form`
+-     parameter admits any kind, so a `Form` declared `<: AnyKind` can be refined with an
+-     unapplied type constructor, `self is Convertible in Map`. Because it is unbounded, it
+-     will also attach to a type with no `Form` member, producing a refinement nothing reads:
+-     a typeclass which means to be used with `in` extends `Formal`.
++ entry .in   `refined in form`：`Form` メンバーを細分化する
++     `refined in form` は `refined { type Form = form }` であり、フォーマットや表現のための前置詞である：`Text is Decodable in Json`、`value is Encodable in Tel`、`Ordinal in xs.type`（denominative の限定されたインデックス）。
++     意図的に上限を持たず、その `form` パラメーターは任意のカインドを認めるので、`<: AnyKind` と宣言された `Form` は、適用されていない型コンストラクターで細分化できる：`self is Convertible in Map`。
++     上限を持たないので、`Form` メンバーのない型にも付き、誰も読まない細分化を生む：`in` とともに使うことを意図した型クラスは `Formal` を継承する。
+
+=     a typeclass which means to be used with `in` extends `Formal`.
+=
+-     ```scala
++     ```scala
+
+=     a typeclass which means to be used with `in` extends `Formal`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val decoder: Text is Decodable in Json = infer
++     val decoder: Text is Decodable in Json = infer
+
+=     val decoder: Text is Decodable in Json = infer
+-     ```
++     ```
+
+- entry .on   `refined on plane`: refines the `Plane` member
+-     `refined on plane` is `refined { type Plane = plane }`, for a type which extends
+-     `Planar`: `Path on Linux`, `Path on Classpath`, `Classloader` as `Findable on
+-     Classpath`. The bound is enforced, so `on` cannot be attached to a type without a
+-     `Plane`.
++ entry .on   `refined on plane`：`Plane` メンバーを細分化する
++     `refined on plane` は `refined { type Plane = plane }` であり、`Planar` を継承する型のためのものである：`Path on Linux`、`Path on Classpath`、`Findable on Classpath` としての `Classloader`。
++     上限が強制されるので、`Plane` のない型に `on` を付けることはできない。
+
+=     `Plane`.
+=
+-     ```scala
++     ```scala
+
+=     `Plane`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val path: Path on Linux = t"/etc/hosts".as[Path on Linux]
++     val path: Path on Linux = t"/etc/hosts".as[Path on Linux]
+
+=     val path: Path on Linux = t"/etc/hosts".as[Path on Linux]
+-     ```
++     ```
+
+- entry .by   `refined by operand`: refines the `Operand` member
+-     `refined by operand` is `refined { type Operand = operand }`, for a type which extends
+-     `Operable`: `Quantity is Multiplicable by Duration`, `List[Int] is Traversable by Int`,
+-     `Data is Streamable by Data`. The operand is the *other* type an operation takes.
++ entry .by   `refined by operand`：`Operand` メンバーを細分化する
++     `refined by operand` は `refined { type Operand = operand }` であり、`Operable` を継承する型のためのものである：`Quantity is Multiplicable by Duration`、`List[Int] is Traversable by Int`、`Data is Streamable by Data`。
++     オペランドは、操作が受け取る*もう一つの*型である。
+
+- entry .to   `refined to result`: refines the `Result` member
+-     `refined to result` is `refined { type Result = result }`, for a type which extends
+-     `Resultant`: `Int is Addable by Int to Int`, `Optional[Text] is Mandatable to Text`.
+-     Written last in a phrase by convention, since it names what comes out.
++ entry .to   `refined to result`：`Result` メンバーを細分化する
++     `refined to result` は `refined { type Result = result }` であり、`Resultant` を継承する型のためのものである：`Int is Addable by Int to Int`、`Optional[Text] is Mandatable to Text`。
++     出てくるものを名指すので、慣例として句の最後に書く。
+
+=     Written last in a phrase by convention, since it names what comes out.
+=
+-     ```scala
++     ```scala
+
+=     Written last in a phrase by convention, since it names what comes out.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val sum: Int is Addable by Int to Int = infer
++     val sum: Int is Addable by Int to Int = infer
+
+=     val sum: Int is Addable by Int to Int = infer
+-     ```
++     ```
+
+- entry .of   `refined of topic`: refines the `Topic` member
+-     `refined of topic` is `refined { type Topic = topic }`, for a type which extends
+-     `Topical`: `Html of "br"`, `Property of "java.home"`, `Typeface of "sans-serif"`. The
+-     topic is usually a literal type which classifies the value.
++ entry .of   `refined of topic`：`Topic` メンバーを細分化する
++     `refined of topic` は `refined { type Topic = topic }` であり、`Topical` を継承する型のためのものである：`Html of "br"`、`Property of "java.home"`、`Typeface of "sans-serif"`。
++     トピックは通常、値を分類するリテラル型である。
+
+- entry .from   `refined from origin`: refines the `Origin` member
+-     `refined from origin` is `refined { type Origin = origin }`, for a type which extends
+-     `Original`: `Int is Distinct from String` (vacuous's proof that a type is not a member
+-     of a union), `Record from Specification` (polyvinyl).
++ entry .from   `refined from origin`：`Origin` メンバーを細分化する
++     `refined from origin` は `refined { type Origin = origin }` であり、`Original` を継承する型のためのものである：`Int is Distinct from String`（型がユニオンのメンバーでないことを示す vacuous の証明）、`Record from Specification`（polyvinyl）。
+
+- entry .across   `refined across domain`: refines the `Domain` member
+-     `refined across domain` is `refined { type Domain = domain }`, for a type which extends
+-     `Domainal`: `Abstractable across Paths to Text`, `Instantiable across Urls from Text`.
+-     The domain is a family of types the instance covers as a whole.
++ entry .across   `refined across domain`：`Domain` メンバーを細分化する
++     `refined across domain` は `refined { type Domain = domain }` であり、`Domainal` を継承する型のためのものである：`Abstractable across Paths to Text`、`Instantiable across Urls from Text`。
++     ドメインは、インスタンスが全体として扱う型の族である。
+
+- entry .over   `refined over transport`: refines the `Transport` member
+-     `refined over transport` is `refined { type Transport = transport }`: `Streamable by
+-     Data over Credit`, `Instant over Unix`, `Html.Element of "ul" over "li"`. Like `in` it
+-     is unbounded, so it attaches to any type; a type which means to be used with it
+-     extends `Transportive`.
++ entry .over   `refined over transport`：`Transport` メンバーを細分化する
++     `refined over transport` は `refined { type Transport = transport }` である：`Streamable by Data over Credit`、`Instant over Unix`、`Html.Element of "ul" over "li"`。
++     `in` と同じく上限を持たないので、任意の型に付く。これとともに使うことを意図した型は `Transportive` を継承する。
+
+- entry .onto   `refined onto target`: refines the `Target` member
+-     `refined onto target` is `refined { type Target = target }`, for a type which extends
+-     `Targetable`: a telekinesis `Fetchable` URL `onto` its target, a parasite
+-     `Interceptable` signal `onto` its registry.
++ entry .onto   `refined onto target`：`Target` メンバーを細分化する
++     `refined onto target` は `refined { type Target = target }` であり、`Targetable` を継承する型のためのものである：そのターゲット `onto` の telekinesis の `Fetchable` な URL、そのレジストリ `onto` の parasite の `Interceptable` なシグナル。
+
+- entry .against   `refined against contrast`: refines the `Contrast` member
+-     `refined against contrast` is `refined { type Contrast = contrast }`, for a type which
+-     extends `Contrastive`: `Int is Commensurable against Double`.
++ entry .against   `refined against contrast`：`Contrast` メンバーを細分化する
++     `refined against contrast` は `refined { type Contrast = contrast }` であり、`Contrastive` を継承する型のためのものである：`Int is Commensurable against Double`。
+
+- entry .under   `refined under limit`: refines the `Limit` member
+-     `refined under limit` is `refined { type Limit = limit }`, for a type which extends
+-     `Limited`: `plane is Nominative under Rules` (nomenclature), `Dot.Id is Nominative
+-     under Dot.Identifier["a valid DOT identifier"]` (acyclicity), an adversaria `Annotated`
+-     field under its enclosing type.
++ entry .under   `refined under limit`：`Limit` メンバーを細分化する
++     `refined under limit` は `refined { type Limit = limit }` であり、`Limited` を継承する型のためのものである：`plane is Nominative under Rules`（nomenclature）、`Dot.Id is Nominative under Dot.Identifier["a valid DOT identifier"]`（acyclicity）、それを囲む型の下にある adversaria の `Annotated` なフィールド。
+
+- entry .at   `refined at locus`: refines the `Locus` member
+-     `refined at locus` is `refined { type Locus = locus }`, for a type which extends
+-     `Locative`: `Api at "/"` (apoplexy), a distillate `Decodable` instance `at` the
+-     location it decodes.
++ entry .at   `refined at locus`：`Locus` メンバーを細分化する
++     `refined at locus` は `refined { type Locus = locus }` であり、`Locative` を継承する型のためのものである：`Api at "/"`（apoplexy）、デコードする場所 `at` の distillate の `Decodable` インスタンス。
+
+- entry .Prepositional   the library's marker object; it has no members
+-     An empty object which exists so that the `prepositional` package has a stable, named
+-     term to refer to. It is not used in code.
++ entry .Prepositional   このライブラリのマーカーオブジェクト。メンバーはない
++     `prepositional` パッケージが参照すべき安定した名前付きの項を持つために存在する空のオブジェクトである。
++     コードの中では使われない。

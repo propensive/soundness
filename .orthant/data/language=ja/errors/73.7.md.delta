@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.73.7` — Time literal: minutes must be two digits
++ # `↯/s.73.7` — 時刻のリテラル：分は 2 桁でなければならない
+
+- Raised by Aviation's `validTime` macro when the literal does not
+- have exactly two minute digits after the decimal point.
++ リテラルの小数点の後に分の桁がちょうど 2 桁ないときに、Aviation の `validTime` マクロが発生させる。
+
+- ## Cause
++ ## 原因
+
+- The macro inspects the source text of the literal and requires the
+- form `<hour>.<mm>` where `<mm>` is two digits.
++ マクロはリテラルのソーステキストを調べ、`<mm>` が 2 桁である `<hour>.<mm>` の形を要求する。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.73.7] the time should have exactly two minutes digits
++ [↯/s.73.7] the time should have exactly two minutes digits
+
+= [↯/s.73.7] the time should have exactly two minutes digits
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Pad the minutes to two digits (e.g. write `9.05` rather than `9.5`).
++ 分を 2 桁に埋める（たとえば `9.5` ではなく `9.05` と書く）。
+
+- ## See also
++ ## 関連項目
+
+- - The other time literal errors: [Families](README.md#families)
+- - Source: `lib/aviation/src/core/aviation.internal.scala`
++ - ほかの時刻のリテラルのエラー：[ファミリー](README.md#families)
++ - ソース：`lib/aviation/src/core/aviation.internal.scala`

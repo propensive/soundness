@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.24.3` — `Validation`
++ # `↯/s.24.3` — `Validation`
+
+- Raised when one or more validation messages are collected against
+- specific document or structure pointers.
++ ドキュメントや構造の特定のポインターに対して、一つ以上の検証メッセージが集められたときに発生する。
+
+- ## Cause
++ ## 原因
+
+- `Validation` carries a list of `(Pointer, Message)` pairs, each
+- identifying a location and the issue at that location. It is used
+- in pipelines that walk a structure and accumulate failures rather
+- than aborting on the first.
++ `Validation` は `(Pointer, Message)` の組のリストを運ぶ。それぞれが位置と、その位置での問題を示す。
++ これは、最初の失敗で中断するのではなく、構造をたどって失敗を蓄積するパイプラインで使われる。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.24.3] /name: the value was not set; /age: the value was not in range
++ [↯/s.24.3] /name: the value was not set; /age: the value was not in range
+
+= [↯/s.24.3] /name: the value was not set; /age: the value was not in range
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Iterate over the embedded pairs to surface each message at its
+- pointer; correct the source structure.
++ 埋め込まれた組を反復し、各メッセージをそのポインターの位置で示す。元の構造を修正する。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/contingency/src/core/contingency.Validation.scala`
++ - ソース：`lib/contingency/src/core/contingency.Validation.scala`

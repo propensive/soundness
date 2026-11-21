@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.27.9` — `U8` value above 255
++ # `↯/s.27.9` — 255 を超える `U8` の値
+
+- Raised at compile time by Hypotenuse's `u8` macro when the value
+- exceeds `255`.
++ 値が `255` を超えるときに、Hypotenuse の `u8` マクロがコンパイル時に発生させる。
+
+- ## Cause
++ ## 原因
+
+- A `U8` (unsigned 8-bit) is bounded above by `255`. The macro's
+- upper-bound check uses `0xffff` for the literal range constant,
+- but the documented type bound is `255`.
++ `U8`（符号なし 8 ビット）の上限は `255` である。
++ マクロの上限の検査はリテラルの範囲の定数に `0xffff` を使っているが、文書化された型の上限は `255` である。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.27.9] a U8 may not be greater than 65535
++ [↯/s.27.9] a U8 may not be greater than 65535
+
+= [↯/s.27.9] a U8 may not be greater than 65535
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Provide a value in the range 0-255.
++ 0-255 の範囲の値を与える。
+
+- ## See also
++ ## 関連項目
+
+- - The other integer literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - ほかの整数のリテラルのエラー：[ファミリー](README.md#families)
++ - ソース：`lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

@@ -1,0 +1,180 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base vexillology
++ base vexillology
+
+- import soundness
++ import soundness
+
+- info   sets of an enumeration's cases packed into the bits of one `Long`, tested and set by case
++ info   一つの `Long` のビットに詰め込まれ、ケースごとに検査し設定する、列挙型のケースの集合
+
+- detail
++ detail
+
+-     _Vexillology_ gives bit flags a typed surface. `Flags[Color]` is a set of on-or-off
+-     flags over the cases of the enumeration `Color`, held in the bits of a single `Long`,
+-     each case owning the bit of its ordinal. A flag is tested and set by naming the case
+-     rather than by a magic bit number, so a bit which means something else, or nothing,
+-     cannot be reached; and the value stays one machine word — free to copy, cheap to store,
+-     natural in a binary format — where a `Set[Color]` would allocate.
++     _Vexillology_ は、ビットフラグに型付きの表面を与える。
++     `Flags[Color]` は列挙型 `Color` のケースに対するオンかオフのフラグの集合であり、一つの `Long` のビットに保持され、それぞれのケースは自分の序数のビットを持つ。
++     フラグは魔法のビット番号ではなくケースを名指しして検査し設定するので、別のことを意味するビットや、何も意味しないビットには到達できない。そして値は一つのマシンワードのままであり、コピーはただ、格納は安価で、バイナリ形式にも自然に収まる。`Set[Color]` ならアロケーションが発生するところである。
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     enum Color:
++     enum Color:
+
+-       case Red, Orange, Yellow, Green, Blue, Indigo, Violet
++       case Red, Orange, Yellow, Green, Blue, Indigo, Violet
+
+-     import Color.*
++     import Color.*
+
+-     var flags = Flags[Color]()
++     var flags = Flags[Color]()
+
+-     flags = flags(Orange) = true
++     flags = flags(Orange) = true
+
+-     flags = flags(Green) = true
++     flags = flags(Green) = true
+
+-     flags(Orange)   // true
++     flags(Orange)   // true
+
+-     flags(Red)      // false
++     flags(Red)      // false
+
+-     flags.set       // Set(Orange, Green)
++     flags.set       // Set(Orange, Green)
+
+-     ```
++     ```
+
+-     A `Flags` value is immutable: each assignment makes a new one, so the variable is
+-     reassigned with the update syntax, `flags = flags(Orange) = true`. The operations need
+-     the enumeration to be `Enumerable`, which every Scala 3 `enum` of singleton cases is.
++     `Flags` の値は不変である。代入するたびに新しい値が作られるので、変数は更新の構文 `flags = flags(Orange) = true` で再代入される。
++     操作には列挙型が `Enumerable` であることが必要であり、シングルトンのケースからなる Scala 3 の `enum` はすべてそうである。
+
+-     The library has a single source set, `vexillology.core`, and everything is exported to
+-     the `soundness` umbrella.
++     ライブラリには一つのソースセット `vexillology.core` があり、すべては `soundness` アンブレラにエクスポートされる。
+
+- refer vexillology.Flags
++ refer vexillology.Flags
+
+- entry .Flags   a set of an enumeration's cases, packed as bits into one `Long`
++ entry .Flags   列挙型のケースの集合で、ビットとして一つの `Long` に詰め込まれる
+
+= entry .Flags   a set of an enumeration's cases, packed as bits into one `Long`
+-   detail
++   detail
+
+-       `Flags[Enumeration]` is the opaque type `vexillology.internal.Flags`, exported here: a
+-       `Long` in which bit *n* is set when the enumeration's case of ordinal *n* is in the
+-       set. `Flags[Color]()` is the empty set, and three extension methods, in implicit scope
+-       without any import, use it:
++       `Flags[Enumeration]` は、ここにエクスポートされている不透明型 `vexillology.internal.Flags` である。序数 *n* の列挙型のケースが集合に含まれるとき、ビット *n* が立つ `Long` である。
++       `Flags[Color]()` は空の集合であり、インポートなしに暗黙のスコープにある三つの拡張メソッドがそれを使う。
+
+-       - `flags(case)` tests whether a case is set;
+-       - `flags(case) = enabled` (that is, `flags.update(case, enabled)`) makes a new value
+-         with the case set or cleared;
+-       - `flags.set` reads the flags out as an ordinary `Set` of the cases.
++       - `flags(case)` は、ケースが立っているかどうかを検査する。
++       - `flags(case) = enabled`（つまり `flags.update(case, enabled)`）は、ケースを立てた、あるいは消した新しい値を作る。
++       - `flags.set` は、フラグをケースの普通の `Set` として読み出す。
+
+-       ```scala
++       ```scala
+
+-       import soundness.*
++       import soundness.*
+
+-       enum Permission:
++       enum Permission:
+
+-         case Read, Write, Execute
++         case Read, Write, Execute
+
+-       val none = Flags[Permission]()
++       val none = Flags[Permission]()
+
+-       val readable = none(Permission.Read) = true
++       val readable = none(Permission.Read) = true
+
+-       val both = readable(Permission.Write) = true
++       val both = readable(Permission.Write) = true
+
+-       both(Permission.Write)   // true
++       both(Permission.Write)   // true
+
+-       both.set.size            // 2
++       both.set.size            // 2
+
+-       ```
++       ```
+
+-       A `Long` has 64 bits, so an enumeration of up to 64 cases fits. Beyond that, a case's
+-       bit position wraps around and it shares a bit with a lower case: there is no check.
+-       Each method takes a case of a singleton type, so an enum case with parameters cannot
+-       be a flag.
++       `Long` は 64 ビットなので、最大 64 個のケースを持つ列挙型が収まる。
++       それを超えると、ケースのビットの位置は一周して、それより下のケースとビットを共有する。検査はない。
++       各メソッドはシングルトン型のケースを取るので、パラメーターを持つ enum のケースはフラグになれない。
+
+-   refer vexillology.internal
++   refer vexillology.internal
+
+- entry .internal   the home of the opaque `Flags` type and its operations
++ entry .internal   不透明な `Flags` 型とその操作の置き場所
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object exists to hold the opaque type `Flags` and the
+-       extension methods on it, which are in implicit scope wherever a `Flags` is, since they
+-       share its enclosing object. `Flags` is exported from here to the `vexillology`
+-       package, whose page has the full account.
+-   entry .Flags   a set of an enumeration's cases packed into a `Long`; see `vexillology.Flags`
++       直接使うためのものではない。このオブジェクトは、不透明型 `Flags` とその上の拡張メソッドを保持するために存在する。拡張メソッドは `Flags` を囲むオブジェクトを共有しているので、`Flags` があるところならどこでも暗黙のスコープにある。
++       `Flags` はここから `vexillology` パッケージにエクスポートされており、その説明はそちらのページにある。
++   entry .Flags   `Long` に詰め込まれた、列挙型のケースの集合。`vexillology.Flags` を参照
+
+-     detail
++     detail
+
+-         The opaque type over `Long`. Its page under the `vexillology` package has the full
+-         account.
+-     entry .apply   the empty set of flags over an enumeration, with no bit set, `Flags[Color]()`
+-   entry .apply   whether a case is set in some flags, `flags(case)`
+-       Needs the enumeration to be `Enumerable`, to find the case's ordinal.
+-   entry .update   a copy of some flags with a case set or cleared, `flags(case) = enabled`
+-       Returns the new `Flags` rather than changing the receiver, so a variable holding the
+-       flags is reassigned: `flags = flags(Orange) = true`.
+-   entry .set   the cases set in some flags, as a `Set` of the enumeration
+-       Visits only the set bits, lowest first.
++         `Long` の上の不透明型である。
++         その説明は `vexillology` パッケージの下のページにある。
++     entry .apply   列挙型に対する、ビットが一つも立っていない空のフラグの集合。`Flags[Color]()`
++   entry .apply   フラグの中でケースが立っているかどうか。`flags(case)`
++       ケースの序数を見つけるため、列挙型が `Enumerable` であることが必要である。
++   entry .update   ケースを立てた、あるいは消したフラグのコピー。`flags(case) = enabled`
++       レシーバを変更するのではなく新しい `Flags` を返すので、フラグを保持する変数は再代入される。`flags = flags(Orange) = true` である。
++   entry .set   フラグの中で立っているケースを、列挙型の `Set` として返す
++       立っているビットだけを、低いほうから順に訪れる。

@@ -1,0 +1,41 @@
+orthant 1 language
+
+- # `↯/s.17.2` — Type has multiple `map` methods
++ # `↯/s.17.2` — 型が複数の `map` メソッドを持つ
+
+- Raised at compile time by Mercator's `functor` macro when the
+- target type has more than one `map` overload, and the macro cannot
+- choose between them.
++ 対象の型が `map` のオーバーロードを二つ以上持ち、マクロがその中から選べないときに、Mercator の `functor` マクロによってコンパイル時に発生する。
+
+- ## Cause
++ ## 原因
+
+- Multiple `map` overloads are ambiguous for derivation purposes.
++ `map` の複数のオーバーロードは、導出の目的にとって曖昧である。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.17.2] the type Play has more than one possible map method
++ [↯/s.17.2] the type Play has more than one possible map method
+
+= [↯/s.17.2] the type Play has more than one possible map method
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Remove or rename overloads, or supply a `Functor` instance manually.
++ オーバーロードを取り除くか名前を変えるか、`Functor` インスタンスを手で提供する。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/mercator/src/core/mercator.internal.scala`
++ - ソース：`lib/mercator/src/core/mercator.internal.scala`

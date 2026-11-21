@@ -1,0 +1,2800 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base escritoire
++ base escritoire
+
+- import soundness
++ import soundness
+
+- info   tables for the terminal: columns which wrap, truncate or collapse to fit a width, drawn in a chosen style
++ info   ターミナルのための表：幅に合わせて折り返し、切り詰め、折りたたまれる列を、選んだスタイルで描く
+
+- detail
++ detail
+
+-     _Escritoire_ renders tabular data as text, for a terminal or a log, taking seriously the
+-     part that a format string cannot: fitting columns of uneven content into a fixed width.
+-     Each column declares a **sizing strategy** — wrap as a paragraph, truncate with an
+-     ellipsis, hold a fixed width, or collapse entirely when space runs out — and the layout
+-     engine negotiates the width between them, wrapping with hyphenation where wrapping is
+-     allowed, and drawing the result with box characters in a `Table.Style` chosen in scope.
++     _Escritoire_ は表形式のデータを、ターミナルやログのためのテキストとして描画する。
++     書式文字列にはできない部分、つまり内容の幅がまちまちな列を固定の幅に収めることに真剣に取り組む。
++     それぞれの列は **サイズ決定方式** を宣言する。
++     段落として折り返す、省略記号で切り詰める、固定幅を保つ、場所が足りなくなれば丸ごと折りたたまれる、のいずれかである。
++     レイアウトエンジンは列の間で幅を調停し、折り返しが許される所ではハイフネーションを使って折り返し、結果をスコープ内で選ばれた `Table.Style` の罫線文字で描く。
+
+-     Three types carry a table from definition to text. A `Scaffold` says how a row type is
+-     put into `Column`s — titles, content, alignment, sizing — and holds no data. A
+-     `Tabulation` is data arranged by a scaffold: the cells' text, no longer referring to the
+-     row type. A `Grid` is a tabulation fitted to one width, which is where a column may
+-     shrink or vanish, and `Grid#render` is the lines. The `tabulation` extension derives the
+-     scaffold for a case class — a column per field, titled from the field names — and
+-     applies it in one step:
++     三つの型が、表を定義からテキストへと運ぶ。
++     `Scaffold` は、行の型をどのように `Column` に分けるか（タイトル、内容、配置、サイズ）を述べ、データは保持しない。
++     `Tabulation` はスカフォールドによって並べられたデータであり、セルのテキストだけを持ち、もはや行の型を参照しない。
++     `Grid` は一つの幅に合わせたタビュレーションであり、列が縮んだり消えたりするのはここである。
++     `Grid#render` がその行の並びになる。
++     `tabulation` 拡張メソッドはケースクラスに対するスカフォールドを導出し（フィールドごとに一列、タイトルはフィールド名から作る）、一度に適用する。
+
+=     applies it in one step:
+=
+-     ```scala
++     ```scala
+
+=     applies it in one step:
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     applies it in one step:
+=
+=     ```scala
+=     import soundness.*
+-     import tableStyles.thinRoundedTableStyle
++     import tableStyles.thinRoundedTableStyle
+
+=     applies it in one step:
+=
+=     ```scala
+=     import soundness.*
+=     import tableStyles.thinRoundedTableStyle
+-     import textMetrics.uniformMetric
++     import textMetrics.uniformMetric
+
+=     applies it in one step:
+=
+=     ```scala
+=     import soundness.*
+=     import tableStyles.thinRoundedTableStyle
+=     import textMetrics.uniformMetric
+-     import columnAttenuation.ignoreAttenuation
++     import columnAttenuation.ignoreAttenuation
+
+=     applies it in one step:
+=
+=     ```scala
+=     import soundness.*
+=     import tableStyles.thinRoundedTableStyle
+=     import textMetrics.uniformMetric
+=     import columnAttenuation.ignoreAttenuation
+=
+-     case class Person(name: Text, age: Int)
++     case class Person(name: Text, age: Int)
+
+-     val people: List[Person] = List(Person(t"Poins", 30), Person(t"Hal", 16))
++     val people: List[Person] = List(Person(t"Poins", 30), Person(t"Hal", 16))
+
+-     people.tabulation.grid(40).render.to[List]
++     people.tabulation.grid(40).render.to[List]
+
+-     // ╭───────┬─────╮
++     // ╭───────┬─────╮
+
+-     // │ Name  │ Age │
++     // │ Name  │ Age │
+
+-     // ├───────┼─────┤
++     // ├───────┼─────┤
+
+-     // │ Poins │  30 │
++     // │ Poins │  30 │
+
+-     // │ Hal   │  16 │
++     // │ Hal   │  16 │
+
+-     // ╰───────┴─────╯
++     // ╰───────┴─────╯
+
+=     // ╰───────┴─────╯
+-     ```
++     ```
+
+-     Laying out a table needs four contextual values, three of which are chosen by importing
+-     a given by name, since `import soundness.*` imports no givens:
++     表をレイアウトするには四つのコンテキスト値が必要である。
++     `import soundness.*` は given をインポートしないので、そのうち三つは given を名前でインポートして選ぶ。
+
+-     - a `Table.Style`, from the `tableStyles` package — the rules, corners and padding;
+-     - an `Attenuation`, from `columnAttenuation` — what happens when no arrangement of the
+-       columns fits the width: `ignoreAttenuation` renders anyway, `failAttenuation` raises
+-       `Table.Error`;
+-     - a `Text is Measurable`, from hieroglyph's `textMetrics` — how wide a character is, so
+-       that `wideCharacterWidthMetric` sizes CJK text by its two-cell glyphs;
+-     - a `Hyphenation`, from polysyllabic, which falls back to no hyphenation unless
+-       `hyphenations.englishHyphenation` is imported.
++     - `tableStyles` パッケージの `Table.Style`：罫線、角、パディング。
++     - `columnAttenuation` の `Attenuation`：列をどう並べても幅に収まらないときに何が起きるか。`ignoreAttenuation` はそれでも描画し、`failAttenuation` は `Table.Error` を発生させる。
++     - hieroglyph の `textMetrics` の `Text is Measurable`：文字の幅。`wideCharacterWidthMetric` は CJK テキストを二セル幅のグリフとして測る。
++     - polysyllabic の `Hyphenation`：`hyphenations.englishHyphenation` をインポートしない限り、ハイフネーションなしになる。
+
+-     The cell type is any `Textual` whose elements are `Char`: `Text`, or escapade's
+-     `Teletype` for colour and style, in which case a cell's width is its visible width, not
+-     the length of its escape codes. A table is `Printable`, so `Out.println(table)` lays it
+-     out at the terminal's own width.
++     セルの型は、要素が `Char` である任意の `Textual` である。
++     `Text` か、色やスタイルのための escapade の `Teletype` であり、後者の場合、セルの幅はエスケープコードの長さではなく見た目の幅である。
++     表は `Printable` なので、`Out.println(table)` はターミナル自身の幅で表をレイアウトする。
+
+-     The library is one source set, `escritoire.core`, built for the JVM, Scala.js and Scala
+-     Native. Everything is exported to the `soundness` umbrella except `Layout` and `Cells`,
+-     which are the incremental layout engine's own vocabulary and are named as
+-     `escritoire.Layout` and `escritoire.Cells`, and the three choice packages `tableStyles`,
+-     `columnAttenuation` and `columnar` merge with the umbrella's packages of the same names
+-     (the umbrella's `columnar` mirrors every strategy but `ParagraphOrBreak`, which is named
+-     as `escritoire.columnar.ParagraphOrBreak`).
++     このライブラリは一つのソースセット `escritoire.core` からなり、JVM、Scala.js、Scala Native 向けにビルドされる。
++     `Layout` と `Cells` を除くすべてが `soundness` アンブレラにエクスポートされる。
++     この二つはインクリメンタルなレイアウトエンジン固有の語彙であり、`escritoire.Layout` と `escritoire.Cells` として名指しする。
++     三つの選択パッケージ `tableStyles`、`columnAttenuation`、`columnar` は、アンブレラの同名のパッケージに統合される（アンブレラの `columnar` は `ParagraphOrBreak` 以外のすべての方式を反映しており、`ParagraphOrBreak` は `escritoire.columnar.ParagraphOrBreak` として名指しする）。
+
+- refer escritoire.Scaffold
++ refer escritoire.Scaffold
+
+- refer escritoire.Column
++ refer escritoire.Column
+
+- refer escritoire.Tabulation
++ refer escritoire.Tabulation
+
+- refer escritoire.Grid
++ refer escritoire.Grid
+
+- refer escritoire.Tabulable
++ refer escritoire.Tabulable
+
+- refer escritoire.tableStyles
++ refer escritoire.tableStyles
+
+- refer escritoire.columnar
++ refer escritoire.columnar
+
+- entry .Scaffold   how a row type is put into columns: a table definition which holds no data
++ entry .Scaffold   行の型をどのように列に分けるか：データを保持しない表の定義
+
+= entry .Scaffold   how a row type is put into columns: a table definition which holds no data
+-   detail
++   detail
+
+-       A `Scaffold[row, text]` is an ordered list of `Column[row, text]`s, built with
+-       `Scaffold[row](columns*)`: the row type is given, and the text type — `Text` or
+-       `Teletype` — is inferred from the titles. It is the stage before data: `#tabulate` applies
+-       it to a `List[row]` to make a `Tabulation`, and `#layout` solves the column widths of the
+-       titles alone, for a table which admits its rows one at a time.
++       `Scaffold[row, text]` は `Column[row, text]` の順序付きリストであり、`Scaffold[row](columns*)` で作る。
++       行の型は明示し、テキストの型（`Text` または `Teletype`）はタイトルから推論される。
++       これはデータの前の段階である。
++       `#tabulate` はこれを `List[row]` に適用して `Tabulation` を作り、`#layout` はタイトルだけから列の幅を解く。後者は行を一つずつ受け入れる表のためである。
+
+=       titles alone, for a table which admits its rows one at a time.
+=
+-       ```scala
++       ```scala
+
+=       titles alone, for a table which admits its rows one at a time.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       titles alone, for a table which admits its rows one at a time.
+=
+=       ```scala
+=       import soundness.*
+-       import tableStyles.thinRoundedTableStyle
++       import tableStyles.thinRoundedTableStyle
+
+=       titles alone, for a table which admits its rows one at a time.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+=       titles alone, for a table which admits its rows one at a time.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+-       import columnAttenuation.ignoreAttenuation
++       import columnAttenuation.ignoreAttenuation
+
+=       titles alone, for a table which admits its rows one at a time.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       val scaffold: Scaffold[Person, Text] =
++       val scaffold: Scaffold[Person, Text] =
+
+-         Scaffold[Person]
++         Scaffold[Person]
+
+=         Scaffold[Person]
+-           ( Column(t"Name")(_.name),
++           ( Column(t"Name")(_.name),
+
+-             Column(t"Age")(_.age) )
++             Column(t"Age")(_.age) )
+
+-       scaffold.tabulate(List(Person(t"Poins", 30), Person(t"Hal", 16))).grid(40).render.to[List]
++       scaffold.tabulate(List(Person(t"Poins", 30), Person(t"Hal", 16))).grid(40).render.to[List]
+
+=       scaffold.tabulate(List(Person(t"Poins", 30), Person(t"Hal", 16))).grid(40).render.to[List]
+-       ```
++       ```
+
+-       A `Tabulable` instance for a type is a function returning its scaffold, so a type whose
+-       columns are not its fields — a record read from a schema, or computed display columns —
+-       is tabulated by giving one. The derived instance for a case class builds a scaffold with
+-       one column per field.
++       ある型に対する `Tabulable` インスタンスは、その型のスカフォールドを返す関数である。
++       そのため、列がフィールドではない型（スキーマから読んだレコードや、計算で求める表示用の列など）は、インスタンスを一つ与えれば表にできる。
++       ケースクラスに対して導出されるインスタンスは、フィールドごとに一列のスカフォールドを作る。
+
+=       one column per field.
+-   refer escritoire.Column
++   refer escritoire.Column
+
+=   refer escritoire.Column
+-   refer escritoire.Tabulation
++   refer escritoire.Tabulation
+
+=   refer escritoire.Tabulation
+-   refer escritoire.Layout
++   refer escritoire.Layout
+
+-   entry .apply   `Scaffold[row](columns*)`: a scaffold of the given columns, in order
+-       The row type is the one explicit type argument; the text type is inferred from the
+-       columns, which all share it. A title written as `t"…"` makes a `Scaffold[row, Text]`; one
+-       written as `e"…"` makes a `Scaffold[row, Teletype]`. The method takes an erased `Void`
+-       parameter between its two type-parameter lists only so that the row type can be given
+-       without the text type.
+-   entry #columns0   the columns, as given to the constructor
+-       The repeated parameter the scaffold was built from; `#columns` is the same columns as
+-       an array, which is what the layout engine reads.
+-   entry #columns   the columns, as an array, in order
+-   entry #titles   the title cells, one row of them, each title cut into its lines
+-       A title may contain `\n`, which makes a title of several lines; the titles are held
+-       as a single-element list so that they can be measured and rendered like any row.
+-   entry #cells   a row phrased through the columns, ahead of any layout
+-       `scaffold.cells(row)` reads every column's content from the row, cuts each into lines
+-       and measures their widths, giving a `Cells[text]`. The cells are independent of any
+-       width, so they can be tested against a `Layout` with `Layout#accommodates`, admitted
+-       with `Layout#extend`, and rendered against it later. Needs a `Text is Measurable`.
+-   entry #layout   the layout of the titles alone, at a width
+-       `scaffold.layout(width)` solves the column widths from the titles' claims and nothing
+-       else, for a table which is built incrementally: each row is then phrased with `#cells`
+-       and admitted with `Layout#extend`, which re-solves the widths only when the row's cells
+-       exceed what the layout has already seen. Needs a `Table.Style`, a `Text is Measurable`
+-       and an `Attenuation` in scope.
++   entry .apply   `Scaffold[row](columns*)`：与えた列からなる、その順のスカフォールド
++       行の型は唯一の明示的な型引数であり、テキストの型は列から推論され、すべての列がそれを共有する。
++       `t"…"` と書いたタイトルは `Scaffold[row, Text]` を作り、`e"…"` と書いたタイトルは `Scaffold[row, Teletype]` を作る。
++       このメソッドが二つの型パラメーターリストの間に消去された `Void` パラメーターを取るのは、テキストの型を与えずに行の型だけを与えられるようにするためにすぎない。
++   entry #columns0   コンストラクターに与えられたとおりの列
++       スカフォールドの構築に使われた可変長パラメーターである。
++       `#columns` は同じ列を配列にしたもので、レイアウトエンジンはそちらを読む。
++   entry #columns   配列としての列、順序どおり
++   entry #titles   タイトルのセルの一行。各タイトルは行に分けられている
++       タイトルには `\n` を含めることができ、それによって複数行のタイトルになる。
++       タイトルは、他の行と同じように測定し描画できるよう、要素が一つのリストとして保持される。
++   entry #cells   レイアウトの前に、列を通して表現した一行
++       `scaffold.cells(row)` は行からすべての列の内容を読み、それぞれを行に分けて幅を測り、`Cells[text]` を与える。
++       セルはどの幅にも依存しないので、`Layout#accommodates` で `Layout` と照らし合わせ、`Layout#extend` で受け入れ、後でそれに対して描画できる。
++       `Text is Measurable` が必要である。
++   entry #layout   ある幅での、タイトルだけのレイアウト
++       `scaffold.layout(width)` は、タイトルの要求だけから列の幅を解く。
++       これはインクリメンタルに構築する表のためのものである。
++       その後、各行を `#cells` で表現して `Layout#extend` で受け入れる。
++       `Layout#extend` は、行のセルがそのレイアウトの既に見たものを超えるときにだけ幅を解き直す。
++       スコープ内に `Table.Style`、`Text is Measurable`、`Attenuation` が必要である。
+
+=       and an `Attenuation` in scope.
+=
+-       ```scala
++       ```scala
+
+=       and an `Attenuation` in scope.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       and an `Attenuation` in scope.
+=
+=       ```scala
+=       import soundness.*
+-       import tableStyles.thinRoundedTableStyle
++       import tableStyles.thinRoundedTableStyle
+
+=       and an `Attenuation` in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+=       and an `Attenuation` in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+-       import columnAttenuation.ignoreAttenuation
++       import columnAttenuation.ignoreAttenuation
+
+=       and an `Attenuation` in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+=       and an `Attenuation` in scope.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+=       case class Person(name: Text, age: Int)
+-       val scaffold = Scaffold[Person](Column(t"Name")(_.name), Column(t"Age")(_.age))
++       val scaffold = Scaffold[Person](Column(t"Name")(_.name), Column(t"Age")(_.age))
+
+-       val titles = scaffold.layout(40)
++       val titles = scaffold.layout(40)
+
+-       val row = scaffold.cells(Person(t"Cleopatra", 38))
++       val row = scaffold.cells(Person(t"Cleopatra", 38))
+
+-       titles.accommodates(row)           // false: the name is wider than the title
++       titles.accommodates(row)           // false: the name is wider than the title
+
+-       val layout = titles.extend(row)    // re-solved with the wider claim
++       val layout = titles.extend(row)    // re-solved with the wider claim
+
+-       layout.lines(row, Nil)             // the row's lines at the settled widths
++       layout.lines(row, Nil)             // the row's lines at the settled widths
+
+=       layout.lines(row, Nil)             // the row's lines at the settled widths
+-       ```
++       ```
+
+-   entry #tabulate   the scaffold applied to data: a `Tabulation`
+-       `scaffold.tabulate(rows)` reads every column of every row into text at once, and
+-       records each row's cell decorations, so the result refers to the row type only as its
+-       `Row` type member. The row count is taken once, when the tabulation is built.
++   entry #tabulate   データに適用したスカフォールド：`Tabulation`
++       `scaffold.tabulate(rows)` はすべての行のすべての列を一度にテキストへ読み込み、各行のセルの装飾を記録する。
++       そのため結果は、行の型を `Row` 型メンバーとしてしか参照しない。
++       行数は、タビュレーションを構築したときに一度だけ数えられる。
+
+- entry .Column   one column of a table: its title, how it reads a cell from a row, and how it is sized
++ entry .Column   表の一列：タイトル、行からセルを読む方法、サイズの決め方
+
+= entry .Column   one column of a table: its title, how it reads a cell from a row, and how it is sized
+-   detail
++   detail
+
+-       A `Column[row, text]` is a title, a function `#get` from the row to the cell's text, a
+-       horizontal and a vertical alignment, a `Columnar` sizing strategy, and an optional
+-       per-row `#decorate` applied to the whole rendered cell. The factory `Column.apply` is
+-       the usual way to make one; the case-class constructor takes every field explicitly.
++       `Column[row, text]` は、タイトル、行からセルのテキストへの関数 `#get`、水平と垂直の配置、`Columnar` のサイズ決定方式、そして描画したセル全体に適用する行ごとの省略可能な `#decorate` からなる。
++       ふつうはファクトリー `Column.apply` で作る。
++       ケースクラスのコンストラクターはすべてのフィールドを明示的に取る。
+
+=       the usual way to make one; the case-class constructor takes every field explicitly.
+=
+-       ```scala
++       ```scala
+
+=       the usual way to make one; the case-class constructor takes every field explicitly.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       the usual way to make one; the case-class constructor takes every field explicitly.
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       val name: Column[Person, Text] = Column(t"Name")(_.name)
++       val name: Column[Person, Text] = Column(t"Name")(_.name)
+
+-       val age: Column[Person, Text] = Column(t"Age", sizing = columnar.Collapsible(0.5))(_.age)
++       val age: Column[Person, Text] = Column(t"Age", sizing = columnar.Collapsible(0.5))(_.age)
+
+-       val note: Column[Person, Text] =
++       val note: Column[Person, Text] =
+
+-         Column(t"Note", textAlign = TextAlignment.Justify, sizing = columnar.Paragraph): person =>
++         Column(t"Note", textAlign = TextAlignment.Justify, sizing = columnar.Paragraph): person =>
+
+-           t"${person.name} is ${person.age}"
++           t"${person.name} is ${person.age}"
+
+=           t"${person.name} is ${person.age}"
+-       ```
++       ```
+
+-       The lambda's result need not be text: the title fixes the text type, and the value is
+-       shown through that type's `Show`, so `_.age` gives a column of `Int`s shown as text.
+-       The default alignment comes from `Column.Alignment[cell]` — numbers right, text left —
+-       unless `textAlign` or `verticalAlign` is given.
++       ラムダの結果はテキストでなくてもよい。
++       タイトルがテキストの型を決め、値はその型の `Show` を通して表示されるので、`_.age` はテキストとして表示される `Int` の列になる。
++       `textAlign` や `verticalAlign` を与えない限り、既定の配置は `Column.Alignment[cell]` から来る（数値は右、テキストは左）。
+
+=       unless `textAlign` or `verticalAlign` is given.
+-   refer escritoire.Columnar
++   refer escritoire.Columnar
+
+=   refer escritoire.Columnar
+-   refer escritoire.columnar
++   refer escritoire.columnar
+
+=   refer escritoire.columnar
+-   refer escritoire.Scaffold
++   refer escritoire.Scaffold
+
+-   entry .apply   `Column(title, textAlign, verticalAlign, sizing, decorate)(get)`: makes a column
+-       The first parameter list is the title and four optional settings; the second is the
+-       function from the row to the cell value, which is shown through the title's `Textual`
+-       type's `Show`. `textAlign` and `verticalAlign` default to the `Column.Alignment` given
+-       for the cell type (`topLeft` where none is defined); `sizing` defaults to
+-       `columnar.Paragraph`; `decorate` defaults to no decoration.
++   entry .apply   `Column(title, textAlign, verticalAlign, sizing, decorate)(get)`：列を作る
++       最初のパラメーターリストはタイトルと四つの省略可能な設定であり、二つ目は行からセルの値への関数である。
++       セルの値は、タイトルの `Textual` 型の `Show` を通して表示される。
++       `textAlign` と `verticalAlign` の既定値は、セルの型に対して与えられた `Column.Alignment` である（定義がなければ `topLeft`）。
++       `sizing` の既定値は `columnar.Paragraph`、`decorate` の既定値は装飾なしである。
+
+-       `decorate` is a function from the row to an optional transformation of the rendered
+-       cell — content and padding together, after alignment — so a `Teletype` table can paint a
+-       whole cell's background by row, and the padding is painted too:
++       `decorate` は、行から、描画したセル（配置の後の、内容とパディングを合わせたもの）に対する省略可能な変換への関数である。
++       そのため `Teletype` の表は、行に応じてセル全体の背景を塗ることができ、パディングも塗られる。
+
+=       whole cell's background by row, and the padding is painted too:
+=
+-       ```scala
++       ```scala
+
+=       whole cell's background by row, and the padding is painted too:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       whole cell's background by row, and the padding is painted too:
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       val highlighted: Column[Person, Teletype] =
++       val highlighted: Column[Person, Teletype] =
+
+-         Column
++         Column
+
+-           ( e"Name",
++           ( e"Name",
+
+-             decorate = person => if person.age > 18 then (line: Teletype) => e"$Bold($line)" else Unset )
++             decorate = person => if person.age > 18 then (line: Teletype) => e"$Bold($line)" else Unset )
+
+-           ( _.name )
++           ( _.name )
+
+=           ( _.name )
+-       ```
++       ```
+
+-       The row type is inferred from the lambda or given explicitly as
+-       `Column[Person, Text, Text](t"Name")(_.name)`, whose three type arguments are the row,
+-       the cell value and the text type.
+-   entry .Alignment   the default text and vertical alignment for a cell type
++       行の型はラムダから推論されるか、`Column[Person, Text, Text](t"Name")(_.name)` のように明示的に与える。
++       三つの型引数は、行、セルの値、テキストの型である。
++   entry .Alignment   セルの型に対する、既定のテキスト配置と垂直配置
+
+=   entry .Alignment   the default text and vertical alignment for a cell type
+-     detail
++     detail
+
+-         `Column.Alignment[cell]` is the alignment a column of `cell` values takes when
+-         `Column.apply` is given neither `textAlign` nor `verticalAlign`: `Byte`, `Short`, `Int`
+-         and `Long` are right-aligned, `Text` left, all at the top. The givens are in the
+-         companion, so a column of `Int`s is right-aligned without an import; `topLeft` is the
+-         default for any other type. It is contravariant in the cell type, so an alignment for
+-         `Any` serves every type.
++         `Column.Alignment[cell]` は、`Column.apply` に `textAlign` も `verticalAlign` も与えないときに、`cell` の値の列が取る配置である。
++         `Byte`、`Short`、`Int`、`Long` は右揃え、`Text` は左揃えで、いずれも上に寄る。
++         given はコンパニオンにあるので、`Int` の列はインポートなしで右揃えになる。
++         他のすべての型の既定は `topLeft` である。
++         セルの型について反変なので、`Any` に対する配置はすべての型に使える。
+
+=         `Any` serves every type.
+=
+-         ```scala
++         ```scala
+
+=         `Any` serves every type.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         import soundness.*
+=
+-         case class Person(name: Text, age: Int)
++         case class Person(name: Text, age: Int)
+
+-         Column[Person, Int, Text](t"Age")(_.age).textAlign    // TextAlignment.Right
++         Column[Person, Int, Text](t"Age")(_.age).textAlign    // TextAlignment.Right
+
+-         Column[Person, Text, Text](t"Name")(_.name).textAlign // TextAlignment.Left
++         Column[Person, Text, Text](t"Name")(_.name).textAlign // TextAlignment.Left
+
+=         Column[Person, Text, Text](t"Name")(_.name).textAlign // TextAlignment.Left
+-         ```
++         ```
+
+-     entry .topLeft   left-aligned, at the top: the default for a type with no alignment of its own
+-     entry .byte   `Byte` cells align right
+-     entry .short   `Short` cells align right
+-     entry .int   `Int` cells align right
+-     entry .long   `Long` cells align right
+-     entry .text   `Text` cells align left
+-     entry #text   the horizontal alignment: `Left`, `Right`, `Center` or `Justify`
+-     entry #vertical   the vertical alignment: `Top`, `Middle` or `Bottom`
+-   entry #title   the column's heading, in the table's text type
+-   entry #get   the cell's text for a row
+-       The function from the row to the cell, already shown as text. In a column made with
+-       `Column.apply`, this is the lambda composed with the cell type's `Show`.
+-   entry #textAlign   how a cell's lines sit within the column's width
+-   entry #verticalAlign   where a short cell sits in a row that other cells have made taller
+-   entry #sizing   the `Columnar` strategy which decides the column's claim on the width
+-   entry #decorate   a per-row transformation of the rendered cell, or `Unset` for none
+-       Applied by the renderer after alignment and padding, to the whole cell including its
+-       gutter, so a background painted here covers the cell edge to edge while the rules stay
+-       undecorated. The renderer knows nothing of styling: the function is in the table's own
+-       text type.
+-   entry #contramap   the same column reading from another row type
+-       `column.contramap(lambda)` adapts a column defined for one row type to any type from
+-       which `lambda` can produce that row, keeping the title, alignment, sizing and
+-       decoration. This is how a column defined once serves every type which can supply its
+-       value:
++     entry .topLeft   左揃えで上寄せ：独自の配置を持たない型の既定
++     entry .byte   `Byte` のセルは右揃え
++     entry .short   `Short` のセルは右揃え
++     entry .int   `Int` のセルは右揃え
++     entry .long   `Long` のセルは右揃え
++     entry .text   `Text` のセルは左揃え
++     entry #text   水平配置：`Left`、`Right`、`Center`、`Justify` のいずれか
++     entry #vertical   垂直配置：`Top`、`Middle`、`Bottom` のいずれか
++   entry #title   列の見出し。表のテキストの型で表す
++   entry #get   ある行に対するセルのテキスト
++       行からセルへの関数で、既にテキストとして表示されたものを返す。
++       `Column.apply` で作った列では、これはラムダとセルの型の `Show` を合成したものである。
++   entry #textAlign   セルの各行が列の幅の中でどう収まるか
++   entry #verticalAlign   他のセルによって高くなった行の中で、短いセルがどこに位置するか
++   entry #sizing   列の幅に対する要求を決める `Columnar` 方式
++   entry #decorate   描画したセルに対する行ごとの変換。なければ `Unset`
++       配置とパディングの後に、レンダラーが余白を含むセル全体に適用する。
++       そのため、ここで塗った背景はセルを端から端まで覆い、罫線は装飾されないままである。
++       レンダラーはスタイルについて何も知らず、関数は表自身のテキストの型で書かれる。
++   entry #contramap   別の行の型から読む、同じ列
++       `column.contramap(lambda)` は、ある行の型に対して定義された列を、`lambda` がその行を作り出せる任意の型に適応させる。
++       タイトル、配置、サイズ、装飾は保たれる。
++       こうして、一度定義した列が、その値を供給できるすべての型に使える。
+
+=       value:
+=
+-       ```scala
++       ```scala
+
+=       value:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       value:
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       val nameColumn: Column[Text, Text] = Column[Text, Text, Text](t"Name")(identity)
++       val nameColumn: Column[Text, Text] = Column[Text, Text, Text](t"Name")(identity)
+
+-       val personName: Column[Person, Text] = nameColumn.contramap[Person](_.name)
++       val personName: Column[Person, Text] = nameColumn.contramap[Person](_.name)
+
+=       val personName: Column[Person, Text] = nameColumn.contramap[Person](_.name)
+-       ```
++       ```
+
+-   entry #retitle   the same column with another title
+-       For a shared table definition where one caller wants a different heading. The derived
+-       `Tabulable` for a case class uses it to title each field's column.
++   entry #retitle   タイトルだけを変えた同じ列
++       共有された表の定義で、ある呼び出し側だけが別の見出しを望む場合のためのものである。
++       ケースクラスに対して導出される `Tabulable` は、これを使って各フィールドの列にタイトルを付ける。
+
+- entry .Columnar   a column-sizing strategy: how a column claims width, and how a cell is fitted to it
++ entry .Columnar   列のサイズ決定方式：列がどのように幅を要求し、セルがどのようにそれに合わせられるか
+
+= entry .Columnar   a column-sizing strategy: how a column claims width, and how a cell is fitted to it
+-   detail
++   detail
+
+-       A `Columnar` answers two questions. `#flex` describes the column's claim on the table's
+-       width — its minimum and natural widths, its appetite for spare space, and whether it may
+-       collapse entirely — from the aggregate `Metrics` of every line the column will display.
+-       `#fit` then arranges one cell's lines into the width the table settled on: wrapping,
+-       chopping, shortening with an ellipsis, or leaving them as they are.
++       `Columnar` は二つの問いに答える。
++       `#flex` は、列が表示するすべての行の集約 `Metrics` から、表の幅に対する列の要求を記述する。
++       つまり、最小幅と自然な幅、余った幅をどれだけ欲しがるか、丸ごと折りたたまれてよいかである。
++       次に `#fit` が、一つのセルの行を表が決めた幅に並べる。
++       折り返す、切り落とす、省略記号で短くする、そのままにする、のいずれかである。
+
+-       The claim is a function of the aggregate metrics alone, which are the max-fold of each
+-       line's own, so a layout can carry the aggregate, admit a new row by folding its cells
+-       in, and know — through `#accommodates` — when a row cannot move the column at all. The
+-       strategies provided are in the `columnar` package: `Paragraph`, `ParagraphOrBreak`,
+-       `Fixed`, `Shortened` and `Collapsible`. The concept is open: a strategy of one's own is
+-       an object or class extending `Columnar` which implements `flex(metrics, maxWidth)` and
+-       `fit`.
++       要求は集約メトリクスだけの関数であり、集約メトリクスは各行のメトリクスの最大値を畳み込んだものである。
++       そのためレイアウトは集約を持ち運び、新しい行のセルを畳み込んで受け入れることができ、`#accommodates` によって、ある行が列をまったく動かせない場合を知ることができる。
++       用意されている方式は `columnar` パッケージにある：`Paragraph`、`ParagraphOrBreak`、`Fixed`、`Shortened`、`Collapsible`。
++       この概念は開かれており、独自の方式は `Columnar` を継承し `flex(metrics, maxWidth)` と `fit` を実装するオブジェクトかクラスである。
+
+-       The widths are solved by tessellate's `Flex.solve`: while the columns' minima cannot fit
+-       the width, the collapsible column of lowest rank is dropped; the survivors then share
+-       the width in proportion to their weight, within their bounds.
++       幅は tessellate の `Flex.solve` が解く。
++       列の最小幅の合計が幅に収まらない間は、ランクが最も低い折りたたみ可能な列が取り除かれる。
++       残った列は、その範囲内で、重みに比例して幅を分け合う。
+
+=       the width in proportion to their weight, within their bounds.
+-   refer escritoire.columnar
++   refer escritoire.columnar
+
+=   refer escritoire.columnar
+-   refer escritoire.Column
++   refer escritoire.Column
+
+-   entry .metrics   the aggregate intrinsic widths of some lines
+-       `Columnar.metrics(lines)` is the max-fold of each line's `Flow.metrics`: a `Metrics`
+-       whose `min` is the widest unbreakable word and whose `natural` is the widest line.
+-       Every strategy's claim derives from it. Needs a `Text is Measurable`.
+-   entry #flex   the column's claim on the width, from its content's metrics
+-       The abstract form, `flex(metrics, maxWidth)`, returns a tessellate `Flex`: the column's
+-       minimum and natural widths, its weight when spare space is shared, an optional maximum,
+-       and whether it collapses, with a rank saying how readily. The overload taking an array
+-       of lines measures them with `Columnar.metrics` first.
+-   entry #accommodates   whether a cell is already within the column's aggregate claim
+-       `accommodates(aggregate, cell)` is true when admitting a cell with intrinsic widths
+-       `cell` leaves the claim — and so the solved widths — unchanged: by default, when its
+-       minimum and natural widths are both within the aggregate's. A strategy whose claim
+-       ignores its content overrides it to `true`, as `columnar.Fixed` does.
+-   entry #fit   one cell's lines arranged into the width the column settled on
+-       `fit(lines, width, textAlign)` gives the lines a cell displays at `width`: wrapped,
+-       chopped, shortened or unchanged, according to the strategy. Needs a `Text is
+-       Measurable` and a `Hyphenation`, which the wrapping strategies use at soft breaks.
++   entry .metrics   いくつかの行の、集約された固有の幅
++       `Columnar.metrics(lines)` は各行の `Flow.metrics` の最大値を畳み込んだものである。
++       その `Metrics` の `min` は分割できない最も広い単語であり、`natural` は最も広い行である。
++       どの方式の要求もここから導かれる。
++       `Text is Measurable` が必要である。
++   entry #flex   内容のメトリクスから求める、幅に対する列の要求
++       抽象形の `flex(metrics, maxWidth)` は tessellate の `Flex` を返す。
++       それは、列の最小幅と自然な幅、余った幅を分け合うときの重み、省略可能な最大幅、そして折りたたまれるかどうかと、その折りたたまれやすさを示すランクからなる。
++       行の配列を取るオーバーロードは、まず `Columnar.metrics` でそれを測る。
++   entry #accommodates   セルが既に列の集約された要求の範囲内にあるかどうか
++       `accommodates(aggregate, cell)` は、固有の幅が `cell` であるセルを受け入れても要求（したがって解かれた幅）が変わらないときに真になる。
++       既定では、セルの最小幅と自然な幅がともに集約の範囲内にあるときである。
++       要求が内容を無視する方式は、`columnar.Fixed` のように、これを `true` にオーバーライドする。
++   entry #fit   列が決めた幅に並べた、一つのセルの行
++       `fit(lines, width, textAlign)` は、セルが `width` で表示する行を与える。
++       方式に応じて、折り返され、切り落とされ、短くされ、あるいはそのままである。
++       `Text is Measurable` と `Hyphenation` が必要であり、折り返す方式はソフトブレークで後者を使う。
+
+- entry .columnar   the sizing strategies, each a `Columnar` to name in a `Column`'s `sizing`
++ entry .columnar   サイズ決定方式。それぞれが `Column` の `sizing` で名指しする `Columnar` である
+
+= entry .columnar   the sizing strategies, each a `Columnar` to name in a `Column`'s `sizing`
+-   detail
++   detail
+
+-       The strategies a column may be given, as `sizing = columnar.Paragraph`. They are
+-       objects and case classes, not givens, so `columnar.Paragraph` is named at the column;
+-       the package exists to keep the five names together. Every `Column` defaults to
+-       `Paragraph`.
++       列に与えられる方式で、`sizing = columnar.Paragraph` のように書く。
++       これらは given ではなくオブジェクトやケースクラスなので、`columnar.Paragraph` は列のところで名指しする。
++       このパッケージは五つの名前をまとめておくためにある。
++       どの `Column` も既定は `Paragraph` である。
+
+-       Which column goes first when the table is too narrow is decided by the strategies
+-       together: a `Collapsible` column is dropped before anything else is squeezed, highest
+-       threshold first; a `Paragraph` column shrinks to its longest word; a `Fixed` column never
+-       moves. Below the width at which the minima fit, the `Attenuation` in scope decides what
+-       happens.
++       表が狭すぎるとき、どの列が先に譲るかは方式どうしで決まる。
++       `Collapsible` の列は、他の何かが詰められる前に、しきい値の高いものから取り除かれる。
++       `Paragraph` の列は最長の単語まで縮む。
++       `Fixed` の列は決して動かない。
++       最小幅が収まる幅を下回ると、スコープ内の `Attenuation` が何が起きるかを決める。
+
+=       happens.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label Four columns at a width which holds them all
++         label すべてを収められる幅での四つの列
+
+=         label Four columns at a width which holds them all
+-         code
++         code
+
+-             import soundness.*
++             import soundness.*
+
+-             import tableStyles.thinRoundedTableStyle
++             import tableStyles.thinRoundedTableStyle
+
+-             import textMetrics.uniformMetric
++             import textMetrics.uniformMetric
+
+-             import columnAttenuation.ignoreAttenuation
++             import columnAttenuation.ignoreAttenuation
+
+-             case class Codebase(name: Text, id: Text, lines: Int, description: Text)
++             case class Codebase(name: Text, id: Text, lines: Int, description: Text)
+
+-             val codebases = List
++             val codebases = List
+
+-               ( Codebase(t"Gossamer", t"gossamer", 4200, t"Statically-checked text operations"),
++               ( Codebase(t"Gossamer", t"gossamer", 4200, t"Statically-checked text operations"),
+
+-                 Codebase(t"Escritoire", t"escritoire", 1900, t"Tabular layout for the terminal") )
++                 Codebase(t"Escritoire", t"escritoire", 1900, t"Tabular layout for the terminal") )
+
+-             val scaffold = Scaffold[Codebase]
++             val scaffold = Scaffold[Codebase]
+
+-               ( Column(t"Name")(_.name),
++               ( Column(t"Name")(_.name),
+
+-                 Column(t"Identifier", sizing = columnar.Collapsible(0.9))(_.id),
++                 Column(t"Identifier", sizing = columnar.Collapsible(0.9))(_.id),
+
+-                 Column(t"Lines", sizing = columnar.Collapsible(0.3))(_.lines),
++                 Column(t"Lines", sizing = columnar.Collapsible(0.3))(_.lines),
+
+-                 Column(t"Description", sizing = columnar.Paragraph)(_.description) )
++                 Column(t"Description", sizing = columnar.Paragraph)(_.description) )
+
+-             scaffold.tabulate(codebases).grid(80).render.to[List]
++             scaffold.tabulate(codebases).grid(80).render.to[List]
+
+=             scaffold.tabulate(codebases).grid(80).render.to[List]
+-       frame
++       frame
+
+-         label Narrower: the identifier, the most collapsible column, is dropped first
++         label より狭く：最も折りたたまれやすい列である識別子が最初に取り除かれる
+
+=         label Narrower: the identifier, the most collapsible column, is dropped first
+-         code
++         code
+
+-             scaffold.tabulate(codebases).grid(60).render.to[List]
++             scaffold.tabulate(codebases).grid(60).render.to[List]
+
+=             scaffold.tabulate(codebases).grid(60).render.to[List]
+-       frame
++       frame
+
+-         label Narrower still: the description wraps, since a paragraph shrinks before a collapsible column with a low threshold goes
++         label さらに狭く：段落はしきい値の低い折りたたみ可能な列が消えるより先に縮むので、説明が折り返される
+
+=         label Narrower still: the description wraps, since a paragraph shrinks before a collapsible column with a low threshold goes
+-         code
++         code
+
+-             scaffold.tabulate(codebases).grid(44).render.to[List]
++             scaffold.tabulate(codebases).grid(44).render.to[List]
+
+=             scaffold.tabulate(codebases).grid(44).render.to[List]
+-       frame
++       frame
+
+-         label At the narrowest, the line count goes too, and only the name and the wrapped description remain
++         label 最も狭いときには行数も消え、名前と折り返された説明だけが残る
+
+=         label At the narrowest, the line count goes too, and only the name and the wrapped description remain
+-         code
++         code
+
+-             scaffold.tabulate(codebases).grid(30).render.to[List]
++             scaffold.tabulate(codebases).grid(30).render.to[List]
+
+=             scaffold.tabulate(codebases).grid(30).render.to[List]
+-       ##
++       ##
+
+=             scaffold.tabulate(codebases).grid(30).render.to[List]
+=       ##
+-       ```
++       ```
+
+=       ```
+-   refer escritoire.Columnar
++   refer escritoire.Columnar
+
+=   refer escritoire.Columnar
+-   refer escritoire.Column
++   refer escritoire.Column
+
+-   entry .Paragraph   wraps at word boundaries; may shrink to its longest word, never grows past its longest line
+-       The default. Its claim is `Flex.content`: a minimum of the widest unbreakable word, a
+-       natural width of the widest line, and a weight equal to the difference, so a column with
+-       more to absorb takes more of the spare width. A cell is fitted with `Flow.wrap`, which
+-       breaks at spaces and at the `Hyphenation` in scope's soft breaks, and never below the
+-       minimum: a word longer than the width overflows rather than being cut.
+-   entry .ParagraphOrBreak   wraps at word boundaries where it can, and chops mid-word rather than overflow
+-       Elastic between a single cell and its natural width, so it has no longest-word floor:
+-       under enough pressure a cell narrower than its widest word is fitted with `Flow.chop`,
+-       cutting lines at the width, where `Paragraph` would overflow. For columns of
+-       identifiers, URLs or hashes which wrap badly but must not spill. It is not mirrored in
+-       the umbrella's `columnar` package, so it is named in full as
+-       `escritoire.columnar.ParagraphOrBreak`.
+-   entry .Fixed   a column exactly `fixedWidth` wide, whatever its content, shortened with an ellipsis
++   entry .Paragraph   単語の境界で折り返す。最長の単語まで縮むことはあるが、最長の行を超えて広がることはない
++       既定の方式である。
++       その要求は `Flex.content` である。
++       最小幅は分割できない最も広い単語、自然な幅は最も広い行、重みはその差であり、吸収すべきものが多い列ほど余った幅を多く取る。
++       セルは `Flow.wrap` で合わせられる。
++       これは空白と、スコープ内の `Hyphenation` のソフトブレークで改行し、最小幅を下回ることはない。
++       幅より長い単語は、切られるのではなくはみ出す。
++   entry .ParagraphOrBreak   可能なところでは単語の境界で折り返し、はみ出すくらいなら単語の途中で切る
++       一セルから自然な幅までの間で伸縮するので、最長の単語という下限がない。
++       十分な圧力がかかると、最も広い単語より狭いセルは `Flow.chop` で合わせられ、行が幅で切られる。
++       `Paragraph` ならはみ出すところである。
++       うまく折り返せないがはみ出してはならない識別子、URL、ハッシュの列のためのものである。
++       アンブレラの `columnar` パッケージには反映されていないので、`escritoire.columnar.ParagraphOrBreak` と完全な名前で名指しする。
++   entry .Fixed   内容にかかわらずちょうど `fixedWidth` の幅の列。省略記号で短くされる
+
+=   entry .Fixed   a column exactly `fixedWidth` wide, whatever its content, shortened with an ellipsis
+-     detail
++     detail
+
+-         The column's claim is rigid at `fixedWidth` and it accommodates every cell, since its
+-         width owes nothing to its content; a cell longer than the width is shortened with
+-         `Flow.shorten` and ends in `ellipsis` (`…` unless another is given).
++         列の要求は `fixedWidth` で固定されており、幅が内容に何も依存しないので、どのセルも受け入れる。
++         幅より長いセルは `Flow.shorten` で短くされ、`ellipsis` で終わる（別のものを与えない限り `…`）。
+
+=         `Flow.shorten` and ends in `ellipsis` (`…` unless another is given).
+=
+-         ```scala
++         ```scala
+
+=         `Flow.shorten` and ends in `ellipsis` (`…` unless another is given).
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         `Flow.shorten` and ends in `ellipsis` (`…` unless another is given).
+=
+=         ```scala
+=         import soundness.*
+-         import tableStyles.thinRoundedTableStyle
++         import tableStyles.thinRoundedTableStyle
+
+=         `Flow.shorten` and ends in `ellipsis` (`…` unless another is given).
+=
+=         ```scala
+=         import soundness.*
+=         import tableStyles.thinRoundedTableStyle
+-         import textMetrics.uniformMetric
++         import textMetrics.uniformMetric
+
+=         `Flow.shorten` and ends in `ellipsis` (`…` unless another is given).
+=
+=         ```scala
+=         import soundness.*
+=         import tableStyles.thinRoundedTableStyle
+=         import textMetrics.uniformMetric
+-         import columnAttenuation.ignoreAttenuation
++         import columnAttenuation.ignoreAttenuation
+
+-         val fixed = Scaffold[Text](Column[Text, Text, Text](t"Fixed", sizing = columnar.Fixed(6))(identity))
++         val fixed = Scaffold[Text](Column[Text, Text, Text](t"Fixed", sizing = columnar.Fixed(6))(identity))
+
+-         fixed.tabulate(List(t"abcdefghij")).grid(40).render.to[List]   // the cell shows as `abcde…`
++         fixed.tabulate(List(t"abcdefghij")).grid(40).render.to[List]   // the cell shows as `abcde…`
+
+=         fixed.tabulate(List(t"abcdefghij")).grid(40).render.to[List]   // the cell shows as `abcde…`
+-         ```
++         ```
+
+-     entry #fixedWidth   the width, in cells
+-     entry #ellipsis   the text which ends a shortened cell: `…` by default
+-   entry .Shortened   elastic between one cell and its natural width; whatever exceeds the settled width is cut with an ellipsis
++     entry #fixedWidth   セル数で表した幅
++     entry #ellipsis   短くされたセルの末尾に付くテキスト。既定は `…`
++   entry .Shortened   一セルから自然な幅までの間で伸縮し、決まった幅を超える部分は省略記号で切られる
+
+=   entry .Shortened   elastic between one cell and its natural width; whatever exceeds the settled width is cut with an ellipsis
+-     detail
++     detail
+
+-         Like `Fixed`, a cell which does not fit is shortened with an ellipsis, but the width is
+-         negotiated rather than fixed: the column claims its natural width, may shrink to a
+-         single cell, and takes spare width in proportion to the difference. `fixedWidth` names
+-         the field but is not a bound on the claim.
+-     entry #fixedWidth   the field the strategy was constructed with
+-     entry #ellipsis   the text which ends a shortened cell: `…` by default
+-   entry .Collapsible   rigid at its natural width, but dropped from the table entirely when space runs out
++         `Fixed` と同じく、収まらないセルは省略記号で短くされるが、幅は固定ではなく調停される。
++         列は自然な幅を要求し、一セルまで縮むことができ、余った幅をその差に比例して取る。
++         `fixedWidth` はフィールドの名前であって、要求の上限ではない。
++     entry #fixedWidth   方式の構築に使われたフィールド
++     entry #ellipsis   短くされたセルの末尾に付くテキスト。既定は `…`
++   entry .Collapsible   自然な幅で固定されているが、場所が足りなくなると表から丸ごと取り除かれる
+
+=   entry .Collapsible   rigid at its natural width, but dropped from the table entirely when space runs out
+-     detail
++     detail
+
+-         The column claims exactly its natural width and never wraps; when the columns' minima
+-         cannot fit the table's width, collapsible columns are dropped one by one, those with
+-         the highest `threshold` first, until the rest fit. A dropped column costs no padding
+-         and no rule. The thresholds are meaningful only relative to one another, so a table's
+-         collapsible columns are ranked by them:
++         列はちょうど自然な幅を要求し、決して折り返さない。
++         列の最小幅が表の幅に収まらないとき、折りたたみ可能な列が、`threshold` の高いものから一つずつ、残りが収まるまで取り除かれる。
++         取り除かれた列は、パディングも罫線も消費しない。
++         しきい値は互いに比べたときにだけ意味を持つので、表の折りたたみ可能な列はしきい値によって順位付けされる。
+
+=         collapsible columns are ranked by them:
+=
+-         ```scala
++         ```scala
+
+=         collapsible columns are ranked by them:
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         collapsible columns are ranked by them:
+=
+=         ```scala
+=         import soundness.*
+-         import tableStyles.thinRoundedTableStyle
++         import tableStyles.thinRoundedTableStyle
+
+=         collapsible columns are ranked by them:
+=
+=         ```scala
+=         import soundness.*
+=         import tableStyles.thinRoundedTableStyle
+-         import textMetrics.uniformMetric
++         import textMetrics.uniformMetric
+
+=         collapsible columns are ranked by them:
+=
+=         ```scala
+=         import soundness.*
+=         import tableStyles.thinRoundedTableStyle
+=         import textMetrics.uniformMetric
+-         import columnAttenuation.ignoreAttenuation
++         import columnAttenuation.ignoreAttenuation
+
+=         collapsible columns are ranked by them:
+=
+=         ```scala
+=         import soundness.*
+=         import tableStyles.thinRoundedTableStyle
+=         import textMetrics.uniformMetric
+=         import columnAttenuation.ignoreAttenuation
+=
+-         case class Person(name: Text, age: Int)
++         case class Person(name: Text, age: Int)
+
+-         val collapsing = Scaffold[Person]
++         val collapsing = Scaffold[Person]
+
+=         val collapsing = Scaffold[Person]
+-           ( Column(t"Name")(_.name),
++           ( Column(t"Name")(_.name),
+
+-             Column(t"Note", sizing = columnar.Collapsible(0.5))(_ => t"annotation") )
++             Column(t"Note", sizing = columnar.Collapsible(0.5))(_ => t"annotation") )
+
+-         val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
++         val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
+
+-         collapsing.tabulate(people).grid(30).render.to[List]   // both columns
++         collapsing.tabulate(people).grid(30).render.to[List]   // both columns
+
+-         collapsing.tabulate(people).grid(14).render.to[List]   // the name alone
++         collapsing.tabulate(people).grid(14).render.to[List]   // the name alone
+
+=         collapsing.tabulate(people).grid(14).render.to[List]   // the name alone
+-         ```
++         ```
+
+-     entry #threshold   between `0` and `1`: how readily the column collapses, higher first
++     entry #threshold   `0` から `1` の間の値：列の折りたたまれやすさ。高いものが先
+
+- entry .Tabulation   data arranged by a scaffold: the cells' text, ready to be laid out at any width
++ entry .Tabulation   スカフォールドによって並べられたデータ：どの幅でもレイアウトできる、セルのテキスト
+
+= entry .Tabulation   data arranged by a scaffold: the cells' text, ready to be laid out at any width
+-   detail
++   detail
+
+-       A `Tabulation[text]` is what `Scaffold#tabulate` (or the `tabulation` extension) makes
+-       from a list of rows: every cell already read into text and cut into lines, the titles
+-       likewise, and each row's decorations, with the row type surviving only as the `#Row`
+-       type member. It is independent of any width: `#grid` fits it to one, and `#layout`
+-       solves the widths without rendering.
++       `Tabulation[text]` は、`Scaffold#tabulate`（または `tabulation` 拡張メソッド）が行のリストから作るものである。
++       すべてのセルは既にテキストへ読み込まれて行に分けられ、タイトルも同様であり、各行の装飾も含まれる。
++       行の型は `#Row` 型メンバーとしてしか残らない。
++       どの幅にも依存しない。
++       `#grid` はそれを一つの幅に合わせ、`#layout` は描画せずに幅を解く。
+
+=       solves the widths without rendering.
+=
+-       ```scala
++       ```scala
+
+=       solves the widths without rendering.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       solves the widths without rendering.
+=
+=       ```scala
+=       import soundness.*
+-       import tableStyles.thinRoundedTableStyle
++       import tableStyles.thinRoundedTableStyle
+
+=       solves the widths without rendering.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+=       solves the widths without rendering.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+-       import columnAttenuation.ignoreAttenuation
++       import columnAttenuation.ignoreAttenuation
+
+=       solves the widths without rendering.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+=       case class Person(name: Text, age: Int)
+-       val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
++       val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
+
+-       val tabulation: Tabulation[Text] = people.tabulation
++       val tabulation: Tabulation[Text] = people.tabulation
+
+-       tabulation.grid(40).render.to[List]
++       tabulation.grid(40).render.to[List]
+
+-       tabulation.grid(12).render.to[List]
++       tabulation.grid(12).render.to[List]
+
+=       tabulation.grid(12).render.to[List]
+-       ```
++       ```
+
+-       A tabulation is `Printable` through `.printable`, so `Out.println(tabulation)` lays it
+-       out at the terminal's width with the style, metric, attenuation and hyphenation in
+-       scope.
++       タビュレーションは `.printable` を通して `Printable` なので、`Out.println(tabulation)` は、スコープ内のスタイル、メトリック、減衰、ハイフネーションを使い、ターミナルの幅でそれをレイアウトする。
+
+=       scope.
+-   refer escritoire.Scaffold
++   refer escritoire.Scaffold
+
+-   refer escritoire.Grid
++   refer escritoire.Grid
+
+=   refer escritoire.Grid
+-   refer escritoire.Layout
++   refer escritoire.Layout
+
+-   entry .printable   prints a tabulation at the terminal's width
+-       The `Printable` given, which lays the table out at `termcap.width` and prints each
+-       line through the text type's own `Printable`. It needs a `Table.Style`, a `Text is
+-       Measurable`, an `Attenuation` and a `Hyphenation` in scope, and the text type's
+-       `Printable`.
+-   entry #Row   the row type the tabulation was made from
+-   entry #columns   the scaffold's columns
+-   entry #titles   the title row: each title's lines
+-   entry #rows   every data row: each cell's lines
+-   entry #dataLength   the number of rows, counted once when the tabulation was built
+-   entry #decorations   each row's per-column decorations, aligned with `#rows`; empty for none
+-       Evaluated when the tabulation is built, the last point at which the row values exist.
+-   entry #layout   the solved column widths at a width, from the titles' and every row's claims
+-       `tabulation.layout(width)` folds every row's cells into the columns' aggregate claims
+-       and solves the widths once, giving a `Layout`. Its `widths` are the widths `#grid`
+-       renders with. Needs a `Table.Style`, a `Text is Measurable` and an `Attenuation`.
+-   entry #grid   the tabulation fitted to a width: a `Grid` whose `render` is the lines
+-       `tabulation.grid(width)` solves the layout as `#layout` does, fits every cell to its
+-       column's width, and builds a `Grid` of two sections — the titles and the rows — sharing
+-       the same widths. If the columns' minima exceed `width` even after every collapsible
+-       column has gone, the `Attenuation` in scope is told: `columnAttenuation.failAttenuation`
+-       raises `Table.Error` and `ignoreAttenuation` lets the table overflow. Needs a
+-       `Table.Style`, a `Text is Measurable`, an `Attenuation` and a `Hyphenation`.
++   entry .printable   タビュレーションをターミナルの幅で出力する
++       表を `termcap.width` でレイアウトし、各行をテキストの型自身の `Printable` を通して出力する `Printable` の given である。
++       スコープ内に `Table.Style`、`Text is Measurable`、`Attenuation`、`Hyphenation` が必要であり、テキストの型の `Printable` も必要である。
++   entry #Row   タビュレーションの元になった行の型
++   entry #columns   スカフォールドの列
++   entry #titles   タイトルの行：各タイトルの行
++   entry #rows   すべてのデータ行：各セルの行
++   entry #dataLength   行数。タビュレーションを構築したときに一度だけ数える
++   entry #decorations   各行の列ごとの装飾。`#rows` と対応し、なければ空
++       タビュレーションを構築するとき、つまり行の値が存在する最後の時点で評価される。
++   entry #layout   ある幅で、タイトルとすべての行の要求から解いた列の幅
++       `tabulation.layout(width)` はすべての行のセルを列の集約された要求に畳み込み、幅を一度だけ解いて `Layout` を与える。
++       その `widths` は、`#grid` が描画に使う幅である。
++       `Table.Style`、`Text is Measurable`、`Attenuation` が必要である。
++   entry #grid   ある幅に合わせたタビュレーション：`render` がその行の並びである `Grid`
++       `tabulation.grid(width)` は、`#layout` と同じようにレイアウトを解き、すべてのセルを列の幅に合わせ、二つのセクション（タイトルと行）からなり同じ幅を共有する `Grid` を構築する。
++       折りたたみ可能な列がすべて消えてもなお列の最小幅が `width` を超える場合は、スコープ内の `Attenuation` に知らされる。
++       `columnAttenuation.failAttenuation` は `Table.Error` を発生させ、`ignoreAttenuation` は表をはみ出させる。
++       `Table.Style`、`Text is Measurable`、`Attenuation`、`Hyphenation` が必要である。
+
+- entry .Grid   a table fitted to a width: sections of rows at settled column widths, in a style
++ entry .Grid   ある幅に合わせた表：決まった列の幅で並ぶ行のセクションと、そのスタイル
+
+= entry .Grid   a table fitted to a width: sections of rows at settled column widths, in a style
+-   detail
++   detail
+
+-       The last stage before text. A `Grid[text]` is a list of `Table.Section`s — each a run of
+-       `Table.Row`s with the column widths they share — and the `Table.Style` to draw them in.
+-       `Tabulation#grid` makes one with two sections, the titles and the data; `#render` draws
+-       it as a `Chain` of lines, with a rule between sections and the style's top and bottom
+-       lines around them.
++       テキストになる前の最後の段階である。
++       `Grid[text]` は `Table.Section` のリストと、それらを描く `Table.Style` からなる。
++       各セクションは、列の幅を共有する `Table.Row` の連なりである。
++       `Tabulation#grid` はタイトルとデータの二つのセクションからなるグリッドを作る。
++       `#render` はそれを行の `Chain` として描き、セクションの間に罫線を引き、その周りにスタイルの上端と下端の線を置く。
+
+=       lines around them.
+=
+-       ```scala
++       ```scala
+
+=       lines around them.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       lines around them.
+=
+=       ```scala
+=       import soundness.*
+-       import tableStyles.thinRoundedTableStyle
++       import tableStyles.thinRoundedTableStyle
+
+=       lines around them.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+=       lines around them.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+-       import columnAttenuation.ignoreAttenuation
++       import columnAttenuation.ignoreAttenuation
+
+=       lines around them.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       val grid: Grid[Text] = List(Person(t"Poins", 30)).tabulation.grid(40)
++       val grid: Grid[Text] = List(Person(t"Poins", 30)).tabulation.grid(40)
+
+-       grid.render.to[List]
++       grid.render.to[List]
+
+-       grid.sections.head.let(_.widths.to[List])   // the settled widths
++       grid.sections.head.let(_.widths.to[List])   // the settled widths
+
+=       grid.sections.head.let(_.widths.to[List])   // the settled widths
+-       ```
++       ```
+
+-       A grid is `Printable` through `.printable`, so it can be printed directly.
++       グリッドは `.printable` を通して `Printable` なので、直接出力できる。
+
+=       A grid is `Printable` through `.printable`, so it can be printed directly.
+-   refer escritoire.Tabulation
++   refer escritoire.Tabulation
+
+=   refer escritoire.Tabulation
+-   refer escritoire.Table.Style
++   refer escritoire.Table.Style
+
+=   refer escritoire.Table.Style
+-   refer escritoire.Layout
++   refer escritoire.Layout
+
+-   entry .printable   prints a grid, one rendered line per terminal line
+-       The `Printable` given: `render` joined with newlines, each line printed through the
+-       text type's own `Printable`. Needs a `Text is Measurable` and the text type's
+-       `Printable`.
+-   entry .rowLines   one row's visual lines against its columns' widths
+-       `Grid.rowLines(style, widths, row)` is `row.height` lines: each cell padded to its
+-       column's width and aligned vertically, wrapped in the style's padding, decorated if the
+-       cell has a decoration, and joined with the style's edge glyphs. The gutter padding
+-       belongs to the cell, so a decoration covers the cell edge to edge while the rules stay
+-       bare. Used by `Grid#render` and `Layout#lines`.
+-   entry .rule   a horizontal rule across columns of the given widths
+-       `Grid.rule(style, widths, above, below)` draws a rule the width of the columns and their
+-       chrome, with a joint glyph wherever a column edge meets it; `above` and `below` say on
+-       which sides columns adjoin, so a top rule has only descenders, a bottom rule only
+-       ascenders, and the rule beneath the titles both. The line weight is the style's
+-       `topLine`, `bottomLine` or `titleLine` accordingly.
+-   entry #sections   the sections, in order, each with its rows and their shared widths
+-   entry #style   the style the grid is drawn in
+-   entry #render   the grid as lines of text
+-       A `Chain[text]`: the style's top line (if it has one), each section's rows with a rule
+-       between sections, and the bottom line (if any). Needs a `Text is Measurable`.
++   entry .printable   グリッドを、描画した一行をターミナルの一行として出力する
++       `render` を改行でつなぎ、各行をテキストの型自身の `Printable` を通して出力する `Printable` の given である。
++       `Text is Measurable` とテキストの型の `Printable` が必要である。
++   entry .rowLines   列の幅に対する、一行分の見た目上の行
++       `Grid.rowLines(style, widths, row)` は `row.height` 本の行である。
++       各セルは列の幅までパディングされて垂直に配置され、スタイルのパディングで包まれ、装飾があれば装飾され、スタイルの縁のグリフでつながれる。
++       余白のパディングはセルに属するので、装飾はセルを端から端まで覆い、罫線は飾られないままである。
++       `Grid#render` と `Layout#lines` が使う。
++   entry .rule   与えた幅の列をまたぐ水平の罫線
++       `Grid.rule(style, widths, above, below)` は、列とその枠の幅の罫線を引き、列の縁が交わる所には接合のグリフを置く。
++       `above` と `below` は、どちら側に列が接するかを示す。
++       そのため上端の罫線には下向きの突起だけが、下端の罫線には上向きの突起だけがあり、タイトルの下の罫線には両方がある。
++       線の太さは、それに応じてスタイルの `topLine`、`bottomLine`、`titleLine` である。
++   entry #sections   順序どおりのセクション。それぞれが行と、行が共有する幅を持つ
++   entry #style   グリッドを描くスタイル
++   entry #render   テキストの行としてのグリッド
++       `Chain[text]` であり、スタイルの上端の線（あれば）、セクションの間に罫線を挟んだ各セクションの行、下端の線（あれば）からなる。
++       `Text is Measurable` が必要である。
+
+- entry .Layout   a table's settled column widths, and the claims they were solved from
++ entry .Layout   表の決まった列の幅と、それを解いた元の要求
+
+= entry .Layout   a table's settled column widths, and the claims they were solved from
+-   detail
++   detail
+
+-       A `Layout[row, text]` is the value between measuring a table and rendering it: which
+-       columns survived (`#survivors`, with their widths), the aggregate claims they were
+-       solved from, and the width and style they were solved at. It is immutable and
+-       incremental: a row phrased as `Cells` is tested with `#accommodates` — within every
+-       column's aggregate, it cannot move a column — and admitted with `#extend`, which gives
+-       the same layout when nothing moves and a re-solved one otherwise. Rows are then
+-       rendered one at a time with `#lines`, and a row's height is known from `#height`
+-       without rendering it when none of its cells wraps.
++       `Layout[row, text]` は、表を測ってから描画するまでの間にある値である。
++       どの列が残ったか（`#survivors`、その幅とともに）、それを解いた元の集約された要求、そして解いたときの幅とスタイルを持つ。
++       不変でインクリメンタルである。
++       `Cells` として表現した行は `#accommodates` で検査され（すべての列の集約の範囲内なら、どの列も動かせない）、`#extend` で受け入れられる。
++       `#extend` は、何も動かなければ同じレイアウトを与え、そうでなければ解き直したものを与える。
++       その後、行は `#lines` で一つずつ描画され、どのセルも折り返さないなら、行の高さは描画しなくても `#height` で分かる。
+
+-       This is the engine behind `Tabulation#grid`, exposed for a table which is built or
+-       displayed row by row — a log which grows, a screen which repaints — where re-laying the
+-       whole table for each row would be wasteful. `Scaffold#layout` makes the first layout
+-       from the titles alone. `Layout` is not exported to the `soundness` umbrella, so the type
+-       is named as `escritoire.Layout` where it must be written.
++       これは `Tabulation#grid` の背後にあるエンジンであり、一行ずつ構築または表示する表（伸びていくログ、描き直す画面）のために公開されている。
++       そのような表で一行ごとに表全体をレイアウトし直すのは無駄である。
++       `Scaffold#layout` は、タイトルだけから最初のレイアウトを作る。
++       `Layout` は `soundness` アンブレラにエクスポートされないので、型を書く必要がある所では `escritoire.Layout` として名指しする。
+
+=       is named as `escritoire.Layout` where it must be written.
+=
+-       ```scala
++       ```scala
+
+=       is named as `escritoire.Layout` where it must be written.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       is named as `escritoire.Layout` where it must be written.
+=
+=       ```scala
+=       import soundness.*
+-       import tableStyles.thinRoundedTableStyle
++       import tableStyles.thinRoundedTableStyle
+
+=       is named as `escritoire.Layout` where it must be written.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+=       is named as `escritoire.Layout` where it must be written.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+-       import columnAttenuation.ignoreAttenuation
++       import columnAttenuation.ignoreAttenuation
+
+=       is named as `escritoire.Layout` where it must be written.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+=       is named as `escritoire.Layout` where it must be written.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+=       case class Person(name: Text, age: Int)
+-       val scaffold = Scaffold[Person](Column(t"Name")(_.name), Column(t"Age")(_.age))
++       val scaffold = Scaffold[Person](Column(t"Name")(_.name), Column(t"Age")(_.age))
+
+=       val scaffold = Scaffold[Person](Column(t"Name")(_.name), Column(t"Age")(_.age))
+-       val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
++       val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
+
+-       val cells = people.map(scaffold.cells(_))
++       val cells = people.map(scaffold.cells(_))
+
+-       val layout = cells.fold(scaffold.layout(40)) { (layout, cells) => layout.extend(cells) }
++       val layout = cells.fold(scaffold.layout(40)) { (layout, cells) => layout.extend(cells) }
+
+-       layout.widths.to[List]
++       layout.widths.to[List]
+
+-       layout.titleLines ++ cells.bind(layout.lines(_, Nil))
++       layout.titleLines ++ cells.bind(layout.lines(_, Nil))
+
+=       layout.titleLines ++ cells.bind(layout.lines(_, Nil))
+-       ```
++       ```
+
+=       ```
+-   refer escritoire.Scaffold
++   refer escritoire.Scaffold
+
+-   refer escritoire.Cells
++   refer escritoire.Cells
+
+=   refer escritoire.Cells
+-   refer escritoire.Tabulation
++   refer escritoire.Tabulation
+
+-   entry .nothing   empty aggregates, one per column, for a layout which has admitted nothing yet
+-   entry .aggregate   the aggregates widened by a row's cells, column by column
+-       `Layout.aggregate(aggregates, cells)` is the elementwise `Metrics.max` of the two,
+-       so the result claims at least what either did.
+-   entry .solve   solves the column widths at a width from the aggregate claims
+-       `Layout.solve(columns, titles, aggregates, width, style)` asks each column's `Columnar`
+-       for its `Flex` from its aggregate, drops any column which can occupy no width at all (a
+-       `Paragraph` column whose every cell is empty, say), deducts the style's chrome, and lets
+-       tessellate's `Flex.solve` collapse and distribute the rest. If the surviving columns'
+-       minima still exceed the width, the `Attenuation` in scope is called with the minimum
+-       the table needed and the width it had. Needs a `Text is Measurable` and an
+-       `Attenuation`.
+-   entry #columns   the columns the layout was solved for
+-   entry #titles   the title rows' cells
+-   entry #aggregates   the per-column aggregate claims the widths were solved from
+-   entry #width   the width the layout was solved at
+-   entry #survivors   the columns which survived, as `(index, width)` pairs in order
+-       A column dropped by collapse is absent; `#widths` is the second element of each pair.
+-   entry #style   the style, whose padding and rules the chrome was costed from
+-   entry #widths   the surviving columns' widths, in order
+-   entry #cells   a row phrased through the layout's columns
+-       The same as `Scaffold#cells`: each column's content for the row, cut into lines and
+-       measured.
+-   entry #accommodates   whether a row's cells are within every column's aggregate claim
+-       True when admitting the row cannot change any column's claim, by each column's
+-       `Columnar#accommodates`; `#extend` then returns this very layout.
+-   entry #extend   this layout, or one re-solved with the row's cells folded in
+-       `layout.extend(cells)` is `layout` itself if `#accommodates` holds, and otherwise
+-       `Layout.solve` over the aggregates widened by the cells, at the same width. The
+-       re-solve may leave every width as it was — a wider claim on a column already pinned by
+-       the width changes nothing — which `#stable` detects. Needs a `Text is Measurable` and an
+-       `Attenuation`.
+-   entry #resize   the same claims solved at another width
+-   entry #stable   whether two layouts show the same columns at the same widths
+-       Compares the `#survivors`: a repaint can skip the rows already drawn when a layout
+-       extended by a new row is stable against the one they were drawn with.
+-   entry #tableRow   a row's cells fitted to the surviving columns' widths, as a `TableRow`
+-       `layout.tableRow(cells, decorations)` fits each surviving column's lines with its
+-       `Columnar#fit`, pairs each with its decoration (read from `decorations` by column
+-       position, `Unset` beyond its end), and measures the row's height. Needs a `Text is
+-       Measurable` and a `Hyphenation`.
+-   entry #lines   a row rendered against the layout: its lines of text
+-       `layout.lines(cells, decorations)` is `Grid.rowLines` over `#tableRow`: the row's
+-       visual lines, with the style's edges, as a `List`. Pass `Nil` for no decorations.
+-   entry #height   a row's height in lines, without rendering it where that is possible
+-       A cell whose natural width fits its column is not wrapped, so it stands as many lines
+-       as it has; only a cell which must wrap is fitted to find out. The row's height is the
+-       tallest cell's.
+-   entry #titleLines   the title rows rendered against the layout
+-   entry #topRule   the rule above the titles, or `Unset` if the style has no top line
+-   entry #titleRule   the rule between the titles and the rows
+-   entry #bottomRule   the rule beneath the last row, or `Unset` if the style has no bottom line
++   entry .nothing   まだ何も受け入れていないレイアウトのための、列ごとに一つの空の集約
++   entry .aggregate   一行のセルによって列ごとに広げた集約
++       `Layout.aggregate(aggregates, cells)` は両者の要素ごとの `Metrics.max` なので、結果はどちらかが要求したもの以上を要求する。
++   entry .solve   集約された要求から、ある幅で列の幅を解く
++       `Layout.solve(columns, titles, aggregates, width, style)` は、各列の `Columnar` に集約からその `Flex` を求める。
++       まったく幅を占められない列（たとえばすべてのセルが空の `Paragraph` の列）を取り除き、スタイルの枠を差し引き、残りの折りたたみと分配を tessellate の `Flex.solve` に任せる。
++       残った列の最小幅がそれでも幅を超える場合は、表が必要とした最小幅と実際の幅を引数として、スコープ内の `Attenuation` が呼ばれる。
++       `Text is Measurable` と `Attenuation` が必要である。
++   entry #columns   レイアウトを解いた対象の列
++   entry #titles   タイトル行のセル
++   entry #aggregates   幅を解いた元の、列ごとの集約された要求
++   entry #width   レイアウトを解いたときの幅
++   entry #survivors   残った列。順序どおりの `(index, width)` の組
++       折りたたみで取り除かれた列は含まれない。
++       `#widths` は各組の二番目の要素である。
++   entry #style   枠のコストの計算に使ったパディングと罫線を持つスタイル
++   entry #widths   残った列の幅、順序どおり
++   entry #cells   レイアウトの列を通して表現した一行
++       `Scaffold#cells` と同じであり、行に対する各列の内容を、行に分けて測ったものである。
++   entry #accommodates   行のセルがすべての列の集約された要求の範囲内にあるかどうか
++       各列の `Columnar#accommodates` によって、行を受け入れてもどの列の要求も変わりえないときに真になる。
++       そのとき `#extend` はまさにこのレイアウトを返す。
++   entry #extend   このレイアウト、または行のセルを畳み込んで解き直したレイアウト
++       `layout.extend(cells)` は、`#accommodates` が成り立つなら `layout` そのものであり、そうでなければ、セルで広げた集約に対して同じ幅で `Layout.solve` を行ったものである。
++       解き直しても、すべての幅が元のままのこともある（既に幅で固定されている列に対するより広い要求は何も変えない）。
++       それは `#stable` が検出する。
++       `Text is Measurable` と `Attenuation` が必要である。
++   entry #resize   同じ要求を別の幅で解いたもの
++   entry #stable   二つのレイアウトが同じ列を同じ幅で表示するかどうか
++       `#survivors` を比較する。
++       新しい行で拡張したレイアウトが、既に描いた行を描いたときのレイアウトに対して安定なら、描き直しではそれらの行を飛ばせる。
++   entry #tableRow   残った列の幅に合わせた一行のセル。`TableRow` として
++       `layout.tableRow(cells, decorations)` は、残った各列の行をその `Columnar#fit` で合わせ、それぞれを装飾と組にし（装飾は列の位置で `decorations` から読み、末尾を超えれば `Unset`）、行の高さを測る。
++       `Text is Measurable` と `Hyphenation` が必要である。
++   entry #lines   レイアウトに対して描画した一行：そのテキストの行
++       `layout.lines(cells, decorations)` は `#tableRow` に対する `Grid.rowLines` であり、スタイルの縁を伴う行の見た目上の行を `List` として与える。
++       装飾がなければ `Nil` を渡す。
++   entry #height   行の高さ（行数）。可能なら描画せずに求める
++       自然な幅が列に収まるセルは折り返されないので、持っている行数だけの高さになる。
++       折り返さなければならないセルだけが、高さを知るために合わせられる。
++       行の高さは最も高いセルの高さである。
++   entry #titleLines   レイアウトに対して描画したタイトル行
++   entry #topRule   タイトルの上の罫線。スタイルに上端の線がなければ `Unset`
++   entry #titleRule   タイトルと行の間の罫線
++   entry #bottomRule   最後の行の下の罫線。スタイルに下端の線がなければ `Unset`
+
+- entry .Cells   one row's cells as the lines each will display, with each cell's intrinsic widths
++ entry .Cells   各セルが表示する行としての一行のセルと、各セルの固有の幅
+
+= entry .Cells   one row's cells as the lines each will display, with each cell's intrinsic widths
+-   detail
++   detail
+
+-       `Cells[text]` is a row phrased once from its row value — each column's content cut into
+-       lines, and each cell's `Metrics` (its longest word and its longest line) — and
+-       independent of any width, so a layout can test it with `Layout#accommodates`, admit it
+-       with `Layout#extend`, and render it at whatever widths it settles on. `Scaffold#cells`
+-       and `Layout#cells` make one from a row; `Cells.of` from lines already cut.
++       `Cells[text]` は、行の値から一度だけ表現した一行である。
++       各列の内容を行に分けたものと、各セルの `Metrics`（最長の単語と最長の行）を持ち、どの幅にも依存しない。
++       そのためレイアウトは、`Layout#accommodates` でそれを検査し、`Layout#extend` で受け入れ、決まったどの幅ででも描画できる。
++       `Scaffold#cells` と `Layout#cells` は行からこれを作り、`Cells.of` は既に分けた行から作る。
+
+-       `Cells` is not exported to the `soundness` umbrella: it is the layout engine's own
+-       vocabulary, reached as `escritoire.Cells` where a program drives a `Layout` directly.
++       `Cells` は `soundness` アンブレラにエクスポートされない。
++       これはレイアウトエンジン固有の語彙であり、プログラムが `Layout` を直接操作する所では `escritoire.Cells` として参照する。
+
+=       vocabulary, reached as `escritoire.Cells` where a program drives a `Layout` directly.
+-   refer escritoire.Layout
++   refer escritoire.Layout
+
+-   entry .of   cells from lines already cut, or from a row through its columns
+-       `Cells.of(lines)` measures each cell's lines; `Cells.of(columns, row)` reads each
+-       column's content from the row first. Both need a `Text is Measurable`.
+-   entry #lines   each cell's lines, by column
+-   entry #metrics   each cell's intrinsic widths, by column
++   entry .of   既に分けた行から、または列を通して行から作るセル
++       `Cells.of(lines)` は各セルの行を測る。
++       `Cells.of(columns, row)` は、まず行から各列の内容を読む。
++       どちらも `Text is Measurable` が必要である。
++   entry #lines   列ごとの、各セルの行
++   entry #metrics   列ごとの、各セルの固有の幅
+
+- entry .Columnation   a flat list arranged in columns, as `ls` lists a directory
++ entry .Columnation   `ls` がディレクトリを一覧するように、平らなリストを列に並べる
+
+= entry .Columnation   a flat list arranged in columns, as `ls` lists a directory
+-   detail
++   detail
+
+-       Not every arrangement of text in columns is a table. A list of short items — file
+-       names, the entries of a legend — reads best as `ls` lays out a directory: as many
+-       columns as the width admits, each item in one cell, no rules and no titles.
+-       `Columnation.layout` does this for a list of textual values; the `columnate` extension
+-       is the same operation as a method on the list.
++       テキストを列に並べたものがすべて表であるわけではない。
++       短い項目のリスト（ファイル名や凡例の項目）は、`ls` がディレクトリを並べるように配置すると最も読みやすい。
++       幅が許すだけの列を作り、各項目を一つのセルに置き、罫線もタイトルもない。
++       `Columnation.layout` はテキストの値のリストに対してこれを行い、`columnate` 拡張メソッドは同じ操作をリストのメソッドとして行う。
+
+=       is the same operation as a method on the list.
+=
+-       ```scala
++       ```scala
+
+=       is the same operation as a method on the list.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       is the same operation as a method on the list.
+=
+=       ```scala
+=       import soundness.*
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+-       Columnation.layout(List(t"apple", t"fig", t"kiwi", t"lime", t"pear", t"plum"), 24)
++       Columnation.layout(List(t"apple", t"fig", t"kiwi", t"lime", t"pear", t"plum"), 24)
+
+-       // List(t"apple  fig    kiwi  lime", t"pear   plum")
++       // List(t"apple  fig    kiwi  lime", t"pear   plum")
+
+=       // List(t"apple  fig    kiwi  lime", t"pear   plum")
+-       ```
++       ```
+
+-   refer escritoire.columnate
++   refer escritoire.columnate
+
+-   entry .layout   the items in as many columns as fit a width, one line per row
+-       `Columnation.layout(items, width, gap, uniform, downward, align)` chooses the greatest
+-       column count at which every column's content fits alongside the others, with `gap`
+-       cells (two by default) between neighbours. Equal-width columns — each as wide as the
+-       widest item — are preferred, but a layout with one more column is admitted when the
+-       items which fall in some column happen to be narrower; spare width is then shared back
+-       out towards equality, no column growing beyond the widest item. `uniform = true`
+-       considers only equal-width layouts; `downward = true` reads the items down each column
+-       rather than across each row; `align` pads each cell within its column, and a
+-       left-aligned row carries no trailing padding after its last item. An item wider than
+-       the width still occupies a single column, and no items make no lines. Needs a `Text is
+-       Measurable`.
++   entry .layout   幅に収まるだけの列に並べた項目。一行が一つの段
++       `Columnation.layout(items, width, gap, uniform, downward, align)` は、すべての列の内容が並んで収まる最大の列数を選ぶ。
++       隣り合う列の間には `gap` セル（既定は二つ）を置く。
++       等幅の列（どれも最も広い項目と同じ幅）が優先されるが、ある列に入る項目がたまたま狭ければ、列を一つ多くしたレイアウトも認められる。
++       そのとき余った幅は等しくなる方向へ分配し直され、どの列も最も広い項目より広くはならない。
++       `uniform = true` は等幅のレイアウトだけを考える。
++       `downward = true` は項目を各行に沿ってではなく各列に沿って下へ読む。
++       `align` は各セルを列の中でパディングし、左揃えの行は最後の項目の後に末尾のパディングを持たない。
++       幅より広い項目もやはり一つの列を占め、項目がなければ行もない。
++       `Text is Measurable` が必要である。
+
+- entry .columnate   `items.columnate(width)`: a list of text in as many columns as fit, one line per row
+-     An extension on `List[text]` for any `Textual` text with `Char` elements, which calls
+-     `Columnation.layout` with the same parameters: `gap` (default 2), `uniform`, `downward`
+-     and `align` (default `TextAlignment.Left`). Needs a `Text is Measurable`.
++ entry .columnate   `items.columnate(width)`：収まるだけの列に並べたテキストのリスト。一行が一つの段
++     要素が `Char` である任意の `Textual` テキストの `List[text]` に対する拡張メソッドで、同じパラメーターで `Columnation.layout` を呼ぶ。
++     パラメーターは `gap`（既定は 2）、`uniform`、`downward`、`align`（既定は `TextAlignment.Left`）である。
++     `Text is Measurable` が必要である。
+
+=     and `align` (default `TextAlignment.Left`). Needs a `Text is Measurable`.
+=
+-     ```scala
++     ```scala
+
+=     and `align` (default `TextAlignment.Left`). Needs a `Text is Measurable`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     and `align` (default `TextAlignment.Left`). Needs a `Text is Measurable`.
+=
+=     ```scala
+=     import soundness.*
+-     import textMetrics.uniformMetric
++     import textMetrics.uniformMetric
+
+-     List(t"a", t"bb", t"c", t"dd", t"e").columnate(11)                       // List(t"a   bb  c", t"dd  e")
++     List(t"a", t"bb", t"c", t"dd", t"e").columnate(11)                       // List(t"a   bb  c", t"dd  e")
+
+-     List(t"aaaa", t"b", t"c", t"d").columnate(12, uniform = true)           // List(t"aaaa  b", t"c     d")
++     List(t"aaaa", t"b", t"c", t"d").columnate(12, uniform = true)           // List(t"aaaa  b", t"c     d")
+
+-     List(t"a", t"b", t"c", t"d", t"e").columnate(7, downward = true)        // List(t"a  c  e", t"b  d")
++     List(t"a", t"b", t"c", t"d", t"e").columnate(7, downward = true)        // List(t"a  c  e", t"b  d")
+
+-     List(t"a", t"bb").columnate(10, align = TextAlignment.Right)            // List(t" a  bb")
++     List(t"a", t"bb").columnate(10, align = TextAlignment.Right)            // List(t" a  bb")
+
+=     List(t"a", t"bb").columnate(10, align = TextAlignment.Right)            // List(t" a  bb")
+-     ```
++     ```
+
+- entry .tabulation   `rows.tabulation`: a list tabulated by its element type's `Tabulable`, or a value by its `Tabular`
+-     Two extensions. On a `List[row]`, `rows.tabulation` needs a `row is Tabulable[text]` —
+-     derived for any case class, and given for `Int`, `Double` and `Text` — and gives the
+-     `Tabulation[text]` of the scaffold applied to the rows. On any value, `value.tabulation`
+-     needs a `value is Tabular[text]`, which supplies both the scaffold and the rows from the
+-     value itself. The text type is inferred from the instance, or given as
+-     `rows.tabulation[Text]`.
++ entry .tabulation   `rows.tabulation`：要素の型の `Tabulable` で表にしたリスト、または `Tabular` で表にした値
++     二つの拡張メソッドがある。
++     `List[row]` に対しては、`rows.tabulation` は `row is Tabulable[text]` を必要とし（任意のケースクラスに対して導出され、`Int`、`Double`、`Text` に対して与えられている）、行にスカフォールドを適用した `Tabulation[text]` を与える。
++     任意の値に対しては、`value.tabulation` は `value is Tabular[text]` を必要とし、これがスカフォールドと行の両方を値そのものから供給する。
++     テキストの型はインスタンスから推論されるか、`rows.tabulation[Text]` のように与える。
+
+=     `rows.tabulation[Text]`.
+=
+-     ```scala
++     ```scala
+
+=     `rows.tabulation[Text]`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     `rows.tabulation[Text]`.
+=
+=     ```scala
+=     import soundness.*
+-     import tableStyles.thinRoundedTableStyle
++     import tableStyles.thinRoundedTableStyle
+
+=     `rows.tabulation[Text]`.
+=
+=     ```scala
+=     import soundness.*
+=     import tableStyles.thinRoundedTableStyle
+-     import textMetrics.uniformMetric
++     import textMetrics.uniformMetric
+
+=     `rows.tabulation[Text]`.
+=
+=     ```scala
+=     import soundness.*
+=     import tableStyles.thinRoundedTableStyle
+=     import textMetrics.uniformMetric
+-     import columnAttenuation.ignoreAttenuation
++     import columnAttenuation.ignoreAttenuation
+
+=     `rows.tabulation[Text]`.
+=
+=     ```scala
+=     import soundness.*
+=     import tableStyles.thinRoundedTableStyle
+=     import textMetrics.uniformMetric
+=     import columnAttenuation.ignoreAttenuation
+=
+-     case class Person(name: Text, age: Int)
++     case class Person(name: Text, age: Int)
+
+-     List(Person(t"Poins", 30), Person(t"Hal", 16)).tabulation.grid(40).render.to[List]
++     List(Person(t"Poins", 30), Person(t"Hal", 16)).tabulation.grid(40).render.to[List]
+
+-     List(1, 22, 333).tabulation.grid(20).render.to[List]   // one untitled, right-aligned column
++     List(1, 22, 333).tabulation.grid(20).render.to[List]   // one untitled, right-aligned column
+
+=     List(1, 22, 333).tabulation.grid(20).render.to[List]   // one untitled, right-aligned column
+-     ```
++     ```
+
+- entry .Tabulable   a typeclass: how a type is put into columns, so a list of it tabulates
++ entry .Tabulable   型クラス：ある型をどのように列に分けるか。それによってその型のリストが表になる
+
+= entry .Tabulable   a typeclass: how a type is put into columns, so a list of it tabulates
+-   detail
++   detail
+
+-       `row is Tabulable[text]` is a function `#table()` returning the `Scaffold[row, text]`
+-       for the type; `#tabulate` applies it to a list. Its companion derives an instance for
+-       any case class — a column per field, each titled by its field name uncamelled and
+-       capitalised (`linesOfCode` becomes `Lines Of Code`), unless a `Table.Relabelling` for the
+-       type in scope says otherwise — and provides instances for `Int`, `Double` and `Text`,
+-       each a single untitled column. A field's column is the field type's own `Tabulable`
+-       scaffold, adapted to the record with `Column#contramap`, so a field of a case-class type
+-       contributes that type's columns in turn.
++       `row is Tabulable[text]` は、その型の `Scaffold[row, text]` を返す関数 `#table()` である。
++       `#tabulate` はそれをリストに適用する。
++       コンパニオンは任意のケースクラスに対してインスタンスを導出し、フィールドごとに一列を作る。
++       各列のタイトルは、スコープ内にその型に対する `Table.Relabelling` があって別に指定しない限り、フィールド名のキャメルケースを分解して先頭を大文字にしたものである（`linesOfCode` は `Lines Of Code` になる）。
++       また `Int`、`Double`、`Text` に対するインスタンスも与え、それぞれタイトルのない一つの列である。
++       フィールドの列は、フィールドの型自身の `Tabulable` のスカフォールドを `Column#contramap` でレコードに適応させたものなので、ケースクラス型のフィールドは、今度はその型の列をもたらす。
+
+=       contributes that type's columns in turn.
+=
+-       ```scala
++       ```scala
+
+=       contributes that type's columns in turn.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       contributes that type's columns in turn.
+=
+=       ```scala
+=       import soundness.*
+-       import tableStyles.thinRoundedTableStyle
++       import tableStyles.thinRoundedTableStyle
+
+=       contributes that type's columns in turn.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+=       contributes that type's columns in turn.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+-       import columnAttenuation.ignoreAttenuation
++       import columnAttenuation.ignoreAttenuation
+
+=       contributes that type's columns in turn.
+=
+=       ```scala
+=       import soundness.*
+=       import tableStyles.thinRoundedTableStyle
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       summon[Person is Tabulable[Text]].tabulate(List(Person(t"Poins", 30))).grid(40).render.to[List]
++       summon[Person is Tabulable[Text]].tabulate(List(Person(t"Poins", 30))).grid(40).render.to[List]
+
+=       summon[Person is Tabulable[Text]].tabulate(List(Person(t"Poins", 30))).grid(40).render.to[List]
+-       ```
++       ```
+
+-       An instance of one's own is the seam for a type whose columns are not its fields:
++       独自のインスタンスは、列がフィールドではない型のための継ぎ目である。
+
+=       An instance of one's own is the seam for a type whose columns are not its fields:
+=
+-       ```scala
++       ```scala
+
+=       An instance of one's own is the seam for a type whose columns are not its fields:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       An instance of one's own is the seam for a type whose columns are not its fields:
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       given Person is Tabulable[Text] = () =>
++       given Person is Tabulable[Text] = () =>
+
+-         Scaffold[Person](Column(t"Who")(_.name), Column(t"Adult?")(person => if person.age >= 18 then t"yes" else t"no"))
++         Scaffold[Person](Column(t"Who")(_.name), Column(t"Adult?")(person => if person.age >= 18 then t"yes" else t"no"))
+
+=         Scaffold[Person](Column(t"Who")(_.name), Column(t"Adult?")(person => if person.age >= 18 then t"yes" else t"no"))
+-       ```
++       ```
+
+-       Only `Text`-celled instances are derived: a `Teletype` table is written as a `Scaffold`
+-       by hand.
++       導出されるのは、セルが `Text` のインスタンスだけである。
++       `Teletype` の表は、`Scaffold` として手で書く。
+
+=       by hand.
+-   refer escritoire.Scaffold
++   refer escritoire.Scaffold
+
+-   refer escritoire.Table.Relabelling
++   refer escritoire.Table.Relabelling
+
+=   refer escritoire.Table.Relabelling
+-   refer escritoire.tabulation
++   refer escritoire.tabulation
+
+-   entry .JoinTabulable   the derived instance for a product type, over its fields' columns
++   entry .JoinTabulable   直積型に対して導出されるインスタンス。フィールドの列からなる
+
+=   entry .JoinTabulable   the derived instance for a product type, over its fields' columns
+-     detail
++     detail
+
+-         The class the derivation builds: a `Tabulable[Text]` whose scaffold is the given
+-         columns. Not normally named by a user; `conjunction` makes one.
+-     entry #table   the scaffold of the joined columns
+-   entry .conjunction   derives the instance for a case class, one column per field
+-       Each field's `Tabulable` gives its columns, which are adapted to the record and
+-       retitled from the field's label — through a `Table.Relabelling[derivation]` if one is
+-       in scope, and otherwise uncamelled and capitalised. This is what the `derived` given
+-       inherited from wisteria's `ProductDerivation` calls, so a case class needs no
+-       annotation to be tabulated.
+-   entry .int   `Int` as one untitled, right-aligned, collapsible column
+-       The column collapses at threshold `0.3`, so a lone number is the first thing to go when
+-       a record of several fields is squeezed.
+-   entry .double   `Double` as one untitled, right-aligned, collapsible column
+-       Needs a `Decimalizer` in scope, which decides how many decimal places are shown.
+-   entry .text   `Text` as one untitled, left-aligned paragraph column
+-   entry #table   the scaffold for the type
+-   entry #tabulate   the scaffold applied to a list of the type: a `Tabulation`
+-       The scaffold is built once, lazily, and reused for every call.
++         導出が構築するクラスであり、スカフォールドが与えられた列である `Tabulable[Text]` である。
++         ふつう利用者が名指しすることはなく、`conjunction` がこれを作る。
++     entry #table   結合した列のスカフォールド
++   entry .conjunction   ケースクラスに対し、フィールドごとに一列のインスタンスを導出する
++       各フィールドの `Tabulable` がその列を与え、それらはレコードに適応され、フィールドのラベルからタイトルを付け直される。
++       スコープ内に `Table.Relabelling[derivation]` があればそれを通し、なければキャメルケースを分解して先頭を大文字にする。
++       これは wisteria の `ProductDerivation` から継承した `derived` given が呼ぶものなので、ケースクラスはアノテーションなしで表にできる。
++   entry .int   タイトルのない、右揃えの、折りたたみ可能な一列としての `Int`
++       列はしきい値 `0.3` で折りたたまれるので、複数のフィールドを持つレコードが詰められると、単独の数値が最初に消える。
++   entry .double   タイトルのない、右揃えの、折りたたみ可能な一列としての `Double`
++       小数点以下を何桁表示するかを決める `Decimalizer` がスコープ内に必要である。
++   entry .text   タイトルのない、左揃えの段落の一列としての `Text`
++   entry #table   その型に対するスカフォールド
++   entry #tabulate   その型のリストに適用したスカフォールド：`Tabulation`
++       スカフォールドは一度だけ遅延して構築され、どの呼び出しでも再利用される。
+
+- entry .Tabular   a typeclass: a value which is itself a table, supplying both its columns and its rows
++ entry .Tabular   型クラス：それ自身が表である値。列と行の両方を供給する
+
+= entry .Tabular   a typeclass: a value which is itself a table, supplying both its columns and its rows
+-   detail
++   detail
+
+-       Where `Tabulable` tabulates a *list* of a type, `value is Tabular[text]` tabulates a
+-       single value which contains its rows: `#table` gives the scaffold for its `#Element`
+-       type and `#rows` extracts the elements, and `#tabulate` applies one to the other. A
+-       report object, a query result or a matrix is tabulated by giving one, and then
+-       `value.tabulation` through the `tabulation` extension.
++       `Tabulable` がある型の*リスト*を表にするのに対し、`value is Tabular[text]` は行を含む単一の値を表にする。
++       `#table` はその `#Element` 型に対するスカフォールドを与え、`#rows` は要素を取り出し、`#tabulate` は一方を他方に適用する。
++       レポートのオブジェクト、クエリの結果、行列は、インスタンスを一つ与えれば、`tabulation` 拡張メソッドを通して `value.tabulation` で表にできる。
+
+-   refer escritoire.Tabulable
++   refer escritoire.Tabulable
+
+=   refer escritoire.Tabulable
+-   refer escritoire.tabulation
++   refer escritoire.tabulation
+
+-   entry #Element   the row type the value's rows have
+-   entry #table   the scaffold for the value's rows
+-   entry #rows   the value's rows, as a list of `Element`
+-   entry #tabulate   the value as a `Tabulation`: `table(value).tabulate(rows(value))`
++   entry #Element   値の行が持つ行の型
++   entry #table   値の行に対するスカフォールド
++   entry #rows   値の行。`Element` のリストとして
++   entry #tabulate   `Tabulation` としての値：`table(value).tabulate(rows(value))`
+
+- entry .Table   the namespace of a rendered table: its cells, rows, sections and style, and `Table.Error`
++ entry .Table   描画した表の名前空間：セル、行、セクション、スタイル、そして `Table.Error`
+
+= entry .Table   the namespace of a rendered table: its cells, rows, sections and style, and `Table.Error`
+-   detail
++   detail
+
+-       `Table` is a namespace, not a type: a table definition is a `Scaffold`, data arranged by
+-       one a `Tabulation`, and the fitted result a `Grid`. `Table` holds the pieces a grid is
+-       drawn from (`Cell`, `Row`, `Section`), the `Style` it is drawn in, the `Relabelling`
+-       which renames derived columns, and the `Error` raised when a table cannot fit.
++       `Table` は型ではなく名前空間である。
++       表の定義は `Scaffold`、それによって並べられたデータは `Tabulation`、合わせた結果は `Grid` である。
++       `Table` は、グリッドを描く元になる部品（`Cell`、`Row`、`Section`）、描くときの `Style`、導出された列の名前を変える `Relabelling`、そして表が収まらないときに発生する `Error` を保持する。
+
+=       which renames derived columns, and the `Error` raised when a table cannot fit.
+-   refer escritoire.Scaffold
++   refer escritoire.Scaffold
+
+=   refer escritoire.Scaffold
+-   refer escritoire.columnAttenuation
++   refer escritoire.columnAttenuation
+
+-   entry .Error   the table needed more width than it was given
++   entry .Error   表が与えられた幅より多くの幅を必要とした
+
+=   entry .Error   the table needed more width than it was given
+-     detail
++     detail
+
+-         _the table required a minimum width of `minimumWidth`, but only `availableWidth` was
+-         available_. Raised through `columnAttenuation.failAttenuation` when, after every
+-         collapsible column has been dropped, the surviving columns' minimum widths and the
+-         style's chrome still exceed the width a grid or layout was asked for. The limit is
+-         concrete: a `Paragraph` column can never be narrower than its longest word, so a table
+-         whose description column holds `Statically-checked` cannot fit below that word's width
+-         plus the rest. Under `ignoreAttenuation` the error is never raised and the table
+-         overflows instead.
++         _the table required a minimum width of `minimumWidth`, but only `availableWidth` was available_。
++         折りたたみ可能な列をすべて取り除いた後も、残った列の最小幅とスタイルの枠が、グリッドやレイアウトに求められた幅を超えるとき、`columnAttenuation.failAttenuation` を通して発生する。
++         この限界は具体的である。
++         `Paragraph` の列は最長の単語より狭くなれないので、説明の列に `Statically-checked` を含む表は、その単語の幅と残りの分を合わせた幅より狭くは収まらない。
++         `ignoreAttenuation` のもとでは、このエラーは決して発生せず、代わりに表がはみ出す。
+
+=         overflows instead.
+=
+-         ```scala
++         ```scala
+
+=         overflows instead.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         overflows instead.
+=
+=         ```scala
+=         import soundness.*
+-         import tableStyles.thinRoundedTableStyle
++         import tableStyles.thinRoundedTableStyle
+
+=         overflows instead.
+=
+=         ```scala
+=         import soundness.*
+=         import tableStyles.thinRoundedTableStyle
+-         import textMetrics.uniformMetric
++         import textMetrics.uniformMetric
+
+-         import columnAttenuation.failAttenuation
++         import columnAttenuation.failAttenuation
+
+-         val wide = Scaffold[Text](Column[Text, Text, Text](t"Name", sizing = columnar.Fixed(20))(identity))
++         val wide = Scaffold[Text](Column[Text, Text, Text](t"Name", sizing = columnar.Fixed(20))(identity))
+
+-         recover:
++         recover:
+
+-           case Table.Error(minimum, available) => List(t"needs $minimum, had $available")
++           case Table.Error(minimum, available) => List(t"needs $minimum, had $available")
+
+-         . protect:
++         . protect:
+
+-             wide.tabulate(List(t"Poins")).grid(5).render.to[List]
++             wide.tabulate(List(t"Poins")).grid(5).render.to[List]
+
+=             wide.tabulate(List(t"Poins")).grid(5).render.to[List]
+-         ```
++         ```
+
+-     entry #minimumWidth   the narrowest width at which the table's columns could all fit
+-     entry #availableWidth   the width the table was asked to fit
++     entry #minimumWidth   表の列がすべて収まりうる最も狭い幅
++     entry #availableWidth   表に収めるよう求められた幅
+
+-   entry .Cell   one cell as rendered: its fitted lines, width, alignment and decoration
++   entry .Cell   描画した一つのセル：合わせた行、幅、配置、装飾
+
+=   entry .Cell   one cell as rendered: its fitted lines, width, alignment and decoration
+-     detail
++     detail
+
+-         The renderer's record of a cell after `Layout#tableRow` has fitted it: the lines it
+-         displays at its column's width, how many there are, how they align, and its decoration.
+-         A user of `Grid` or `Layout` sees these inside a `Row`; nothing else makes them.
++         `Layout#tableRow` がセルを合わせた後の、レンダラーによるセルの記録である。
++         列の幅で表示する行、その行数、それらの配置、そして装飾を持つ。
++         `Grid` や `Layout` の利用者は、これらを `Row` の中で目にする。
++         他に作るものはない。
+
+-     refer escritoire.Table.Row
++     refer escritoire.Table.Row
+
+-     entry #width   the column's settled width, in cells
+-     entry #span   how many columns the cell spans; always `1`
+-     entry #lines   the fitted lines
+-     entry #minHeight   the number of lines
+-     entry #textAlign   how each line is padded to the width
+-     entry #verticalAlign   where the lines sit when the row is taller than `minHeight`
+-     entry #decorate   the transformation applied to each rendered line, or `Unset`
+-     entry #apply   the line at an index, which the caller has already checked against `minHeight`
+-   entry .Row   one row of fitted cells, with its height in lines
++     entry #width   列の決まった幅。セル数で表す
++     entry #span   セルがまたぐ列の数。常に `1`
++     entry #lines   合わせた行
++     entry #minHeight   行の数
++     entry #textAlign   各行を幅までどうパディングするか
++     entry #verticalAlign   行が `minHeight` より高いとき、行の並びがどこに位置するか
++     entry #decorate   描画した各行に適用する変換。なければ `Unset`
++     entry #apply   あるインデックスの行。呼び出し側は既に `minHeight` と照合している
++   entry .Row   合わせたセルの一行と、その高さ（行数）
+
+=   entry .Row   one row of fitted cells, with its height in lines
+-     detail
++     detail
+
+-         Made by `Layout#tableRow`, and rendered by `Grid.rowLines`. The row's height is its
+-         tallest cell's line count, and a shorter cell is placed within it by its vertical
+-         alignment.
++         `Layout#tableRow` が作り、`Grid.rowLines` が描画する。
++         行の高さは最も高いセルの行数であり、それより短いセルはその垂直配置によって行の中に置かれる。
+
+-     refer escritoire.Table.Cell
++     refer escritoire.Table.Cell
+
+=     refer escritoire.Table.Cell
+-     refer escritoire.Grid
++     refer escritoire.Grid
+
+-     entry #cells   the fitted cells, one per surviving column
+-     entry #title   whether this is a title row
+-     entry #height   the number of visual lines the row occupies
+-     entry #apply   the cell at a column index
+-   entry .Section   a run of rows which share column widths
++     entry #cells   合わせたセル。残った列ごとに一つ
++     entry #title   これがタイトル行かどうか
++     entry #height   行が占める見た目上の行数
++     entry #apply   ある列インデックスのセル
++   entry .Section   列の幅を共有する行の連なり
+
+=   entry .Section   a run of rows which share column widths
+-     detail
++     detail
+
+-         A `Grid` is a list of sections, drawn with a rule between each pair. `Tabulation#grid`
+-         makes two — the titles and the data — at the same widths; every section's rows are
+-         rendered against the section's own `widths`.
++         `Grid` はセクションのリストであり、隣り合うセクションの間に罫線を引いて描かれる。
++         `Tabulation#grid` は、タイトルとデータの二つを同じ幅で作る。
++         どのセクションの行も、そのセクション自身の `widths` に対して描画される。
+
+=         rendered against the section's own `widths`.
+-     refer escritoire.Grid
++     refer escritoire.Grid
+
+-     entry #widths   the column widths the section's rows were fitted to
+-     entry #rows   the rows, lazily, as a `Chain`
+-   entry .Style   the rules, corners and padding a table is drawn with
++     entry #widths   セクションの行を合わせた列の幅
++     entry #rows   行。`Chain` として遅延して与える
++   entry .Style   表を描く罫線、角、パディング
+
+=   entry .Style   the rules, corners and padding a table is drawn with
+-     detail
++     detail
+
+-         A `Style` says how much padding each cell has on either side, which weight of line
+-         — `Blank`, `Thin`, `Thick` or `Double`, or `Unset` for no line at all — draws the top
+-         edge, the bottom edge, the rule beneath the titles, the outer sides and the inner column
+-         edges, and which `LineCharset` (`Default`, `Rounded` or `Ascii`) supplies the glyphs.
+-         The six styles in the `tableStyles` package cover the usual choices; a style of one's
+-         own is a `Style` value given locally.
++         `Style` は、各セルの両側にどれだけのパディングがあるかを述べる。
++         また、上端、下端、タイトルの下の罫線、外側の辺、内側の列の縁をどの太さの線（`Blank`、`Thin`、`Thick`、`Double`、または線をまったく引かない `Unset`）で描くか、どの `LineCharset`（`Default`、`Rounded`、`Ascii`）がグリフを供給するかを述べる。
++         `tableStyles` パッケージの六つのスタイルが、よくある選択を網羅している。
++         独自のスタイルは、ローカルに与える `Style` の値である。
+
+-         A style is a contextual value: `Tabulation#grid`, `Scaffold#layout` and the `Printable`
+-         givens take one, and `import soundness.*` brings none in, so one of the `tableStyles`
+-         givens is imported by name.
++         スタイルはコンテキスト値である。
++         `Tabulation#grid`、`Scaffold#layout`、`Printable` の given がそれを取り、`import soundness.*` は何ももたらさないので、`tableStyles` の given の一つを名前でインポートする。
+
+=         givens is imported by name.
+=
+-         ```scala
++         ```scala
+
+=         givens is imported by name.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         given ascii: Table.Style =
++         given ascii: Table.Style =
+
+-           Table.Style(1, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, LineCharset.Ascii)
++           Table.Style(1, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, LineCharset.Ascii)
+
+=           Table.Style(1, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, LineCharset.Ascii)
+-         ```
++         ```
+
+-         `Blank` and `Unset` differ: a `Blank` top line is drawn as a blank line, keeping the
+-         table's vertical spacing, where `Unset` draws nothing. Styled `Teletype` content lays
+-         out by its visible width in every style.
++         `Blank` と `Unset` は異なる。
++         `Blank` の上端の線は空行として描かれ、表の垂直方向の間隔を保つが、`Unset` は何も描かない。
++         スタイルを付けた `Teletype` の内容は、どのスタイルでも見た目の幅でレイアウトされる。
+
+-     refer escritoire.tableStyles
++     refer escritoire.tableStyles
+
+=     refer escritoire.tableStyles
+-     refer escritoire.Grid
++     refer escritoire.Grid
+
+-     entry #padding   the cells to the left and right of each cell's content
+-     entry #topLine   the weight of the top edge, or `Unset` for no top edge
+-     entry #bottomLine   the weight of the bottom edge, or `Unset` for no bottom edge
+-     entry #titleLine   the weight of the rule between the titles and the rows, or `Unset` for none
+-     entry #sideLines   the weight of the outer left and right edges; `Blank` for none
+-     entry #innerLines   the weight of the edges between columns; `Blank` for none
+-     entry #charset   which glyph set draws the lines: `Default`, `Rounded` or `Ascii`
+-     entry #columnCost   the chrome one column adds: its padding on both sides and one edge
+-     entry #cost   the chrome of a given number of columns: their costs and the closing edge
+-   entry .Relabelling   overrides the column titles a derived table takes from its field names
++     entry #padding   各セルの内容の左右に置くセル数
++     entry #topLine   上端の線の太さ。上端がなければ `Unset`
++     entry #bottomLine   下端の線の太さ。下端がなければ `Unset`
++     entry #titleLine   タイトルと行の間の罫線の太さ。なければ `Unset`
++     entry #sideLines   外側の左右の辺の太さ。なければ `Blank`
++     entry #innerLines   列の間の縁の太さ。なければ `Blank`
++     entry #charset   線を描くグリフの集合：`Default`、`Rounded`、`Ascii` のいずれか
++     entry #columnCost   一つの列が加える枠：両側のパディングと一つの縁
++     entry #cost   与えた数の列の枠：それらのコストと閉じる縁
++   entry .Relabelling   導出された表がフィールド名から取る列のタイトルを上書きする
+
+=   entry .Relabelling   overrides the column titles a derived table takes from its field names
+-     detail
++     detail
+
+-         A `Relabelling[target]` is a function `#relabelling()` from field names to the
+-         titles wanted instead, consulted by the derived `Tabulable` for `target`: a field named
+-         in the map takes the mapped title, and any other its uncamelled, capitalised name. A
+-         given in scope at the point of derivation is enough; the trait is covariant in its
+-         target, so a relabelling for a supertype applies to its subtypes.
++         `Relabelling[target]` は、フィールド名から代わりに望むタイトルへの関数 `#relabelling()` であり、`target` に対して導出される `Tabulable` が参照する。
++         マップに含まれるフィールドはマップされたタイトルを取り、それ以外のフィールドはキャメルケースを分解し先頭を大文字にした名前を取る。
++         導出の時点でスコープ内に given があれば十分である。
++         このトレイトは対象について共変なので、上位型に対する名前の付け替えはその下位型にも適用される。
+
+=         target, so a relabelling for a supertype applies to its subtypes.
+=
+-         ```scala
++         ```scala
+
+=         target, so a relabelling for a supertype applies to its subtypes.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         target, so a relabelling for a supertype applies to its subtypes.
+=
+=         ```scala
+=         import soundness.*
+-         import tableStyles.thinRoundedTableStyle
++         import tableStyles.thinRoundedTableStyle
+
+=         target, so a relabelling for a supertype applies to its subtypes.
+=
+=         ```scala
+=         import soundness.*
+=         import tableStyles.thinRoundedTableStyle
+-         import textMetrics.uniformMetric
++         import textMetrics.uniformMetric
+
+=         target, so a relabelling for a supertype applies to its subtypes.
+=
+=         ```scala
+=         import soundness.*
+=         import tableStyles.thinRoundedTableStyle
+=         import textMetrics.uniformMetric
+-         import columnAttenuation.ignoreAttenuation
++         import columnAttenuation.ignoreAttenuation
+
+=         target, so a relabelling for a supertype applies to its subtypes.
+=
+=         ```scala
+=         import soundness.*
+=         import tableStyles.thinRoundedTableStyle
+=         import textMetrics.uniformMetric
+=         import columnAttenuation.ignoreAttenuation
+=
+-         case class Person(name: Text, age: Int)
++         case class Person(name: Text, age: Int)
+
+-         given Table.Relabelling[Person] = () => Map(t"name" -> t"Full Name")
++         given Table.Relabelling[Person] = () => Map(t"name" -> t"Full Name")
+
+-         List(Person(t"Poins", 30)).tabulation.grid(40).render.to[List].head   // the title is `Full Name`
++         List(Person(t"Poins", 30)).tabulation.grid(40).render.to[List].head   // the title is `Full Name`
+
+=         List(Person(t"Poins", 30)).tabulation.grid(40).render.to[List].head   // the title is `Full Name`
+-         ```
++         ```
+
+-     refer escritoire.Tabulable
++     refer escritoire.Tabulable
+
+-     entry #relabelling   the map from field names to titles
+-         Called once and cached; a field absent from the map keeps its derived title.
+-     entry #apply   the title for a field name, or `Unset` if the map does not name it
++     entry #relabelling   フィールド名からタイトルへのマップ
++         一度だけ呼ばれてキャッシュされる。
++         マップにないフィールドは、導出されたタイトルを保つ。
++     entry #apply   フィールド名に対するタイトル。マップに名前がなければ `Unset`
+
+- entry .Attenuation   what happens when a table's columns cannot fit the width it was given
++ entry .Attenuation   表の列が与えられた幅に収まらないときに何が起きるか
+
+= entry .Attenuation   what happens when a table's columns cannot fit the width it was given
+-   detail
++   detail
+
+-       An `Attenuation` is called by `Layout.solve` with the minimum width the table needed and
+-       the width it had, when the first exceeds the second even after every collapsible column
+-       has been dropped. It is a policy, not a behaviour the library fixes: a report written
+-       to a file, where nobody will see that the columns were mangled, wants a failure; an
+-       interactive display, where the user can widen the window, wants the rendering. The two
+-       policies are the givens of the `columnAttenuation` package, imported by name; every
+-       `grid`, `layout`, `extend` and `resize` needs one in scope.
++       `Attenuation` は、折りたたみ可能な列をすべて取り除いた後もなお、表が必要とした最小幅が実際の幅を超えるとき、その二つの幅を引数として `Layout.solve` から呼ばれる。
++       これはライブラリが固定する振る舞いではなく、ポリシーである。
++       列が崩れたことに誰も気づかないファイルに書き出すレポートなら、失敗が望ましい。
++       利用者がウィンドウを広げられる対話的な表示なら、描画が望ましい。
++       二つのポリシーは `columnAttenuation` パッケージの given であり、名前でインポートする。
++       どの `grid`、`layout`、`extend`、`resize` も、スコープ内にその一つを必要とする。
+
+=       `grid`, `layout`, `extend` and `resize` needs one in scope.
+-   refer escritoire.columnAttenuation
++   refer escritoire.columnAttenuation
+
+=   refer escritoire.columnAttenuation
+-   refer escritoire.Table
++   refer escritoire.Table
+
+-   entry #apply   called with the minimum width the table needed and the width available
++   entry #apply   表が必要とした最小幅と利用できる幅を引数として呼ばれる
+
+- entry .columnAttenuation   the two policies for a table which does not fit, each a given to import by name
++ entry .columnAttenuation   収まらない表に対する二つのポリシー。それぞれ名前でインポートする given である
+
+= entry .columnAttenuation   the two policies for a table which does not fit, each a given to import by name
+-   detail
++   detail
+
+=   detail
+-       ```scala
++       ```scala
+
+=   detail
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import columnAttenuation.ignoreAttenuation
++       import columnAttenuation.ignoreAttenuation
+
+=       import columnAttenuation.ignoreAttenuation
+-       ```
++       ```
+
+-       `ignoreAttenuation` renders the table anyway, as well as the width allows, and cannot
+-       fail, so choosing it needs no error handling; `failAttenuation` raises `Table.Error`
+-       rather than produce something misleading, and so needs a `Tactic[Table.Error]` — a
+-       `recover`, a `safely`, or `strategies.throwUnsafely` — in scope. Neither is in scope
+-       without an import, since `import soundness.*` imports no givens.
++       `ignoreAttenuation` は、幅が許す限りでともかく表を描画し、失敗しえないので、選んでもエラー処理は要らない。
++       `failAttenuation` は、誤解を招くものを作るよりも `Table.Error` を発生させるので、スコープ内に `Tactic[Table.Error]`（`recover`、`safely`、`strategies.throwUnsafely`）が必要である。
++       `import soundness.*` は given をインポートしないので、どちらもインポートしなければスコープに入らない。
+
+-   refer escritoire.Attenuation
++   refer escritoire.Attenuation
+
+=   refer escritoire.Attenuation
+-   refer escritoire.Table
++   refer escritoire.Table
+
+-   entry .failAttenuation   raises `Table.Error` when the table cannot fit
+-       A context function from a `Tactic[Table.Error]` to an `Attenuation` which captures it,
+-       so importing the given also demands the tactic where the table is laid out. The error
+-       carries the minimum width needed and the width available.
+-   entry .ignoreAttenuation   renders the table anyway, overflowing the width
+-       Does nothing when told the table does not fit: the surviving columns keep their minimum
+-       widths and the lines run past the width asked for.
++   entry .failAttenuation   表が収まらないとき `Table.Error` を発生させる
++       `Tactic[Table.Error]` から、それを捕捉する `Attenuation` へのコンテキスト関数である。
++       そのため、この given をインポートすると、表をレイアウトする所で戦術も要求される。
++       エラーは、必要な最小幅と利用できる幅を持つ。
++   entry .ignoreAttenuation   幅をはみ出しても、ともかく表を描画する
++       表が収まらないと知らされても何もしない。
++       残った列は最小幅を保ち、行は求められた幅を越えて伸びる。
+
+- entry .tableStyles   six ready-made table styles, each a given to import by name
++ entry .tableStyles   既製の六つの表スタイル。それぞれ名前でインポートする given である
+
+= entry .tableStyles   six ready-made table styles, each a given to import by name
+-   detail
++   detail
+
+-       The box drawing is chosen by the `Table.Style` given in scope, and the choice is never
+-       implicit: `import soundness.*` brings none of these in, and one is imported by name. The
+-       same table under the six styles:
++       罫線の描き方はスコープ内の `Table.Style` の given で選ばれ、この選択が暗黙に行われることはない。
++       `import soundness.*` はこれらを何ももたらさないので、一つを名前でインポートする。
++       六つのスタイルでの同じ表：
+
+=       same table under the six styles:
+=
+-       ```scala
++       ```scala
+
+=       same table under the six styles:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       same table under the six styles:
+=
+=       ```scala
+=       import soundness.*
+-       import textMetrics.uniformMetric
++       import textMetrics.uniformMetric
+
+=       import soundness.*
+=       import textMetrics.uniformMetric
+-       import columnAttenuation.ignoreAttenuation
++       import columnAttenuation.ignoreAttenuation
+
+=       import soundness.*
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+=       import soundness.*
+=       import textMetrics.uniformMetric
+=       import columnAttenuation.ignoreAttenuation
+=
+=       case class Person(name: Text, age: Int)
+-       val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
++       val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
+
+=       val people = List(Person(t"Poins", 30), Person(t"Hal", 16))
+-       ```
++       ```
+
+=       ```
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Thick
++       alternative Thick
+
+=       alternative Thick
+-         code
++         code
+
+=       alternative Thick
+=         code
+-             locally:
++             locally:
+
+-               import tableStyles.thickTableStyle
++               import tableStyles.thickTableStyle
+
+=               import tableStyles.thickTableStyle
+-               people.tabulation.grid(40).render.to[List]
++               people.tabulation.grid(40).render.to[List]
+
+-               // ┏━━━━━━━┯━━━━━┓
++               // ┏━━━━━━━┯━━━━━┓
+
+-               // ┃ Name  │ Age ┃
++               // ┃ Name  │ Age ┃
+
+-               // ┠───────┼─────┨
++               // ┠───────┼─────┨
+
+-               // ┃ Poins │  30 ┃
++               // ┃ Poins │  30 ┃
+
+-               // ┃ Hal   │  16 ┃
++               // ┃ Hal   │  16 ┃
+
+-               // ┗━━━━━━━┷━━━━━┛
++               // ┗━━━━━━━┷━━━━━┛
+
+-       alternative Thin rounded
++       alternative Thin rounded
+
+=       alternative Thin rounded
+-         code
++         code
+
+=       alternative Thin rounded
+=         code
+-             locally:
++             locally:
+
+-               import tableStyles.thinRoundedTableStyle
++               import tableStyles.thinRoundedTableStyle
+
+=               import tableStyles.thinRoundedTableStyle
+-               people.tabulation.grid(40).render.to[List]
++               people.tabulation.grid(40).render.to[List]
+
+-               // ╭───────┬─────╮
++               // ╭───────┬─────╮
+
+-               // │ Name  │ Age │
++               // │ Name  │ Age │
+
+-               // ├───────┼─────┤
++               // ├───────┼─────┤
+
+-               // │ Poins │  30 │
++               // │ Poins │  30 │
+
+-               // │ Hal   │  16 │
++               // │ Hal   │  16 │
+
+-               // ╰───────┴─────╯
++               // ╰───────┴─────╯
+
+-       alternative Horizontal
++       alternative Horizontal
+
+=       alternative Horizontal
+-         code
++         code
+
+=       alternative Horizontal
+=         code
+-             locally:
++             locally:
+
+-               import tableStyles.horizontalTableStyle
++               import tableStyles.horizontalTableStyle
+
+=               import tableStyles.horizontalTableStyle
+-               people.tabulation.grid(40).render.to[List]
++               people.tabulation.grid(40).render.to[List]
+
+=               people.tabulation.grid(40).render.to[List]
+-               // ╶─────────────╴
++               // ╶─────────────╴
+
+=               // ╶─────────────╴
+-               //   Name    Age
++               //   Name    Age
+
+=               // ╶─────────────╴
+=               //   Name    Age
+-               // ╶─────────────╴
++               // ╶─────────────╴
+
+=               // ╶─────────────╴
+=               //   Name    Age
+=               // ╶─────────────╴
+-               //   Poins    30
++               //   Poins    30
+
+=               // ╶─────────────╴
+=               //   Name    Age
+=               // ╶─────────────╴
+=               //   Poins    30
+-               //   Hal      16
++               //   Hal      16
+
+=               //   Hal      16
+-               // ╶─────────────╴
++               // ╶─────────────╴
+
+-       alternative Vertical
++       alternative Vertical
+
+=       alternative Vertical
+-         code
++         code
+
+=       alternative Vertical
+=         code
+-             locally:
++             locally:
+
+-               import tableStyles.verticalTableStyle
++               import tableStyles.verticalTableStyle
+
+=               import tableStyles.verticalTableStyle
+-               people.tabulation.grid(40).render.to[List]
++               people.tabulation.grid(40).render.to[List]
+
+-       alternative Mid only
++       alternative Mid only
+
+=       alternative Mid only
+-         code
++         code
+
+=       alternative Mid only
+=         code
+-             locally:
++             locally:
+
+-               import tableStyles.midOnlyTableStyle
++               import tableStyles.midOnlyTableStyle
+
+=               import tableStyles.midOnlyTableStyle
+-               people.tabulation.grid(40).render.to[List]
++               people.tabulation.grid(40).render.to[List]
+
+-       alternative Minimal
++       alternative Minimal
+
+=       alternative Minimal
+-         code
++         code
+
+=       alternative Minimal
+=         code
+-             locally:
++             locally:
+
+-               import tableStyles.minimalTableStyle
++               import tableStyles.minimalTableStyle
+
+=               import tableStyles.minimalTableStyle
+-               people.tabulation.grid(40).render.to[List]
++               people.tabulation.grid(40).render.to[List]
+
+=               people.tabulation.grid(40).render.to[List]
+-               //   Name    Age
++               //   Name    Age
+
+=               people.tabulation.grid(40).render.to[List]
+=               //   Name    Age
+-               // ╶─────────────╴
++               // ╶─────────────╴
+
+=               people.tabulation.grid(40).render.to[List]
+=               //   Name    Age
+=               // ╶─────────────╴
+-               //   Poins    30
++               //   Poins    30
+
+=               people.tabulation.grid(40).render.to[List]
+=               //   Name    Age
+=               // ╶─────────────╴
+=               //   Poins    30
+-               //   Hal      16
++               //   Hal      16
+
+=               //   Hal      16
+-       ##
++       ##
+
+=               //   Hal      16
+=       ##
+-       ```
++       ```
+
+-       A style of one's own is a `Table.Style` value bound as a local given instead.
++       独自のスタイルは、代わりにローカルな given として束縛した `Table.Style` の値である。
+
+=       A style of one's own is a `Table.Style` value bound as a local given instead.
+-   refer escritoire.Table.Style
++   refer escritoire.Table.Style
+
+-   entry .thickTableStyle   heavy top, bottom and sides; thin title rule and column edges; square corners
+-   entry .thinRoundedTableStyle   thin rules throughout, with rounded corners
+-   entry .horizontalTableStyle   thin top, bottom and title rules; no vertical lines
+-       The cells keep their padding, so columns are separated by two spaces where the edge
+-       would have been.
+-   entry .midOnlyTableStyle   a thin rule beneath the titles; blank lines above and below the table
+-       The top and bottom lines are `Blank`, not absent, so the table keeps the vertical
+-       spacing a bordered one would have without drawing the border.
+-   entry .verticalTableStyle   thin side and column edges; no horizontal rules
+-       The horizontal rules are `Blank`, so each is a line of edge stubs: `╷` above and `╵`
+-       below.
+-   entry .minimalTableStyle   a thin rule beneath the titles and nothing else
+-       The top and bottom lines are `Unset`, so the table is its title line, one rule, and
+-       its rows.
++   entry .thickTableStyle   上端、下端、両辺は太線。タイトルの罫線と列の縁は細線。角は直角
++   entry .thinRoundedTableStyle   すべて細線で、角は丸い
++   entry .horizontalTableStyle   上端、下端、タイトルの罫線は細線。縦線はない
++       セルはパディングを保つので、縁があった所では列が二つの空白で区切られる。
++   entry .midOnlyTableStyle   タイトルの下に細い罫線。表の上と下は空行
++       上端と下端の線は存在しないのではなく `Blank` なので、表は枠を描かずに、枠のある表と同じ垂直方向の間隔を保つ。
++   entry .verticalTableStyle   辺と列の縁は細線。水平の罫線はない
++       水平の罫線は `Blank` なので、それぞれが縁の切れ端の行になる：上は `╷`、下は `╵`。
++   entry .minimalTableStyle   タイトルの下の細い罫線だけ
++       上端と下端の線は `Unset` なので、表はタイトルの行、一本の罫線、そして行からなる。
+
+- entry .TextAlignment   how a cell's lines sit within a column's width: tessellate's `Alignment`
+-     `TextAlignment` is an alias for `tessellate.Alignment`, with `TextAlignment` the value
+-     `tessellate.Alignment` so that the cases are named as `TextAlignment.Left`. `Left` pads
+-     on the right; `Right` pads on the left; `Center` splits the padding, putting the odd cell
+-     on the right; `Justify` spreads the spaces between words so that every line but the last
+-     reaches the full width — the newspaper setting, which suits a prose column and nothing
+-     else. Each has a `pad(content, width, last)` which does the padding, `last` saying whether
+-     the line is a cell's last, which `Justify` leaves ragged.
++ entry .TextAlignment   セルの各行が列の幅の中でどう収まるか：tessellate の `Alignment`
++     `TextAlignment` は `tessellate.Alignment` の別名であり、値の `TextAlignment` は `tessellate.Alignment` なので、ケースは `TextAlignment.Left` のように名指しする。
++     `Left` は右側をパディングし、`Right` は左側をパディングする。
++     `Center` はパディングを分け、余りの一セルを右に置く。
++     `Justify` は単語の間の空白を広げて、最後の行以外のすべての行が幅いっぱいに届くようにする。
++     これは新聞の組み方であり、散文の列には合うが、それ以外には合わない。
++     それぞれがパディングを行う `pad(content, width, last)` を持つ。
++     `last` はその行がセルの最後の行かどうかを示し、`Justify` は最後の行を不揃いのままにする。
+
+=     the line is a cell's last, which `Justify` leaves ragged.
+=
+-     ```scala
++     ```scala
+
+=     the line is a cell's last, which `Justify` leaves ragged.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     the line is a cell's last, which `Justify` leaves ragged.
+=
+=     ```scala
+=     import soundness.*
+-     import textMetrics.uniformMetric
++     import textMetrics.uniformMetric
+
+-     TextAlignment.Left.pad(t"hi", 6, true)        // t"hi    "
++     TextAlignment.Left.pad(t"hi", 6, true)        // t"hi    "
+
+-     TextAlignment.Right.pad(t"hi", 6, true)       // t"    hi"
++     TextAlignment.Right.pad(t"hi", 6, true)       // t"    hi"
+
+-     TextAlignment.Center.pad(t"hi", 7, true)      // t"  hi   "
++     TextAlignment.Center.pad(t"hi", 7, true)      // t"  hi   "
+
+-     TextAlignment.Justify.pad(t"a b c", 9, false) // t"a   b   c"
++     TextAlignment.Justify.pad(t"a b c", 9, false) // t"a   b   c"
+
+=     TextAlignment.Justify.pad(t"a b c", 9, false) // t"a   b   c"
+-     ```
++     ```
+
+- entry .VerticalAlignment   where a cell sits in a row that another cell has made taller: tessellate's `Alignment.Vertical`
+-     An alias for `tessellate.Alignment.Vertical`, with the cases `Top`, `Middle` and
+-     `Bottom`. A wrapped cell makes its whole row taller, and the other cells in that row sit
+-     at the top, middle or bottom of the extra height according to their column's
+-     `verticalAlign`; `Top` is the default for every type.
++ entry .VerticalAlignment   他のセルによって高くなった行の中でセルがどこに位置するか：tessellate の `Alignment.Vertical`
++     `tessellate.Alignment.Vertical` の別名であり、ケースは `Top`、`Middle`、`Bottom` である。
++     折り返されたセルは行全体を高くし、その行の他のセルは、列の `verticalAlign` に従って、増えた高さの上、中央、下のいずれかに位置する。
++     `Top` はすべての型の既定である。

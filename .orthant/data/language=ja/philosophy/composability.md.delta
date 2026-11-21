@@ -1,0 +1,250 @@
+orthant 1 language
+
+- # Composability
++ # 合成可能性
+
+- Soundness is built to compose: small pieces combine into larger ones without special
+- cases, and the combination behaves as the parts lead one to expect. APIs are designed
+- so that the result of one operation is the input to the next, types combine to describe
+- richer types, and capabilities nest within capabilities. Composability is what lets a
+- small, consistent set of parts cover an enormous range of uses, and it is treated as a
+- deliberate design constraint rather than a property hoped for after the fact.
++ Soundness は合成できるように作られている。小さな部品は特別な場合なしにより大きなものへと組み合わさり、その組み合わせは部品から予想されるとおりに振る舞う。
++ API は、一つの操作の結果が次の操作の入力になるように設計され、型は組み合わさってより豊かな型を記述し、ケイパビリティはケイパビリティの中に入れ子になる。
++ 合成可能性があるからこそ、小さく一貫した部品の集まりで途方もなく広い用途をまかなえる。そしてそれは、後から期待される性質ではなく、意図的な設計上の制約として扱われる。
+
+- ## Values compose
++ ## 値は合成される
+
+- A [stream](../en/modules/streams.md) pipeline is the clearest case. Each stage takes a
+- stream and yields a stream, so stages chain without adapters and in any order that makes
+- sense:
++ [ストリーム](../en/modules/streams.md) のパイプラインは、最も明快な例である。
++ 各段階はストリームを取ってストリームを生むので、段階はアダプターなしで、意味をなすどの順序でもつながる。
+
+= sense:
+=
+- ```scala fuel
++ ```scala fuel
+
+= sense:
+=
+= ```scala fuel
+- parse
++ parse
+
+= sense:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- file.stream.decompress[Gzip].via(decoder).records
++ file.stream.decompress[Gzip].via(decoder).records
+
+= file.stream.decompress[Gzip].via(decoder).records
+- ```
++ ```
+
+- Nothing in that line is special-cased for its neighbours. Decompression does not know it
+- is reading from a file; the decoder does not know its input was compressed. Because each
+- stage is a value, the chain can be assembled at runtime, held in a variable, or built by
+- a function that decides which stages a particular job needs.
++ この行のどれも、隣のものに合わせた特別扱いはされていない。
++ 展開はファイルから読んでいることを知らない。デコーダーは入力が圧縮されていたことを知らない。
++ 各段階は値なので、連鎖は実行時に組み立てることも、変数に保持することも、ある仕事にどの段階が必要かを決める関数で組み立てることもできる。
+
+- ## Types compose
++ ## 型は合成される
+
+- An [infix type](infix-types.md) adds one clause without nesting a bracket, so a precise
+- type is built up the way an English description is:
++ [中置型](infix-types.md) は括弧を入れ子にせずに節を一つ加えるので、精密な型は、英語の記述と同じようにして組み立てられる。
+
+= type is built up the way an English description is:
+=
+- ```scala fuel
++ ```scala fuel
+
+= type is built up the way an English description is:
+=
+= ```scala fuel
+- parse
++ parse
+
+= type is built up the way an English description is:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- Path on Linux
++ Path on Linux
+
+- Raster by Rgba in Png
++ Raster by Rgba in Png
+
+- Text is Decodable in Json
++ Text is Decodable in Json
+
+- Html.Element of "ul" over "li" in Whatwg
++ Html.Element of "ul" over "li" in Whatwg
+
+= Html.Element of "ul" over "li" in Whatwg
+- ```
++ ```
+
+- Each preposition means the same thing wherever it appears, so a reader who has understood
+- one such type reads the next by analogy. The alternative — `Element["ul", "li", Whatwg]` —
+- carries the same information and tells the reader nothing about which parameter is which.
++ 各前置詞はどこに現れても同じことを意味するので、そうした型を一つ理解した読み手は、次のものを類推で読める。
++ 代わりの書き方である `Element["ul", "li", Whatwg]` は同じ情報を運ぶが、どのパラメーターがどれなのかを読み手に何も伝えない。
+
+- ## Capabilities compose
++ ## ケイパビリティは合成される
+
+- Two capabilities in scope are two capabilities; there is no combined type to construct
+- and no ordering to choose. Fallible, asynchronous and logging code compose by being
+- written next to each other:
++ スコープにある二つのケイパビリティは、二つのケイパビリティである。構築すべき組み合わせの型もなければ、選ぶべき順序もない。
++ 失敗しうるコード、非同期のコード、ログを取るコードは、並べて書くことで合成される。
+
+= written next to each other:
+=
+- ```scala fuel
++ ```scala fuel
+
+= written next to each other:
+=
+= ```scala fuel
+- parse
++ parse
+
+= written next to each other:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- supervise:
++ supervise:
+
+-   recover:
++   recover:
+
+-     case error: HttpError => fallback
++     case error: HttpError => fallback
+
+-   . protect:
++   . protect:
+
+-       async(url"https://example.com/".fetch().receive[Text])
++       async(url"https://example.com/".fetch().receive[Text])
+
+=       async(url"https://example.com/".fetch().receive[Text])
+- ```
++ ```
+
+- This is the property that [direct style](direct-style.md) exists to preserve. Under a
+- monadic encoding the same combination requires a transformer stack, and the order in
+- which the effects are stacked becomes a decision with consequences. Here it is not a
+- decision at all.
++ これは [ダイレクトスタイル](direct-style.md) が守るために存在する性質である。
++ モナドによる符号化のもとでは、同じ組み合わせにトランスフォーマーのスタックが必要になり、作用をどの順序で積むかが、結果を伴う決定になる。
++ ここでは、それはそもそも決定ではない。
+
+- ## Scopes compose
++ ## スコープは合成される
+
+- Because a capability is introduced by a block, and blocks nest, resource lifetimes nest:
++ ケイパビリティはブロックによって導入され、ブロックは入れ子になるので、リソースの存続期間も入れ子になる。
+
+= Because a capability is introduced by a block, and blocks nest, resource lifetimes nest:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Because a capability is introduced by a block, and blocks nest, resource lifetimes nest:
+=
+= ```scala fuel
+- parse
++ parse
+
+= Because a capability is introduced by a block, and blocks nest, resource lifetimes nest:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- archive.open[Zip](): zip ?=>
++ archive.open[Zip](): zip ?=>
+
+-   target.open[File](Write): handle ?=>
++   target.open[File](Write): handle ?=>
+
+-     handle.write(zip.entries.head.stream)
++     handle.write(zip.entries.head.stream)
+
+=     handle.write(zip.entries.head.stream)
+- ```
++ ```
+
+- The inner scope sees both capabilities; each is withdrawn at its own boundary, in the
+- right order, whether the block completes or fails. Adding a third resource adds a line
+- rather than restructuring the other two — and [capture checking](capture-checking.md)
+- proves that nothing escapes outward.
++ 内側のスコープは両方のケイパビリティを見る。それぞれは、ブロックが完了しても失敗しても、正しい順序で、それぞれの境界で取り下げられる。
++ 三つ目のリソースを加えても、ほかの二つを組み立て直すのではなく、一行が加わるだけである。そして [キャプチャ検査](capture-checking.md) が、何も外へ逃げ出さないことを証明する。
+
+- ## The constraint this places on design
++ ## これが設計に課す制約
+
+- Composability is easy to describe and hard to keep, because the pressure against it is
+- always local. Every special case, every "convenience" overload that takes the pair rather
+- than the parts, every operation that works only when called first — each is a small
+- convenience that removes a combination someone else needed.
++ 合成可能性は、述べるのは易しく保つのは難しい。それに逆らう圧力は常に局所的だからである。
++ 特別な場合、部品ではなく組を取る「便利な」オーバーロード、最初に呼ばれたときにしか動かない操作。どれもが、ほかの誰かが必要としていた組み合わせを取り除く、小さな便利さである。
+
+- Three rules follow, and they are why some Soundness APIs look more austere than they
+- might:
++ 三つの規則が導かれ、Soundness の API のいくつかが本来よりも簡素に見えるのはそのためである。
+
+- **Return the type you accept.** An operation that takes a stream returns a stream, so it
+- can sit in the middle of a chain rather than only at the end.
++ **受け取る型を返す。**
++ ストリームを取る操作はストリームを返すので、連鎖の終わりだけでなく途中にも置ける。
+
+- **Do not fuse what the caller can combine.** There is no `readAndDecompress`, because
+- `stream.decompress[Gzip].read[Text]` already exists and the fused version would have to
+- be repeated for every pair.
++ **呼び出し側が組み合わせられるものを融合しない。**
++ `readAndDecompress` はない。`stream.decompress[Gzip].read[Text]` がすでにあり、融合した版はあらゆる組について繰り返さなければならなくなるからである。
+
+- **Make the general case the only case.** If an operation works for `List` but not for a
+- stream, the abstraction is wrong — which is why the operations are defined over
+- typeclasses rather than over concrete types.
++ **一般の場合を唯一の場合にする。**
++ ある操作が `List` には使えてストリームには使えないなら、抽象化が誤っている。操作が具体的な型ではなく型クラスに対して定義されているのはこのためである。
+
+- ## What it costs
++ ## コスト
+
+- A composable API is less immediately convenient than a fused one. `dir.archive[Tar]().gzip`
+- is two calls where `tarGzip(dir)` would be one, and a reader who wanted exactly the fused
+- operation pays a small tax for the generality they did not need.
++ 合成可能な API は、融合した API ほどすぐには便利でない。
++ `tarGzip(dir)` なら一回の呼び出しで済むところが、`dir.archive[Tar]().gzip` では二回になり、まさに融合した操作を求めていた読み手は、必要としなかった一般性のために小さな税を払う。
+
+- That tax is accepted because it is bounded and the alternative is not: fused operations
+- multiply combinatorially, and each one added is a place where the general path and the
+- shortcut can drift apart.
++ その税が受け入れられるのは、それには上限があり、代わりのやり方には上限がないからである。融合した操作は組み合わせ的に増え、一つ加えるたびに、一般の経路と近道が食い違いうる場所が一つ増える。
+
+- See [small APIs](small-apis.md) for the vocabulary this keeps small, and
+- [decoupling](decoupling.md) for how independent modules manage to compose at all.
++ これが小さく保つ語彙については [小さな API](small-apis.md) を、独立したモジュールがそもそもどうやって合成できるのかについては [分離](decoupling.md) を参照のこと。

@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `SN-924` — `for`-comprehension layout (retired)
++ # `SN-924` — `for` 内包表記のレイアウト（廃止）
+
+- This error no longer exists. The page is kept so that the code is not reused, and so
+- that a reference to it from an older release can still be resolved.
++ このエラーはもう存在しない。
++ このページは、コードが再利用されないように、また古いリリースからの参照が今でも解決できるように残されている。
+
+- ## What became of it
++ ## その後
+
+- The Decorum compiler plugin, which raised this error, was extracted from Soundness and
+- is now [Consequent](https://github.com/propensive/consequent), a standalone checker for
+- Consequent Style. The rule survives there under a new identifier, in which the letter
+- names the principle it derives from:
++ このエラーを発生させていた Decorum コンパイラプラグインは Soundness から切り出され、現在は Consequent Style のための独立したチェッカーである [Consequent](https://github.com/propensive/consequent) になっている。
++ 規則はそこで新しい識別子の下に残っており、その文字は規則の由来となった原則を表す：
+
+- ```tabular
++ ```tabular
+
+- column  Was
+- column  Now
++ column  旧
++ column  新
+
+- row  `SN-924`  [`T3`](https://github.com/propensive/consequent/blob/main/doc/rules/T3.md)
++ row  `SN-924`  [`T3`](https://github.com/propensive/consequent/blob/main/doc/rules/T3.md)
+
+- row  `SN-924.1`  [`T3.1`](https://github.com/propensive/consequent/blob/main/doc/rules/T3.md)
++ row  `SN-924.1`  [`T3.1`](https://github.com/propensive/consequent/blob/main/doc/rules/T3.md)
+
+- row  `SN-924.2`  [`T3.2`](https://github.com/propensive/consequent/blob/main/doc/rules/T3.md)
++ row  `SN-924.2`  [`T3.2`](https://github.com/propensive/consequent/blob/main/doc/rules/T3.md)
+
+- row  `SN-924.3`  [`T3.3`](https://github.com/propensive/consequent/blob/main/doc/rules/T3.md)
++ row  `SN-924.3`  [`T3.3`](https://github.com/propensive/consequent/blob/main/doc/rules/T3.md)
+
+- row  `SN-924.4`  [`T3.4`](https://github.com/propensive/consequent/blob/main/doc/rules/T3.md)
++ row  `SN-924.4`  [`T3.4`](https://github.com/propensive/consequent/blob/main/doc/rules/T3.md)
+
+- ```
++ ```

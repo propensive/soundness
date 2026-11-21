@@ -1,0 +1,70 @@
+orthant 1 language
+
+- # `↯/s.106.2` — `JsonPointer.Error`
++ # `↯/s.106.2` — `JsonPointer.Error`
+
+- Raised when a JSON pointer cannot be resolved.
++ JSON ポインターを解決できないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Jacinta resolves JSON pointers per RFC 6901. The constructor takes
+- a `reason: Reason`; the rendered message is `the JSON pointer
+- could not be resolved because $reason`.
++ Jacinta は RFC 6901 に従って JSON ポインターを解決する。
++ コンストラクターは `reason: Reason` を受け取り、描画されるメッセージは `the JSON pointer could not be resolved because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- (`↯/s.106.2.1`, `UnknownDocument`, was retired when `JsonPointer` lost its never-populated document
+- URL and `JsonPointer.Registry`; the remaining numbers are unchanged.)
++ （`↯/s.106.2.1` の `UnknownDocument` は、`JsonPointer` が一度も値の入らなかったドキュメントの URL と `JsonPointer.Registry` を失ったときに廃止された。
++ 残りの番号は変わっていない。）
+
+- ### `↯/s.106.2.2` — `ExpectedHash`
++ ### `↯/s.106.2.2` — `ExpectedHash`
+
+- A JSON reference does not begin with `#`.
++ JSON 参照が `#` で始まっていない。
+
+- **Example.** `[↯/s.106.2.2] the JSON reference was not valid because a JSON reference must begin with '#'`
++ **例。** `[↯/s.106.2.2] the JSON reference was not valid because a JSON reference must begin with '#'`
+
+- **Resolution.** Begin the reference with `#`, as in `#/play/title`.
++ **解決方法。** `#/play/title` のように、参照を `#` で始める。
+
+- ### `↯/s.106.2.3` — `ExpectedSlash`
++ ### `↯/s.106.2.3` — `ExpectedSlash`
+
+- A JSON reference's fragment does not begin with `/`.
++ JSON 参照のフラグメントが `/` で始まっていない。
+
+- **Example.** `[↯/s.106.2.3] the JSON reference was not valid because a JSON reference fragment must begin with '/'`
++ **例。** `[↯/s.106.2.3] the JSON reference was not valid because a JSON reference fragment must begin with '/'`
+
+- **Resolution.** Begin the fragment with `/`, as in `#/play`. A bare `#` addressing the whole document is also valid.
++ **解決方法。** `#/play` のように、フラグメントを `/` で始める。
++ ドキュメント全体を指す素の `#` も正しい。
+
+- ### `↯/s.106.2.4` — `BadEscape`
++ ### `↯/s.106.2.4` — `BadEscape`
+
+- A `~` in a JSON reference is not followed by `0` or `1`.
++ JSON 参照の中の `~` の後に `0` も `1` も続いていない。
+
+- **Example.** `[↯/s.106.2.4] the JSON reference was not valid because a '~' in a JSON reference must be followed by '0' or '1'`
++ **例。** `[↯/s.106.2.4] the JSON reference was not valid because a '~' in a JSON reference must be followed by '0' or '1'`
+
+- **Resolution.** Escape a literal `~` as `~0` and a literal `/` as `~1`. No other escape is defined.
++ **解決方法。** リテラルの `~` は `~0` に、リテラルの `/` は `~1` にエスケープする。
++ 他のエスケープは定義されていない。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/jacinta/src/core/jacinta.JsonPointer.scala`
+- - `↯/s.106.1` — typed JSON access errors
++ - ソース：`lib/jacinta/src/core/jacinta.JsonPointer.scala`
++ - `↯/s.106.1` — 型付きの JSON アクセスのエラー

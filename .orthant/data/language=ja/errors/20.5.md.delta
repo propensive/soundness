@@ -1,0 +1,44 @@
+orthant 1 language
+
+- # `↯/s.20.5` — Type is abstract
++ # `↯/s.20.5` — 型が抽象的である
+
+- Raised at compile time by Vacuous's `concrete` macro when the type
+- is abstract.
++ 型が抽象的であるときに、Vacuous の `concrete` マクロによってコンパイル時に発生する。
+
+- ## Cause
++ ## 原因
+
+- The macro provides evidence that a type is concrete (i.e. it is
+- not an abstract type member or unbounded type parameter). When the
+- type is abstract, the macro halts.
++ このマクロは、型が具体的である（つまり、抽象型メンバーでも上限のない型パラメーターでもない）ことの証拠を提供する。
++ 型が抽象的であるとき、マクロは停止する。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.20.5] type T is abstract
++ [↯/s.20.5] type T is abstract
+
+= [↯/s.20.5] type T is abstract
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Use a concrete type at the call site, or pass evidence of
+- concreteness.
++ 呼び出し箇所で具体的な型を使うか、具体性の証拠を渡す。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/vacuous/src/core/vacuous.internal.scala`
++ - ソース：`lib/vacuous/src/core/vacuous.internal.scala`

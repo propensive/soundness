@@ -1,0 +1,58 @@
+orthant 1 language
+
+- # `↯/s.105.8` — `PublicKey.Error`
++ # `↯/s.105.8` — `PublicKey.Error`
+
+- Raised when a key document cannot be read as a public key of the cipher asked for.
++ 鍵の文書を、求められた暗号方式の公開鍵として読めないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- A public key is read from an X.509 `SubjectPublicKeyInfo` or a PKCS#1 `RSAPublicKey`, bare or
+- in PEM armor, as a key of a named cipher, such as `PublicKey[Rsa[2048]]`. This error covers a
+- document that is not a public key, and one that holds a key of another algorithm or size.
++ 公開鍵は、X.509 の `SubjectPublicKeyInfo` または PKCS#1 の `RSAPublicKey` から、そのままの形か PEM のアーマー形式で、`PublicKey[Rsa[2048]]` のような名前付きの暗号方式の鍵として読まれる。
++ このエラーが扱うのは、公開鍵でない文書と、別のアルゴリズムやサイズの鍵を保持する文書である。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  コード
++ column  理由
++ column  メッセージ
+
+- row  `↯/s.105.8.1`  `Malformed`  the key document was malformed: <detail>
++ row  `↯/s.105.8.1`  `Malformed`  the key document was malformed: <detail>
+
+- row  `↯/s.105.8.2`  `Mismatch`  a <expected> key was expected but <found> was found
++ row  `↯/s.105.8.2`  `Mismatch`  a <expected> key was expected but <found> was found
+
+- row  `↯/s.105.8.3`  `Unsupported`  the key uses an unsupported <detail>
++ row  `↯/s.105.8.3`  `Unsupported`  the key uses an unsupported <detail>
+
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- A `Mismatch` names what the document holds: read the key as that cipher, or supply the key
+- that was intended. A key in OpenSSH's single-line form is not PEM; read it with
+- `OpenSsh.publicKey`.
++ `Mismatch` は、文書が保持しているものを名指す。鍵をその暗号方式として読むか、意図した鍵を与える。
++ OpenSSH の一行形式の鍵は PEM ではない。`OpenSsh.publicKey` で読む。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/enigmatic/src/core/enigmatic.PublicKey.scala`
+- - `↯/s.105.7` — `PrivateKey.Error`, the same for a private key
++ - ソース：`lib/enigmatic/src/core/enigmatic.PublicKey.scala`
++ - `↯/s.105.7` — `PrivateKey.Error`。秘密鍵についての同じエラー

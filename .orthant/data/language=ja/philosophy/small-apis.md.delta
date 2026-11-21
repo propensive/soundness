@@ -1,0 +1,227 @@
+orthant 1 language
+
+- # Small APIs
++ # 小さな API
+
+- Soundness keeps its APIs small by giving one operation one name. A single polymorphic
+- method — `read`, `as`, `show` — serves every type that supports it, instead of a
+- family of near-duplicates that differ only in what they apply to. There is one obvious
+- way to do a thing, so there is less to learn, less to remember, and less chance of
+- reaching for the wrong variant. The breadth of what an API can do comes from the range
+- of types it ranges over, not from the number of methods it offers.
++ Soundness は、一つの操作に一つの名前を与えることで API を小さく保つ。
++ 適用対象だけが異なる、ほとんど重複したメソッドの一族の代わりに、`read`、`as`、`show` のような単一の多相メソッドが、それをサポートするあらゆる型に役立つ。
++ 物事を行う明白な方法が一つしかないので、学ぶことも覚えることも少なく、誤ったバリアントに手を伸ばす可能性も低い。
++ API にできることの幅は、それが提供するメソッドの数からではなく、それが及ぶ型の範囲から生まれる。
+
+- ## One verb, many types
++ ## 一つの動詞、多くの型
+
+- `read` parses a source into the type asked for. There is no `readJson`, no `parseXml`,
+- no `fromCsv` — the type argument says what is wanted, and an instance for that type does
+- the work:
++ `read` はソースを求められた型へとパースする。
++ `readJson` も `parseXml` も `fromCsv` もない。
++ 型引数が何を求めているかを述べ、その型のインスタンスが仕事をする：
+
+= the work:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the work:
+=
+= ```scala fuel
+- parse
++ parse
+
+= the work:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- source.read[Json]
++ source.read[Json]
+
+- source.read[Xml]
++ source.read[Xml]
+
+- source.read[Markdown of Layout]
++ source.read[Markdown of Layout]
+
+- source.read[Raster in Png]
++ source.read[Raster in Png]
+
+- source.read[Person in Dsv]
++ source.read[Person in Dsv]
+
+= source.read[Person in Dsv]
+- ```
++ ```
+
+- Adding a format adds instances, not methods. The vocabulary a reader must learn does not
+- grow when the library does.
++ 形式を追加するとインスタンスが増えるのであって、メソッドが増えるのではない。
++ 読者が学ばなければならない語彙は、ライブラリが大きくなっても増えない。
+
+- The same holds throughout. Each verb is one method, whose meaning for a given type comes
+- from one typeclass:
++ 同じことが全体を通じて成り立つ。
++ 各動詞は一つのメソッドであり、ある型に対するその意味は一つの型クラスから来る：
+
+- ```tabular
++ ```tabular
+
+- column  Verb
+- column  Does
+- column  Typeclass
+- row  `read`  reads a source as a value  `Readable`
+- row  `as`  decodes  `Decodable`
+- row  `show`  renders for a person  `Showable`
+- row  `inspect`  renders for a programmer  `Inspectable`
+- row  `in`  encodes into a format  `Encodable`
+- row  `stream`  exposes a value as a stream  `Streamable`
+- row  `digest`  hashes  `Digestible`
+- row  `serialize`  renders bytes in a base encoding  `Serializable`
++ column  動詞
++ column  働き
++ column  型クラス
++ row  `read`  ソースを値として読む  `Readable`
++ row  `as`  デコードする  `Decodable`
++ row  `show`  人間向けに描画する  `Showable`
++ row  `inspect`  プログラマー向けに描画する  `Inspectable`
++ row  `in`  形式へエンコードする  `Encodable`
++ row  `stream`  値をストリームとして公開する  `Streamable`
++ row  `digest`  ハッシュする  `Digestible`
++ row  `serialize`  バイトを基数エンコーディングで描画する  `Serializable`
+
+= row  `serialize`  renders bytes in a base encoding  `Serializable`
+- ```
++ ```
+
+- So decoding, encoding, hashing and serializing read alike, whatever the type:
++ そのため、デコード、エンコード、ハッシュ、直列化は、型が何であっても同じように読める：
+
+= So decoding, encoding, hashing and serializing read alike, whatever the type:
+=
+- ```scala fuel
++ ```scala fuel
+
+= So decoding, encoding, hashing and serializing read alike, whatever the type:
+=
+= ```scala fuel
+- parse
++ parse
+
+= So decoding, encoding, hashing and serializing read alike, whatever the type:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- t"2024-01-15".as[Date]
++ t"2024-01-15".as[Date]
+
+- t"example.com".as[Hostname]
++ t"example.com".as[Hostname]
+
+- person.in[Json]
++ person.in[Json]
+
+- person.in[Cbor]
++ person.in[Cbor]
+
+- payload.digest[Sha2[256]].serialize[Hex]
++ payload.digest[Sha2[256]].serialize[Hex]
+
+= payload.digest[Sha2[256]].serialize[Hex]
+- ```
++ ```
+
+- ## What makes it possible
++ ## それを可能にするもの
+
+- Three things, and none of them is naming discipline alone.
++ 三つのものであり、そのどれも命名の規律だけによるものではない。
+
+- **Typeclasses supply the meaning.** `read` is one method whose behaviour comes from a
+- `Readable` instance; `as` from a `Decodable`; `show` from a `Showable`. The method is a
+- name for a *relationship*, not for an implementation.
++ **型クラスが意味を与える。**
++ `read` は、その動作が `Readable` インスタンスから来る一つのメソッドである。
++ `as` は `Decodable` から、`show` は `Showable` から来る。
++ メソッドは実装の名前ではなく、*関係*の名前である。
+
+- **The type argument carries the intent** that a longer name would otherwise carry.
+- `read[Json]` says as much as `readJson` in the same number of characters, and composes:
+- `read[Person in Json]` has no reasonable name at all in the other scheme.
++ **型引数が意図を運ぶ。**
++ それがなければ、より長い名前が運ぶことになる意図である。
++ `read[Json]` は同じ文字数で `readJson` と同じだけのことを言い、しかも合成できる。
++ `read[Person in Json]` には、もう一方の方式ではまともな名前がまったくない。
+
+- **Uniqueness of names makes the umbrella import safe.** Because there is one `Path` and
+- one `Error` in the whole of `soundness`, a single `import soundness.*` never forces a
+- choice between two things called the same — which is what allows one verb to be
+- genuinely one verb rather than several shadowing each other. See
+- [naming](naming.md).
++ **名前の一意性がアンブレラのインポートを安全にする。**
++ `soundness` 全体に `Path` は一つ、`Error` も一つしかないので、単一の `import soundness.*` が同じ名前で呼ばれる二つのものの間で選択を強いることは決してない。
++ これが、一つの動詞が互いを隠し合ういくつもの動詞ではなく、本当に一つの動詞であることを可能にしている。
++ [命名](naming.md)を参照のこと。
+
+- ## The counter-pressure
++ ## 逆向きの圧力
+
+- A small API is not an API with few capabilities, and the principle is not "add no
+- methods". It is a constraint on *how* capability is added: by widening the range of
+- types an existing operation covers, before adding an operation.
++ 小さな API とはケイパビリティの少ない API ではなく、この原則は「メソッドを追加するな」ということではない。
++ それはケイパビリティを*どのように*追加するかについての制約である。
++ 操作を追加する前に、既存の操作が扱う型の範囲を広げるのである。
+
+- Two forces push the other way, and both are legitimate in their place.
++ 二つの力が逆方向に押しており、どちらもそれぞれの場所では正当である。
+
+- The first is when an operation genuinely differs. `read` and `load` are two verbs for
+- [XML](../en/modules/xml.md), because reading yields the content and loading yields the
+- document with its header — a real distinction, not a variant. Collapsing them would
+- force a flag argument, which is a worse way to say the same thing.
++ 一つ目は、操作が本当に異なる場合である。
++ [XML](../en/modules/xml.md) に対して `read` と `load` は二つの動詞である。
++ 読むことは内容をもたらし、ロードすることはヘッダー付きの文書をもたらすからであり、これはバリアントではなく本当の区別である。
++ 両者をまとめるとフラグ引数を強いることになり、それは同じことを言うより悪い方法である。
+
+- The second is when a domain has its own vocabulary that a general verb would obscure. A
+- `Tarfile` has `gzip`, not `in[Gzip]`, because "a gzipped tarball" is the thing the domain
+- names. Insisting on the general verb everywhere makes an API uniform and unreadable,
+- which trades one kind of learning cost for another.
++ 二つ目は、一般的な動詞では覆い隠されてしまう独自の語彙を、ある領域が持っている場合である。
++ `Tarfile` が持つのは `in[Gzip]` ではなく `gzip` である。
++ 「gzip 圧縮された tarball」こそ、その領域が名指すものだからである。
++ どこでも一般的な動詞に固執すると、API は一様になるが読めなくなり、ある種の学習コストを別の種類のものと引き換えることになる。
+
+- ## What it costs
++ ## コスト
+
+- Polymorphic methods put weight on inference and on error messages. When
+- `source.read[Person in Json]` fails because an instance is missing, the compiler's
+- default complaint is about an implicit search, not about a missing codec — which is
+- further from the problem than "no method `readPerson`" would have been.
++ 多相メソッドは推論とエラーメッセージに負担をかける。
++ インスタンスが欠けているために `source.read[Person in Json]` が失敗したとき、コンパイラのデフォルトの苦情は欠けたコーデックについてではなく暗黙の探索についてのものであり、「`readPerson` というメソッドはない」よりも問題から遠い。
+
+- That cost is paid down rather than denied: importing `explainMissingContext` turns the
+- bare implicit error into a diagnosis that names the import which would satisfy it. The
+- trade — a slightly worse failure mode for a much smaller vocabulary — is only worth
+- making if the failure mode is repaired, so it is.
++ そのコストは否定されるのではなく返済される。
++ `explainMissingContext` をインポートすると、素の暗黙のエラーが、それを満たすインポートを名指す診断に変わる。
++ この取引、つまりはるかに小さな語彙と引き換えにわずかに悪い失敗の様態を受け入れることは、失敗の様態が修復される場合にのみ行う価値があり、だからこそ修復されている。
+
+- See [elegant prose](elegant-prose.md) for why the vocabulary being learnable by analogy
+- is the real prize, and [composability](composability.md) for what the uniformity buys.
++ 類推によって語彙を学べることがなぜ本当の報酬なのかについては[優雅な散文](elegant-prose.md)を、一様性が何をもたらすかについては[合成可能性](composability.md)を参照のこと。

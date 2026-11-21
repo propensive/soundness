@@ -1,0 +1,58 @@
+orthant 1 language
+
+- # `↯/s.68.2` — `Moniker.Error`
++ # `↯/s.68.2` — `Moniker.Error`
+
+- Raised when a moniker — a stable, compiletime-checked identifier — is not valid.
++ モニカー（安定した、コンパイル時に検査される識別子）が有効でないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- A moniker names something so it can be referred to across edits: a test, a benchmark cell,
+- a schema field. Its syntax is restricted so that it can appear unquoted on a command line
+- and in a report.
++ モニカーは、編集をまたいで参照できるように何かに名前を付ける。テスト、ベンチマークのセル、スキーマのフィールドである。
++ その構文は、コマンドラインやレポートに引用符なしで現れられるように制限されている。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  コード
++ column  理由
++ column  メッセージ
+
+- row  `↯/s.68.2.1`  `Unreadable`  `[↯/s.68.2.1] the vocabulary could not be read`
++ row  `↯/s.68.2.1`  `Unreadable`  `[↯/s.68.2.1] the vocabulary could not be read`
+
+- row  `↯/s.68.2.2`  `OutOfRange`  `[↯/s.68.2.2] the number <n> is outside the representable range`
++ row  `↯/s.68.2.2`  `OutOfRange`  `[↯/s.68.2.2] the number <n> is outside the representable range`
+
+- row  `↯/s.68.2.3`  `Malformed`  `[↯/s.68.2.3] <name> is not of the form <adjective>-<animal>`
++ row  `↯/s.68.2.3`  `Malformed`  `[↯/s.68.2.3] <name> is not of the form <adjective>-<animal>`
+
+- row  `↯/s.68.2.4`  `UnknownWord`  `[↯/s.68.2.4] the word <word> does not appear in the vocabulary`
++ row  `↯/s.68.2.4`  `UnknownWord`  `[↯/s.68.2.4] the word <word> does not appear in the vocabulary`
+
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Use an identifier made of letters, digits and the permitted separators, beginning with a
+- letter. The reason names the specific rule that was broken.
++ 文字、数字、許された区切り文字からなり、文字で始まる識別子を使う。
++ 理由は、破られた特定の規則を名指す。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/nomenclature/src/lexicon/nomenclature.Moniker.scala`
++ - ソース：`lib/nomenclature/src/lexicon/nomenclature.Moniker.scala`

@@ -1,0 +1,1506 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base wisteria
++ base wisteria
+
+- import soundness
++ import soundness
+
+- info   generic derivation of typeclass instances for products and sums, from two rules written once
++ info   一度だけ書いた二つの規則による、直積と直和のための型クラスインスタンスの汎用的な導出
+
+- detail
++ detail
+
+-     _Wisteria_ is the derivation engine behind every derived codec in Soundness — the JSON
+-     encoders built from case classes, the CSV rows built from fields, the digests built from
+-     structures. A typeclass author writes two rules, `conjunction` (how the instances of a
+-     **product**'s fields combine into an instance for the product) and `disjunction` (how an
+-     instance for a **sum** chooses among its variants), by extending `Derivation`, and every
+-     case class, tuple, enumeration and sealed trait then has an instance, resolved through the
+-     inherited `derived` given or requested with a `derives` clause. There is no macro to write:
+-     the two rules are ordinary inline methods, and the field-by-field or variant-by-variant
+-     work is done by the inherited combinators `fields`, `contexts`, `build`, `construct`,
+-     `variant`, `delegate`, `choices` and `singleton`.
++     _Wisteria_ は、Soundness のあらゆる導出されたコーデックの背後にある導出のエンジンである。ケースクラスから組み立てられる JSON のエンコーダー、フィールドから組み立てられる CSV の行、構造から組み立てられるダイジェストがそうである。
++     型クラスの作者は `Derivation` を継承して二つの規則を書く。`conjunction`（**直積**のフィールドのインスタンスを組み合わせて直積のインスタンスにする方法）と `disjunction`（**直和**のインスタンスがバリアントの中から選ぶ方法）である。そうすれば、すべてのケースクラス、タプル、列挙型、シールされたトレイトがインスタンスを持ち、それは継承された `derived` given を通じて解決されるか、`derives` 節で要求される。
++     書くべきマクロはない。二つの規則は普通のインラインメソッドであり、フィールドごと、バリアントごとの作業は、継承されたコンビネーター `fields`、`contexts`、`build`、`construct`、`variant`、`delegate`、`choices`、`singleton` が行う。
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     import dysasymptotics.linearAccess
++     import dysasymptotics.linearAccess
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     trait Presentation[value]:
++     trait Presentation[value]:
+
+-       def present(value: value): Text
++       def present(value: value): Text
+
+-     object Presentation extends Derivation[Presentation]:
++     object Presentation extends Derivation[Presentation]:
+
+-       given Presentation[Text] = identity(_)
++       given Presentation[Text] = identity(_)
+
+-       given Presentation[Int] = _.toString.tt
++       given Presentation[Int] = _.toString.tt
+
+-       inline def conjunction[derivation <: Product: ProductReflection]: Presentation[derivation] =
++       inline def conjunction[derivation <: Product: ProductReflection]: Presentation[derivation] =
+
+=       inline def conjunction[derivation <: Product: ProductReflection]: Presentation[derivation] =
+-         value =>
++         value =>
+
+-           fields(value):
++           fields(value):
+
+-             [field] => field => t"$label=${contextual.present(field)}"
++             [field] => field => t"$label=${contextual.present(field)}"
+
+-           . join(t"${typeName[derivation]}(", t", ", t")")
++           . join(t"${typeName[derivation]}(", t", ", t")")
+
+-       inline def disjunction[derivation: SumReflection]: Presentation[derivation] =
++       inline def disjunction[derivation: SumReflection]: Presentation[derivation] =
+
+=       inline def disjunction[derivation: SumReflection]: Presentation[derivation] =
+-         value =>
++         value =>
+
+-           variant(value):
++           variant(value):
+
+-             [variant <: derivation] => variant => contextual.present(variant)
++             [variant <: derivation] => variant => contextual.present(variant)
+
+-     extension [value](value: value)
++     extension [value](value: value)
+
+-       def present(using presentation: Presentation[value]): Text = presentation.present(value)
++       def present(using presentation: Presentation[value]): Text = presentation.present(value)
+
+-     case class Person(name: Text, age: Int) derives Presentation
++     case class Person(name: Text, age: Int) derives Presentation
+
+-     Person(t"Hamlet", 30).present   // t"Person(name=Hamlet, age=30)"
++     Person(t"Hamlet", 30).present   // t"Person(name=Hamlet, age=30)"
+
+-     ```
++     ```
+
+-     Inside the polymorphic lambda each combinator takes, the field or variant is described by
+-     a handful of contextual values, read through the package's accessors: `contextual` is the
+-     typeclass instance for the field's own type, `label` its name as written, `index` its
+-     position, `default` (from vacuous) the field's declared default value or `Unset`, and
+-     `dereference` a function from the product to the field. The `[field] => field => …`
+-     syntax is a polymorphic lambda: every field has a different type, and the body knows only
+-     that `contextual` is an instance for precisely that type, which is all it needs.
++     各コンビネーターが受け取る多相ラムダの中では、フィールドやバリアントはいくつかのコンテキスト値によって記述され、パッケージのアクセサーを通じて読まれる。`contextual` はフィールド自身の型に対する型クラスインスタンス、`label` は書かれたとおりのその名前、`index` はその位置、`default`（vacuous から）はフィールドの宣言された既定値または `Unset`、`dereference` は直積からフィールドへの関数である。
++     `[field] => field => …` の構文は多相ラムダである。どのフィールドも型が異なり、本体が知っているのは `contextual` がまさにその型に対するインスタンスであることだけだが、それで十分である。
+
+-     A **product** is a case class, a tuple, an enumeration case or a singleton (a case object,
+-     or a parameterless enumeration case, which is a product with no fields); its values are
+-     **fields**, with fixed types, a canonical order and labels. A **sum** is an enumeration or
+-     a sealed trait; its alternatives are **variants**. The engine recognises each through
+-     `scala.deriving.Mirror`, aliased here as `Reflection`, `ProductReflection` and
+-     `SumReflection`, so a type with no mirror — a plain trait, a class which is not a case
+-     class — fails at the point of derivation.
++     **直積**とは、ケースクラス、タプル、列挙型のケース、またはシングルトン（ケースオブジェクト、またはパラメーターのない列挙型のケースで、フィールドのない直積である）である。その値は**フィールド**であり、固定された型、正準な順序、ラベルを持つ。
++     **直和**とは列挙型またはシールされたトレイトであり、その選択肢は**バリアント**である。
++     エンジンはそれぞれを `scala.deriving.Mirror`（ここでは `Reflection`、`ProductReflection`、`SumReflection` という別名を持つ）を通じて認識するので、ミラーを持たない型（普通のトレイトや、ケースクラスではないクラス）は導出の時点で失敗する。
+
+-     `Derivation` derives for both products and sums; `ProductDerivation` for products alone,
+-     so that applying the typeclass to a sum is a compile error, and `SumDerivation` for sums
+-     alone. For a typeclass written in the `Self` style (`value is Display`), the aliases
+-     `Derivable` and `ProductDerivable` adapt the shape. A derived instance sits at lower
+-     priority than any given written in the companion's own body, so a hand-written instance
+-     for one type always wins. The derivation is invisible to the user of a typeclass, for whom
+-     defining a case class is enough.
++     `Derivation` は直積と直和の両方について導出する。`ProductDerivation` は直積だけについて導出するので、その型クラスを直和に適用するとコンパイルエラーになる。`SumDerivation` は直和だけについて導出する。
++     `Self` 形式で書かれた型クラス（`value is Display`）には、別名 `Derivable` と `ProductDerivable` が形を合わせる。
++     導出されたインスタンスは、コンパニオン自身の本体に書かれたどの given よりも優先度が低いので、ある型に対して手書きしたインスタンスが常に勝つ。
++     導出は型クラスの利用者からは見えず、利用者にとってはケースクラスを定義すれば十分である。
+
+-     The engine derives a whole **graph** at once: `derived[T]` visits every type reachable from
+-     `T`'s fields and variants, emits one instance per distinct type, and resolves each field
+-     through the real implicit search while ignoring the typeclass's own derivation givens, so
+-     a field's instance is a hand-written one, a codec for a collection, or a sibling in the
+-     same graph — and a recursive type resolves to itself rather than re-entering the
+-     derivation. A recursive type is still best given its instance on its companion with a
+-     `derives` clause.
++     エンジンは**グラフ**全体を一度に導出する。`derived[T]` は `T` のフィールドとバリアントから到達できるすべての型を訪れ、異なる型ごとにインスタンスを一つ出力し、型クラス自身の導出の given を無視しながら実際の暗黙の探索を通じて各フィールドを解決する。そのため、フィールドのインスタンスは手書きのもの、コレクションのコーデック、または同じグラフの兄弟のどれかであり、再帰的な型は導出に再び入るのではなく自分自身に解決される。
++     それでも再帰的な型には、`derives` 節でコンパニオンにインスタンスを与えるのが最善である。
+
+-     Beyond codecs, the `arithmetic` object derives `Addable`, `Subtractable`, `Multiplicable`
+-     and `Divisible` field-wise for any product, each a given imported by name:
+-     `import arithmetic.addable`. Per-field overrides come from vicarious: a `derivation is
+-     Specific over typeclass` in scope, built with `specifically`, supplies a different instance
+-     at a named field path, and every combinator consults it.
++     コーデック以外にも、`arithmetic` オブジェクトは、任意の直積に対してフィールドごとに `Addable`、`Subtractable`、`Multiplicable`、`Divisible` を導出する。それぞれ名前で import する given である：`import arithmetic.addable`。
++     フィールドごとの上書きは vicarious から来る。`specifically` で組み立てた `derivation is Specific over typeclass` がスコープにあると、名前付きのフィールドパスで別のインスタンスが提供され、すべてのコンビネーターがそれを参照する。
+
+-     The library is one source set, `wisteria.core`, which compiles for the JVM, Scala.js and
+-     Scala Native. Everything is exported to the `soundness` umbrella, with one caveat: the
+-     accessor `label` shares its name with tarantula's `Element#label()`, so a file which
+-     imports both and sees `label` reported ambiguous should write `wisteria.label`.
++     このライブラリは一つのソースセット `wisteria.core` であり、JVM、Scala.js、Scala Native 向けにコンパイルされる。
++     すべてが `soundness` アンブレラにエクスポートされるが、注意が一つある。アクセサー `label` は tarantula の `Element#label()` と名前を共有するので、両方を import して `label` が曖昧だと報告されたファイルでは `wisteria.label` と書く。
+
+- refer wisteria.Derivation
++ refer wisteria.Derivation
+
+- refer wisteria.ProductDerivation
++ refer wisteria.ProductDerivation
+
+- refer wisteria.SumDerivation
++ refer wisteria.SumDerivation
+
+- refer wisteria.Variant
++ refer wisteria.Variant
+
+- refer vicarious.Specific
++ refer vicarious.Specific
+
+- entry .Derivation   the base of a typeclass companion which derives for both products and sums
++ entry .Derivation   直積と直和の両方について導出する型クラスのコンパニオンの基底
+
+= entry .Derivation   the base of a typeclass companion which derives for both products and sums
+-   detail
++   detail
+
+-       `object Typeclass extends Derivation[Typeclass]` gives the typeclass a derivation: the
+-       object implements `conjunction` (the product rule, from `ProductDerivation.Methods`) and
+-       `disjunction` (the sum rule, from `SumDerivation.Methods`), and inherits `derived`, the
+-       given through which any product or sum type resolves an instance. The type parameter
+-       is the typeclass's type constructor; a `Self`-style typeclass uses `Derivable` instead.
++       `object Typeclass extends Derivation[Typeclass]` は型クラスに導出を与える。オブジェクトは `conjunction`（`ProductDerivation.Methods` からの直積の規則）と `disjunction`（`SumDerivation.Methods` からの直和の規則）を実装し、`derived` を継承する。これは、任意の直積型や直和型がインスタンスを解決するための given である。
++       型パラメーターは型クラスの型コンストラクターである。`Self` 形式の型クラスは代わりに `Derivable` を使う。
+
+=       is the typeclass's type constructor; a `Self`-style typeclass uses `Derivable` instead.
+=
+-       ```scala
++       ```scala
+
+=       is the typeclass's type constructor; a `Self`-style typeclass uses `Derivable` instead.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       is the typeclass's type constructor; a `Self`-style typeclass uses `Derivable` instead.
+=
+=       ```scala
+=       import soundness.*
+-       import dysasymptotics.linearAccess
++       import dysasymptotics.linearAccess
+
+-       trait Equivalence[value]:
++       trait Equivalence[value]:
+
+-         def equal(left: value, right: value): Boolean
++         def equal(left: value, right: value): Boolean
+
+-       object Equivalence extends Derivation[Equivalence]:
++       object Equivalence extends Derivation[Equivalence]:
+
+-         given Equivalence[Int] = _ == _
++         given Equivalence[Int] = _ == _
+
+-         given Equivalence[Text] = _.lower == _.lower
++         given Equivalence[Text] = _.lower == _.lower
+
+-         inline def conjunction[derivation <: Product: ProductReflection]: Equivalence[derivation] =
++         inline def conjunction[derivation <: Product: ProductReflection]: Equivalence[derivation] =
+
+=         inline def conjunction[derivation <: Product: ProductReflection]: Equivalence[derivation] =
+-           (left, right) =>
++           (left, right) =>
+
+-             contexts[derivation]():
++             contexts[derivation]():
+
+-               [field] => equivalence =>
++               [field] => equivalence =>
+
+-                 val extract: derivation => field = dereference
++                 val extract: derivation => field = dereference
+
+-                 equivalence.equal(extract(left), extract(right))
++                 equivalence.equal(extract(left), extract(right))
+
+-             . all { boolean => boolean }
++             . all { boolean => boolean }
+
+-         inline def disjunction[derivation: SumReflection]: Equivalence[derivation] =
++         inline def disjunction[derivation: SumReflection]: Equivalence[derivation] =
+
+=         inline def disjunction[derivation: SumReflection]: Equivalence[derivation] =
+-           (left, right) =>
++           (left, right) =>
+
+-             variant(left):
++             variant(left):
+
+-               [variant <: derivation] => leftValue =>
++               [variant <: derivation] => leftValue =>
+
+-                 complement(right).lay(false)(contextual.equal(leftValue, _))
++                 complement(right).lay(false)(contextual.equal(leftValue, _))
+
+=                 complement(right).lay(false)(contextual.equal(leftValue, _))
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       Equivalence.derived[Person].equal(Person(t"Hamlet", 30), Person(t"HAMLET", 30))   // true
++       Equivalence.derived[Person].equal(Person(t"Hamlet", 30), Person(t"HAMLET", 30))   // true
+
+=       Equivalence.derived[Person].equal(Person(t"Hamlet", 30), Person(t"HAMLET", 30))   // true
+-       ```
++       ```
+
+-       Both rules are `inline`: they expand at the use site, once per type in the derived
+-       graph, which is what lets the lambda's `contextual` be the instance for the right field
+-       type and lets `inline if choice[derivation]` reject a shape at compile time with
+-       `scala.compiletime.error` (written fully qualified). Two mistakes are common enough to
+-       name: a long error ending _given instance derived in trait Derivation does not match
+-       type…_ almost always means a polymorphic lambda's type variable lacks its upper bound
+-       (`[variant <: derivation]`, not `[variant]`), and a mismatch against `Product` means
+-       `conjunction`'s type parameter lacks `<: Product`.
++       どちらの規則も `inline` である。使用箇所で、導出されたグラフの型ごとに一度展開される。それによってラムダの `contextual` が正しいフィールドの型に対するインスタンスになり、`inline if choice[derivation]` が `scala.compiletime.error`（完全修飾で書く）でコンパイル時にある形を拒否できる。
++       名前を挙げる価値があるほどよくある間違いが二つある。_given instance derived in trait Derivation does not match type…_ で終わる長いエラーは、ほとんどの場合、多相ラムダの型変数に上限がないこと（`[variant]` ではなく `[variant <: derivation]`）を意味する。`Product` との不一致は、`conjunction` の型パラメーターに `<: Product` がないことを意味する。
+
+-       The object need not be the typeclass's companion. Defined on an ordinary object, the
+-       rules give derivation without exposing it to implicit search, and `Rules.derived[T]` is
+-       called wherever an instance is wanted — the way to offer two derivations of one typeclass,
+-       a strict and a lenient parser, say.
++       このオブジェクトは型クラスのコンパニオンである必要はない。
++       普通のオブジェクトに定義すると、規則は暗黙の探索に公開されずに導出を与え、インスタンスが欲しい所でどこでも `Rules.derived[T]` を呼ぶ。たとえば厳格なパーサーと寛容なパーサーのように、一つの型クラスに二つの導出を用意する方法である。
+
+-       Under capture checking, a rule's result type is `typeclass[derivation]^`: a derived
+-       instance may honestly capture the capabilities its resolution needed, such as a decoder's
+-       tactic, and the capture is erased once, in `derivedOne`. A derivation expands in the
+-       module which uses it, so a capture error in a derivation is reported in that module, not
+-       the typeclass's own. A sum rule which calls `delegate` or `singleton` needs a
+-       `Tactic[Variant.Error]` where it expands; the usual shape seals it inside the instance
+-       with `provide[Tactic[Variant.Error]]`, so that the derived instance is not itself a
+-       capability.
++       キャプチャ検査のもとでは、規則の結果の型は `typeclass[derivation]^` である。導出されたインスタンスは、デコーダーの戦術のように、その解決に必要だったケイパビリティを正直にキャプチャしてよく、そのキャプチャは `derivedOne` で一度だけ消去される。
++       導出はそれを使うモジュールの中で展開されるので、導出の中のキャプチャのエラーは型クラス自身のモジュールではなく、そのモジュールで報告される。
++       `delegate` や `singleton` を呼ぶ直和の規則は、展開される所で `Tactic[Variant.Error]` を必要とする。通常の形は、`provide[Tactic[Variant.Error]]` でそれをインスタンスの中に封じ込めるもので、そうすれば導出されたインスタンス自体はケイパビリティにならない。
+
+-   refer wisteria.ProductDerivation.Methods
++   refer wisteria.ProductDerivation.Methods
+
+=   refer wisteria.ProductDerivation.Methods
+-   refer wisteria.SumDerivation.Methods
++   refer wisteria.SumDerivation.Methods
+
+-   refer wisteria.Derivable
++   refer wisteria.Derivable
+
+-   entry #derivedOne   an instance for one type, product or sum, one level deep
+-       Chooses `disjunction` for a sum and `conjunction` for a product, by inspecting the type's
+-       symbol, and narrows the fresh result to `typeclass[derivation]`. Its fields and variants
+-       resolve to sibling instances; `derived` calls it once for every distinct type in the
+-       graph, and a derivation reaches it directly when it wants exactly one level.
+-   entry #derived   the given which derives an instance for any type with a `Reflection`
+-       `derived[derivation]`, taking a `Reflection[derivation]` (a `scala.deriving.Mirror`), is
+-       the given implicit search finds for every product and sum type, and the method a
+-       `derives Typeclass` clause names. It builds the whole graph of types reachable from
+-       `derivation` — every field type and variant type, recursively — emits one lazily
+-       bound instance per distinct type, and returns the root's. A field whose type has a
+-       hand-written given, or a codec such as `List[T]`'s, uses that; a field whose type is
+-       another product or sum in the graph uses its sibling; a type which reaches itself
+-       resolves to its own binding. A field type with no instance at all is a compile error at
+-       the derivation, and compiling an explicit `Typeclass.derived[T]` at the call site is the
+-       quickest way to learn which field is missing one.
++   entry #derivedOne   一つの型（直積または直和）に対する、一段の深さのインスタンス
++       型のシンボルを調べて、直和には `disjunction` を、直積には `conjunction` を選び、新しい結果を `typeclass[derivation]` に絞り込む。
++       そのフィールドとバリアントは兄弟のインスタンスに解決される。`derived` はグラフの異なる型ごとにこれを一度呼び、ちょうど一段だけが欲しい導出はこれを直接使う。
++   entry #derived   `Reflection` を持つ任意の型に対してインスタンスを導出する given
++       `Reflection[derivation]`（`scala.deriving.Mirror`）を受け取る `derived[derivation]` は、暗黙の探索があらゆる直積型と直和型に対して見つける given であり、`derives Typeclass` 節が名指しするメソッドである。
++       `derivation` から到達できる型のグラフ全体（すべてのフィールドの型とバリアントの型を再帰的に）を組み立て、異なる型ごとに遅延して束縛されるインスタンスを一つ出力し、ルートのものを返す。
++       型に手書きの given や `List[T]` のようなコーデックがあるフィールドはそれを使い、型がグラフの中の別の直積や直和であるフィールドはその兄弟を使い、自分自身に到達する型は自分の束縛に解決される。
++       インスタンスがまったくないフィールドの型は導出の時点でコンパイルエラーになり、どのフィールドにインスタンスが欠けているかを知る最も手早い方法は、呼び出し箇所で明示的な `Typeclass.derived[T]` をコンパイルすることである。
+
+- entry .ProductDerivation   the base of a typeclass companion which derives for products only
++ entry .ProductDerivation   直積だけについて導出する型クラスのコンパニオンの基底
+
+= entry .ProductDerivation   the base of a typeclass companion which derives for products only
+-   detail
++   detail
+
+-       `object Typeclass extends ProductDerivation[Typeclass]` gives the typeclass a derivation
+-       for case classes, tuples and singletons, and none for sums: applying it to an
+-       enumeration or a sealed trait is a compile error naming the mismatch rather than a
+-       runtime surprise. The object implements `conjunction` alone, and inherits `derived`. The
+-       combinators a product rule is written with — `fields`, `contexts`, `build`, `construct`,
+-       `complement`, `typeName`, `tuple` and `singleton` — are the members of
+-       `ProductDerivation.Methods`.
++       `object Typeclass extends ProductDerivation[Typeclass]` は型クラスに、ケースクラス、タプル、シングルトンに対する導出を与え、直和に対する導出は与えない。それを列挙型やシールされたトレイトに適用すると、実行時の驚きではなく、不一致を名指しするコンパイルエラーになる。
++       オブジェクトは `conjunction` だけを実装し、`derived` を継承する。
++       直積の規則を書くためのコンビネーター（`fields`、`contexts`、`build`、`construct`、`complement`、`typeName`、`tuple`、`singleton`）は `ProductDerivation.Methods` のメンバーである。
+
+=       `ProductDerivation.Methods`.
+=
+-       ```scala
++       ```scala
+
+=       `ProductDerivation.Methods`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `ProductDerivation.Methods`.
+=
+=       ```scala
+=       import soundness.*
+-       import dysasymptotics.linearAccess
++       import dysasymptotics.linearAccess
+
+-       trait Parsing[value]:
++       trait Parsing[value]:
+
+-         def parse(text: Text): value
++         def parse(text: Text): value
+
+-       object Parsing extends ProductDerivation[Parsing]:
++       object Parsing extends ProductDerivation[Parsing]:
+
+-         given Parsing[Text] = identity(_)
++         given Parsing[Text] = identity(_)
+
+-         given Parsing[Int] = _.s.toInt
++         given Parsing[Int] = _.s.toInt
+
+-         inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
++         inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+
+-           text =>
++           text =>
+
+-             val columns = text.cut(t",")
++             val columns = text.cut(t",")
+
+-             build[derivation]:
++             build[derivation]:
+
+-               [field] => parsing => parsing.parse(columns(Ordinal.zerary(index)).or(t""))
++               [field] => parsing => parsing.parse(columns(Ordinal.zerary(index)).or(t""))
+
+=               [field] => parsing => parsing.parse(columns(Ordinal.zerary(index)).or(t""))
+=
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       Parsing.derived[Person].parse(t"Hamlet,30")   // Person(t"Hamlet", 30)
++       Parsing.derived[Person].parse(t"Hamlet,30")   // Person(t"Hamlet", 30)
+
+=       Parsing.derived[Person].parse(t"Hamlet,30")   // Person(t"Hamlet", 30)
+-       ```
++       ```
+
+=       Parsing.derived[Person].parse(t"Hamlet,30")   // Person(t"Hamlet", 30)
+=       ```
+-   refer wisteria.Derivation
++   refer wisteria.Derivation
+
+=       ```
+=   refer wisteria.Derivation
+-   refer wisteria.ProductDerivable
++   refer wisteria.ProductDerivable
+
+-   entry .Methods   the product combinators: the vocabulary a `conjunction` is written in
++   entry .Methods   直積のコンビネーター：`conjunction` を書くための語彙
+
+=   entry .Methods   the product combinators: the vocabulary a `conjunction` is written in
+-     detail
++     detail
+
+-         The trait every `Derivation` and `ProductDerivation` mixes in. It declares the
+-         abstract product rule, `conjunction`, and supplies the inline combinators the rule is
+-         written with. Each takes a polymorphic lambda, `[field] => … => result`, and expands
+-         it once per field, with the field's contextual values in scope: `contextual`, the
+-         `typeclass[field]` instance; `label`, the field's name as `Text`; `index`, its position
+-         as `Int & FieldIndex[field]`; `default`, a `Default[Optional[field]]` holding the
+-         declared default or `Unset`; and, in `contexts`, `dereference`, a function
+-         `derivation -> field`. The combinators are `protected`, so they are reached from inside
+-         the deriving object:
++         すべての `Derivation` と `ProductDerivation` が混ぜ込むトレイトである。
++         抽象的な直積の規則 `conjunction` を宣言し、その規則を書くためのインラインのコンビネーターを提供する。
++         それぞれが多相ラムダ `[field] => … => result` を受け取り、フィールドのコンテキスト値をスコープに置いてフィールドごとに一度それを展開する。そのコンテキスト値とは、`typeclass[field]` インスタンスである `contextual`、`Text` としてのフィールドの名前である `label`、`Int & FieldIndex[field]` としての位置である `index`、宣言された既定値または `Unset` を持つ `Default[Optional[field]]` である `default`、そして `contexts` の中では関数 `derivation -> field` である `dereference` である。
++         コンビネーターは `protected` なので、導出するオブジェクトの内側から使う。
+
+-         - `fields(value)(lambda)` folds over the fields of a value, giving the lambda each
+-           field's value, and returns the results as a frozen `Array[result]`. This is the
+-           **consumer**'s combinator: a renderer, an encoder, a hash. The lambda's parameter is
+-           the field's value.
+-         - `contexts[derivation]()(lambda)` is the same fold with no value: the lambda's
+-           parameter is the field's instance, and `dereference` is available for reaching into a
+-           value — or two values, which is how an equivalence compares corresponding fields
+-           without separating them from the lambda that typed them. For a schema, or the list
+-           of a product's labels, no value is needed at all.
+-         - `build[derivation](lambda)` constructs a new value of the product: the lambda's
+-           parameter is the field's instance, and it returns the field's value. This is the
+-           **producer**'s combinator: a parser, a decoder, a generator. Construction goes
+-           through the mirror's `fromProduct`, which is what makes it work for case classes
+-           nested in objects and declared inside methods.
+-         - `construct[constructor, derivation](bind, pure, lambda)` is `build` for a lambda
+-           whose result is wrapped in a type constructor — an `Optional`, an `Attempt`, a
+-           `List` — threading the fields through the polymorphic `bind` and `pure` it is given,
+-           so that a failing field fails the product:
+-           `construct[Option, derivation]([in, out] => _.flatMap, [monadic] => Some(_), lambda)`.
+-         - `complement(product)` reads the current field out of another value of the same
+-           product, typed with the field's type, inside any of the lambdas; `dereference` is the
+-           same access as a function.
++         - `fields(value)(lambda)` は値のフィールドを畳み込み、ラムダに各フィールドの値を与え、結果を凍結済みの `Array[result]` として返す。これは**消費者**のコンビネーターであり、描画器、エンコーダー、ハッシュのためのものである。ラムダのパラメーターはフィールドの値である。
++         - `contexts[derivation]()(lambda)` は値のない同じ畳み込みである。ラムダのパラメーターはフィールドのインスタンスであり、値の中に手を伸ばすために `dereference` が使える。値が二つでもよく、等価性が対応するフィールドを、それらを型付けしたラムダから切り離さずに比較するのはこの方法による。スキーマや、直積のラベルのリストには、値はまったく要らない。
++         - `build[derivation](lambda)` は直積の新しい値を組み立てる。ラムダのパラメーターはフィールドのインスタンスであり、ラムダはフィールドの値を返す。これは**生産者**のコンビネーターであり、パーサー、デコーダー、生成器のためのものである。組み立てはミラーの `fromProduct` を経由し、それによってオブジェクトの中に入れ子になったケースクラスやメソッドの中で宣言されたケースクラスにも使える。
++         - `construct[constructor, derivation](bind, pure, lambda)` は、結果が型コンストラクター（`Optional`、`Attempt`、`List`）に包まれたラムダのための `build` である。与えられた多相の `bind` と `pure` を通じてフィールドを順に通すので、失敗したフィールドは直積を失敗させる：`construct[Option, derivation]([in, out] => _.flatMap, [monadic] => Some(_), lambda)`。
++         - `complement(product)` は、どのラムダの中でも、同じ直積の別の値から現在のフィールドを、フィールドの型で型付けして読み出す。`dereference` は同じアクセスを関数として表したものである。
+
+-         A fold summons the typeclass for **every** field, so even a typeclass whose leaf
+-         instances are trivial (the labels of a `Text`, say) must provide them. `index` is a
+-         branded `Int`, so a native `List` is indexed with `Ordinal.zerary(index)` and yields
+-         an `Optional`; the complexity gate for indexing (`dysasymptotics.linearAccess`) must be
+-         imported where the derivation expands. Under capture checking, a value a lambda reads
+-         from an array-typed field keeps the field's capture annotation, so a product with a
+-         frozen `Array[Long]^{}` field derives cleanly.
++         畳み込みは**すべての**フィールドについて型クラスを召喚するので、末端のインスタンスが自明な型クラス（たとえば `Text` のラベル）でも、それらを提供しなければならない。
++         `index` はブランド付きの `Int` なので、ネイティブの `List` は `Ordinal.zerary(index)` で添字付けし、`Optional` を得る。添字付けのための計算量の関門（`dysasymptotics.linearAccess`）は、導出が展開される所で import しなければならない。
++         キャプチャ検査のもとでは、ラムダが配列型のフィールドから読む値はフィールドのキャプチャのアノテーションを保つので、凍結済みの `Array[Long]^{}` フィールドを持つ直積はすんなり導出される。
+
+-         Because the rule is `inline`, a gated collection operation inside it — `.all`,
+-         `.to[List]`, indexing a `List` by an ordinal — is resolved where the derivation
+-         expands, against everything imported there. If such an operation fails to resolve in
+-         the expansion though the same line compiles in a plain `def`, move it into an ordinary
+-         helper method which the rule calls.
+-     entry #conjunction   the product rule: an instance for a product from its fields' instances
+-         Abstract, implemented by the deriving object. `conjunction[derivation <: Product:
+-         ProductReflection]: typeclass[derivation]^` is called once per product type in a
+-         derived graph, with the mirror in scope, and returns the instance, usually as a lambda
+-         over `fields`, `contexts`, `build` or `construct`. The `<: Product` bound and the
+-         context bound are both required. The result is fresh (`^`) under capture checking, so
+-         the instance may capture what its construction needed; `Derivation#derivedOne` erases
+-         the capture.
+-     entry #typeName   the name of the type being derived for, as `Text`
+-         `typeName[derivation]` is the mirror's label: `Person` for `case class Person`, `Tuple2`
+-         for a pair. Available in both rules, and in the lambdas, for a rendering which names
+-         the type or a variant.
+-     entry #tuple   whether the product is a tuple, decided as the code compiles
+-         `inline if tuple[derivation] then … else …` lets a rendering drop the type name for a
+-         tuple, whose fields are labelled `_1`, `_2`, ….
+-     entry #singleton   whether the product is a singleton — a case object or a parameterless case
+-         `inline if singleton[derivation] then typeName[derivation] else …`: a singleton has no
+-         fields, so a rendering shows only its name, and a parser has nothing to parse.
+-   entry #derivedOne   an instance for one product type, one level deep
+-       `conjunction` applied to the type, with its mirror summoned, and the fresh result
+-       narrowed to `typeclass[derivation]`. A sum type is a compile error here.
+-   entry #derived   the given which derives an instance for any product type
+-       As `Derivation#derived`: builds the graph of reachable types and returns the root's
+-       instance, each type derived with `derivedOne`. A sum among the reachable types is a
+-       compile error, since this derivation has no `disjunction`.
++         規則が `inline` なので、その中の関門付きのコレクション操作（`.all`、`.to[List]`、序数による `List` の添字付け）は、導出が展開される所で、そこで import されているすべてのものに対して解決される。
++         そうした操作が、同じ行が普通の `def` ではコンパイルできるのに展開の中では解決に失敗するなら、規則が呼ぶ普通のヘルパーメソッドに移す。
++     entry #conjunction   直積の規則：フィールドのインスタンスから直積のインスタンスを作る
++         抽象的で、導出するオブジェクトが実装する。
++         `conjunction[derivation <: Product: ProductReflection]: typeclass[derivation]^` は、導出されたグラフの直積型ごとに、ミラーをスコープに置いて一度呼ばれ、インスタンスを返す。通常は `fields`、`contexts`、`build`、`construct` の上のラムダとしてである。
++         `<: Product` の境界とコンテキスト境界はどちらも必須である。
++         キャプチャ検査のもとでは結果は新しい（`^`）ので、インスタンスは組み立てに必要だったものをキャプチャしてよい。`Derivation#derivedOne` がそのキャプチャを消去する。
++     entry #typeName   導出の対象となる型の名前（`Text` として）
++         `typeName[derivation]` はミラーのラベルである。`case class Person` なら `Person`、対なら `Tuple2` である。
++         どちらの規則でも、またラムダの中でも使え、型やバリアントを名指しする描画のためのものである。
++     entry #tuple   直積がタプルかどうか。コードのコンパイル時に決まる
++         `inline if tuple[derivation] then … else …` によって、描画はタプルの型名を落とせる。タプルのフィールドのラベルは `_1`、`_2`、… である。
++     entry #singleton   直積がシングルトン（ケースオブジェクトまたはパラメーターのないケース）かどうか
++         `inline if singleton[derivation] then typeName[derivation] else …`：シングルトンにはフィールドがないので、描画は名前だけを示し、パーサーにはパースするものがない。
++   entry #derivedOne   一つの直積型に対する、一段の深さのインスタンス
++       ミラーを召喚して型に `conjunction` を適用し、新しい結果を `typeclass[derivation]` に絞り込んだもの。
++       ここでは直和型はコンパイルエラーになる。
++   entry #derived   任意の直積型に対してインスタンスを導出する given
++       `Derivation#derived` と同じく、到達できる型のグラフを組み立ててルートのインスタンスを返す。各型は `derivedOne` で導出される。
++       この導出には `disjunction` がないので、到達できる型の中に直和があるとコンパイルエラーになる。
+
+- entry .SumDerivation   the base of a typeclass companion which derives for sums only
++ entry .SumDerivation   直和だけについて導出する型クラスのコンパニオンの基底
+
+= entry .SumDerivation   the base of a typeclass companion which derives for sums only
+-   detail
++   detail
+
+-       `object Typeclass extends SumDerivation[Typeclass]` gives the typeclass a derivation for
+-       enumerations and sealed traits, and none for products: the variants' instances must come
+-       from elsewhere, hand-written givens as a rule. The object implements `disjunction`
+-       alone, and inherits `derived`. The combinators a sum rule is written with — `variant`,
+-       `delegate`, `choices`, `singleton`, `complement`, `variantLabels` and `choice` — are the
+-       members of `SumDerivation.Methods`.
++       `object Typeclass extends SumDerivation[Typeclass]` は型クラスに、列挙型とシールされたトレイトに対する導出を与え、直積に対する導出は与えない。バリアントのインスタンスは他の所から、通常は手書きの given から来なければならない。
++       オブジェクトは `disjunction` だけを実装し、`derived` を継承する。
++       直和の規則を書くためのコンビネーター（`variant`、`delegate`、`choices`、`singleton`、`complement`、`variantLabels`、`choice`）は `SumDerivation.Methods` のメンバーである。
+
+=       members of `SumDerivation.Methods`.
+=
+-       ```scala
++       ```scala
+
+=       members of `SumDerivation.Methods`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       trait Handling[value]:
++       trait Handling[value]:
+
+-         def handle(value: value): Unit
++         def handle(value: value): Unit
+
+-       enum Signal:
++       enum Signal:
+
+-         case Start(at: Int)
++         case Start(at: Int)
+
+-         case Stop(reason: Text)
++         case Stop(reason: Text)
+
+-       object Handling extends SumDerivation[Handling]:
++       object Handling extends SumDerivation[Handling]:
+
+-         given Handling[Signal.Start] = start => ()
++         given Handling[Signal.Start] = start => ()
+
+-         given Handling[Signal.Stop] = stop => ()
++         given Handling[Signal.Stop] = stop => ()
+
+-         inline def disjunction[derivation: SumReflection]: Handling[derivation] =
++         inline def disjunction[derivation: SumReflection]: Handling[derivation] =
+
+-           value => variant(value):
++           value => variant(value):
+
+-             [variant <: derivation] => value => contextual.handle(value)
++             [variant <: derivation] => value => contextual.handle(value)
+
+-       summon[Handling[Signal]].handle(Signal.Stop(t"done"))
++       summon[Handling[Signal]].handle(Signal.Stop(t"done"))
+
+=       summon[Handling[Signal]].handle(Signal.Stop(t"done"))
+-       ```
++       ```
+
+=       summon[Handling[Signal]].handle(Signal.Stop(t"done"))
+=       ```
+-   refer wisteria.Derivation
++   refer wisteria.Derivation
+
+-   refer wisteria.Variant
++   refer wisteria.Variant
+
+-   entry .Methods   the sum combinators: the vocabulary a `disjunction` is written in
++   entry .Methods   直和のコンビネーター：`disjunction` を書くための語彙
+
+=   entry .Methods   the sum combinators: the vocabulary a `disjunction` is written in
+-     detail
++     detail
+
+-         The trait every `Derivation` and `SumDerivation` mixes in. It declares the abstract
+-         sum rule, `disjunction`, and supplies the inline combinators the rule is written with.
+-         Each takes a polymorphic lambda over the variant, `[variant <: derivation] => … =>
+-         result` — the upper bound is required — and expands it with the variant's contextual
+-         values in scope: `contextual`, the `typeclass[variant]` instance; `label`, the
+-         variant's name as `Text`; and `index`, its position as `Int & Variant.Index[variant]`.
+-         The combinators are `protected`, so they are reached from inside the deriving object:
++         すべての `Derivation` と `SumDerivation` が混ぜ込むトレイトである。
++         抽象的な直和の規則 `disjunction` を宣言し、その規則を書くためのインラインのコンビネーターを提供する。
++         それぞれがバリアントの上の多相ラムダ `[variant <: derivation] => … => result`（上限は必須）を受け取り、バリアントのコンテキスト値をスコープに置いてそれを展開する。そのコンテキスト値とは、`typeclass[variant]` インスタンスである `contextual`、`Text` としてのバリアントの名前である `label`、`Int & Variant.Index[variant]` としての位置である `index` である。
++         コンビネーターは `protected` なので、導出するオブジェクトの内側から使う。
+
+-         - `variant(sum)(lambda)` dispatches on the actual case of a value: the lambda's
+-           parameter is the value narrowed to its variant, so the body is typed at the case
+-           rather than at the sum. This is the **consumer**'s combinator.
+-         - `delegate(label)(lambda)` is told which variant to produce, by its label, and gives
+-           the lambda that variant's instance; this is the **producer**'s combinator, for a
+-           decoder whose input carries a discriminator. A label naming no variant raises
+-           `Variant.Error`, so a `Tactic[Variant.Error]` must be in scope where the rule
+-           expands — sealed inside the instance with `provide[Tactic[Variant.Error]]` as a rule.
+-         - `singleton(label)` turns a label back into the value it names, for a sum whose
+-           variants are all singletons; an unknown label raises `Variant.Error` likewise.
+-         - `choices(lambda)` folds over every variant with no value to dispatch on, giving the
+-           lambda each variant's instance, label and index, and returns a frozen
+-           `Array[result]`: what a derivation producing a schema rather than an instance needs.
+-         - `complement(sum)` reads the other value of a two-value typeclass narrowed to the
+-           current variant, as an `Optional`, since the two need not be the same variant.
+-         - `variantLabels` lists the variants' labels, in declaration order.
++         - `variant(sum)(lambda)` は値の実際のケースで振り分ける。ラムダのパラメーターはそのバリアントに絞り込まれた値なので、本体は直和ではなくケースで型付けされる。これは**消費者**のコンビネーターである。
++         - `delegate(label)(lambda)` は、どのバリアントを生産するかをラベルで告げられ、ラムダにそのバリアントのインスタンスを与える。これは**生産者**のコンビネーターであり、入力が判別子を持つデコーダーのためのものである。どのバリアントも名指ししないラベルは `Variant.Error` を発生させるので、規則が展開される所に `Tactic[Variant.Error]` がなければならない。通常は `provide[Tactic[Variant.Error]]` でインスタンスの中に封じ込める。
++         - `singleton(label)` は、すべてのバリアントがシングルトンである直和について、ラベルをそれが名指しする値に戻す。未知のラベルは同じく `Variant.Error` を発生させる。
++         - `choices(lambda)` は、振り分けるための値なしにすべてのバリアントを畳み込み、ラムダに各バリアントのインスタンス、ラベル、位置を与え、凍結済みの `Array[result]` を返す。インスタンスではなくスキーマを生産する導出が必要とするのはこれである。
++         - `complement(sum)` は、二つの値を取る型クラスのもう一方の値を現在のバリアントに絞り込んで、`Optional` として読む。二つが同じバリアントとは限らないからである。
++         - `variantLabels` はバリアントのラベルを宣言順に並べる。
+
+-         `choice[derivation]` reports, as the code compiles, whether every variant is a
+-         singleton — an enumeration of names, with no data — and is written `inline if
+-         choice[derivation] then … else scala.compiletime.error("…")` so that a derivation which
+-         makes sense only for such enumerations rejects the rest with its own message.
+-     entry #disjunction   the sum rule: an instance for a sum from its variants' instances
+-         Abstract, implemented by the deriving object. `disjunction[derivation:
+-         SumReflection]: typeclass[derivation]^` is called once per sum type in a derived graph,
+-         with the mirror in scope, and returns the instance, usually as a lambda over `variant`
+-         or `delegate`. Fresh (`^`) under capture checking, like `conjunction`.
+-     entry #choice   whether every variant of the sum is a singleton, decided as the code compiles
+-         `transparent inline`, so `inline if choice[derivation]` is resolved at compile time
+-         and the branch not taken is eliminated — including a `scala.compiletime.error` which
+-         would otherwise fail the build. True for an enumeration of bare names and a sealed
+-         trait of case objects; false as soon as one variant carries data. Decided by inspecting
+-         the type's symbol, so it is reliable deep inside the graph's inlining.
+-   entry #derivedOne   an instance for one sum type, one level deep
+-       `disjunction` applied to the type, with its mirror summoned, and the fresh result
+-       narrowed to `typeclass[derivation]`. A product type is a compile error here.
+-   entry #derived   the given which derives an instance for any sum type
+-       As `Derivation#derived`: builds the graph of reachable types and returns the root's
+-       instance. A product among the reachable types — a variant with fields, say — must have
+-       an instance of its own, since this derivation has no `conjunction`.
++         `choice[derivation]` は、すべてのバリアントがシングルトンであるかどうか（データを持たない名前の列挙かどうか）を、コードのコンパイル時に報告する。`inline if choice[derivation] then … else scala.compiletime.error("…")` と書き、そうした列挙型にだけ意味のある導出が、それ以外を独自のメッセージで拒否するようにする。
++     entry #disjunction   直和の規則：バリアントのインスタンスから直和のインスタンスを作る
++         抽象的で、導出するオブジェクトが実装する。
++         `disjunction[derivation: SumReflection]: typeclass[derivation]^` は、導出されたグラフの直和型ごとに、ミラーをスコープに置いて一度呼ばれ、インスタンスを返す。通常は `variant` または `delegate` の上のラムダとしてである。
++         `conjunction` と同じく、キャプチャ検査のもとでは新しい（`^`）。
++     entry #choice   直和のすべてのバリアントがシングルトンかどうか。コードのコンパイル時に決まる
++         `transparent inline` なので、`inline if choice[derivation]` はコンパイル時に解決され、取られない分岐は取り除かれる。そうでなければビルドを失敗させる `scala.compiletime.error` もである。
++         むき出しの名前の列挙型やケースオブジェクトのシールされたトレイトでは真であり、一つでもバリアントがデータを持てば偽である。
++         型のシンボルを調べて決めるので、グラフのインライン化の奥深くでも信頼できる。
++   entry #derivedOne   一つの直和型に対する、一段の深さのインスタンス
++       ミラーを召喚して型に `disjunction` を適用し、新しい結果を `typeclass[derivation]` に絞り込んだもの。
++       ここでは直積型はコンパイルエラーになる。
++   entry #derived   任意の直和型に対してインスタンスを導出する given
++       `Derivation#derived` と同じく、到達できる型のグラフを組み立ててルートのインスタンスを返す。
++       この導出には `conjunction` がないので、到達できる型の中の直積（たとえばフィールドを持つバリアント）は自分のインスタンスを持たなければならない。
+
+- entry .Derivable   `Derivation` for a typeclass written in the `Self` style: `value is Display`
++ entry .Derivable   `Self` 形式で書かれた型クラスのための `Derivation`：`value is Display`
+
+= entry .Derivable   `Derivation` for a typeclass written in the `Self` style: `value is Display`
+-   detail
++   detail
+
+-       `Derivation` takes a type constructor, `Typeclass[_]`. A typeclass whose subject is a
+-       `Self` type member — `trait Display { type Self; def display(value: Self): Text }`, used
+-       as `Text is Display` — has no type constructor to give it, so `Derivable[Display]`
+-       spells one: it is `Derivation[[self] =>> Display { type Self = self }]`. The rules are
+-       then written with the `is` syntax in their result types, and the same combinators apply.
++       `Derivation` は型コンストラクター `Typeclass[_]` を受け取る。
++       主題が `Self` 型メンバーである型クラス（`trait Display { type Self; def display(value: Self): Text }` を `Text is Display` として使うもの）には与えるべき型コンストラクターがないので、`Derivable[Display]` がそれを綴る。それは `Derivation[[self] =>> Display { type Self = self }]` である。
++       そのうえで規則は結果の型に `is` 構文を使って書かれ、同じコンビネーターが当てはまる。
+
+-       Watched as a typeclass grows: a `Display` first written for products alone, with
+-       `ProductDerivable`, then given a sum rule as well, with `Derivable`.
++       型クラスが成長する様子を見る。`Display` はまず `ProductDerivable` で直積だけに対して書かれ、次に `Derivable` で直和の規則も与えられる。
+
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label A product rule alone: case classes display, sums do not
++         label 直積の規則だけ：ケースクラスは表示されるが、直和は表示されない
+
+=         label A product rule alone: case classes display, sums do not
+-         code
++         code
+
+=         label A product rule alone: case classes display, sums do not
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A product rule alone: case classes display, sums do not
+=         code
+=             import soundness.*
+-             import dysasymptotics.linearAccess
++             import dysasymptotics.linearAccess
+
+=         label A product rule alone: case classes display, sums do not
+=         code
+=             import soundness.*
+=             import dysasymptotics.linearAccess
+=
+-             trait Display:
++             trait Display:
+
+=         label A product rule alone: case classes display, sums do not
+=         code
+=             import soundness.*
+=             import dysasymptotics.linearAccess
+=
+=             trait Display:
+-               type Self
++               type Self
+
+=         label A product rule alone: case classes display, sums do not
+=         code
+=             import soundness.*
+=             import dysasymptotics.linearAccess
+=
+=             trait Display:
+=               type Self
+-               def display(value: Self): Text
++               def display(value: Self): Text
+
+-             object Display extends ProductDerivable[Display]:
++             object Display extends ProductDerivable[Display]:
+
+=             object Display extends ProductDerivable[Display]:
+-               given (Text is Display) = identity(_)
++               given (Text is Display) = identity(_)
+
+=             object Display extends ProductDerivable[Display]:
+=               given (Text is Display) = identity(_)
+-               given (Int is Display) = _.toString.tt
++               given (Int is Display) = _.toString.tt
+
+=             object Display extends ProductDerivable[Display]:
+=               given (Text is Display) = identity(_)
+=               given (Int is Display) = _.toString.tt
+=
+-               inline def conjunction[derivation <: Product: ProductReflection]: derivation is Display =
++               inline def conjunction[derivation <: Product: ProductReflection]: derivation is Display =
+
+=             object Display extends ProductDerivable[Display]:
+=               given (Text is Display) = identity(_)
+=               given (Int is Display) = _.toString.tt
+=
+=               inline def conjunction[derivation <: Product: ProductReflection]: derivation is Display =
+-                 value =>
++                 value =>
+
+=             object Display extends ProductDerivable[Display]:
+=               given (Text is Display) = identity(_)
+=               given (Int is Display) = _.toString.tt
+=
+=               inline def conjunction[derivation <: Product: ProductReflection]: derivation is Display =
+=                 value =>
+-                   fields(value):
++                   fields(value):
+
+=             object Display extends ProductDerivable[Display]:
+=               given (Text is Display) = identity(_)
+=               given (Int is Display) = _.toString.tt
+=
+=               inline def conjunction[derivation <: Product: ProductReflection]: derivation is Display =
+=                 value =>
+=                   fields(value):
+-                     [field] => field => contextual.display(field)
++                     [field] => field => contextual.display(field)
+
+=             object Display extends ProductDerivable[Display]:
+=               given (Text is Display) = identity(_)
+=               given (Int is Display) = _.toString.tt
+=
+=               inline def conjunction[derivation <: Product: ProductReflection]: derivation is Display =
+=                 value =>
+=                   fields(value):
+=                     [field] => field => contextual.display(field)
+-                   . join(t",")
++                   . join(t",")
+
+=                   . join(t",")
+=
+-             extension [value](value: value)
++             extension [value](value: value)
+
+=                   . join(t",")
+=
+=             extension [value](value: value)
+-               def display(using display: value is Display): Text = display.display(value)
++               def display(using display: value is Display): Text = display.display(value)
+
+=                   . join(t",")
+=
+=             extension [value](value: value)
+=               def display(using display: value is Display): Text = display.display(value)
+=
+-             case class Person(name: Text, age: Int)
++             case class Person(name: Text, age: Int)
+
+=                   . join(t",")
+=
+=             extension [value](value: value)
+=               def display(using display: value is Display): Text = display.display(value)
+=
+=             case class Person(name: Text, age: Int)
+=
+-             sealed trait Contact
++             sealed trait Contact
+
+=                   . join(t",")
+=
+=             extension [value](value: value)
+=               def display(using display: value is Display): Text = display.display(value)
+=
+=             case class Person(name: Text, age: Int)
+=
+=             sealed trait Contact
+-             case class Email(address: Text) extends Contact
++             case class Email(address: Text) extends Contact
+
+=                   . join(t",")
+=
+=             extension [value](value: value)
+=               def display(using display: value is Display): Text = display.display(value)
+=
+=             case class Person(name: Text, age: Int)
+=
+=             sealed trait Contact
+=             case class Email(address: Text) extends Contact
+-             case class Phone(number: Text) extends Contact
++             case class Phone(number: Text) extends Contact
+
+=                   . join(t",")
+=
+=             extension [value](value: value)
+=               def display(using display: value is Display): Text = display.display(value)
+=
+=             case class Person(name: Text, age: Int)
+=
+=             sealed trait Contact
+=             case class Email(address: Text) extends Contact
+=             case class Phone(number: Text) extends Contact
+=
+-             Person(t"Juliet", 13).display                     // t"Juliet,13"
++             Person(t"Juliet", 13).display                     // t"Juliet,13"
+
+-             (Email(t"juliet@example.com"): Contact).display   // does not compile
++             (Email(t"juliet@example.com"): Contact).display   // does not compile
+
+=             (Email(t"juliet@example.com"): Contact).display   // does not compile
+-       frame
++       frame
+
+-         label A sum rule as well: the variant's own instance displays it
++         label 直和の規則も：バリアント自身のインスタンスがそれを表示する
+
+=         label A sum rule as well: the variant's own instance displays it
+-         code
++         code
+
+=         label A sum rule as well: the variant's own instance displays it
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A sum rule as well: the variant's own instance displays it
+=         code
+=             import soundness.*
+-             import dysasymptotics.linearAccess
++             import dysasymptotics.linearAccess
+
+=         label A sum rule as well: the variant's own instance displays it
+=         code
+=             import soundness.*
+=             import dysasymptotics.linearAccess
+=
+-             trait Display:
++             trait Display:
+
+=         label A sum rule as well: the variant's own instance displays it
+=         code
+=             import soundness.*
+=             import dysasymptotics.linearAccess
+=
+=             trait Display:
+-               type Self
++               type Self
+
+=         label A sum rule as well: the variant's own instance displays it
+=         code
+=             import soundness.*
+=             import dysasymptotics.linearAccess
+=
+=             trait Display:
+=               type Self
+-               def display(value: Self): Text
++               def display(value: Self): Text
+
+-             object Display extends Derivable[Display]:
++             object Display extends Derivable[Display]:
+
+=             object Display extends Derivable[Display]:
+-               given (Text is Display) = identity(_)
++               given (Text is Display) = identity(_)
+
+=             object Display extends Derivable[Display]:
+=               given (Text is Display) = identity(_)
+-               given (Int is Display) = _.toString.tt
++               given (Int is Display) = _.toString.tt
+
+=             object Display extends Derivable[Display]:
+=               given (Text is Display) = identity(_)
+=               given (Int is Display) = _.toString.tt
+=
+-               inline def conjunction[derivation <: Product: ProductReflection]: derivation is Display =
++               inline def conjunction[derivation <: Product: ProductReflection]: derivation is Display =
+
+=             object Display extends Derivable[Display]:
+=               given (Text is Display) = identity(_)
+=               given (Int is Display) = _.toString.tt
+=
+=               inline def conjunction[derivation <: Product: ProductReflection]: derivation is Display =
+-                 value =>
++                 value =>
+
+=             object Display extends Derivable[Display]:
+=               given (Text is Display) = identity(_)
+=               given (Int is Display) = _.toString.tt
+=
+=               inline def conjunction[derivation <: Product: ProductReflection]: derivation is Display =
+=                 value =>
+-                   fields(value):
++                   fields(value):
+
+=             object Display extends Derivable[Display]:
+=               given (Text is Display) = identity(_)
+=               given (Int is Display) = _.toString.tt
+=
+=               inline def conjunction[derivation <: Product: ProductReflection]: derivation is Display =
+=                 value =>
+=                   fields(value):
+-                     [field] => field => contextual.display(field)
++                     [field] => field => contextual.display(field)
+
+=             object Display extends Derivable[Display]:
+=               given (Text is Display) = identity(_)
+=               given (Int is Display) = _.toString.tt
+=
+=               inline def conjunction[derivation <: Product: ProductReflection]: derivation is Display =
+=                 value =>
+=                   fields(value):
+=                     [field] => field => contextual.display(field)
+-                   . join(t",")
++                   . join(t",")
+
+-               inline def disjunction[derivation: SumReflection]: derivation is Display =
++               inline def disjunction[derivation: SumReflection]: derivation is Display =
+
+=               inline def disjunction[derivation: SumReflection]: derivation is Display =
+-                 value =>
++                 value =>
+
+-                   variant(value):
++                   variant(value):
+
+-                     [variant <: derivation] => variant => contextual.display(variant)
++                     [variant <: derivation] => variant => contextual.display(variant)
+
+=                     [variant <: derivation] => variant => contextual.display(variant)
+=
+-             extension [value](value: value)
++             extension [value](value: value)
+
+=                     [variant <: derivation] => variant => contextual.display(variant)
+=
+=             extension [value](value: value)
+-               def display(using display: value is Display): Text = display.display(value)
++               def display(using display: value is Display): Text = display.display(value)
+
+=                     [variant <: derivation] => variant => contextual.display(variant)
+=
+=             extension [value](value: value)
+=               def display(using display: value is Display): Text = display.display(value)
+=
+-             case class Person(name: Text, age: Int)
++             case class Person(name: Text, age: Int)
+
+=                     [variant <: derivation] => variant => contextual.display(variant)
+=
+=             extension [value](value: value)
+=               def display(using display: value is Display): Text = display.display(value)
+=
+=             case class Person(name: Text, age: Int)
+=
+-             sealed trait Contact
++             sealed trait Contact
+
+=                     [variant <: derivation] => variant => contextual.display(variant)
+=
+=             extension [value](value: value)
+=               def display(using display: value is Display): Text = display.display(value)
+=
+=             case class Person(name: Text, age: Int)
+=
+=             sealed trait Contact
+-             case class Email(address: Text) extends Contact
++             case class Email(address: Text) extends Contact
+
+=                     [variant <: derivation] => variant => contextual.display(variant)
+=
+=             extension [value](value: value)
+=               def display(using display: value is Display): Text = display.display(value)
+=
+=             case class Person(name: Text, age: Int)
+=
+=             sealed trait Contact
+=             case class Email(address: Text) extends Contact
+-             case class Phone(number: Text) extends Contact
++             case class Phone(number: Text) extends Contact
+
+=                     [variant <: derivation] => variant => contextual.display(variant)
+=
+=             extension [value](value: value)
+=               def display(using display: value is Display): Text = display.display(value)
+=
+=             case class Person(name: Text, age: Int)
+=
+=             sealed trait Contact
+=             case class Email(address: Text) extends Contact
+=             case class Phone(number: Text) extends Contact
+=
+-             Person(t"Juliet", 13).display                     // t"Juliet,13"
++             Person(t"Juliet", 13).display                     // t"Juliet,13"
+
+-             (Email(t"juliet@example.com"): Contact).display   // t"juliet@example.com"
++             (Email(t"juliet@example.com"): Contact).display   // t"juliet@example.com"
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       Overrides for one field path come through vicarious: with a `Duel is Specific over
+-       Display` in scope, built as `specifically { case root.opponent.name() => shout }`, the
+-       derived instance uses `shout` at exactly that path and the defaults elsewhere.
++       一つのフィールドパスに対する上書きは vicarious を通じて来る。`specifically { case root.opponent.name() => shout }` として組み立てた `Duel is Specific over Display` がスコープにあると、導出されたインスタンスはまさにそのパスで `shout` を使い、他の所では既定のものを使う。
+
+=       derived instance uses `shout` at exactly that path and the defaults elsewhere.
+-   refer wisteria.Derivation
++   refer wisteria.Derivation
+
+=       derived instance uses `shout` at exactly that path and the defaults elsewhere.
+=   refer wisteria.Derivation
+-   refer wisteria.ProductDerivable
++   refer wisteria.ProductDerivable
+
+- entry .ProductDerivable   `ProductDerivation` for a typeclass written in the `Self` style
+-     `ProductDerivable[Typeclass]` is `ProductDerivation[[self] =>> Typeclass { type Self =
+-     self }]`: the product-only derivation for a typeclass whose subject is its `Self` type
+-     member, with `conjunction` returning `derivation is Typeclass`. See `Derivable` for the
+-     two-rule form.
++ entry .ProductDerivable   `Self` 形式で書かれた型クラスのための `ProductDerivation`
++     `ProductDerivable[Typeclass]` は `ProductDerivation[[self] =>> Typeclass { type Self = self }]` である。主題が `Self` 型メンバーである型クラスのための直積だけの導出であり、`conjunction` は `derivation is Typeclass` を返す。
++     二つの規則を持つ形については `Derivable` を参照。
+
+- entry .Reflection   evidence that a type is a product or a sum: `scala.deriving.Mirror.Of`
+-     `Reflection[derivation]` is the compiler's `Mirror.Of[derivation]`, the evidence every
+-     `derived` given takes: it exists for every case class, tuple, enumeration, sealed trait
+-     and singleton, and for nothing else, which is why a plain trait or a non-case class cannot
+-     be derived for. A `ProductReflection` satisfies a `Reflection` requirement, since
+-     `Mirror.ProductOf` is a `Mirror.Of`. A mirror resolves within a nested context-bound
+-     search, which is what lets a derived instance be summoned from inside another
+-     typeclass's own derivation, such as a format's `read[T]`.
++ entry .Reflection   型が直積または直和であることの証拠：`scala.deriving.Mirror.Of`
++     `Reflection[derivation]` はコンパイラの `Mirror.Of[derivation]` であり、すべての `derived` given が受け取る証拠である。それはすべてのケースクラス、タプル、列挙型、シールされたトレイト、シングルトンに対して存在し、それ以外には存在しない。普通のトレイトやケースでないクラスに対して導出できないのはそのためである。
++     `Mirror.ProductOf` は `Mirror.Of` なので、`ProductReflection` は `Reflection` の要求を満たす。
++     ミラーは入れ子のコンテキスト境界の探索の中でも解決される。それによって、フォーマットの `read[T]` のような別の型クラス自身の導出の内側から、導出されたインスタンスを召喚できる。
+
+- entry .ProductReflection   evidence that a type is a product: `scala.deriving.Mirror.ProductOf`
+-     `ProductReflection[derivation <: Product]` is the context bound `conjunction` requires. It
+-     carries the product's field labels and types, and its `fromProduct` is how `build`
+-     constructs a value.
++ entry .ProductReflection   型が直積であることの証拠：`scala.deriving.Mirror.ProductOf`
++     `ProductReflection[derivation <: Product]` は `conjunction` が要求するコンテキスト境界である。
++     直積のフィールドのラベルと型を持ち、その `fromProduct` は `build` が値を組み立てる手段である。
+
+- entry .SumReflection   evidence that a type is a sum: `scala.deriving.Mirror.SumOf`
+-     `SumReflection[derivation]` is the context bound `disjunction` requires. It carries the
+-     variants' labels and types, and its `ordinal` is how `variant` finds the actual case of a
+-     value.
++ entry .SumReflection   型が直和であることの証拠：`scala.deriving.Mirror.SumOf`
++     `SumReflection[derivation]` は `disjunction` が要求するコンテキスト境界である。
++     バリアントのラベルと型を持ち、その `ordinal` は `variant` が値の実際のケースを見つける手段である。
+
+- entry .contextual   the typeclass instance for the current field or variant, inside a combinator's lambda
+-     Inside the polymorphic lambda given to `fields`, `contexts`, `build`, `construct`,
+-     `variant`, `delegate` or `choices`, `contextual` is the `typeclass[field]` (or
+-     `typeclass[variant]`) instance for the current element's type — a hand-written given,
+-     a codec, or a sibling instance from the same derived graph — and the only means the body
+-     has of doing anything with a value whose type it cannot see. Most combinators also pass
+-     the same instance as the lambda's parameter, so `[field] => parsing => parsing.parse(…)`
+-     and `contextual.parse(…)` are the same instance.
++ entry .contextual   コンビネーターのラムダの中での、現在のフィールドまたはバリアントに対する型クラスインスタンス
++     `fields`、`contexts`、`build`、`construct`、`variant`、`delegate`、`choices` に与えた多相ラムダの中では、`contextual` は現在の要素の型に対する `typeclass[field]`（または `typeclass[variant]`）インスタンスである。手書きの given、コーデック、または同じ導出されたグラフの兄弟のインスタンスであり、本体が、型の見えない値で何かをする唯一の手段である。
++     ほとんどのコンビネーターは同じインスタンスをラムダのパラメーターとしても渡すので、`[field] => parsing => parsing.parse(…)` と `contextual.parse(…)` は同じインスタンスである。
+
+- entry .label   the name of the current field or variant, as `Text`, inside a combinator's lambda
+-     For a field, the name as written in the case class (`_1`, `_2`, … for a tuple); for a
+-     variant, the case's name. A renderer uses it as a key, a parser matches it against a
+-     discriminator. In the `soundness` umbrella the name is shared with tarantula's
+-     `Element#label()`: a file which imports both and finds `label` ambiguous writes
+-     `wisteria.label`.
++ entry .label   コンビネーターのラムダの中での、現在のフィールドまたはバリアントの名前（`Text` として）
++     フィールドならケースクラスに書かれたとおりの名前（タプルなら `_1`、`_2`、…）、バリアントならケースの名前である。
++     描画器はそれをキーとして使い、パーサーはそれを判別子と照合する。
++     `soundness` アンブレラでは、この名前は tarantula の `Element#label()` と共有されている。両方を import して `label` が曖昧になったファイルでは `wisteria.label` と書く。
+
+- entry .index   the position of the current field or variant, inside a combinator's lambda
+-     For a field, an `Int & FieldIndex[field]`; for a variant, an `Int & Variant.Index[variant]`.
+-     The brand ties the number to the element's type, so `complement(product)` can read the
+-     same field out of another value and type it correctly. It compares and arithmetises as an
+-     `Int`, but indexing a native `List` with it is written `columns(Ordinal.zerary(index))`,
+-     which yields an `Optional`, under an imported complexity gate such as
+-     `dysasymptotics.linearAccess`.
++ entry .index   コンビネーターのラムダの中での、現在のフィールドまたはバリアントの位置
++     フィールドなら `Int & FieldIndex[field]`、バリアントなら `Int & Variant.Index[variant]` である。
++     ブランドは数を要素の型に結びつけるので、`complement(product)` は別の値から同じフィールドを読み出し、正しく型付けできる。
++     `Int` として比較や算術ができるが、それでネイティブの `List` を添字付けするには `columns(Ordinal.zerary(index))` と書き、`dysasymptotics.linearAccess` のような計算量の関門を import したうえで `Optional` を得る。
+
+- entry .dereference   a function from the product to the current field, inside a `contexts` lambda
+-     `dereference` is a `derivation -> field`: with no value to fold over, `contexts` gives
+-     each field a way to be read from any value of the product, typed with the field's type.
+-     Bind it once — `val extract: derivation => field = dereference` — and apply it to each of
+-     the values a two-value typeclass compares, so both fields reach the one `contextual`
+-     instance without ever losing their type.
++ entry .dereference   `contexts` のラムダの中での、直積から現在のフィールドへの関数
++     `dereference` は `derivation -> field` である。畳み込む値がないので、`contexts` は各フィールドに、直積の任意の値から、フィールドの型で型付けして読み出される手段を与える。
++     一度束縛し（`val extract: derivation => field = dereference`）、二つの値を取る型クラスが比較する値のそれぞれに適用すれば、両方のフィールドが型を失わずに一つの `contextual` インスタンスに届く。
+
+- entry .variant   `wisteria.variant` reads the tagged `"variant"` value from context; the combinator is `SumDerivation.Methods#variant`
+-     The package-level accessor `variant[value]` reads a contextual value tagged `"variant"`,
+-     in the style of `index` and `label`. The combinator a `disjunction` calls as
+-     `variant(value) { [variant <: derivation] => variant => … }` is the inherited method of
+-     `SumDerivation.Methods`, which dispatches on a sum value's actual case; inside the
+-     deriving object the method shadows this accessor.
++ entry .variant   `wisteria.variant` はコンテキストから `"variant"` のタグ付きの値を読む。コンビネーターは `SumDerivation.Methods#variant`
++     パッケージ水準のアクセサー `variant[value]` は、`index` や `label` と同じ流儀で、`"variant"` のタグを付けたコンテキスト値を読む。
++     `disjunction` が `variant(value) { [variant <: derivation] => variant => … }` として呼ぶコンビネーターは `SumDerivation.Methods` の継承されたメソッドで、直和の値の実際のケースで振り分ける。導出するオブジェクトの内側では、メソッドがこのアクセサーを覆い隠す。
+
+- entry .arithmetic   field-wise `+`, `-`, `*` and `/` for any product, as givens imported by name
++ entry .arithmetic   任意の直積に対するフィールドごとの `+`、`-`、`*`、`/`。名前で import する given として
+
+= entry .arithmetic   field-wise `+`, `-`, `*` and `/` for any product, as givens imported by name
+-   detail
++   detail
+
+-       Four derivations of symbolism's arithmetic typeclasses, each adding, subtracting,
+-       multiplying or dividing two values of a product field by field through the fields' own
+-       instances, so `Text` concatenates while `Int` sums with no instance written for the
+-       product. Each is a given to import by name — `import soundness.*` does not bring them in
+-       — because an arithmetic on every case class is a choice, not a default.
++       symbolism の算術の型クラスの四つの導出で、それぞれ直積の二つの値を、フィールド自身のインスタンスを通じてフィールドごとに足し、引き、掛け、割る。そのため、直積に対してインスタンスを書かなくても、`Text` は連結され、`Int` は合計される。
++       それぞれ名前で import する given である（`import soundness.*` はそれらを取り込まない）。すべてのケースクラスに算術を与えることは既定ではなく選択だからである。
+
+=       — because an arithmetic on every case class is a choice, not a default.
+=
+-       ```scala
++       ```scala
+
+=       — because an arithmetic on every case class is a choice, not a default.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import arithmetic.addable
++       import arithmetic.addable
+
+-       case class Pair(label: Text, count: Int)
++       case class Pair(label: Text, count: Int)
+
+-       Pair(t"Mac", 10) + Pair(t"beth", 15)   // Pair(t"Macbeth", 25)
++       Pair(t"Mac", 10) + Pair(t"beth", 15)   // Pair(t"Macbeth", 25)
+
+=       Pair(t"Mac", 10) + Pair(t"beth", 15)   // Pair(t"Macbeth", 25)
+-       ```
++       ```
+
+-       The derivation objects (`AddableDerivation` and its siblings) are `ProductDerivation`s
+-       of the respective typeclass, available for an explicit `derived[T]`, and each given is
+-       `Derivation.derived[value]` for any `value <: Product` with a `ProductReflection`.
+-   entry .AddableDerivation   `ProductDerivation` of `value is Addable by value to value`
+-       Its `conjunction` builds the sum of two products with `build`, adding each pair of
+-       corresponding fields (read with `complement`) through the field's `Addable`.
+-   entry .addable   the given: any product is `Addable by` itself `to` itself, field-wise
+-       `AddableDerivation.derived[value]` for every `value <: Product` with a
+-       `ProductReflection`; every field type needs its own `Addable`. Imported by name.
+-   entry .SubtractableDerivation   `ProductDerivation` of `value is Subtractable by value to value`
+-       As `AddableDerivation`, with each pair of fields subtracted.
+-   entry .subtractable   the given: any product is `Subtractable by` itself `to` itself, field-wise
+-       `SubtractableDerivation.derived[value]`; imported by name.
+-   entry .MultiplicableDerivation   `ProductDerivation` of `value is Multiplicable by value to value`
+-       As `AddableDerivation`, with each pair of fields multiplied.
+-   entry .multiplicable   the given: any product is `Multiplicable by` itself `to` itself, field-wise
+-       `MultiplicableDerivation.derived[value]`; imported by name.
+-   entry .DivisibleDerivation   `ProductDerivation` of `value is Divisible by value to value`
+-       As `AddableDerivation`, with each pair of fields divided.
+-   entry .divisible   the given: any product is `Divisible by` itself `to` itself, field-wise
+-       `DivisibleDerivation.derived[value]`; imported by name.
++       導出のオブジェクト（`AddableDerivation` とその兄弟）はそれぞれの型クラスの `ProductDerivation` であり、明示的な `derived[T]` に使える。そして各 given は、`ProductReflection` を持つ任意の `value <: Product` に対する `Derivation.derived[value]` である。
++   entry .AddableDerivation   `value is Addable by value to value` の `ProductDerivation`
++       その `conjunction` は `build` で二つの直積の和を組み立て、対応するフィールドの各対（`complement` で読む）をフィールドの `Addable` を通じて足す。
++   entry .addable   given：任意の直積は、フィールドごとに、自分自身に `Addable by` で、自分自身 `to` になる
++       `ProductReflection` を持つすべての `value <: Product` に対する `AddableDerivation.derived[value]`。すべてのフィールドの型にそれ自身の `Addable` が必要である。名前で import する。
++   entry .SubtractableDerivation   `value is Subtractable by value to value` の `ProductDerivation`
++       `AddableDerivation` と同じで、フィールドの各対を引く。
++   entry .subtractable   given：任意の直積は、フィールドごとに、自分自身に `Subtractable by` で、自分自身 `to` になる
++       `SubtractableDerivation.derived[value]`。名前で import する。
++   entry .MultiplicableDerivation   `value is Multiplicable by value to value` の `ProductDerivation`
++       `AddableDerivation` と同じで、フィールドの各対を掛ける。
++   entry .multiplicable   given：任意の直積は、フィールドごとに、自分自身に `Multiplicable by` で、自分自身 `to` になる
++       `MultiplicableDerivation.derived[value]`。名前で import する。
++   entry .DivisibleDerivation   `value is Divisible by value to value` の `ProductDerivation`
++       `AddableDerivation` と同じで、フィールドの各対を割る。
++   entry .divisible   given：任意の直積は、フィールドごとに、自分自身に `Divisible by` で、自分自身 `to` になる
++       `DivisibleDerivation.derived[value]`。名前で import する。
+
+- entry .Discriminable   how a sum's variant is told apart on the wire, for a format's decoder
++ entry .Discriminable   フォーマットのデコーダーのために、直和のバリアントをワイヤ上でどう見分けるか
+
+= entry .Discriminable   how a sum's variant is told apart on the wire, for a format's decoder
+-   detail
++   detail
+
+-       A format which encodes a sum must say which variant a value is, and a `value is
+-       Discriminable in Form` says how: `discriminate` reads the variant's label out of a value
+-       in the format's `Form` (a JSON node, say), `variant` strips the discriminator to leave
+-       the variant's own payload, and `rewrite` adds a label to a payload for encoding. The
+-       typeclass is defined here, next to the derivation which consults it, and implemented by
+-       each format: jacinta's `discriminables` package offers a `type` field, a `kind` field, a
+-       wrapper object keyed by the variant's name and a `type`/`value` envelope, each a given
+-       imported by name. A format's derived decoder calls `discriminate` and then `delegate`s
+-       to the variant it names, raising `Variant.Error` for an unknown label.
+-   entry #rewrite   a payload in the form, with the variant's label `kind` written into it
+-   entry #discriminate   the variant label a value in the form carries, or `Unset` if it has none
+-   entry #variant   the variant's own payload, with the discriminator removed
++       直和をエンコードするフォーマットは、値がどのバリアントかを示さなければならず、`value is Discriminable in Form` がその方法を示す。`discriminate` はフォーマットの `Form`（たとえば JSON のノード）の値からバリアントのラベルを読み、`variant` は判別子を取り除いてバリアント自身のペイロードを残し、`rewrite` はエンコードのためにペイロードにラベルを加える。
++       この型クラスは、それを参照する導出の隣であるここで定義され、各フォーマットが実装する。jacinta の `discriminables` パッケージは、`type` フィールド、`kind` フィールド、バリアントの名前をキーとするラッパーオブジェクト、`type`/`value` のエンベロープを提供し、それぞれ名前で import する given である。
++       フォーマットの導出されたデコーダーは `discriminate` を呼び、それが名指しするバリアントに `delegate` し、未知のラベルに対しては `Variant.Error` を発生させる。
++   entry #rewrite   バリアントのラベル `kind` を書き込んだ、その形式のペイロード
++   entry #discriminate   その形式の値が持つバリアントのラベル。持たなければ `Unset`
++   entry #variant   判別子を取り除いた、バリアント自身のペイロード
+
+- entry .FieldIndex   the brand on a field's `index`: `Int & FieldIndex[field]`
+-     A sealed, uninhabited trait intersected with `Int` to tie a field's position to its type,
+-     so that `complement(product)`, given the index, can read the field out of another value
+-     and return it as `field`. The `index` accessor yields it inside a product combinator's
+-     lambda; it is never constructed by hand.
++ entry .FieldIndex   フィールドの `index` に付くブランド：`Int & FieldIndex[field]`
++     フィールドの位置をその型に結びつけるために `Int` と交差させた、シールされた、値を持たないトレイトである。そのため `complement(product)` は、位置を与えられると、別の値からフィールドを読み出して `field` として返せる。
++     直積のコンビネーターのラムダの中で `index` アクセサーがそれを与える。手で組み立てることはない。
+
+- entry .Variant   the vocabulary of sum derivation: a variant's `Index`, and the `Error` for an unknown label
++ entry .Variant   直和の導出の語彙：バリアントの `Index` と、未知のラベルに対する `Error`
+
+= entry .Variant   the vocabulary of sum derivation: a variant's `Index`, and the `Error` for an unknown label
+-   detail
++   detail
+
+-       There is no `Variant` type: a variant is a case of the sum being derived, identified by
+-       its position (`Variant.Index`) and its label. The object holds the error a producer
+-       raises when a label names no variant, and the brand on a variant's index.
++       `Variant` 型はない。バリアントは導出される直和のケースであり、その位置（`Variant.Index`）とラベルで識別される。
++       このオブジェクトは、ラベルがどのバリアントも名指ししないときに生産者が発生させるエラーと、バリアントの位置に付くブランドを持つ。
+
+=       raises when a label names no variant, and the brand on a variant's index.
+-   refer wisteria.SumDerivation.Methods
++   refer wisteria.SumDerivation.Methods
+
+-   entry .Error   raised when a label names no variant of the sum: _the specified variant (`x`) is not one of the valid variants (…) of sum type `S`_
++   entry .Error   ラベルが直和のどのバリアントも名指ししないときに発生する：_the specified variant (`x`) is not one of the valid variants (…) of sum type `S`_
+
+=   entry .Error   raised when a label names no variant of the sum: _the specified variant (`x`) is not one of the valid variants (…) of sum type `S`_
+-     detail
++     detail
+
+-         Raised, through a `Tactic[Variant.Error]`, by `delegate` and `singleton` when the
+-         label they are given — usually a discriminator read from a decoder's input — matches
+-         none of the sum's variants. The message lists the valid variants, so the error says
+-         what the input should have carried. A derivation which calls either combinator needs
+-         the tactic in scope where it expands: `provide[Tactic[Variant.Error]]` inside the
+-         instance keeps the derived instance from capturing the caller's own.
++         `delegate` と `singleton` が、与えられたラベル（通常はデコーダーの入力から読んだ判別子）が直和のどのバリアントとも一致しないときに、`Tactic[Variant.Error]` を通じて発生させる。
++         メッセージは有効なバリアントを列挙するので、エラーは入力が何を持つべきだったかを示す。
++         どちらかのコンビネーターを呼ぶ導出は、展開される所で戦術をスコープに必要とする。インスタンスの中の `provide[Tactic[Variant.Error]]` によって、導出されたインスタンスが呼び出し元自身の戦術をキャプチャしないようにできる。
+
+-         ```scala
++         ```scala
+
+-         import soundness.*
++         import soundness.*
+
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         trait Parsing[value]:
++         trait Parsing[value]:
+
+-           def parse(text: Text): value
++           def parse(text: Text): value
+
+-         object Parsing extends Derivation[Parsing]:
++         object Parsing extends Derivation[Parsing]:
+
+-           given Parsing[Int] = _.s.toInt
++           given Parsing[Int] = _.s.toInt
+
+-           given Parsing[Boolean] = _ == t"yes"
++           given Parsing[Boolean] = _ == t"yes"
+
+-           inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
++           inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+
+-             text => build[derivation] { [field] => parsing => parsing.parse(text) }
++             text => build[derivation] { [field] => parsing => parsing.parse(text) }
+
+-           inline def disjunction[derivation: SumReflection]: Parsing[derivation] =
++           inline def disjunction[derivation: SumReflection]: Parsing[derivation] =
+
+-             text =>
++             text =>
+
+-               text.cut(t":") match
++               text.cut(t":") match
+
+-                 case List(prefix: Text, rest: Text) =>
++                 case List(prefix: Text, rest: Text) =>
+
+-                   provide[Tactic[Variant.Error]]:
++                   provide[Tactic[Variant.Error]]:
+
+-                     delegate[derivation](prefix):
++                     delegate[derivation](prefix):
+
+-                       [variant <: derivation] => parsing => parsing.parse(rest)
++                       [variant <: derivation] => parsing => parsing.parse(rest)
+
+-         sealed trait Wrapped
++         sealed trait Wrapped
+
+-         case class WrappedInt(value: Int) extends Wrapped
++         case class WrappedInt(value: Int) extends Wrapped
+
+-         case class WrappedBool(value: Boolean) extends Wrapped
++         case class WrappedBool(value: Boolean) extends Wrapped
+
+-         try Parsing.derived[Wrapped].parse(t"Unknown:42").toString.tt
++         try Parsing.derived[Wrapped].parse(t"Unknown:42").toString.tt
+
+-         catch case error: Variant.Error => error.validVariants.join(t", ")   // t"WrappedInt, WrappedBool"
++         catch case error: Variant.Error => error.validVariants.join(t", ")   // t"WrappedInt, WrappedBool"
+
+-         ```
++         ```
+
+-         `Variant.Error[derivation](label)` builds the error for a sum type, filling in the
+-         sum's name and its variant labels at compile time.
+-     entry .apply   builds the error for a sum type: `Variant.Error[Sum](label)`
+-         An inline method which fills in `sum` and `validVariants` from the type's symbol, so a
+-         caller supplies only the offending label.
+-     entry #inputLabel   the label which named no variant
+-     entry #sum   the name of the sum type
+-     entry #validVariants   the labels of the sum's variants, in declaration order
+-   entry .Index   the brand on a variant's `index`: `Int & Variant.Index[variant]`
++         `Variant.Error[derivation](label)` は直和型に対するエラーを組み立て、直和の名前とバリアントのラベルをコンパイル時に埋める。
++     entry .apply   直和型に対するエラーを組み立てる：`Variant.Error[Sum](label)`
++         型のシンボルから `sum` と `validVariants` を埋めるインラインメソッドなので、呼び出し元は問題のラベルだけを与える。
++     entry #inputLabel   どのバリアントも名指ししなかったラベル
++     entry #sum   直和型の名前
++     entry #validVariants   直和のバリアントのラベル（宣言順）
++   entry .Index   バリアントの `index` に付くブランド：`Int & Variant.Index[variant]`
+
+=   entry .Index   the brand on a variant's `index`: `Int & Variant.Index[variant]`
+-     detail
++     detail
+
+-         A sealed, uninhabited trait intersected with `Int` to tie a variant's position to its
+-         type. The `index` accessor yields it inside a sum combinator's lambda, and
+-         `complement(sum)` uses it to narrow another value to the same variant.
+-     entry .apply   brands an `Int` as the index of a variant: `Variant.Index[variant](int)`
++         バリアントの位置をその型に結びつけるために `Int` と交差させた、シールされた、値を持たないトレイトである。
++         直和のコンビネーターのラムダの中で `index` アクセサーがそれを与え、`complement(sum)` はそれを使って別の値を同じバリアントに絞り込む。
++     entry .apply   `Int` にバリアントの位置としてブランドを付ける：`Variant.Index[variant](int)`
+
+- entry .internal   the macros behind the derivation engine and the combinators
++ entry .internal   導出のエンジンとコンビネーターの背後のマクロ
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object houses the macro implementations the inline combinators
+-       splice, and the accessors tests and tooling use. `derived` is `deriveGraph`; `fields`,
+-       `contexts`, `build` and `construct` are `fieldsProduct`, `contextsProduct`,
+-       `buildProduct` and `constructMonadic`; `choice` is `isChoice`. `fieldInstance` is the
+-       implicit search which resolves a field's instance while ignoring the typeclass's own
+-       derivation givens, so a field lands on a hand-written given, a codec or a sibling of the
+-       graph and never re-enters the derivation.
+-   entry .default   a field's declared default value, by its index, or `Unset`
+-   entry .sumName   the name of a type, as `Text`, from its symbol
+-   entry .variantLabelList   the labels of a sum's variants, in declaration order
+-   entry .fieldLabelList   the labels of a product's fields, in declaration order
+-   entry .field   the typeclass instance for an element, resolved without re-entering the derivation
+-   entry .overridePaths   the dotted field paths a `Specific over typeclass` in scope overrides, or `Nil`
+-   entry .overridePathsMacro   the macro behind `overridePaths`
+-   entry .Reentrant   a marker given during a re-entry probe, so a type reaching itself resolves to its sibling
+-   entry .reentrySentinel   what a re-entry probe returns; never evaluated
+-   entry .isSum   whether a type is a sum, decided as the code compiles
+-   entry .isSumMacro   the macro behind `isSum`
+-   entry .fieldLabels   the macro behind `fieldLabelList`
+-   entry .isSumType   whether a type representation is a sealed trait or enumeration with children
+-   entry .isProductType   whether a type representation is a product the engine can build
+-   entry .isChoice   the macro behind `choice`: whether every variant is a singleton
+-   entry .fieldInstance   the macro behind `field`
+-   entry .deriveGraph   the macro behind `derived`: one lazily bound instance per reachable type
+-   entry .buildProduct   the macro behind `build`
+-   entry .contextsProduct   the macro behind `contexts`
+-   entry .fieldsProduct   the macro behind `fields`
+-   entry .constructMonadic   the macro behind `construct`
+-   entry .typeName   the macro behind `sumName`
+-   entry .variantLabels   the macro behind `variantLabelList`
+-   entry .getDefault   the macro behind `default`: reads the synthetic default-argument method
++       直接使うためのものではない。このオブジェクトは、インラインのコンビネーターがスプライスするマクロの実装と、テストやツールが使うアクセサーを収めている。
++       `derived` は `deriveGraph` であり、`fields`、`contexts`、`build`、`construct` は `fieldsProduct`、`contextsProduct`、`buildProduct`、`constructMonadic` であり、`choice` は `isChoice` である。
++       `fieldInstance` は、型クラス自身の導出の given を無視しながらフィールドのインスタンスを解決する暗黙の探索なので、フィールドは手書きの given、コーデック、またはグラフの兄弟に行き着き、導出に再び入ることはない。
++   entry .default   位置によるフィールドの宣言された既定値、または `Unset`
++   entry .sumName   シンボルからの型の名前（`Text` として）
++   entry .variantLabelList   直和のバリアントのラベル（宣言順）
++   entry .fieldLabelList   直積のフィールドのラベル（宣言順）
++   entry .field   導出に再び入らずに解決された、要素に対する型クラスインスタンス
++   entry .overridePaths   スコープ内の `Specific over typeclass` が上書きする、ドットで区切ったフィールドパス、または `Nil`
++   entry .overridePathsMacro   `overridePaths` の背後のマクロ
++   entry .Reentrant   再入の探査の間に与えられる印の given。自分自身に到達する型がその兄弟に解決されるようにする
++   entry .reentrySentinel   再入の探査が返すもの。評価されることはない
++   entry .isSum   型が直和かどうか。コードのコンパイル時に決まる
++   entry .isSumMacro   `isSum` の背後のマクロ
++   entry .fieldLabels   `fieldLabelList` の背後のマクロ
++   entry .isSumType   型の表現が、子を持つシールされたトレイトまたは列挙型かどうか
++   entry .isProductType   型の表現が、エンジンが組み立てられる直積かどうか
++   entry .isChoice   `choice` の背後のマクロ：すべてのバリアントがシングルトンかどうか
++   entry .fieldInstance   `field` の背後のマクロ
++   entry .deriveGraph   `derived` の背後のマクロ：到達できる型ごとに遅延して束縛されるインスタンスを一つ
++   entry .buildProduct   `build` の背後のマクロ
++   entry .contextsProduct   `contexts` の背後のマクロ
++   entry .fieldsProduct   `fields` の背後のマクロ
++   entry .constructMonadic   `construct` の背後のマクロ
++   entry .typeName   `sumName` の背後のマクロ
++   entry .variantLabels   `variantLabelList` の背後のマクロ
++   entry .getDefault   `default` の背後のマクロ：合成された既定引数のメソッドを読む

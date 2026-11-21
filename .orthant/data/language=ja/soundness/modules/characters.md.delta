@@ -1,0 +1,728 @@
+orthant 1 language
+
+- ## Characters
++ ## 文字
+
+- ### About
++ ### 概要
+
+- The boundary between text and bytes is a
+- [character encoding](https://en.wikipedia.org/wiki/Character_encoding), and here the choice of
+- encoding is explicit and typed. A `Codepage` turns text into bytes, and a `Charset` turns bytes
+- back into text. Each is a [contextual value], chosen by import, so no conversion ever happens
+- under an assumed default. What to do with bytes which cannot be decoded is a separate choice,
+- made just as explicitly.
++ テキストとバイトの境界は[文字エンコーディング](https://en.wikipedia.org/wiki/Character_encoding)であり、ここではエンコーディングの選択は明示的で、型付けされている。
++ `Codepage` はテキストをバイトに変え、`Charset` はバイトをテキストに戻す。
++ どちらもインポートで選ぶ[コンテキスト値]なので、暗黙の既定値のもとで変換が行われることはない。
++ デコードできないバイトをどう扱うかは別の選択であり、同じく明示的に行う。
+
+- A program sometimes needs facts about single characters too:
++ プログラムは、一つ一つの文字についての事実も必要とすることがある。
+
+- - how many columns a character occupies in a terminal, where an "East Asian wide" character
+-   takes two;
+- - a character's Unicode name and properties;
+- - its superscript and subscript forms;
+- - the [grapheme cluster](https://unicode.org/reports/tr29/) boundaries, which say where one
+-   character, as a reader perceives it, ends and the next begins.
++ - 端末で文字が何列を占めるか。「東アジアの全角」文字は二列を取る。
++ - 文字の Unicode の名前と特性。
++ - その上付き添字と下付き添字の形。
++ - [書記素クラスタ](https://unicode.org/reports/tr29/)の境界。読み手が知覚する一つの文字がどこで終わり、次の文字がどこで始まるかを示す。
+
+- ### On characters
++ ### 文字について
+
+- Encodings fail, and most APIs hide the failure. Decoding bytes with the platform's default
+- charset silently replaces anything malformed. Corrupt input turns into question marks somewhere
+- downstream, and nothing in the code records which encoding was assumed.
++ エンコーディングは失敗するものであり、ほとんどの API はその失敗を隠す。
++ プラットフォームの既定の文字セットでバイトをデコードすると、不正なものは黙って置き換えられる。
++ 壊れた入力は下流のどこかで疑問符に変わり、どのエンコーディングが想定されたかはコードのどこにも記録されない。
+
+- Meanwhile "one character" is a slippery idea. A flag emoji is two code points. An accented
+- letter may be one or two. A wide ideograph occupies two columns of a terminal. These details
+- matter as soon as text is measured or split.
++ 一方で「一つの文字」というのはつかみどころのない考えである。
++ 国旗の絵文字は二つのコードポイントである。
++ アクセント付きの文字は一つのこともあれば二つのこともある。
++ 全角の表意文字は端末の二列を占める。
++ こうした細部は、テキストを測ったり分割したりした途端に重要になる。
+
+- Here the choices are separate, and each is stated:
++ ここでは選択は別々であり、それぞれが明示される。
+
+= Here the choices are separate, and each is stated:
+=
+- ```tabular
++ ```tabular
+
+- column  Choice
+- column  Made by
+- row  the encoding  a `Codepage` or `Charset` given, imported where it is used
+- row  what happens to undecodable bytes  a `TextSanitizer` given
+- row  how wide a character is  a metric, chosen for the display
++ column  選択
++ column  選び方
++ row  エンコーディング  使う場所でインポートする `Codepage` または `Charset` の given
++ row  デコードできないバイトの扱い  `TextSanitizer` の given
++ row  文字の幅  表示に合わせて選ぶ指標
+
+= row  how wide a character is  a metric, chosen for the display
+- ```
++ ```
+
+- Naming each as a [given], instead of defaulting silently, is
+- [declarative context](../../philosophy/declarative-context.md) at the boundary between bytes and
+- text. Everything comes from the `soundness` package, and the second import lets the samples
+- print their results:
++ 黙って既定値を使う代わりにそれぞれを [given] として名指しすることは、バイトとテキストの境界における[宣言的なコンテキスト](../../philosophy/declarative-context.md)である。
++ すべては `soundness` パッケージから来る。二つ目のインポートは、サンプルが結果を表示できるようにする。
+
+= print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Encoding and decoding
++ ### エンコードとデコード
+
+- Text cannot become bytes until an encoding has been chosen. There is no default to fall back
+- on, so without a `Codepage` in scope the conversion does not compile:
++ テキストは、エンコーディングが選ばれるまでバイトになれない。
++ 頼れる既定値はないので、スコープ内に `Codepage` がなければ変換はコンパイルされない。
+
+= on, so without a `Codepage` in scope the conversion does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= on, so without a `Codepage` in scope the conversion does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= on, so without a `Codepage` in scope the conversion does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= on, so without a `Codepage` in scope the conversion does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- t"café".in[Data]
++ t"café".in[Data]
+
+= t"café".in[Data]
+- ```
++ ```
+
+- An encoding is brought into scope by import. The conversion then happens where text meets
+- bytes, either explicitly, as here, or wherever a [stream](streams.md) crosses the boundary:
++ エンコーディングはインポートでスコープに入れる。
++ すると変換は、テキストがバイトと出会う場所で行われる。ここでのように明示的に行われることもあれば、[ストリーム](streams.md)が境界を越える場所で行われることもある。
+
+= bytes, either explicitly, as here, or wherever a [stream](streams.md) crosses the boundary:
+=
+- ```scala
++ ```scala
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import charsets.utf8Charset
++ import charsets.utf8Charset
+
+- import textSanitizers.strictSanitizer
++ import textSanitizers.strictSanitizer
+
+- val bytes = t"café".in[Data]
++ val bytes = t"café".in[Data]
+
+= val bytes = t"café".in[Data]
+- ```
++ ```
+
+= val bytes = t"café".in[Data]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val bytes = t"café".in[Data]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val bytes = t"café".in[Data]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(bytes.length.show)
++ Out.println(bytes.length.show)
+
+- Out.println(bytes.utf8)
++ Out.println(bytes.utf8)
+
+= Out.println(bytes.utf8)
+- ```
++ ```
+
+- The four characters are five bytes, since `é` takes two bytes in UTF-8.
++ UTF-8 では `é` が二バイトを取るので、四つの文字は五バイトになる。
+
+- UTF-8, UTF-16 in both byte orders, ASCII and ISO-8859-1 are provided. Any encoding the JVM
+- knows can be named with the `enc"…"` [interpolator], which checks at [compiletime] that the
+- encoding exists. When an encoder is asked for, it also checks that the encoding can encode as
+- well as decode:
++ UTF-8、両方のバイト順の UTF-16、ASCII、ISO-8859-1 が提供されている。
++ JVM が知っているどのエンコーディングも `enc"…"` [補間子]で名指しでき、これはそのエンコーディングが存在することを[コンパイル時]に検査する。
++ エンコーダーを求めると、そのエンコーディングがデコードだけでなくエンコードもできることも検査する。
+
+= well as decode:
+=
+- ```scala
++ ```scala
+
+- val encoder = enc"UTF-8".encoder
++ val encoder = enc"UTF-8".encoder
+
+= val encoder = enc"UTF-8".encoder
+- ```
++ ```
+
+= val encoder = enc"UTF-8".encoder
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- compile
++ compile
+
+= ```
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= ```
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- enc"ABCDEF"
++ enc"ABCDEF"
+
+= enc"ABCDEF"
+- ```
++ ```
+
+- ### Bad input
++ ### 不正な入力
+
+- When a decoder meets bytes which are not valid in its encoding, it consults the `TextSanitizer`
+- in scope. Three sanitizers decide between failing, dropping and replacing:
++ デコーダーは、そのエンコーディングで有効でないバイトに出会うと、スコープ内の `TextSanitizer` に問い合わせる。
++ 三つのサニタイザーが、失敗する、取り除く、置き換えるのいずれかを決める。
+
+= in scope. Three sanitizers decide between failing, dropping and replacing:
+=
+- ```tabular
++ ```tabular
+
+- column  Sanitizer
+- column  On bad bytes
+- row  `strictSanitizer`  raises a `Charset.Error` which names the position of the fault
+- row  `skipSanitizer`  drops them
+- row  `substituteSanitizer`  replaces them with `?`
++ column  サニタイザー
++ column  不正なバイトに対して
++ row  `strictSanitizer`  誤りの位置を示す `Charset.Error` を発生させる
++ row  `skipSanitizer`  取り除く
++ row  `substituteSanitizer`  `?` で置き換える
+
+= row  `substituteSanitizer`  replaces them with `?`
+- ```
++ ```
+
+- These four bytes are a hyphen, the first byte of a two-byte sequence whose second byte is
+- missing, and the digits `1` and `0`:
++ 次の四つのバイトは、ハイフン、二つ目のバイトが欠けた二バイトの並びの一つ目のバイト、そして数字の `1` と `0` である。
+
+= missing, and the digits `1` and `0`:
+=
+- ```scala
++ ```scala
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- val badUtf8 = Data(45, -62, 49, 48)
++ val badUtf8 = Data(45, -62, 49, 48)
+
+= val badUtf8 = Data(45, -62, 49, 48)
+- ```
++ ```
+
+= val badUtf8 = Data(45, -62, 49, 48)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val badUtf8 = Data(45, -62, 49, 48)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val badUtf8 = Data(45, -62, 49, 48)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= ##
+- locally:
++ locally:
+
+-   import textSanitizers.skipSanitizer
++   import textSanitizers.skipSanitizer
+
+=   import textSanitizers.skipSanitizer
+-   Out.println(charsets.utf8Charset.decoded(badUtf8))
++   Out.println(charsets.utf8Charset.decoded(badUtf8))
+
+=   import textSanitizers.skipSanitizer
+=   Out.println(charsets.utf8Charset.decoded(badUtf8))
+=
+- locally:
++ locally:
+
+-   import textSanitizers.substituteSanitizer
++   import textSanitizers.substituteSanitizer
+
+=   import textSanitizers.substituteSanitizer
+-   Out.println(charsets.utf8Charset.decoded(badUtf8))
++   Out.println(charsets.utf8Charset.decoded(badUtf8))
+
+=   import textSanitizers.substituteSanitizer
+=   Out.println(charsets.utf8Charset.decoded(badUtf8))
+=
+- locally:
++ locally:
+
+-   import textSanitizers.strictSanitizer
++   import textSanitizers.strictSanitizer
+
+-   Out.println(capture[Charset.Error](charsets.utf8Charset.decoded(badUtf8)).message.show)
++   Out.println(capture[Charset.Error](charsets.utf8Charset.decoded(badUtf8)).message.show)
+
+=   Out.println(capture[Charset.Error](charsets.utf8Charset.decoded(badUtf8)).message.show)
+- ```
++ ```
+
+- Which behavior is right depends on the data. Strictness suits input which should be trusted
+- absolutely, and tolerance suits text recovered from a lossy source. Either way, the choice is
+- visible at the import.
++ どの振る舞いが正しいかはデータによる。
++ 厳格さは絶対に信頼できるはずの入力に合い、寛容さは損失のある情報源から回収したテキストに合う。
++ いずれにしても、選択はインポートを見れば分かる。
+
+- A fourth sanitizer keeps both. `accrueSanitizer` carries on decoding, as the skipping one does,
+- but records each fault. The whole of a damaged input is recovered, *and* every bad sequence is
+- reported, with the position at which it occurred.
++ 四つ目のサニタイザーは両方を保つ。
++ `accrueSanitizer` は、取り除くものと同じくデコードを続けるが、それぞれの誤りを記録する。
++ 壊れた入力の全体が回収され、*しかも*すべての不正な並びが、それが現れた位置とともに報告される。
+
+- The faults [accumulate](errors.md#accumulating-failures) into a value of the caller's choosing,
+- here an error which collects positions and faults. `validate` does the collecting: its first
+- block says how each fault joins the accumulation, and its `protect` block does the decoding.
++ 誤りは、呼び出し側が選んだ値に[蓄積される](errors.md#accumulating-failures)。ここでは位置と誤りを集めるエラーである。
++ 集めるのは `validate` である。最初のブロックはそれぞれの誤りが蓄積にどう加わるかを示し、`protect` ブロックがデコードを行う。
+
+= block says how each fault joins the accumulation, and its `protect` block does the decoding.
+=
+- ```scala
++ ```scala
+
+- import dysasymptotics.linearSize
++ import dysasymptotics.linearSize
+
+- case class DecodeIssues(items: List[(Int, Charset.Error)] = Nil)(using Diagnostics)
++ case class DecodeIssues(items: List[(Int, Charset.Error)] = Nil)(using Diagnostics)
+
+- extends Error(m"${items.size} decoding issues"):
++ extends Error(m"${items.size} decoding issues"):
+
+-   def +(position: Int, error: Charset.Error): DecodeIssues =
++   def +(position: Int, error: Charset.Error): DecodeIssues =
+
+-     DecodeIssues(items :+ (position, error))
++     DecodeIssues(items :+ (position, error))
+
+- val issues =
++ val issues =
+
+-   validate[Charset.Focus](DecodeIssues()):
++   validate[Charset.Focus](DecodeIssues()):
+
+-     case error: Charset.Error => accrual + (prior.let(_.position).or(0), error)
++     case error: Charset.Error => accrual + (prior.let(_.position).or(0), error)
+
+-   . protect:
++   . protect:
+
+-       import textSanitizers.accrueSanitizer
++       import textSanitizers.accrueSanitizer
+
+-       charsets.utf8Charset.decoded(badUtf8)
++       charsets.utf8Charset.decoded(badUtf8)
+
+=       charsets.utf8Charset.decoded(badUtf8)
+- ```
++ ```
+
+- The result of `validate` is the accumulation, with one entry for the one bad sequence:
++ `validate` の結果は蓄積であり、一つの不正な並びに対して一つの項目がある。
+
+= The result of `validate` is the accumulation, with one entry for the one bad sequence:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The result of `validate` is the accumulation, with one entry for the one bad sequence:
+=
+= ```scala fuel
+- run
++ run
+
+= The result of `validate` is the accumulation, with one entry for the one bad sequence:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- issues.items.each: (position, error) =>
++ issues.items.each: (position, error) =>
+
+-   Out.println(t"at byte $position: ${error.message}")
++   Out.println(t"at byte $position: ${error.message}")
+
+=   Out.println(t"at byte $position: ${error.message}")
+- ```
++ ```
+
+- This is what a tool wants when it imports a file of uncertain origin: the text, and a list of
+- where it was wrong, not a choice between the two.
++ 出所の不確かなファイルを取り込むツールが求めるのはこれである。テキストと、それが間違っていた場所の一覧であり、そのどちらかを選ぶことではない。
+
+- ### Encodings
++ ### エンコーディング
+
+- The packages `codepages` and `charsets` provide the encodings a program is likely to need, each
+- as a named given:
++ `codepages` と `charsets` のパッケージは、プログラムが必要としそうなエンコーディングを、それぞれ名前付きの given として提供する。
+
+= as a named given:
+=
+- ```tabular
++ ```tabular
+
+- column  Encoding
+- column  Codepage, for encoding
+- column  Charset, for decoding
++ column  エンコーディング
++ column  Codepage（エンコード用）
++ column  Charset（デコード用）
+
+- row  UTF-8  `utf8Codepage`  `utf8Charset`
++ row  UTF-8  `utf8Codepage`  `utf8Charset`
+
+- row  UTF-16  `utf16Codepage`  `utf16Charset`
++ row  UTF-16  `utf16Codepage`  `utf16Charset`
+
+- row  UTF-16, little-endian  `utf16LeCodepage`  `utf16LeCharset`
+- row  UTF-16, big-endian  `utf16BeCodepage`  `utf16BeCharset`
++ row  UTF-16、リトルエンディアン  `utf16LeCodepage`  `utf16LeCharset`
++ row  UTF-16、ビッグエンディアン  `utf16BeCodepage`  `utf16BeCharset`
+
+- row  ASCII  `asciiCodepage`  `asciiCharset`
++ row  ASCII  `asciiCodepage`  `asciiCharset`
+
+- row  ISO-8859-1  `iso88591Codepage`  `iso88591Charset`, which always skips bad bytes
++ row  ISO-8859-1  `iso88591Codepage`  `iso88591Charset`（常に不正なバイトを取り除く）
+
+= row  ISO-8859-1  `iso88591Codepage`  `iso88591Charset`, which always skips bad bytes
+- ```
++ ```
+
+- Every other charset uses the sanitizer in scope.
++ それ以外の文字セットはすべて、スコープ内のサニタイザーを使う。
+
+- Encoding and decoding also work as stages of a [stream](streams.md#composing-a-pipeline). A
+- multi-byte character which is split across two chunks is carried over the boundary, not
+- corrupted. That includes a surrogate pair split between chunks, which is where a naive
+- implementation loses a character.
++ エンコードとデコードは、[ストリーム](streams.md#composing-a-pipeline)の段階としても働く。
++ 二つのチャンクにまたがって分割されたマルチバイト文字は、壊されることなく境界を越えて引き継がれる。
++ これにはチャンクの間で分割されたサロゲートペアも含まれる。素朴な実装が文字を失うのはここである。
+
+- ### Character widths
++ ### 文字の幅
+
+- A character is not always one column wide in a monospaced display. The `metrics` extension
+- measures a character, or a text, through the metric in scope. There are three, in the package
+- `textMetrics`:
++ 等幅の表示で、文字がいつも一列の幅とは限らない。
++ `metrics` 拡張は、スコープ内の指標を通して文字やテキストを測る。
++ 指標は `textMetrics` パッケージに三つある。
+
+= `textMetrics`:
+=
+- ```tabular
++ ```tabular
+
+- column  Metric
+- column  Two columns
+- column  No columns
+- column  One column
+- row  `uniformMetric`  none  none  every character
+- row  `eastAsianScriptsMetric`  wide and full-width characters  none  every other character
+- row  `wideCharacterWidthMetric`  wide and full-width characters  control characters, combining and enclosing marks, format characters  every other character
++ column  指標
++ column  二列
++ column  ゼロ列
++ column  一列
++ row  `uniformMetric`  なし  なし  すべての文字
++ row  `eastAsianScriptsMetric`  全角文字  なし  それ以外のすべての文字
++ row  `wideCharacterWidthMetric`  全角文字  制御文字、結合記号と囲み記号、書式文字  それ以外のすべての文字
+
+= row  `wideCharacterWidthMetric`  wide and full-width characters  control characters, combining and enclosing marks, format characters  every other character
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- import textMetrics.eastAsianScriptsMetric
++ import textMetrics.eastAsianScriptsMetric
+
+= import textMetrics.eastAsianScriptsMetric
+- ```
++ ```
+
+= import textMetrics.eastAsianScriptsMetric
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import textMetrics.eastAsianScriptsMetric
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import textMetrics.eastAsianScriptsMetric
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println('a'.metrics.show)
++ Out.println('a'.metrics.show)
+
+- Out.println('身'.metrics.show)
++ Out.println('身'.metrics.show)
+
+= Out.println('身'.metrics.show)
+- ```
++ ```
+
+- Text [padding and fitting](text.md#padding-and-fitting) measure with the same metric, so a
+- column of Japanese text aligns correctly where counting characters would not.
++ テキストの[パディングと詰め込み](text.md#padding-and-fitting)も同じ指標で測るので、文字を数えるのではうまくいかない日本語テキストの列も正しく揃う。
+
+- The choice affects speed as well as correctness, which is why the most thorough metric is not
+- simply the default. Measuring a text under `uniformMetric` is reading its length, in constant
+- time. Measuring it under `eastAsianScriptsMetric` means inspecting every character and adding up
+- the widths. Where a text is known to hold nothing wide, the uniform metric gives the same answer
+- for nothing.
++ この選択は正しさだけでなく速度にも影響する。最も念入りな指標が単純に既定値になっていないのはそのためである。
++ `uniformMetric` のもとでテキストを測ることは、その長さを読むことであり、定数時間で済む。
++ `eastAsianScriptsMetric` のもとで測ることは、すべての文字を調べて幅を足し合わせることを意味する。
++ テキストに全角のものが何もないと分かっている場所では、一様な指標が同じ答えをただで与える。
+
+- ### Unicode properties
++ ### Unicode の特性
+
+- A character answers questions about itself. It reports its Unicode name, and gives its
+- superscript and subscript forms where Unicode defines them:
++ 文字は自分自身についての問いに答える。
++ Unicode の名前を報告し、Unicode が定義している場合は上付き添字と下付き添字の形を与える。
+
+= superscript and subscript forms where Unicode defines them:
+=
+- ```tabular
++ ```tabular
+
+- column  Member
+- column  Returns
+- row  `whitespace`  whether it is whitespace
+- row  `control`  whether it is an ISO control character
+- row  `printable`  whether it is neither whitespace nor a control character
+- row  `letter`, `digit`, `alphanumeric`  whether it is a letter, a digit, or either
+- row  `majuscular`, `minuscular`  whether it is upper-case or lower-case
+- row  `majuscule`, `minuscule`  its upper-case or lower-case form
+- row  `description`, `designation`  its Unicode name, an `Optional[Text]`
+- row  `superscript`, `subscript`  its superscript or subscript form, an `Optional[Char]`
++ column  メンバー
++ column  返すもの
++ row  `whitespace`  空白文字かどうか
++ row  `control`  ISO の制御文字かどうか
++ row  `printable`  空白文字でも制御文字でもないかどうか
++ row  `letter`, `digit`, `alphanumeric`  文字か、数字か、そのどちらかかどうか
++ row  `majuscular`, `minuscular`  大文字か小文字かどうか
++ row  `majuscule`, `minuscule`  その大文字または小文字の形
++ row  `description`, `designation`  その Unicode の名前で、`Optional[Text]`
++ row  `superscript`, `subscript`  その上付き添字または下付き添字の形で、`Optional[Char]`
+
+= row  `superscript`, `subscript`  its superscript or subscript form, an `Optional[Char]`
+- ```
++ ```
+
+= row  `superscript`, `subscript`  its superscript or subscript form, an `Optional[Char]`
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= row  `superscript`, `subscript`  its superscript or subscript form, an `Optional[Char]`
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= row  `superscript`, `subscript`  its superscript or subscript form, an `Optional[Char]`
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println('é'.description.inspect)
++ Out.println('é'.description.inspect)
+
+- Out.println('\t'.control.inspect)
++ Out.println('\t'.control.inspect)
+
+- Out.println('2'.superscript.inspect)
++ Out.println('2'.superscript.inspect)
+
+- Out.println('é'.superscript.inspect)
++ Out.println('é'.superscript.inspect)
+
+= Out.println('é'.superscript.inspect)
+- ```
++ ```
+
+- The last three are [optional](optional-values.md) values. `inspect` displays a present one
+- between corner brackets, and an absent one, such as the superscript of `é`, as `○`.
++ 最後の三つは[オプショナル](optional-values.md)な値である。
++ `inspect` は存在する値をかぎ括弧の間に表示し、`é` の上付き添字のような存在しない値を `○` と表示する。
+
+- ### Grapheme clusters
++ ### 書記素クラスタ
+
+- What a reader perceives as one character may be several code points: a flag, an emoji sequence,
+- a letter with a combining accent. `GraphemeBreak.boundaries` finds the positions where one such
+- character ends and the next begins, following Unicode's segmentation rules. Two flags are four
+- code points, and eight `Char`s, but two graphemes:
++ 読み手が一つの文字と知覚するものが、いくつものコードポイントであることがある。国旗、絵文字の並び、結合アクセント付きの文字などである。
++ `GraphemeBreak.boundaries` は、Unicode の分割規則に従って、そうした文字が終わり次の文字が始まる位置を見つける。
++ 二つの国旗は四つのコードポイントであり、八つの `Char` だが、二つの書記素である。
+
+= code points, and eight `Char`s, but two graphemes:
+=
+- ```scala fuel
++ ```scala fuel
+
+= code points, and eight `Char`s, but two graphemes:
+=
+= ```scala fuel
+- run
++ run
+
+= code points, and eight `Char`s, but two graphemes:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(GraphemeBreak.boundaries(t"🇬🇧🇫🇷").to[List].inspect)
++ Out.println(GraphemeBreak.boundaries(t"🇬🇧🇫🇷").to[List].inspect)
+
+= Out.println(GraphemeBreak.boundaries(t"🇬🇧🇫🇷").to[List].inspect)
+- ```
++ ```
+
+- Code which truncates or reverses text at these boundaries never splits a character in half.
+- [Text](text.md#graphemes-and-width) counts and measures graphemes with `Writing`.
++ これらの境界でテキストを切り詰めたり反転させたりするコードは、文字を決して半分に割らない。
++ [Text](text.md#graphemes-and-width) は `Writing` で書記素を数え、測る。
+
+- ### Related
++ ### 関連
+
+- - [Filesystem](filesystem.md) describes the encodings which file names and contents are read in.
++ - [Filesystem](filesystem.md) は、ファイル名と内容がどのエンコーディングで読まれるかを説明する。

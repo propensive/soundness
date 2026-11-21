@@ -1,0 +1,369 @@
+orthant 1 language
+
+- # Platform Parity
++ # プラットフォームの同等性
+
+- A batteries-included platform earns the name only if the batteries work where applications
+- actually run: on the JVM, in browsers, as native binaries, inside WASM runtimes, and on Android
+- devices. The promise is not that every module runs everywhere — a browser has no filesystem —
+- but that every exclusion is inherent, stated, and checked, and that building for any target is
+- no harder than building for the JVM.
++ バッテリー同梱のプラットフォームがその名に値するのは、アプリケーションが実際に動く場所でバッテリーが働くときだけである。JVM 上、ブラウザの中、ネイティブバイナリとして、WASM ランタイムの中、そして Android デバイスの上である。
++ 約束は、すべてのモジュールがどこでも動くということではない（ブラウザにはファイルシステムがない）。すべての除外が本質的なものであり、明示され、検査されていること、そしてどのターゲット向けのビルドも JVM 向けのビルドより難しくないことである。
+
+- Where each target stands today:
++ 各ターゲットの現状：
+
+= Where each target stands today:
+=
+- ```tabular
++ ```tabular
+
+- column  Target
+- column  Today
+- column  Closed by
+- row  JVM  total
+- row  JavaScript  most modules  plat-3
+- row  Native  most modules  plat-3
+- row  WASI  a narrow but real slice, built on the WASM component model  plat-4
+- row  Android  end-to-end — D8 dexing and APK signing without the Android SDK — but outside the ordinary build  plat-2
++ column  ターゲット
++ column  現状
++ column  解消する項目
++ row  JVM  全面的
++ row  JavaScript  ほとんどのモジュール  plat-3
++ row  Native  ほとんどのモジュール  plat-3
++ row  WASI  狭いが本物の一部。WASM コンポーネントモデルの上に築かれている  plat-4
++ row  Android  端から端まで動く（Android SDK なしでの D8 による dex 化と APK 署名）が、通常のビルドの外にある  plat-2
+
+= row  Android  end-to-end — D8 dexing and APK signing without the Android SDK — but outside the ordinary build  plat-2
+- ```
++ ```
+
+- Parity means closing each of those qualifications, and the instrument for doing so is a manifest: the platform matrix as
+- checked-in data, where every "no" carries a reason, and CI fails when reality regresses from
+- the manifest. When the only reasons left are inherent ones, the parity statement holds.
++ 同等性とは、これらの但し書きを一つずつ解消することであり、そのための手段はマニフェストである。マニフェストとは、チェックインされたデータとしてのプラットフォームの行列であり、そこではすべての「no」が理由を持ち、現実がマニフェストより後退すれば CI が失敗する。
++ 残る理由が本質的なものだけになったとき、同等性の主張が成り立つ。
+
+- The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
++ このトラックの項目と、その時期およびハードな依存を示す。各項目の状況は [`status.tel`](status.tel) に記録されている：
+
+= The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+=
+- ```tabular
++ ```tabular
+
+- column  Item
+- column  Title
+- column  Horizon
+- column  Needs
+- row  plat-1  the platform manifest is enforced  near
+- row  plat-2  Android in the ordinary build  near → mid
+- row  plat-3  JavaScript and Native at full non-excluded coverage  mid  plat-1
+- row  plat-4  WASI beyond the first seven backends  mid → long
+- row  plat-5  the parity statement holds  long  plat-4
+- row  plat-6  the browser is a first-class application target  mid
+- row  plat-7  degustation atomizes TASTy without the compiler  mid  plat-3
++ column  項目
++ column  題目
++ column  時期
++ column  依存
++ row  plat-1  プラットフォームのマニフェストが強制される  近期
++ row  plat-2  通常のビルドに Android が入る  近期 → 中期
++ row  plat-3  JavaScript と Native が除外以外を完全に網羅する  中期  plat-1
++ row  plat-4  最初の七つのバックエンドを超える WASI  中期 → 長期
++ row  plat-5  同等性の主張が成り立つ  長期  plat-4
++ row  plat-6  ブラウザが第一級のアプリケーションのターゲットになる  中期
++ row  plat-7  degustation がコンパイラなしで TASTy をアトム化する  中期  plat-3
+
+= row  plat-7  degustation atomizes TASTy without the compiler  mid  plat-3
+- ```
++ ```
+
+- ## plat-1: the platform manifest is enforced
++ ## plat-1: プラットフォームのマニフェストが強制される
+
+- Horizon: near
+- Baseline: 104 of 145 rows build for JavaScript, 108 for Native; 34 JavaScript exclusions, every one with a reason (measured 2026-10-21; 101 of 144 on 2026-09-25; 94 of 132 on 2026-08-01)
++ 時期：近期
++ 基準値：145 行のうち 104 行が JavaScript 向けに、108 行が Native 向けにビルドされる。JavaScript の除外は 34 あり、すべてに理由がある（2026-10-21 に測定。2026-09-25 に 144 のうち 101、2026-08-01 に 132 のうち 94）
+
+- `doc/compatibility.tsv` records the matrix, and `etc/check-compatibility.py` (run by `make
+- build`) regenerates its platform columns from `build.mill` — each component's `scalaJs`/
+- `scalaNative` flags and `sources`/`jsSources`/`nativeSources` source sets — and fails on any
+- divergence from the committed copy or on an exclusion with no reason in `notes`. The matrix is
+- therefore a contract: a module added without a row, or a flag flipped without the file, fails
+- the build, and the only hand-written content is the reason for every `no` or `core` cell.
++ `doc/compatibility.tsv` は行列を記録し、`etc/check-compatibility.py`（`make build` が実行する）は、そのプラットフォームの列を `build.mill`（各コンポーネントの `scalaJs`/`scalaNative` フラグと、`sources`/`jsSources`/`nativeSources` のソースセット）から再生成し、コミットされた写しとの食い違いや、`notes` に理由のない除外があれば失敗する。
++ したがって行列は契約である。行なしで追加されたモジュールや、ファイルを変えずに切り替えたフラグはビルドを失敗させ、手で書く内容は、すべての `no` または `core` のセルの理由だけである。
+
+- Done when: the ordinary build regenerates the manifest, fails on divergence from the committed
+- copy, and no exclusion row has an empty reason — met by `etc/check-compatibility.py`. Interim gauge:
++ 完了条件：通常のビルドがマニフェストを再生成し、コミットされた写しとの食い違いで失敗し、理由が空の除外行が一つもないこと。`etc/check-compatibility.py` によって満たされている。暫定のゲージ：
+
+-     grep -v '^#' doc/compatibility.tsv | awk -F'\t' '$3=="yes"{n++} END{print n}'    # 104 → 145 minus inherent exclusions
++     grep -v '^#' doc/compatibility.tsv | awk -F'\t' '$3=="yes"{n++} END{print n}'    # 104 → 145 minus inherent exclusions
+
+- ## plat-2: Android in the ordinary build
++ ## plat-2: 通常のビルドに Android が入る
+
+- Horizon: near → mid
++ 時期：近期 → 中期
+
+- The dexing and APK-signing path works but is gated on `ANDROID_HOME` and excluded from CI. An
+- Android application should be built and signed on every attested run, so regressions surface
+- immediately rather than on the next manual attempt.
++ dex 化と APK 署名の経路は動くが、`ANDROID_HOME` で制限されており、CI から除外されている。
++ Android アプリケーションは、すべての証明付きの実行でビルドされ署名されるべきである。そうすれば後退は、次の手動の試行ではなく、すぐに表に出る。
+
+- Done when: `make attest` includes the Android stage, and CI records a signed APK for every
+- release.
++ 完了条件：`make attest` が Android の段階を含み、CI がすべてのリリースについて署名済みの APK を記録すること。
+
+- ## plat-3: JavaScript and Native at full non-excluded coverage
++ ## plat-3: JavaScript と Native が除外以外を完全に網羅する
+
+- Horizon: mid
+- Needs: plat-1
++ 時期：中期
++ 依存：plat-1
+
+- Every module builds for JavaScript and Native unless its exclusion reason is inherent, and
+- Native coverage is verified by the real binary link check throughout, not compilation alone.
++ すべてのモジュールは、その除外の理由が本質的なものでない限り、JavaScript と Native 向けにビルドされ、Native の網羅はコンパイルだけでなく、全体を通して本物のバイナリのリンク検査で確かめられる。
+
+- Done when: the manifest shows no JavaScript or Native exclusion whose reason is not inherent,
+- and the Native link check covers every Native-capable module.
++ 完了条件：マニフェストに、理由が本質的でない JavaScript や Native の除外が一つもなく、Native のリンク検査が Native に対応するすべてのモジュールを網羅すること。
+
+- No known non-inherent Native gap remains. Closed on 2026-10-22: guillotine's pseudo-terminal,
+- rewritten over Scala Native's C interop (`posix_openpt`, `posix_spawn`, `poll`; the JVM one is
+- Panama), so `Command#pty` runs real terminals on Native. Closed on
+- 2026-10-21: coaxial's native backend joins multicast groups (bringing syndesis to Native);
+- telekinesis's `soundnessHttp` client moved into the cross-compiling `telekinesis.sockets`, giving
+- Native an `Http.Backend` (HTTP/1.1, over coaxial's OpenSSL connection for `https`); and
+- hellenism's classloader construction moved into a `core-jvm` source set, so `cp"…"` resources,
+- cataclysm's HTML stylesheets and the seven WASI backends compile for Native too.
++ 本質的でない Native の欠落で、既知のものはもう残っていない。
++ 2026-10-22 に解消：guillotine の疑似端末が、Scala Native の C 相互運用（`posix_openpt`、`posix_spawn`、`poll`。JVM 版は Panama）の上で書き直され、`Command#pty` が Native で本物の端末を動かすようになった。
++ 2026-10-21 に解消：coaxial のネイティブバックエンドがマルチキャストグループに参加するようになり（これで syndesis が Native に入った）、telekinesis の `soundnessHttp` クライアントがクロスコンパイルされる `telekinesis.sockets` に移って、Native に `Http.Backend`（HTTP/1.1。`https` には coaxial の OpenSSL 接続を使う）を与えた。そして hellenism のクラスローダーの構築が `core-jvm` ソースセットに移ったので、`cp"…"` のリソース、cataclysm の HTML スタイルシート、七つの WASI バックエンドも Native 向けにコンパイルされる。
+
+- Cryptography is no longer a JavaScript exclusion: enigmatic's pure-Scala `SoundnessCrypto`
+- (AES in every mode, HMAC, AES-GCM, ChaCha20-Poly1305, X25519, Ed25519) backs the Scala.js and
+- Scala Native builds, and `import providers.soundnessProvider` selects it anywhere. What it does
+- not cover — RSA, DSA, ECDSA, ML-DSA — stays with the JDK and OpenSSL. A provider over the
+- browser's Web Crypto API is gated on JSPI: `crypto.subtle` is Promise-only and the `Crypto`
+- contract is synchronous, so it needs the fork's `js.async`/`js.await` proven under the Wasm
+- backend first (plat-6); with that, Web Crypto slots in as an alternative provider for the
+- primitives it has, without an API change.
++ 暗号はもう JavaScript の除外ではない。enigmatic の純粋な Scala による `SoundnessCrypto`（あらゆるモードの AES、HMAC、AES-GCM、ChaCha20-Poly1305、X25519、Ed25519）が Scala.js と Scala Native のビルドを支え、`import providers.soundnessProvider` はどこでもそれを選択する。
++ それが網羅しないもの（RSA、DSA、ECDSA、ML-DSA）は、JDK と OpenSSL に残る。
++ ブラウザの Web Crypto API の上のプロバイダーは JSPI 待ちである。`crypto.subtle` は Promise 専用であり、`Crypto` の契約は同期的なので、まずフォークの `js.async`/`js.await` が Wasm バックエンドで実証される必要がある（plat-6）。それがあれば、Web Crypto は、自身が持つプリミティブについて、API を変えずに代わりのプロバイダーとして収まる。
+
+- The link check links again (2026-10-22): Proscala 1.0.4 publishes its supplementary library as
+- `proscala-library_native0.5_3`, so `scala.caps.SharedUnscoped` (which every Native link then
+- reached through `contingency.ThrowTactic`; since #2328 only `scala.Spreadable` is reached) has
+- NIR from the toolchain itself, through
+- `nativeToolchain.runtimeDeps`; the one-trait `nativelink.shim` that bridged the gap is gone. The
+- same release carries `tasty-core` for Scala.js and Scala Native, which is what lets
+- `hyperbole.tasty` read TASTy on both without the compiler. `nativelink.binary` runs on every
+- attest, exercising the FFI, filesystem, sockets, supervisors, the pseudo-terminal and OpenSSL;
+- widening it to every Native-capable module (and reviving `nativelink.testSuites`) remains.
++ リンク検査は再びリンクする（2026-10-22）。Proscala 1.0.4 は補助ライブラリを `proscala-library_native0.5_3` として公開するので、`scala.caps.SharedUnscoped`（当時すべての Native のリンクが `contingency.ThrowTactic` を通して到達していた。#2328 以降は `scala.Spreadable` にしか到達しない）は、`nativeToolchain.runtimeDeps` を通して、ツールチェーンそのものから NIR を得る。その欠落を埋めていた、トレイト一つの `nativelink.shim` はなくなった。
++ 同じリリースは Scala.js と Scala Native 向けの `tasty-core` を含んでおり、これによって `hyperbole.tasty` は両方でコンパイラなしに TASTy を読める。
++ `nativelink.binary` はすべての証明の際に実行され、FFI、ファイルシステム、ソケット、スーパーバイザー、疑似端末、OpenSSL を動かす。それを Native に対応するすべてのモジュールに広げること（そして `nativelink.testSuites` を復活させること）が残っている。
+
+- ## plat-4: WASI beyond the first seven backends
++ ## plat-4: 最初の七つのバックエンドを超える WASI
+
+- Horizon: mid → long
+- Baseline: 7 WASI backends; HTTP sends any method with a body, sockets are TCP-only (measured 2026-09-25; HTTP was GET-only on 2026-08-01)
++ 時期：中期 → 長期
++ 基準値：WASI バックエンドが 7 つ。HTTP は本文付きの任意のメソッドを送れ、ソケットは TCP のみ（2026-09-25 に測定。2026-08-01 には HTTP は GET のみだった）
+
+- The WASI slice — environment, clock, random, sockets, filesystem, HTTP, stdio — proves the WIT
+- component-model approach; parity requires the full HTTP method set, UDP, and backends for every
+- module whose domain WASI can express. The compiler side of this is within reach: Soundness is
+- built with Proscala, so the Wasm backend and the binding generation (today an out-of-tree
+- `wit-bindgen` fork, to be vendored) are ours to fix. The genuinely external gate is WASI
+- itself: its interfaces must mature far enough to express what the backends need.
++ WASI の一部（環境、時計、乱数、ソケット、ファイルシステム、HTTP、標準入出力）は、WIT コンポーネントモデルの方式を実証している。同等性には、HTTP のメソッド一式、UDP、そして WASI が表現できる領域を持つすべてのモジュールのバックエンドが必要である。
++ このうちコンパイラ側は手の届くところにある。Soundness は Proscala でビルドされているので、Wasm バックエンドとバインディングの生成（今日はツリーの外の `wit-bindgen` のフォークであり、取り込む予定）は、我々が直せるものである。
++ 本当に外部にある関門は WASI そのものである。そのインターフェースが、バックエンドが必要とするものを表現できるほど成熟しなければならない。
+
+- Done when: the manifest's WASI column matches the JavaScript column except where the exclusion
+- reason names a missing WASI capability. Interim gauge:
++ 完了条件：マニフェストの WASI の列が、除外の理由が欠けている WASI のケイパビリティを名指す場合を除いて、JavaScript の列と一致すること。暫定のゲージ：
+
+-     ls -d lib/*/src/wasi | wc -l    # 7 and rising
++     ls -d lib/*/src/wasi | wc -l    # 7 and rising
+
+- A component is now deployable as well as runnable: `Image.wasm` (embarcadero) packages one as a
+- Wasm OCI Artifact, anthology's `OciImage` format reaches that from a compilation in one path, and
+- `make wasm-e2e` serves the packaged HTTP component under `wasmtime serve`. What is still missing
+- between here and a Wasm workload running on a cluster is distribution — nothing in the tree speaks
+- the OCI registry protocol, so an artifact reaches a registry only via `skopeo` or `ctr` — and the
+- containerd client cannot yet name a Wasm runtime when it creates a container.
++ コンポーネントは今では実行できるだけでなく、デプロイもできる。`Image.wasm`（embarcadero）はそれを Wasm OCI Artifact としてパッケージし、anthology の `OciImage` 形式はコンパイルから一つの経路でそこに至り、`make wasm-e2e` はパッケージされた HTTP コンポーネントを `wasmtime serve` のもとで提供する。
++ ここからクラスター上で Wasm のワークロードが動くまでの間にまだ欠けているのは配布である。ツリーの中に OCI レジストリのプロトコルを話すものは何もないので、成果物がレジストリに届くのは `skopeo` か `ctr` を経由する場合だけであり、containerd のクライアントはコンテナーを作るときにまだ Wasm ランタイムを指定できない。
+
+- ## plat-5: the parity statement holds
++ ## plat-5: 同等性の主張が成り立つ
+
+- Horizon: long
+- Needs: plat-4
++ 時期：長期
++ 依存：plat-4
+
+- The end-state, stated as a fact about the manifest: no exclusion reason anywhere in it means
+- "not yet". Every reason is inherent — the platform cannot support the capability — and the
+- manifest's reasons are themselves the completion signal.
++ 最終状態は、マニフェストについての事実として述べられる。その中のどこにも、「まだ」を意味する除外の理由がないこと。
++ すべての理由は本質的なもの（プラットフォームがそのケイパビリティをサポートできない）であり、マニフェストの理由そのものが完了の合図である。
+
+- Done when: every exclusion reason in `doc/compatibility.tsv` describes an inherent platform
+- limitation, and a reason vocabulary check in CI enforces the distinction.
++ 完了条件：`doc/compatibility.tsv` のすべての除外の理由が本質的なプラットフォームの制限を記述し、CI の理由の語彙の検査がその区別を強制すること。
+
+- ## plat-7: degustation atomizes TASTy without the compiler
++ ## plat-7: degustation がコンパイラなしで TASTy をアトム化する
+
+- Horizon: mid
+- Needs: plat-3
+- Baseline: `degustation.core` (1,179 lines) drives `scala3-tasty-inspector` over the compiler's reflection; JVM-only, with `scala3-compiler_3` on its classpath (measured 2026-10-23)
++ 時期：中期
++ 依存：plat-3
++ 基準値：`degustation.core`（1,179 行）は、コンパイラのリフレクションの上で `scala3-tasty-inspector` を駆動する。JVM 専用で、クラスパスに `scala3-compiler_3` を持つ（2026-10-23 に測定）
+
+- degustation — the `tasty/1` atomizer behind LIRA's Scala discipline — is the last module
+- kept off JavaScript and Native by the compiler for a reason that is not inherent: the
+- discipline is *defined* over the compiler's semantic model (`tasty.md` §4), so the atomizer
+- pattern-matches `quotes.reflect` types and asks symbols for their `fullName`, `signature`,
+- `children` and flags. Proscala 1.0.4 publishes `tasty-core` for all three platforms, and
+- `hyperbole.tasty` already reads TASTy through it, so the question is what degustation needs
+- beyond the bytes. Scoped on 2026-10-23:
++ degustation（LIRA の Scala の規律の背後にある `tasty/1` のアトム化器）は、本質的でない理由でコンパイラによって JavaScript と Native から締め出されている最後のモジュールである。規律はコンパイラの意味モデルの上で*定義*されている（`tasty.md` §4）ので、アトム化器は `quotes.reflect` の型にパターンマッチし、シンボルにその `fullName`、`signature`、`children` とフラグを尋ねる。
++ Proscala 1.0.4 は三つのプラットフォームすべて向けに `tasty-core` を公開しており、`hyperbole.tasty` はすでにそれを通して TASTy を読んでいるので、問題は degustation がバイト列のほかに何を必要とするかである。
++ 2026-10-23 に範囲を定めた：
+
+- - **Structural, and free from raw TASTy**: modifiers (`tasty/1`'s whole flag set,
+-   `PRIVATEqualified` for the visibility rule, `ARTIFACT`/`SYNTHETIC`), annotations (including
+-   the `@Child` annotations that are the sealed/enum child list, in declaration order), a
+-   template's parents, self type, type parameters and declarations, every member's declared
+-   type (parameter and result `tpt`s, bounds, aliases), inline and macro bodies as trees with
+-   local symbols addressable for alpha-normalization, package-qualified references
+-   (`TERMREFpkg`/`TYPEREFpkg`), and — on the *referencing* side — the erased signature itself,
+-   which every `TERMREF` to an overloaded member carries in its `SIGNED` name. The compiler's
+-   `LazyRef` placeholders, which §7 has to special-case, do not exist in the file.
+- - **Semantic, and needing a model of the dependency classpath**: two things only. (1) The
+-   erased-signature disambiguator of a *declaration*'s key (§6): erasing a declared parameter
+-   type means dealiasing it, erasing an opaque type and a value class to their underlying
+-   types, a type-parameter reference to its bound, and an intersection by the class/trait
+-   distinction of its parts — each of which asks what a referenced type *is*, in a dependency's
+-   TASTy or a Java classfile. (2) The declaring owner of a selected member (§6 "keying is by
+-   declaration", `TastyDiscipline`): `play.title` pickles as `title`'s signed name against
+-   `play`'s type, and finding that `title` is declared in `Base` is a member lookup along `Play`'s
+-   parents. Neither needs subtyping, type inference, as-seen-from substitution or completion
+-   order; both need the classpath loaded lazily, which is what `tasty-query` exists to do.
++ - **構造的なもので、生の TASTy から無償で得られるもの**：修飾子（`tasty/1` のフラグ一式、可視性の規則のための `PRIVATEqualified`、`ARTIFACT`/`SYNTHETIC`）、アノテーション（シールされた型や enum の子のリストである `@Child` アノテーションを宣言順に含む）、テンプレートの親、自己型、型パラメーターと宣言、すべてのメンバーの宣言された型（パラメーターと結果の `tpt`、境界、別名）、α 正規化のためにローカルシンボルを指せる木としての inline とマクロの本体、パッケージで修飾された参照（`TERMREFpkg`/`TYPEREFpkg`）、そして*参照する*側では消去されたシグネチャそのもの。これはオーバーロードされたメンバーへのすべての `TERMREF` が、その `SIGNED` 名の中に持っている。コンパイラの `LazyRef` プレースホルダーは、§7 が特別扱いしなければならないものだが、ファイルの中には存在しない。
++ - **意味的なもので、依存先のクラスパスのモデルを必要とするもの**：二つだけである。(1) *宣言*のキーの消去されたシグネチャによる曖昧さ解消子（§6）。宣言されたパラメーターの型を消去するとは、別名を展開し、不透明型と値クラスをその基底の型に、型パラメーターの参照をその境界に、交差型をその各部分のクラスとトレイトの区別によって消去することである。そのどれもが、参照された型が何で*ある*かを、依存先の TASTy や Java のクラスファイルの中に尋ねる。(2) 選択されたメンバーを宣言している所有者（§6「キーは宣言による」、`TastyDiscipline`）。`play.title` は `play` の型に対する `title` の署名付きの名前としてピクルされ、`title` が `Base` で宣言されていると突き止めるのは、`Play` の親をたどるメンバーの検索である。どちらも部分型付け、型推論、as-seen-from の置換、完了の順序を必要としない。どちらもクラスパスを遅延して読み込むことを必要とし、それはまさに `tasty-query` が存在する目的である。
+
+- Three ways to close it:
++ 解消する方法は三つある：
+
+- 1. **Own semantic layer over `tasty-core`** (recommended): five components, listed below,
+-    of roughly 6,000 lines against `tasty-query`'s 19,000, because degustation needs none of
+-    its subtyping, type maps or Scala 2 pickle reader.
+- 2. **Depend on `tasty-query`**: ~1,000 lines changed, but a 19,000-line dependency published
+-    for the JVM and Scala.js only — Native would need a cross-build published by us, as
+-    Proscala now does for `tasty-core` — whose erasure and member resolution are its own
+-    reimplementation of the compiler's, with the same coupling to each Scala release.
+- 3. **Leave it on the compiler** and classify the exclusion as inherent: atomization runs at
+-    assembly and publish time, where a JVM is at hand. Honest today, but it rules out
+-    atomizing from a Native or Wasm build tool, which is the reason to want it.
++ 1. **`tasty-core` の上に独自の意味層を作る**（推奨）：以下に挙げる五つのコンポーネントで、およそ 6,000 行になる。`tasty-query` の 19,000 行に比べて少ないのは、degustation がその部分型付け、型の写像、Scala 2 のピクルの読み取りを何も必要としないからである。
++ 2. **`tasty-query` に依存する**：変更はおよそ 1,000 行だが、JVM と Scala.js 向けにしか公開されていない 19,000 行の依存になる。Native には、Proscala が今 `tasty-core` に対して行っているように、我々が公開するクロスビルドが必要になる。そのイレイジャとメンバーの解決は、コンパイラのものの独自の再実装であり、Scala のリリースごとに同じ結合を持つ。
++ 3. **コンパイラに残す**。そして除外を本質的なものに分類する：アトム化は、JVM が手元にあるアセンブリと公開の時点で実行される。今日の時点では正直だが、Native や Wasm のビルドツールからアトム化する道を閉ざす。それこそが、これを望む理由である。
+
+- The first option's components and their estimated sizes:
++ 最初の方法のコンポーネントと、その推定の大きさ：
+
+= The first option's components and their estimated sizes:
+=
+- ```tabular
++ ```tabular
+
+- column  Component
+- column  Lines
+- column  Notes
+- row  a tree unpickler into plain data  ~2,000  `hyperbole.tasty` contributes the header and name table
+- row  a lazy classpath loader over directories and jars, with a Java classfile reader for class kind, type parameters and member descriptors  ~1,200
+- row  Scala 3 erasure and signature spelling  ~900  after dotc's `TypeErasure` and `Signature`
+- row  member lookup along parents  ~300
+- row  the atomizer re-expressed over the data model  ~1,200  the encoding rules unchanged
++ column  コンポーネント
++ column  行数
++ column  注記
++ row  木をプレーンなデータにするアンピクラー  ~2,000  ヘッダーと名前表は `hyperbole.tasty` が提供する
++ row  ディレクトリと jar の上の遅延クラスパスローダー。クラスの種類、型パラメーター、メンバーの記述子のための Java クラスファイルの読み取りを含む  ~1,200
++ row  Scala 3 のイレイジャとシグネチャの綴り  ~900  dotc の `TypeErasure` と `Signature` に倣う
++ row  親をたどるメンバーの検索  ~300
++ row  データモデルの上で表現し直したアトム化器  ~1,200  符号化の規則は変わらない
+
+= row  the atomizer re-expressed over the data model  ~1,200  the encoding rules unchanged
+- ```
++ ```
+
+- Either of the first two is a new discipline, `tasty/2` (`tasty.md` §1: any change to the
+- canonicalization is a new discipline): §4 extraction over raw TASTy instead of the compiler's
+- model; §6, §11 and §12 spelling erasure as the discipline defines it rather than "as the
+- compiler computes it"; §7 losing the `LazyRef` clause; §14's promise becoming checkable in
+- fact, since two toolchains can no longer disagree about a model only one of them builds. The
+- verification is differential: run the new atomizer and the compiler-driven one over every
+- `*.tasty` Soundness publishes and demand identical (key, class, value) listings — the existing
+- "a real module's TASTy atomizes" tests are the seed of that corpus — before the compiler-driven
+- one is retired.
++ 最初の二つのどちらも新しい規律 `tasty/2` になる（`tasty.md` §1：正準化への変更はどれも新しい規律である）。§4 はコンパイラのモデルではなく生の TASTy からの抽出になり、§6、§11、§12 はイレイジャを「コンパイラが計算するとおり」ではなく規律が定義するとおりに綴り、§7 は `LazyRef` の条項を失い、§14 の約束は実際に検査できるものになる。二つのツールチェーンが、片方しか構築しないモデルについて食い違うことはもうありえないからである。
++ 検証は差分による。新しいアトム化器とコンパイラ駆動のアトム化器を、Soundness が公開するすべての `*.tasty` に対して実行し、同一の（キー、クラス、値）の一覧を要求する。既存の「本物のモジュールの TASTy がアトム化される」テストが、そのコーパスの種である。これをコンパイラ駆動のものが引退する前に行う。
+
+- Progress (2026-10-23, branch `degustation-tasty`): option 1 built. `degustation.tasty` holds the
+- data model, the reader, the classpath `Universe`, `Erasure` and `Degustation.atomize`, and
+- crosses to all three platforms; `degustation.core` keeps `Inspection.atomize` as its filesystem
+- face (directories and jars through `java.util.zip`, the JDK's classes through the platform
+- class loader) and is JVM-only for that reason, with no compiler dependency. Over the 147 build
+- modules the atoms are byte-identical to the compiler-driven atomizer's except where the
+- compiler's output was an artifact of the run (`tasty.md` §16); the compiler-driven atomizer is
+- the test suite's oracle. `tasty.md` describes `tasty/2`.
++ 進捗（2026-10-23、ブランチ `degustation-tasty`）：方法 1 を構築した。
++ `degustation.tasty` はデータモデル、読み取り器、クラスパスの `Universe`、`Erasure`、`Degustation.atomize` を持ち、三つのプラットフォームすべてにまたがる。`degustation.core` は `Inspection.atomize` をファイルシステム側の顔として保持し（ディレクトリと jar は `java.util.zip` を通し、JDK のクラスはプラットフォームのクラスローダーを通す）、その理由で JVM 専用だが、コンパイラへの依存はない。
++ 147 のビルドモジュールにわたって、アトムはコンパイラ駆動のアトム化器のものとバイト単位で同一である。ただし、コンパイラの出力が実行の副産物であった場合（`tasty.md` §16）は除く。コンパイラ駆動のアトム化器はテストスイートの基準である。
++ `tasty.md` は `tasty/2` を記述している。
+
+- Done when: `degustation.core` depends on `tasty-core` and not on the compiler, builds for
+- JavaScript and Native (or its filesystem face is shown to be the only JVM residue, and a
+- Native build tool can supply the JDK's classes as a jar), and atomizes the Soundness corpus
+- identically to the compiler-driven atomizer it replaces; `tasty.md` describes `tasty/2`.
++ 完了条件：`degustation.core` がコンパイラではなく `tasty-core` に依存し、JavaScript と Native 向けにビルドされ（あるいは、そのファイルシステム側の顔だけが JVM の残りであり、Native のビルドツールが JDK のクラスを jar として与えられることが示され）、Soundness のコーパスを、置き換え対象のコンパイラ駆動のアトム化器と同一にアトム化すること。`tasty.md` が `tasty/2` を記述していること。
+
+- ## plat-6: the browser is a first-class application target
++ ## plat-6: ブラウザが第一級のアプリケーションのターゲットになる
+
+= ## plat-6: the browser is a first-class application target
+=
+- Horizon: mid
++ 時期：中期
+
+- Compiling for JavaScript is necessary but not sufficient: a website built with Soundness
+- should be written in Soundness end-to-end, with the front-end in Scala.js and every web API —
+- DOM, fetch, storage, media — reached through typed facades generated from WebIDL by
+- xenophile, over querencia's typed DOM. No hand-written JavaScript, no untyped `js.Dynamic`
+- seams. The proof is dogfood: soundness.dev's own front-end, served by the in-tree website,
+- built this way.
++ JavaScript 向けのコンパイルは必要だが、十分ではない。Soundness で作る Web サイトは、端から端まで Soundness で書かれるべきである。フロントエンドは Scala.js で書き、すべての Web API（DOM、fetch、ストレージ、メディア）には、xenophile が WebIDL から生成し、querencia の型付き DOM の上に置かれた型付きのファサードを通して到達する。
++ 手書きの JavaScript はなく、型のない `js.Dynamic` の継ぎ目もない。
++ その証明は自らの製品を使うことである。ツリー内の Web サイトが提供する soundness.dev 自身のフロントエンドを、この方法で作る。
+
+- Done when: the soundness.dev front-end ships as Soundness-compiled Scala.js, with all web API
+- access through generated typed facades, and builds in the ordinary build.
++ 完了条件：soundness.dev のフロントエンドが Soundness でコンパイルされた Scala.js として出荷され、Web API へのすべてのアクセスが生成された型付きのファサードを通り、通常のビルドでビルドされること。

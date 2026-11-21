@@ -1,0 +1,1105 @@
+orthant 1 language
+
+- ## Text
++ ## テキスト
+
+- ### About
++ ### 概要
+
+- `Text` is the string type used throughout Soundness, written with the `t"…"` [interpolator]. It
+- has a large and consistent set of operations: splitting and joining, slicing, changing case,
+- trimming, padding, replacing, searching and fuzzy matching. Each is typed so that a mistake is
+- caught at [compiletime], instead of surfacing as a wrong answer or an exception at [runtime].
++ `Text` は Soundness 全体で使われる文字列型であり、`t"…"` [補間子]で書かれる。
++ 分割と結合、切り出し、大文字と小文字の変換、トリム、パディング、置換、検索、あいまい一致という、大きく一貫した操作の集まりを持つ。
++ それぞれは型付けされているので、誤りは誤った答えや[実行時]の例外として表に出るのではなく、[コンパイル時]に捕らえられる。
+
+- `Text` is an [opaque type] over the JVM's `String`, so it costs nothing at runtime. Every
+- operation is written against the `Textual` [typeclass], so the same methods work on `Text` and
+- on other textual types alike.
++ `Text` は JVM の `String` の上の[不透明型]なので、実行時のコストはかからない。
++ すべての操作は `Textual` [型クラス]に対して書かれているので、同じメソッドが `Text` にも他のテキスト型にも同様に働く。
+
+- ### On text
++ ### テキストについて
+
+- Java's `String` gathered its methods over decades, and it shows. None of its pitfalls is caught
+- by the types, so each mistake waits for runtime:
++ Java の `String` は数十年をかけてメソッドを集めてきたが、それが表れている。
++ その落とし穴はどれも型によって捕らえられないので、それぞれの誤りは実行時まで待ち構えている。
+
+= by the types, so each mistake waits for runtime:
+=
+- ```tabular
++ ```tabular
+
+- column  In Java's `String`
+- column  The pitfall
+- column  With `Text`
+- row  `indexOf`  returns `-1` for "not found"  `offsetOf` returns an `Optional` position
+- row  `substring`  throws on a bad index  `keep`, `skip`, `snip` and `segment`, counting with ordinals
+- row  `split`  takes a regular expression where a literal was meant  `cut` takes a `Text`, a `Char` or a regular expression, as typed
+- row  any method returning a string  may return `null`  nothing returns `null`
++ column  Java の `String` では
++ column  落とし穴
++ column  `Text` では
++ row  `indexOf`  「見つからない」ことを `-1` で返す  `offsetOf` は `Optional` の位置を返す
++ row  `substring`  不正な添字で例外を投げる  `keep`、`skip`、`snip`、`segment` が序数で数える
++ row  `split`  リテラルを意図したところで正規表現を取る  `cut` は型付けされたとおりに `Text`、`Char`、正規表現のいずれかを取る
++ row  文字列を返すあらゆるメソッド  `null` を返すかもしれない  何も `null` を返さない
+
+= row  any method returning a string  may return `null`  nothing returns `null`
+- ```
++ ```
+
+- `Text` presents the same underlying strings through a deliberately designed surface. Three rules
+- hold throughout:
++ `Text` は、同じ基礎の文字列を、意図して設計された表面を通じて提示する。
++ 三つの規則が全体を通じて成り立つ。
+
+- - Nothing returns `null`. Absence is an [optional](optional-values.md) value.
+- - Nothing returns a mutable array.
+- - Nothing takes `Any` and quietly calls `toString` on it. A value must say how it becomes text
+-   before it can be treated as text.
++ - 何も `null` を返さない。不在は[オプショナル](optional-values.md)な値である。
++ - 何も可変の配列を返さない。
++ - 何も `Any` を受け取って黙ってそれに `toString` を呼んだりしない。値は、テキストとして扱われる前に、どのようにテキストになるかを述べなければならない。
+
+- Everything comes from the `soundness` package. The operations which measure width need a text
+- metric in scope, and the last import lets the samples print their results:
++ すべては `soundness` パッケージから来る。
++ 幅を測る操作はスコープにテキストの尺度を必要とし、最後のインポートでサンプルが結果を印字できるようになる。
+
+= metric in scope, and the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import textMetrics.uniformMetric
++ import textMetrics.uniformMetric
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- Wherever an operation depends on a collation, an encoding or a metric, that choice is named by
+- an import. Nothing about text is assumed, which is
+- [declarative context](../../philosophy/declarative-context.md) at work.
++ 操作が照合、エンコーディング、尺度に依存する場合は常に、その選択はインポートによって名指しされる。
++ テキストについては何も仮定されない。これは[宣言的なコンテキスト](../../philosophy/declarative-context.md)の働きである。
+
+- ### Writing text
++ ### テキストを書く
+
+- The `t"…"` interpolator builds a `Text`, substituting any value which can be shown:
++ `t"…"` 補間子は、表示できる任意の値を置換して `Text` を作る。
+
+= The `t"…"` interpolator builds a `Text`, substituting any value which can be shown:
+=
+- ```scala
++ ```scala
+
+- val name = t"Hamlet"
++ val name = t"Hamlet"
+
+= val name = t"Hamlet"
+- ```
++ ```
+
+= val name = t"Hamlet"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val name = t"Hamlet"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val name = t"Hamlet"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"Hello, $name!")
++ Out.println(t"Hello, $name!")
+
+= Out.println(t"Hello, $name!")
+- ```
++ ```
+
+- A value with no way of being shown cannot be substituted. Where Java would print something like
+- `Object@1b6d3586`, this does not compile:
++ 表示する方法を持たない値は置換できない。
++ Java なら `Object@1b6d3586` のようなものを印字するところで、これはコンパイルされない。
+
+= `Object@1b6d3586`, this does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `Object@1b6d3586`, this does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= `Object@1b6d3586`, this does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= `Object@1b6d3586`, this does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- t"Hello, ${new Object()}!"
++ t"Hello, ${new Object()}!"
+
+= t"Hello, ${new Object()}!"
+- ```
++ ```
+
+- Prose in source code wants to be wrapped for the programmer, and unwrapped for the output. The
+- `txt"…"` interpolator joins the lines of a wrapped paragraph with single spaces, and strips the
+- indentation the source needed. A blank line is a paragraph break, and becomes a single newline:
++ ソースコードの中の文章は、プログラマーのためには折り返し、出力のためには折り返しを解きたい。
++ `txt"…"` 補間子は、折り返された段落の行を一つの空白でつなぎ、ソースが必要とした字下げを取り除く。
++ 空行は段落の区切りであり、一つの改行になる。
+
+= indentation the source needed. A blank line is a paragraph break, and becomes a single newline:
+=
+- ```scala fuel
++ ```scala fuel
+
+= indentation the source needed. A blank line is a paragraph break, and becomes a single newline:
+=
+= ```scala fuel
+- run
++ run
+
+= indentation the source needed. A blank line is a paragraph break, and becomes a single newline:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(txt"""This message is written
++ Out.println(txt"""This message is written
+
+-                   across several lines.
++                   across several lines.
+
+-                   This is its second paragraph.""")
++                   This is its second paragraph.""")
+
+=                   This is its second paragraph.""")
+- ```
++ ```
+
+- ### Splitting and joining
++ ### 分割と結合
+
+- `cut` divides text at a delimiter, which may be a `Text`, a `Char` or a
+- [regular expression](patterns.md). `words` and `lines` are the common cases:
++ `cut` はテキストを区切りで分割する。区切りは `Text`、`Char`、[正規表現](patterns.md)のいずれでもよい。
++ `words` と `lines` はよくある場合である。
+
+= [regular expression](patterns.md). `words` and `lines` are the common cases:
+=
+- ```scala fuel
++ ```scala fuel
+
+= [regular expression](patterns.md). `words` and `lines` are the common cases:
+=
+= ```scala fuel
+- run
++ run
+
+= [regular expression](patterns.md). `words` and `lines` are the common cases:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"one,two,three".cut(t",").inspect)
++ Out.println(t"one,two,three".cut(t",").inspect)
+
+- Out.println(t"a short sentence".words.inspect)
++ Out.println(t"a short sentence".words.inspect)
+
+= Out.println(t"a short sentence".words.inspect)
+- ```
++ ```
+
+- `join` combines a collection of text. It takes an optional separator, and an optional final
+- separator, for a list which reads naturally in English:
++ `join` はテキストのコレクションを結合する。
++ 英語として自然に読めるリストのために、任意の区切りと、任意の最後の区切りを取る。
+
+= separator, for a list which reads naturally in English:
+=
+- ```scala fuel
++ ```scala fuel
+
+= separator, for a list which reads naturally in English:
+=
+= ```scala fuel
+- run
++ run
+
+= separator, for a list which reads naturally in English:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(List(t"one", t"two", t"three").join(t", "))
++ Out.println(List(t"one", t"two", t"three").join(t", "))
+
+- Out.println(List(t"one", t"two", t"three").join(t", ", t" and "))
++ Out.println(List(t"one", t"two", t"three").join(t", ", t" and "))
+
+= Out.println(List(t"one", t"two", t"three").join(t", ", t" and "))
+- ```
++ ```
+
+- `join` does the job of the standard library's `mkString`, and differs in the way that matters.
+- `mkString` calls `toString` on every element without saying so, so a collection of anything at
+- all produces text of some kind. `join` produces text only from textual elements. A collection
+- whose elements have no meaningful rendering does not compile. If the elements are themselves
+- collections, `join` concatenates them, and the separator is then one of *their* elements;
+- [Collections](collections.md#reshaping) describes that form.
++ `join` は標準ライブラリの `mkString` の仕事をし、重要な点で異なる。
++ `mkString` はすべての要素に断りなく `toString` を呼ぶので、何のコレクションからでも何らかのテキストが生まれる。
++ `join` はテキストの要素からしかテキストを生まない。
++ 要素が意味のある描画を持たないコレクションはコンパイルされない。
++ 要素がそれ自体コレクションであれば、`join` はそれらを連結し、そのとき区切りは*それらの*要素の一つである。[コレクション](collections.md#reshaping)がその形を説明する。
+
+- ### Slicing
++ ### 切り出し
+
+- `keep` takes a number of characters and `skip` drops them. Both count from the left by default,
+- and from the right with `Rtl`. `snip` splits the text at a position, into a pair:
++ `keep` は文字を指定した数だけ取り、`skip` はそれを捨てる。
++ どちらもデフォルトでは左から数え、`Rtl` を付けると右から数える。
++ `snip` はテキストをある位置で分割して組にする。
+
+= and from the right with `Rtl`. `snip` splits the text at a position, into a pair:
+=
+- ```scala fuel
++ ```scala fuel
+
+= and from the right with `Rtl`. `snip` splits the text at a position, into a pair:
+=
+= ```scala fuel
+- run
++ run
+
+= and from the right with `Rtl`. `snip` splits the text at a position, into a pair:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"Hello".skip(1))
++ Out.println(t"Hello".skip(1))
+
+- Out.println(t"Hello".keep(1, Rtl))
++ Out.println(t"Hello".keep(1, Rtl))
+
+- Out.println(t"Hello".snip(2).inspect)
++ Out.println(t"Hello".snip(2).inspect)
+
+= Out.println(t"Hello".snip(2).inspect)
+- ```
++ ```
+
+- `segment` takes a range of positions. The positions are
+- [ordinals](https://en.wikipedia.org/wiki/Ordinal_number), `Prim`, `Sec`, `Ter` and so on, which
+- count from one. The fifth to the seventh characters are `Quin thru Sept`, so there is no
+- zero-based index to get wrong by one:
++ `segment` は位置の範囲を取る。
++ 位置は[序数](https://en.wikipedia.org/wiki/Ordinal_number)、つまり `Prim`、`Sec`、`Ter` などであり、一から数える。
++ 五番目から七番目の文字は `Quin thru Sept` なので、一つずれて間違えるようなゼロ始まりの添字はない。
+
+= zero-based index to get wrong by one:
+=
+- ```scala fuel
++ ```scala fuel
+
+= zero-based index to get wrong by one:
+=
+= ```scala fuel
+- run
++ run
+
+= zero-based index to get wrong by one:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"Hello world".segment(Quin thru Sept).inspect)
++ Out.println(t"Hello world".segment(Quin thru Sept).inspect)
+
+= Out.println(t"Hello world".segment(Quin thru Sept).inspect)
+- ```
++ ```
+
+- [Collections](collections.md#positions-and-access) uses the same ordinals for positions in a
+- list.
++ [コレクション](collections.md#positions-and-access)は、リストの中の位置に同じ序数を使う。
+
+- ### Transforming
++ ### 変換
+
+- Trimming, changing case and replacing are each a verb. `sub` replaces one piece of text with
+- another:
++ トリム、大文字と小文字の変換、置換は、それぞれ一つの動詞である。
++ `sub` はテキストのある部分を別のものに置き換える。
+
+= another:
+=
+- ```scala fuel
++ ```scala fuel
+
+= another:
+=
+= ```scala fuel
+- run
++ run
+
+= another:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"  Hello  ".trim.inspect)
++ Out.println(t"  Hello  ".trim.inspect)
+
+- Out.println(t"hello".capitalize)
++ Out.println(t"hello".capitalize)
+
+- Out.println(t"LOUD".lower)
++ Out.println(t"LOUD".lower)
+
+- Out.println(t"naive".sub(t"i", t"ï"))
++ Out.println(t"naive".sub(t"i", t"ï"))
+
+= Out.println(t"naive".sub(t"i", t"ï"))
+- ```
++ ```
+
+- `keep` also takes a predicate, and keeps the characters which satisfy it:
++ `keep` は述語も取り、それを満たす文字を残す。
+
+= `keep` also takes a predicate, and keeps the characters which satisfy it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `keep` also takes a predicate, and keeps the characters which satisfy it:
+=
+= ```scala fuel
+- run
++ run
+
+= `keep` also takes a predicate, and keeps the characters which satisfy it:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"HELLOworld".keep(_.isUpper))
++ Out.println(t"HELLOworld".keep(_.isUpper))
+
+= Out.println(t"HELLOworld".keep(_.isUpper))
+- ```
++ ```
+
+- [Characters](characters.md) describes what can be asked of a single character.
++ [文字](characters.md)は、一つの文字について何を問えるかを説明する。
+
+- ### Sorting and comparing text
++ ### テキストのソートと比較
+
+- Text has no natural order. Whether `café` sorts before or after `caff` depends on the
+- *collation*, and a program which sorts text without choosing one is making a choice it does not
+- know about. So sorting text, or comparing it with `<`, needs a collation in scope. Without one,
+- the comparison does not compile:
++ テキストには自然な順序がない。
++ `café` が `caff` の前に来るか後に来るかは*照合*に依存し、照合を選ばずにテキストをソートするプログラムは、自分の知らない選択をしている。
++ そのため、テキストのソートや `<` による比較には、スコープに照合が必要である。
++ それがなければ、比較はコンパイルされない。
+
+= the comparison does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the comparison does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= the comparison does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= the comparison does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- t"apple" < t"banana"
++ t"apple" < t"banana"
+
+= t"apple" < t"banana"
+- ```
++ ```
+
+- Two collations are provided:
++ 二つの照合が提供されている。
+
+= Two collations are provided:
+=
+- ```tabular
++ ```tabular
+
+- column  Import
+- column  Orders text
+- row  `collations.unicodeCollation`  by the Unicode Collation Algorithm: dictionary order, ranking accents before case
+- row  `collations.codepointCollation`  by code point, which is fast and stable, but places supplementary characters after the whole basic plane
++ column  インポート
++ column  テキストの並べ方
++ row  `collations.unicodeCollation`  Unicode 照合アルゴリズムによる。辞書順で、アクセントを大文字と小文字より先に順位付ける
++ row  `collations.codepointCollation`  コードポイントによる。高速で安定しているが、補助文字を基本多言語面全体の後に置く
+
+= row  `collations.codepointCollation`  by code point, which is fast and stable, but places supplementary characters after the whole basic plane
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- import soundness.collationComparable
++ import soundness.collationComparable
+
+- import collations.unicodeCollation
++ import collations.unicodeCollation
+
+- import sortingAlgorithms.timsort
++ import sortingAlgorithms.timsort
+
+= import sortingAlgorithms.timsort
+- ```
++ ```
+
+= import sortingAlgorithms.timsort
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import sortingAlgorithms.timsort
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import sortingAlgorithms.timsort
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(List(t"caff", t"café", t"cafe").sort.inspect)
++ Out.println(List(t"caff", t"café", t"cafe").sort.inspect)
+
+- Out.println((t"apple" < t"banana").inspect)
++ Out.println((t"apple" < t"banana").inspect)
+
+= Out.println((t"apple" < t"banana").inspect)
+- ```
++ ```
+
+- [Collections](collections.md#sorting) explains `sort` and the choice of sorting algorithm.
++ [コレクション](collections.md#sorting)が `sort` とソートアルゴリズムの選択を説明する。
+
+- ### Case conventions
++ ### 大文字小文字の規約
+
+- Text splits into words, and the words rejoin in a naming convention. `uncamel` breaks a
+- camel-case or Pascal-case identifier into its words, in lower case. `unkebab` and `unsnake` do
+- the same for the other styles. Four methods join words in each style:
++ テキストは単語に分かれ、単語は命名規約に従って再びつながる。
++ `uncamel` はキャメルケースやパスカルケースの識別子を、小文字の単語に分解する。
++ `unkebab` と `unsnake` は他のスタイルに対して同じことをする。
++ 四つのメソッドが、それぞれのスタイルで単語をつなぐ。
+
+= the same for the other styles. Four methods join words in each style:
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Joins words
+- row  `kebab`  with hyphens
+- row  `snake`  with underscores
+- row  `camel`  capitalizing every word but the first
+- row  `pascal`  capitalizing every word
++ column  メソッド
++ column  単語のつなぎ方
++ row  `kebab`  ハイフンでつなぐ
++ row  `snake`  アンダースコアでつなぐ
++ row  `camel`  最初以外のすべての単語の先頭を大文字にする
++ row  `pascal`  すべての単語の先頭を大文字にする
+
+= row  `pascal`  capitalizing every word
+- ```
++ ```
+
+= row  `pascal`  capitalizing every word
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= row  `pascal`  capitalizing every word
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= row  `pascal`  capitalizing every word
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"oneTwoThree".uncamel.kebab)
++ Out.println(t"oneTwoThree".uncamel.kebab)
+
+- Out.println(t"oneTwoThree".uncamel.snake)
++ Out.println(t"oneTwoThree".uncamel.snake)
+
+- Out.println(t"one-two-three".unkebab.camel)
++ Out.println(t"one-two-three".unkebab.camel)
+
+- Out.println(t"one_two_three".unsnake.pascal)
++ Out.println(t"one_two_three".unsnake.pascal)
+
+= Out.println(t"one_two_three".unsnake.pascal)
+- ```
++ ```
+
+- ### Padding and fitting
++ ### パディングと幅合わせ
+
+- `pad` extends text to a width, `center` pads it on both sides, and `fit` forces an exact width,
+- truncating if need be. Each measures width through the `Text is Measurable` given in scope.
+- Here that is `uniformMetric`, which counts every character as one column:
++ `pad` はテキストをある幅まで延ばし、`center` は両側にパディングを入れ、`fit` は必要なら切り詰めて正確な幅にする。
++ それぞれ、スコープにある `Text is Measurable` の given を通じて幅を測る。
++ ここではそれは `uniformMetric` であり、すべての文字を一桁として数える。
+
+= Here that is `uniformMetric`, which counts every character as one column:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Here that is `uniformMetric`, which counts every character as one column:
+=
+= ```scala fuel
+- run
++ run
+
+= Here that is `uniformMetric`, which counts every character as one column:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"123".pad(5, Bidi.Rtl).inspect)
++ Out.println(t"123".pad(5, Bidi.Rtl).inspect)
+
+- Out.println(t"123".fit(5, Bidi.Rtl, '.').inspect)
++ Out.println(t"123".fit(5, Bidi.Rtl, '.').inspect)
+
+- Out.println(t"123456789".fit(5).inspect)
++ Out.println(t"123456789".fit(5).inspect)
+
+= Out.println(t"123456789".fit(5).inspect)
+- ```
++ ```
+
+- [Tables](tables.md) uses these to lay out columns of text.
++ [表](tables.md)は、テキストの列を配置するのにこれらを使う。
+
+- ### Searching
++ ### 検索
+
+- Five methods ask about membership and position:
++ 五つのメソッドが、包含と位置について問う。
+
+= Five methods ask about membership and position:
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Answers
+- row  `contains`  whether the text contains another
+- row  `starts`  whether the text starts with another
+- row  `ends`  whether the text ends with another
+- row  `count`  how many characters satisfy a predicate
+- row  `offsetOf`  where another text occurs, searching from the left by default
++ column  メソッド
++ column  答えること
++ row  `contains`  テキストが別のテキストを含むかどうか
++ row  `starts`  テキストが別のテキストで始まるかどうか
++ row  `ends`  テキストが別のテキストで終わるかどうか
++ row  `count`  述語を満たす文字がいくつあるか
++ row  `offsetOf`  別のテキストがどこに現れるか。デフォルトでは左から検索する
+
+= row  `offsetOf`  where another text occurs, searching from the left by default
+- ```
++ ```
+
+- `offsetOf` gives an `Optional` position. Text which is not found gives `Unset`, never a number
+- which could be mistaken for a position:
++ `offsetOf` は `Optional` の位置を返す。
++ 見つからないテキストは `Unset` を返し、位置と取り違えられうる数を返すことはない。
+
+= which could be mistaken for a position:
+=
+- ```scala fuel
++ ```scala fuel
+
+= which could be mistaken for a position:
+=
+= ```scala fuel
+- run
++ run
+
+= which could be mistaken for a position:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"hello world".contains(t"ello").inspect)
++ Out.println(t"hello world".contains(t"ello").inspect)
+
+- Out.println(t"banana".count(_ == 'a').show)
++ Out.println(t"banana".count(_ == 'a').show)
+
+- Out.println(t"hello world".offsetOf(t"o").inspect)
++ Out.println(t"hello world".offsetOf(t"o").inspect)
+
+- Out.println(t"hello world".offsetOf(t"z").inspect)
++ Out.println(t"hello world".offsetOf(t"z").inspect)
+
+= Out.println(t"hello world".offsetOf(t"z").inspect)
+- ```
++ ```
+
+- [Patterns](patterns.md) matches text against regular expressions and globs, and extracts parts
+- of it.
++ [パターン](patterns.md)は、テキストを正規表現やグロブと照合し、その部分を取り出す。
+
+- ### Bytes
++ ### バイト
+
+- Text encodes to bytes through the character encoding in scope, and bytes decode back:
++ テキストはスコープにある文字エンコーディングを通じてバイトにエンコードされ、バイトはデコードされて戻る。
+
+= Text encodes to bytes through the character encoding in scope, and bytes decode back:
+=
+- ```scala
++ ```scala
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- val bytes = t"Adélaïde".in[Data]
++ val bytes = t"Adélaïde".in[Data]
+
+= val bytes = t"Adélaïde".in[Data]
+- ```
++ ```
+
+= val bytes = t"Adélaïde".in[Data]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val bytes = t"Adélaïde".in[Data]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val bytes = t"Adélaïde".in[Data]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(bytes.length.show)
++ Out.println(bytes.length.show)
+
+- Out.println(bytes.utf8)
++ Out.println(bytes.utf8)
+
+= Out.println(bytes.utf8)
+- ```
++ ```
+
+- The eight characters are ten bytes in UTF-8, since each accented letter takes two.
+- [Characters](characters.md) covers encodings, and [Base encoding](base-encoding.md) writes bytes
+- as hexadecimal or Base64 text.
++ アクセント付きの文字はそれぞれ二バイトを取るので、八つの文字は UTF-8 で十バイトになる。
++ [文字](characters.md)がエンコーディングを扱い、[Base エンコーディング](base-encoding.md)はバイトを十六進数や Base64 のテキストとして書く。
+
+- ### Fuzzy matching
++ ### あいまい一致
+
+- Two pieces of text can be compared for closeness, not just equality, through a `Proximity`
+- measure in scope. The [Levenshtein](https://en.wikipedia.org/wiki/Levenshtein_distance) distance
+- counts the single-character edits between them:
++ 二つのテキストは、スコープにある `Proximity` の尺度を通じて、等しさだけでなく近さでも比較できる。
++ [レーベンシュタイン](https://en.wikipedia.org/wiki/Levenshtein_distance)距離は、それらの間の一文字単位の編集を数える。
+
+= counts the single-character edits between them:
+=
+- ```scala
++ ```scala
+
+- import proximities.levenshteinProximity
++ import proximities.levenshteinProximity
+
+- import caseSensitivity.caseSensitive
++ import caseSensitivity.caseSensitive
+
+= import caseSensitivity.caseSensitive
+- ```
++ ```
+
+= import caseSensitivity.caseSensitive
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import caseSensitivity.caseSensitive
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import caseSensitivity.caseSensitive
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"Hello world".proximity(t"Hello orld").show)
++ Out.println(t"Hello world".proximity(t"Hello orld").show)
+
+= Out.println(t"Hello world".proximity(t"Hello orld").show)
+- ```
++ ```
+
+- Comparing one word against a whole vocabulary in this way is slow, and a spelling suggestion
+- needs it to be fast. A `Lexicon` is a [BK-tree](https://en.wikipedia.org/wiki/BK-tree) over the
+- words. It uses the triangle inequality, which the distance obeys, to rule out most of the
+- vocabulary without measuring it:
++ このように一つの単語を語彙全体と比較するのは遅いが、綴りの提案は速くなければならない。
++ `Lexicon` は単語の上の [BK 木](https://en.wikipedia.org/wiki/BK-tree)である。
++ 距離が従う三角不等式を使って、語彙の大部分を測ることなく除外する。
+
+= vocabulary without measuring it:
+=
+- ```scala
++ ```scala
+
+- val words = List(t"book", t"boot", t"cook", t"look", t"bake")
++ val words = List(t"book", t"boot", t"cook", t"look", t"bake")
+
+- val lexicon = Lexicon(words)
++ val lexicon = Lexicon(words)
+
+= val lexicon = Lexicon(words)
+- ```
++ ```
+
+- A search at distance zero is an exact lookup. Widening the radius admits more distant
+- candidates, which is how a "did you mean" suggestion is produced from a large word list:
++ 距離ゼロでの検索は完全一致の検索である。
++ 半径を広げるとより遠い候補が入る。大きな単語リストから「もしかして」の提案はこうして作られる。
+
+= candidates, which is how a "did you mean" suggestion is produced from a large word list:
+=
+- ```scala fuel
++ ```scala fuel
+
+= candidates, which is how a "did you mean" suggestion is produced from a large word list:
+=
+= ```scala fuel
+- run
++ run
+
+= candidates, which is how a "did you mean" suggestion is produced from a large word list:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(lexicon.search(t"book", 0).inspect)
++ Out.println(lexicon.search(t"book", 0).inspect)
+
+- Out.println(lexicon.search(t"booq", 1).inspect)
++ Out.println(lexicon.search(t"booq", 1).inspect)
+
+= Out.println(lexicon.search(t"booq", 1).inspect)
+- ```
++ ```
+
+- ### Prefix dictionaries
++ ### 接頭辞の辞書
+
+- Where lookup is by exact key, a `Dictionary` maps text to values through a
+- [trie](https://en.wikipedia.org/wiki/Trie). A lookup costs the length of the key, not a hash of
+- the whole of it, and a query by prefix costs the length of the prefix:
++ 完全なキーで検索する場合、`Dictionary` は[トライ木](https://en.wikipedia.org/wiki/Trie)を通じてテキストを値に対応付ける。
++ 検索のコストはキー全体のハッシュではなくキーの長さであり、接頭辞による問い合わせのコストは接頭辞の長さである。
+
+= the whole of it, and a query by prefix costs the length of the prefix:
+=
+- ```scala
++ ```scala
+
+- val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
++ val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
+
+= val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
+- ```
++ ```
+
+= val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(dictionary(t"colour").inspect)
++ Out.println(dictionary(t"colour").inspect)
+
+- Out.println(dictionary.size.show)
++ Out.println(dictionary.size.show)
+
+= Out.println(dictionary.size.show)
+- ```
++ ```
+
+- ### Graphemes and width
++ ### 書記素と幅
+
+- A `Char` is not a unit of text a person would recognize. `é` may be one code point or two, and a
+- family emoji is several code points joined together, so counting `Char`s answers the wrong
+- question. `Writing` gives a text's *grapheme clusters*, which are what a reader would call
+- characters, and the boundaries between them:
++ `Char` は人が認識するテキストの単位ではない。
++ `é` は一つのコードポイントかもしれないし二つかもしれず、家族の絵文字はいくつものコードポイントがつながったものなので、`Char` を数えても誤った問いに答えることになる。
++ `Writing` はテキストの*書記素クラスタ*、つまり読み手が文字と呼ぶものと、その間の境界を与える。
+
+= characters, and the boundaries between them:
+=
+- ```scala fuel
++ ```scala fuel
+
+= characters, and the boundaries between them:
+=
+= ```scala fuel
+- run
++ run
+
+= characters, and the boundaries between them:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Writing(t"abc").graphemeCount.show)
++ Out.println(Writing(t"abc").graphemeCount.show)
+
+= Out.println(Writing(t"abc").graphemeCount.show)
+- ```
++ ```
+
+- Nor is a grapheme always one column wide on a terminal. Under a metric in scope, `metrics` gives
+- the width the terminal will actually use. That is one column for ASCII, one for a letter with a
+- combining accent, and two for Chinese, Japanese and Korean characters and for most emoji:
++ また、書記素が端末上で常に一桁の幅であるとも限らない。
++ スコープにある尺度のもとで、`metrics` は端末が実際に使う幅を与える。
++ それは ASCII では一桁、結合アクセント付きの文字では一桁、中国語、日本語、韓国語の文字やほとんどの絵文字では二桁である。
+
+= combining accent, and two for Chinese, Japanese and Korean characters and for most emoji:
+=
+- ```scala fuel
++ ```scala fuel
+
+= combining accent, and two for Chinese, Japanese and Korean characters and for most emoji:
+=
+= ```scala fuel
+- run
++ run
+
+= combining accent, and two for Chinese, Japanese and Korean characters and for most emoji:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- locally:
++ locally:
+
+-   import textMetrics.wideCharacterWidthMetric
++   import textMetrics.wideCharacterWidthMetric
+
+-   Out.println(Grapheme("a").metrics.show)
++   Out.println(Grapheme("a").metrics.show)
+
+-   Out.println(Grapheme("é").metrics.show)
++   Out.println(Grapheme("é").metrics.show)
+
+-   Out.println(Grapheme("日").metrics.show)
++   Out.println(Grapheme("日").metrics.show)
+
+=   Out.println(Grapheme("日").metrics.show)
+- ```
++ ```
+
+- Aligning columns of text in a [terminal](terminal.md) depends on this width.
++ [端末](terminal.md)でテキストの列をそろえるには、この幅が必要である。
+
+- ### Rendering numbers
++ ### 数の描画
+
+- Turning a number into text involves a choice, of how many digits are worth showing, which
+- `toString` makes badly. A `Decimalizer` states the choice as a number of significant figures,
+- and every `show` of a floating-point number consults the one in scope:
++ 数をテキストに変えるには、何桁を示す価値があるかという選択が伴い、`toString` はそれを下手に行う。
++ `Decimalizer` はその選択を有効数字の桁数として述べ、浮動小数点数のすべての `show` はスコープにあるそれを参照する。
+
+= and every `show` of a floating-point number consults the one in scope:
+=
+- ```scala fuel
++ ```scala fuel
+
+= and every `show` of a floating-point number consults the one in scope:
+=
+= ```scala fuel
+- run
++ run
+
+= and every `show` of a floating-point number consults the one in scope:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Decimalizer(3).decimalize(-3.14159))
++ Out.println(Decimalizer(3).decimalize(-3.14159))
+
+= Out.println(Decimalizer(3).decimalize(-3.14159))
+- ```
++ ```
+
+- The same value therefore renders consistently everywhere in a program, and changing the
+- precision is a matter of one given, not a search for format strings. [Numbers](numbers.md)
+- covers the numeric types themselves.
++ したがって同じ値はプログラムのどこでも一貫して描画され、精度を変えるのは書式文字列を探し回ることではなく、一つの given の問題である。
++ [数](numbers.md)は数値型そのものを扱う。
+
+- ### Any textual type
++ ### 任意のテキスト型
+
+- Every operation above is defined over the `Textual` typeclass, not over `Text` alone. A type
+- which declares itself textual gains the same `cut`, `join`, `keep`, `pad` and the rest, without
+- redefining any of them. The styled text of a [terminal](terminal.md) is one such type, so styled
+- and plain text are manipulated with one vocabulary.
++ 上のすべての操作は、`Text` だけでなく `Textual` 型クラスの上に定義されている。
++ 自らをテキストであると宣言する型は、どれも定義し直すことなく、同じ `cut`、`join`、`keep`、`pad` などを得る。
++ [端末](terminal.md)のスタイル付きテキストはそのような型の一つなので、スタイル付きのテキストと素のテキストは一つの語彙で操作される。

@@ -1,0 +1,67 @@
+orthant 1 language
+
+- # `↯/s.89.1` — `Font.Error`
++ # `↯/s.89.1` — `Font.Error`
+
+- Raised when Phoenicia cannot read a font file, or when a face is requested from a provision
+- that cannot set it.
++ Phoenicia がフォントファイルを読めないとき、またはフェイスを組めないプロビジョンにそのフェイスを要求したときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Phoenicia parses font files (typically TrueType/OpenType) and reports
+- this error when the file is missing required tables, uses an unknown
+- format, or fails the magic-number check. It also reports it when a `Font` is made from a
+- `Face` — a weight, slant, stretch, variation or feature — that the typeface's `Typesettable`
+- provision does not cover, so that the document does not go on to a synthesized or substituted
+- rendering. The message is `the font could not be used because $reason`.
++ Phoenicia はフォントファイル（典型的には TrueType/OpenType）をパースし、ファイルに必要なテーブルがないとき、未知の形式を使っているとき、またはマジックナンバーの検査に失敗したときに、このエラーを報告する。
++ また、書体の `Typesettable` プロビジョンが対応しない `Face`（太さ、傾き、字幅、バリエーション、フィーチャー）から `Font` を作ったときにも報告するので、ドキュメントが合成や代用による描画に進むことはない。
++ メッセージは `the font could not be used because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Meaning
+- column  Message
+- column  Resolution
+- row  `↯/s.89.1.1`  `MissingTable`  A required table identified by `tag` was not found in the font file.  `[↯/s.89.1.1] the font could not be used because the table cmap was not found`  Use a font that contains the required tables; many font subsetting tools can strip mandatory tables.
+- row  `↯/s.89.1.2`  `UnknownFormat`  A table was located but its content does not match any version of the format Phoenicia knows how to read.  `[↯/s.89.1.2] the font could not be used because the table contains data in an unknown format`  Use a font that conforms to a supported version of the OpenType/TrueType specification.
+- row  `↯/s.89.1.3`  `MagicNumber`  The font's leading bytes did not match the expected magic number, indicating the file is not a font Phoenicia recognises.  `[↯/s.89.1.3] the font could not be used because the font did not contain expected check data`  Confirm the file is a TrueType or OpenType font and not corrupted; check that the file was opened in binary mode.
+- row  `↯/s.89.1.4`  `MissingEncoding`  The font declares no character-to-glyph mapping this reader can use.  `[↯/s.89.1.4] the font contains no usable character encoding`  Use a font with a Unicode `cmap` subtable. A font carrying only a legacy Macintosh or symbol encoding cannot map characters to glyphs.
+- row  `↯/s.89.1.5`  `UncoveredWeight`  The provision offers no face at the requested weight.  `[↯/s.89.1.5] the font could not be used because Inter is not provided at weight 700`  Embed a file at that weight (or a variable font whose `wght` axis spans it), declare the weight in a linked provision's coverage, or ask for a weight the provision has.
+- row  `↯/s.89.1.6`  `UncoveredSlant`  The provision has no italic (or no upright) face.  `[↯/s.89.1.6] the font could not be used because Inter is not provided in an italic face`  Add the italic file to the provision, or set the face upright.
+- row  `↯/s.89.1.7`  `UncoveredStretch`  The provision offers no face at the requested stretch.  `[↯/s.89.1.7] the font could not be used because Inter is not provided at a stretch of 75.0%`  Add a condensed or expanded file, or use the normal width.
+- row  `↯/s.89.1.8`  `UnknownAxis`  The face varies an axis the font does not have.  `[↯/s.89.1.8] the font could not be used because Inter has no variation axis opsz`  Check the font's `fvar` table for the axes it defines; `Sfnt.fvar` lists them.
+- row  `↯/s.89.1.9`  `AxisOutOfRange`  The face sets an axis to a value outside the range the font admits.  `[↯/s.89.1.9] the font could not be used because Inter does not admit 950.0 on its wght axis`  Keep the value within the axis's minimum and maximum.
+- row  `↯/s.89.1.10`  `MissingFeature`  The face enables a layout feature the font's `GSUB` and `GPOS` tables do not implement.  `[↯/s.89.1.10] the font could not be used because Inter does not implement the layout feature onum`  Use a font that implements the feature, or drop the setting; `Sfnt.features` lists what a file implements.
++ column  コード
++ column  理由
++ column  意味
++ column  メッセージ
++ column  解決方法
++ row  `↯/s.89.1.1`  `MissingTable`  `tag` で識別される必須のテーブルがフォントファイルに見つからなかった。  `[↯/s.89.1.1] the font could not be used because the table cmap was not found`  必須のテーブルを含むフォントを使う。多くのフォントのサブセット化ツールは必須のテーブルを取り除いてしまうことがある。
++ row  `↯/s.89.1.2`  `UnknownFormat`  テーブルは見つかったが、その内容が Phoenicia が読み方を知っている形式のどのバージョンにも一致しない。  `[↯/s.89.1.2] the font could not be used because the table contains data in an unknown format`  OpenType/TrueType の仕様のサポートされたバージョンに準拠するフォントを使う。
++ row  `↯/s.89.1.3`  `MagicNumber`  フォントの先頭のバイトが期待されたマジックナンバーに一致せず、ファイルが Phoenicia の認識するフォントではないことを示している。  `[↯/s.89.1.3] the font could not be used because the font did not contain expected check data`  ファイルが TrueType または OpenType のフォントであり、壊れていないことを確かめる。ファイルがバイナリモードで開かれたかを確認する。
++ row  `↯/s.89.1.4`  `MissingEncoding`  フォントが、このリーダーが使える文字からグリフへの対応付けを宣言していない。  `[↯/s.89.1.4] the font contains no usable character encoding`  Unicode の `cmap` サブテーブルを持つフォントを使う。レガシーな Macintosh またはシンボルのエンコーディングしか持たないフォントは、文字をグリフに対応付けられない。
++ row  `↯/s.89.1.5`  `UncoveredWeight`  プロビジョンが要求された太さのフェイスを提供していない。  `[↯/s.89.1.5] the font could not be used because Inter is not provided at weight 700`  その太さのファイル（またはその太さを範囲に含む `wght` 軸を持つ可変フォント）を埋め込むか、リンクしたプロビジョンのカバレッジでその太さを宣言するか、プロビジョンが持つ太さを要求する。
++ row  `↯/s.89.1.6`  `UncoveredSlant`  プロビジョンにイタリック（または直立）のフェイスがない。  `[↯/s.89.1.6] the font could not be used because Inter is not provided in an italic face`  イタリックのファイルをプロビジョンに加えるか、フェイスを直立で組む。
++ row  `↯/s.89.1.7`  `UncoveredStretch`  プロビジョンが要求された字幅のフェイスを提供していない。  `[↯/s.89.1.7] the font could not be used because Inter is not provided at a stretch of 75.0%`  コンデンスまたはエキスパンドのファイルを加えるか、通常の幅を使う。
++ row  `↯/s.89.1.8`  `UnknownAxis`  フェイスが、フォントの持たない軸を変化させている。  `[↯/s.89.1.8] the font could not be used because Inter has no variation axis opsz`  フォントの `fvar` テーブルで、それが定義する軸を確認する。`Sfnt.fvar` がそれらを列挙する。
++ row  `↯/s.89.1.9`  `AxisOutOfRange`  フェイスが、軸をフォントの許す範囲外の値に設定している。  `[↯/s.89.1.9] the font could not be used because Inter does not admit 950.0 on its wght axis`  値を軸の最小値と最大値の範囲内に保つ。
++ row  `↯/s.89.1.10`  `MissingFeature`  フェイスが、フォントの `GSUB` と `GPOS` テーブルが実装していないレイアウトのフィーチャーを有効にしている。  `[↯/s.89.1.10] the font could not be used because Inter does not implement the layout feature onum`  そのフィーチャーを実装するフォントを使うか、その設定をやめる。`Sfnt.features` がファイルの実装するものを列挙する。
+
+- ```
++ ```
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/phoenicia/src/core/phoenicia.Font.scala`
++ - ソース：`lib/phoenicia/src/core/phoenicia.Font.scala`

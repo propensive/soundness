@@ -1,0 +1,590 @@
+orthant 1 language
+
+- ## Mathematical Markup
++ ## 数式マークアップ
+
+- ### About
++ ### 概要
+
+- Mathematics on a web page is [MathML](https://www.w3.org/TR/MathML-Core/): a presentation tree
+- of rows, fractions, scripts and roots, which browsers render natively. That tree is modeled
+- here as typed values, read back from XML, and embedded in [HTML](html.md). Writing MathML by
+- hand is unbearable, so *Ergo* is provided too: a one-line shorthand which parses to the same
+- tree, and serializes back out of it.
++ ウェブページ上の数学は [MathML](https://www.w3.org/TR/MathML-Core/) である。これは行、分数、添字、根からなる表示用のツリーで、ブラウザがネイティブに描画する。
++ ここではそのツリーが型付きの値としてモデル化され、XML から読み戻され、[HTML](html.md) に埋め込まれる。
++ MathML を手で書くのは耐えがたいので、*Ergo* も提供される。これは同じツリーにパースされ、そのツリーから直列化して戻せる一行の略記法である。
+
+- ### On writing mathematics
++ ### 数学を書くことについて
+
+- An equation is a tree, and MathML says so honestly. But it says so in perhaps ten times the
+- characters of the equation itself. `x²` is `<msup><mi>x</mi><mn>2</mn></msup>`, and a quadratic
+- formula runs to several lines which no one can read as mathematics. The alternatives are worse
+- in a different way. TeX is compact and expressive, but needs a large renderer and produces
+- something the browser cannot introspect. An image loses the content entirely.
++ 方程式はツリーであり、MathML は正直にそう述べる。
++ しかしそれを、方程式そのもののおそらく十倍の文字数で述べる。
++ `x²` は `<msup><mi>x</mi><mn>2</mn></msup>` であり、二次方程式の解の公式は、誰も数学として読めない何行にもなる。
++ 代替案は別の意味でもっと悪い。
++ TeX は簡潔で表現力があるが、大きな描画エンジンを必要とし、ブラウザが内部を調べられないものを生み出す。
++ 画像は内容を完全に失う。
+
+- Ergo takes the middle path. It is a compact linear notation, with one glyph for each structural
+- role, which parses to MathML and serializes back. The source stays readable, the output is a
+- real document tree, and the round trip is exact. Markup built from typed values, and not from
+- strings, is [safety by construction](../../philosophy/safety-by-construction.md) for a notation
+- which is easy to get subtly wrong.
++ Ergo は中間の道を取る。
++ それは構造上の役割ごとに一つのグリフを持つ簡潔な線形の記法であり、MathML にパースされ、直列化して戻せる。
++ ソースは読みやすいままで、出力は本物の文書ツリーであり、往復は正確である。
++ 文字列からではなく型付きの値から作られるマークアップは、微妙に誤りやすい記法にとっての[構築による安全性](../../philosophy/safety-by-construction.md)である。
+
+- Everything comes from the `soundness` package. The other imports choose a [strategy] for errors
+- and an [XML schema](xml.md) for reading, and let the samples print their results:
++ すべては `soundness` パッケージから来る。
++ 他のインポートは、エラーのための[戦略]と読み取りのための [XML スキーマ](xml.md)を選び、サンプルが結果を印字できるようにする。
+
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import Mathml.*
++ import Mathml.*
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import xmlSchemas.freeformXmlSchema
++ import xmlSchemas.freeformXmlSchema
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### The MathML tree
++ ### MathML のツリー
+
+- The elements are values named after the tags, and `Math` is the root. These are the ones which
+- Ergo writes:
++ 要素はタグにちなんで名付けられた値であり、`Math` がルートである。
++ Ergo が書くのは次のものである。
+
+= Ergo writes:
+=
+- ```tabular
++ ```tabular
+
+- column  Value
+- column  Element
+- column  Meaning
+- row  `Mi`  `<mi>`  identifier
+- row  `Mn`  `<mn>`  number
+- row  `Mo`  `<mo>`  operator
+- row  `Mrow`  `<mrow>`  group
+- row  `Mfrac`  `<mfrac>`  fraction
+- row  `Msqrt`  `<msqrt>`  square root
+- row  `Mroot`  `<mroot>`  nth root
+- row  `Msup`  `<msup>`  superscript
+- row  `Msub`  `<msub>`  subscript
+- row  `Msubsup`  `<msubsup>`  subscript and superscript
+- row  `Mover`  `<mover>`  overscript
+- row  `Munder`  `<munder>`  underscript
+- row  `Munderover`  `<munderover>`  underscript and overscript
+- row  `Mtable`, `Mtr`, `Mtd`  `<mtable>`, `<mtr>`, `<mtd>`  table, row, cell
++ column  値
++ column  要素
++ column  意味
++ row  `Mi`  `<mi>`  識別子
++ row  `Mn`  `<mn>`  数
++ row  `Mo`  `<mo>`  演算子
++ row  `Mrow`  `<mrow>`  グループ
++ row  `Mfrac`  `<mfrac>`  分数
++ row  `Msqrt`  `<msqrt>`  平方根
++ row  `Mroot`  `<mroot>`  n 乗根
++ row  `Msup`  `<msup>`  上付き添字
++ row  `Msub`  `<msub>`  下付き添字
++ row  `Msubsup`  `<msubsup>`  下付き添字と上付き添字
++ row  `Mover`  `<mover>`  上部の添え字
++ row  `Munder`  `<munder>`  下部の添え字
++ row  `Munderover`  `<munderover>`  下部と上部の添え字
++ row  `Mtable`, `Mtr`, `Mtd`  `<mtable>`, `<mtr>`, `<mtd>`  表、行、セル
+
+= row  `Mtable`, `Mtr`, `Mtd`  `<mtable>`, `<mtr>`, `<mtd>`  table, row, cell
+- ```
++ ```
+
+- The other elements, such as `Mtext`, `Mspace`, `Mstyle` and `Mpadded`, are modeled the same
+- way. `in[Xml]` renders a `Math`:
++ `Mtext`、`Mspace`、`Mstyle`、`Mpadded` のような他の要素も、同じようにモデル化されている。
++ `in[Xml]` は `Math` を描画する。
+
+= way. `in[Xml]` renders a `Math`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= way. `in[Xml]` renders a `Math`:
+=
+= ```scala fuel
+- run
++ run
+
+= way. `in[Xml]` renders a `Math`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Math(Msup(Mi(t"x"), Mn(t"2"))).in[Xml].show)
++ Out.println(Math(Msup(Mi(t"x"), Mn(t"2"))).in[Xml].show)
+
+= Out.println(Math(Msup(Mi(t"x"), Mn(t"2"))).in[Xml].show)
+- ```
++ ```
+
+- MathML text reads back with `read[Math]`, and a document round-trips unchanged. An attribute
+- which the model does not interpret is preserved, not dropped:
++ MathML のテキストは `read[Math]` で読み戻され、文書は変わらずに往復する。
++ モデルが解釈しない属性は、捨てられずに保たれる。
+
+= which the model does not interpret is preserved, not dropped:
+=
+- ```scala fuel
++ ```scala fuel
+
+= which the model does not interpret is preserved, not dropped:
+=
+= ```scala fuel
+- run
++ run
+
+= which the model does not interpret is preserved, not dropped:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val square = Math(Msup(Mi(t"x"), Mn(t"2")))
++ val square = Math(Msup(Mi(t"x"), Mn(t"2")))
+
+- Out.println((square.in[Xml].show.read[Math] == square).inspect)
++ Out.println((square.in[Xml].show.read[Math] == square).inspect)
+
+= Out.println((square.in[Xml].show.read[Math] == square).inspect)
+- ```
++ ```
+
+- A root element which is not `<math>` raises a `Mathml.Error`, which names what was found
+- instead:
++ `<math>` でないルート要素は、代わりに何が見つかったかを名指しする `Mathml.Error` を発生させる。
+
+= instead:
+=
+- ```scala fuel
++ ```scala fuel
+
+= instead:
+=
+= ```scala fuel
+- run
++ run
+
+= instead:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= instead:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"<p>not mathematics</p>".read[Math]
++ t"<p>not mathematics</p>".read[Math]
+
+= t"<p>not mathematics</p>".read[Math]
+- ```
++ ```
+
+- `html` embeds an expression as a foreign element in an HTML tree, and `Mathml.Reader.read`
+- extracts it again.
++ `html` は式を HTML ツリーの中の外部要素として埋め込み、`Mathml.Reader.read` はそれを再び取り出す。
+
+- A `Math` also has a `display`, which is block or inline. It decides whether the browser sets the
+- expression as a displayed equation, or within running text.
++ `Math` は `display` も持ち、それはブロックかインラインである。
++ これは、ブラウザが式を別行立ての方程式として組むか、本文の中で組むかを決める。
+
+- ### Ergo
++ ### Ergo
+
+- An Ergo expression is delimited by a pair of brackets, and the **first character** chooses which
+- pair, `(`, `[`, `{` or `⟨`, acts as grouping throughout. Every *other* bracket is then a literal
+- operator. A grouped run is one `<mrow>`, and the operands of an operator are uniformly "an atom
+- or a grouped unit". This is the quadratic formula:
++ Ergo の式は一対の括弧で区切られ、**最初の文字**によって、`(`、`[`、`{`、`⟨` のどの対が全体を通じてグループ化として働くかが選ばれる。
++ そのとき、*それ以外の*括弧はすべてリテラルの演算子である。
++ グループ化された連なりは一つの `<mrow>` であり、演算子の被演算子は一様に「アトムまたはグループ化された単位」である。
++ これは二次方程式の解の公式である。
+
+= or a grouped unit". This is the quadratic formula:
+=
+- ```scala fuel
++ ```scala fuel
+
+= or a grouped unit". This is the quadratic formula:
+=
+= ```scala fuel
+- run
++ run
+
+= or a grouped unit". This is the quadratic formula:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val quadratic = Ergo.parse(t"(x = (-b ± √(b↗2 - 4 a c))/(2 a))")
++ val quadratic = Ergo.parse(t"(x = (-b ± √(b↗2 - 4 a c))/(2 a))")
+
+- Out.println(quadratic.in[Xml].show)
++ Out.println(quadratic.in[Xml].show)
+
+= Out.println(quadratic.in[Xml].show)
+- ```
++ ```
+
+- Tokens follow three rules, and a space is a separator which renders as nothing:
++ トークンは三つの規則に従い、空白は何も描画しない区切りである。
+
+= Tokens follow three rules, and a space is a separator which renders as nothing:
+=
+- ```tabular
++ ```tabular
+
+- column  A run of
+- column  Becomes
+- column  Example
+- row  letters  one identifier, `<mi>`  `sin` is `<mi>sin</mi>`; `x y` means *x·y*
+- row  digits, with an interior `.` allowed  one number, `<mn>`  `3.14`
+- row  any other character  an operator, `<mo>`  `=`
++ column  連なり
++ column  なるもの
++ column  例
++ row  文字  一つの識別子、`<mi>`  `sin` は `<mi>sin</mi>`。`x y` は *x·y* を意味する
++ row  数字（内部の `.` は許される）  一つの数、`<mn>`  `3.14`
++ row  それ以外の任意の文字  演算子、`<mo>`  `=`
+
+= row  any other character  an operator, `<mo>`  `=`
+- ```
++ ```
+
+- ### Structural glyphs
++ ### 構造のグリフ
+
+- Scripts and limits attach to the atom on their left, and a fraction binds more loosely than the
+- scripts. An index atom immediately before `√`, with no space, makes an nth root. The three table
+- introducers are each self-delimiting, and their body is one group whose children are the
+- elements.
++ 添字と極限はその左のアトムに付き、分数は添字より緩く結合する。
++ `√` の直前に空白なしで置かれた指数のアトムは n 乗根を作る。
++ 三つの表の導入子はそれぞれ自らを区切り、その本体は、子が要素である一つのグループである。
+
+= elements.
+=
+- ```tabular
++ ```tabular
+
+- column  Glyph
+- column  Role
+- column  Element
+- column  Example
+- row  `↗`  superscript  `<msup>`  `x↗2` is *x²*
+- row  `↘`  subscript  `<msub>`  `x↘i` is *xᵢ*
+- row  `↘` and `↗`  both, on one base  `<msubsup>`  `x↘i↗2` is *xᵢ²*
+- row  `↑`  overscript or upper limit  `<mover>`
+- row  `↓`  underscript or lower limit  `<munder>`
+- row  `↓` and `↑`  both, on one base  `<munderover>`  `∑↓(i = 1)↑n`
+- row  `/`  fraction  `<mfrac>`  `a/b`
+- row  `√`  square root  `<msqrt>`  `√x`
+- row  `√` after an index  nth root  `<mroot>`  `3√x` is *∛x*
+- row  `⋱`  matrix  `<mtable>`  `⋱(((1)(2))((3)(4)))` is a 2×2 matrix
+- row  `⋯`  row vector  a single-row `<mtable>`
+- row  `⋮`  column vector  a single-column `<mtable>`
++ column  グリフ
++ column  役割
++ column  要素
++ column  例
++ row  `↗`  上付き添字  `<msup>`  `x↗2` は *x²*
++ row  `↘`  下付き添字  `<msub>`  `x↘i` は *xᵢ*
++ row  `↘` と `↗`  一つの底に両方  `<msubsup>`  `x↘i↗2` は *xᵢ²*
++ row  `↑`  上部の添え字または上限  `<mover>`
++ row  `↓`  下部の添え字または下限  `<munder>`
++ row  `↓` と `↑`  一つの底に両方  `<munderover>`  `∑↓(i = 1)↑n`
++ row  `/`  分数  `<mfrac>`  `a/b`
++ row  `√`  平方根  `<msqrt>`  `√x`
++ row  指数の後の `√`  n 乗根  `<mroot>`  `3√x` は *∛x*
++ row  `⋱`  行列  `<mtable>`  `⋱(((1)(2))((3)(4)))` は 2×2 の行列
++ row  `⋯`  行ベクトル  一行の `<mtable>`
++ row  `⋮`  列ベクトル  一列の `<mtable>`
+
+= row  `⋮`  column vector  a single-column `<mtable>`
+- ```
++ ```
+
+- Large operators need no special syntax. `∑` is an ordinary operator, and `∑↓(i = 1)↑n` gives it
+- limits below and above:
++ 大型の演算子に特別な構文は必要ない。
++ `∑` は通常の演算子であり、`∑↓(i = 1)↑n` はそれに下と上の極限を与える。
+
+= limits below and above:
+=
+- ```scala fuel
++ ```scala fuel
+
+= limits below and above:
+=
+= ```scala fuel
+- run
++ run
+
+= limits below and above:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Ergo.parse(t"(∑↓(i = 1)↑n i↗2)").in[Xml].show)
++ Out.println(Ergo.parse(t"(∑↓(i = 1)↑n i↗2)").in[Xml].show)
+
+= Out.println(Ergo.parse(t"(∑↓(i = 1)↑n i↗2)").in[Xml].show)
+- ```
++ ```
+
+- An operator glyph with a missing operand degrades to a literal operator, so `(↗)` writes a
+- literal ↗ rather than failing.
++ 被演算子が欠けた演算子のグリフはリテラルの演算子に退化するので、`(↗)` は失敗せずにリテラルの ↗ を書く。
+
+- ### Attribute directives
++ ### 属性の指示子
+
+- Each MathML Core presentation attribute has one directive glyph. Directives are *postfix*, and
+- bind to the atom or bracketed group immediately to their left. Several simply juxtapose: `=◆⇿`
+- sets both `largeop` and `stretchy` on the `=`.
++ MathML Core の表示用の属性には、それぞれ一つの指示子のグリフがある。
++ 指示子は*後置*であり、そのすぐ左のアトムまたは括弧で囲まれたグループに結合する。
++ 複数の指示子は単に並べて書ける。`=◆⇿` は `=` に `largeop` と `stretchy` の両方を設定する。
+
+- Enumerated and boolean attributes have one bare glyph for each value, and take no parameter. A
+- boolean is `⇿` for true and `↮` for false. Because they never take a group, `=◆(a)` is `=` with
+- `largeop="true"`, *times* `(a)`. Open-valued attributes, which are lengths, colors and integers,
+- take their value in the active grouping bracket, read verbatim. Under `(` grouping, `x●(red)`
+- sets `mathcolor="red"`.
++ 列挙型の属性と真偽値の属性は、値ごとに一つの素のグリフを持ち、パラメーターを取らない。
++ 真偽値は、真なら `⇿`、偽なら `↮` である。
++ これらは決してグループを取らないので、`=◆(a)` は `largeop="true"` の `=` *掛ける* `(a)` である。
++ 長さ、色、整数である開いた値の属性は、その値を有効なグループ化の括弧の中に取り、そのまま読まれる。
++ `(` のグループ化のもとでは、`x●(red)` は `mathcolor="red"` を設定する。
+
+- Grouping decides what a directive applies to. `(x↗2)●(red)` colors the whole superscript, while
+- `x↗2●(red)` colors only the `2`:
++ グループ化が、指示子が何に適用されるかを決める。
++ `(x↗2)●(red)` は上付き添字全体に色を付け、`x↗2●(red)` は `2` だけに色を付ける。
+
+= `x↗2●(red)` colors only the `2`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `x↗2●(red)` colors only the `2`:
+=
+= ```scala fuel
+- run
++ run
+
+= `x↗2●(red)` colors only the `2`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Ergo.parse(t"((x↗2)●(red))").in[Xml].show)
++ Out.println(Ergo.parse(t"((x↗2)●(red))").in[Xml].show)
+
+- Out.println(Ergo.parse(t"(x↗2●(red))").in[Xml].show)
++ Out.println(Ergo.parse(t"(x↗2●(red))").in[Xml].show)
+
+= Out.println(Ergo.parse(t"(x↗2●(red))").in[Xml].show)
+- ```
++ ```
+
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Glyphs
+- column  Attribute
+- column  Meaning
+- row  `⧆` / `⧄`  `displaystyle`  display style, or inline/text style
+- row  `⌄[±n]`  `scriptlevel`  relative script size; `+n` shrinks
+- row  `◻` / `▭`  `display`  block or inline, on the root
+- row  `●[colour]`  `mathcolor`  foreground color
+- row  `▨[colour]`  `mathbackground`  background color
+- row  `⟑[length]`  `mathsize`  font size
+- row  `⦱`  `mathvariant`  upright, canceling automatic italicisation
+- row  `⊩` / `⫣`  `dir`  left-to-right or right-to-left
+- row  `⊰` / `⊹` / `⊱`  `form`  prefix, infix or postfix operator
+- row  `∥` / `∤`  `fence`  mark as a fence
+- row  `▮` / `▯`  `separator`  mark as a separator
+- row  `⇿` / `↮`  `stretchy`  allow stretching to surrounding content
+- row  `⋈` / `⋊`  `symmetric`  stretch symmetrically about the axis
+- row  `◆` / `◇`  `largeop`  treat as a large operator in display style
+- row  `⧳` / `⧯`  `movablelimits`  limits over/under in display, scripts inline
+- row  `⧔[length]` / `⧕[length]`  `lspace` / `rspace`  space either side of an operator
+- row  `⟰[length]` / `⟱[length]`  `maxsize` / `minsize`  stretch bounds
+- row  `↔[length]`  `width`  advance width of a box
+- row  `⍏[length]` / `⍖[length]`  `height` / `depth`  extent above and below the baseline
+- row  `↕[length]`  `voffset`  vertical shift of padded content
+- row  `═[length]`  `linethickness`  fraction bar thickness; `0` for none
+- row  `◠` / `⌢`  `accent`  treat an overscript as a tight accent
+- row  `◡` / `⌣`  `accentunder`  treat an underscript as a tight accent
+- row  `⚙[type]`  `actiontype`  legacy; undefined in Core
++ column  グリフ
++ column  属性
++ column  意味
++ row  `⧆` / `⧄`  `displaystyle`  別行立てのスタイル、またはインライン/テキストのスタイル
++ row  `⌄[±n]`  `scriptlevel`  相対的な添字の大きさ。`+n` で縮む
++ row  `◻` / `▭`  `display`  ブロックまたはインライン。ルートに付ける
++ row  `●[colour]`  `mathcolor`  前景色
++ row  `▨[colour]`  `mathbackground`  背景色
++ row  `⟑[length]`  `mathsize`  フォントの大きさ
++ row  `⦱`  `mathvariant`  立体。自動的なイタリック化を取り消す
++ row  `⊩` / `⫣`  `dir`  左から右、または右から左
++ row  `⊰` / `⊹` / `⊱`  `form`  前置、中置、後置の演算子
++ row  `∥` / `∤`  `fence`  囲みとして印を付ける
++ row  `▮` / `▯`  `separator`  区切りとして印を付ける
++ row  `⇿` / `↮`  `stretchy`  周囲の内容に合わせて伸びることを許す
++ row  `⋈` / `⋊`  `symmetric`  軸に対して対称に伸ばす
++ row  `◆` / `◇`  `largeop`  別行立てのスタイルで大型の演算子として扱う
++ row  `⧳` / `⧯`  `movablelimits`  別行立てでは極限を上下に、インラインでは添字にする
++ row  `⧔[length]` / `⧕[length]`  `lspace` / `rspace`  演算子の両側の空き
++ row  `⟰[length]` / `⟱[length]`  `maxsize` / `minsize`  伸びの上限と下限
++ row  `↔[length]`  `width`  ボックスの送り幅
++ row  `⍏[length]` / `⍖[length]`  `height` / `depth`  ベースラインの上と下の広がり
++ row  `↕[length]`  `voffset`  パディングされた内容の垂直方向のずらし
++ row  `═[length]`  `linethickness`  分数の横線の太さ。`0` でなし
++ row  `◠` / `⌢`  `accent`  上部の添え字を詰まったアクセントとして扱う
++ row  `◡` / `⌣`  `accentunder`  下部の添え字を詰まったアクセントとして扱う
++ row  `⚙[type]`  `actiontype`  旧式。Core では未定義
+
+= row  `⚙[type]`  `actiontype`  legacy; undefined in Core
+- ```
++ ```
+
+- The scope is MathML Core, so the MathML 3 families which it dropped have no glyphs: the table
+- attributes, such as `columnalign`, `rowspan` and `frame`, since Core keeps the table *elements*
+- but defines none of these; `<menclose>` and its notations; the quote attributes of `<ms>`; and
+- the elementary-mathematics elements `<mstack>`, `<mlongdiv>` and the rest.
++ 範囲は MathML Core なので、Core が落とした MathML 3 の系統にはグリフがない。`columnalign`、`rowspan`、`frame` のような表の属性（Core は表の*要素*は残すが、これらは一つも定義しない）、`<menclose>` とその記法、`<ms>` の引用符の属性、そして `<mstack>`、`<mlongdiv>` などの初等数学の要素である。
+
+- ### Serializing back
++ ### 直列化して戻す
+
+- `Ergo.serialize` turns a MathML tree back into Ergo. The two are inverse over the Ergo subset: a
+- parsed expression serializes and parses again to the same tree:
++ `Ergo.serialize` は MathML のツリーを Ergo に戻す。
++ 二つは Ergo の部分集合の上で互いに逆である。パースされた式は直列化され、再びパースされて同じツリーになる。
+
+= parsed expression serializes and parses again to the same tree:
+=
+- ```scala fuel
++ ```scala fuel
+
+= parsed expression serializes and parses again to the same tree:
+=
+= ```scala fuel
+- run
++ run
+
+= parsed expression serializes and parses again to the same tree:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Ergo.serialize(quadratic))
++ Out.println(Ergo.serialize(quadratic))
+
+= Out.println(Ergo.serialize(quadratic))
+- ```
++ ```
+
+- An element outside that subset, such as `<mtext>`, is rejected with an `Ergo.Error`, and is not
+- serialized approximately, so the round trip is a guarantee and not a hope:
++ `<mtext>` のようなその部分集合の外の要素は、近似的に直列化されることなく `Ergo.Error` で拒否されるので、往復は希望ではなく保証である。
+
+= serialized approximately, so the round trip is a guarantee and not a hope:
+=
+- ```scala fuel
++ ```scala fuel
+
+= serialized approximately, so the round trip is a guarantee and not a hope:
+=
+= ```scala fuel
+- run
++ run
+
+= serialized approximately, so the round trip is a guarantee and not a hope:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= serialized approximately, so the round trip is a guarantee and not a hope:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- Ergo.serialize(Math(Mtext(t"hello")))
++ Ergo.serialize(Math(Mtext(t"hello")))
+
+= Ergo.serialize(Math(Mtext(t"hello")))
+- ```
++ ```
+
+- ### Related
++ ### 関連
+
+- - [HTML](html.md) describes the documents which a `Math` is embedded in.
+- - [XML](xml.md) describes the `Xml` which MathML renders to and reads from.
+- - [Chemistry](chemistry.md) typesets formulas of another kind.
+- - [Mathematics](mathematics.md) computes with the quantities that the markup displays.
++ - [HTML](html.md) は、`Math` が埋め込まれる文書を説明する。
++ - [XML](xml.md) は、MathML の描画先であり読み取り元である `Xml` を説明する。
++ - [化学](chemistry.md)は、別の種類の式を組む。
++ - [数学](mathematics.md)は、マークアップが表示する量を使って計算する。

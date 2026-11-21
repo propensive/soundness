@@ -1,0 +1,586 @@
+orthant 1 language
+
+- ## Environment
++ ## 環境
+
+- ### About
++ ### 概要
+
+- A program's surroundings are available as typed [contextual values][contextual value]: its
+- environment variables, the JVM's system properties, and the working directory it was started
+- in. Reading a variable gives a value of the type it should hold. That is an `Int` where an
+- integer is expected, and a path where a path is expected. A variable which is not set raises a
+- typed error. It never gives a `null` or an empty string.
++ プログラムの周囲は、型付きの[コンテキスト値]として利用できる。環境変数、JVM のシステムプロパティ、そしてプログラムが起動された作業ディレクトリである。
++ 変数を読むと、それが保持すべき型の値が得られる。
++ 整数が期待されるところでは `Int`、パスが期待されるところではパスである。
++ 設定されていない変数は型付きのエラーを発生させる。
++ `null` や空文字列を返すことは決してない。
+
+- Each source of ambient input is a [capability], supplied as a [given]. A program's dependence
+- on its environment is therefore visible in its signatures, and a test can hand it a fixed
+- environment in place of the real one.
++ 周囲からの入力のそれぞれの供給源は[ケイパビリティ]であり、[given] として与えられる。
++ したがって、プログラムが環境に依存していることはそのシグネチャに表れ、テストは本物の環境の代わりに固定された環境を渡すことができる。
+
+- ### On the environment
++ ### 環境について
+
+- The values which a program inherits when it starts are, in the raw, a bag of untyped strings
+- reached through global static calls. `System.getenv` returns a `String` or `null`. A property
+- which should be a number arrives as text. Nothing records that a piece of code depends on a
+- particular variable being set. The dependence is invisible, and the parsing is left for each
+- caller to get right.
++ プログラムが起動時に受け継ぐ値は、生のままでは、グローバルな静的呼び出しを通じて届く型のない文字列の袋である。
++ `System.getenv` は `String` か `null` を返す。
++ 数であるべきプロパティはテキストとして届く。
++ あるコードが特定の変数の設定に依存していることを記録するものは何もない。
++ 依存は目に見えず、パースを正しく行うことは各呼び出し側に任されている。
+
+- Here each source is a capability. An `Environment`, a `System` and a `WorkingDirectory` are
+- contextual values which a method requires when it reads from them, so the dependence is in the
+- type, as [honest signatures](../../philosophy/honest-signatures.md) require. Each read is decoded
+- to the expected type, and fails loudly when a required value is missing. And since the
+- capability is a given, substituting a controlled environment, for a test or to sandbox a
+- component, is a matter of a different import.
++ ここでは、それぞれの供給源がケイパビリティである。
++ `Environment`、`System`、`WorkingDirectory` は、メソッドがそれらから読むときに必要とするコンテキスト値なので、[正直なシグネチャ](../../philosophy/honest-signatures.md)が求めるとおり、依存は型の中にある。
++ それぞれの読み取りは期待される型にデコードされ、必須の値が欠けていればはっきりと失敗する。
++ そしてケイパビリティは given なので、テストのため、あるいはコンポーネントをサンドボックス化するために管理された環境に差し替えることは、インポートを変えるだけの問題である。
+
+- Everything comes from the `soundness` package. The real environment and system properties are
+- supplied by imports, and the last import lets the samples print their results:
++ すべては `soundness` パッケージから来る。
++ 本物の環境とシステムプロパティはインポートによって与えられ、最後のインポートでサンプルが結果を印字できるようになる。
+
+= supplied by imports, and the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import systems.javaBaseSystem
++ import systems.javaBaseSystem
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Environment variables
++ ### 環境変数
+
+- A variable is read as a member of `Environment`. Its name is written in camel case, and is
+- translated to the conventional upper-case form with underscores, so `Environment.editor` reads
+- `EDITOR`. The result has the type which the variable is known to hold, decoded from its text:
++ 変数は `Environment` のメンバーとして読まれる。
++ その名前はキャメルケースで書かれ、慣例的なアンダースコア付きの大文字の形に変換されるので、`Environment.editor` は `EDITOR` を読む。
++ 結果は、その変数が保持すると分かっている型を持ち、テキストからデコードされる。
+
+= `EDITOR`. The result has the type which the variable is known to hold, decoded from its text:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `EDITOR`. The result has the type which the variable is known to hold, decoded from its text:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= `EDITOR`. The result has the type which the variable is known to hold, decoded from its text:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val home: Text = Environment.home
++ val home: Text = Environment.home
+
+- val columns: Int = Environment.columns
++ val columns: Int = Environment.columns
+
+= val columns: Int = Environment.columns
+- ```
++ ```
+
+- A variable which is not set raises an `Environment.Error`. The [strategy] in scope turns that
+- into an exception, an absent value or a handled failure, as the caller chooses:
++ 設定されていない変数は `Environment.Error` を発生させる。
++ スコープにある[戦略]が、呼び出し側の選択に応じて、それを例外、存在しない値、あるいは処理された失敗に変える。
+
+= into an exception, an absent value or a handled failure, as the caller chooses:
+=
+- ```scala fuel
++ ```scala fuel
+
+= into an exception, an absent value or a handled failure, as the caller chooses:
+=
+= ```scala fuel
+- run
++ run
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- Environment.thisVariableIsNotSet[Text]
++ Environment.thisVariableIsNotSet[Text]
+
+= Environment.thisVariableIsNotSet[Text]
+- ```
++ ```
+
+- ### Overriding for a block
++ ### ブロックに対する上書き
+
+- The environment is a capability, so a block can be run against a different one. An
+- `Environment` is a single function, from the name of a variable to its
+- [optional](optional-values.md) value. One which is built for a test, or which layers overrides
+- on the real environment, is a few lines, and a given in a narrower scope takes precedence:
++ 環境はケイパビリティなので、ブロックを別の環境に対して実行できる。
++ `Environment` は、変数の名前からその[オプショナル](optional-values.md)な値への一つの関数である。
++ テストのために作られたものや、本物の環境の上に上書きを重ねるものは数行で書け、より狭いスコープにある given が優先される。
+
+= on the real environment, is a few lines, and a given in a narrower scope takes precedence:
+=
+- ```scala fuel
++ ```scala fuel
+
+= on the real environment, is a few lines, and a given in a narrower scope takes precedence:
+=
+= ```scala fuel
+- run
++ run
+
+= on the real environment, is a few lines, and a given in a narrower scope takes precedence:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- locally:
++ locally:
+
+-   given environment: Environment = name => if name == t"EDITOR" then t"vim" else Unset
++   given environment: Environment = name => if name == t"EDITOR" then t"vim" else Unset
+
+-   Out.println(Environment.editor[Text])
++   Out.println(Environment.editor[Text])
+
+=   Out.println(Environment.editor[Text])
+- ```
++ ```
+
+- Substituting an entirely different environment replaces every lookup within its scope.
+- `environments.emptyEnvironment` is one such, and code which reads the environment can then be
+- exercised without depending on the machine it runs on. `systems.emptySystem` does the same for
+- system properties, so a test need not depend on the JVM which happens to run it either.
+- [Testing](testing.md) covers the rest of what a test needs.
++ まったく別の環境に差し替えると、そのスコープ内のすべての検索が置き換えられる。
++ `environments.emptyEnvironment` はその一つであり、環境を読むコードを、それが実行されるマシンに依存せずに試すことができる。
++ `systems.emptySystem` はシステムプロパティに対して同じことをするので、テストはたまたまそれを実行する JVM に依存する必要もない。
++ [テスト](testing.md)が、テストに必要な残りのことを扱う。
+
+- Tests are not the only case. A resident [daemon](daemons.md) serves invocations from many
+- different shells over its lifetime, each with its own environment, and the JVM's global
+- environment belongs to whichever shell happened to start the daemon. Taking the environment as
+- a capability is what lets each invocation be served against the environment it actually came
+- from.
++ テストだけが用途ではない。
++ 常駐する[デーモン](daemons.md)は、その生存期間中に多くの異なるシェルからの呼び出しに応じ、それぞれが独自の環境を持つ。そして JVM のグローバルな環境は、たまたまデーモンを起動したシェルのものである。
++ 環境をケイパビリティとして受け取ることで、それぞれの呼び出しを、それが実際に来た環境に対して処理できる。
+
+- `variables` sets one variable for one block. The variable is named in camel case, and is set
+- in the conventional upper-case form, so `gitIndexFile` is `GIT_INDEX_FILE`. It is set on top
+- of the `Environment` in scope, so a [subprocess](processes.md) which is run within the block
+- inherits it:
++ `variables` は一つのブロックに対して一つの変数を設定する。
++ 変数はキャメルケースで名指しされ、慣例的な大文字の形で設定されるので、`gitIndexFile` は `GIT_INDEX_FILE` である。
++ これはスコープにある `Environment` の上に設定されるので、ブロックの中で実行される[サブプロセス](processes.md)はそれを受け継ぐ。
+
+= inherits it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= inherits it:
+=
+= ```scala fuel
+- run
++ run
+
+= inherits it:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- variables(gitIndexFile = t"/tmp/index"):
++ variables(gitIndexFile = t"/tmp/index"):
+
+-   Out.println(Environment.gitIndexFile[Text])
++   Out.println(Environment.gitIndexFile[Text])
+
+=   Out.println(Environment.gitIndexFile[Text])
+- ```
++ ```
+
+- ### System properties
++ ### システムプロパティ
+
+- The two sources are alike in carrying textual pairs of keys and values into a JVM. They differ
+- in where they come from, and in how they are named:
++ 二つの供給源は、キーと値のテキストの組を JVM に運ぶという点で似ている。
++ 異なるのは、どこから来るかと、どのように名付けられるかである。
+
+= in where they come from, and in how they are named:
+=
+- ```tabular
++ ```tabular
+
+- column  Source
+- column  Comes from
+- column  Named in
+- column  For example
+- column  When missing
+- row  environment variables  the shell that started the process  upper case  `PATH`, `XDG_CONFIG_HOME`  `Environment.Error`
+- row  system properties  `-D` arguments to `java` itself  dotted lower- or camel-case  `default.log.directory`  `Property.Error`
++ column  供給源
++ column  出どころ
++ column  命名
++ column  例
++ column  欠けているとき
++ row  環境変数  プロセスを起動したシェル  大文字  `PATH`、`XDG_CONFIG_HOME`  `Environment.Error`
++ row  システムプロパティ  `java` 自体への `-D` 引数  ドット区切りの小文字またはキャメルケース  `default.log.directory`  `Property.Error`
+
+= row  system properties  `-D` arguments to `java` itself  dotted lower- or camel-case  `default.log.directory`  `Property.Error`
+- ```
++ ```
+
+- Both arrive as text, in a format which only the reading program knows. That is the argument
+- for [decoding](decoding.md) them into structured types where they are read, and not passing
+- strings inward.
++ どちらも、読むプログラムだけが知っている形式のテキストとして届く。
++ それが、文字列を内側へ渡していくのではなく、読む場所で構造化された型に[デコードする](decoding.md)ことの根拠である。
+
+- A system property is read through `System.properties`. Its dotted name is written as a path
+- of members, which ends in an application. Each property is decoded to its natural type:
++ システムプロパティは `System.properties` を通じて読まれる。
++ ドット区切りの名前はメンバーのパスとして書かれ、最後は適用で終わる。
++ 各プロパティはその自然な型にデコードされる。
+
+= of members, which ends in an application. Each property is decoded to its natural type:
+=
+- ```scala fuel
++ ```scala fuel
+
+= of members, which ends in an application. Each property is decoded to its natural type:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= of members, which ends in an application. Each property is decoded to its natural type:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val user: Text = System.properties.user.name()
++ val user: Text = System.properties.user.name()
+
+- val os: Text = System.properties.os.name()
++ val os: Text = System.properties.os.name()
+
+- val separator: Char = System.properties.file.separator()
++ val separator: Char = System.properties.file.separator()
+
+= val separator: Char = System.properties.file.separator()
+- ```
++ ```
+
+- A property which is not defined raises a `Property.Error`, which is handled like any other
+- error.
++ 定義されていないプロパティは `Property.Error` を発生させ、それは他のエラーと同じように処理される。
+
+- ### The working directory
++ ### 作業ディレクトリ
+
+- The directory which a program was launched in is a `WorkingDirectory` capability. It is
+- requested where it is needed, and is not read from a global. With
+- `workingDirectories.javaBaseWorkingDirectory` in scope, a method which resolves a relative
+- [path](paths.md) against the working directory declares that need in its signature.
++ プログラムが起動されたディレクトリは `WorkingDirectory` のケイパビリティである。
++ それは必要な場所で要求され、グローバルな値から読まれることはない。
++ `workingDirectories.javaBaseWorkingDirectory` がスコープにあるとき、作業ディレクトリに対して相対[パス](paths.md)を解決するメソッドは、その必要をシグネチャで宣言する。
+
+- `workingDirectory` gives the directory itself, and `temporaryDirectory` gives a temporary
+- one. Each is resolved to the type of path which is asked for.
++ `workingDirectory` はそのディレクトリ自体を与え、`temporaryDirectory` は一時的なディレクトリを与える。
++ それぞれは、求められたパスの型に解決される。
+
+- ### Standard directories
++ ### 標準のディレクトリ
+
+- The
+- [XDG base directory specification](https://specifications.freedesktop.org/basedir-spec/latest/)
+- says where a program's data, configuration, cache and state belong. It honors the user's
+- environment where that is set, and falls back to the specification's defaults where it is
+- not. `Xdg` gives each of them, and the search paths for data and configuration:
++ [XDG Base Directory 仕様](https://specifications.freedesktop.org/basedir-spec/latest/)は、プログラムのデータ、設定、キャッシュ、状態がどこに属するかを述べる。
++ ユーザーの環境が設定されていればそれに従い、されていなければ仕様のデフォルトに戻る。
++ `Xdg` はそのそれぞれと、データと設定の検索パスを与える。
+
+= not. `Xdg` gives each of them, and the search paths for data and configuration:
+=
+- ```scala fuel
++ ```scala fuel
+
+= not. `Xdg` gives each of them, and the search paths for data and configuration:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= not. `Xdg` gives each of them, and the search paths for data and configuration:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLinux
+
+- val config = Xdg.configHome[Path on Linux]
++ val config = Xdg.configHome[Path on Linux]
+
+- val cache = Xdg.cacheHome[Path on Linux]
++ val cache = Xdg.cacheHome[Path on Linux]
+
+- val search = Xdg.dataDirs[Path on Linux]
++ val search = Xdg.dataDirs[Path on Linux]
+
+= val search = Xdg.dataDirs[Path on Linux]
+- ```
++ ```
+
+- `configHome` is `~/.config`, unless `XDG_CONFIG_HOME` says otherwise. Using these, instead of
+- a hard-coded `~/.myapp`, makes a program's files land where the user's tools for backup,
+- synchronization and cleaning expect them.
++ `configHome` は、`XDG_CONFIG_HOME` が別の場所を指定しない限り `~/.config` である。
++ ハードコードされた `~/.myapp` の代わりにこれらを使うと、プログラムのファイルは、ユーザーのバックアップ、同期、掃除のツールが期待する場所に置かれる。
+
+- The conventional layout of a Unix system is typed too. `Home` and `Base` are each a
+- `BaseLayout`: a tree of nested objects which name the directories under the user's home, and
+- under the root of the filesystem. Applying one, with the type of path as its type argument,
+- resolves it against the `Environment` and `System` in scope:
++ Unix システムの慣例的な配置も型付けされている。
++ `Home` と `Base` はそれぞれ `BaseLayout` である。これは、ユーザーのホームの下と、ファイルシステムのルートの下のディレクトリを名指しする入れ子のオブジェクトのツリーである。
++ パスの型を型引数として一つを適用すると、スコープにある `Environment` と `System` に対してそれが解決される。
+
+= resolves it against the `Environment` and `System` in scope:
+=
+- ```scala fuel
++ ```scala fuel
+
+= resolves it against the `Environment` and `System` in scope:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= resolves it against the `Environment` and `System` in scope:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val userConfig = Home.Config[Path on Linux]()
++ val userConfig = Home.Config[Path on Linux]()
+
+- val share = Home.Local.Share[Path on Linux]()
++ val share = Home.Local.Share[Path on Linux]()
+
+- val logs = Base.Var.Log[Path on Linux]()
++ val logs = Base.Var.Log[Path on Linux]()
+
+= val logs = Base.Var.Log[Path on Linux]()
+- ```
++ ```
+
+- These are `~/.config`, `~/.local/share` and `/var/log`. Each layout also knows whether it is
+- meant to be written to. `readOnly` is `true` for `/usr` and everything beneath it, among
+- others, so a program can check before it tries:
++ これらは `~/.config`、`~/.local/share`、`/var/log` である。
++ それぞれの配置は、書き込まれることを意図しているかどうかも知っている。
++ `readOnly` は、とりわけ `/usr` とその下のすべてに対して `true` なので、プログラムは書き込もうとする前に確認できる。
+
+= others, so a program can check before it tries:
+=
+- ```scala fuel
++ ```scala fuel
+
+= others, so a program can check before it tries:
+=
+= ```scala fuel
+- run
++ run
+
+= others, so a program can check before it tries:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Base.Usr.Bin.readOnly.inspect)
++ Out.println(Base.Usr.Bin.readOnly.inspect)
+
+- Out.println(Base.Etc.readOnly.inspect)
++ Out.println(Base.Etc.readOnly.inspect)
+
+= Out.println(Base.Etc.readOnly.inspect)
+- ```
++ ```
+
+- The layouts are listed in full, with their `readOnly` values, under
+- [standard directories](filesystem.md#standard-directories).
++ 配置は、その `readOnly` の値とともに、[標準のディレクトリ](filesystem.md#standard-directories)の下にすべて列挙されている。
+
+- ### The machine
++ ### マシン
+
+- `Architecture` names the processor which a program is running on. It is parsed from the
+- platform's own report into a typed value, such as `X86(64)`, `Arm(64)` or
+- `Ppc(64, littleEndian = true)`. Code which must choose a native library, or a path through the
+- code, by architecture therefore matches on a value, and not on a string whose spelling varies
+- between platforms.
++ `Architecture` は、プログラムが実行されているプロセッサーを名指しする。
++ それはプラットフォーム自身の報告から、`X86(64)`、`Arm(64)`、`Ppc(64, littleEndian = true)` のような型付きの値にパースされる。
++ したがって、アーキテクチャによってネイティブライブラリやコードの経路を選ばなければならないコードは、プラットフォームによって綴りの異なる文字列ではなく、値に対してマッチする。
+
+- `Os` does the same for the operating system. It is decoded from the many spellings which the
+- property `os.name` takes, by matching the start of it, in any case:
++ `Os` はオペレーティングシステムに対して同じことをする。
++ それは、プロパティ `os.name` がとる多くの綴りから、大文字小文字を問わずその先頭を照合することでデコードされる。
+
+= property `os.name` takes, by matching the start of it, in any case:
+=
+- ```tabular
++ ```tabular
+
+- column  Case
+- column  When `os.name` begins
+- column  For example
++ column  ケース
++ column  `os.name` の先頭が
++ column  例
+
+- row  `Os.Linux`  `linux`  `Linux`
++ row  `Os.Linux`  `linux`  `Linux`
+
+- row  `Os.MacOs`  `mac` or `darwin`  `Mac OS X`
++ row  `Os.MacOs`  `mac` または `darwin`  `Mac OS X`
+
+- row  `Os.Windows`  `windows`  `Windows Server 2022`
++ row  `Os.Windows`  `windows`  `Windows Server 2022`
+
+- row  `Os.FreeBsd`  `freebsd`  `FreeBSD`
++ row  `Os.FreeBsd`  `freebsd`  `FreeBSD`
+
+- row  `Os.OpenBsd`  `openbsd`  `OpenBSD`
++ row  `Os.OpenBsd`  `openbsd`  `OpenBSD`
+
+- row  `Os.NetBsd`  `netbsd`  `NetBSD`
++ row  `Os.NetBsd`  `netbsd`  `NetBSD`
+
+- row  `Os.Solaris`  `sunos` or `solaris`  `SunOS`
++ row  `Os.Solaris`  `sunos` または `solaris`  `SunOS`
+
+- row  `Os.Aix`  `aix`  `AIX`
++ row  `Os.Aix`  `aix`  `AIX`
+
+- row  `Os.Other(name)`  anything else, kept as `name`
++ row  `Os.Other(name)`  それ以外のすべて。`name` として保持される
+
+= row  `Os.Other(name)`  anything else, kept as `name`
+- ```
++ ```
+
+- Both are read from the `System` in scope, so a test can run the same code as though on another
+- platform, by handing it a fixed `System`. A program which names a release to download, say,
+- matches on the pair, and not on the raw text of a property:
++ どちらもスコープにある `System` から読まれるので、テストは固定された `System` を渡すことで、同じコードを別のプラットフォーム上にあるかのように実行できる。
++ たとえばダウンロードするリリースを名指しするプログラムは、プロパティの生のテキストではなく、この組に対してマッチする。
+
+= matches on the pair, and not on the raw text of a property:
+=
+- ```scala
++ ```scala
+
+- val platform: Optional[Text] = (System.os, System.architecture) match
++ val platform: Optional[Text] = (System.os, System.architecture) match
+
+-   case (Os.Linux, Architecture.X86(_: 64))   => t"linux-x64"
++   case (Os.Linux, Architecture.X86(_: 64))   => t"linux-x64"
+
+-   case (Os.Linux, Architecture.Arm(_: 64))   => t"linux-arm64"
++   case (Os.Linux, Architecture.Arm(_: 64))   => t"linux-arm64"
+
+-   case (Os.MacOs, Architecture.Arm(_: 64))   => t"macos-arm64"
++   case (Os.MacOs, Architecture.Arm(_: 64))   => t"macos-arm64"
+
+-   case (Os.Windows, Architecture.X86(_: 64)) => t"windows-x64"
++   case (Os.Windows, Architecture.X86(_: 64)) => t"windows-x64"
+
+-   case _                                     => Unset
++   case _                                     => Unset
+
+=   case _                                     => Unset
+- ```
++ ```
+
+- The third facet of the platform is the virtual machine itself. `Vm` names it, and is where
+- the events which the VM raises are intercepted: its shutdown, an uncaught exception, a garbage
+- collection. [Concurrency](concurrency.md) describes `Vm.intercept`.
++ プラットフォームの三つ目の側面は仮想マシンそのものである。
++ `Vm` がそれを名指しし、VM が発生させるイベント、つまりシャットダウン、捕捉されない例外、ガベージコレクションはそこで横取りされる。
++ [並行性](concurrency.md)が `Vm.intercept` を説明する。
+
+- `termcaps.environmentTermcap` reports what the [terminal](terminal.md) can do. It decides the
+- depth of color from `COLORTERM` where that is set, and from `tput` otherwise, which is how
+- styled output degrades correctly on a terminal which cannot show it.
++ `termcaps.environmentTermcap` は、[端末](terminal.md)に何ができるかを報告する。
++ 色の深さを、設定されていれば `COLORTERM` から、そうでなければ `tput` から決める。スタイル付きの出力が、それを表示できない端末で正しく劣化するのはこのためである。
+
+- ### Related
++ ### 関連
+
+- - [Command-line interfaces](cli.md) reads a program's arguments in the same typed way.
+- - [Processes](processes.md) starts other programs, which inherit the environment in scope.
+- - [Filesystem](filesystem.md) reads and writes the files which these directories hold.
+- - [Classpath](classpath.md) reads the classpath from a system property, and [internationalization](internationalization.md) the locale from the environment.
++ - [コマンドラインインターフェース](cli.md)は、プログラムの引数を同じ型付きの方法で読む。
++ - [プロセス](processes.md)は他のプログラムを起動し、それらはスコープにある環境を受け継ぐ。
++ - [ファイルシステム](filesystem.md)は、これらのディレクトリが保持するファイルを読み書きする。
++ - [クラスパス](classpath.md)はシステムプロパティからクラスパスを読み、[国際化](internationalization.md)は環境からロケールを読む。

@@ -1,0 +1,7 @@
+orthant 1 language
+
+- A `U8` (unsigned 8-bit) is bounded above by `255`.
++ `U8`（符号なし 8 ビット）の上限は `255` である。
+
+- [↯/s.27.9] a U8 may not be greater than 255
++ [↯/s.27.9] a U8 may not be greater than 255

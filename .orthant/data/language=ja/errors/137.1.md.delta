@@ -1,0 +1,64 @@
+orthant 1 language
+
+- # `↯/s.137.1` — `Link.Error`
++ # `↯/s.137.1` — `Link.Error`
+
+- Raised when linking a compilation into an artifact fails.
++ コンパイルの結果を成果物にリンクすることに失敗したときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Linking turns a compilation's output into an executable JAR, a JavaScript bundle, a native
+- binary or an Android package. This error covers the linker terminating abnormally, and the
+- entry-point requirements each artifact imposes.
++ リンクは、コンパイルの出力を実行可能な JAR、JavaScript のバンドル、ネイティブのバイナリ、あるいは Android のパッケージに変える。
++ このエラーは、リンカーの異常終了と、各成果物が課すエントリーポイントの要件を扱う。
+
+- ## Variants
++ ## バリアント
+
+- ### `↯/s.137.1.1` — `Failed`
++ ### `↯/s.137.1.1` — `Failed`
+
+- **Example.** `[↯/s.137.1.1] the linker terminated abnormally`
++ **例。** `[↯/s.137.1.1] the linker terminated abnormally`
+
+- ### `↯/s.137.1.3` — `NoEntryPoint`
++ ### `↯/s.137.1.3` — `NoEntryPoint`
+
+- **Example.** `[↯/s.137.1.3] the artifact requires exactly one entry point`
++ **例。** `[↯/s.137.1.3] the artifact requires exactly one entry point`
+
+- ### `↯/s.137.1.4` — `ManyEntryPoints`
++ ### `↯/s.137.1.4` — `ManyEntryPoints`
+
+- **Example.** `[↯/s.137.1.4] an executable JAR permits at most one entry point`
++ **例。** `[↯/s.137.1.4] an executable JAR permits at most one entry point`
+
+- ### `↯/s.137.1.11` — `CompilationFailed`
++ ### `↯/s.137.1.11` — `CompilationFailed`
+
+- **Example.** `[↯/s.137.1.11] compilation failed with 2 errors`
++ **例。** `[↯/s.137.1.11] compilation failed with 2 errors`
+
+- The reason carries every diagnostic the compiler reported, as `notices`.
++ 理由は、コンパイラが報告したすべての診断を `notices` として持つ。
+
+- ## Resolution
++ ## 解決方法
+
+- An executable JAR permits at most one entry point and a native executable requires exactly
+- one; the reason says which rule was broken. A linker that terminated abnormally carries its
+- stack trace.
++ 実行可能な JAR はエントリーポイントを最大一つしか許さず、ネイティブの実行ファイルはちょうど一つを要求する。理由が、どの規則が破られたかを示す。
++ 異常終了したリンカーは、そのスタックトレースを持つ。
+
+- > This error previously used the code `↯/s.137.3`, which collided with `CompilerError`.
++ > このエラーは以前はコード `↯/s.137.3` を使っていたが、これは `CompilerError` と衝突していた。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/anthology/src/core/anthology.Link.scala`
++ - ソース：`lib/anthology/src/core/anthology.Link.scala`

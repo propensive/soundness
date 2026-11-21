@@ -1,0 +1,174 @@
+orthant 1 language
+
+-   entry .Notice   one diagnostic: its importance, file, message, span, semantic markup and bolt code
++   entry .Notice   一つの診断。重要度、ファイル、メッセージ、スパン、意味的なマークアップ、bolt コード
+
+-         `#markup` is only set by `Scalac` under `scalacOptions.semanticDiagnostics`: the raw
+-         message with the compiler's in-band semantic markers (U+E000 and its companions)
+-         preserved, which the delicious library parses into a `SemanticMessage` of styled spans,
+-         placeholders and pickled types, so that a "found `A`, required `B`" message arrives as
+-         two types to render and compare rather than as text to re-parse.
+-
+-         `#code` is only set by `Scalac` under `scalacOptions.boltCodes`, and only for an error or
+-         a warning: the bolt code Proscala gives the diagnostic, as a `fulminate.Bolt`, such as
+-         `↯/p.1.7` for a type mismatch (upstream's `E007`). Proscala writes the code in the heading
+-         of its own report, not in the message, so it is read here from the diagnostic itself.
+-     entry #importance   whether the notice is informational, a warning or an error
+-     entry #file   the name the source was given when it was compiled
+-     entry #message   the diagnostic's text, with any semantic markers stripped
+-     entry #span   the region of the source the notice concerns, or `Unset`
+-     entry #markup   the raw message with semantic markers, under `-Zsemantic-diagnostics`, else `Unset`
++         `#markup` は、`scalacOptions.semanticDiagnostics` の下で `Scalac` だけが設定する。コンパイラの帯域内の意味マーカー（U+E000 とその仲間）を保持した生のメッセージであり、delicious ライブラリがこれをスタイル付きのスパン、プレースホルダー、ピクルされた型からなる `SemanticMessage` にパースする。そのため、「found `A`, required `B`」というメッセージは、再びパースすべきテキストではなく、描画して比較できる二つの型として届く。
++
++         `#code` は、`scalacOptions.boltCodes` の下で `Scalac` だけが、エラーと警告についてだけ設定する。Proscala が診断に与える bolt コードを `fulminate.Bolt` として表したものであり、たとえば型の不一致では `↯/p.1.7`（上流の `E007`）である。
++         Proscala はコードをメッセージではなく自身のレポートの見出しに書くので、ここでは診断そのものから読み取られる。
++     entry #importance   通知が情報、警告、エラーのどれであるか
++     entry #file   コンパイル時にソースに与えられた名前
++     entry #message   診断のテキスト。意味マーカーは取り除かれている
++     entry #span   通知が対象とするソースの領域、または `Unset`
++     entry #markup   `-Zsemantic-diagnostics` の下では意味マーカー付きの生のメッセージ、それ以外では `Unset`
+
+-     entry #code   the diagnostic's bolt code, under `-Zbolt-codes`, else `Unset`
++     entry #code   `-Zbolt-codes` の下では診断の bolt コード、それ以外では `Unset`
+
+-       An option the object lacks is written directly as `Scalac.Option[Scalac.Versions](flags*)`.
++       An option the object lacks is written directly as `Scalac.Option[Scalac.Versions](flags*)`.
+
+-   entry .newSyntax   `-new-syntax`, at every version
+-   entry .sourceFuture   `-source future`, at every version
+-   entry .experimental   `-experimental`, at 3.4 to 3.8
+-   entry .semanticDiagnostics   `-Zsemantic-diagnostics`, at 3.9: keeps each notice's semantic markup
+-       Under this option the compiler marks each interpolated argument of a message in band,
+-       with pickled TASTy for the types among them, and a `Compiler.Notice` keeps that marked-up form
+-       as its `markup` alongside the plain `message`, for the delicious library to parse into
+-       a `SemanticMessage`.
+-   entry .boltCodes   `-Zbolt-codes`, at 3.9: gives each error and warning notice its bolt code
+-       Under this option Proscala gives every error and warning a bolt code, `↯/p.1.7`, and a
+-       `Compiler.Notice` carries it as its `code`.
+-   entry .warnings   the warning options: `-feature`, `-deprecation`, `-W…` flags and `-Wunused`
++   entry .newSyntax   `-new-syntax`, at every version
++   entry .sourceFuture   `-source future`, at every version
++   entry .experimental   `-experimental`, at 3.4 to 3.8
++   entry .semanticDiagnostics   `-Zsemantic-diagnostics`, at 3.9: keeps each notice's semantic markup
++       Under this option the compiler marks each interpolated argument of a message in band,
++       with pickled TASTy for the types among them, and a `Compiler.Notice` keeps that marked-up form
++       as its `markup` alongside the plain `message`, for the delicious library to parse into
++       a `SemanticMessage`.
++   entry .boltCodes   `-Zbolt-codes`。3.9 で：エラーと警告の各通知にその bolt コードを与える
++       このオプションの下では、Proscala はすべてのエラーと警告に `↯/p.1.7` のような bolt コードを与え、`Compiler.Notice` はそれを `code` として持つ。
++   entry .warnings   the warning options: `-feature`, `-deprecation`, `-W…` flags and `-Wunused`
+
+-         Each is a `Scalac.Option` typed by the versions it exists at; `.unused` takes an
+-         `Unused` selection, and `.lint` holds the `-Wshadow` flags.
+-     entry .feature   `-feature`, at every version
+-     entry .deprecation   `-deprecation`, at every version
+-     entry .implausiblePatterns   `-Wimplausible-patterns`, at 3.3 to 3.6
+-     entry .enumCommentDiscard   `-Wenum-comment-discard`, at 3.4 to 3.6
+-     entry .unstableInlineAccessors   `-WunstableInlineAccessors`, at 3.4 to 3.6
+-     entry .nonUnitStatement   `-Wnonunit-statement`, at 3.4 to 3.6
+-     entry .valueDiscard   `-Wvalue-discard`, at 3.4 to 3.6
+-     entry .unused   `-Wunused:…` from an `Unused` selection: all, none, or a subset of features
+-         `warnings.unused(Unused.All)` is `-Wunused:all`, `Unused.None` is `-Wunused:none`, and
+-         `Unused.Subset(List(UnusedFeature.Privates, UnusedFeature.Locals))` is
+-         `-Wunused:privates,locals`. The option's version is the selection's.
+-     entry .lint   the `-Wshadow` lint flags
++         Each is a `Scalac.Option` typed by the versions it exists at; `.unused` takes an
++         `Unused` selection, and `.lint` holds the `-Wshadow` flags.
++     entry .feature   `-feature`, at every version
++     entry .deprecation   `-deprecation`, at every version
++     entry .implausiblePatterns   `-Wimplausible-patterns`, at 3.3 to 3.6
++     entry .enumCommentDiscard   `-Wenum-comment-discard`, at 3.4 to 3.6
++     entry .unstableInlineAccessors   `-WunstableInlineAccessors`, at 3.4 to 3.6
++     entry .nonUnitStatement   `-Wnonunit-statement`, at 3.4 to 3.6
++     entry .valueDiscard   `-Wvalue-discard`, at 3.4 to 3.6
++     entry .unused   `-Wunused:…` from an `Unused` selection: all, none, or a subset of features
++         `warnings.unused(Unused.All)` is `-Wunused:all`, `Unused.None` is `-Wunused:none`, and
++         `Unused.Subset(List(UnusedFeature.Privates, UnusedFeature.Locals))` is
++         `-Wunused:privates,locals`. The option's version is the selection's.
++     entry .lint   the `-Wshadow` lint flags
+
+-           `privateShadow` and `typeParameterShadow`, at 3.4 to 3.6.
++           `privateShadow` and `typeParameterShadow`, at 3.4 to 3.6.
+
+-   entry .internal   the `-Y` flags: target names, safe init, explicit nulls, pattern checks, capture checking
++   entry .internal   the `-Y` flags: target names, safe init, explicit nulls, pattern checks, capture checking
+
+-         The compiler's internal options, as values.
+-     entry .requireTargetName   `-Yrequire-targetName`, at every version
+-     entry .safeInit   `-Ysafe-init`, at every version
+-     entry .explicitNulls   `-Yexplicit-nulls`, at every version
+-     entry .checkPatterns   `-Ycheck-all-patmat`, at every version
+-     entry .ccNew   `-Ycc-new`, at 3.4 to 3.6
+-     entry .ccDebug   `-Ycc-debug`, at 3.5 and 3.6
+-     entry .ccLog   `-Ycc-log`, at 3.5 and 3.6
+-   entry .advanced   the `-X` flags
++         The compiler's internal options, as values.
++     entry .requireTargetName   `-Yrequire-targetName`, at every version
++     entry .safeInit   `-Ysafe-init`, at every version
++     entry .explicitNulls   `-Yexplicit-nulls`, at every version
++     entry .checkPatterns   `-Ycheck-all-patmat`, at every version
++     entry .ccNew   `-Ycc-new`, at 3.4 to 3.6
++     entry .ccDebug   `-Ycc-debug`, at 3.5 and 3.6
++     entry .ccLog   `-Ycc-log`, at 3.5 and 3.6
++   entry .advanced   the `-X` flags
+
+-         Only `maxInlines` so far; others are written directly as `Scalac.Option`s.
+-     entry .maxInlines   `-Xmax-inlines n`, at every version
+-   entry .language   the `-language:` options
++         Only `maxInlines` so far; others are written directly as `Scalac.Option`s.
++     entry .maxInlines   `-Xmax-inlines n`, at every version
++   entry .language   the `-language:` options
+
+-         Holds `experimental`, the `-language:experimental.…` features.
+-     entry .experimental   the `-language:experimental.…` features, each at the versions which offer it
++         Holds `experimental`, the `-language:experimental.…` features.
++     entry .experimental   the `-language:experimental.…` features, each at the versions which offer it
+
+-           One option per experimental language feature, named as the feature is:
+-           `clauseInterleaving` (3.3 to 3.6), `givenLoopPrevention` (3.4 to 3.6),
+-           `fewerBraces` (3.1 to 3.6), `into` (3.4 to 3.6), `relaxedExtensionImports` (3.3),
+-           `erasedDefinitions` (all), `saferExceptions` (3.2 to 3.6), `namedTypeArguments`
+-           (all), `pureFunctions` (3.3 to 3.6), `captureChecking` (3.3 to 3.6), `modularity`
+-           (3.5 and 3.6), `namedTuples` (3.5 and 3.6), `genericNumberLiterals` (all),
+-           `betterMatchTypeExtractors` (3.5 and 3.6), `quotedPatternsWithPolymorphicFunctions`
+-           (3.6) and `betterFors` (3.6).
+-       entry .clauseInterleaving   `-language:experimental.clauseInterleaving`, at 3.3 to 3.6
+-       entry .givenLoopPrevention   `-language:experimental.givenLoopPrevention`, at 3.4 to 3.6
+-       entry .fewerBraces   `-language:experimental.fewerBraces`, at 3.1 to 3.6
+-       entry .into   `-language:experimental.into`, at 3.4 to 3.6
+-       entry .relaxedExtensionImports   `-language:experimental.relaxedExtensionImports`, at 3.3
+-       entry .erasedDefinitions   `-language:experimental.erasedDefinitions`, at every version
+-       entry .saferExceptions   `-language:experimental.saferExceptions`, at 3.2 to 3.6
+-       entry .namedTypeArguments   `-language:experimental.namedTypeArguments`, at every version
+-       entry .pureFunctions   `-language:experimental.pureFunctions`, at 3.3 to 3.6
+-       entry .captureChecking   `-language:experimental.captureChecking`, at 3.3 to 3.6
+-       entry .modularity   `-language:experimental.modularity`, at 3.5 and 3.6
+-       entry .namedTuples   `-language:experimental.namedTuples`, at 3.5 and 3.6
+-       entry .genericNumberLiterals   `-language:experimental.genericNumberLiterals`, at every version
+-       entry .betterMatchTypeExtractors   `-language:experimental.betterMatchTypeExtractors`, at 3.5 and 3.6
+-       entry .quotedPatternsWithPolymorphicFunctions   `-language:experimental.quotedPatternsWithPolymorphicFunctions`, at 3.6
+-       entry .betterFors   `-language:experimental.betterFors`, at 3.6
++           One option per experimental language feature, named as the feature is:
++           `clauseInterleaving` (3.3 to 3.6), `givenLoopPrevention` (3.4 to 3.6),
++           `fewerBraces` (3.1 to 3.6), `into` (3.4 to 3.6), `relaxedExtensionImports` (3.3),
++           `erasedDefinitions` (all), `saferExceptions` (3.2 to 3.6), `namedTypeArguments`
++           (all), `pureFunctions` (3.3 to 3.6), `captureChecking` (3.3 to 3.6), `modularity`
++           (3.5 and 3.6), `namedTuples` (3.5 and 3.6), `genericNumberLiterals` (all),
++           `betterMatchTypeExtractors` (3.5 and 3.6), `quotedPatternsWithPolymorphicFunctions`
++           (3.6) and `betterFors` (3.6).
++       entry .clauseInterleaving   `-language:experimental.clauseInterleaving`, at 3.3 to 3.6
++       entry .givenLoopPrevention   `-language:experimental.givenLoopPrevention`, at 3.4 to 3.6
++       entry .fewerBraces   `-language:experimental.fewerBraces`, at 3.1 to 3.6
++       entry .into   `-language:experimental.into`, at 3.4 to 3.6
++       entry .relaxedExtensionImports   `-language:experimental.relaxedExtensionImports`, at 3.3
++       entry .erasedDefinitions   `-language:experimental.erasedDefinitions`, at every version
++       entry .saferExceptions   `-language:experimental.saferExceptions`, at 3.2 to 3.6
++       entry .namedTypeArguments   `-language:experimental.namedTypeArguments`, at every version
++       entry .pureFunctions   `-language:experimental.pureFunctions`, at 3.3 to 3.6
++       entry .captureChecking   `-language:experimental.captureChecking`, at 3.3 to 3.6
++       entry .modularity   `-language:experimental.modularity`, at 3.5 and 3.6
++       entry .namedTuples   `-language:experimental.namedTuples`, at 3.5 and 3.6
++       entry .genericNumberLiterals   `-language:experimental.genericNumberLiterals`, at every version
++       entry .betterMatchTypeExtractors   `-language:experimental.betterMatchTypeExtractors`, at 3.5 and 3.6
++       entry .quotedPatternsWithPolymorphicFunctions   `-language:experimental.quotedPatternsWithPolymorphicFunctions`, at 3.6
++       entry .betterFors   `-language:experimental.betterFors`, at 3.6

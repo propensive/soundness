@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.27.14` — `U16` value above 65535
++ # `↯/s.27.14` — 65535 を超える `U16` の値
+
+- Raised at compile time by Hypotenuse's `u16` macro when the value
+- is greater than 65535.
++ 値が 65535 より大きいときに、Hypotenuse の `u16` マクロがコンパイル時に発生させる。
+
+- ## Cause
++ ## 原因
+
+- A `U16` (unsigned 16-bit) is bounded above by `0xffff`.
++ `U16`（符号なし 16 ビット）の上限は `0xffff` である。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.27.14] a U16 may not be greater than 65535
++ [↯/s.27.14] a U16 may not be greater than 65535
+
+= [↯/s.27.14] a U16 may not be greater than 65535
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Provide a value in the range 0-65535.
++ 0-65535 の範囲の値を与える。
+
+- ## See also
++ ## 関連項目
+
+- - The other integer literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - ほかの整数のリテラルのエラー：[ファミリー](README.md#families)
++ - ソース：`lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

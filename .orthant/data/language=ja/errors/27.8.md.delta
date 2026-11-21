@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.27.8` — `U8` value below 0
++ # `↯/s.27.8` — `U8` の値が 0 を下回る
+
+- Raised at compile time by Hypotenuse's `u8` macro when the value is
+- less than 0.
++ 値が 0 より小さいときに、Hypotenuse の `u8` マクロによってコンパイル時に発生する。
+
+- ## Cause
++ ## 原因
+
+- A `U8` (unsigned 8-bit) cannot be negative.
++ `U8`（符号なし 8 ビット）は負にはなれない。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.27.8] a U8 may not be less than 0
++ [↯/s.27.8] a U8 may not be less than 0
+
+= [↯/s.27.8] a U8 may not be less than 0
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Provide a value in the range 0-255.
++ 0-255 の範囲の値を与える。
+
+- ## See also
++ ## 関連項目
+
+- - The other integer literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - そのほかの整数リテラルのエラー：[ファミリー](README.md#families)
++ - ソース：`lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

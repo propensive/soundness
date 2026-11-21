@@ -1,0 +1,101 @@
+orthant 1 language
+
+-   entry .int   decodes an `Int` from decimal text, distinguishing unparseable from out-of-range
+-       Needs a `Tactic[Number.Error]`. Parses with `Integer.parseInt`, so the text must be an
+-       optionally-signed decimal integer with no surrounding space. Text which is not an
+-       integer raises `Number.Error` with `Reason.Unparseable`; an integer outside the range
+-       of an `Int` raises it with `Reason.OutOfRange`.
+-   entry .byte   decodes a `Byte` from decimal text, distinguishing unparseable from out-of-range
+-       Needs a `Tactic[Number.Error]`. Text which is not an integer raises `Number.Error` with
+-       `Reason.Unparseable`; an integer outside −128 to 127 raises it with `Reason.OutOfRange`.
+-   entry .short   decodes a `Short` from decimal text, distinguishing unparseable from out-of-range
+-       Needs a `Tactic[Number.Error]`. Text which is not an integer raises `Number.Error` with
+-       `Reason.Unparseable`; an integer outside the range of a `Short` raises it with
+-       `Reason.OutOfRange`.
+-   entry .long   decodes a `Long` from decimal text, distinguishing unparseable from out-of-range
+-       Needs a `Tactic[Number.Error]`; parses with `java.lang.Long.parseLong`. Text which is
+-       not an integer raises `Number.Error` with `Reason.Unparseable`; an integer outside the
+-       range of a `Long` raises it with `Reason.OutOfRange`.
+-   entry .double   decodes a `Double` from text, raising `Number.Error` if it is unparseable
+-       Needs a `Tactic[Number.Error]`; parses with `java.lang.Double.parseDouble`, so exponents,
+-       `NaN` and `Infinity` are accepted as Java accepts them.
+-   entry .float   decodes a `Float` from text, raising `Number.Error` if it is unparseable
+-       Needs a `Tactic[Number.Error]`; parses with `java.lang.Float.parseFloat`.
+-   entry .char   decodes a `Char` as the first character of the text
+-       Needs no tactic. Any text beyond the first character is ignored, and empty text is not
+-       checked for: prefer `As[Char]`, which matches only text of exactly one character.
+-   entry .boolean   decodes a `Boolean` from any `Truth` spelling in scope, in any case, raising `Truth.Error`
+-       Needs a `Tactic[Truth.Error]` and collects every `Truth` in scope (`Every[Truth]`). The
+-       text is trimmed and lowercased, then offered to each spelling in turn; text which none
+-       recognizes raises `Truth.Error`. `Truth.trueFalse`, in the `Truth` companion, is always
+-       in scope, and each `truths` given imported adds a spelling beside it rather than
+-       replacing it.
++   entry .int   十進のテキストから `Int` をデコードする。パース不能と範囲外を区別する
++       `Tactic[Number.Error]` が必要である。
++       `Integer.parseInt` でパースするので、テキストは前後に空白のない、符号を任意に付けた十進の整数でなければならない。
++       整数でないテキストは `Reason.Unparseable` で `Number.Error` を発生させる。
++       `Int` の範囲外の整数は `Reason.OutOfRange` でそれを発生させる。
++   entry .byte   十進のテキストから `Byte` をデコードする。パース不能と範囲外を区別する
++       `Tactic[Number.Error]` が必要である。
++       整数でないテキストは `Reason.Unparseable` で `Number.Error` を発生させる。
++       −128 から 127 の外の整数は `Reason.OutOfRange` でそれを発生させる。
++   entry .short   十進のテキストから `Short` をデコードする。パース不能と範囲外を区別する
++       `Tactic[Number.Error]` が必要である。
++       整数でないテキストは `Reason.Unparseable` で `Number.Error` を発生させる。
++       `Short` の範囲外の整数は `Reason.OutOfRange` でそれを発生させる。
++   entry .long   十進のテキストから `Long` をデコードする。パース不能と範囲外を区別する
++       `Tactic[Number.Error]` が必要であり、`java.lang.Long.parseLong` でパースする。
++       整数でないテキストは `Reason.Unparseable` で `Number.Error` を発生させる。
++       `Long` の範囲外の整数は `Reason.OutOfRange` でそれを発生させる。
++   entry .double   テキストから `Double` をデコードする。パースできなければ `Number.Error` を発生させる
++       `Tactic[Number.Error]` が必要である。
++       `java.lang.Double.parseDouble` でパースするので、指数、`NaN`、`Infinity` は Java が受け付けるとおりに受け付けられる。
++   entry .float   テキストから `Float` をデコードする。パースできなければ `Number.Error` を発生させる
++       `Tactic[Number.Error]` が必要である。
++       `java.lang.Float.parseFloat` でパースする。
++   entry .char   テキストの最初の文字として `Char` をデコードする
++       戦術は必要ない。
++       最初の文字より後のテキストは無視され、空のテキストは検査されない。
++       ちょうど一文字のテキストにだけマッチする `As[Char]` を使うほうがよい。
++   entry .boolean   スコープ内の任意の `Truth` の綴りから、大文字小文字を問わず `Boolean` をデコードする。`Truth.Error` を発生させる
++       `Tactic[Truth.Error]` が必要で、スコープ内のすべての `Truth` を集める（`Every[Truth]`）。
++       テキストはトリムされて小文字にされ、それから各綴りに順に渡される。
++       どれも認識しないテキストは `Truth.Error` を発生させる。
++       `Truth` のコンパニオンにある `Truth.trueFalse` は常にスコープ内にあり、インポートした `truths` の given はそれぞれ、それを置き換えるのではなく、その横に綴りを加える。
+
+-   entry .stringText   converts a `String` to `Text`
+-   entry .irrefutable   a `String` converts with the `Irrefutable` of `Text`, after conversion to `Text`
+-   entry .textString   converts `Text` to a `String`
+-   entry .ident   converts any value to itself
+-   entry .byteShort   widens a `Byte` to a `Short`
+-   entry .byteInt   widens a `Byte` to an `Int`
+-   entry .byteLong   widens a `Byte` to a `Long`
+-   entry .byteFloat   widens a `Byte` to a `Float`
+-   entry .byteDouble   widens a `Byte` to a `Double`
+-   entry .shortInt   widens a `Short` to an `Int`
+-   entry .shortLong   widens a `Short` to a `Long`
+-   entry .shortFloat   widens a `Short` to a `Float`
+-   entry .shortDouble   widens a `Short` to a `Double`
+-   entry .intLong   widens an `Int` to a `Long`
+-   entry .intDouble   widens an `Int` to a `Double`
+-   entry .floatDouble   widens a `Float` to a `Double`
+-   entry #unapply   converts a value; it cannot fail
+-   entry #contramap   an irrefutable conversion from a new type, applying a pure function first
++   entry .stringText   `String` を `Text` に変換する
++   entry .irrefutable   `String` は、`Text` に変換した後、`Text` の `Irrefutable` で変換される
++   entry .textString   `Text` を `String` に変換する
++   entry .ident   任意の値をそれ自身に変換する
++   entry .byteShort   `Byte` を `Short` に拡大する
++   entry .byteInt   `Byte` を `Int` に拡大する
++   entry .byteLong   `Byte` を `Long` に拡大する
++   entry .byteFloat   `Byte` を `Float` に拡大する
++   entry .byteDouble   `Byte` を `Double` に拡大する
++   entry .shortInt   `Short` を `Int` に拡大する
++   entry .shortLong   `Short` を `Long` に拡大する
++   entry .shortFloat   `Short` を `Float` に拡大する
++   entry .shortDouble   `Short` を `Double` に拡大する
++   entry .intLong   `Int` を `Long` に拡大する
++   entry .intDouble   `Int` を `Double` に拡大する
++   entry .floatDouble   `Float` を `Double` に拡大する
++   entry #unapply   値を変換する。失敗しえない
++   entry #contramap   新しい型からの反駁不能な変換。先に純粋な関数を適用する

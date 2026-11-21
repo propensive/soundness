@@ -1,0 +1,79 @@
+orthant 1 language
+
+-       The queue and the writer daemon belong to the **call site** and the destination: every
+-       `Logger` built at the same source position for an equal destination shares one, so a
+-       given re-evaluated on each summon does not start a new thread each time, and a helper
+-       which builds `Logger(path)` for different paths from one line gets a queue for each.
+-   entry #accepts   whether the logger records events at a level: at or above its threshold
+-   entry #submit   queues a transcribed event for formatting and writing, at a level and timestamp
+-       Called by `Loggable.fanOut` once `#accepts` and `admits` have passed; the event is
+-       formatted on the calling thread and its record queued for the writer daemon. Not
+-       usually called directly.
++       キューと書き込みのデーモンは**呼び出し箇所**と出力先に属する。
++       同じソース位置で等しい出力先に対して作られたすべての `Logger` は 1 つを共有するので、召喚のたびに再評価される given が毎回新しいスレッドを始めることはなく、1 行から異なるパスに対して `Logger(path)` を作るヘルパーはパスごとにキューを得る。
++   entry #accepts   ロガーがあるレベルのイベントを記録するかどうか。閾値以上なら記録する
++   entry #submit   転記されたイベントを、レベルとタイムスタンプとともに、整形と書き込みのためにキューに入れる
++       `#accepts` と `admits` を通った後に `Loggable.fanOut` が呼ぶ。イベントは呼び出し側のスレッドで整形され、そのレコードが書き込みのデーモンのためにキューに入れられる。
++       通常は直接呼ばない。
+
+- entry .dateFormat   the date and time pattern of the timestamped formats: `2026-Nov-04 09:30:00.250`
+-     A `java.time.format.DateTimeFormatter` for `yyyy-MMM-dd HH:mm:ss.SSS` in the JVM's
+-     default time zone, used by `timestampedLogFormat` and `ansiTimestampedLogFormat`. It is
+-     immutable, so it is safe to use from several threads.
++ entry .dateFormat   タイムスタンプ付きの形式の日付と時刻のパターン：`2026-Nov-04 09:30:00.250`
++     JVM の既定のタイムゾーンにおける `yyyy-MMM-dd HH:mm:ss.SSS` の `java.time.format.DateTimeFormatter` であり、`timestampedLogFormat` と `ansiTimestampedLogFormat` が使う。
++     これは不変なので、複数のスレッドから使っても安全である。
+
+-       `timestampedLogFormat` and `untimestampedLogFormat` format any `Communicable` value,
+-       `ansiTimestampedLogFormat` and `googleCloudPlatformLogFormat` only a `Message`, which a
+-       `Logger[…, Message]` transcribes every event to. `textLevelLogFormat` and
+-       `teletypeableLogFormat`, which render a `Log.Level`, are used by the others.
+-   entry .timestampedLogFormat   a line of text: date and time, the level in brackets, and the message
+-       `2026-Nov-04 09:30:00.250 [INFO] server listening on 8080`, ending with a newline, for
+-       any `Communicable` event, with the timestamp formatted by `dateFormat`.
+-   entry .untimestampedLogFormat   a line of text: the level in brackets, and the message
+-       `[INFO] server listening on 8080`, ending with a newline, for any `Communicable`
+-       event. Suits a destination which adds its own timestamp, such as `Syslog`.
+-   entry .textLevelLogFormat   renders a `Log.Level` as `FINE`, `INFO`, `WARN` or `FAIL`
+-       The `Showable` for `Log.Level` the text formats interpolate.
+-   entry .ansiTimestampedLogFormat   a teletype: dimmed date and time, the level on a coloured ground, `>` and the message
+-       A `Message is Inscribable in Teletype`, for terminals, in `eucalyptus.ansi`. It needs a
+-       `LogPalette` in scope for its colours. Messages are cut into lines of at most 76
+-       characters, and each continuation line is indented to align under the first line's
+-       message. With `Out` as the destination it also needs `writables.outTeletypeWritable`
+-       and a `Stdio`.
++       `timestampedLogFormat` と `untimestampedLogFormat` は任意の `Communicable` な値を整形し、`ansiTimestampedLogFormat` と `googleCloudPlatformLogFormat` は `Message` だけを整形する。`Logger[…, Message]` はすべてのイベントを `Message` に転記する。
++       `Log.Level` を描画する `textLevelLogFormat` と `teletypeableLogFormat` は、ほかの形式が使うものである。
++   entry .timestampedLogFormat   1 行のテキスト：日付と時刻、角括弧の中のレベル、そしてメッセージ
++       `2026-Nov-04 09:30:00.250 [INFO] server listening on 8080` のように改行で終わり、任意の `Communicable` なイベントに使える。タイムスタンプは `dateFormat` で整形される。
++   entry .untimestampedLogFormat   1 行のテキスト：角括弧の中のレベル、そしてメッセージ
++       `[INFO] server listening on 8080` のように改行で終わり、任意の `Communicable` なイベントに使える。
++       `Syslog` のように自らタイムスタンプを付ける出力先に適している。
++   entry .textLevelLogFormat   `Log.Level` を `FINE`、`INFO`、`WARN`、`FAIL` として描画する
++       テキスト形式が埋め込む、`Log.Level` の `Showable` である。
++   entry .ansiTimestampedLogFormat   テレタイプ：薄暗い日付と時刻、色付きの地の上のレベル、`>`、そしてメッセージ
++       端末向けの `Message is Inscribable in Teletype` であり、`eucalyptus.ansi` にある。
++       色のために `LogPalette` がスコープに必要である。
++       メッセージは最大 76 文字の行に切られ、各継続行は最初の行のメッセージの下に揃うように字下げされる。
++       出力先が `Out` の場合は、`writables.outTeletypeWritable` と `Stdio` も必要である。
+
+-       Each record ends with a newline.
+-   entry .teletypeableLogFormat   renders a `Log.Level` as a bold label on the `LogPalette` colour for its level
+-       The `Teletypeable` for `Log.Level` that `ansiTimestampedLogFormat` uses, in
+-       `eucalyptus.ansi`. It needs a `LogPalette`.
+-   entry .googleCloudPlatformLogFormat   one compact JSON object per event, with `severity` and `message`
+-       A `Message is Inscribable in Text`, in `eucalyptus.gcp`, which writes
+-       `{"severity":"WARNING","message":"…"}`, the structured form Google Cloud's logging
+-       agent reads from a container's standard output. The levels map to `DEBUG`, `INFO`,
+-       `WARNING` and `ERROR`; the message is its plain text, without styling. No timestamp is
+-       written, as the agent records its own. Each record ends with a newline: one object
+-       per line.
++       各レコードは改行で終わる。
++   entry .teletypeableLogFormat   `Log.Level` を、そのレベルの `LogPalette` の色の上の太字のラベルとして描画する
++       `ansiTimestampedLogFormat` が使う `Log.Level` の `Teletypeable` であり、`eucalyptus.ansi` にある。
++       `LogPalette` が必要である。
++   entry .googleCloudPlatformLogFormat   イベントごとに 1 つのコンパクトな JSON オブジェクト。`severity` と `message` を持つ
++       `eucalyptus.gcp` にある `Message is Inscribable in Text` であり、`{"severity":"WARNING","message":"…"}` を書く。これは Google Cloud のロギングエージェントがコンテナーの標準出力から読む構造化された形である。
++       レベルは `DEBUG`、`INFO`、`WARNING`、`ERROR` に対応する。メッセージはスタイルのない平文のテキストである。
++       エージェントが自らタイムスタンプを記録するので、タイムスタンプは書かれない。
++       各レコードは改行で終わる：1 行に 1 つのオブジェクトである。

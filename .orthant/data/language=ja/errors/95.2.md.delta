@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.95.2` — `Terminal.Error`
++ # `↯/s.95.2` — `Terminal.Error`
+
+- Raised when interactive terminal operations are attempted but
+- stdin is not connected to a TTY.
++ 標準入力が TTY につながっていないのに、対話的な端末の操作が試みられたときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Profanity needs a real terminal for interactive features. When
+- stdin is a pipe or redirect, this error is thrown.
++ Profanity の対話的な機能には本物の端末が必要である。
++ 標準入力がパイプやリダイレクトであるとき、このエラーが投げられる。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.95.2] STDIN is not attached to a TTY
++ [↯/s.95.2] STDIN is not attached to a TTY
+
+= [↯/s.95.2] STDIN is not attached to a TTY
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Run the program in an interactive shell, or fall back to a
+- non-interactive code path.
++ プログラムを対話的なシェルで実行するか、対話的でないコードの経路に切り替える。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/profanity/src/core/profanity.Terminal.scala`
++ - ソース：`lib/profanity/src/core/profanity.Terminal.scala`

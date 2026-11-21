@@ -1,0 +1,2212 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base syndesis
++ base syndesis
+
+- import soundness
++ import soundness
+
+- info   DNS-based service discovery over multicast DNS: advertise a service, browse for others, resolve an instance
++ info   マルチキャスト DNS 上の DNS ベースのサービス発見：サービスを広告し、他のサービスをブラウズし、インスタンスを解決する
+
+- detail
++ detail
+
+-     _Syndesis_ lets a program which serves something on the local network — a build daemon, a
+-     printer, a game — be found without anyone being told its address. It implements
+-     **DNS-based service discovery** (RFC 6763), which names a service *type* (`_fury._tcp`)
+-     and its *instances* (`Elsinore._fury._tcp.local`), carried over **multicast DNS** (RFC
+-     6762), where every host answers for its own names and no nameserver is involved.
++     _Syndesis_ は、ローカルネットワーク上で何かを提供するプログラム（ビルドのデーモン、プリンター、ゲーム）が、誰にもそのアドレスを教えられることなく見つけられるようにする。
++     これは **DNS ベースのサービス発見**（RFC 6763）を実装する。
++     それはサービスの*種類*（`_fury._tcp`）とその*インスタンス*（`Elsinore._fury._tcp.local`）に名前を付けるもので、**マルチキャスト DNS**（RFC 6762）の上で運ばれる。
++     そこでは各ホストが自身の名前について答え、ネームサーバーは関わらない。
+
+-     The vocabulary is in `Discovery`: a `Discovery.Service` and a `Discovery.Instance`, which
+-     compute their DNS-SD names when constructed, under validation; a `Discovery.Txt` record of
+-     `key=value` pairs; a `Discovery.Description` of what an instance advertises; and a
+-     `Discovery.Resolution` of where an instance is. The three operations are extensions —
+-     `advertise` and `browse` on a service, `resolve` on an instance — each delegating to the
+-     `Discovery.Backend` in scope. The one backend provided is `Mdns.Responder`, the
+-     socket-based mDNS responder, selected by importing `discoveryBackends.mdnsSockets`.
++     語彙は `Discovery` にある。
++     構築時に検証の下で DNS-SD の名前を計算する `Discovery.Service` と `Discovery.Instance`、`key=value` の対からなる `Discovery.Txt` のレコード、インスタンスが広告するものを表す `Discovery.Description`、インスタンスがどこにあるかを表す `Discovery.Resolution` である。
++     三つの操作は拡張である。
++     サービスに対する `advertise` と `browse`、インスタンスに対する `resolve` であり、それぞれスコープにある `Discovery.Backend` に委譲する。
++     提供される唯一のバックエンドは `Mdns.Responder` で、ソケットを使う mDNS のレスポンダーであり、`discoveryBackends.mdnsSockets` をインポートして選ぶ。
+
+-     ```scala fuel
++     ```scala fuel
+
+-     typecheck
++     typecheck
+
+-     ##
++     ##
+
+-     import soundness.*
++     import soundness.*
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import threads.platformThreads
++     import threads.platformThreads
+
+-     import probates.awaitProbate
++     import probates.awaitProbate
+
+-     import abstractables.millisecondsAbstractable
++     import abstractables.millisecondsAbstractable
+
+-     import socketBackends.javaBaseSockets
++     import socketBackends.javaBaseSockets
+
+-     import discoveryBackends.mdnsSockets
++     import discoveryBackends.mdnsSockets
+
+-     val fury = Discovery.Service(t"fury", Tcp)
++     val fury = Discovery.Service(t"fury", Tcp)
+
+-     val txt = Discovery.Txt(t"fingerprint" -> t"ab12")
++     val txt = Discovery.Txt(t"fingerprint" -> t"ab12")
+
+-     supervise:
++     supervise:
+
+-       fury.advertise(Discovery.Description(t"Elsinore", tcp"8443", txt)):
++       fury.advertise(Discovery.Description(t"Elsinore", tcp"8443", txt)):
+
+=       fury.advertise(Discovery.Description(t"Elsinore", tcp"8443", txt)):
+-         fury.browse:
++         fury.browse:
+
+=       fury.advertise(Discovery.Description(t"Elsinore", tcp"8443", txt)):
+=         fury.browse:
+-           summon[Discovery.Browser].events.each:
++           summon[Discovery.Browser].events.each:
+
+-             case Discovery.Event.Found(instance) => instance.resolve(5000L).endpoints
++             case Discovery.Event.Found(instance) => instance.resolve(5000L).endpoints
+
+=             case Discovery.Event.Found(instance) => instance.resolve(5000L).endpoints
+-             case Discovery.Event.Lost(instance)  => ()
++             case Discovery.Event.Lost(instance)  => ()
+
+-     ```
++     ```
+
+-     An advertisement and a browse are **loans**: each lasts for its block and ends with it —
+-     or with the `Monitor` it runs under, whose cancellation unwinds the block. Both need a
+-     `Monitor^`, a `Probate.Shared`, a `Tactic[Discovery.Error]` and a `Discovery.Activity is
+-     Loggable` in scope, besides the backend. The backend is an explicit `using` clause of its
+-     own, so a responder other than the given one can be named: `fury.browse(using other)`.
++     広告とブラウズは**貸し出し**である。
++     それぞれはブロックの間続き、ブロックとともに終わる。
++     あるいはそれが走る `Monitor` とともに終わり、そのキャンセルはブロックを巻き戻す。
++     どちらも、バックエンドのほかに、`Monitor^`、`Probate.Shared`、`Tactic[Discovery.Error]`、`Discovery.Activity is Loggable` がスコープにあることを必要とする。
++     バックエンドはそれ自身の明示的な `using` 節なので、given のもの以外のレスポンダーを名指しできる。
++     `fury.browse(using other)`。
+
+-     The library has one source set, `syndesis.core`, for the JVM. `Mdns` is both the
+-     responder and its parts — the `Mdns.Transport` seam it speaks through, the `Mdns.Cache`
+-     of what it has heard, and `Mdns.Tiebreak` — of which `Mdns.Transport.Bus`, an in-memory
+-     link, is the one a program under test needs: responders joined to one bus hear one
+-     another and nothing else, so the protocol runs deterministically without a network.
++     このライブラリには JVM のためのソースセット `syndesis.core` が一つある。
++     `Mdns` はレスポンダーであり、その部品でもある。
++     それが話すための継ぎ目 `Mdns.Transport`、聞いたことを保持する `Mdns.Cache`、そして `Mdns.Tiebreak` である。
++     そのうちメモリー内のリンクである `Mdns.Transport.Bus` は、テスト中のプログラムが必要とするものである。
++     一つのバスに参加したレスポンダーは互いの声を聞き、それ以外は何も聞かないので、プロトコルはネットワークなしに決定的に走る。
+
+-     Everything is exported to the `soundness` umbrella, and the `discoveryBackends` choice
+-     package merges with the umbrella's own; `import soundness.*` brings in no backend, so
+-     `mdnsSockets` is imported by name.
++     すべてが `soundness` アンブレラにエクスポートされ、`discoveryBackends` の選択パッケージはアンブレラ自身のものに統合される。
++     `import soundness.*` はバックエンドを持ち込まないので、`mdnsSockets` は名前でインポートする。
+
+- refer syndesis.Discovery
++ refer syndesis.Discovery
+
+- refer syndesis.Mdns
++ refer syndesis.Mdns
+
+- refer syndesis.advertise
++ refer syndesis.advertise
+
+- refer syndesis.browse
++ refer syndesis.browse
+
+- refer syndesis.resolve
++ refer syndesis.resolve
+
+- entry .Discovery   the vocabulary of DNS-SD: services, instances, TXT records, and the backend seam
++ entry .Discovery   DNS-SD の語彙：サービス、インスタンス、TXT レコード、バックエンドの継ぎ目
+
+= entry .Discovery   the vocabulary of DNS-SD: services, instances, TXT records, and the backend seam
+-   detail
++   detail
+
+-       `Discovery` holds everything a program says and hears about services, independently of
+-       how the names travel. A `Service` is a type such as `_fury._tcp`; an `Instance` is one
+-       named provider of it; a `Txt` record is what an instance says about itself; a
+-       `Description` is what an instance advertises; a `Resolution` is where a found instance
+-       turned out to be. The `Backend` trait is the seam a transport implements, and
+-       `Advertisement` and `Browser` are the handles the `advertise` and `browse` loans lend.
++       `Discovery` は、名前がどのように運ばれるかとは独立に、プログラムがサービスについて言うこと、聞くことのすべてを保持する。
++       `Service` は `_fury._tcp` のような種類である。
++       `Instance` はその名前付きの提供者の一つである。
++       `Txt` のレコードはインスタンスが自身について言うことである。
++       `Description` はインスタンスが広告するものである。
++       `Resolution` は見つかったインスタンスが実際にどこにあったかである。
++       `Backend` のトレイトはトランスポートが実装する継ぎ目であり、`Advertisement` と `Browser` は `advertise` と `browse` の貸し出しが貸し出すハンドルである。
+
+=       `Advertisement` and `Browser` are the handles the `advertise` and `browse` loans lend.
+=
+-       ```scala
++       ```scala
+
+=       `Advertisement` and `Browser` are the handles the `advertise` and `browse` loans lend.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Advertisement` and `Browser` are the handles the `advertise` and `browse` loans lend.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       import strategies.throwUnsafely
+=
+-       val fury = Discovery.Service(t"fury", Tcp)
++       val fury = Discovery.Service(t"fury", Tcp)
+
+=       import strategies.throwUnsafely
+=
+=       val fury = Discovery.Service(t"fury", Tcp)
+-       val elsinore = Discovery.Instance(t"Elsinore", fury)
++       val elsinore = Discovery.Instance(t"Elsinore", fury)
+
+-       fury.dnsName                         // dns"_fury._tcp.local"
++       fury.dnsName                         // dns"_fury._tcp.local"
+
+-       elsinore.show                          // t"Elsinore._fury._tcp.local"
++       elsinore.show                          // t"Elsinore._fury._tcp.local"
+
+-       Discovery.Txt(t"fp" -> t"abc").strings   // List(t"fp=abc")
++       Discovery.Txt(t"fp" -> t"abc").strings   // List(t"fp=abc")
+
+=       Discovery.Txt(t"fp" -> t"abc").strings   // List(t"fp=abc")
+-       ```
++       ```
+
+-       Every name is computed when its value is constructed, under validation, so a name over
+-       the DNS limits is a `Discovery.Error` at construction rather than a failure on the wire,
+-       and every later use of the name is total.
++       すべての名前はその値が構築されるときに検証の下で計算されるので、DNS の制限を超える名前はワイヤ上の失敗ではなく構築時の `Discovery.Error` になり、その名前の後のすべての使用は全域的である。
+
+-   refer syndesis.Discovery.Service
++   refer syndesis.Discovery.Service
+
+=   refer syndesis.Discovery.Service
+-   refer syndesis.Discovery.Instance
++   refer syndesis.Discovery.Instance
+
+=   refer syndesis.Discovery.Instance
+-   refer syndesis.Discovery.Backend
++   refer syndesis.Discovery.Backend
+
+-   refer syndesis.Discovery.Error
++   refer syndesis.Discovery.Error
+
+-   entry .local   the `local` domain, `dns"local"`, under which every mDNS name sits
+-   entry .Service   a service type, such as `_fury._tcp`: a registered name and a transport
++   entry .local   すべての mDNS の名前が置かれる `local` ドメイン `dns"local"`
++   entry .Service   `_fury._tcp` のようなサービスの種類：登録された名前とトランスポート
+
+=   entry .Service   a service type, such as `_fury._tcp`: a registered name and a transport
+-     detail
++     detail
+
+-         A service type is a registered name of up to fifteen characters (RFC 6763 §7),
+-         without its leading underscore, and a protocol which is either `Tcp` or `Udp`. Its
+-         `#dnsName` is `_name._tcp.local` (or `_udp`), computed and validated at construction.
+-         An optional list of `#subtypes` names narrower kinds of the service, each browsed under
+-         `_subtype._sub._name._tcp.local` (`#subtypeName`), and each advertised instance is
+-         listed under every subtype of its service.
++         サービスの種類は、先頭のアンダースコアを除いて最大十五文字の登録された名前（RFC 6763 §7）と、`Tcp` か `Udp` のどちらかのプロトコルである。
++         その `#dnsName` は `_name._tcp.local`（または `_udp`）であり、構築時に計算されて検証される。
++         任意の `#subtypes` のリストはサービスのより狭い種類に名前を付け、それぞれは `_subtype._sub._name._tcp.local`（`#subtypeName`）の下でブラウズされる。
++         広告される各インスタンスは、そのサービスのすべての下位種類の下に挙げられる。
+
+=         listed under every subtype of its service.
+=
+-         ```scala
++         ```scala
+
+=         listed under every subtype of its service.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         listed under every subtype of its service.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         listed under every subtype of its service.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+-         val fury = Discovery.Service(t"fury", Tcp)
++         val fury = Discovery.Service(t"fury", Tcp)
+
+-         fury.dnsName                         // dns"_fury._tcp.local"
++         fury.dnsName                         // dns"_fury._tcp.local"
+
+-         fury.show                            // t"_fury._tcp"
++         fury.show                            // t"_fury._tcp"
+
+-         fury.subtypeName(t"printer")         // dns"_printer._sub._fury._tcp.local"
++         fury.subtypeName(t"printer")         // dns"_printer._sub._fury._tcp.local"
+
+-         Discovery.Service(t"sip", Udp).dnsName   // dns"_sip._udp.local"
++         Discovery.Service(t"sip", Udp).dnsName   // dns"_sip._udp.local"
+
+=         Discovery.Service(t"sip", Udp).dnsName   // dns"_sip._udp.local"
+-         ```
++         ```
+
+-         A name which is empty, longer than fifteen characters or begins with `_` is rejected
+-         with `Discovery.Error` reason `InvalidService`. The constructor is private: a service
+-         is made with `Service.apply` or read back from a DNS name with `Service.parse`.
+-     entry .enumeration   the meta-query name every service type on the link is listed under
+-         `dns"_services._dns-sd._udp.local"` (RFC 6763 §9): the responder advertises a PTR from
+-         this name to each service type it has an instance of, so a browser can enumerate the
+-         types on the link before choosing one.
+-     entry .apply   a validated service type from its name, protocol and optional subtypes
+-         `Discovery.Service(name, Tcp | Udp, subtypes = Nil)`. Needs a
+-         `Tactic[Discovery.Error]`; raises reason `InvalidService` for an empty name, one over
+-         fifteen characters, or one beginning with `_`, and `InvalidName` if the resulting DNS
+-         name breaks a DNS limit.
+-     entry .parse   the service type a DNS name such as `_fury._tcp.local` denotes, or `Unset`
+-         The inverse of `#dnsName`. The name must have exactly three labels, the last `local`,
+-         the second `_tcp` or `_udp`, and the first beginning with `_`; anything else is `Unset`.
+-         A parsed service has no subtypes.
+-     entry .showable   renders a service type in its registered form, `_fury._tcp`
+-     entry #name   the registered service name, without its leading underscore
+-     entry #protocol   the transport, `Tcp` or `Udp`
+-     entry #subtypes   the subtypes an instance of this service is also listed under
+-     entry #dnsName   the DNS-SD name of the service type: `_fury._tcp.local`
+-     entry #subtypeName   the name a subtype's instances are browsed under
+-         `_printer._sub._fury._tcp.local` for the subtype `printer`. Needs a
+-         `Tactic[Discovery.Error]`, raising `InvalidName` if the label breaks a DNS limit.
+-   entry .Instance   one named provider of a service: a UTF-8 label under the service type
++         空であるか、十五文字より長いか、`_` で始まる名前は、`Discovery.Error` の理由 `InvalidService` で拒否される。
++         コンストラクターは private である。
++         サービスは `Service.apply` で作るか、`Service.parse` で DNS の名前から読み戻す。
++     entry .enumeration   リンク上のすべてのサービスの種類が挙げられるメタクエリーの名前
++         `dns"_services._dns-sd._udp.local"`（RFC 6763 §9）。
++         レスポンダーは、インスタンスを持つ各サービスの種類へのこの名前からの PTR を広告するので、ブラウザはリンク上の種類を列挙してから一つを選べる。
++     entry .apply   名前、プロトコル、任意の下位種類から作る、検証されたサービスの種類
++         `Discovery.Service(name, Tcp | Udp, subtypes = Nil)`。
++         `Tactic[Discovery.Error]` を必要とする。
++         空の名前、十五文字を超える名前、`_` で始まる名前に対しては理由 `InvalidService` を、結果の DNS の名前が DNS の制限を破るときは `InvalidName` を発生させる。
++     entry .parse   `_fury._tcp.local` のような DNS の名前が表すサービスの種類、または `Unset`
++         `#dnsName` の逆である。
++         名前はちょうど三つのラベルを持たなければならず、最後は `local`、二つ目は `_tcp` か `_udp`、最初は `_` で始まらなければならない。
++         それ以外は `Unset` である。
++         パースされたサービスは下位種類を持たない。
++     entry .showable   サービスの種類を登録された形 `_fury._tcp` で描画する
++     entry #name   先頭のアンダースコアを除いた、登録されたサービスの名前
++     entry #protocol   トランスポート。`Tcp` か `Udp`
++     entry #subtypes   このサービスのインスタンスが併せて挙げられる下位種類
++     entry #dnsName   サービスの種類の DNS-SD の名前：`_fury._tcp.local`
++     entry #subtypeName   下位種類のインスタンスがブラウズされる名前
++         下位種類 `printer` に対しては `_printer._sub._fury._tcp.local`。
++         `Tactic[Discovery.Error]` を必要とし、ラベルが DNS の制限を破るときは `InvalidName` を発生させる。
++   entry .Instance   サービスの名前付きの提供者の一つ：サービスの種類の下の UTF-8 のラベル
+
+=   entry .Instance   one named provider of a service: a UTF-8 label under the service type
+-     detail
++     detail
+
+-         An instance is a single DNS label of UTF-8 (RFC 6763 §4.1.1) — spaces and dots
+-         included, no escaping, up to 63 bytes — prefixed to its service's name, so
+-         `Instance(t"Hamlet's Printer. Upstairs", fury)` has the labels `Hamlet's Printer. Upstairs`,
+-         `_fury`, `_tcp`, `local`. It shows in the presentation form of §4.3, with the label's
+-         dots escaped: `Hamlet\.Printer._fury._tcp.local`.
++         インスタンスは UTF-8 の一つの DNS のラベル（RFC 6763 §4.1.1）であり、空白とドットを含み、エスケープはなく、最大 63 バイトで、サービスの名前の前に付けられる。
++         そのため `Instance(t"Hamlet's Printer. Upstairs", fury)` はラベル `Hamlet's Printer. Upstairs`、`_fury`、`_tcp`、`local` を持つ。
++         これは §4.3 の表示形式で、ラベルのドットをエスケープして表示される。
++         `Hamlet\.Printer._fury._tcp.local`。
+
+=         dots escaped: `Hamlet\.Printer._fury._tcp.local`.
+=
+-         ```scala
++         ```scala
+
+=         dots escaped: `Hamlet\.Printer._fury._tcp.local`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         dots escaped: `Hamlet\.Printer._fury._tcp.local`.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         dots escaped: `Hamlet\.Printer._fury._tcp.local`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+-         val fury = Discovery.Service(t"fury", Tcp)
++         val fury = Discovery.Service(t"fury", Tcp)
+
+=         dots escaped: `Hamlet\.Printer._fury._tcp.local`.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         val fury = Discovery.Service(t"fury", Tcp)
+-         val elsinore = Discovery.Instance(t"Elsinore", fury)
++         val elsinore = Discovery.Instance(t"Elsinore", fury)
+
+-         elsinore.renamed.label                   // t"Elsinore (2)"
++         elsinore.renamed.label                   // t"Elsinore (2)"
+
+-         Discovery.Instance.parse(dns"Elsinore._fury._tcp.local") == elsinore
++         Discovery.Instance.parse(dns"Elsinore._fury._tcp.local") == elsinore
+
+=         Discovery.Instance.parse(dns"Elsinore._fury._tcp.local") == elsinore
+-         ```
++         ```
+
+-         An instance is the value a browser reports as found or lost, and the one `resolve` is
+-         called on. The constructor is private: an instance is made with `Instance.apply` or
+-         read back from a PTR record's target with `Instance.parse`.
+-     entry .apply   a validated instance from its label and service
+-         Needs a `Tactic[Discovery.Error]`; an empty label, or one over 63 bytes, raises reason
+-         `InvalidName` naming the label.
+-     entry .parse   the instance a name such as `Elsinore._fury._tcp.local` denotes, or `Unset`
+-         The first label is the instance's label, kept exactly as written, and the rest must
+-         parse as a `Service`; a name with no labels, or whose parent is not a service type
+-         (such as the service type's own name), is `Unset`.
+-     entry .showable   renders an instance as its DNS name, with the label's dots escaped
+-     entry #label   the instance's own name, one label of UTF-8
+-     entry #service   the service type the instance provides
+-     entry #dnsName   the full DNS-SD name: the label, then the service's name
+-     entry #renamed   the next name to try after a conflict: `Elsinore` → `Elsinore (2)` → `Elsinore (3)`
+-         RFC 6762 §9's renaming: a counter in parentheses is appended, or incremented if the
+-         label already ends with one. Needs a `Tactic[Discovery.Error]`, since the new label is
+-         validated like any other. The responder renames an advertised instance this way when
+-         another host holds, or wins, its name.
+-   entry .Txt   an instance's TXT record: `key=value` pairs, read case-insensitively, first occurrence winning
++         インスタンスは、ブラウザが見つかった、または失われたと報告する値であり、`resolve` が呼ばれる値である。
++         コンストラクターは private である。
++         インスタンスは `Instance.apply` で作るか、`Instance.parse` で PTR レコードの対象から読み戻す。
++     entry .apply   ラベルとサービスから作る、検証されたインスタンス
++         `Tactic[Discovery.Error]` を必要とする。
++         空のラベル、または 63 バイトを超えるラベルは、そのラベルを挙げて理由 `InvalidName` を発生させる。
++     entry .parse   `Elsinore._fury._tcp.local` のような名前が表すインスタンス、または `Unset`
++         最初のラベルはインスタンスのラベルで、書かれたとおりに保たれ、残りは `Service` としてパースできなければならない。
++         ラベルのない名前や、親がサービスの種類でない名前（サービスの種類自身の名前など）は `Unset` である。
++     entry .showable   インスタンスを、ラベルのドットをエスケープした DNS の名前として描画する
++     entry #label   インスタンス自身の名前。UTF-8 の一つのラベル
++     entry #service   インスタンスが提供するサービスの種類
++     entry #dnsName   完全な DNS-SD の名前：ラベルの後にサービスの名前
++     entry #renamed   衝突の後に試す次の名前：`Elsinore` → `Elsinore (2)` → `Elsinore (3)`
++         RFC 6762 §9 の名前の変更である。
++         括弧で囲んだカウンターが追加されるか、ラベルがすでにそれで終わっていれば増やされる。
++         新しいラベルは他と同じように検証されるので、`Tactic[Discovery.Error]` を必要とする。
++         レスポンダーは、別のホストが名前を保持しているか、名前を勝ち取ったとき、広告したインスタンスの名前をこうして変える。
++   entry .Txt   インスタンスの TXT レコード：`key=value` の対。大文字小文字を区別せずに読み、最初の出現が優先される
+
+=   entry .Txt   an instance's TXT record: `key=value` pairs, read case-insensitively, first occurrence winning
+-     detail
++     detail
+
+-         A TXT record is a list of entries, each a key with an optional value (RFC 6763 §6).
+-         Keys are printable ASCII without `=`, and each `key=value` string must fit the
+-         255-octet character-string. Duplicate keys are kept as written, but `#apply` and
+-         `#has` read the first occurrence of a key, comparing keys without regard to ASCII case,
+-         as §6.4 says a receiver should.
++         TXT レコードは項目のリストで、それぞれは任意の値を持つキーである（RFC 6763 §6）。
++         キーは `=` を含まない印字可能な ASCII であり、各 `key=value` の文字列は 255 オクテットの文字列に収まらなければならない。
++         重複したキーは書かれたとおりに保たれるが、`#apply` と `#has` は、§6.4 が受信者はそうすべきだと言うとおり、ASCII の大文字小文字を区別せずにキーを比較して、キーの最初の出現を読む。
+
+=         as §6.4 says a receiver should.
+=
+-         ```scala
++         ```scala
+
+=         as §6.4 says a receiver should.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         as §6.4 says a receiver should.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         val txt = Discovery.Txt(t"fp" -> t"abc", t"flag" -> Unset)
++         val txt = Discovery.Txt(t"fp" -> t"abc", t"flag" -> Unset)
+
+-         txt(t"FP")           // t"abc"
++         txt(t"FP")           // t"abc"
+
+-         txt(t"flag")         // Unset, though present
++         txt(t"flag")         // Unset, though present
+
+-         txt.has(t"flag")     // true
++         txt.has(t"flag")     // true
+
+-         txt.strings          // List(t"fp=abc", t"flag")
++         txt.strings          // List(t"fp=abc", t"flag")
+
+=         txt.strings          // List(t"fp=abc", t"flag")
+-         ```
++         ```
+
+-         A `Txt` travels in a `Description` when advertising and comes back in a `Resolution`.
+-     entry .empty   the TXT record with no entries, which the wire carries as one empty string
+-     entry .apply   a validated TXT record from `key -> value` pairs, a value being `Optional[Text]`
+-         Needs a `Tactic[Discovery.Error]`; a key which is empty, contains `=` or a
+-         non-printable character, or whose `key=value` string exceeds 255 bytes of UTF-8,
+-         raises reason `InvalidTxt` naming the key.
+-     entry .parse   a TXT record from the strings of a received record
+-         Each string is `key=value`, or `key` alone for a key with no value (`Unset`); the
+-         first `=` splits, so `eq=a=b` is the key `eq` with the value `a=b`. The empty string
+-         which stands for an empty record is skipped. Nothing is validated.
+-     entry .showable   renders the record as its strings, each in double quotes, space-separated
+-     entry #entries   the entries in order, each a key and an optional value, duplicates kept
+-     entry #apply   the value of a key, or `Unset` if the key is absent or has no value
+-         `txt(key)` finds the first entry whose key matches without regard to ASCII case. A
+-         key present without a value and a key absent both give `Unset`; `#has` tells them
+-         apart.
+-     entry #has   whether a key is present at all, with or without a value
+-     entry #strings   the record's wire strings: one per entry, or a single empty string for none
+-   entry .Description   what an instance advertises: its name, port, TXT record, host, priority and weight
++         `Txt` は広告するときには `Description` に入って運ばれ、`Resolution` に入って戻ってくる。
++     entry .empty   項目のない TXT レコード。ワイヤ上では一つの空文字列として運ばれる
++     entry .apply   `key -> value` の対から作る、検証された TXT レコード。値は `Optional[Text]`
++         `Tactic[Discovery.Error]` を必要とする。
++         空のキー、`=` か印字できない文字を含むキー、または `key=value` の文字列が UTF-8 で 255 バイトを超えるキーは、そのキーを挙げて理由 `InvalidTxt` を発生させる。
++     entry .parse   受信したレコードの文字列から作る TXT レコード
++         各文字列は `key=value` であるか、値のないキー（`Unset`）なら `key` だけである。
++         最初の `=` で分割されるので、`eq=a=b` はキー `eq` と値 `a=b` である。
++         空のレコードを表す空文字列は飛ばされる。
++         何も検証されない。
++     entry .showable   レコードを、それぞれ二重引用符で囲み空白で区切った文字列として描画する
++     entry #entries   順序どおりの項目。それぞれキーと任意の値で、重複は保たれる
++     entry #apply   キーの値。キーがないか値がなければ `Unset`
++         `txt(key)` は、ASCII の大文字小文字を区別せずにキーが一致する最初の項目を見つける。
++         値なしで存在するキーも、存在しないキーも、どちらも `Unset` を与える。
++         `#has` がそれらを区別する。
++     entry #has   値の有無にかかわらず、キーが存在するかどうか
++     entry #strings   レコードのワイヤ上の文字列：項目ごとに一つ、項目がなければ一つの空文字列
++   entry .Description   インスタンスが広告するもの：名前、ポート、TXT レコード、ホスト、優先度、重み
+
+=   entry .Description   what an instance advertises: its name, port, TXT record, host, priority and weight
+-     detail
++     detail
+
+-         The input to `advertise`: the label the instance asks for (which a conflict may
+-         rename), the port it serves on (a `Port`, so `tcp"8443"` or `udp"5004"`), its `Txt`
+-         record, and optionally the host name its address records are published under — by
+-         default this host's own name — and the SRV record's `priority` and `weight`, for a
+-         service with several instances.
++         `advertise` への入力である。
++         インスタンスが求めるラベル（衝突によって名前が変わりうる）、それが提供するポート（`Port` なので `tcp"8443"` や `udp"5004"`）、その `Txt` レコード、そして任意で、アドレスのレコードが公開されるホスト名（既定ではこのホスト自身の名前）と、インスタンスが複数あるサービスのための SRV レコードの `priority` と `weight` である。
+
+=         service with several instances.
+=
+-         ```scala
++         ```scala
+
+=         service with several instances.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         service with several instances.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         val txt = Discovery.Txt(t"fp" -> t"abc")
++         val txt = Discovery.Txt(t"fp" -> t"abc")
+
+-         Discovery.Description(t"Elsinore", tcp"8443", txt)
++         Discovery.Description(t"Elsinore", tcp"8443", txt)
+
+=         Discovery.Description(t"Elsinore", tcp"8443", txt)
+-         ```
++         ```
+
+-     entry #instance   the label asked for; the name claimed may differ after a conflict
+-     entry #port   the port the instance serves on
+-     entry #txt   the TXT record to publish; `Txt.empty` by default
+-     entry #host   the host name to publish address records under, or `Unset` for this host's
+-     entry #priority   the SRV record's priority, `0` by default
+-     entry #weight   the SRV record's weight, `0` by default
+-   entry .Resolution   where a found instance is and what it says: host, port, TXT and addresses
++     entry #instance   求めるラベル。衝突の後、実際に獲得された名前は異なりうる
++     entry #port   インスタンスが提供するポート
++     entry #txt   公開する TXT レコード。既定では `Txt.empty`
++     entry #host   アドレスのレコードを公開するホスト名。このホストのものなら `Unset`
++     entry #priority   SRV レコードの優先度。既定では `0`
++     entry #weight   SRV レコードの重み。既定では `0`
++   entry .Resolution   見つかったインスタンスがどこにあり、何を言っているか：ホスト、ポート、TXT、アドレス
+
+=   entry .Resolution   where a found instance is and what it says: host, port, TXT and addresses
+-     detail
++     detail
+
+-         The result of `resolve`: the instance, the DNS name of the host serving it, the port
+-         (typed to the service's transport), its `Txt` record, and the host's IPv4 and IPv6
+-         addresses. `#endpoints` pairs each address with the port, ready to connect to in turn.
++         `resolve` の結果である。
++         インスタンス、それを提供するホストの DNS の名前、ポート（サービスのトランスポートに合わせて型付けされる）、その `Txt` レコード、ホストの IPv4 と IPv6 のアドレスからなる。
++         `#endpoints` は各アドレスをポートと組にし、順に接続できるようにする。
+
+=         addresses. `#endpoints` pairs each address with the port, ready to connect to in turn.
+=
+-         ```scala
++         ```scala
+
+=         addresses. `#endpoints` pairs each address with the port, ready to connect to in turn.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         addresses. `#endpoints` pairs each address with the port, ready to connect to in turn.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         addresses. `#endpoints` pairs each address with the port, ready to connect to in turn.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+-         val fury = Discovery.Service(t"fury", Tcp)
++         val fury = Discovery.Service(t"fury", Tcp)
+
+=         addresses. `#endpoints` pairs each address with the port, ready to connect to in turn.
+=
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=
+=         val fury = Discovery.Service(t"fury", Tcp)
+-         val elsinore = Discovery.Instance(t"Elsinore", fury)
++         val elsinore = Discovery.Instance(t"Elsinore", fury)
+
+-         val resolution =
++         val resolution =
+
+-           Discovery.Resolution
++           Discovery.Resolution
+
+-             (elsinore, dns"elsinore.local", tcp"8443", Discovery.Txt.empty, List(ip"192.168.1.2", ip"fe80::1"))
++             (elsinore, dns"elsinore.local", tcp"8443", Discovery.Txt.empty, List(ip"192.168.1.2", ip"fe80::1"))
+
+-         resolution.endpoints.map(_.remote)   // List(t"192.168.1.2", t"fe80::1")
++         resolution.endpoints.map(_.remote)   // List(t"192.168.1.2", t"fe80::1")
+
+=         resolution.endpoints.map(_.remote)   // List(t"192.168.1.2", t"fe80::1")
+-         ```
++         ```
+
+-     entry #instance   the instance which was resolved
+-     entry #host   the DNS name of the host serving the instance, from its SRV record
+-     entry #port   the port, from the SRV record
+-     entry #txt   the instance's TXT record
+-     entry #addresses   the host's addresses, IPv4 then IPv6, as `Ipv4 | Ipv6` values
+-     entry #endpoints   each address paired with the port, as an `Endpoint[Port]`
+-   entry .Event   what a browser sees: an instance found on the link, or lost from it
++     entry #instance   解決されたインスタンス
++     entry #host   インスタンスを提供するホストの DNS の名前。SRV レコードから
++     entry #port   ポート。SRV レコードから
++     entry #txt   インスタンスの TXT レコード
++     entry #addresses   ホストのアドレス。IPv4 の次に IPv6 で、`Ipv4 | Ipv6` の値として
++     entry #endpoints   各アドレスをポートと組にした `Endpoint[Port]`
++   entry .Event   ブラウザが見るもの：リンク上で見つかったインスタンス、またはリンクから失われたインスタンス
+
+=   entry .Event   what a browser sees: an instance found on the link, or lost from it
+-     detail
++     detail
+
+-         `Found(instance)` is an instance appearing — its PTR record arriving in the cache —
+-         and `Lost(instance)` is one leaving, by a goodbye or by its records expiring. A change
+-         to an instance's details (its port or TXT record) is not an event: resolve it again.
+-         A `Browser` delivers these through `#events`.
+-     entry .showable   renders an event as `found Elsinore._fury._tcp.local` or `lost …`
+-   entry .Activity   what a backend reports as it works, logged through the `Loggable` at each loan
++         `Found(instance)` はインスタンスが現れること（その PTR レコードがキャッシュに届くこと）であり、`Lost(instance)` はグッバイによって、またはレコードの期限切れによってインスタンスが去ることである。
++         インスタンスの詳細（ポートや TXT レコード）の変化はイベントではない。
++         もう一度解決すること。
++         `Browser` はこれらを `#events` を通じて届ける。
++     entry .showable   イベントを `found Elsinore._fury._tcp.local` や `lost …` として描画する
++   entry .Activity   バックエンドが働きながら報告するもの。各貸し出しの `Loggable` を通じてログに記録される
+
+=   entry .Activity   what a backend reports as it works, logged through the `Loggable` at each loan
+-     detail
++     detail
+
+-         Each loan — an advertisement, a browse, a resolution — takes a `Discovery.Activity is
+-         Loggable`, to which the backend reports what it does for that loan: `Probing(name)`
+-         and `Yielded(name)` at `fine` level and `Conflicted(name)` while a name is being
+-         claimed; `Claimed(instance)` and `Withdrawn(instance)` as an advertisement starts and
+-         ends; `Browsing(service)` and `Resolved(instance)`. All are tagged `Log.Network`, and
+-         the probing ones `Log.Protocol` as well. A backend holds no logger of its own, so its
+-         background work between loans — defending a name, re-probing after a conflict — goes
+-         unreported; `logging.silentLogging` satisfies the requirement when nothing is wanted.
++         各貸し出し（広告、ブラウズ、解決）は `Discovery.Activity is Loggable` を取り、バックエンドはその貸し出しのために行うことをそれに報告する。
++         名前を獲得している間は `fine` レベルで `Probing(name)` と `Yielded(name)`、そして `Conflicted(name)` を、広告の開始と終了で `Claimed(instance)` と `Withdrawn(instance)` を、そして `Browsing(service)` と `Resolved(instance)` を報告する。
++         すべては `Log.Network` のタグを持ち、探査に関するものは `Log.Protocol` のタグも持つ。
++         バックエンドは自身のロガーを持たないので、貸し出しの合間のバックグラウンドの作業（名前の防衛、衝突の後の再探査）は報告されない。
++         何も望まないときは `logging.silentLogging` が要件を満たす。
+
+=         unreported; `logging.silentLogging` satisfies the requirement when nothing is wanted.
+=
+-         ```scala
++         ```scala
+
+=         unreported; `logging.silentLogging` satisfies the requirement when nothing is wanted.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         given loggable: Discovery.Activity is Loggable = (_, _, event) => ()
++         given loggable: Discovery.Activity is Loggable = (_, _, event) => ()
+
+=         given loggable: Discovery.Activity is Loggable = (_, _, event) => ()
+-         ```
++         ```
+
+-     entry .silent   a `Loggable` which discards every activity, for a backend's background work
+-     entry .communicable   renders each activity as a message: _probing for the name `…`_, _claimed and announced `…`_, …
+-   entry .Backend   what a transport does for discovery: advertise, withdraw, browse, dismiss, resolve
++     entry .silent   すべての活動を捨てる `Loggable`。バックエンドのバックグラウンドの作業のためのもの
++     entry .communicable   各活動をメッセージとして描画する：_probing for the name `…`_、_claimed and announced `…`_、…
++   entry .Backend   トランスポートが発見のために行うこと：広告、取り下げ、ブラウズ、終了、解決
+
+=   entry .Backend   what a transport does for discovery: advertise, withdraw, browse, dismiss, resolve
+-     detail
++     detail
+
+-         The seam behind `advertise`, `browse` and `resolve`: each loan calls a start and, in a
+-         `finally`, the matching stop. Each start takes the `Monitor^` under which the backend
+-         runs its background tasks (so cancelling the monitor ends them), a `Probate.Shared`, a
+-         `Tactic[Discovery.Error]` and the `Loggable` the loan's `Activity` goes to. A backend
+-         holds no capabilities of its own, which is what lets loans nest — a browse inside an
+-         advertisement. `Mdns.Responder` is the implementation provided; the given
+-         `discoveryBackends.mdnsSockets` builds one over the `Socket.Backend` in scope.
++         `advertise`、`browse`、`resolve` の背後の継ぎ目である。
++         各貸し出しは開始を呼び、`finally` の中で対応する停止を呼ぶ。
++         各開始は、バックエンドがバックグラウンドのタスクを走らせる `Monitor^`（そのためモニターをキャンセルするとそれらが終わる）、`Probate.Shared`、`Tactic[Discovery.Error]`、そして貸し出しの `Activity` が送られる `Loggable` を取る。
++         バックエンドは自身のケイパビリティを持たない。
++         それによって貸し出しを入れ子にできる（広告の中のブラウズ）。
++         `Mdns.Responder` が提供される実装であり、given の `discoveryBackends.mdnsSockets` はスコープにある `Socket.Backend` の上にそれを作る。
+
+-         The intent is one backend per program: bind it once as a `given` rather than summoning
+-         it afresh at each use, which would open a socket per summons.
+-     entry #advertise   claims a name for the instance and announces it, yielding the running `Advertising`
+-         Probes for the name, renames on conflict, and announces; the `Advertising` returned
+-         reads the instance currently claimed, which a later conflict may rename again. Raises
+-         `Discovery.Error` reason `Conflict` if no name can be claimed, `InvalidTxt` if the TXT
+-         record cannot be encoded, and `Unavailable` if the transport cannot be opened.
+-     entry #withdraw   ends an advertisement: sends its goodbye and releases the backend's loan
+-     entry #browse   starts a browse of a service type, yielding the `Browsing` whose relay carries events
+-     entry #dismiss   ends a browse: stops its re-query loop and its relay
+-     entry #resolve   resolves an instance within a timeout, raising `Discovery.Error` reason `Timeout` otherwise
+-         The timeout is any duration `Abstractable across Durations to Long`, in milliseconds
+-         (a plain `5000L` with `abstractables.millisecondsAbstractable` imported).
+-   entry .Browsing   a browse as a backend hands it over: its event relay and a snapshot of its instances
++         一つのプログラムに一つのバックエンドを使うことが意図されている。
++         使うたびに新たに召喚するのではなく、一度だけ `given` として束縛すること。
++         そうしなければ召喚のたびにソケットを開くことになる。
++     entry #advertise   インスタンスのために名前を獲得して告知し、走っている `Advertising` を生む
++         名前を探査し、衝突すれば名前を変え、告知する。
++         返される `Advertising` は現在獲得しているインスタンスを読み、それは後の衝突によって再び名前が変わりうる。
++         名前を獲得できなければ `Discovery.Error` の理由 `Conflict` を、TXT レコードをエンコードできなければ `InvalidTxt` を、トランスポートを開けなければ `Unavailable` を発生させる。
++     entry #withdraw   広告を終える：そのグッバイを送り、バックエンドの貸し出しを解放する
++     entry #browse   サービスの種類のブラウズを始め、リレーがイベントを運ぶ `Browsing` を生む
++     entry #dismiss   ブラウズを終える：再クエリーのループとリレーを止める
++     entry #resolve   タイムアウト内にインスタンスを解決する。そうでなければ `Discovery.Error` の理由 `Timeout` を発生させる
++         タイムアウトは任意の継続時間 `Abstractable across Durations to Long` をミリ秒で表したものである（`abstractables.millisecondsAbstractable` をインポートした素の `5000L`）。
++   entry .Browsing   バックエンドが手渡すブラウズ：そのイベントのリレーと、そのインスタンスのスナップショット
+
+=   entry .Browsing   a browse as a backend hands it over: its event relay and a snapshot of its instances
+-     detail
++     detail
+
+-         A plain value, built by a backend's `browse`, which the `browse` loan wraps in the
+-         `Browser` it lends. A program uses `Browser`; a backend author constructs this.
+-     entry #relay   the `Relay[Event]` the backend puts found and lost events on
+-     entry #instances   the instances the backend currently knows, as a `Set`
+-   entry .Advertising   an advertisement as a backend hands it over: the instance currently claimed
++         バックエンドの `browse` が作る素の値で、`browse` の貸し出しはそれを、自身が貸し出す `Browser` に包む。
++         プログラムは `Browser` を使い、バックエンドの作者がこれを構築する。
++     entry #relay   バックエンドが見つかったイベントと失われたイベントを置く `Relay[Event]`
++     entry #instances   バックエンドが現在知っているインスタンス。`Set` として
++   entry .Advertising   バックエンドが手渡す広告：現在獲得しているインスタンス
+
+=   entry .Advertising   an advertisement as a backend hands it over: the instance currently claimed
+-     detail
++     detail
+
+-         The trait a backend's `advertise` returns and its `withdraw` takes back, wrapped by
+-         the loan in the `Advertisement` it lends. `#instance` is read live: a conflict after
+-         establishment may rename it.
+-     entry #instance   the instance currently claimed, after any renaming
+-   entry .Advertisement   the handle an `advertise` loan lends: the instance as currently claimed
++         バックエンドの `advertise` が返し、その `withdraw` が受け取り直すトレイトで、貸し出しはそれを、自身が貸し出す `Advertisement` に包む。
++         `#instance` はその都度読まれる。
++         確立の後の衝突がその名前を変えうるからである。
++     entry #instance   名前の変更があればその後の、現在獲得しているインスタンス
++   entry .Advertisement   `advertise` の貸し出しが貸し出すハンドル：現在獲得しているインスタンス
+
+=   entry .Advertisement   the handle an `advertise` loan lends: the instance as currently claimed
+-     detail
++     detail
+
+-         Available inside an `advertise` block as `summon[Discovery.Advertisement]`. Its
+-         `#instance` is read live rather than copied, because a host which turns up later
+-         asserting the same name makes the responder probe afresh and, if the probe is
+-         answered, rename: `Elsinore` may become `Elsinore (2)` during the block. The handle is a
+-         plain value, not a capability — the socket and the background tasks belong to the
+-         `Monitor` — which is what lets it pass through a nested loan.
++         `advertise` のブロックの中で `summon[Discovery.Advertisement]` として使える。
++         その `#instance` はコピーされるのではなくその都度読まれる。
++         後から同じ名前を主張するホストが現れると、レスポンダーは新たに探査し、探査に答えがあれば名前を変えるからである。
++         `Elsinore` はブロックの間に `Elsinore (2)` になりうる。
++         このハンドルはケイパビリティではなく素の値であり（ソケットとバックグラウンドのタスクは `Monitor` に属する）、そのため入れ子の貸し出しを通り抜けられる。
+
+=         `Monitor` — which is what lets it pass through a nested loan.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         `Monitor` — which is what lets it pass through a nested loan.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         `Monitor` — which is what lets it pass through a nested loan.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         `Monitor` — which is what lets it pass through a nested loan.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+=         `Monitor` — which is what lets it pass through a nested loan.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         `Monitor` — which is what lets it pass through a nested loan.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=         import strategies.throwUnsafely
+-         import threads.platformThreads
++         import threads.platformThreads
+
+=         `Monitor` — which is what lets it pass through a nested loan.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=         import strategies.throwUnsafely
+=         import threads.platformThreads
+-         import probates.awaitProbate
++         import probates.awaitProbate
+
+=         `Monitor` — which is what lets it pass through a nested loan.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=         import strategies.throwUnsafely
+=         import threads.platformThreads
+=         import probates.awaitProbate
+-         import socketBackends.javaBaseSockets
++         import socketBackends.javaBaseSockets
+
+=         `Monitor` — which is what lets it pass through a nested loan.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=         import strategies.throwUnsafely
+=         import threads.platformThreads
+=         import probates.awaitProbate
+=         import socketBackends.javaBaseSockets
+-         import discoveryBackends.mdnsSockets
++         import discoveryBackends.mdnsSockets
+
+=         `Monitor` — which is what lets it pass through a nested loan.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=         import strategies.throwUnsafely
+=         import threads.platformThreads
+=         import probates.awaitProbate
+=         import socketBackends.javaBaseSockets
+=         import discoveryBackends.mdnsSockets
+=
+-         val fury = Discovery.Service(t"fury", Tcp)
++         val fury = Discovery.Service(t"fury", Tcp)
+
+=         `Monitor` — which is what lets it pass through a nested loan.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=         import strategies.throwUnsafely
+=         import threads.platformThreads
+=         import probates.awaitProbate
+=         import socketBackends.javaBaseSockets
+=         import discoveryBackends.mdnsSockets
+=
+=         val fury = Discovery.Service(t"fury", Tcp)
+=
+-         supervise:
++         supervise:
+
+-           fury.advertise(Discovery.Description(t"Elsinore", tcp"8443")):
++           fury.advertise(Discovery.Description(t"Elsinore", tcp"8443")):
+
+-             summon[Discovery.Advertisement].instance.label   // t"Elsinore", or t"Elsinore (2)"
++             summon[Discovery.Advertisement].instance.label   // t"Elsinore", or t"Elsinore (2)"
+
+=             summon[Discovery.Advertisement].instance.label   // t"Elsinore", or t"Elsinore (2)"
+-         ```
++         ```
+
+-     entry #instance   the instance currently claimed, which a conflict may have renamed
+-   entry .Browser   the handle a `browse` loan lends: events as they happen, and the instances known
++     entry #instance   現在獲得しているインスタンス。衝突によって名前が変わっていることがある
++   entry .Browser   `browse` の貸し出しが貸し出すハンドル：起きるにつれてのイベントと、既知のインスタンス
+
+=   entry .Browser   the handle a `browse` loan lends: events as they happen, and the instances known
+-     detail
++     detail
+
+-         Available inside a `browse` block as `summon[Discovery.Browser]`. `#events` is a
+-         `Chain` of `Event`s, delivered as instances appear and leave — instances already known
+-         when the browse began are reported first, as `Found` — and `#instances` is the set
+-         currently known. The chain ends when the loan does.
++         `browse` のブロックの中で `summon[Discovery.Browser]` として使える。
++         `#events` は `Event` の `Chain` で、インスタンスが現れたり去ったりするにつれて届けられる。
++         ブラウズの開始時にすでに知られているインスタンスは、最初に `Found` として報告される。
++         `#instances` は現在知られている集合である。
++         チェーンは貸し出しが終わるときに終わる。
+
+=         currently known. The chain ends when the loan does.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         currently known. The chain ends when the loan does.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         currently known. The chain ends when the loan does.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         currently known. The chain ends when the loan does.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+=         currently known. The chain ends when the loan does.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         currently known. The chain ends when the loan does.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=         import strategies.throwUnsafely
+-         import threads.platformThreads
++         import threads.platformThreads
+
+=         currently known. The chain ends when the loan does.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=         import strategies.throwUnsafely
+=         import threads.platformThreads
+-         import probates.awaitProbate
++         import probates.awaitProbate
+
+=         currently known. The chain ends when the loan does.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=         import strategies.throwUnsafely
+=         import threads.platformThreads
+=         import probates.awaitProbate
+-         import socketBackends.javaBaseSockets
++         import socketBackends.javaBaseSockets
+
+=         currently known. The chain ends when the loan does.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=         import strategies.throwUnsafely
+=         import threads.platformThreads
+=         import probates.awaitProbate
+=         import socketBackends.javaBaseSockets
+-         import discoveryBackends.mdnsSockets
++         import discoveryBackends.mdnsSockets
+
+=         currently known. The chain ends when the loan does.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=         import strategies.throwUnsafely
+=         import threads.platformThreads
+=         import probates.awaitProbate
+=         import socketBackends.javaBaseSockets
+=         import discoveryBackends.mdnsSockets
+=
+-         val fury = Discovery.Service(t"fury", Tcp)
++         val fury = Discovery.Service(t"fury", Tcp)
+
+=         currently known. The chain ends when the loan does.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=         import strategies.throwUnsafely
+=         import threads.platformThreads
+=         import probates.awaitProbate
+=         import socketBackends.javaBaseSockets
+=         import discoveryBackends.mdnsSockets
+=
+=         val fury = Discovery.Service(t"fury", Tcp)
+=
+-         supervise:
++         supervise:
+
+-           fury.browse:
++           fury.browse:
+
+-             summon[Discovery.Browser].events.head   // the first Found or Lost event
++             summon[Discovery.Browser].events.head   // the first Found or Lost event
+
+=             summon[Discovery.Browser].events.head   // the first Found or Lost event
+-         ```
++         ```
+
+-     entry #events   the `Chain[Event]` of instances found and lost, as they happen
+-     entry #instances   the instances currently known, as a `Set[Instance]`
+-   entry .Error   raised when a name is invalid, cannot be claimed, does not resolve, or no backend starts
++     entry #events   見つかったインスタンスと失われたインスタンスの、起きるにつれての `Chain[Event]`
++     entry #instances   現在知られているインスタンス。`Set[Instance]` として
++   entry .Error   名前が不正である、獲得できない、解決しない、またはバックエンドが起動しないときに発生する
+
+=   entry .Error   raised when a name is invalid, cannot be claimed, does not resolve, or no backend starts
+-     detail
++     detail
+
+-         Error `↯/s.102.1`: _service discovery failed because `reason`_. The `#reason` is one of
+-         `Discovery.Error.Reason`'s cases, numbered 1 to 6:
++         エラー `↯/s.102.1`：_service discovery failed because `reason`_。
++         `#reason` は `Discovery.Error.Reason` のケースの一つで、1 から 6 まで番号が付いている。
+
+-         ```tabular
++         ```tabular
+
+-         column  Case
+-         column  Code
+-         column  Message
+-         column  Note
+-         row  `Conflict(name)`  1  _the name `name` could not be claimed after repeated conflicts_  after a hundred renamings
++         column  ケース
++         column  コード
++         column  メッセージ
++         column  備考
++         row  `Conflict(name)`  1  _the name `name` could not be claimed after repeated conflicts_  百回の名前の変更の後
+
+-         row  `Timeout(instance)`  2  _the instance `instance` did not resolve before the timeout_
++         row  `Timeout(instance)`  2  _the instance `instance` did not resolve before the timeout_
+
+-         row  `InvalidName(text)`  3  _the name `text` is not a valid DNS-SD name_  a label or name is empty, over 63 bytes, or over a DNS limit
+-         row  `InvalidTxt(key)`  4  _the TXT entry `key` is not valid_  its key is empty, contains `=` or a non-printable character, or the entry exceeds 255 bytes
+-         row  `InvalidService(name)`  5  _the service name `name` is not valid_  empty, over fifteen characters, or beginning with `_`
+-         row  `Unavailable`  6  _no service discovery backend could be started_  the transport could not be opened; the responder's own `Mdns.Error` is the cause
++         row  `InvalidName(text)`  3  _the name `text` is not a valid DNS-SD name_  ラベルか名前が空である、63 バイトを超える、または DNS の制限を超える
++         row  `InvalidTxt(key)`  4  _the TXT entry `key` is not valid_  キーが空である、`=` か印字できない文字を含む、または項目が 255 バイトを超える
++         row  `InvalidService(name)`  5  _the service name `name` is not valid_  空である、十五文字を超える、または `_` で始まる
++         row  `Unavailable`  6  _no service discovery backend could be started_  トランスポートを開けなかった。レスポンダー自身の `Mdns.Error` が原因である
+
+=         row  `Unavailable`  6  _no service discovery backend could be started_  the transport could not be opened; the responder's own `Mdns.Error` is the cause
+-         ```
++         ```
+
+=         ```
+=
+-         ```scala
++         ```scala
+
+=         ```
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         capture[Discovery.Error](Discovery.Service(t"_fury", Tcp)).reason
++         capture[Discovery.Error](Discovery.Service(t"_fury", Tcp)).reason
+
+-         // Discovery.Error.Reason.InvalidService(t"_fury")
++         // Discovery.Error.Reason.InvalidService(t"_fury")
+
+=         // Discovery.Error.Reason.InvalidService(t"_fury")
+-         ```
++         ```
+
+-     entry .Reason   why discovery failed: `Conflict`, `Timeout`, `InvalidName`, `InvalidTxt`, `InvalidService` or `Unavailable`
++     entry .Reason   発見が失敗した理由：`Conflict`、`Timeout`、`InvalidName`、`InvalidTxt`、`InvalidService`、`Unavailable`
+
+=     entry .Reason   why discovery failed: `Conflict`, `Timeout`, `InvalidName`, `InvalidTxt`, `InvalidService` or `Unavailable`
+-       detail
++       detail
+
+-           An enum, each case numbered, with a `Communicable` rendering such as _the name
+-           `Elsinore._fury._tcp.local` could not be claimed after repeated conflicts_ or _the
+-           instance `…` did not resolve before the timeout_.
+-       entry .communicable   renders each reason as a message
+-       entry #number   the reason's number, `1` to `6`, the second part of the error's code
+-     entry #reason   why discovery failed
++           各ケースに番号が付いた列挙型で、_the name `Elsinore._fury._tcp.local` could not be claimed after repeated conflicts_ や _the instance `…` did not resolve before the timeout_ のような `Communicable` の描画を持つ。
++       entry .communicable   各理由をメッセージとして描画する
++       entry #number   理由の番号。`1` から `6` で、エラーのコードの二つ目の部分
++     entry #reason   発見が失敗した理由
+
+- entry .advertise   `service.advertise(description) { … }`: advertises an instance for the block
++ entry .advertise   `service.advertise(description) { … }`：ブロックの間インスタンスを広告する
+
+= entry .advertise   `service.advertise(description) { … }`: advertises an instance for the block
+-   detail
++   detail
+
+-       An extension on `Discovery.Service`. The instance is probed for, claimed — renamed
+-       `Elsinore (2)` if another host holds the name, or this responder already advertises it —
+-       and announced; it stays advertised for the block, and a goodbye is sent when the block
+-       ends, normally or by an exception, or when the `Monitor` is cancelled. The block
+-       receives a `Discovery.Advertisement`, from which the name actually claimed is read.
++       `Discovery.Service` に対する拡張である。
++       インスタンスは探査され、獲得され（別のホストがその名前を保持しているか、このレスポンダーがすでにそれを広告していれば `Elsinore (2)` に名前が変わる）、告知される。
++       それはブロックの間広告されたままであり、ブロックが正常にまたは例外で終わるとき、あるいは `Monitor` がキャンセルされるときに、グッバイが送られる。
++       ブロックは `Discovery.Advertisement` を受け取り、そこから実際に獲得された名前を読む。
+
+=       receives a `Discovery.Advertisement`, from which the name actually claimed is read.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       receives a `Discovery.Advertisement`, from which the name actually claimed is read.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       receives a `Discovery.Advertisement`, from which the name actually claimed is read.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       receives a `Discovery.Advertisement`, from which the name actually claimed is read.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       receives a `Discovery.Advertisement`, from which the name actually claimed is read.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       receives a `Discovery.Advertisement`, from which the name actually claimed is read.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import threads.platformThreads
++       import threads.platformThreads
+
+=       receives a `Discovery.Advertisement`, from which the name actually claimed is read.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import threads.platformThreads
+-       import probates.awaitProbate
++       import probates.awaitProbate
+
+=       import probates.awaitProbate
+-       import socketBackends.javaBaseSockets
++       import socketBackends.javaBaseSockets
+
+=       import probates.awaitProbate
+=       import socketBackends.javaBaseSockets
+-       import discoveryBackends.mdnsSockets
++       import discoveryBackends.mdnsSockets
+
+=       import probates.awaitProbate
+=       import socketBackends.javaBaseSockets
+=       import discoveryBackends.mdnsSockets
+=
+-       val fury = Discovery.Service(t"fury", Tcp)
++       val fury = Discovery.Service(t"fury", Tcp)
+
+-       val description = Discovery.Description(t"Elsinore", tcp"8443", Discovery.Txt(t"fp" -> t"abc"))
++       val description = Discovery.Description(t"Elsinore", tcp"8443", Discovery.Txt(t"fp" -> t"abc"))
+
+=       val description = Discovery.Description(t"Elsinore", tcp"8443", Discovery.Txt(t"fp" -> t"abc"))
+=
+-       supervise:
++       supervise:
+
+-         fury.advertise(description):
++         fury.advertise(description):
+
+-           summon[Discovery.Advertisement].instance
++           summon[Discovery.Advertisement].instance
+
+=           summon[Discovery.Advertisement].instance
+-       ```
++       ```
+
+-       The backend is a `using` clause of its own, before the block, so one other than the
+-       given can be named: `fury.advertise(description)(using responder) { … }`. The block
+-       also needs a `Monitor^` (from `supervise`), a `Probate.Shared`, a
+-       `Tactic[Discovery.Error]` and a `Discovery.Activity is Loggable`. Raises
+-       `Discovery.Error` for an invalid label or TXT record, a name which cannot be claimed
+-       after repeated conflicts, or a transport which cannot be opened. Loans nest: a browse
+-       may run inside an advertisement.
++       バックエンドはブロックの前にあるそれ自身の `using` 節なので、given のもの以外を名指しできる。
++       `fury.advertise(description)(using responder) { … }`。
++       ブロックはさらに `Monitor^`（`supervise` から）、`Probate.Shared`、`Tactic[Discovery.Error]`、`Discovery.Activity is Loggable` を必要とする。
++       不正なラベルや TXT レコード、繰り返し衝突した後に獲得できない名前、開けないトランスポートに対しては `Discovery.Error` を発生させる。
++       貸し出しは入れ子にできる。
++       ブラウズは広告の中で走ってよい。
+
+-   refer syndesis.Discovery.Advertisement
++   refer syndesis.Discovery.Advertisement
+
+-   refer syndesis.Discovery.Description
++   refer syndesis.Discovery.Description
+
+-   refer syndesis.browse
++   refer syndesis.browse
+
+- entry .browse   `service.browse { … }`: watches for instances of a service type for the block
++ entry .browse   `service.browse { … }`：ブロックの間サービスの種類のインスタンスを見張る
+
+= entry .browse   `service.browse { … }`: watches for instances of a service type for the block
+-   detail
++   detail
+
+-       An extension on `Discovery.Service`. The block receives a `Discovery.Browser`, whose
+-       `events` are the instances appearing on and leaving the link, as they happen, and whose
+-       `instances` are those currently known. Instances already in the cache are reported at
+-       once as `Found`; then the service type is queried, and queried again at intervals
+-       doubling from a second to an hour, each query telling other responders what is already
+-       known. The browse ends with the block, or with the `Monitor`.
++       `Discovery.Service` に対する拡張である。
++       ブロックは `Discovery.Browser` を受け取る。
++       その `events` は、リンクに現れたりリンクから去ったりするインスタンスを、起きるにつれて表し、その `instances` は現在知られているものである。
++       すでにキャッシュにあるインスタンスはすぐに `Found` として報告される。
++       次にサービスの種類がクエリーされ、一秒から一時間まで倍々に伸びる間隔で再びクエリーされ、各クエリーはすでに知られていることを他のレスポンダーに伝える。
++       ブラウズはブロックとともに、あるいは `Monitor` とともに終わる。
+
+=       known. The browse ends with the block, or with the `Monitor`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       known. The browse ends with the block, or with the `Monitor`.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       known. The browse ends with the block, or with the `Monitor`.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       known. The browse ends with the block, or with the `Monitor`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       known. The browse ends with the block, or with the `Monitor`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       known. The browse ends with the block, or with the `Monitor`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import threads.platformThreads
++       import threads.platformThreads
+
+=       known. The browse ends with the block, or with the `Monitor`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import threads.platformThreads
+-       import probates.awaitProbate
++       import probates.awaitProbate
+
+=       known. The browse ends with the block, or with the `Monitor`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import threads.platformThreads
+=       import probates.awaitProbate
+-       import abstractables.millisecondsAbstractable
++       import abstractables.millisecondsAbstractable
+
+=       known. The browse ends with the block, or with the `Monitor`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import threads.platformThreads
+=       import probates.awaitProbate
+=       import abstractables.millisecondsAbstractable
+-       import socketBackends.javaBaseSockets
++       import socketBackends.javaBaseSockets
+
+=       known. The browse ends with the block, or with the `Monitor`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import threads.platformThreads
+=       import probates.awaitProbate
+=       import abstractables.millisecondsAbstractable
+=       import socketBackends.javaBaseSockets
+-       import discoveryBackends.mdnsSockets
++       import discoveryBackends.mdnsSockets
+
+=       known. The browse ends with the block, or with the `Monitor`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import threads.platformThreads
+=       import probates.awaitProbate
+=       import abstractables.millisecondsAbstractable
+=       import socketBackends.javaBaseSockets
+=       import discoveryBackends.mdnsSockets
+=
+-       val fury = Discovery.Service(t"fury", Tcp)
++       val fury = Discovery.Service(t"fury", Tcp)
+
+=       val fury = Discovery.Service(t"fury", Tcp)
+=
+-       supervise:
++       supervise:
+
+=       supervise:
+-         fury.browse:
++         fury.browse:
+
+=       supervise:
+=         fury.browse:
+-           summon[Discovery.Browser].events.each:
++           summon[Discovery.Browser].events.each:
+
+-             case Discovery.Event.Found(instance) => instance.resolve(5000L).txt(t"fp")
++             case Discovery.Event.Found(instance) => instance.resolve(5000L).txt(t"fp")
+
+=             case Discovery.Event.Found(instance) => instance.resolve(5000L).txt(t"fp")
+-             case Discovery.Event.Lost(instance)  => ()
++             case Discovery.Event.Lost(instance)  => ()
+
+=             case Discovery.Event.Lost(instance)  => ()
+-       ```
++       ```
+
+-       The backend is a `using` clause of its own (`fury.browse(using responder) { … }`), and
+-       the block needs a `Monitor^`, a `Probate.Shared`, a `Tactic[Discovery.Error]` and a
+-       `Discovery.Activity is Loggable`. The browse logs `Discovery.Activity.Browsing`.
++       バックエンドはそれ自身の `using` 節であり（`fury.browse(using responder) { … }`）、ブロックは `Monitor^`、`Probate.Shared`、`Tactic[Discovery.Error]`、`Discovery.Activity is Loggable` を必要とする。
++       ブラウズは `Discovery.Activity.Browsing` をログに記録する。
+
+-   refer syndesis.Discovery.Browser
++   refer syndesis.Discovery.Browser
+
+-   refer syndesis.Discovery.Event
++   refer syndesis.Discovery.Event
+
+-   refer syndesis.resolve
++   refer syndesis.resolve
+
+- entry .resolve   `instance.resolve(timeout)`: the instance's host, port, TXT record and addresses
++ entry .resolve   `instance.resolve(timeout)`：インスタンスのホスト、ポート、TXT レコード、アドレス
+
+= entry .resolve   `instance.resolve(timeout)`: the instance's host, port, TXT record and addresses
+-   detail
++   detail
+
+-       An extension on `Discovery.Instance`, giving a `Discovery.Resolution`. If the cache
+-       already holds the instance's SRV and TXT records and its host's address records, the
+-       resolution is immediate; otherwise those records are queried for and the call waits up
+-       to the timeout for them to arrive. The timeout is any value `Abstractable across
+-       Durations to Long`, in milliseconds — a `5000L` with
+-       `abstractables.millisecondsAbstractable` imported, or an aviation duration.
++       `Discovery.Instance` に対する拡張で、`Discovery.Resolution` を与える。
++       キャッシュがすでにインスタンスの SRV と TXT のレコードとホストのアドレスのレコードを保持していれば、解決は即座である。
++       そうでなければそれらのレコードがクエリーされ、呼び出しはそれらが届くのをタイムアウトまで待つ。
++       タイムアウトは任意の値 `Abstractable across Durations to Long` をミリ秒で表したものである。
++       `abstractables.millisecondsAbstractable` をインポートした `5000L` や、aviation の継続時間である。
+
+=       `abstractables.millisecondsAbstractable` imported, or an aviation duration.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       `abstractables.millisecondsAbstractable` imported, or an aviation duration.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       `abstractables.millisecondsAbstractable` imported, or an aviation duration.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       `abstractables.millisecondsAbstractable` imported, or an aviation duration.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       `abstractables.millisecondsAbstractable` imported, or an aviation duration.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       `abstractables.millisecondsAbstractable` imported, or an aviation duration.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import threads.platformThreads
++       import threads.platformThreads
+
+=       `abstractables.millisecondsAbstractable` imported, or an aviation duration.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import threads.platformThreads
+-       import probates.awaitProbate
++       import probates.awaitProbate
+
+=       `abstractables.millisecondsAbstractable` imported, or an aviation duration.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import threads.platformThreads
+=       import probates.awaitProbate
+-       import abstractables.millisecondsAbstractable
++       import abstractables.millisecondsAbstractable
+
+=       `abstractables.millisecondsAbstractable` imported, or an aviation duration.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import threads.platformThreads
+=       import probates.awaitProbate
+=       import abstractables.millisecondsAbstractable
+-       import socketBackends.javaBaseSockets
++       import socketBackends.javaBaseSockets
+
+=       `abstractables.millisecondsAbstractable` imported, or an aviation duration.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import threads.platformThreads
+=       import probates.awaitProbate
+=       import abstractables.millisecondsAbstractable
+=       import socketBackends.javaBaseSockets
+-       import discoveryBackends.mdnsSockets
++       import discoveryBackends.mdnsSockets
+
+=       `abstractables.millisecondsAbstractable` imported, or an aviation duration.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import threads.platformThreads
+=       import probates.awaitProbate
+=       import abstractables.millisecondsAbstractable
+=       import socketBackends.javaBaseSockets
+=       import discoveryBackends.mdnsSockets
+=
+-       val fury = Discovery.Service(t"fury", Tcp)
++       val fury = Discovery.Service(t"fury", Tcp)
+
+=       import discoveryBackends.mdnsSockets
+=
+=       val fury = Discovery.Service(t"fury", Tcp)
+-       val elsinore = Discovery.Instance(t"Elsinore", fury)
++       val elsinore = Discovery.Instance(t"Elsinore", fury)
+
+=       val elsinore = Discovery.Instance(t"Elsinore", fury)
+=
+-       supervise:
++       supervise:
+
+-         val resolution = elsinore.resolve(5000L)
++         val resolution = elsinore.resolve(5000L)
+
+-         (resolution.port.number, resolution.txt(t"fp"), resolution.endpoints)
++         (resolution.port.number, resolution.txt(t"fp"), resolution.endpoints)
+
+=         (resolution.port.number, resolution.txt(t"fp"), resolution.endpoints)
+-       ```
++       ```
+
+-       Raises `Discovery.Error` reason `Timeout` if the records do not arrive in time, naming
+-       the instance. The call is a loan on the backend like the others — it takes the backend
+-       as its own `using` clause, and needs a `Monitor^`, a `Probate.Shared`, a
+-       `Tactic[Discovery.Error]` and a `Discovery.Activity is Loggable` — and logs
+-       `Discovery.Activity.Resolved` on success.
++       レコードが時間内に届かなければ、インスタンスを挙げて `Discovery.Error` の理由 `Timeout` を発生させる。
++       この呼び出しは他のものと同じくバックエンドに対する貸し出しであり（バックエンドをそれ自身の `using` 節として取り、`Monitor^`、`Probate.Shared`、`Tactic[Discovery.Error]`、`Discovery.Activity is Loggable` を必要とする）、成功すると `Discovery.Activity.Resolved` をログに記録する。
+
+-   refer syndesis.Discovery.Resolution
++   refer syndesis.Discovery.Resolution
+
+=   refer syndesis.Discovery.Resolution
+-   refer syndesis.Discovery.Instance
++   refer syndesis.Discovery.Instance
+
+- entry .discoveryBackends   the discovery backends, each a given to import by name
++ entry .discoveryBackends   発見のバックエンド。それぞれ名前でインポートする given
+
+= entry .discoveryBackends   the discovery backends, each a given to import by name
+-   detail
++   detail
+
+-       Which backend advertises, browses and resolves is the `Discovery.Backend` given in
+-       scope. `import soundness.*` brings none in: one is imported by name, and the intent is
+-       one backend per program, bound once.
++       どのバックエンドが広告し、ブラウズし、解決するかは、スコープにある `Discovery.Backend` の given である。
++       `import soundness.*` は何も持ち込まない。
++       バックエンドは名前でインポートし、一つのプログラムに一つのバックエンドを一度だけ束縛することが意図されている。
+
+=       one backend per program, bound once.
+=
+-       ```scala
++       ```scala
+
+=       one backend per program, bound once.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import socketBackends.javaBaseSockets
++       import socketBackends.javaBaseSockets
+
+=       import soundness.*
+=       import socketBackends.javaBaseSockets
+-       import discoveryBackends.mdnsSockets
++       import discoveryBackends.mdnsSockets
+
+=       import discoveryBackends.mdnsSockets
+-       ```
++       ```
+
+-       For a program under test, an `Mdns.Responder` over an `Mdns.Transport.Bus` can be
+-       bound as a local given, or passed explicitly as `(using responder)`, in place of the
+-       socket-based one.
+-   entry .mdnsSockets   the mDNS responder over the multicast sockets of the `Socket.Backend` in scope
+-       An `Mdns.Responder` whose transport is `Mdns.Transport.sockets` over the
+-       `Socket.Backend` given (such as `socketBackends.javaBaseSockets`), with multicast
+-       loopback, a multicast hop limit of 255, a datagram size of 9000 bytes, and whatever
+-       `Socket.Option.Udp`s are in scope as an `Every`. It joins `224.0.0.251:5353` and
+-       `[ff02::fb]:5353` on every interface which is up, multicast-capable and has an address
+-       of the group's family, with address and port reuse, so it runs beside the system's own
+-       responder. The sockets are opened at the first loan and closed after the last; a host
+-       with no multicast-capable interface fails the first loan with `Discovery.Error` reason
+-       `Unavailable`.
++       テスト中のプログラムでは、ソケットを使うものの代わりに、`Mdns.Transport.Bus` の上の `Mdns.Responder` をローカルの given として束縛するか、`(using responder)` として明示的に渡せる。
++   entry .mdnsSockets   スコープにある `Socket.Backend` のマルチキャストソケットの上の mDNS のレスポンダー
++       トランスポートが `Socket.Backend` の given（`socketBackends.javaBaseSockets` など）の上の `Mdns.Transport.sockets` である `Mdns.Responder` で、マルチキャストのループバック、255 のマルチキャストのホップ制限、9000 バイトのデータグラムの大きさを持ち、スコープにある `Socket.Option.Udp` を `Every` として用いる。
++       これは、稼働中でマルチキャストに対応し、そのグループの系列のアドレスを持つすべてのインターフェースで、アドレスとポートの再利用を伴って `224.0.0.251:5353` と `[ff02::fb]:5353` に参加するので、システム自身のレスポンダーと並んで走る。
++       ソケットは最初の貸し出しで開かれ、最後のものの後に閉じられる。
++       マルチキャストに対応するインターフェースのないホストでは、最初の貸し出しが `Discovery.Error` の理由 `Unavailable` で失敗する。
+
+-       The given is computed each time it is summoned, so bind it once — `given backend:
+-       Discovery.Backend = discoveryBackends.mdnsSockets` — rather than summoning it at each
+-       use, which would open a socket per summons.
++       この given は召喚されるたびに計算されるので、使うたびに召喚するのではなく、一度だけ束縛すること（`given backend: Discovery.Backend = discoveryBackends.mdnsSockets`）。
++       そうしなければ召喚のたびにソケットを開くことになる。
+
+- entry .Mdns   the multicast DNS responder (RFC 6762) and its parts: transport, cache, tiebreaking
++ entry .Mdns   マルチキャスト DNS（RFC 6762）のレスポンダーとその部品：トランスポート、キャッシュ、タイブレーク
+
+= entry .Mdns   the multicast DNS responder (RFC 6762) and its parts: transport, cache, tiebreaking
+-   detail
++   detail
+
+-       `Mdns` is the one `Discovery.Backend` provided: `Mdns.Responder`, a responder which
+-       speaks through an `Mdns.Transport` — the sockets, or an in-memory `Mdns.Transport.Bus`
+-       — keeps what it hears in an `Mdns.Cache`, and settles simultaneous probes with
+-       `Mdns.Tiebreak`. The transport is a seam of its own, below `Discovery`'s, so the protocol
+-       runs identically over the network and over a bus, which is how it is tested without
+-       touching the host's network.
++       `Mdns` は提供される唯一の `Discovery.Backend` である。
++       `Mdns.Responder` はレスポンダーで、`Mdns.Transport`（ソケット、またはメモリー内の `Mdns.Transport.Bus`）を通じて話し、聞いたことを `Mdns.Cache` に保持し、同時の探査を `Mdns.Tiebreak` で決着させる。
++       トランスポートは `Discovery` の継ぎ目の下にあるそれ自身の継ぎ目なので、プロトコルはネットワーク上でもバス上でも同じように走る。
++       こうして、ホストのネットワークに触れずにテストされる。
+
+=       touching the host's network.
+=
+-       ```scala
++       ```scala
+
+=       touching the host's network.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       touching the host's network.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+-       import threads.platformThreads
++       import threads.platformThreads
+
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import threads.platformThreads
+-       import probates.awaitProbate
++       import probates.awaitProbate
+
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=       import threads.platformThreads
+=       import probates.awaitProbate
+-       import abstractables.millisecondsAbstractable
++       import abstractables.millisecondsAbstractable
+
+=       import abstractables.millisecondsAbstractable
+=
+-       val fury = Discovery.Service(t"fury", Tcp)
++       val fury = Discovery.Service(t"fury", Tcp)
+
+-       val description = Discovery.Description(t"Elsinore", tcp"8443")
++       val description = Discovery.Description(t"Elsinore", tcp"8443")
+
+=       val description = Discovery.Description(t"Elsinore", tcp"8443")
+=
+-       supervise:
++       supervise:
+
+-         val bus = Mdns.Transport.Bus()
++         val bus = Mdns.Transport.Bus()
+
+-         val a = Mdns.Responder(() => bus.join(dns"a.local", List(ip"10.0.0.1")))
++         val a = Mdns.Responder(() => bus.join(dns"a.local", List(ip"10.0.0.1")))
+
+-         val b = Mdns.Responder(() => bus.join(dns"b.local", List(ip"10.0.0.2")))
++         val b = Mdns.Responder(() => bus.join(dns"b.local", List(ip"10.0.0.2")))
+
+-         fury.advertise(description)(using a):
++         fury.advertise(description)(using a):
+
+-           fury.browse(using b):
++           fury.browse(using b):
+
+-             summon[Discovery.Browser].events.head   // Discovery.Event.Found(Elsinore._fury._tcp.local)
++             summon[Discovery.Browser].events.head   // Discovery.Event.Found(Elsinore._fury._tcp.local)
+
+=             summon[Discovery.Browser].events.head   // Discovery.Event.Found(Elsinore._fury._tcp.local)
+-       ```
++       ```
+
+-       The responder's own failure to start — no multicast-capable interface, or a group it
+-       cannot join — is an `Mdns.Error`, which the loan reports as `Discovery.Error` reason
+-       `Unavailable`.
++       レスポンダー自身の起動の失敗（マルチキャストに対応するインターフェースがない、または参加できないグループがある）は `Mdns.Error` であり、貸し出しはそれを `Discovery.Error` の理由 `Unavailable` として報告する。
+
+-   refer syndesis.Mdns.Responder
++   refer syndesis.Mdns.Responder
+
+-   refer syndesis.Mdns.Transport
++   refer syndesis.Mdns.Transport
+
+=   refer syndesis.Mdns.Transport
+-   refer syndesis.Discovery.Backend
++   refer syndesis.Discovery.Backend
+
+-   entry .group4   the IPv4 mDNS group, `224.0.0.251` on port 5353
+-   entry .group6   the IPv6 mDNS group, `ff02::fb` on port 5353
+-   entry .port   the mDNS port, `udp"mdns"` (5353), the source and destination of every message
+-   entry .Transport   what the responder needs of the network: this host's name and addresses, send, reply, receive, close
++   entry .group4   IPv4 の mDNS のグループ。ポート 5353 の `224.0.0.251`
++   entry .group6   IPv6 の mDNS のグループ。ポート 5353 の `ff02::fb`
++   entry .port   mDNS のポート `udp"mdns"`（5353）。すべてのメッセージの送信元かつ宛先
++   entry .Transport   レスポンダーがネットワークに求めるもの：このホストの名前とアドレス、送信、返信、受信、クローズ
+
+=   entry .Transport   what the responder needs of the network: this host's name and addresses, send, reply, receive, close
+-     detail
++     detail
+
+-         The seam between the protocol and the link. A transport publishes this host's
+-         `#host` name and `#addresses` (what its own address records say), sends a message to
+-         the group, sends a unicast reply, offers `#inlets` to receive from, and closes. Two
+-         implementations: `Transport.sockets`, over a `Socket.Backend`, and `Transport.Bus`, an
+-         in-memory link for tests. `Mdns.Responder` takes a function which opens one, so the
+-         transport is opened at the first loan and closed after the last.
+-     entry .Inlet   one source of packets, received one at a time by a blocking call
++         プロトコルとリンクの間の継ぎ目である。
++         トランスポートは、このホストの `#host` の名前と `#addresses`（自身のアドレスのレコードが言うもの）を公開し、グループにメッセージを送り、ユニキャストの返信を送り、受信のための `#inlets` を提供し、閉じる。
++         実装は二つある。
++         `Socket.Backend` の上の `Transport.sockets` と、テストのためのメモリー内のリンク `Transport.Bus` である。
++         `Mdns.Responder` はトランスポートを開く関数を取るので、トランスポートは最初の貸し出しで開かれ、最後のものの後に閉じられる。
++     entry .Inlet   パケットの一つの源。ブロックする呼び出しで一つずつ受信する
+
+=     entry .Inlet   one source of packets, received one at a time by a blocking call
+-       detail
++       detail
+
+-           A joined socket, in practice: a transport over both groups has two, and the
+-           responder reads each in a loop of its own. A `Bus` member is its own single inlet,
+-           which a test may receive from directly.
+-       entry #receive   the next packet, blocking until one arrives; raises `Socket.Error` once closed
+-     entry .sockets   a transport over the multicast sockets of a `Socket.Backend`
+-         `Mdns.Transport.sockets(backend, options)` joins the IPv4 group on every suitable
+-         interface with an IPv4 address and the IPv6 group on every one with an IPv6 address —
+-         the IPv6 group is left out on an IPv4-only host — and fails with `Mdns.Error` reason
+-         `NoInterface` if no interface is up and multicast-capable, or reason `Join` if neither
+-         group can be joined. This host's name is the first label of its hostname under
+-         `.local` (or `soundness.local` if it has none), and its addresses are those of the
+-         joined interfaces. A unicast reply leaves through the socket of the destination's
+-         family. `discoveryBackends.mdnsSockets` builds a responder over this.
+-     entry .Bus   an in-memory link: every member receives what any sends, itself included
++           実際には参加したソケットである。
++           両方のグループの上のトランスポートは二つ持ち、レスポンダーはそれぞれをそれ自身のループで読む。
++           `Bus` のメンバーはそれ自身が唯一の入口であり、テストはそこから直接受信してよい。
++       entry #receive   次のパケット。届くまでブロックする。閉じられると `Socket.Error` を発生させる
++     entry .sockets   `Socket.Backend` のマルチキャストソケットの上のトランスポート
++         `Mdns.Transport.sockets(backend, options)` は、IPv4 のアドレスを持つ適切なすべてのインターフェースで IPv4 のグループに、IPv6 のアドレスを持つすべてのインターフェースで IPv6 のグループに参加する。
++         IPv4 だけのホストでは IPv6 のグループは除かれる。
++         稼働中でマルチキャストに対応するインターフェースがなければ `Mdns.Error` の理由 `NoInterface` で、どちらのグループにも参加できなければ理由 `Join` で失敗する。
++         このホストの名前は `.local` の下のそのホスト名の最初のラベル（なければ `soundness.local`）であり、そのアドレスは参加したインターフェースのものである。
++         ユニキャストの返信は、宛先の系列のソケットから出ていく。
++         `discoveryBackends.mdnsSockets` はこの上にレスポンダーを作る。
++     entry .Bus   メモリー内のリンク：どのメンバーが送ったものも、自身を含むすべてのメンバーが受信する
+
+=     entry .Bus   an in-memory link: every member receives what any sends, itself included
+-       detail
++       detail
+
+-           A `Bus` stands in for the network under test. Each `#join` adds a member with a host
+-           name and addresses; a member's `send` is delivered to every member's queue, the
+-           sender included (as multicast loopback does), and a `reply` reaches the member whose
+-           addresses include the destination. A member is both a `Transport` and its own
+-           `Inlet`, so a test can `receive()` from it directly to watch the packets a responder
+-           emits, and `close()` makes a pending receive fail with `Socket.Error`.
++           `Bus` はテストの下でネットワークの代わりになる。
++           各 `#join` はホスト名とアドレスを持つメンバーを加える。
++           メンバーの `send` は（マルチキャストのループバックがするように）送信者を含むすべてのメンバーのキューに届けられ、`reply` はアドレスに宛先を含むメンバーに届く。
++           メンバーは `Transport` であり、それ自身の `Inlet` でもあるので、テストはそこから直接 `receive()` して、レスポンダーが出すパケットを見張ることができ、`close()` は保留中の受信を `Socket.Error` で失敗させる。
+
+-           ```scala
++           ```scala
+
+-           import soundness.*
++           import soundness.*
+
+-           import strategies.throwUnsafely
++           import strategies.throwUnsafely
+
+=
+-           val bus = Mdns.Transport.Bus()
++           val bus = Mdns.Transport.Bus()
+
+-           val first = bus.join(dns"first.local", List(ip"10.0.0.1"))
++           val first = bus.join(dns"first.local", List(ip"10.0.0.1"))
+
+-           val second = bus.join(dns"second.local", List(ip"10.0.0.2"))
++           val second = bus.join(dns"second.local", List(ip"10.0.0.2"))
+
+-           first.send(Data(1, 2, 3))
++           first.send(Data(1, 2, 3))
+
+-           second.receive().sender   // ip"10.0.0.1"
++           second.receive().sender   // ip"10.0.0.1"
+
+-           ```
++           ```
+
+-       entry #join   adds a member with a host name and addresses, as a `Transport & Transport.Inlet`
+-     entry #host   this host's name, as its address records publish it
+-     entry #addresses   this host's addresses, which its A and AAAA records carry
+-     entry #send   multicasts a message to the group; raises `Socket.Error`
+-     entry #reply   sends a unicast reply to an address and port; raises `Socket.Error`
+-     entry #inlets   the inlets to receive from, one per joined socket
+-     entry #close   closes the transport, making any pending receive fail
+-   entry .Cache   the records heard on the link, by name, type and data, honouring their TTLs
++       entry #join   ホスト名とアドレスを持つメンバーを、`Transport & Transport.Inlet` として加える
++     entry #host   アドレスのレコードが公開する、このホストの名前
++     entry #addresses   A と AAAA のレコードが運ぶ、このホストのアドレス
++     entry #send   グループにメッセージをマルチキャストする。`Socket.Error` を発生させる
++     entry #reply   アドレスとポートにユニキャストの返信を送る。`Socket.Error` を発生させる
++     entry #inlets   受信のための入口。参加したソケットごとに一つ
++     entry #close   トランスポートを閉じ、保留中の受信を失敗させる
++   entry .Cache   リンク上で聞いたレコード。名前、型、データをキーとし、その TTL に従う
+
+=   entry .Cache   the records heard on the link, by name, type and data, honouring their TTLs
+-     detail
++     detail
+
+-         The responder's memory of what other hosts have said, keyed by a record's identity
+-         (name, type and data) and kept in the monotonic nanoseconds of `System.nanoTime`. It
+-         applies RFC 6762 §10: a record heard again is refreshed; a goodbye (TTL 0) lapses a
+-         second later; a record with the cache-flush bit retires the other records of its
+-         name and type which are more than a second old. What absorbing or sweeping changed
+-         comes back as `Cache.Transition`s, which the responder turns into browse events.
++         他のホストが言ったことについてのレスポンダーの記憶で、レコードの同一性（名前、型、データ）をキーとし、`System.nanoTime` の単調なナノ秒で保持される。
++         これは RFC 6762 §10 を適用する。
++         再び聞いたレコードは更新される。
++         グッバイ（TTL 0）は一秒後に失効する。
++         キャッシュフラッシュのビットを持つレコードは、同じ名前と型の他のレコードのうち一秒より古いものを引退させる。
++         取り込みや掃除が変えたものは `Cache.Transition` として返り、レスポンダーはそれをブラウズのイベントに変える。
+
+=         comes back as `Cache.Transition`s, which the responder turns into browse events.
+=
+-         ```scala
++         ```scala
+
+=         comes back as `Cache.Transition`s, which the responder turns into browse events.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val second = 1_000_000_000L
++         val second = 1_000_000_000L
+
+-         val record = Dns.Record(dns"elsinore.local", 120, Dns.Rdata.A(ip"10.0.0.1"))
++         val record = Dns.Record(dns"elsinore.local", 120, Dns.Rdata.A(ip"10.0.0.1"))
+
+-         val cache = Mdns.Cache()
++         val cache = Mdns.Cache()
+
+-         cache.absorb(List(record), 0L)        // List(Mdns.Cache.Transition.Added(record))
++         cache.absorb(List(record), 0L)        // List(Mdns.Cache.Transition.Added(record))
+
+-         cache.sweep(121*second)               // List(Mdns.Cache.Transition.Removed(record))
++         cache.sweep(121*second)               // List(Mdns.Cache.Transition.Removed(record))
+
+=         cache.sweep(121*second)               // List(Mdns.Cache.Transition.Removed(record))
+-         ```
++         ```
+
+-     entry .Entry   what the cache holds for one record: when it arrived and when it lapses
+-       entry #record   the record
+-       entry #received   when it was last heard, in `System.nanoTime` nanoseconds
+-       entry #expiry   when it lapses, in the same clock
+-     entry .Transition   what absorbing or sweeping changed: `Added`, `Refreshed` or `Removed`, each with its record
++     entry .Entry   一つのレコードについてキャッシュが保持するもの：それがいつ届き、いつ失効するか
++       entry #record   レコード
++       entry #received   最後に聞いた時点。`System.nanoTime` のナノ秒で
++       entry #expiry   失効する時点。同じ時計で
++     entry .Transition   取り込みや掃除が変えたもの：`Added`、`Refreshed`、`Removed`。それぞれレコードを持つ
+
+=     entry .Transition   what absorbing or sweeping changed: `Added`, `Refreshed` or `Removed`, each with its record
+-       detail
++       detail
+
+-           `Added(record)` is a record not previously held, `Refreshed(record)` one heard
+-           again, and `Removed(record)` one which `#sweep` found lapsed. A PTR record of a
+-           browsed service type added or removed is an instance found or lost.
+-       entry #record   the record the transition concerns
+-     entry #absorb   takes in received records at a time, reporting what was added or refreshed
+-     entry #sweep   drops every record lapsed by the given time, reporting each as `Removed`
+-     entry #lookup   the unexpired records of a name and type at the given time
+-     entry #knownAnswers   the records of a name and type with over half their TTL left, with the TTL remaining
+-         What a query tells other responders it already knows (RFC 6762 §7.1), so they need
+-         not answer again.
+-     entry #earliestExpiry   when the first record of a name and type lapses, or `Unset` if none is held
+-     entry #size   how many records the cache holds
+-   entry .Tiebreak   the order in which two hosts' simultaneous probes for one name are compared
++           `Added(record)` は以前は保持していなかったレコード、`Refreshed(record)` は再び聞いたレコード、`Removed(record)` は `#sweep` が失効していると見つけたレコードである。
++           ブラウズしているサービスの種類の PTR レコードの追加や削除は、インスタンスが見つかったこと、または失われたことである。
++       entry #record   遷移が関わるレコード
++     entry #absorb   受信したレコードをある時点で取り込み、追加されたものや更新されたものを報告する
++     entry #sweep   与えられた時点までに失効したすべてのレコードを捨て、それぞれを `Removed` として報告する
++     entry #lookup   与えられた時点での、ある名前と型の期限切れでないレコード
++     entry #knownAnswers   ある名前と型のレコードのうち TTL が半分より多く残っているもの。残りの TTL とともに
++         クエリーが他のレスポンダーに、すでに知っていると伝えるものである（RFC 6762 §7.1）。
++         そのため彼らは再び答える必要がない。
++     entry #earliestExpiry   ある名前と型の最初のレコードが失効する時点。何も保持していなければ `Unset`
++     entry #size   キャッシュが保持するレコードの数
++   entry .Tiebreak   一つの名前に対する二つのホストの同時の探査を比較する順序
+
+=   entry .Tiebreak   the order in which two hosts' simultaneous probes for one name are compared
+-     detail
++     detail
+
+-         RFC 6762 §8.2.1: when two hosts probe for the same name at once, each compares the
+-         records it proposes with the other's, and the one whose records are lexicographically
+-         lower yields. A record ranks by class, then type, then its uncompressed data as
+-         unsigned bytes, a prefix ranking below what extends it. Two sets of records are
+-         sorted and compared pairwise: the first difference decides, a set which runs out first
+-         loses, and identical sets are `Comparison.Same` — no conflict at all.
++         RFC 6762 §8.2.1：二つのホストが同時に同じ名前を探査すると、それぞれは自身が提案するレコードを相手のものと比較し、レコードが辞書順で小さい方が譲る。
++         レコードはクラス、次に型、次に符号なしバイトとしての圧縮されていないデータで順位付けされ、接頭辞はそれを延長したものより下の順位になる。
++         二つのレコードの集合は整列され、対ごとに比較される。
++         最初の違いが決め、先に尽きた集合が負け、同一の集合は `Comparison.Same`、つまりまったく衝突しない。
+
+=         loses, and identical sets are `Comparison.Same` — no conflict at all.
+=
+-         ```scala
++         ```scala
+
+=         loses, and identical sets are `Comparison.Same` — no conflict at all.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val a = Dns.Record(dns"host.local", 120, Dns.Rdata.A(ip"10.0.0.1"), flush = true)
++         val a = Dns.Record(dns"host.local", 120, Dns.Rdata.A(ip"10.0.0.1"), flush = true)
+
+-         val srv = Dns.Record(dns"Elsinore._fury._tcp.local", 120, Dns.Rdata.Srv(0, 0, 8443, dns"host.local"), flush = true)
++         val srv = Dns.Record(dns"Elsinore._fury._tcp.local", 120, Dns.Rdata.Srv(0, 0, 8443, dns"host.local"), flush = true)
+
+-         Mdns.Tiebreak.compare(a, srv)                   // Comparison.Less: A before SRV
++         Mdns.Tiebreak.compare(a, srv)                   // Comparison.Less: A before SRV
+
+-         Mdns.Tiebreak.compare(List(srv, a), List(a, srv))   // Comparison.Same
++         Mdns.Tiebreak.compare(List(srv, a), List(a, srv))   // Comparison.Same
+
+=         Mdns.Tiebreak.compare(List(srv, a), List(a, srv))   // Comparison.Same
+-         ```
++         ```
+
+-     entry .compare   compares two records, or two lists of proposed records, as `Comparison`
+-   entry .Responder   the mDNS responder: one per program, serving every loan through one transport
++     entry .compare   二つのレコード、または提案されたレコードの二つのリストを、`Comparison` として比較する
++   entry .Responder   mDNS のレスポンダー：一つのプログラムに一つで、すべての貸し出しを一つのトランスポートを通じて扱う
+
+=   entry .Responder   the mDNS responder: one per program, serving every loan through one transport
+-     detail
++     detail
+
+-         `Mdns.Responder(open)` takes a function which opens an `Mdns.Transport`; the transport
+-         is opened at the first loan and closed when the last ends, and its receive loops and
+-         cache sweeper run as tasks under the `Monitor` the loan supplies, so cancelling that
+-         monitor ends them too. It is a `Discovery.Backend`, so it is what `advertise`,
+-         `browse` and `resolve` call; `discoveryBackends.mdnsSockets` is one over the sockets,
+-         and one over an `Mdns.Transport.Bus` is how a program is tested.
++         `Mdns.Responder(open)` は `Mdns.Transport` を開く関数を取る。
++         トランスポートは最初の貸し出しで開かれ、最後のものが終わると閉じられる。
++         その受信のループとキャッシュの掃除は、貸し出しが与える `Monitor` の下でタスクとして走るので、そのモニターをキャンセルするとそれらも終わる。
++         これは `Discovery.Backend` なので、`advertise`、`browse`、`resolve` が呼ぶものである。
++         `discoveryBackends.mdnsSockets` はソケットの上のものであり、`Mdns.Transport.Bus` の上のものでプログラムをテストする。
+
+-         Of RFC 6762 it does: probing three times at 250 ms, with renaming on conflict and
+-         tiebreaking between simultaneous probes; announcing twice, a second apart; defending
+-         an established name, and re-probing it (renaming if the probe is answered) when a
+-         later response conflicts with it; answering queries, with known-answer suppression, a
+-         random 20–120 ms delay for shared records, answers falling due together aggregated
+-         into one message, and legacy unicast replies for a querier not on port 5353; goodbyes;
+-         TTL-honouring browsing with exponential re-query; and resolving. Its own echoes are
+-         recognised by message ID.
++         RFC 6762 のうち、これが行うのは次のことである。
++         250 ms 間隔での三回の探査（衝突すれば名前を変え、同時の探査の間でタイブレークする）。
++         一秒間隔での二回の告知。
++         確立した名前の防衛と、後のレスポンスがそれと衝突したときの再探査（探査に答えがあれば名前を変える）。
++         クエリーへの応答（既知の応答の抑制、共有のレコードに対する 20〜120 ms のランダムな遅延、同時に期限が来る応答の一つのメッセージへの集約、ポート 5353 にいないクエリー送信者への旧式のユニキャストの返信を伴う）。
++         グッバイ。
++         指数的な再クエリーを伴う、TTL に従うブラウズ。
++         そして解決である。
++         自身のエコーはメッセージ ID で識別される。
+
+=         recognised by message ID.
+=
+-         ```scala
++         ```scala
+
+=         recognised by message ID.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         recognised by message ID.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+-         import threads.platformThreads
++         import threads.platformThreads
+
+=         ```scala
+=         import soundness.*
+=         import strategies.throwUnsafely
+=         import threads.platformThreads
+-         import probates.awaitProbate
++         import probates.awaitProbate
+
+=         import probates.awaitProbate
+=
+-         val fury = Discovery.Service(t"fury", Tcp)
++         val fury = Discovery.Service(t"fury", Tcp)
+
+-         val description = Discovery.Description(t"Elsinore", tcp"8443")
++         val description = Discovery.Description(t"Elsinore", tcp"8443")
+
+=         val description = Discovery.Description(t"Elsinore", tcp"8443")
+=
+-         supervise:
++         supervise:
+
+=         supervise:
+-           val bus = Mdns.Transport.Bus()
++           val bus = Mdns.Transport.Bus()
+
+-           val a = Mdns.Responder(() => bus.join(dns"a.local", List(ip"10.0.0.1")))
++           val a = Mdns.Responder(() => bus.join(dns"a.local", List(ip"10.0.0.1")))
+
+-           fury.advertise(description)(using a):
++           fury.advertise(description)(using a):
+
+-             fury.advertise(description.copy(port = tcp"8444"))(using a):
++             fury.advertise(description.copy(port = tcp"8444"))(using a):
+
+-               summon[Discovery.Advertisement].instance.label   // t"Elsinore (2)"
++               summon[Discovery.Advertisement].instance.label   // t"Elsinore (2)"
+
+=               summon[Discovery.Advertisement].instance.label   // t"Elsinore (2)"
+-         ```
++         ```
+
+-     refer syndesis.Discovery.Backend
++     refer syndesis.Discovery.Backend
+
+-     refer syndesis.Mdns.Transport
++     refer syndesis.Mdns.Transport
+
+-     entry #advertise   probes for, claims and announces an instance, as `Discovery.Backend#advertise`
+-         Publishes the PTR from the service type (and from the enumeration meta-type, and from
+-         each subtype), the SRV and TXT records, and the host's address records; the last three
+-         are unique to the instance, so they carry the cache-flush bit. PTRs live 75 minutes,
+-         the rest two minutes. A name this responder already holds is renamed without probing.
+-     entry #withdraw   sends the goodbye for an advertisement and releases the loan
+-     entry #browse   starts a browse, reporting known instances at once and re-querying at doubling intervals
+-     entry #dismiss   stops a browse's re-query loop and its relay, and releases the loan
+-     entry #resolve   resolves an instance from the cache, or queries for its records and waits up to the timeout
+-   entry .Error   raised when the responder cannot start: no interface, or a group it cannot join
++     entry #advertise   `Discovery.Backend#advertise` として、インスタンスを探査し、獲得し、告知する
++         サービスの種類からの（そして列挙のメタ型から、各下位種類からの）PTR、SRV と TXT のレコード、ホストのアドレスのレコードを公開する。
++         最後の三つはインスタンスに固有なので、キャッシュフラッシュのビットを持つ。
++         PTR は 75 分間、残りは二分間生きる。
++         このレスポンダーがすでに保持している名前は、探査せずに名前が変えられる。
++     entry #withdraw   広告のグッバイを送り、貸し出しを解放する
++     entry #browse   ブラウズを始め、既知のインスタンスをすぐに報告し、倍々に伸びる間隔で再クエリーする
++     entry #dismiss   ブラウズの再クエリーのループとリレーを止め、貸し出しを解放する
++     entry #resolve   インスタンスをキャッシュから解決するか、そのレコードをクエリーしてタイムアウトまで待つ
++   entry .Error   レスポンダーが起動できないときに発生する：インターフェースがない、または参加できないグループがある
+
+=   entry .Error   raised when the responder cannot start: no interface, or a group it cannot join
+-     detail
++     detail
+
+-         Error `↯/s.102.2`: _the mDNS responder could not start because `reason`_. Reason
+-         `NoInterface` (2) is _no interface is up and capable of multicast_; reason
+-         `Join(group)` (1) is _the multicast group `224.0.0.251:5353` could not be joined_,
+-         raised when neither group could be joined. Raised by `Mdns.Transport.sockets`; a loan
+-         which hits it reports `Discovery.Error` reason `Unavailable` instead, with this error
+-         as its diagnostics.
+-     entry .Reason   why the responder could not start: `Join(group)` or `NoInterface`
++         エラー `↯/s.102.2`：_the mDNS responder could not start because `reason`_。
++         理由 `NoInterface`（2）は _no interface is up and capable of multicast_ である。
++         理由 `Join(group)`（1）は _the multicast group `224.0.0.251:5353` could not be joined_ であり、どちらのグループにも参加できなかったときに発生する。
++         `Mdns.Transport.sockets` が発生させる。
++         これに当たった貸し出しは、代わりに `Discovery.Error` の理由 `Unavailable` を、このエラーを診断情報として報告する。
++     entry .Reason   レスポンダーが起動できなかった理由：`Join(group)` または `NoInterface`
+
+=     entry .Reason   why the responder could not start: `Join(group)` or `NoInterface`
+-       detail
++       detail
+
+-           An enum of two numbered cases, with a `Communicable` rendering each.
+-       entry .communicable   renders each reason as a message
+-       entry #number   the reason's number, `1` or `2`, the second part of the error's code
+-     entry #reason   why the responder could not start
++           番号付きの二つのケースを持つ列挙型で、それぞれを描画する `Communicable` を持つ。
++       entry .communicable   各理由をメッセージとして描画する
++       entry #number   理由の番号。`1` か `2` で、エラーのコードの二つ目の部分
++     entry #reason   レスポンダーが起動できなかった理由

@@ -1,0 +1,819 @@
+orthant 1 language
+
+- ## OpenAPI
++ ## OpenAPI
+
+- ### About
++ ### 概要
+
+- An [OpenAPI](https://www.openapis.org/) document describes a REST API: its paths, parameters,
+- and request and response schemas. Here that description becomes a *typed client* as the code
+- compiles. Pointing `Api` at a specification gives a value whose navigation mirrors the paths of
+- the API. Each segment, each path parameter, each query or header parameter and each response
+- type is checked against the specification. A call which the API does not offer, or a parameter
+- of the wrong type, does not compile.
++ [OpenAPI](https://www.openapis.org/) の文書は REST API を記述する。そのパス、パラメーター、リクエストとレスポンスのスキーマである。
++ ここではその記述が、コードのコンパイル時に*型付きのクライアント*になる。
++ `Api` に仕様を指し示すと、API のパスをそのまま映したナビゲーションを持つ値が得られる。
++ 各セグメント、各パスパラメーター、各クエリパラメーターやヘッダーパラメーター、各レスポンスの型が、仕様に照らして検査される。
++ API が提供しない呼び出しや、型の間違ったパラメーターはコンパイルされない。
+
+- ### On API specifications
++ ### API の仕様について
+
+- An OpenAPI document is a machine-readable contract. The usual way to honor it is code
+- generation: a build step emits a client, which is compiled, versioned and kept in step by
+- tooling. The contract is enforced, at the price of generated sources and a build pipeline. When
+- the generator is skipped, calls are made against remembered URLs and hoped-for schemas.
++ OpenAPI の文書は機械可読な契約である。
++ それを守る通常の方法はコード生成である。ビルドの一段階がクライアントを出力し、それがコンパイルされ、バージョン管理され、ツールによって歩調を合わせて保たれる。
++ 契約は強制されるが、その代償は生成されたソースとビルドパイプラインである。
++ 生成器を省くと、呼び出しは記憶された URL と、そうであってほしいスキーマに対して行われる。
+
+- Here the specification is read during compilation instead. There is no generated code to
+- maintain. The client *is* the specification, interpreted by the compiler, and a drift between
+- code and contract is a compile error in the code. That is
+- [correctness](../../philosophy/correctness.md) by construction, and not by review.
++ ここではそうではなく、仕様はコンパイル中に読まれる。
++ 保守すべき生成コードはない。
++ クライアントは、コンパイラが解釈した仕様*そのもの*であり、コードと契約のずれはコード内のコンパイルエラーになる。
++ これはレビューによってではなく、構築による [正しさ](../../philosophy/correctness.md) である。
+
+- Everything comes from the `soundness` package, with a few deliberate choices imported by name:
++ すべては `soundness` パッケージから来て、いくつかの意図的な選択を名前でインポートする。
+
+= Everything comes from the `soundness` package, with a few deliberate choices imported by name:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import internetAccess.online
++ import internetAccess.online
+
+- import httpBackends.javaNetHttp
++ import httpBackends.javaNetHttp
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+- import construables.jsonConstruable
++ import construables.jsonConstruable
+
+- import postables.jsonPostable
++ import postables.jsonPostable
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import formatting.compactJsonFormatting
++ import formatting.compactJsonFormatting
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+= import errorDiagnostics.stackTracesDiagnostics
+- ```
++ ```
+
+- The samples on this page call APIs over the network, so they are compiled but not run.
++ このページのサンプルはネットワーク越しに API を呼び出すので、コンパイルはされるが実行はされない。
+
+- ### A typed client
++ ### 型付きのクライアント
+
+- `Api` reads a specification from the [classpath](classpath.md) as the code compiles. The
+- specification may be JSON or YAML, and OpenAPI 3.0 or 3.1. The resulting value navigates by
+- path:
++ `Api` は、コードのコンパイル時に [クラスパス](classpath.md) から仕様を読む。
++ 仕様は JSON でも YAML でもよく、OpenAPI 3.0 でも 3.1 でもよい。
++ 結果の値はパスによってナビゲートする。
+
+= path:
+=
+- ```scala fuel
++ ```scala fuel
+
+= path:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= path:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val api = Api(cp"/openapi/local/petstore.json")
++ val api = Api(cp"/openapi/local/petstore.json")
+
+- val pets = api.pets
++ val pets = api.pets
+
+- val pet = api.pets(42)
++ val pet = api.pets(42)
+
+= val pet = api.pets(42)
+- ```
++ ```
+
+- `api.pets` is the `/pets` path, and `api.pets(42)` is `/pets/{petId}`, with the parameter typed
+- by the specification. A path which the specification does not have does not compile:
++ `api.pets` は `/pets` のパスであり、`api.pets(42)` は `/pets/{petId}` であって、パラメーターは仕様によって型付けされる。
++ 仕様にないパスはコンパイルされない。
+
+= by the specification. A path which the specification does not have does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- api.unicorns
++ api.unicorns
+
+= api.unicorns
+- ```
++ ```
+
+- A path parameter of the wrong type, such as text where the specification says integer, is also
+- a compile error, caught where the call is written. A parameter of `type: integer` with
+- `format: int64` is a `Long`, and an `Int` is accepted too. A segment which the specification
+- writes with characters Scala does not allow in an identifier is written in backticks, as in
+- `` api.`museum-hours` `` or `` api.users.`@me` ``.
++ 仕様が整数と言っているところにテキストを渡すような、型の間違ったパスパラメーターも、呼び出しが書かれた場所で捕捉されるコンパイルエラーである。
++ `format: int64` の `type: integer` のパラメーターは `Long` であり、`Int` も受け付けられる。
++ 仕様が Scala の識別子に使えない文字で書くセグメントは、`` api.`museum-hours` `` や `` api.users.`@me` `` のようにバッククォートで囲んで書く。
+
+- The base URL comes from the first server of the specification, with its `{variables}` at their
+- defaults, and is checked as a URL as the code compiles. A specification whose server is
+- relative, such as `/api/v3`, or which declares none, must take its base from the caller. A
+- relative server URL then extends that base:
++ ベース URL は仕様の最初のサーバーから、その `{variables}` をデフォルトにして得られ、コードのコンパイル時に URL として検査される。
++ `/api/v3` のようにサーバーが相対的である仕様や、サーバーを宣言しない仕様は、ベースを呼び出し側から受け取らなければならない。
++ その場合、相対的なサーバー URL はそのベースを延長する。
+
+= relative server URL then extends that base:
+=
+- ```scala fuel
++ ```scala fuel
+
+= relative server URL then extends that base:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= relative server URL then extends that base:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val petstore = Api(cp"/openapi/swagger/petstore3.json", base = url"https://petstore3.swagger.io")
++ val petstore = Api(cp"/openapi/swagger/petstore3.json", base = url"https://petstore3.swagger.io")
+
+= val petstore = Api(cp"/openapi/swagger/petstore3.json", base = url"https://petstore3.swagger.io")
+- ```
++ ```
+
+- What is about to be sent is a value too. `request` on any navigated `Api` or `Api.Response` is
+- an `Api.Request`, whose fields are:
++ これから送られるものも値である。
++ ナビゲートした任意の `Api` や `Api.Response` の `request` は `Api.Request` であり、そのフィールドは次のとおりである。
+
+= an `Api.Request`, whose fields are:
+=
+- ```tabular
++ ```tabular
+
+- column  Field
+- column  Holds
+- row  `method`  the `Http.Method`
+- row  `base`  the base `HttpUrl`
+- row  `path`  the path template
+- row  `substitutions`  the values for the template's variables
+- row  `query`  the `Query`
+- row  `headers`  the `Http.Header`s
+- row  `body`  the body, with its `MediaType`
+- row  `accept`  the media type asked for
++ column  フィールド
++ column  保持するもの
++ row  `method`  `Http.Method`
++ row  `base`  ベースの `HttpUrl`
++ row  `path`  パスのテンプレート
++ row  `substitutions`  テンプレートの変数の値
++ row  `query`  `Query`
++ row  `headers`  `Http.Header` の並び
++ row  `body`  本文と、その `MediaType`
++ row  `accept`  求めるメディアタイプ
+
+= row  `accept`  the media type asked for
+- ```
++ ```
+
+- ### Calling
++ ### 呼び出す
+
+- An endpoint is invoked with its method, with its query and header parameters as named arguments,
+- and with a request body as a value. `call` executes the request and reads the response as the
+- type asked for, which must conform to the response schema the specification declares:
++ エンドポイントは、そのメソッドで、クエリパラメーターとヘッダーパラメーターを名前付き引数として、リクエストの本文を値として呼び出される。
++ `call` はリクエストを実行し、レスポンスを求めた型として読む。その型は、仕様が宣言するレスポンスのスキーマに適合しなければならない。
+
+= type asked for, which must conform to the response schema the specification declares:
+=
+- ```scala
++ ```scala
+
+- case class Pet(id: Int, name: Text, tag: Optional[Text] = Unset)
++ case class Pet(id: Int, name: Text, tag: Optional[Text] = Unset)
+
+- case class NewPet(name: Text, tag: Optional[Text] = Unset)
++ case class NewPet(name: Text, tag: Optional[Text] = Unset)
+
+= case class NewPet(name: Text, tag: Optional[Text] = Unset)
+- ```
++ ```
+
+= case class NewPet(name: Text, tag: Optional[Text] = Unset)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class NewPet(name: Text, tag: Optional[Text] = Unset)
+= ```
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= case class NewPet(name: Text, tag: Optional[Text] = Unset)
+= ```
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val one: Pet = api.pets(42).get.call[Pet]()
++ val one: Pet = api.pets(42).get.call[Pet]()
+
+- val some: List[Pet] = api.pets.get(limit = 10).call[List[Pet]]()
++ val some: List[Pet] = api.pets.get(limit = 10).call[List[Pet]]()
+
+- val created: Pet = api.pets.post(NewPet(t"Crab")).call[Pet]()
++ val created: Pet = api.pets.post(NewPet(t"Crab")).call[Pet]()
+
+- val deleted: Unit = api.sessions(t"abc").delete.call()
++ val deleted: Unit = api.sessions(t"abc").delete.call()
+
+= val deleted: Unit = api.sessions(t"abc").delete.call()
+- ```
++ ```
+
+- The first is `GET /pets/42`, decoded according to the schema. The third sends a typed request
+- body. The last answers `204` with no body, so its result is `Unit`.
++ 一つ目は `GET /pets/42` であり、スキーマに従ってデコードされる。
++ 三つ目は型付きのリクエスト本文を送る。
++ 最後のものは本文なしの `204` を返すので、結果は `Unit` である。
+
+- A parameter declared on the path item applies to every operation on it. A parameter written as
+- a `$ref` into the components of the document is followed, as are `$ref` responses and request
+- bodies. Where an operation declares several successful responses, `200` is preferred, then
+- `201`, then the lowest. Asking for a type which the response schema does not support is a
+- compile error.
++ パス項目に宣言されたパラメーターは、そのすべての操作に適用される。
++ 文書のコンポーネントへの `$ref` として書かれたパラメーターはたどられ、`$ref` のレスポンスやリクエスト本文も同様である。
++ 操作が複数の成功レスポンスを宣言している場合は、`200`、次に `201`、次に最小のものが優先される。
++ レスポンスのスキーマがサポートしない型を求めるとコンパイルエラーになる。
+
+- ### Security
++ ### セキュリティ
+
+- The specification of an API names its security schemes, which may be an API key in a header,
+- query parameter or cookie, HTTP authentication, OAuth 2 or OpenID Connect, and says which of
+- them each operation requires. The credentials come from [OAuth](oauth.md). A `Credential` is a
+- [contextual value] named for the scheme, which holds the value the kind of scheme calls for. An
+- operation which requires credentials which nobody has provided does not compile, and the error
+- names the givens which would satisfy each alternative:
++ API の仕様はセキュリティスキームを名付け、各操作がそのどれを必要とするかを示す。スキームは、ヘッダー、クエリパラメーター、クッキーの中の API キー、HTTP 認証、OAuth 2、OpenID Connect のいずれかである。
++ 資格情報は [OAuth](oauth.md) から来る。
++ `Credential` はスキームの名前を付けた [コンテキスト値] であり、スキームの種類が求める値を保持する。
++ 誰も提供していない資格情報を必要とする操作はコンパイルされず、エラーは各選択肢を満たす given を名指しする。
+
+= names the givens which would satisfy each alternative:
+=
+- ```scala
++ ```scala
+
+- val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
++ val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
+
+- given apiKey: ("api_key" is Credential to Text) = Credential(t"…")
++ given apiKey: ("api_key" is Credential to Text) = Credential(t"…")
+
+- given oauth: ("petstore_auth" is Credential to Authorization) =
++ given oauth: ("petstore_auth" is Credential to Authorization) =
+
+-   Credential(issuer.clientCredentials(t"read:pets", t"write:pets"))
++   Credential(issuer.clientCredentials(t"read:pets", t"write:pets"))
+
+=   Credential(issuer.clientCredentials(t"read:pets", t"write:pets"))
+- ```
++ ```
+
+=   Credential(issuer.clientCredentials(t"read:pets", t"write:pets"))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   Credential(issuer.clientCredentials(t"read:pets", t"write:pets"))
+= ```
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+=   Credential(issuer.clientCredentials(t"read:pets", t"write:pets"))
+= ```
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- petstore.pet(42L).get.call()
++ petstore.pet(42L).get.call()
+
+- petstore.pet(42L).delete(api_key = t"…")
++ petstore.pet(42L).delete(api_key = t"…")
+
+= petstore.pet(42L).delete(api_key = t"…")
+- ```
++ ```
+
+- The first call sends `api_key` as the specification dictates. In the second, `api_key` is a
+- header parameter, and is sent as a header. Each kind of scheme takes its own credential, and
+- sends it its own way:
++ 一つ目の呼び出しは、仕様が指示するとおりに `api_key` を送る。
++ 二つ目では、`api_key` はヘッダーパラメーターであり、ヘッダーとして送られる。
++ スキームの種類ごとに独自の資格情報を取り、それを独自の方法で送る。
+
+= sends it its own way:
+=
+- ```tabular
++ ```tabular
+
+- column  Scheme
+- column  Credential
+- column  Sent
+- row  API key  `Credential to Text`  in the header, query parameter or cookie the scheme names
+- row  HTTP authentication  `Credential to Auth`  in the `Authorization` header
+- row  OAuth 2, OpenID Connect  `Credential to Authorization`, or `Credential to Auth` for a token obtained elsewhere  as a `Bearer` authorization
+- row  mutual TLS  not supported
++ column  スキーム
++ column  資格情報
++ column  送り方
++ row  API キー  `Credential to Text`  スキームが名指しするヘッダー、クエリパラメーター、クッキーの中で
++ row  HTTP 認証  `Credential to Auth`  `Authorization` ヘッダーの中で
++ row  OAuth 2、OpenID Connect  `Credential to Authorization`、または他所で得たトークンには `Credential to Auth`  `Bearer` 認可として
++ row  相互 TLS  サポートされていない
+
+= row  mutual TLS  not supported
+- ```
++ ```
+
+- An OAuth 2 or OpenID Connect token is checked, before the request goes, against the scopes which
+- the requirement names. A token which lacks one raises `OAuth.Error`. Where an operation offers
+- alternative requirements, the first of which every scheme has a credential in scope is used. An
+- operation whose `security` is empty needs none.
++ OAuth 2 や OpenID Connect のトークンは、リクエストが送られる前に、要件が名指しするスコープに照らして検査される。
++ そのうち一つを欠くトークンは `OAuth.Error` を発生させる。
++ 操作が要件の選択肢を提供している場合は、すべてのスキームの資格情報がスコープにある最初のものが使われる。
++ `security` が空の操作は何も必要としない。
+
+- ### Errors
++ ### エラー
+
+- Every response which an operation declares outside the success range has its own error type,
+- named for its status:
++ 操作が成功の範囲外で宣言するすべてのレスポンスは、そのステータスにちなんで名付けられた独自のエラー型を持つ。
+
+= named for its status:
+=
+- ```tabular
++ ```tabular
+
+- column  Declared response
+- column  Error type
+- row  a status telekinesis names, such as `404`, `400` or `429`  one named for it: `Api.NotFound`, `Api.BadRequest`, `Api.TooManyRequests`
+- row  the `4XX` range  `Api.ClientError`
+- row  the `5XX` range  `Api.ServerError`
++ column  宣言されたレスポンス
++ column  エラー型
++ row  `404`、`400`、`429` のように telekinesis が名前を持つステータス  それにちなんで名付けられたもの。`Api.NotFound`、`Api.BadRequest`、`Api.TooManyRequests`
++ row  `4XX` の範囲  `Api.ClientError`
++ row  `5XX` の範囲  `Api.ServerError`
+
+- row  `default`  `Api.OtherError`
++ row  `default`  `Api.OtherError`
+
+= row  `default`  `Api.OtherError`
+- ```
++ ```
+
+- Each carries the error body, construed as the type which the specification declares for it, by
+- the first of these which applies:
++ それぞれはエラーの本文を持ち、それは仕様がそのために宣言した型として、次のうち最初に当てはまるものによって解釈される。
+
+= the first of these which applies:
+=
+- ```tabular
++ ```tabular
+
+- column  The error body is
+- column  Construed as
+- row  a JSON object  a record typed by the error schema
+- row  of a media type with a carrier  the media type's carrier
+- row  anything else  `Text`
+- row  not declared  `Unit`
++ column  エラーの本文
++ column  解釈される型
++ row  JSON オブジェクト  エラーのスキーマで型付けされたレコード
++ row  キャリアを持つメディアタイプ  そのメディアタイプのキャリア
++ row  その他  `Text`
++ row  宣言されていない  `Unit`
+
+= row  not declared  `Unit`
+- ```
++ ```
+
+- The `Api.Response` of the operation records the union of them as its `Failure`. So `attempt`
+- gives an `Attempt` over exactly the declared errors, and the compiler checks a `match` over it
+- for exhaustiveness:
++ 操作の `Api.Response` は、それらのユニオンを `Failure` として記録する。
++ そのため `attempt` はちょうど宣言されたエラーにわたる `Attempt` を与え、コンパイラはそれに対する `match` の網羅性を検査する。
+
+= for exhaustiveness:
+=
+- ```scala fuel
++ ```scala fuel
+
+= for exhaustiveness:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= for exhaustiveness:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- petstore.pet(42L).get.attempt[Pet]() match
++ petstore.pet(42L).get.attempt[Pet]() match
+
+-   case Attempt.Success(pet)                        => pet.name
++   case Attempt.Success(pet)                        => pet.name
+
+-   case Attempt.Failure(Api.NotFound(()))           => t"no such pet"
++   case Attempt.Failure(Api.NotFound(()))           => t"no such pet"
+
+-   case Attempt.Failure(Api.BadRequest(()))         => t"bad id"
++   case Attempt.Failure(Api.BadRequest(()))         => t"bad id"
+
+- given basic: ("basicAuth" is Credential to Auth) = Credential(Auth.Basic(t"user", t"pass"))
++ given basic: ("basicAuth" is Credential to Auth) = Credential(Auth.Basic(t"user", t"pass"))
+
+- val stripe = Api(cp"/openapi/stripe/spec3.json")
++ val stripe = Api(cp"/openapi/stripe/spec3.json")
+
+- stripe.v1.customers(t"cus_1").get.attempt[Json]() match
++ stripe.v1.customers(t"cus_1").get.attempt[Json]() match
+
+-   case Attempt.Success(customer)                       => customer
++   case Attempt.Success(customer)                       => customer
+
+-   case Attempt.Failure(Api.OtherError(status, problem)) => problem.error.message
++   case Attempt.Failure(Api.OtherError(status, problem)) => problem.error.message
+
+=   case Attempt.Failure(Api.OtherError(status, problem)) => problem.error.message
+- ```
++ ```
+
+- A case for a status which the specification does not declare, such as `Api.Conflict` for these
+- operations, does not compile. `call()` itself raises the declared errors through
+- [contingency](errors.md), with one [tactic] for each declared type, which a `recover` or
+- `mitigate` supplies case by case. A handler which misses one is a compile error which names it.
++ これらの操作に対する `Api.Conflict` のように、仕様が宣言しないステータスのケースはコンパイルされない。
++ `call()` 自体は、宣言されたエラーを [contingency](errors.md) を通じて発生させ、宣言された型ごとに一つの [戦術] を使う。それは `recover` や `mitigate` がケースごとに供給する。
++ 一つでも漏らしたハンドラは、それを名指しするコンパイルエラーになる。
+
+- Servers do not always keep to their specifications. A response with an undeclared status raises
+- `Api.Violation`, which carries the status and the bytes of the body. Every call may meet it, and
+- it is handled apart from the declared errors. It is the breach of the contract, not one of its
+- cases.
++ サーバーは常に仕様を守るとは限らない。
++ 宣言されていないステータスのレスポンスは `Api.Violation` を発生させ、それはステータスと本文のバイトを持つ。
++ どの呼び出しもそれに出会う可能性があり、それは宣言されたエラーとは別に処理される。
++ それは契約のケースの一つではなく、契約の違反である。
+
+- ### Media types and their carriers
++ ### メディアタイプとそのキャリア
+
+- The specification names the media type of each body, and a `Construable` names the type which
+- carries that media type: `("application/json" is Construable to Json)`, or
+- `("image/png" is Construable to (Raster in Png))`. The [typeclass] carries no operations. The
+- reader and writer of the carrier do the work. Every mapping is a contextual value in the
+- `construables` family, imported by name, so nothing is construed without a deliberate choice:
++ 仕様は各本文のメディアタイプを名付け、`Construable` はそのメディアタイプを運ぶ型を名付ける。`("application/json" is Construable to Json)` や `("image/png" is Construable to (Raster in Png))` である。
++ この [型クラス] は操作を持たない。
++ 仕事をするのはキャリアの読み手と書き手である。
++ すべての対応付けは `construables` ファミリーのコンテキスト値であり、名前でインポートするので、意図的な選択なしに何かが解釈されることはない。
+
+= `construables` family, imported by name, so nothing is construed without a deliberate choice:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `construables` family, imported by name, so nothing is construed without a deliberate choice:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= `construables` family, imported by name, so nothing is construed without a deliberate choice:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import construables.pngConstruable
++ import construables.pngConstruable
+
+- given museumAuth: ("MuseumPlaceholderAuth" is Credential to Auth) =
++ given museumAuth: ("MuseumPlaceholderAuth" is Credential to Auth) =
+
+-   Credential(Auth.Basic(t"curator", t"…"))
++   Credential(Auth.Basic(t"curator", t"…"))
+
+- val museum = Api(cp"/openapi/redocly/museum.yaml")
++ val museum = Api(cp"/openapi/redocly/museum.yaml")
+
+- val ticket: Raster in Png = museum.tickets(t"a1").qr.get.call()
++ val ticket: Raster in Png = museum.tickets(t"a1").qr.get.call()
+
+- val inventory: Json = petstore.store.inventory.get.call()
++ val inventory: Json = petstore.store.inventory.get.call()
+
+= val inventory: Json = petstore.store.inventory.get.call()
+- ```
++ ```
+
+- These are the `Construable`s provided:
++ 提供される `Construable` は次のとおりである。
+
+= These are the `Construable`s provided:
+=
+- ```tabular
++ ```tabular
+
+- column  Media type
+- column  Carrier
+- column  Given
++ column  メディアタイプ
++ column  キャリア
++ column  given
+
+- row  `application/json`  `Json`  `construables.jsonConstruable`
++ row  `application/json`  `Json`  `construables.jsonConstruable`
+
+- row  `application/xml`  `Xml`  `construables.xmlConstruable`
++ row  `application/xml`  `Xml`  `construables.xmlConstruable`
+
+- row  `text/xml`  `Xml`  `construables.textXmlConstruable`
++ row  `text/xml`  `Xml`  `construables.textXmlConstruable`
+
+- row  `application/yaml`  `Yaml`  `construables.yamlConstruable`
++ row  `application/yaml`  `Yaml`  `construables.yamlConstruable`
+
+- row  `application/vnd.tel`  `Tel`  `construables.telConstruable`
++ row  `application/vnd.tel`  `Tel`  `construables.telConstruable`
+
+- row  `application/cbor`  `Cbor`  `construables.cborConstruable`
++ row  `application/cbor`  `Cbor`  `construables.cborConstruable`
+
+- row  `application/protobuf`  `Protobuf`  `construables.protobufConstruable`
++ row  `application/protobuf`  `Protobuf`  `construables.protobufConstruable`
+
+- row  `text/html`  `Document[Html]`  `construables.htmlConstruable`
++ row  `text/html`  `Document[Html]`  `construables.htmlConstruable`
+
+- row  `text/css`  `Css`  `construables.cssConstruable`
++ row  `text/css`  `Css`  `construables.cssConstruable`
+
+- row  `image/svg+xml`  `Svg`  `construables.svgConstruable`
++ row  `image/svg+xml`  `Svg`  `construables.svgConstruable`
+
+- row  `text/markdown`  `Markdown of Layout`  `construables.markdownConstruable`
++ row  `text/markdown`  `Markdown of Layout`  `construables.markdownConstruable`
+
+- row  `text/csv`  `Sheet`  `construables.csvConstruable`
++ row  `text/csv`  `Sheet`  `construables.csvConstruable`
+
+- row  `text/tab-separated-values`  `Sheet`  `construables.tsvConstruable`
++ row  `text/tab-separated-values`  `Sheet`  `construables.tsvConstruable`
+
+- row  `text/plain`  `Text`  `construables.plainTextConstruable`
++ row  `text/plain`  `Text`  `construables.plainTextConstruable`
+
+- row  `application/octet-stream`  `Data`  `construables.octetStreamConstruable`
++ row  `application/octet-stream`  `Data`  `construables.octetStreamConstruable`
+
+- row  `application/x-www-form-urlencoded`  `Query`  `construables.formConstruable`
++ row  `application/x-www-form-urlencoded`  `Query`  `construables.formConstruable`
+
+- row  `image/png`  `Raster in Png`  `construables.pngConstruable`
++ row  `image/png`  `Raster in Png`  `construables.pngConstruable`
+
+- row  `image/jpeg`  `Raster in Jpeg`  `construables.jpegConstruable`
++ row  `image/jpeg`  `Raster in Jpeg`  `construables.jpegConstruable`
+
+- row  `image/gif`  `Raster in Gif`  `construables.gifConstruable`
++ row  `image/gif`  `Raster in Gif`  `construables.gifConstruable`
+
+- row  `image/bmp`  `Raster in Bmp`  `construables.bmpConstruable`
++ row  `image/bmp`  `Raster in Bmp`  `construables.bmpConstruable`
+
+- row  `image/webp`  `Raster in Webp`  `construables.webpConstruable`
++ row  `image/webp`  `Raster in Webp`  `construables.webpConstruable`
+
+= row  `image/webp`  `Raster in Webp`  `construables.webpConstruable`
+- ```
++ ```
+
+- A structured-syntax suffix falls back to the type it names, so `application/problem+json` is
+- construed by the JSON mapping. Where an operation offers several media types, the first with a
+- mapping in scope is chosen, with `application/json` first.
++ 構造化構文の接尾辞は、それが名付ける型に代替されるので、`application/problem+json` は JSON の対応付けによって解釈される。
++ 操作が複数のメディアタイプを提供している場合は、`application/json` を先頭として、スコープに対応付けがある最初のものが選ばれる。
+
+- A request body is encoded to the carrier of the media type, and written by that carrier's
+- `Postable`, which is likewise imported by name, as `postables.jsonPostable` or
+- `postables.xmlPostable`. A value which already *is* the carrier, such as a `Query` for
+- `application/x-www-form-urlencoded` or `Data` for `application/octet-stream`, is sent as it is.
++ リクエストの本文はメディアタイプのキャリアにエンコードされ、そのキャリアの `Postable` によって書かれる。`Postable` も同様に、`postables.jsonPostable` や `postables.xmlPostable` のように名前でインポートする。
++ `application/x-www-form-urlencoded` に対する `Query` や `application/octet-stream` に対する `Data` のように、すでにキャリア*である*値は、そのまま送られる。
+
+- ### Records from a response
++ ### レスポンスからのレコード
+
+- A response is read in one of four ways:
++ レスポンスは四つの方法のいずれかで読まれる。
+
+= A response is read in one of four ways:
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Reads the response as
+- row  `call[T]()`  a `T`, raising the declared errors
+- row  `attempt[T]()`  an `Attempt` over a `T` and the declared errors
+- row  `record()`  a record typed by the response schema
+- row  `tuple()`  a named tuple typed by the response schema, read eagerly
++ column  メソッド
++ column  レスポンスの読み方
++ row  `call[T]()`  `T` として。宣言されたエラーを発生させる
++ row  `attempt[T]()`  `T` と宣言されたエラーにわたる `Attempt` として
++ row  `record()`  レスポンスのスキーマで型付けされたレコードとして
++ row  `tuple()`  レスポンスのスキーマで型付けされた名前付きタプルとして。正格に読む
+
+= row  `tuple()`  a named tuple typed by the response schema, read eagerly
+- ```
++ ```
+
+- A JSON response can be read without a mirror class at all. `record()` gives a
+- [record](records.md) typed by the response schema, with one member for each property, at the
+- type the schema declares. Nested objects and references to component schemas are nested
+- records, and an array of objects is a `List` of them:
++ JSON のレスポンスは、対応するクラスをまったく使わずに読める。
++ `record()` はレスポンスのスキーマで型付けされた [レコード](records.md) を与え、プロパティごとに一つのメンバーを、スキーマが宣言する型で持つ。
++ 入れ子のオブジェクトやコンポーネントのスキーマへの参照は入れ子のレコードになり、オブジェクトの配列はそれらの `List` になる。
+
+= records, and an array of objects is a `List` of them:
+=
+- ```scala fuel
++ ```scala fuel
+
+= records, and an array of objects is a `List` of them:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= records, and an array of objects is a `List` of them:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val found = petstore.pet(42L).get.record()
++ val found = petstore.pet(42L).get.record()
+
+- val name: Text = found.name
++ val name: Text = found.name
+
+- val photos: List[Text] = found.photoUrls
++ val photos: List[Text] = found.photoUrls
+
+- val sold = petstore.pet.findByStatus.get(status = t"sold").record().map(_.name)
++ val sold = petstore.pet.findByStatus.get(status = t"sold").record().map(_.name)
+
+= val sold = petstore.pet.findByStatus.get(status = t"sold").record().map(_.name)
+- ```
++ ```
+
+- `tuple()` reads the same schema as a named tuple, eagerly. Both need a JSON response whose
+- schema describes an object or an array of objects. Anything else is a compile error which
+- suggests `call[T]()`.
++ `tuple()` は同じスキーマを名前付きタプルとして正格に読む。
++ どちらも、スキーマがオブジェクトまたはオブジェクトの配列を記述する JSON のレスポンスを必要とする。
++ それ以外はコンパイルエラーになり、エラーは `call[T]()` を提案する。
+
+- ### The document model
++ ### 文書モデル
+
+- The specification itself is also a value. `OpenApi` decodes an OpenAPI 3.x document from JSON or
+- YAML into typed parts: info, servers with their variables, paths, operations, parameters,
+- request bodies, responses, and component schemas, parameters, responses and request bodies.
+- This serves tooling which inspects APIs rather than calling them. A YAML document is translated
+- to JSON and read by the same decoder, so the two forms cannot drift.
++ 仕様そのものも値である。
++ `OpenApi` は OpenAPI 3.x の文書を JSON または YAML から型付きの部分にデコードする。info、変数を持つサーバー、パス、操作、パラメーター、リクエスト本文、レスポンス、そしてコンポーネントのスキーマ、パラメーター、レスポンス、リクエスト本文である。
++ これは API を呼び出すのではなく検査するツールに役立つ。
++ YAML の文書は JSON に翻訳されて同じデコーダーで読まれるので、二つの形式がずれることはない。
+
+- A parameter, response or request body written as a `$ref` is kept as an `OpenApi.Ref`, and
+- resolved on demand by `apply()`, given the document. A schema reference resolves the same way,
+- one hop at a time, so cyclic schemas stay finite. A document of an unsupported version, or one
+- which will not parse, raises an `OpenApi.Error` which names the fault.
++ `$ref` として書かれたパラメーター、レスポンス、リクエスト本文は `OpenApi.Ref` として保持され、文書を与えると `apply()` によって必要に応じて解決される。
++ スキーマの参照も同じように、一度に一段ずつ解決されるので、循環するスキーマも有限のままである。
++ サポートされていないバージョンの文書や、パースできない文書は、誤りを名指しする `OpenApi.Error` を発生させる。
+
+- The model and the client are exercised against a corpus of real descriptions: the examples of
+- the OpenAPI Initiative, Swagger's Petstore, Redocly's Museum, Twilio, Kubernetes, Discord, Box
+- and Stripe. They are checked in under `lib/apoplexy/res/test/openapi` with their provenance.
++ モデルとクライアントは、実在する記述のコーパスで試験されている。OpenAPI Initiative の例、Swagger の Petstore、Redocly の Museum、Twilio、Kubernetes、Discord、Box、Stripe である。
++ これらは出所とともに `lib/apoplexy/res/test/openapi` の下にチェックインされている。
+
+- ### Limitations
++ ### 制限
+
+- Cookie parameters, `callbacks`, `links`, `security` requirements, `webhooks` and references into
+- other documents are read into the model where the model has a place for them, but the client
+- does not act on them. A `multipart/form-data` body is not yet construed.
++ クッキーパラメーター、`callbacks`、`links`、`security` の要件、`webhooks`、他の文書への参照は、モデルにその場所がある場合にはモデルに読み込まれるが、クライアントはそれに基づいて動作しない。
++ `multipart/form-data` の本文はまだ解釈されない。
+
+- ### Related
++ ### 関連
+
+- - [HTTP client](http-client.md) carries the requests, and describes the backends.
+- - [OAuth](oauth.md) describes the `Credential` values and the token flows.
+- - [Records](records.md) describes the typed records which `record()` gives.
+- - [JSON](json.md), [XML](xml.md) and [YAML](yaml.md) describe the carriers of the common media
+-   types.
+- - [Errors](errors.md) describes `attempt`, `recover` and `mitigate`.
+- - [Media types](media-types.md) describes the `MediaType` values which name each body.
++ - [HTTP クライアント](http-client.md) はリクエストを運び、バックエンドを説明する。
++ - [OAuth](oauth.md) は `Credential` の値とトークンのフローを説明する。
++ - [レコード](records.md) は `record()` が与える型付きのレコードを説明する。
++ - [JSON](json.md)、[XML](xml.md)、[YAML](yaml.md) は一般的なメディアタイプのキャリアを説明する。
++ - [エラー](errors.md) は `attempt`、`recover`、`mitigate` を説明する。
++ - [メディアタイプ](media-types.md) は各本文を名付ける `MediaType` の値を説明する。

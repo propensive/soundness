@@ -1,0 +1,70 @@
+orthant 1 language
+
+- # `↯/s.105.7` — `PrivateKey.Error`
++ # `↯/s.105.7` — `PrivateKey.Error`
+
+- Raised when a key document cannot be read as a private key of the cipher asked for.
++ 鍵ドキュメントを、求められた暗号方式の秘密鍵として読めないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- A private key is read from a document — PKCS#8, PKCS#1, SEC1 or OpenSSH's own container, bare
+- or in PEM armor — as a key of a named cipher, such as `PrivateKey[Ecdsa[256]]`. This error
+- covers a document that is not a key at all, one that holds a key of another algorithm or
+- size, and one that cannot be used as it stands.
++ 秘密鍵は、ドキュメント（PKCS#8、PKCS#1、SEC1、または OpenSSH 独自のコンテナー。そのままのものでも PEM のアーマー形式のものでもよい）から、`PrivateKey[Ecdsa[256]]` のような、指定した暗号方式の鍵として読まれる。
++ このエラーは、そもそも鍵ではないドキュメント、別のアルゴリズムや大きさの鍵を保持するドキュメント、そしてそのままでは使えないドキュメントを対象とする。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  コード
++ column  理由
++ column  メッセージ
+
+- row  `↯/s.105.7.1`  `Malformed`  the key document was malformed: <detail>
++ row  `↯/s.105.7.1`  `Malformed`  the key document was malformed: <detail>
+
+- row  `↯/s.105.7.2`  `Mismatch`  a <expected> key was expected but <found> was found
++ row  `↯/s.105.7.2`  `Mismatch`  a <expected> key was expected but <found> was found
+
+- row  `↯/s.105.7.3`  `Encrypted`  the key is protected by a passphrase
++ row  `↯/s.105.7.3`  `Encrypted`  the key is protected by a passphrase
+
+- row  `↯/s.105.7.4`  `Unsupported`  the key uses an unsupported <detail>
++ row  `↯/s.105.7.4`  `Unsupported`  the key uses an unsupported <detail>
+
+- row  `↯/s.105.7.5`  `PublicKeyAbsent`  the key does not carry its public key
++ row  `↯/s.105.7.5`  `PublicKeyAbsent`  the key does not carry its public key
+
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- A `Mismatch` names what the document holds: read the key as that cipher, or supply the key
+- that was intended. A passphrase-protected key must be decrypted before it is read, for
+- example with `ssh-keygen -p` or `openssl pkcs8`. An EC, Ed25519 or ML-DSA key written without
+- its public half cannot answer `public`; rewrite it with a tool that includes the public key,
+- as `openssl pkey` does.
++ `Mismatch` は、ドキュメントが保持するものを名指す。
++ 鍵をその暗号方式として読むか、意図した鍵を与える。
++ パスフレーズで保護された鍵は、読む前に、たとえば `ssh-keygen -p` や `openssl pkcs8` で復号しなければならない。
++ 公開鍵の半分なしに書かれた EC、Ed25519、ML-DSA の鍵は `public` に答えられない。
++ `openssl pkey` のように公開鍵を含めるツールで書き直す。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/enigmatic/src/core/enigmatic.PrivateKey.scala`
+- - `↯/s.105.8` — `PublicKey.Error`, the same for a public key
++ - ソース：`lib/enigmatic/src/core/enigmatic.PrivateKey.scala`
++ - `↯/s.105.8` — `PublicKey.Error`。公開鍵に対する同じエラー

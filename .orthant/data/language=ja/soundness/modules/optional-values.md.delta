@@ -1,0 +1,791 @@
+orthant 1 language
+
+- ## Optional Values
++ ## オプショナルな値
+
+- ### About
++ ### 概要
+
+- A value that might be absent has the type `Optional`. An `Optional[Text]` is either a `Text`, or
+- the single value `Unset`, which stands for absence.
++ 存在しないかもしれない値は `Optional` 型を持つ。
++ `Optional[Text]` は `Text` であるか、存在しないことを表す唯一の値 `Unset` であるかのどちらかである。
+
+- Unlike an `Option`, an `Optional` adds no wrapper. A present value is stored as itself, and is
+- written as itself, so the common case of a value that is there costs nothing and needs no
+- ceremony.
++ `Option` と違い、`Optional` はラッパーを加えない。
++ 存在する値はそれ自体として格納され、それ自体として書かれるので、値がそこにあるというよくある場合には、コストも儀式も要らない。
+
+- Optionality is also flat. `Optional[Optional[Int]]` is the same type as `Optional[Int]`, so the
+- ambiguous state which `Option` allows, a "present absence" such as `Some(None)`, cannot be
+- represented at all.
++ オプショナル性は平坦でもある。
++ `Optional[Optional[Int]]` は `Optional[Int]` と同じ型なので、`Option` が許す曖昧な状態、つまり `Some(None)` のような「存在する不在」は、そもそも表現できない。
+
+- ### On absence
++ ### 不在について
+
+- Three ways of saying "no value" are in common use:
++ 「値がない」ことを表す方法は、よく使われるものが三つある：
+
+= Three ways of saying "no value" are in common use:
+=
+- ```tabular
++ ```tabular
+
+- column  Absence as
+- column  Visible in the type
+- column  A present value is
+- column  Nests
+- row  `null`  no, so it fails only when dereferenced  itself  no
+- row  `Option`  yes  boxed in a `Some`  yes: `Option[Option[T]]` has two distinct empties
+- row  `Optional`  yes  itself  no
++ column  不在の表し方
++ column  型に現れるか
++ column  存在する値は
++ column  入れ子になるか
++ row  `null`  いいえ。そのため参照解決したときにはじめて失敗する  それ自体  いいえ
++ row  `Option`  はい  `Some` にボックス化される  はい。`Option[Option[T]]` には二つの異なる空がある
++ row  `Optional`  はい  それ自体  いいえ
+
+= row  `Optional`  yes  itself  no
+- ```
++ ```
+
+- `null` is invisible to the compiler. `Option` is visible, but makes every present value pay for
+- a wrapper, and code which meets a nested `Option` must thread through both layers.
++ `null` はコンパイラには見えない。
++ `Option` は見えるが、存在するすべての値にラッパーのコストを払わせ、入れ子になった `Option` に出会ったコードは両方の層をくぐり抜けなければならない。
+
+- An `Optional` keeps the safety of `Option`: absence is in the type, and the compiler makes sure
+- it is handled. It behaves like the value itself when the value is present. It rests on Scala's
+- [union types](https://docs.scala-lang.org/scala3/reference/new-types/union-types.html):
+- `Optional[value]` is exactly the union `Unset | value`. A union needs no wrapper, and a union of
+- a type with itself is that same type, which is why optionality never nests.
+- [Optionality](../../philosophy/optionality.md) describes the principle. Everything comes from the
+- `soundness` package, and the second import lets the samples print their results:
++ `Optional` は `Option` の安全性を保つ。不在は型に現れ、コンパイラはそれが扱われることを保証する。
++ 値が存在するときには、値そのもののように振る舞う。
++ これは Scala の[ユニオン型](https://docs.scala-lang.org/scala3/reference/new-types/union-types.html)に基づいている。`Optional[value]` はまさにユニオン `Unset | value` である。
++ ユニオンにはラッパーが要らず、ある型とそれ自身のユニオンはその同じ型なので、オプショナル性は決して入れ子にならない。
++ [オプショナル性](../../philosophy/optionality.md)がその原則を説明している。
++ すべては `soundness` パッケージから来る。2 つ目のインポートは、サンプルが結果を出力できるようにする：
+
+= `soundness` package, and the second import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Representing absence
++ ### 不在を表す
+
+- An optional value has the type `Optional[…]`. A present value is assigned exactly as a plain
+- value would be, and an absent one is `Unset`:
++ オプショナルな値は `Optional[…]` 型を持つ。
++ 存在する値は普通の値とまったく同じように代入し、存在しない値は `Unset` とする：
+
+= value would be, and an absent one is `Unset`:
+=
+- ```scala
++ ```scala
+
+- val name: Optional[Text] = t"Hamlet"
++ val name: Optional[Text] = t"Hamlet"
+
+- val nickname: Optional[Text] = Unset
++ val nickname: Optional[Text] = Unset
+
+= val nickname: Optional[Text] = Unset
+- ```
++ ```
+
+- An optional value cannot be used where a plain value is needed until the absent case has been
+- dealt with. The compiler insists on it:
++ オプショナルな値は、存在しない場合が処理されるまで、普通の値が必要な場所では使えない。
++ コンパイラがそれを要求する：
+
+= dealt with. The compiler insists on it:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+= compile
+- errors show
++ errors show
+
+= compile
+= errors show
+- ##
++ ##
+
+- val greeting: Text = name
++ val greeting: Text = name
+
+= val greeting: Text = name
+- ```
++ ```
+
+- The operations which deal with it, each described below, are:
++ それを処理する操作は以下のとおりで、それぞれ後で説明する：
+
+= The operations which deal with it, each described below, are:
+=
+- ```tabular
++ ```tabular
+
+- column  Operation
+- column  Gives
+- row  `or`  the value, or a fallback evaluated only when needed
+- row  `let`  a function's result for a present value, with `Unset` passed through
+- row  `lay`  a fallback for absence, or a function's result for presence, as a plain value
+- row  `present`, `absent`  which case a value is in
+- row  `mask`  `Unset` in place of a present value that satisfies a predicate
+- row  `assume`  the value, or an `Optional.Error` thrown
+- row  `presume`  the value, or the type's `Default`
+- row  `compact`  the present values of a collection
+- row  `unless`  `Unset` in place of any value that satisfies a predicate
+- row  `puncture`  `Unset` in place of one particular value
+- row  `only`  a partial function's result, or `Unset` where it is not defined
+- row  `option`  an `Option`
+- row  `optional`  an `Optional`, from an `Option`
+- row  `default[T]`  the `Default` value of the type `T`
++ column  操作
++ column  得られるもの
++ row  `or`  値、または必要なときにだけ評価される代替
++ row  `let`  存在する値に対する関数の結果。`Unset` はそのまま通す
++ row  `lay`  不在に対する代替、または存在に対する関数の結果。普通の値として得られる
++ row  `present`, `absent`  値がどちらの場合にあるか
++ row  `mask`  述語を満たす存在する値の代わりに `Unset`
++ row  `assume`  値、または投げられる `Optional.Error`
++ row  `presume`  値、またはその型の `Default`
++ row  `compact`  コレクションの存在する値
++ row  `unless`  述語を満たすあらゆる値の代わりに `Unset`
++ row  `puncture`  ある特定の値の代わりに `Unset`
++ row  `only`  部分関数の結果。定義されていない場所では `Unset`
++ row  `option`  `Option`
++ row  `optional`  `Option` から得た `Optional`
++ row  `default[T]`  型 `T` の `Default` の値
+
+= row  `default[T]`  the `Default` value of the type `T`
+- ```
++ ```
+
+- ### Supplying a fallback
++ ### 代替を与える
+
+- `or` gives the value if it is present, and a fallback otherwise. The result is a plain value:
++ `or` は、値が存在すればその値を、そうでなければ代替を与える。
++ 結果は普通の値である：
+
+= `or` gives the value if it is present, and a fallback otherwise. The result is a plain value:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `or` gives the value if it is present, and a fallback otherwise. The result is a plain value:
+=
+= ```scala fuel
+- run
++ run
+
+= `or` gives the value if it is present, and a fallback otherwise. The result is a plain value:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(name.or(t"anonymous"))
++ Out.println(name.or(t"anonymous"))
+
+- Out.println(nickname.or(t"anonymous"))
++ Out.println(nickname.or(t"anonymous"))
+
+= Out.println(nickname.or(t"anonymous"))
+- ```
++ ```
+
+- The fallback is evaluated only when it is needed, so it may be expensive, or may itself fail.
++ 代替は必要なときにだけ評価されるので、コストが高くてもよく、それ自体が失敗してもよい。
+
+- ### Transforming
++ ### 変換する
+
+- `let` applies a function to a present value, and passes `Unset` through untouched:
++ `let` は存在する値に関数を適用し、`Unset` には手を付けずにそのまま通す：
+
+= `let` applies a function to a present value, and passes `Unset` through untouched:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `let` applies a function to a present value, and passes `Unset` through untouched:
+=
+= ```scala fuel
+- run
++ run
+
+= `let` applies a function to a present value, and passes `Unset` through untouched:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(name.let(_.upper).inspect)
++ Out.println(name.let(_.upper).inspect)
+
+- Out.println(nickname.let(_.upper).inspect)
++ Out.println(nickname.let(_.upper).inspect)
+
+= Out.println(nickname.let(_.upper).inspect)
+- ```
++ ```
+
+- `inspect` displays a present optional value between corner brackets, and an absent one as `○`.
++ `inspect` は、存在するオプショナルな値をかぎ括弧で囲んで表示し、存在しない値を `○` として表示する。
+
+- Because optionality is flat, `let` does the work of both `map` and `flatMap` on an `Option`. A
+- function which itself returns an `Optional` does not add a layer, so calls to `let` chain
+- without nesting:
++ オプショナル性は平坦なので、`let` は `Option` における `map` と `flatMap` の両方の役割を果たす。
++ それ自体が `Optional` を返す関数は層を加えないので、`let` の呼び出しは入れ子にならずに連鎖する：
+
+= without nesting:
+=
+- ```scala
++ ```scala
+
+- def initial(text: Text): Optional[Char] = text.chars.head
++ def initial(text: Text): Optional[Char] = text.chars.head
+
+= def initial(text: Text): Optional[Char] = text.chars.head
+- ```
++ ```
+
+= def initial(text: Text): Optional[Char] = text.chars.head
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= def initial(text: Text): Optional[Char] = text.chars.head
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= def initial(text: Text): Optional[Char] = text.chars.head
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(name.let(initial).inspect)
++ Out.println(name.let(initial).inspect)
+
+- Out.println(nickname.let(initial).inspect)
++ Out.println(nickname.let(initial).inspect)
+
+= Out.println(nickname.let(initial).inspect)
+- ```
++ ```
+
+- `lay` handles both cases at once. It takes a fallback for absence and a function for presence,
+- so its result is a plain value, not an `Optional`:
++ `lay` は両方の場合を一度に扱う。
++ 不在に対する代替と存在に対する関数を受け取るので、その結果は `Optional` ではなく普通の値である：
+
+= so its result is a plain value, not an `Optional`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= so its result is a plain value, not an `Optional`:
+=
+= ```scala fuel
+- run
++ run
+
+= so its result is a plain value, not an `Optional`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(name.lay(0)(_.length).show)
++ Out.println(name.lay(0)(_.length).show)
+
+- Out.println(nickname.lay(0)(_.length).show)
++ Out.println(nickname.lay(0)(_.length).show)
+
+= Out.println(nickname.lay(0)(_.length).show)
+- ```
++ ```
+
+- ### Testing presence
++ ### 存在を調べる
+
+- `present` and `absent` say which case a value is in:
++ `present` と `absent` は、値がどちらの場合にあるかを示す：
+
+= `present` and `absent` say which case a value is in:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `present` and `absent` say which case a value is in:
+=
+= ```scala fuel
+- run
++ run
+
+= `present` and `absent` say which case a value is in:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(name.present.inspect)
++ Out.println(name.present.inspect)
+
+- Out.println(nickname.absent.inspect)
++ Out.println(nickname.absent.inspect)
+
+= Out.println(nickname.absent.inspect)
+- ```
++ ```
+
+- `mask` discards a present value which satisfies a predicate, and leaves any other value as it
+- was:
++ `mask` は述語を満たす存在する値を捨て、それ以外の値はそのまま残す：
+
+= was:
+=
+- ```scala fuel
++ ```scala fuel
+
+= was:
+=
+= ```scala fuel
+- run
++ run
+
+= was:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(name.mask(_.length > 64).inspect)
++ Out.println(name.mask(_.length > 64).inspect)
+
+- Out.println(name.mask(_.length < 64).inspect)
++ Out.println(name.mask(_.length < 64).inspect)
+
+= Out.println(name.mask(_.length < 64).inspect)
+- ```
++ ```
+
+- ### Requiring a value
++ ### 値を要求する
+
+- Sometimes a value is known to be present, though its type cannot say so. `assume` asserts it,
+- and gives the plain value. The assertion is unchecked, so `assume` needs the capability to
+- throw, and throws an `Optional.Error` if it is wrong:
++ 値が存在することは分かっているのに、その型ではそれを表せないことがある。
++ `assume` はそれを表明し、普通の値を与える。
++ この表明は検査されないので、`assume` には例外を投げるケイパビリティが必要であり、表明が誤っていれば `Optional.Error` を投げる：
+
+= throw, and throws an `Optional.Error` if it is wrong:
+=
+- ```scala
++ ```scala
+
+- import scala.unsafeExceptions.canThrowAny
++ import scala.unsafeExceptions.canThrowAny
+
+= import scala.unsafeExceptions.canThrowAny
+- ```
++ ```
+
+= import scala.unsafeExceptions.canThrowAny
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import scala.unsafeExceptions.canThrowAny
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import scala.unsafeExceptions.canThrowAny
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(name.assume)
++ Out.println(name.assume)
+
+= Out.println(name.assume)
+- ```
++ ```
+
+= Out.println(name.assume)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= Out.println(name.assume)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- errors show
++ errors show
+
+= run
+= errors show
+- ##
++ ##
+
+- nickname.assume
++ nickname.assume
+
+= nickname.assume
+- ```
++ ```
+
+- `presume` falls back to the type's default instead: an empty text, a zero, an empty list. It is
+- available for the types which [declare a default](#defaults):
++ `presume` は代わりにその型のデフォルトに戻る。空のテキスト、ゼロ、空のリストなどである。
++ これは[デフォルトを宣言する](#defaults)型で使える：
+
+= available for the types which [declare a default](#defaults):
+=
+- ```scala fuel
++ ```scala fuel
+
+= available for the types which [declare a default](#defaults):
+=
+= ```scala fuel
+- run
++ run
+
+= available for the types which [declare a default](#defaults):
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(nickname.presume.inspect)
++ Out.println(nickname.presume.inspect)
+
+= Out.println(nickname.presume.inspect)
+- ```
++ ```
+
+- ### Absence from collections
++ ### コレクションからの不在
+
+- `compact` reduces a collection of optional values to the values which are present, in a
+- collection of the same kind:
++ `compact` は、オプショナルな値のコレクションを、存在する値だけからなる同じ種類のコレクションにする：
+
+= collection of the same kind:
+=
+- ```scala fuel
++ ```scala fuel
+
+= collection of the same kind:
+=
+= ```scala fuel
+- run
++ run
+
+= collection of the same kind:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(List[Optional[Text]](t"a", Unset, t"c").compact.inspect)
++ Out.println(List[Optional[Text]](t"a", Unset, t"c").compact.inspect)
+
+= Out.println(List[Optional[Text]](t"a", Unset, t"c").compact.inspect)
+- ```
++ ```
+
+- Optional values also come *out* of [collections](collections.md#positions-and-access). Looking
+- up a key in a map, or the first element of a list, gives an `Optional`, since there may be
+- nothing there.
++ オプショナルな値は、[コレクション](collections.md#positions-and-access)から*出てくる*こともある。
++ マップでキーを引いたり、リストの最初の要素を取ったりすると、そこに何もないかもしれないので、`Optional` が得られる。
+
+- ### Building an optional
++ ### オプショナルな値を作る
+
+- A condition turns any value into an optional one. `unless` discards the value when a predicate
+- holds, `puncture` discards one particular value, and `only` keeps a value where a partial
+- function is defined:
++ 条件を使えば、どんな値もオプショナルな値に変えられる。
++ `unless` は述語が成り立つときに値を捨て、`puncture` はある特定の値を捨て、`only` は部分関数が定義されている場所で値を残す：
+
+= function is defined:
+=
+- ```scala
++ ```scala
+
+- val count = 0
++ val count = 0
+
+- val input = t""
++ val input = t""
+
+- val value = 7
++ val value = 7
+
+= val value = 7
+- ```
++ ```
+
+= val value = 7
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val value = 7
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val value = 7
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(count.unless(_ == 0).inspect)
++ Out.println(count.unless(_ == 0).inspect)
+
+- Out.println(input.puncture(t"").inspect)
++ Out.println(input.puncture(t"").inspect)
+
+- Out.println(value.only { case n if n > 0 => n*n }.inspect)
++ Out.println(value.only { case n if n > 0 => n*n }.inspect)
+
+= Out.println(value.only { case n if n > 0 => n*n }.inspect)
+- ```
++ ```
+
+- `safely` builds one from an operation that may fail: it gives the result, or `Unset` if the
+- operation raised an error. [Errors](errors.md#choosing-a-strategy) describes it.
++ `safely` は失敗するかもしれない操作からオプショナルな値を作る。結果を与えるか、操作がエラーを発生させたなら `Unset` を与える。
++ [エラー](errors.md#choosing-a-strategy)がそれを説明している。
+
+- ### Working with `Option`
++ ### `Option` を扱う
+
+- An `Option` is sometimes unavoidable, at the boundary with another library. The two convert in
+- both directions:
++ 別のライブラリとの境界では、`Option` が避けられないことがある。
++ 二つは双方向に変換できる：
+
+= both directions:
+=
+- ```scala fuel
++ ```scala fuel
+
+= both directions:
+=
+= ```scala fuel
+- run
++ run
+
+= both directions:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(name.option.inspect)
++ Out.println(name.option.inspect)
+
+- Out.println(Some(t"Hamlet").optional.inspect)
++ Out.println(Some(t"Hamlet").optional.inspect)
+
+= Out.println(Some(t"Hamlet").optional.inspect)
+- ```
++ ```
+
+- ### Optional fields in data
++ ### データ中のオプショナルなフィールド
+
+- A case class field typed `Optional` is understood by the data formats. An absent field is left
+- out of the output, and a field missing from a document is read as `Unset`.
+- [JSON](json.md#optional-fields-and-defaults) shows this, along with the imports which make a
+- missing field an error instead; the other formats behave alike.
++ `Optional` 型のケースクラスのフィールドは、データ形式に理解される。
++ 存在しないフィールドは出力から省かれ、ドキュメントにないフィールドは `Unset` として読まれる。
++ [JSON](json.md#optional-fields-and-defaults) がこれを示し、代わりにフィールドの欠落をエラーにするインポートも示している。ほかの形式も同様に振る舞う。
+
+- ### What it costs
++ ### コスト
+
+- An `Optional[Text]` *is* a `Text`. There is no wrapper, so a present value costs nothing to
+- hold, nothing to pass and nothing to read. `Option`, by contrast, allocates a `Some` for every
+- present value. In a data structure of a million records, that is a million objects which exist
+- only to say "yes, there is one".
++ `Optional[Text]` は `Text` *そのもの*である。
++ ラッパーはないので、存在する値は保持するのにも、渡すのにも、読むのにもコストがかからない。
++ これに対して `Option` は、存在する値ごとに `Some` をアロケートする。
++ 百万件のレコードのデータ構造では、それは「はい、一つある」と言うためだけに存在する百万個のオブジェクトになる。
+
+- The operations are inlined too, and `or` is optimized at [compiletime]. A chain of fallbacks
+- collapses without building intermediate optionals, and a fallback which is a constant becomes a
+- constant. [Zero cost](../../philosophy/zero-cost.md) explains why this matters to the design.
++ 操作もインライン化され、`or` は[コンパイル時]に最適化される。
++ 代替の連鎖は中間のオプショナルな値を作らずに畳み込まれ、定数の代替は定数になる。
++ [ゼロコスト](../../philosophy/zero-cost.md)が、これが設計にとってなぜ重要かを説明している。
+
+- The price of the representation is that `Optional[Optional[T]]` cannot exist. Absence has one
+- representation, so it cannot nest. This is checked at compiletime: a type which could not be
+- made optional unambiguously is rejected where it is written.
++ この表現の代償は、`Optional[Optional[T]]` が存在できないことである。
++ 不在には表現が一つしかないので、入れ子にできない。
++ これはコンパイル時に検査される。曖昧さなくオプショナルにできない型は、それが書かれた場所で拒否される。
+
+- ### Requiring an unambiguous type
++ ### 曖昧でない型を要求する
+
+- Three [typeclasses][typeclass] support that check, and are occasionally useful directly:
++ 三つの[型クラス]がその検査を支えており、ときには直接役に立つ：
+
+= Three [typeclasses][typeclass] support that check, and are occasionally useful directly:
+=
+- ```tabular
++ ```tabular
+
+- column  Typeclass
+- column  Witnesses
+- row  `Concrete`  that a type is a definite type, not an abstract one
+- row  `Distinct`  that a type is not a member of a given union
+- row  `Mandatable`  the type with its optionality stripped: the type a present value has
++ column  型クラス
++ column  証明する内容
++ row  `Concrete`  型が抽象型ではなく確定した型であること
++ row  `Distinct`  型が与えられたユニオンのメンバーでないこと
++ row  `Mandatable`  オプショナル性を取り除いた型。存在する値が持つ型
+
+= row  `Mandatable`  the type with its optionality stripped: the type a present value has
+- ```
++ ```
+
+- `Concrete` matters because an abstract type might later be instantiated to something which is
+- already optional. `Distinct` is the check that keeps `Unset` out of the value type.
++ `Concrete` が重要なのは、抽象型が後で、すでにオプショナルな何かにインスタンス化されるかもしれないからである。
++ `Distinct` は、`Unset` を値の型から締め出す検査である。
+
+- A generic method which takes an `Optional[value]`, for an abstract `value`, therefore demands
+- evidence that `value` is concrete. The demand appears in the method's signature, an
+- [honest signature], and not as a failure at some distant call.
++ したがって、抽象的な `value` について `Optional[value]` を受け取るジェネリックなメソッドは、`value` が具体的であるという証拠を要求する。
++ その要求は、どこか遠くの呼び出しでの失敗としてではなく、メソッドのシグネチャに現れる。これが[正直なシグネチャ]である。
+
+- ### Defaults
++ ### デフォルト
+
+- `presume` and `default` draw on a `Default` instance, which supplies the value a type falls back
+- to. Instances exist for the types with an obvious zero: empty text, zero, an empty collection. A
+- type declares its own by defining one:
++ `presume` と `default` は `Default` インスタンスを利用する。これは、ある型が戻るべき値を与える。
++ 空のテキスト、ゼロ、空のコレクションのように、明らかなゼロを持つ型にはインスタンスがある。
++ 型は自分のインスタンスを定義することで、独自のデフォルトを宣言する：
+
+= type declares its own by defining one:
+=
+- ```scala
++ ```scala
+
+- case class Volume(level: Int)
++ case class Volume(level: Int)
+
+- given Default[Volume] = () => Volume(0)
++ given Default[Volume] = () => Volume(0)
+
+- val setting: Optional[Volume] = Unset
++ val setting: Optional[Volume] = Unset
+
+= val setting: Optional[Volume] = Unset
+- ```
++ ```
+
+= val setting: Optional[Volume] = Unset
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val setting: Optional[Volume] = Unset
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val setting: Optional[Volume] = Unset
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(setting.presume.inspect)
++ Out.println(setting.presume.inspect)
+
+= Out.println(setting.presume.inspect)
+- ```
++ ```
+
+- A `Default` is computed each time it is asked for, not stored, so a default which is expensive
+- to compute is computed only where it is used.
++ `Default` は保存されず、求められるたびに計算されるので、計算にコストがかかるデフォルトは使われる場所でだけ計算される。

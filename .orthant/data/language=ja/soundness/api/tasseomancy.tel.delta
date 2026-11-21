@@ -1,0 +1,2909 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base tasseomancy
++ base tasseomancy
+
+- import soundness
++ import soundness
+
+- info   SVG charts from typed data: bars, lines, scatter, pie, histogram, box plots and doughnuts
++ info   型付きのデータから描く SVG のチャート：棒、折れ線、散布図、円、ヒストグラム、箱ひげ図、ドーナツ
+
+- detail
++ detail
+
+-     _Tasseomancy_ draws charts as savagery `Svg` values from typed data, keeping four decisions
+-     apart which charting libraries usually tangle into one call: the **shape** of the data,
+-     the **kind** of chart, the **fit** of the one to the other, and the **style**.
++     _Tasseomancy_ は、型付きのデータからチャートを savagery の `Svg` 値として描く。
++     チャートのライブラリがたいてい一つの呼び出しに絡め合わせてしまう四つの決定を、別々に保つ：データの**形**、チャートの**種類**、一方の他方への**適合**、そして**スタイル**である。
+
+-     - The shape is in the types. A `Series[x, y]` is a named run of points; its abscissa type
+-       decides the axis: a `Text`, an enum or a `Chart.Category` is `Categorical`, a number, a
+-       `Duration`, an `Instant` or any `Quantity` is `Continuous`. `Samples[y]` are raw
+-       measurements, `Chart.Estimate` a value with its interval, `Noted` a value with a note, and a
+-       `Dag` of `Weighted`, `Progressive` nodes is a dependency graph.
+-     - A kind is a value — `Bars()`, `StackedBars()`, `Lines()`, `Scatter()`, `Pie()`,
+-       `Histogram()`, `Boxes()` or `Doughnut()` — and `data.chart(kind)` compiles only where a
+-       `Plottable` instance says the kind can draw the data's shape: a pie of three series or a
+-       line through category labels is a compile error.
+-     - The fit — each axis's range, transform and gradations — is chosen by a `Calibration`
+-       keyed on the axis's value type, overridden by a scoped given, an import from
+-       `calibrations`, or an argument to the kind. The result is a `Scale` or `Bands`: plain
+-       data, which is what lets a chart tell whether new data still fits its axes.
+-     - The style is a `Chart.Style` value — `Chart.Standard` by default — with a method for
+-       every component drawn, a `ChartPalette` of colours named by role, and a `FontMetric`
+-       which measures text for the layout.
++     - 形は型にある。`Series[x, y]` は名前の付いた点の並びであり、その横軸の型が軸を決める：`Text`、列挙型、`Chart.Category` は `Categorical` であり、数値、`Duration`、`Instant`、任意の `Quantity` は `Continuous` である。`Samples[y]` は生の測定値、`Chart.Estimate` は区間を伴う値、`Noted` は注記を伴う値であり、`Weighted` かつ `Progressive` なノードの `Dag` は依存グラフである。
++     - 種類は値である（`Bars()`、`StackedBars()`、`Lines()`、`Scatter()`、`Pie()`、`Histogram()`、`Boxes()`、`Doughnut()`）。`data.chart(kind)` は、その種類がデータの形を描けると `Plottable` インスタンスが述べる場合にのみコンパイルされる：三つの系列の円グラフや、カテゴリーのラベルを通る折れ線はコンパイルエラーである。
++     - 適合（各軸の範囲、変換、刻み）は、軸の値の型をキーとする `Calibration` が選び、スコープの given、`calibrations` からのインポート、または種類への引数で上書きされる。結果は `Scale` か `Bands` である。これは単なるデータであり、それゆえチャートは新しいデータがまだ軸に収まるかどうかを判断できる。
++     - スタイルは `Chart.Style` 値（デフォルトは `Chart.Standard`）であり、描かれるすべての構成要素に対応するメソッドと、役割で名付けられた色の `ChartPalette`、そしてレイアウトのためにテキストを測る `FontMetric` を持つ。
+
+=       which measures text for the layout.
+=
+-     ```scala
++     ```scala
+
+=       which measures text for the layout.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val north = Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0))
++     val north = Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0))
+
+-     val south = Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0))
++     val south = Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0))
+
+-     val sales = List(north, south).chart(Bars())
++     val sales = List(north, south).chart(Bars())
+
+-     sales.fit.bands.categories           // Sequence(t"jan", t"feb", t"mar")
++     sales.fit.bands.categories           // Sequence(t"jan", t"feb", t"mar")
+
+-     sales.fit.ordinate.upper             // 6.0, padded to a whole gradation step
++     sales.fit.ordinate.upper             // 6.0, padded to a whole gradation step
+
+-     sales.in[Svg].in[Xml].show.keep(4)   // t"<svg"
++     sales.in[Svg].in[Xml].show.keep(4)   // t"<svg"
+
+=     sales.in[Svg].in[Xml].show.keep(4)   // t"<svg"
+-     ```
++     ```
+
+-     A `Chart` is immutable. `revise` takes new data and yields the next chart with a list of
+-     `Chart.Revision`s: if the fit still accommodates the data, the axes hold still and only the
+-     identified parts (`series-0`, `legend`, `rank-1`, …) that changed are replaced; otherwise
+-     the whole chart is redrawn. A page holding the SVG needs only those two operations.
++     `Chart` は不変である。
++     `revise` は新しいデータを受け取り、次のチャートを `Chart.Revision` のリストとともに返す：適合がまだデータを収められるなら、軸は動かず、変化した識別済みの部分（`series-0`、`legend`、`rank-1`、…）だけが置き換えられる。そうでなければチャート全体が描き直される。
++     SVG を保持するページに必要なのは、この二つの操作だけである。
+
+-     Rendering is `chart.in[Svg]`, which needs the kind's own style (`Bars.Style` for bars),
+-     a `ChartPalette`, a `FontMetric` and a cartouche `Arranger` in scope; every one has a
+-     companion default, so nothing need be imported. The choice packages `calibrations`,
+-     `palettes` and `fontMetrics` each hold givens to import **by name** — `import
+-     palettes.solarizedDarkChartPalette` — since `import tasseomancy.*` brings in no givens,
+-     and a lexically-scoped given outranks any companion default. Label placement is
+-     cartouche's: `import arrangers.annealingArranger` chooses simulated annealing for a
+-     crowded chart.
++     描画は `chart.in[Svg]` であり、その種類自身のスタイル（棒グラフなら `Bars.Style`）、`ChartPalette`、`FontMetric`、cartouche の `Arranger` がスコープに必要である。どれにもコンパニオンのデフォルトがあるので、何もインポートする必要はない。
++     選択パッケージ `calibrations`、`palettes`、`fontMetrics` はそれぞれ、**名前で**インポートする given を保持する（`import palettes.solarizedDarkChartPalette`）。`import tasseomancy.*` は given を持ち込まず、レキシカルスコープの given はどのコンパニオンのデフォルトよりも優先されるからである。
++     ラベルの配置は cartouche が担う：`import arrangers.annealingArranger` は、混み合ったチャートのために焼きなまし法を選ぶ。
+
+-     The library is one source set, `tasseomancy.core`, which depends on savagery, cartouche,
+-     cataclysm (for `Css.Style` and `Font in Web`), phoenicia, iridescence, quantitative,
+-     aviation and acyclicity. Everything is exported to the `soundness` umbrella, where the
+-     three choice packages merge with the umbrella's own.
++     このライブラリは一つのソースセット `tasseomancy.core` であり、savagery、cartouche、cataclysm（`Css.Style` と `Font in Web` のため）、phoenicia、iridescence、quantitative、aviation、acyclicity に依存する。
++     すべては `soundness` アンブレラにエクスポートされ、三つの選択パッケージはアンブレラ自身のものと統合される。
+
+- refer tasseomancy.Chart
++ refer tasseomancy.Chart
+
+- refer tasseomancy.Series
++ refer tasseomancy.Series
+
+- refer tasseomancy.Plottable
++ refer tasseomancy.Plottable
+
+- refer tasseomancy.Calibration
++ refer tasseomancy.Calibration
+
+- refer tasseomancy.Scale
++ refer tasseomancy.Scale
+
+- refer savagery.Svg
++ refer savagery.Svg
+
+- entry .chart   pairs data with a chart kind, checked for compatibility as the code compiles
+-     An extension on any value: `data.chart(form)` needs a `data is Plottable in form to fit by
+-     style` instance, which exists only where the kind can draw the data's shape, and returns a
+-     `Chart[data, form, fit, style]` already fitted to the data with the instance's `fit`. The
+-     fit type is the kind's own (`Lines.Fit`, with its `abscissa` and `ordinate` scales), so
+-     the axes are visible on the result, and the style type is the kind's own too, so
+-     rendering asks for exactly the components the kind draws.
++ entry .chart   データをチャートの種類と組み合わせ、互換性をコードのコンパイル時に検査する
++     任意の値に対する拡張である：`data.chart(form)` には `data is Plottable in form to fit by style` インスタンスが必要であり、それはその種類がデータの形を描ける場合にのみ存在する。そして、インスタンスの `fit` ですでにデータに適合させた `Chart[data, form, fit, style]` を返す。
++     適合の型はその種類自身のもの（`abscissa` と `ordinate` のスケールを持つ `Lines.Fit`）なので、軸が結果に見える。スタイルの型もその種類自身のものなので、描画はその種類が描く構成要素だけをちょうど求める。
+
+=     rendering asks for exactly the components the kind draws.
+=
+-     ```scala
++     ```scala
+
+=     rendering asks for exactly the components the kind draws.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
++     val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
+
+-     val chart: Chart[Series[Double, Double], Lines, Lines.Fit, Lines.Style] = growth.chart(Lines())
++     val chart: Chart[Series[Double, Double], Lines, Lines.Fit, Lines.Style] = growth.chart(Lines())
+
+-     chart.fit.abscissa.upper   // 10.0
++     chart.fit.abscissa.upper   // 10.0
+
+=     chart.fit.abscissa.upper   // 10.0
+-     ```
++     ```
+
+-     An incompatible pairing does not compile: a categorical series cannot be `Lines()`, a
+-     collection of series cannot be `Pie()`, `Samples` cannot be `Bars()`, and a `Dag` whose
+-     nodes lack `Weighted` or `Progressive` cannot be `Doughnut()`.
++     互換でない組み合わせはコンパイルされない：カテゴリーの系列は `Lines()` にできず、系列のコレクションは `Pie()` にできず、`Samples` は `Bars()` にできず、ノードに `Weighted` または `Progressive` がない `Dag` は `Doughnut()` にできない。
+
+=     nodes lack `Weighted` or `Progressive` cannot be `Doughnut()`.
+=
+-     ```scala
++     ```scala
+
+=     nodes lack `Weighted` or `Progressive` cannot be `Doughnut()`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     Series(t"a")((t"x", 1.0)).chart(Lines())   // does not compile
++     Series(t"a")((t"x", 1.0)).chart(Lines())   // does not compile
+
+=     Series(t"a")((t"x", 1.0)).chart(Lines())   // does not compile
+-     ```
++     ```
+
+- entry .Chart   data, a chart kind, and the fit of one to the other, revisable as data arrives
++ entry .Chart   データ、チャートの種類、そして一方の他方への適合。データが届くにつれて改訂できる
+
+= entry .Chart   data, a chart kind, and the fit of one to the other, revisable as data arrives
+-   detail
++   detail
+
+-       A `Chart[data, form, fit, style]` holds its `#data`, its kind (`#form`), the `#fit` the
+-       kind computed from the data, and the `Plottable` instance that pairs them. It is made by
+-       the `chart` extension rather than directly. The fit's type is the kind's own — `Bars.Fit`
+-       with `bands` and `ordinate`, `Lines.Fit` with two scales, `Doughnut.Fit[node]` with its
+-       bands — and the style type is the kind's style trait, so a bar chart renders against a
+-       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
++       `Chart[data, form, fit, style]` は、その `#data`、種類（`#form`）、種類がデータから計算した `#fit`、そしてそれらを組み合わせる `Plottable` インスタンスを保持する。
++       直接作るのではなく、`chart` 拡張で作る。
++       適合の型はその種類自身のもの（`bands` と `ordinate` を持つ `Bars.Fit`、二つのスケールを持つ `Lines.Fit`、帯を持つ `Doughnut.Fit[node]`）であり、スタイルの型はその種類のスタイルのトレイトである。したがって棒グラフは `Bars.Style` に対して、円グラフは `Pie.Style` に対して描画される。`Chart.Standard` はそのすべてを実装する。
+
+=       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
+=
+-       ```scala
++       ```scala
+
+=       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
+=
+=       ```scala
+=       import soundness.*
+=
+-       val sales =
++       val sales =
+
+=       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+-         List
++         List
+
+=       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+=         List
+-           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
++           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+
+=       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+=         List
+=           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+-             Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
++             Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
+
+=       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+=         List
+=           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+=             Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
+=
+-       val chart = sales.chart(Bars())
++       val chart = sales.chart(Bars())
+
+-       val svg: Svg = chart.in[Svg]
++       val svg: Svg = chart.in[Svg]
+
+-       svg.in[Xml].show.contains(t"""id="series-1"""")   // true
++       svg.in[Xml].show.contains(t"""id="series-1"""")   // true
+
+=       svg.in[Xml].show.contains(t"""id="series-1"""")   // true
+-       ```
++       ```
+
+-       Rendering as `chart.in[Svg]` (the `.encodable` given) or `#drawing` needs the kind's
+-       style, a `ChartPalette`, a `FontMetric` and an `Arranger` in scope, each of which has a
+-       companion default: `Chart.Style.standard`, `ChartPalette.slate`, `FontMetric.fromStyle`
+-       and cartouche's sequential arranger. A given `Chart.Standard` in lexical scope replaces
+-       the default style for every kind at once.
++       `chart.in[Svg]`（`.encodable` given）や `#drawing` としての描画には、その種類のスタイル、`ChartPalette`、`FontMetric`、`Arranger` がスコープに必要であり、それぞれにコンパニオンのデフォルトがある：`Chart.Style.standard`、`ChartPalette.slate`、`FontMetric.fromStyle`、そして cartouche の逐次的なアレンジャーである。
++       レキシカルスコープにある given の `Chart.Standard` は、すべての種類のデフォルトのスタイルを一度に置き換える。
+
+-       A chart is immutable; `#revise` is how it follows new data, keeping the fit while it
+-       still accommodates the data so that the axes hold still, and returning what changed on
+-       the page.
++       チャートは不変である。
++       `#revise` は、チャートが新しいデータに追従する方法である。適合がまだデータを収められる間はそれを保って軸を動かさず、ページ上で変化したものを返す。
+
+=       the page.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label A line chart fitted to two points
++         label 二つの点に適合させた折れ線グラフ
+
+=         label A line chart fitted to two points
+-         code
++         code
+
+=         label A line chart fitted to two points
+=         code
+-             val latency = Series(t"p99")((0.0, 12.0), (10.0, 14.0)).chart(Lines())
++             val latency = Series(t"p99")((0.0, 12.0), (10.0, 14.0)).chart(Lines())
+
+-             latency.fit.ordinate.upper                        // 14.0
++             latency.fit.ordinate.upper                        // 14.0
+
+=             latency.fit.ordinate.upper                        // 14.0
+-       frame
++       frame
+
+-         label A point within the axes replaces one part
++         label 軸の内側の点は一つの部分を置き換える
+
+=         label A point within the axes replaces one part
+-         code
++         code
+
+=         label A point within the axes replaces one part
+=         code
+-             val latency = Series(t"p99")((0.0, 12.0), (10.0, 14.0)).chart(Lines())
++             val latency = Series(t"p99")((0.0, 12.0), (10.0, 14.0)).chart(Lines())
+
+-             val (next, revisions) = latency.revise(latency.data.add((5.0, 13.0)))
++             val (next, revisions) = latency.revise(latency.data.add((5.0, 13.0)))
+
+-             revisions.size                                    // 1: a Chart.Revision.Replace of series-0
++             revisions.size                                    // 1: a Chart.Revision.Replace of series-0
+
+-             next.fit.ordinate.upper                           // 14.0: the fit survived
++             next.fit.ordinate.upper                           // 14.0: the fit survived
+
+=             next.fit.ordinate.upper                           // 14.0: the fit survived
+-       frame
++       frame
+
+-         label A point beyond them redraws the chart
++         label 軸の外側の点はチャートを描き直す
+
+=         label A point beyond them redraws the chart
+-         code
++         code
+
+=         label A point beyond them redraws the chart
+=         code
+-             val latency = Series(t"p99")((0.0, 12.0), (10.0, 14.0)).chart(Lines())
++             val latency = Series(t"p99")((0.0, 12.0), (10.0, 14.0)).chart(Lines())
+
+-             val (next, revisions) = latency.revise(latency.data.add((20.0, 30.0)))
++             val (next, revisions) = latency.revise(latency.data.add((20.0, 30.0)))
+
+-             revisions.size                                    // 1: a Chart.Revision.Redraw
++             revisions.size                                    // 1: a Chart.Revision.Redraw
+
+-             next.fit.ordinate.upper                           // 30.0: a new fit
++             next.fit.ordinate.upper                           // 30.0: a new fit
+
+=             next.fit.ordinate.upper                           // 30.0: a new fit
+-       ##
++       ##
+
+=             next.fit.ordinate.upper                           // 30.0: a new fit
+=       ##
+-       ```
++       ```
+
+=       ```
+-   refer tasseomancy.chart
++   refer tasseomancy.chart
+
+-   refer tasseomancy.Plottable
++   refer tasseomancy.Plottable
+
+-   refer tasseomancy.Chart.Standard
++   refer tasseomancy.Chart.Standard
+
+=   refer tasseomancy.Chart.Standard
+-   refer tasseomancy.ChartPalette
++   refer tasseomancy.ChartPalette
+
+=   refer tasseomancy.ChartPalette
+-   refer tasseomancy.FontMetric
++   refer tasseomancy.FontMetric
+
+-   entry .Legend   where the legend goes: `Hidden`, `Right` or `Bottom`
+-       `Chart.Style#legend` chooses one. `Right` stacks a swatch and name per series beside the
+-       plot, `Bottom` flows them along the bottom in one row, and `Hidden` draws no legend and
+-       reserves no room for one. A doughnut has no legend whatever the setting.
+-   entry .Axis   which axis a cartesian style hook is drawing: `Abscissa` or `Ordinate`
+-       Passed to `Chart.Cartesian`'s `axisLine`, `tick`, `tickLabel`, `gridLine`, `axisTitle`,
+-       `arrowhead`, `axisBreak` and `labelRoom`, so that one override may treat the horizontal
+-       axis differently from the vertical.
+-   entry .Anchoring   where a run of text is set, as the arrangement decided: point and alignment
++   entry .Legend   凡例を置く場所：`Hidden`、`Right`、`Bottom`
++       `Chart.Style#legend` がその一つを選ぶ。
++       `Right` は系列ごとの色見本と名前をプロットの横に積み重ね、`Bottom` はそれらを下端に沿って一行に流し、`Hidden` は凡例を描かず、そのための場所も確保しない。
++       ドーナツは、設定にかかわらず凡例を持たない。
++   entry .Axis   直交座標系のスタイルのフックがどの軸を描いているか：`Abscissa` または `Ordinate`
++       `Chart.Cartesian` の `axisLine`、`tick`、`tickLabel`、`gridLine`、`axisTitle`、`arrowhead`、`axisBreak`、`labelRoom` に渡されるので、一つのオーバーライドで横軸を縦軸と異なるように扱える。
++   entry .Anchoring   配置が決めた、テキストの並びを組む場所：点と揃え
+
+=   entry .Anchoring   where a run of text is set, as the arrangement decided: point and alignment
+-     detail
++     detail
+
+-         A label's anchor `#point`, with the `Lettering.Anchor` and `Lettering.Baseline` that put
+-         the text on the right side of it. `Chart.Cartesian#tickLabel`, `#pointLabel` and
+-         `Pie.Style#wedgeLabel` receive one: the position is cartouche's to choose, since a
+-         label may have been moved to another side of its point, or off it with a leader line,
+-         to avoid a collision; a style draws the text at `at.point` with `at.anchor` and
+-         `at.baseline`, applying any transform of its own to the point.
+-     entry .of   the anchoring for a placed cartouche `Caption.Position`
+-         Text to the east of its point starts there and is centred on it vertically; text to
+-         the west ends there; text to the north sits on it (alphabetic baseline) and text to the
+-         south hangs from it; the diagonal attachments combine the two, and `Center` is middle
+-         and middle.
+-     entry #point   the anchor point, in the drawing's coordinates
+-     entry #anchor   the `text-anchor`: whether the point is the text's start, middle or end
+-     entry #baseline   the `dominant-baseline`: which line of the glyphs lies on the point
+-   entry .Style   what every chart kind shares: canvas, font, legend, and how common components are drawn
++         ラベルのアンカーの `#point` と、テキストをその正しい側に置く `Lettering.Anchor` と `Lettering.Baseline` である。
++         `Chart.Cartesian#tickLabel`、`#pointLabel`、`Pie.Style#wedgeLabel` はこれを受け取る。位置を選ぶのは cartouche である。ラベルは衝突を避けるために、その点の別の側へ、あるいは引き出し線を伴って点から離れた所へ移されているかもしれないからである。スタイルはテキストを `at.point` に `at.anchor` と `at.baseline` で描き、点には自身の変換を適用する。
++     entry .of   配置済みの cartouche の `Caption.Position` に対するアンカー
++         点の東にあるテキストはそこから始まり、垂直方向はそこを中心とする。西にあるテキストはそこで終わる。北にあるテキストはその上に乗り（アルファベットのベースライン）、南にあるテキストはそこから垂れ下がる。斜めの取り付けは両者を組み合わせ、`Center` は水平も垂直も中央である。
++     entry #point   アンカーの点。描画の座標で表す
++     entry #anchor   `text-anchor`：点がテキストの始まり、中央、終わりのどれであるか
++     entry #baseline   `dominant-baseline`：グリフのどの線が点の上にあるか
++   entry .Style   すべてのチャートの種類が共有するもの：キャンバス、フォント、凡例、共通の構成要素の描き方
+
+=   entry .Style   what every chart kind shares: canvas, font, legend, and how common components are drawn
+-     detail
++     detail
+
+-         The root of the style hierarchy. A chart kind computes the geometry — where a label
+-         sits, how tall a bar is — and calls a method of the style for each component, which
+-         returns the `Figure`s to draw; a style overrides the methods it wants drawn differently
+-         and inherits the rest. `Chart.Cartesian` adds the axes, and each kind adds its own
+-         trait (`Bars.Style`, `Lines.Style`, `Pie.Style`, …); `Chart.Standard` implements every
+-         one, and is the companion default, so a chart renders with no style in scope.
++         スタイルの階層の根である。
++         チャートの種類は幾何（ラベルがどこにあるか、棒の高さはどれだけか）を計算し、構成要素ごとにスタイルのメソッドを呼び出す。メソッドは描くべき `Figure` を返す。スタイルは、描き方を変えたいメソッドをオーバーライドし、残りを継承する。
++         `Chart.Cartesian` は軸を加え、各種類は自身のトレイト（`Bars.Style`、`Lines.Style`、`Pie.Style`、…）を加える。`Chart.Standard` はそのすべてを実装し、コンパニオンのデフォルトであるので、スコープにスタイルがなくてもチャートは描画される。
+
+-         The `#font` is a `Font in Web`: a face paired with a provision for its typeface, so a
+-         chart can only be set in a typeface the SVG will carry a `@font-face` for, or in a
+-         generic family. A named family is a provision plus a font:
++         `#font` は `Font in Web` である：フェイスとその書体のためのプロビジョンを組にしたものなので、チャートは、SVG が `@font-face` を持つ書体か、総称ファミリーでしか組めない。
++         名前付きのファミリーは、プロビジョンとフォントの組である：
+
+=         generic family. A named family is a provision plus a font:
+=
+-         ```scala
++         ```scala
+
+=         generic family. A named family is a provision plus a font:
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         given (Typeface of "Menlo") is Typesettable in Web = Web.local()
++         given (Typeface of "Menlo") is Typesettable in Web = Web.local()
+
+-         given Chart.Standard = Chart.Standard(font = Web.font(Typeface["Menlo"].face))
++         given Chart.Standard = Chart.Standard(font = Web.font(Typeface["Menlo"].face))
+
+-         val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
++         val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
+
+-         growth.chart(Lines()).in[Svg].in[Xml].show.contains(t"@font-face")   // true
++         growth.chart(Lines()).in[Svg].in[Xml].show.contains(t"@font-face")   // true
+
+=         growth.chart(Lines()).in[Svg].in[Xml].show.contains(t"@font-face")   // true
+-         ```
++         ```
+
+-     refer tasseomancy.Chart.Cartesian
++     refer tasseomancy.Chart.Cartesian
+
+-     refer tasseomancy.Chart.Standard
++     refer tasseomancy.Chart.Standard
+
+-     entry .standard   the no-import default style: `Chart.Standard()`
+-         A companion given, so any `Chart.Standard` (or other style) given in lexical scope
+-         outranks it.
+-     entry #width   the drawing's width, in pixels
+-     entry #height   the drawing's height, in pixels
+-     entry #inset   the margin between the drawing's edge and anything drawn, in pixels
+-     entry #font   the font every run of text is set in, a `Font in Web`
+-     entry #fontSize   the type size, in pixels, from which the spacing of components derives
+-     entry #legend   where the legend goes, a `Chart.Legend`
+-     entry #gap   the unit of spacing between components: four tenths of the font size
+-     entry #fontStyle   the CSS for a run of text in a colour: `font-size` and `fill`
+-         The face itself is not here; it is the lettering's `font`. An override may add
+-         properties, such as a letter-spacing or a weight.
+-     entry #lettering   sets a run of text at a point: every label, title and legend entry comes through here
+-         Makes a savagery `Lettering` at the position with the anchor, baseline, `#fontStyle`
+-         of the colour, the style's `#font` and any transforms. Overriding it restyles all of a
+-         chart's text at once; the more specific hooks (`tickLabel`, `legendLabel`, …) call it.
+-     entry #backdrop   the figures behind everything: a rectangle in the palette's background colour
+-         Drawn first, as the `backdrop` part, so that a dark palette's lettering is not set on
+-         the page's white. Override to return `Nil` for a transparent chart.
+-     entry #legendLineHeight   the height of one legend entry: 1.6 times the font size
+-     entry #swatchSize   the side of a legend swatch: the font size
+-     entry #swatch   the colour sample beside a legend entry's name: a filled square by default
+-         Takes the swatch's top-left corner, the series' colour and its index, so a style may
+-         draw a line sample for one series and a box for another.
+-     entry #legendLabel   a legend entry's name, set to the right of its swatch
+-     entry #leader   the line from a label that had to move away from its point back to that point
+-         A one-pixel stroked polyline by default. A point's note, or a pie wedge's percentage,
+-         is moved off with a leader when every side of its point is taken; override this to
+-         style or suppress the line.
+-   entry .Cartesian   what every chart with an abscissa and an ordinate shares: axes, grid, titles, markers
++     entry .standard   インポート不要のデフォルトのスタイル：`Chart.Standard()`
++         コンパニオンの given なので、レキシカルスコープにある任意の `Chart.Standard`（または他のスタイル）の given がこれより優先される。
++     entry #width   描画の幅。ピクセル単位
++     entry #height   描画の高さ。ピクセル単位
++     entry #inset   描画の端と描かれるものとの間の余白。ピクセル単位
++     entry #font   すべてのテキストの並びを組むフォント。`Font in Web` である
++     entry #fontSize   文字の大きさ。ピクセル単位で、構成要素の間隔はここから導かれる
++     entry #legend   凡例を置く場所。`Chart.Legend` である
++     entry #gap   構成要素の間の間隔の単位：フォントサイズの 10 分の 4
++     entry #fontStyle   ある色のテキストの並びのための CSS：`font-size` と `fill`
++         フェイスそのものはここにはなく、レタリングの `font` にある。
++         オーバーライドでは、字間や太さなどのプロパティを加えられる。
++     entry #lettering   テキストの並びを点に組む：すべてのラベル、タイトル、凡例の項目はここを通る
++         その位置に、アンカー、ベースライン、その色の `#fontStyle`、スタイルの `#font`、任意の変換を伴う savagery の `Lettering` を作る。
++         これをオーバーライドすると、チャートのテキストすべてのスタイルが一度に変わる。より具体的なフック（`tickLabel`、`legendLabel`、…）はこれを呼び出す。
++     entry #backdrop   すべての背後にある図形：パレットの背景色の矩形
++         暗いパレットのレタリングがページの白の上に組まれないように、`backdrop` 部分として最初に描かれる。
++         透明なチャートにするには、`Nil` を返すようにオーバーライドする。
++     entry #legendLineHeight   凡例の一項目の高さ：フォントサイズの 1.6 倍
++     entry #swatchSize   凡例の色見本の一辺：フォントサイズ
++     entry #swatch   凡例の項目の名前の横にある色の見本：デフォルトでは塗りつぶした正方形
++         色見本の左上の角、系列の色とそのインデックスを受け取るので、スタイルはある系列には線の見本を、別の系列には箱を描ける。
++     entry #legendLabel   凡例の項目の名前。色見本の右に組まれる
++     entry #leader   点から離れざるを得なかったラベルからその点へ戻る線
++         デフォルトでは 1 ピクセルの線を引いた折れ線である。
++         点の注記や円グラフの扇形の百分率は、その点のどの側も埋まっているときに引き出し線を伴って移される。線のスタイルを変えたり線を消したりするには、これをオーバーライドする。
++   entry .Cartesian   横軸と縦軸を持つすべてのチャートが共有するもの：軸、グリッド、タイトル、マーカー
+
+=   entry .Cartesian   what every chart with an abscissa and an ordinate shares: axes, grid, titles, markers
+-     detail
++     detail
+
+-         Extends `Chart.Style` with the axis components and the parameters of their layout.
+-         Positions are given in the drawing's coordinates; the style decides the shape, the
+-         stroke and where a label sits relative to its tick. `Bars.Style`, `Lines.Style`,
+-         `Scatter.Style`, `Boxes.Style` and (through `Bars.Style`) `StackedBars.Style` and
+-         `Histogram.Style` extend it; `Pie.Style` and `Doughnut.Style` do not, having no axes.
++         `Chart.Style` を、軸の構成要素とそのレイアウトのパラメーターで拡張する。
++         位置は描画の座標で与えられる。スタイルは形、線、そしてラベルが目盛りに対してどこにあるかを決める。
++         `Bars.Style`、`Lines.Style`、`Scatter.Style`、`Boxes.Style`、そして（`Bars.Style` を通して）`StackedBars.Style` と `Histogram.Style` がこれを拡張する。`Pie.Style` と `Doughnut.Style` は軸を持たないので拡張しない。
+
+=         `Histogram.Style` extend it; `Pie.Style` and `Doughnut.Style` do not, having no axes.
+=
+-         ```scala
++         ```scala
+
+=         `Histogram.Style` extend it; `Pie.Style` and `Doughnut.Style` do not, having no axes.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         given Chart.Standard = new Chart.Standard(grid = false, abscissaTitle = t"month"):
++         given Chart.Standard = new Chart.Standard(grid = false, abscissaTitle = t"month"):
+
+-           override def arrowhead(tip: Point, axis: Chart.Axis, color: Color in Srgb): List[Figure] =
++           override def arrowhead(tip: Point, axis: Chart.Axis, color: Color in Srgb): List[Figure] =
+
+-             List(Polyline(List(tip, Point(tip.x - 6, tip.y - 3), Point(tip.x - 6, tip.y + 3)), closed = true))
++             List(Polyline(List(tip, Point(tip.x - 6, tip.y - 3), Point(tip.x - 6, tip.y + 3)), closed = true))
+
+=             List(Polyline(List(tip, Point(tip.x - 6, tip.y - 3), Point(tip.x - 6, tip.y + 3)), closed = true))
+-         ```
++         ```
+
+-     entry #pitch   the room one gradation wants along an axis, in pixels: how many ticks the axis gets
+-         An axis of length `L` is given a budget of `L / pitch` gradations; the ruler chooses
+-         round steps within it, and an abscissa whose labels would still overlap is given fewer.
+-     entry #tickLength   how far a tick extends beyond the axis line, in pixels
+-     entry #grid   whether grid lines are drawn at the major gradations
+-     entry #abscissaTitle   a title for the abscissa, or `Unset` for the one its type supplies
+-         A quantity axis is titled by its dimension and unit, `distance / m`, from the type; a
+-         title given here replaces the name but keeps the unit: `tide height / m`.
+-     entry #ordinateTitle   a title for the ordinate, or `Unset` for the one its type supplies
+-     entry #strokeWidth   the width of a series line and a box plot's median, in pixels
+-     entry #markerRadius   the radius of a point's marker, in pixels
+-     entry #axisLine   the line of an axis, from one end to the other
+-     entry #arrowhead   a mark at the far end of an axis; nothing by default
+-     entry #axisBreak   a mark at the origin end of a linear axis whose range excludes zero; nothing by default
+-         Called only for a linear scale which starts above zero or ends below it, which is where
+-         a reader might otherwise assume the axis begins at zero.
+-     entry #gridLine   a grid line across the plot at a major gradation, if `#grid` is set
+-     entry #tick   a tick mark at a gradation: downward from an abscissa, leftward from an ordinate
+-         `major` is false for an unlabelled minor gradation, such as the `2`–`9` multiples on a
+-         logarithmic axis.
+-     entry #tickLabel   a gradation's label, at the anchoring the arrangement chose
+-         Set beyond its tick by `tickLength + gap`: below an abscissa's, beside an ordinate's.
+-         A label that would overlap its neighbour is hidden rather than drawn. An override which
+-         rotates or moves labels must also override `#labelRoom`, so the layout reserves the
+-         right space.
+-     entry #labelRoom   the room an axis's ticks and labels take beyond its line, which the layout reserves
+-         For the abscissa, the tick, the gap and one line of text; for the ordinate, the tick,
+-         the gap and the widest label as the `FontMetric` in scope measures it.
+-     entry #titleRoom   the room an axis title takes: 1.6 times the font size
+-     entry #axisTitle   an axis's title: below the middle of the abscissa, or upright beside the ordinate
+-         The ordinate's title is set at the drawing's left edge, rotated ninety degrees
+-         anticlockwise about its anchor.
+-     entry #marker   the mark at a point: a filled circle of `#markerRadius`
+-         Takes the series index, so markers may differ by series.
+-     entry #errorBar   the bar from a value's lower bound to its upper, with caps
+-         Drawn for an `Estimate`: a vertical line between `top` and `bottom` and a horizontal
+-         cap of half-width `cap` at each end, in the palette's axis colour.
+-     entry #pointLabel   the note a `Noted` value carries, set beside its marker
+-         To the right by default, or on whichever side the arrangement found clear of other
+-         labels, markers and lines, at the `Chart.Anchoring` given.
+-   entry .Standard   the default style of every chart kind, as a case class of named parameters
++     entry #pitch   一つの刻みが軸に沿って必要とする幅。ピクセル単位で、軸がいくつの目盛りを得るかを決める
++         長さ `L` の軸には `L / pitch` 個の刻みの予算が与えられる。ルーラーはその範囲内で切りのよい間隔を選び、それでもラベルが重なってしまう横軸にはより少ない刻みが与えられる。
++     entry #tickLength   目盛りが軸の線を越えて伸びる長さ。ピクセル単位
++     entry #grid   主な刻みにグリッド線を描くかどうか
++     entry #abscissaTitle   横軸のタイトル。型が与えるものを使うなら `Unset`
++         量の軸には、型からその次元と単位によるタイトル `distance / m` が付く。ここで与えたタイトルは名前を置き換えるが、単位は保つ：`tide height / m`。
++     entry #ordinateTitle   縦軸のタイトル。型が与えるものを使うなら `Unset`
++     entry #strokeWidth   系列の線と箱ひげ図の中央値の線の幅。ピクセル単位
++     entry #markerRadius   点のマーカーの半径。ピクセル単位
++     entry #axisLine   軸の線。一方の端から他方の端まで
++     entry #arrowhead   軸の遠い端にある印。デフォルトでは何もない
++     entry #axisBreak   範囲が零を含まない線形の軸の原点側の端にある印。デフォルトでは何もない
++         零より上から始まるか零より下で終わる線形のスケールに対してのみ呼ばれる。そうした所では、読み手は軸が零から始まると思い込みかねないからである。
++     entry #gridLine   主な刻みでプロットを横切るグリッド線。`#grid` が設定されている場合
++     entry #tick   刻みに置く目盛り：横軸からは下向き、縦軸からは左向き
++         対数軸の `2`–`9` の倍数のような、ラベルのない副刻みでは `major` は偽である。
++     entry #tickLabel   刻みのラベル。配置が選んだアンカーに置かれる
++         目盛りの先に `tickLength + gap` だけ離して組まれる：横軸では下に、縦軸では横に置く。
++         隣と重なってしまうラベルは、描かれずに隠される。
++         ラベルを回転させたり移動させたりするオーバーライドは、レイアウトが正しい場所を確保するように `#labelRoom` もオーバーライドしなければならない。
++     entry #labelRoom   軸の目盛りとラベルが線の先に占める場所。レイアウトがこれを確保する
++         横軸では、目盛り、間隔、テキスト一行分である。縦軸では、目盛り、間隔、そしてスコープにある `FontMetric` が測った最も幅の広いラベルである。
++     entry #titleRoom   軸のタイトルが占める場所：フォントサイズの 1.6 倍
++     entry #axisTitle   軸のタイトル：横軸の中央の下、または縦軸の横に縦向きで置く
++         縦軸のタイトルは描画の左端に組まれ、そのアンカーを中心に反時計回りに 90 度回転される。
++     entry #marker   点の印：半径 `#markerRadius` の塗りつぶした円
++         系列のインデックスを受け取るので、マーカーは系列ごとに変えられる。
++     entry #errorBar   値の下限から上限までの棒。両端に横線がある
++         `Estimate` に対して描かれる：`top` と `bottom` の間の縦線と、両端にある半幅 `cap` の横線であり、パレットの軸の色で描く。
++     entry #pointLabel   `Noted` 値が持つ注記。マーカーの横に組まれる
++         デフォルトでは右に、あるいは配置が他のラベル、マーカー、線と重ならないと判断した側に、与えられた `Chart.Anchoring` で置く。
++   entry .Standard   すべてのチャートの種類のデフォルトのスタイル。名前付きパラメーターのケースクラスである
+
+=   entry .Standard   the default style of every chart kind, as a case class of named parameters
+-     detail
++     detail
+
+-         Implements `Bars.Style`, `StackedBars.Style`, `Histogram.Style`, `Lines.Style`,
+-         `Scatter.Style`, `Boxes.Style`, `Pie.Style` and `Doughnut.Style` at once, so one value
+-         in scope styles any chart. Every parameter has a default: `width = 640.0`, `height =
+-         400.0`, `inset = 12.0`, `font = Web.sansSerifFont`, `fontSize = 12.0`, `legend =
+-         Legend.Right`, `pitch = 60.0`, `tickLength = 5.0`, `grid = true`, `abscissaTitle` and
+-         `ordinateTitle` unset, `strokeWidth = 2.0`, `markerRadius = 3.5`, `markers = false`,
+-         `smoothing = 0.0`, `barGap = 0.25`, `boxGap = 0.25`, `hole = 0.0`, `sectorGap = 2.0`
+-         and `bandGap = 2.0`. Any component's rendering is an override on an anonymous subclass:
++         `Bars.Style`、`StackedBars.Style`、`Histogram.Style`、`Lines.Style`、`Scatter.Style`、`Boxes.Style`、`Pie.Style`、`Doughnut.Style` を一度に実装するので、スコープにある一つの値でどのチャートにもスタイルが付く。
++         すべてのパラメーターにデフォルトがある：`width = 640.0`、`height = 400.0`、`inset = 12.0`、`font = Web.sansSerifFont`、`fontSize = 12.0`、`legend = Legend.Right`、`pitch = 60.0`、`tickLength = 5.0`、`grid = true`、未設定の `abscissaTitle` と `ordinateTitle`、`strokeWidth = 2.0`、`markerRadius = 3.5`、`markers = false`、`smoothing = 0.0`、`barGap = 0.25`、`boxGap = 0.25`、`hole = 0.0`、`sectorGap = 2.0`、`bandGap = 2.0` である。
++         どの構成要素の描画も、無名サブクラスでのオーバーライドで変えられる：
+
+=         and `bandGap = 2.0`. Any component's rendering is an override on an anonymous subclass:
+=
+-         ```scala
++         ```scala
+
+=         and `bandGap = 2.0`. Any component's rendering is an override on an anonymous subclass:
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         given Chart.Standard = new Chart.Standard(width = 800.0, ordinateTitle = t"units sold"):
++         given Chart.Standard = new Chart.Standard(width = 800.0, ordinateTitle = t"units sold"):
+
+-           override def bar(corner: Point, width: Double, height: Double, color: Color in Srgb, series: Int)
++           override def bar(corner: Point, width: Double, height: Double, color: Color in Srgb, series: Int)
+
+-           :   List[Figure] =
++           :   List[Figure] =
+
+-             List(Circle(corner, (width/2.0).toFloat))
++             List(Circle(corner, (width/2.0).toFloat))
+
+-         val sales = List(Series(t"north")((t"jan", 3.0), (t"feb", 5.0)))
++         val sales = List(Series(t"north")((t"jan", 3.0), (t"feb", 5.0)))
+
+-         sales.chart(Bars()).in[Svg].in[Xml].show.contains(t"<circle")   // true
++         sales.chart(Bars()).in[Svg].in[Xml].show.contains(t"<circle")   // true
+
+=         sales.chart(Bars()).in[Svg].in[Xml].show.contains(t"<circle")   // true
+-         ```
++         ```
+
+-         A helper that renders charts should take the style as a `using` parameter; one which
+-         does not silently renders with the companion defaults.
+-   entry .Drawing   a rendered chart as its parts, each under a stable identifier, in drawing order
++         チャートを描画するヘルパーは、スタイルを `using` パラメーターとして受け取るべきである。そうしないヘルパーは、黙ってコンパニオンのデフォルトで描画する。
++   entry .Drawing   描画済みのチャートを部分に分けたもの。それぞれ安定した識別子の下に、描画順に並ぶ
+
+=   entry .Drawing   a rendered chart as its parts, each under a stable identifier, in drawing order
+-     detail
++     detail
+
+-         The result of `Chart#drawing`: the canvas size, any SVG definitions, and a `Ledger`
+-         from `Svg.Id` to `Figure` holding `backdrop`, then (for a cartesian chart) `grid`,
+-         `abscissa`, `ordinate`, `series-0`, `series-1`, … and `legend`; a pie has `wedges` and
+-         `legend`; a doughnut `rank-0`, `rank-1`, …. The identifiers are what a
+-         `Chart.Revision.Replace` names, and each becomes the `id` of a `<g>` in the SVG.
+-     entry .encodable   the whole drawing as one `Svg`, as `drawing.in[Svg]`
+-     entry #width   the canvas width, from the style
+-     entry #height   the canvas height, from the style
+-     entry #defs   SVG definitions the drawing needs; none for the standard kinds
+-     entry #parts   the parts by identifier, in drawing order
+-   entry .encodable   a chart as an `Svg`, as `chart.in[Svg]`, with the components it asks for
+-       Needs the chart's own style type (`Bars.Style` for a bar chart; `Chart.Standard`
+-       satisfies every kind), a `ChartPalette`, a `FontMetric` and an `Arranger` in scope, all
+-       of which have companion defaults. `chart.in[Svg].in[Xml].show` is the SVG text.
+-   entry .Revision   what changed between one drawing of a chart and the next
++         `Chart#drawing` の結果である：キャンバスの大きさ、任意の SVG 定義、そして `Svg.Id` から `Figure` への `Ledger` であり、`backdrop`、続いて（直交座標系のチャートなら）`grid`、`abscissa`、`ordinate`、`series-0`、`series-1`、…、`legend` を保持する。円グラフは `wedges` と `legend` を、ドーナツは `rank-0`、`rank-1`、… を持つ。
++         識別子は `Chart.Revision.Replace` が指定するものであり、それぞれが SVG の `<g>` の `id` になる。
++     entry .encodable   描画全体を一つの `Svg` として：`drawing.in[Svg]`
++     entry #width   キャンバスの幅。スタイルから
++     entry #height   キャンバスの高さ。スタイルから
++     entry #defs   描画が必要とする SVG 定義。標準の種類にはない
++     entry #parts   識別子ごとの部分。描画順
++   entry .encodable   チャートを `Svg` として：`chart.in[Svg]`。チャートが求める構成要素を伴う
++       チャート自身のスタイルの型（棒グラフなら `Bars.Style`。`Chart.Standard` はすべての種類を満たす）、`ChartPalette`、`FontMetric`、`Arranger` がスコープに必要であり、そのすべてにコンパニオンのデフォルトがある。
++       `chart.in[Svg].in[Xml].show` が SVG のテキストである。
++   entry .Revision   チャートのある描画と次の描画の間で変化したもの
+
+=   entry .Revision   what changed between one drawing of a chart and the next
+-     detail
++     detail
+
+-         Returned by `Chart#revise`. `Redraw(svg)` carries the whole new drawing, because the
+-         axes moved to fit the new data; `Replace(id, figure)` names one part — `series-0`,
+-         `legend`, `rank-1` — whose rendering differs, with the figure that replaces it. A page
+-         holding the SVG needs only to replace an element by its identifier, or the whole
+-         element, so a chart can be kept current over a WebSocket by sending each revision.
+-         Unchanged data yields an empty list.
+-   entry #data   the data the chart was made from
+-   entry #form   the chart kind: the `Bars()`, `Lines()`, … value, with any explicit calibrations
+-   entry #fit   the fit of the data to the kind: the kind's own fit type, with its axes visible
+-       `chart.fit.ordinate.transform` on a line chart, `chart.fit.bands.categories` on a bar
+-       chart, `chart.fit.edges` on a histogram, `chart.fit.total` on a pie.
+-   entry #plottable   the `Plottable` instance pairing the data with the kind
+-   entry #drawing   renders the chart as a `Chart.Drawing`: its parts under their identifiers
+-       Needs the kind's style, a `ChartPalette`, a `FontMetric` and an `Arranger`, as `.encodable`
+-       does. The drawing is computed afresh on each call.
+-   entry #revise   the next chart for new data, with the list of what changed on the page
+-       If the `Plottable`'s `accommodates` says the current fit still holds the new data, the
+-       fit is kept — the axes hold still — and each part whose rendering differs becomes a
+-       `Chart.Revision.Replace`; otherwise the data is refitted and the single revision is a
+-       `Chart.Revision.Redraw` of the new SVG. The new data must have the same type: a chart
+-       of `Series[Double, Double]` is revised with another such series, typically
+-       `chart.data.add(point)`.
++         `Chart#revise` が返す。
++         `Redraw(svg)` は新しい描画全体を運ぶ。新しいデータに合わせて軸が動いたからである。`Replace(id, figure)` は、描画が異なる一つの部分（`series-0`、`legend`、`rank-1`）を指定し、それを置き換える図形を伴う。
++         SVG を保持するページは、要素をその識別子で置き換えるか、要素全体を置き換えるだけでよいので、改訂を一つずつ送ればチャートを WebSocket 越しに最新に保てる。
++         データが変わらなければ空のリストになる。
++   entry #data   チャートを作ったデータ
++   entry #form   チャートの種類：`Bars()`、`Lines()`、… の値。明示的な較正を伴うこともある
++   entry #fit   データの種類への適合：その種類自身の適合の型であり、軸が見える
++       折れ線グラフでは `chart.fit.ordinate.transform`、棒グラフでは `chart.fit.bands.categories`、ヒストグラムでは `chart.fit.edges`、円グラフでは `chart.fit.total` である。
++   entry #plottable   データを種類と組み合わせる `Plottable` インスタンス
++   entry #drawing   チャートを `Chart.Drawing` として描画する：識別子の下にある部分
++       `.encodable` と同じく、その種類のスタイル、`ChartPalette`、`FontMetric`、`Arranger` が必要である。
++       描画は呼び出しのたびに新たに計算される。
++   entry #revise   新しいデータに対する次のチャートと、ページ上で変化したもののリスト
++       現在の適合がまだ新しいデータを収められると `Plottable` の `accommodates` が述べるなら、適合は保たれ（軸は動かない）、描画が異なる部分はそれぞれ `Chart.Revision.Replace` になる。そうでなければデータは適合し直され、唯一の改訂は新しい SVG の `Chart.Revision.Redraw` になる。
++       新しいデータは同じ型でなければならない：`Series[Double, Double]` のチャートは、別のそうした系列で改訂する。典型的には `chart.data.add(point)` である。
+
+=       `chart.data.add(point)`.
+=
+-       ```scala
++       ```scala
+
+=       `chart.data.add(point)`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `chart.data.add(point)`.
+=
+=       ```scala
+=       import soundness.*
+=
+-       val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
++       val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
+
+-       val chart = growth.chart(Lines())
++       val chart = growth.chart(Lines())
+
+-       chart.revise(growth)(1)                        // Nil
++       chart.revise(growth)(1)                        // Nil
+
+-       chart.revise(growth.add((5.0, 5.0)))(1).size   // 1: a Replace of series-0
++       chart.revise(growth.add((5.0, 5.0)))(1).size   // 1: a Replace of series-0
+
+-       chart.revise(growth.add((20.0, 20.0)))(1).size // 1: a Redraw
++       chart.revise(growth.add((20.0, 20.0)))(1).size // 1: a Redraw
+
+=       chart.revise(growth.add((20.0, 20.0)))(1).size // 1: a Redraw
+-       ```
++       ```
+
+-   entry .Category   a category with no type of its own: any showable value wrapped as a label
++   entry .Category   独自の型を持たないカテゴリー：表示可能な任意の値をラベルとして包んだもの
+
+=   entry .Category   a category with no type of its own: any showable value wrapped as a label
+-     detail
++     detail
+
+-         What `Series#categorical` makes from a numeric abscissa, or anything wrapped by hand:
+-         `Category(42)` has the label `t"42"`. A `Category` is `Categorical` by its `#label`.
+-     entry .apply   `Category(value)`: a category labelled by any showable value
+-     entry #label   the label, as text
+-   entry .Estimate   a value with the interval it is believed to lie in, drawn with error bars or a band
+-       `Estimate(value, lower, upper)`: a mean with its confidence interval, a median with its
+-       quartiles. It is `Continuous` by its `value`, with `bounds` of `(lower, upper)`, so a
+-       scatter plot or bar chart draws an error bar through each one (`Chart.Cartesian#errorBar`)
+-       and a line chart fills a translucent band between the bounds (`Lines.Style#band`); the
+-       bounds also count towards the axis's extent, so the whole interval is on the axis.
++         `Series#categorical` が数値の横軸から作るもの、あるいは手で包んだ任意のものである：`Category(42)` のラベルは `t"42"` である。
++         `Category` は、その `#label` によって `Categorical` である。
++     entry .apply   `Category(value)`：表示可能な任意の値でラベルを付けたカテゴリー
++     entry #label   ラベル。テキストで表す
++   entry .Estimate   値があると考えられる区間を伴う値。誤差棒か帯で描かれる
++       `Estimate(value, lower, upper)`：信頼区間を伴う平均や、四分位数を伴う中央値である。
++       その `value` によって `Continuous` であり、`bounds` は `(lower, upper)` なので、散布図や棒グラフではそれぞれに誤差棒が描かれ（`Chart.Cartesian#errorBar`）、折れ線グラフでは境界の間に半透明の帯が塗られる（`Lines.Style#band`）。境界も軸の範囲に算入されるので、区間全体が軸に収まる。
+
+=       bounds also count towards the axis's extent, so the whole interval is on the axis.
+=
+-       ```scala
++       ```scala
+
+=       bounds also count towards the axis's extent, so the whole interval is on the axis.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val timings = Series(t"sort")((t"small", Chart.Estimate(5.0, 4.0, 6.0)), (t"large", Chart.Estimate(9.0, 8.5, 9.5)))
++       val timings = Series(t"sort")((t"small", Chart.Estimate(5.0, 4.0, 6.0)), (t"large", Chart.Estimate(9.0, 8.5, 9.5)))
+
+-       timings.chart(Bars()).fit.ordinate.upper   // 10.0
++       timings.chart(Bars()).fit.ordinate.upper   // 10.0
+
+=       timings.chart(Bars()).fit.ordinate.upper   // 10.0
+-       ```
++       ```
+
+- entry .Plottable   the compatibility of a shape of data with a kind of chart, and what it takes to draw it
++ entry .Plottable   データの形とチャートの種類との互換性、そしてそれを描くのに必要なもの
+
+= entry .Plottable   the compatibility of a shape of data with a kind of chart, and what it takes to draw it
+-   detail
++   detail
+
+-       `data is Plottable in form to fit by style` exists only where the kind can draw the
+-       data: a pie needs one categorical series, a line needs numeric axes, a doughnut a `Dag`
+-       of weighted, progressive nodes. The kind is the `Form`, the fit the `Result` (so a
+-       chart's fit is the kind's own, with its axes visible), and the style the `Operand`,
+-       bounded by `Chart.Style`. The standard instances live in each kind's companion —
+-       `Bars.series`, `Bars.traversable`, `Lines.series`, `Histogram.samples`, `Doughnut.dag`,
+-       … — so they are found with no import; a `traversable` instance covers any collection
+-       of series or samples (a `List`, `Set` or `Sequence`), its traversal evidence resolved
+-       before the element types' typeclasses.
++       `data is Plottable in form to fit by style` は、その種類がデータを描ける場合にのみ存在する：円グラフには一つのカテゴリーの系列が、折れ線には数値の軸が、ドーナツには重み付きで進捗を持つノードの `Dag` が必要である。
++       種類は `Form`、適合は `Result`（したがってチャートの適合はその種類自身のものであり、軸が見える）、スタイルは `Operand` であり、`Chart.Style` を上限とする。
++       標準のインスタンスは各種類のコンパニオン（`Bars.series`、`Bars.traversable`、`Lines.series`、`Histogram.samples`、`Doughnut.dag`、…）にあるので、インポートなしで見つかる。`traversable` インスタンスは、系列や標本の任意のコレクション（`List`、`Set`、`Sequence`）を扱い、その走査の証拠は要素の型の型クラスより先に解決される。
+
+-       A new kind of chart is a new value with instances for the shapes it can draw; nothing
+-       else changes. An instance's `#draw` receives the kind's style, a `ChartPalette`, a
+-       `FontMetric` and an `Arranger`.
++       新しい種類のチャートは、それが描ける形のためのインスタンスを伴う新しい値である。他には何も変わらない。
++       インスタンスの `#draw` は、その種類のスタイル、`ChartPalette`、`FontMetric`、`Arranger` を受け取る。
+
+=       `FontMetric` and an `Arranger`.
+-   refer tasseomancy.chart
++   refer tasseomancy.chart
+
+-   refer tasseomancy.Chart
++   refer tasseomancy.Chart
+
+-   entry #fit   chooses the axes from the data: the `Result`, such as `Lines.Fit`
+-   entry #accommodates   whether a fit still holds new data, so that a revision can replace one part
+-       For a cartesian kind, every position and interval lies within the scales and every
+-       category is a known band; for a pie, the categories are unchanged; for a doughnut, the
+-       graph's shape and weights are unchanged.
+-   entry #draw   renders the data against a fit as a `Chart.Drawing`
+-       Takes the style (the `Operand`), a `ChartPalette`, a `FontMetric` and an `Arranger` as
+-       contextual values.
++   entry #fit   データから軸を選ぶ：`Lines.Fit` のような `Result`
++   entry #accommodates   適合がまだ新しいデータを収められるかどうか。改訂が一つの部分を置き換えられるようにするため
++       直交座標系の種類では、すべての位置と区間がスケールの内側にあり、すべてのカテゴリーが既知の帯であること。円グラフでは、カテゴリーが変わらないこと。ドーナツでは、グラフの形と重みが変わらないこと。
++   entry #draw   適合に対してデータを `Chart.Drawing` として描画する
++       スタイル（`Operand`）、`ChartPalette`、`FontMetric`、`Arranger` をコンテキスト値として受け取る。
+
+- entry .Series   one named run of points: the unit of data a chart kind is compatible with
++ entry .Series   名前の付いた一つの点の並び：チャートの種類が互換となるデータの単位
+
+= entry .Series   one named run of points: the unit of data a chart kind is compatible with
+-   detail
++   detail
+
+-       A `Series[x, y]` is a name and a `Sequence` of `(x, y)` pairs. The abscissa type decides
+-       the axis: a `Text`, enum or `Chart.Category` is `Categorical` and suits `Bars`, `StackedBars`
+-       and `Pie`; a number, `Duration`, `Instant` or `Quantity` is `Continuous` and suits
+-       `Lines` and `Scatter`. The ordinate is always `Continuous`, and may be an `Chart.Estimate`
+-       (drawn with error bars or a band) or a `Noted` value (labelled beside its marker).
+-       Several series are any collection of them — a `List`, `Set` or `Sequence` — since the
+-       kinds' `traversable` instances cover anything traversable by series.
++       `Series[x, y]` は、名前と `(x, y)` の組の `Sequence` である。
++       横軸の型が軸を決める：`Text`、列挙型、`Chart.Category` は `Categorical` であり、`Bars`、`StackedBars`、`Pie` に合う。数値、`Duration`、`Instant`、`Quantity` は `Continuous` であり、`Lines` と `Scatter` に合う。
++       縦軸は常に `Continuous` であり、`Chart.Estimate`（誤差棒か帯で描かれる）や `Noted` 値（マーカーの横にラベルが付く）であってもよい。
++       複数の系列は、それらの任意のコレクション（`List`、`Set`、`Sequence`）である。各種類の `traversable` インスタンスが、系列で走査できるものすべてを扱うからである。
+
+=       kinds' `traversable` instances cover anything traversable by series.
+=
+-       ```scala
++       ```scala
+
+=       kinds' `traversable` instances cover anything traversable by series.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val north = Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0))
++       val north = Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0))
+
+-       val timings = Series(t"sort")((1000, Chart.Estimate(2.1, 1.9, 2.4)), (10000, Chart.Estimate(24.0, 22.5, 26.1)))
++       val timings = Series(t"sort")((1000, Chart.Estimate(2.1, 1.9, 2.4)), (10000, Chart.Estimate(24.0, 22.5, 26.1)))
+
+-       val cities = Series(t"cities")((1.0, Noted(3.0, t"Paris")), (2.0, Noted(5.0, t"Rome")))
++       val cities = Series(t"cities")((1.0, Noted(3.0, t"Paris")), (2.0, Noted(5.0, t"Rome")))
+
+-       val year = Series(2024)((t"jan", 1.0))   // named by any showable value
++       val year = Series(2024)((t"jan", 1.0))   // named by any showable value
+
+-       year.name                                 // t"2024"
++       year.name                                 // t"2024"
+
+=       year.name                                 // t"2024"
+-       ```
++       ```
+
+-       A series is immutable; `#add` appends a point in amortized constant time, which is what
+-       a chart fed one measurement at a time needs.
++       系列は不変である。`#add` は償却定数時間で点を追加する。これは、一度に一つの測定値を与えられるチャートが必要とするものである。
+
+=       a chart fed one measurement at a time needs.
+-   refer tasseomancy.chart
++   refer tasseomancy.chart
+
+=   refer tasseomancy.chart
+-   refer tasseomancy.Samples
++   refer tasseomancy.Samples
+
+-   entry .apply   `Series(name)(points*)`: a series named by any showable value, with its points
+-       The name is shown once, at construction: `Series(t"north")(…)`, `Series(2024)(…)` or
+-       `Series(Quarter.Q1)(…)` all give a `Text` name.
+-   entry #name   the series' name, as text: its legend entry
+-   entry #points   the points, in the order given
+-       A line chart sorts them by abscissa before drawing; a scatter plot and a bar chart keep
+-       the order, which for bars is the order categories first appear.
+-   entry #add   the series with one more point, appended in amortized constant time
+-   entry #categorical   the same points with each abscissa as a `Category`, for a bar chart over a numeric axis
+-       Needs `x is Showable`. A series over input sizes becomes a bar per size rather than a
+-       line over sizes: `timings.categorical.chart(Bars())`.
++   entry .apply   `Series(name)(points*)`：表示可能な任意の値で名付けた、点を伴う系列
++       名前は構築時に一度だけ表示される：`Series(t"north")(…)`、`Series(2024)(…)`、`Series(Quarter.Q1)(…)` はいずれも `Text` の名前を与える。
++   entry #name   系列の名前。テキストで表し、凡例の項目になる
++   entry #points   点。与えられた順に並ぶ
++       折れ線グラフは描画の前にそれらを横軸で並べ替える。散布図と棒グラフは順序を保ち、棒グラフではそれがカテゴリーが最初に現れる順になる。
++   entry #add   点を一つ加えた系列。償却定数時間で追加する
++   entry #categorical   各横軸の値を `Category` にした同じ点。数値の軸に対する棒グラフのため
++       `x is Showable` が必要である。
++       入力サイズに対する系列は、サイズに対する折れ線ではなく、サイズごとの棒になる：`timings.categorical.chart(Bars())`。
+
+- entry .Samples   raw measurements under one name, before any summary: what a histogram bins and a box plot summarizes
++ entry .Samples   何らかの要約の前の、一つの名前の下の生の測定値：ヒストグラムが区分し、箱ひげ図が要約するもの
+
+= entry .Samples   raw measurements under one name, before any summary: what a histogram bins and a box plot summarizes
+-   detail
++   detail
+
+-       `Samples[y]` is a name and a `Sequence` of values of a `Continuous` type. `Histogram`
+-       cuts their range into bins and counts them; `Boxes` summarizes them as quartiles and
+-       extremes. A collection of sample sets is drawn as one series per set.
++       `Samples[y]` は、名前と `Continuous` 型の値の `Sequence` である。
++       `Histogram` はその範囲を階級に分けて数え、`Boxes` はそれを四分位数と両極値として要約する。
++       標本の集合のコレクションは、集合ごとに一つの系列として描かれる。
+
+=       extremes. A collection of sample sets is drawn as one series per set.
+=
+-       ```scala
++       ```scala
+
+=       extremes. A collection of sample sets is drawn as one series per set.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val before = Samples(t"before")(21.0, 22.5, 23.1, 22.8, 24.0)
++       val before = Samples(t"before")(21.0, 22.5, 23.1, 22.8, 24.0)
+
+-       val after = Samples(t"after")(18.2, 18.9, 19.5, 18.1, 19.0)
++       val after = Samples(t"after")(18.2, 18.9, 19.5, 18.1, 19.0)
+
+-       List(before, after).chart(Boxes()).fit.summaries.size   // 2
++       List(before, after).chart(Boxes()).fit.summaries.size   // 2
+
+=       List(before, after).chart(Boxes()).fit.summaries.size   // 2
+-       ```
++       ```
+
+=       ```
+-   refer tasseomancy.Histogram
++   refer tasseomancy.Histogram
+
+=   refer tasseomancy.Histogram
+-   refer tasseomancy.Boxes
++   refer tasseomancy.Boxes
+
+-   entry .apply   `Samples(name)(values*)`: a sample set named by any showable value
+-   entry #name   the set's name, as text
+-   entry #values   the measurements, in the order given
+-   entry #add   the set with one more measurement appended
++   entry .apply   `Samples(name)(values*)`：表示可能な任意の値で名付けた標本の集合
++   entry #name   集合の名前。テキストで表す
++   entry #values   測定値。与えられた順に並ぶ
++   entry #add   測定値を一つ追加した集合
+
+- entry .Noted   a value with a note attached, which a scatter plot or line chart sets beside its marker
+-     `Noted(value, note)`: the value is `Continuous` by `value`, and its `annotation` is the
+-     note, which `Chart.Cartesian#pointLabel` sets to the right of the marker, or on another
+-     side, or off with a leader, as cartouche's arrangement finds room. Either coordinate of a
+-     point may be `Noted`; the abscissa's note wins if both are.
++ entry .Noted   注記を付けた値。散布図や折れ線グラフはそれをマーカーの横に組む
++     `Noted(value, note)`：値は `value` によって `Continuous` であり、その `annotation` は注記である。`Chart.Cartesian#pointLabel` は、cartouche の配置が場所を見つけたとおりに、それをマーカーの右に、別の側に、あるいは引き出し線を伴って離れた所に組む。
++     点のどちらの座標も `Noted` であってよい。両方がそうなら、横軸の注記が優先される。
+
+=     point may be `Noted`; the abscissa's note wins if both are.
+=
+-     ```scala
++     ```scala
+
+=     point may be `Noted`; the abscissa's note wins if both are.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val cities = Series(t"cities")((1.0, Noted(3.0, t"Paris")), (2.0, Noted(5.0, t"Rome")))
++     val cities = Series(t"cities")((1.0, Noted(3.0, t"Paris")), (2.0, Noted(5.0, t"Rome")))
+
+-     cities.chart(Scatter()).in[Svg].in[Xml].show.contains(t">Paris<")   // true
++     cities.chart(Scatter()).in[Svg].in[Xml].show.contains(t">Paris<")   // true
+
+=     cities.chart(Scatter()).in[Svg].in[Xml].show.contains(t">Paris<")   // true
+-     ```
++     ```
+
+-     The name was `Annotated` until 0.72.0; it collided in the umbrella with adversaria's
+-     `Annotated` typeclass.
++     この名前は 0.72.0 までは `Annotated` であった。アンブレラで adversaria の `Annotated` 型クラスと衝突したのである。
+
+- entry .Categorical   a value that names a category on an axis: distinct labels, no arithmetic
++ entry .Categorical   軸上のカテゴリーを名指す値：互いに異なるラベルであり、算術はない
+
+= entry .Categorical   a value that names a category on an axis: distinct labels, no arithmetic
+-   detail
++   detail
+
+-       The typeclass of a bar chart's or a pie's abscissa. Categories are distinct labels in
+-       first-appearance order across all the series, with no positions between them. `Text`,
+-       `Chart.Category` and any `scala.reflect.Enum` with an `Enumerable` instance are `Categorical`
+-       through the companion; a type of your own needs one line:
++       棒グラフや円グラフの横軸の型クラスである。
++       カテゴリーは、すべての系列を通して最初に現れた順に並ぶ互いに異なるラベルであり、その間に位置はない。
++       `Text`、`Chart.Category`、そして `Enumerable` インスタンスを持つ任意の `scala.reflect.Enum` は、コンパニオンを通して `Categorical` である。独自の型には一行が必要である：
+
+=       through the companion; a type of your own needs one line:
+=
+-       ```scala
++       ```scala
+
+=       through the companion; a type of your own needs one line:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Region(name: Text)
++       case class Region(name: Text)
+
+-       given Region is Categorical = _.name
++       given Region is Categorical = _.name
+
+=       given Region is Categorical = _.name
+-       ```
++       ```
+
+-   entry .text   text is its own label
+-   entry .category   a `Category` by its label
+-   entry .enumerable   an enum case by its name, through its `Enumerable` instance
+-   entry #label   the label a value contributes to the axis
++   entry .text   テキストはそれ自身がラベルである
++   entry .category   `Category` をそのラベルで
++   entry .enumerable   列挙型のケースをその名前で。`Enumerable` インスタンスを通す
++   entry #label   値が軸に与えるラベル
+
+- entry .Continuous   a value with a position on a numeric axis, and optionally an interval around it
++ entry .Continuous   数値の軸上の位置を持ち、任意でその周りの区間を持つ値
+
+= entry .Continuous   a value with a position on a numeric axis, and optionally an interval around it
+-   detail
++   detail
+
+-       The typeclass of every numeric axis. `#position` is the number drawn from, `#bounds` an
+-       optional interval (an `Chart.Estimate` has one), `#annotation` an optional note (a `Noted`
+-       value has one), and `#notation` says how an axis of this type is graduated, written and
+-       titled, since seconds are read differently from counts and a quantity is measured in
+-       units. The companion covers `Int`, `Long`, `Double`, `Float`, `F64`, every `Quantity`,
+-       `Duration`, `Instant`, `Chart.Estimate` and `Noted`; a type of your own needs only a position:
++       すべての数値の軸の型クラスである。
++       `#position` は描画の元となる数値、`#bounds` は任意の区間（`Chart.Estimate` が持つ）、`#annotation` は任意の注記（`Noted` 値が持つ）であり、`#notation` はこの型の軸の刻み方、書き方、タイトルの付け方を述べる。秒は個数とは異なる読み方をされ、量は単位で測られるからである。
++       コンパニオンは `Int`、`Long`、`Double`、`Float`、`F64`、すべての `Quantity`、`Duration`、`Instant`、`Chart.Estimate`、`Noted` を扱う。独自の型に必要なのは位置だけである：
+
+=       `Duration`, `Instant`, `Chart.Estimate` and `Noted`; a type of your own needs only a position:
+=
+-       ```scala
++       ```scala
+
+=       `Duration`, `Instant`, `Chart.Estimate` and `Noted`; a type of your own needs only a position:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Reading(celsius: Double)
++       case class Reading(celsius: Double)
+
+-       given Reading is Continuous = _.celsius
++       given Reading is Continuous = _.celsius
+
+=       given Reading is Continuous = _.celsius
+-       ```
++       ```
+
+-   refer tasseomancy.Scale.Notation
++   refer tasseomancy.Scale.Notation
+
+=   refer tasseomancy.Scale.Notation
+-   refer tasseomancy.Calibration
++   refer tasseomancy.Calibration
+
+-   entry .int   an `Int` by its value
+-   entry .long   a `Long` by its value
+-   entry .double   a `Double` by itself
+-   entry .float   a `Float` by its value
+-   entry .f64   a hypotenuse `F64` by its value
+-   entry .quantity   any `Quantity`, by its magnitude in its own units, which name and title the axis
+-       An inline given: the units and the quantity's dimension are read from the type where
+-       the chart is made, so an axis of `Quantity[Metres[1]]` is titled `distance / m` and one
+-       of `Metre/Second` values `velocity / m·s¯¹`, with the units written as they are
+-       everywhere in Soundness. A style's `abscissaTitle` or `ordinateTitle` replaces the name
+-       and keeps the unit. The more specific `.duration` takes precedence for seconds.
+-   entry .QuantityContinuous   the class behind `.quantity`: a `Continuous` for one `Quantity` type with its notation
+-       Named rather than anonymous, because an inline given would otherwise duplicate the
+-       class at every expansion site. Not normally written by a user.
+-   entry .duration   an aviation `Duration`, by its seconds, on a clock-stepped axis titled `time`
+-       Its notation is `Spacing.Sexagesimal` and `Labelling.Interval`: gradations fall at
+-       seconds, half-minutes, minutes, hours, and carry their own units, `250ms`, `1m30s`.
+-   entry .instant   an aviation `Instant`, by its seconds since the epoch, labelled as a time of day
+-       Whatever the resolution of its timeline. The notation is sexagesimal with
+-       `Labelling.Clock`, so gradations read `01:01:01`, in UTC.
+-   entry .estimate   an `Estimate` by its value, with its interval as the bounds
+-   entry .noted   a `Noted` value by its value, with its note as the annotation
+-   entry #position   where the value lies on the axis, as a number
+-   entry #bounds   the interval around the value, or `Unset`
+-       Drawn as an error bar or a band, and included in the axis's extent.
+-   entry #annotation   a note to set beside the value's marker, or `Unset`
+-   entry #notation   how an axis of this type is spaced, labelled, named and united: a `Scale.Notation`
+-       Decimal spacing with bare numbers and no name or unit, unless overridden.
++   entry .int   `Int` をその値で
++   entry .long   `Long` をその値で
++   entry .double   `Double` をそれ自身で
++   entry .float   `Float` をその値で
++   entry .f64   hypotenuse の `F64` をその値で
++   entry .quantity   任意の `Quantity` を、それ自身の単位での大きさで。単位が軸の名前とタイトルになる
++       インライン given である：単位と量の次元は、チャートを作る場所で型から読み取られるので、`Quantity[Metres[1]]` の軸のタイトルは `distance / m` に、`Metre/Second` の値の軸のタイトルは `velocity / m·s¯¹` になり、単位は Soundness のどこでも書かれるとおりに書かれる。
++       スタイルの `abscissaTitle` や `ordinateTitle` は名前を置き換え、単位は保つ。
++       秒については、より具体的な `.duration` が優先される。
++   entry .QuantityContinuous   `.quantity` の背後にあるクラス：一つの `Quantity` 型とその表記のための `Continuous`
++       無名ではなく名前付きである。そうしないと、インライン given が展開される場所ごとにクラスを複製してしまうからである。
++       通常、ユーザーが書くものではない。
++   entry .duration   aviation の `Duration` をその秒数で。時計の刻みの軸で、タイトルは `time`
++       その表記は `Spacing.Sexagesimal` と `Labelling.Interval` である：刻みは秒、半分、分、時に置かれ、`250ms`、`1m30s` のように自身の単位を伴う。
++   entry .instant   aviation の `Instant` をエポックからの秒数で。一日の時刻としてラベルが付く
++       その時刻系の分解能にかかわらない。
++       表記は `Labelling.Clock` を伴う六十進法なので、刻みは UTC で `01:01:01` のように読める。
++   entry .estimate   `Estimate` をその値で。区間を境界とする
++   entry .noted   `Noted` 値をその値で。注記を注釈とする
++   entry #position   値が軸上のどこにあるか。数値で表す
++   entry #bounds   値の周りの区間、または `Unset`
++       誤差棒か帯として描かれ、軸の範囲に含まれる。
++   entry #annotation   値のマーカーの横に組む注記、または `Unset`
++   entry #notation   この型の軸の間隔、ラベル、名前、単位の付け方：`Scale.Notation`
++       オーバーライドされない限り、十進の間隔で、数値のみであり、名前も単位もない。
+
+- entry .Weighted   the extent of a doughnut's node: its share of its rank's angle and of the band's thickness
+-     `node is Weighted` gives `weight(node): Double`. In a `Doughnut`, a node's sector sweeps
+-     the share of its band's turn that its weight is of the rank's total, and a band is as
+-     thick as its rank's share of the whole graph's weight. A negative weight counts as zero.
++ entry .Weighted   ドーナツのノードの大きさ：その段の角度と帯の太さに占める割合
++     `node is Weighted` は `weight(node): Double` を与える。
++     `Doughnut` では、ノードの扇形は、その重みが段の合計に占める割合だけ帯の一周を掃き、帯の太さは、その段がグラフ全体の重みに占める割合になる。
++     負の重みは零として数える。
+
+=     thick as its rank's share of the whole graph's weight. A negative weight counts as zero.
+=
+-     ```scala
++     ```scala
+
+=     thick as its rank's share of the whole graph's weight. A negative weight counts as zero.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     thick as its rank's share of the whole graph's weight. A negative weight counts as zero.
+=
+=     ```scala
+=     import soundness.*
+=
+-     case class Step(name: Text, size: Double, done: Double)
++     case class Step(name: Text, size: Double, done: Double)
+
+-     given Step is Weighted = _.size
++     given Step is Weighted = _.size
+
+=     given Step is Weighted = _.size
+-     ```
++     ```
+
+-     The name was `Sized` until 0.74.0, when that name went to proscenium's length proof.
++     この名前は 0.74.0 までは `Sized` であった。そのとき、この名前は proscenium の長さの証明に移った。
+
+- entry .Progressive   how far a doughnut's node has come, from 0 (not started) to 1 (done)
+-     `node is Progressive` gives `completion(node): Double`, clipped to `[0, 1]` when drawn.
+-     A node carries its own progress, so a doughnut is revised like any chart, with a new
+-     `Dag` of the same shape whose nodes have come further, and only the bands whose sectors
+-     filled further are replaced.
++ entry .Progressive   ドーナツのノードがどこまで進んだか。0（未着手）から 1（完了）まで
++     `node is Progressive` は `completion(node): Double` を与え、描画時には `[0, 1]` に切り詰められる。
++     ノードは自身の進捗を持つので、ドーナツは他のチャートと同じく、ノードがより進んだ同じ形の新しい `Dag` で改訂され、扇形がより満たされた帯だけが置き換えられる。
+
+=     filled further are replaced.
+=
+-     ```scala
++     ```scala
+
+=     filled further are replaced.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     filled further are replaced.
+=
+=     ```scala
+=     import soundness.*
+=
+-     case class Step(name: Text, size: Double, done: Double)
++     case class Step(name: Text, size: Double, done: Double)
+
+-     given Step is Progressive = _.done
++     given Step is Progressive = _.done
+
+=     given Step is Progressive = _.done
+-     ```
++     ```
+
+- entry .Bars   bars grouped by category: one bar per series in each category's band, from zero
++ entry .Bars   カテゴリーごとにまとめた棒：各カテゴリーの帯に系列ごとに一本の棒があり、零から伸びる
+
+= entry .Bars   bars grouped by category: one bar per series in each category's band, from zero
+-   detail
++   detail
+
+-       A chart kind for one `Series[x, y]` or any collection of them, where `x` is
+-       `Categorical` and `y` is `Continuous` with a `Calibration`. Each category is a band of
+-       the abscissa, in first-appearance order across all the series, and within it one bar per
+-       series rises (or falls) from zero to the value, with an error bar where the value is an
+-       `Chart.Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
++       一つの `Series[x, y]` またはその任意のコレクションのためのチャートの種類であり、`x` は `Categorical`、`y` は `Calibration` を伴う `Continuous` である。
++       各カテゴリーは横軸の帯であり、すべての系列を通して最初に現れた順に並ぶ。その中では系列ごとに一本の棒が零から値まで伸び（あるいは下がり）、値が `Chart.Estimate` であるところには誤差棒が付く。
++       縦軸は零に固定される。棒の長さこそがその意味だからである。
+
+=       `Chart.Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
+=
+-       ```scala
++       ```scala
+
+=       `Chart.Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Chart.Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
+=
+=       ```scala
+=       import soundness.*
+=
+-       val sales =
++       val sales =
+
+=       `Chart.Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+-         List
++         List
+
+=       `Chart.Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+=         List
+-           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
++           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+
+=       `Chart.Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+=         List
+=           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+-             Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
++             Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
+
+=       `Chart.Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+=         List
+=           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+=             Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
+=
+-       val chart = sales.chart(Bars())
++       val chart = sales.chart(Bars())
+
+-       chart.fit.bands.categories     // Sequence(t"jan", t"feb", t"mar")
++       chart.fit.bands.categories     // Sequence(t"jan", t"feb", t"mar")
+
+-       chart.fit.ordinate.lower       // 0.0
++       chart.fit.ordinate.lower       // 0.0
+
+=       chart.fit.ordinate.lower       // 0.0
+-       ```
++       ```
+
+-       `Bars(ordinate = calibrations.logarithmicCalibration)` fixes the ordinate's calibration
+-       for this chart alone; otherwise the `Calibration` given for `y` applies. The drawing's
+-       parts are `backdrop`, `grid`, `abscissa`, `ordinate`, `series-0`, …, `legend`.
++       `Bars(ordinate = calibrations.logarithmicCalibration)` は、このチャートだけの縦軸の較正を固定する。そうでなければ、`y` に対して与えられた `Calibration` が適用される。
++       描画の部分は `backdrop`、`grid`、`abscissa`、`ordinate`、`series-0`、…、`legend` である。
+
+-   refer tasseomancy.StackedBars
++   refer tasseomancy.StackedBars
+
+=   refer tasseomancy.StackedBars
+-   refer tasseomancy.Bands
++   refer tasseomancy.Bands
+
+-   entry .Fit   a bar chart's fit: the categories as `#bands` and the ordinate `Scale`
+-     entry #bands   the `Bands` of the abscissa: one per category, in first-appearance order
+-     entry #ordinate   the ordinate `Scale`, anchored at zero
+-   entry .Style   the components of a bar chart beyond the axes: the bars, and the gap within a band
++   entry .Fit   棒グラフの適合：`#bands` としてのカテゴリーと、縦軸の `Scale`
++     entry #bands   横軸の `Bands`：カテゴリーごとに一つ、最初に現れた順
++     entry #ordinate   縦軸の `Scale`。零に固定される
++   entry .Style   軸以外の棒グラフの構成要素：棒と、帯の中の間隔
+
+=   entry .Style   the components of a bar chart beyond the axes: the bars, and the gap within a band
+-     detail
++     detail
+
+-         Extends `Chart.Cartesian`. `StackedBars.Style` and `Histogram.Style` extend this in
+-         turn, so a `bar` override applies to all three kinds.
+-     entry #barGap   the fraction of a category's band left empty around its group of bars
+-         `0.25` in `Chart.Standard`: the group takes three quarters of the band.
+-     entry #bar   one bar, from its top-left corner with its width and height, in the series' colour
+-         A filled `Rectangle` by default. The corner is the top of a positive bar, or the
+-         zero line of a negative one, so the rectangle always extends downward.
+-   entry .series   one categorical series is plottable as bars
+-       Needs `x is Categorical`, `y is Continuous` and `y is Calibration`.
+-   entry .traversable   any collection traversable by categorical series is plottable as bars
+-       The traversal evidence is resolved first, since it is what determines `x` and `y`.
+-   entry #ordinate   a calibration for the ordinate, or `Unset` for the one given for the value type
++         `Chart.Cartesian` を拡張する。
++         `StackedBars.Style` と `Histogram.Style` がさらにこれを拡張するので、`bar` のオーバーライドは三つの種類すべてに適用される。
++     entry #barGap   カテゴリーの帯のうち、棒のまとまりの周りに空けておく割合
++         `Chart.Standard` では `0.25` であり、まとまりは帯の 4 分の 3 を占める。
++     entry #bar   一本の棒。左上の角と幅と高さで表し、系列の色で描く
++         デフォルトでは塗りつぶした `Rectangle` である。
++         角は、正の棒では上端、負の棒では零の線なので、矩形は常に下へ伸びる。
++   entry .series   一つのカテゴリーの系列は棒として描ける
++       `x is Categorical`、`y is Continuous`、`y is Calibration` が必要である。
++   entry .traversable   カテゴリーの系列で走査できる任意のコレクションは棒として描ける
++       走査の証拠が先に解決される。それが `x` と `y` を決めるからである。
++   entry #ordinate   縦軸の較正、または値の型に対して与えられたものを使うなら `Unset`
+
+- entry .StackedBars   bars stacked by category: each series' value sits on the total of those before it
++ entry .StackedBars   カテゴリーごとに積み上げた棒：各系列の値は、それより前の系列の合計の上に乗る
+
+= entry .StackedBars   bars stacked by category: each series' value sits on the total of those before it
+-   detail
++   detail
+
+-       As `Bars`, but one bar per category, whose full height is the category's total: each
+-       series' value is stacked on the running total of the series before it, with positive and
+-       negative values stacking apart in opposite directions from zero. The ordinate spans the
+-       largest total, anchored at zero.
++       `Bars` と同様だが、カテゴリーごとに棒は一本であり、その全体の高さはカテゴリーの合計である：各系列の値はそれより前の系列の累計の上に積み上げられ、正の値と負の値は零から反対の方向に別々に積み上げられる。
++       縦軸は最大の合計までを覆い、零に固定される。
+
+=       largest total, anchored at zero.
+=
+-       ```scala
++       ```scala
+
+=       largest total, anchored at zero.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       largest total, anchored at zero.
+=
+=       ```scala
+=       import soundness.*
+=
+-       val sales =
++       val sales =
+
+=       largest total, anchored at zero.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+-         List
++         List
+
+=       largest total, anchored at zero.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+=         List
+-           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
++           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+
+=       largest total, anchored at zero.
+=
+=       ```scala
+=       import soundness.*
+=
+=       val sales =
+=         List
+=           ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+-             Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
++             Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
+
+-       sales.chart(StackedBars()).fit.ordinate.upper   // 10.0
++       sales.chart(StackedBars()).fit.ordinate.upper   // 10.0
+
+=       sales.chart(StackedBars()).fit.ordinate.upper   // 10.0
+-       ```
++       ```
+
+-       Only a collection of series is plottable as stacked bars: a single series has nothing
+-       to stack, and is drawn as `Bars`.
++       積み上げ棒グラフとして描けるのは系列のコレクションだけである：単一の系列には積み上げるものがないので、`Bars` として描かれる。
+
+-   refer tasseomancy.Bars
++   refer tasseomancy.Bars
+
+-   entry .Fit   a stacked chart's fit: the categories as `#bands` and the ordinate `Scale`
+-     entry #bands   the `Bands` of the abscissa, one per category
+-     entry #ordinate   the ordinate `Scale`, anchored at zero and spanning the largest total
+-   entry .Style   the same components as `Bars.Style`: a stacked chart draws what a grouped one does
+-   entry .traversable   any collection traversable by categorical series is plottable as stacked bars
+-   entry #ordinate   a calibration for the ordinate, or `Unset` for the one given for the value type
++   entry .Fit   積み上げ棒グラフの適合：`#bands` としてのカテゴリーと、縦軸の `Scale`
++     entry #bands   横軸の `Bands`。カテゴリーごとに一つ
++     entry #ordinate   縦軸の `Scale`。零に固定され、最大の合計までを覆う
++   entry .Style   `Bars.Style` と同じ構成要素：積み上げ棒グラフは、まとめた棒グラフと同じものを描く
++   entry .traversable   カテゴリーの系列で走査できる任意のコレクションは積み上げ棒として描ける
++   entry #ordinate   縦軸の較正、または値の型に対して与えられたものを使うなら `Unset`
+
+- entry .Histogram   the distribution of samples: the range cut into equal bins, and a bar per series in each
++ entry .Histogram   標本の分布：範囲を等しい階級に区切り、各階級に系列ごとの棒を置く
+
+= entry .Histogram   the distribution of samples: the range cut into equal bins, and a bar per series in each
+-   detail
++   detail
+
+-       A chart kind for `Samples[y]` or any collection of sample sets, where `y` is
+-       `Continuous` with a `Calibration`. The range of all the samples is cut into equal bins —
+-       `#bins` of them if given, otherwise by Sturges' rule, one more than the base-two
+-       logarithm of the sample count — at round edges in the value type's notation, and a bar
+-       per series in each bin counts the samples that fall in it. The ordinate is a linear count
+-       from zero, titled `count`.
++       `Samples[y]` または標本の集合の任意のコレクションのためのチャートの種類であり、`y` は `Calibration` を伴う `Continuous` である。
++       すべての標本の範囲は等しい階級に区切られる。与えられれば `#bins` 個、そうでなければスタージェスの公式により、標本数の 2 を底とする対数に 1 を足した数であり、境界は値の型の表記で切りのよい所に置かれる。各階級では、系列ごとの棒がそこに入る標本を数える。
++       縦軸は零からの線形の個数であり、タイトルは `count` である。
+
+=       from zero, titled `count`.
+=
+-       ```scala
++       ```scala
+
+=       from zero, titled `count`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val samples = Samples(t"s")(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0)
++       val samples = Samples(t"s")(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0)
+
+-       samples.chart(Histogram()).fit.edges.size      // 5: four bins
++       samples.chart(Histogram()).fit.edges.size      // 5: four bins
+
+-       samples.chart(Histogram(bins = 2)).fit.edges.size   // 3
++       samples.chart(Histogram(bins = 2)).fit.edges.size   // 3
+
+=       samples.chart(Histogram(bins = 2)).fit.edges.size   // 3
+-       ```
++       ```
+
+=       samples.chart(Histogram(bins = 2)).fit.edges.size   // 3
+=       ```
+-   refer tasseomancy.Samples
++   refer tasseomancy.Samples
+
+=   refer tasseomancy.Samples
+-   refer tasseomancy.Boxes
++   refer tasseomancy.Boxes
+
+-   entry .Fit   a histogram's fit: the bin `#edges`, the abscissa over them and the ordinate of counts
+-     entry #edges   the bin edges, one more than the bins, at round steps
+-     entry #abscissa   the linear `Scale` from the first edge to the last
+-     entry #ordinate   the `Scale` of counts, from zero to the most-counted bin, padded to a round step
+-   entry .Style   the same components as `Bars.Style`: a histogram draws bars
+-   entry .samples   one sample set is plottable as a histogram
+-   entry .traversable   any collection traversable by sample sets is plottable as a histogram
+-   entry #bins   the number of bins, or `Unset` for Sturges' rule
+-   entry #ordinate   a calibration for the ordinate of counts, or `Unset` for linear
++   entry .Fit   ヒストグラムの適合：階級の `#edges`、それを覆う横軸、個数の縦軸
++     entry #edges   階級の境界。階級の数より一つ多く、切りのよい間隔で置かれる
++     entry #abscissa   最初の境界から最後の境界までの線形の `Scale`
++     entry #ordinate   個数の `Scale`。零から最も多く数えた階級までで、切りのよい間隔までパディングされる
++   entry .Style   `Bars.Style` と同じ構成要素：ヒストグラムは棒を描く
++   entry .samples   一つの標本の集合はヒストグラムとして描ける
++   entry .traversable   標本の集合で走査できる任意のコレクションはヒストグラムとして描ける
++   entry #bins   階級の数、またはスタージェスの公式を使うなら `Unset`
++   entry #ordinate   個数の縦軸の較正、または線形にするなら `Unset`
+
+- entry .Lines   a line per series through its points in abscissa order, with bands for intervals
++ entry .Lines   系列ごとに、横軸の順に点を通る一本の線。区間には帯を伴う
+
+= entry .Lines   a line per series through its points in abscissa order, with bands for intervals
+-   detail
++   detail
+
+-       A chart kind for one `Series[x, y]` or any collection of them, where both `x` and `y`
+-       are `Continuous` with a `Calibration`. Each series is a polyline through its points
+-       sorted by abscissa; where the values are `Chart.Estimate`s a translucent band is filled
+-       between their bounds; markers are drawn at the points if the style's `markers` is set;
+-       and a `Noted` value's note is set beside its marker. Neither axis is anchored at zero: a
+-       line shows change, not magnitude. The same fit as `Scatter`.
++       一つの `Series[x, y]` またはその任意のコレクションのためのチャートの種類であり、`x` と `y` はどちらも `Calibration` を伴う `Continuous` である。
++       各系列は、横軸で並べ替えた点を通る折れ線である。値が `Chart.Estimate` であるところでは、その境界の間に半透明の帯が塗られる。スタイルの `markers` が設定されていれば点にマーカーが描かれ、`Noted` 値の注記はマーカーの横に組まれる。
++       どちらの軸も零には固定されない：線が示すのは大きさではなく変化だからである。
++       適合は `Scatter` と同じである。
+
+=       line shows change, not magnitude. The same fit as `Scatter`.
+=
+-       ```scala
++       ```scala
+
+=       line shows change, not magnitude. The same fit as `Scatter`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       line shows change, not magnitude. The same fit as `Scatter`.
+=
+=       ```scala
+=       import soundness.*
+=
+-       val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
++       val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
+
+-       val decay = Series(t"decay")((0.0, 10.0), (10.0, 0.0))
++       val decay = Series(t"decay")((0.0, 10.0), (10.0, 0.0))
+
+-       List(growth, decay).chart(Lines()).fit.abscissa.upper   // 10.0
++       List(growth, decay).chart(Lines()).fit.abscissa.upper   // 10.0
+
+=       List(growth, decay).chart(Lines()).fit.abscissa.upper   // 10.0
+-       ```
++       ```
+
+-       A style with `smoothing > 0.0` draws each line through the Kalman-smoothed values of
+-       its points instead, while the markers stay at the points measured:
++       `smoothing > 0.0` のスタイルは、代わりに各線を点のカルマン平滑化した値に通して描き、マーカーは測定した点に留まる：
+
+=       its points instead, while the markers stay at the points measured:
+=
+-       ```scala
++       ```scala
+
+=       its points instead, while the markers stay at the points measured:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       given Chart.Standard = Chart.Standard(markers = true, smoothing = 4.0)
++       given Chart.Standard = Chart.Standard(markers = true, smoothing = 4.0)
+
+-       val noisy = Series(t"noisy")((0.0, 10.0), (1.0, 10.0), (2.0, 20.0), (3.0, 10.0), (4.0, 10.0))
++       val noisy = Series(t"noisy")((0.0, 10.0), (1.0, 10.0), (2.0, 20.0), (3.0, 10.0), (4.0, 10.0))
+
+-       noisy.chart(Lines()).in[Svg].in[Xml].show.contains(t"<circle")   // true
++       noisy.chart(Lines()).in[Svg].in[Xml].show.contains(t"<circle")   // true
+
+=       noisy.chart(Lines()).in[Svg].in[Xml].show.contains(t"<circle")   // true
+-       ```
++       ```
+
+-       `Lines(abscissa = …, ordinate = …)` fixes a calibration for either axis of this chart
+-       alone, which is how two axes of the same type are calibrated differently.
++       `Lines(abscissa = …, ordinate = …)` は、このチャートだけについてどちらかの軸の較正を固定する。同じ型の二つの軸を異なるように較正するには、こうする。
+
+-   refer tasseomancy.Scatter
++   refer tasseomancy.Scatter
+
+-   refer tasseomancy.Kalman
++   refer tasseomancy.Kalman
+
+-   entry .Fit   a line chart's fit: the `#abscissa` and `#ordinate` scales
+-     entry #abscissa   the abscissa `Scale`, over the extent of the positions
+-     entry #ordinate   the ordinate `Scale`, over the extent of the positions and their intervals
+-   entry .Style   the components of a line chart beyond the axes: the line, the band and the markers
++   entry .Fit   折れ線グラフの適合：`#abscissa` と `#ordinate` のスケール
++     entry #abscissa   横軸の `Scale`。位置の範囲を覆う
++     entry #ordinate   縦軸の `Scale`。位置とその区間の範囲を覆う
++   entry .Style   軸以外の折れ線グラフの構成要素：線、帯、マーカー
+
+=   entry .Style   the components of a line chart beyond the axes: the line, the band and the markers
+-     detail
++     detail
+
+-         Extends `Chart.Cartesian` with `#markers` and `#smoothing` as parameters and three
+-         hooks. A series' colour and index are passed to each, so lines may differ by series.
+-     entry #markers   whether a marker is drawn at each point
+-     entry #smoothing   how much the line is smoothed: the Kalman measurement-to-process noise ratio
+-         Zero draws the line through the points; a larger ratio trusts each measurement less
+-         and smooths more. See `Kalman.smooth`.
+-     entry #line   the line through a series' points: a polyline stroked at `strokeWidth`
+-     entry #band   the area between a series' upper and lower bounds: a closed polyline filled at 20% opacity
+-         The points run along the upper bounds and back along the lower.
+-     entry #lineMarker   the marker at a point, if `#markers` is set: `marker` by default
+-   entry .series   one series with continuous axes is plottable as lines
+-   entry .traversable   any collection traversable by such series is plottable as lines
+-   entry #abscissa   a calibration for the abscissa, or `Unset` for the one given for its type
+-   entry #ordinate   a calibration for the ordinate, or `Unset` for the one given for its type
++         `Chart.Cartesian` を、パラメーターとしての `#markers` と `#smoothing`、そして三つのフックで拡張する。
++         それぞれには系列の色とインデックスが渡されるので、線は系列ごとに変えられる。
++     entry #markers   各点にマーカーを描くかどうか
++     entry #smoothing   線をどれだけ平滑化するか：カルマンの測定ノイズとプロセスノイズの比
++         零なら線は点を通って描かれる。比が大きいほど各測定値を信頼せず、より平滑化する。
++         `Kalman.smooth` を参照。
++     entry #line   系列の点を通る線：`strokeWidth` で線を引いた折れ線
++     entry #band   系列の上限と下限の間の領域：不透明度 20% で塗りつぶした閉じた折れ線
++         点は上限に沿って進み、下限に沿って戻る。
++     entry #lineMarker   `#markers` が設定されている場合の、点のマーカー：デフォルトでは `marker`
++   entry .series   連続的な軸を持つ一つの系列は折れ線として描ける
++   entry .traversable   そうした系列で走査できる任意のコレクションは折れ線として描ける
++   entry #abscissa   横軸の較正、またはその型に対して与えられたものを使うなら `Unset`
++   entry #ordinate   縦軸の較正、またはその型に対して与えられたものを使うなら `Unset`
+
+- entry .Scatter   a marker per point, with error bars for intervals and labels for notes
++ entry .Scatter   点ごとのマーカー。区間には誤差棒、注記にはラベルを伴う
+
+= entry .Scatter   a marker per point, with error bars for intervals and labels for notes
+-   detail
++   detail
+
+-       A chart kind for one `Series[x, y]` or any collection of them, where both `x` and `y`
+-       are `Continuous` with a `Calibration`. Every point is a marker (`Chart.Cartesian#marker`),
+-       an `Chart.Estimate` adds an error bar, and a `Noted` value a label beside the marker, placed
+-       by cartouche so that notes at the same point are set on different sides. The fit is
+-       exactly a line chart's; only the drawing differs.
++       一つの `Series[x, y]` またはその任意のコレクションのためのチャートの種類であり、`x` と `y` はどちらも `Calibration` を伴う `Continuous` である。
++       すべての点はマーカー（`Chart.Cartesian#marker`）になり、`Chart.Estimate` は誤差棒を加え、`Noted` 値はマーカーの横にラベルを加える。ラベルは cartouche が配置するので、同じ点の注記は異なる側に組まれる。
++       適合は折れ線グラフのものとまったく同じであり、描き方だけが異なる。
+
+=       exactly a line chart's; only the drawing differs.
+=
+-       ```scala
++       ```scala
+
+=       exactly a line chart's; only the drawing differs.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       given Chart.Standard = Chart.Standard(grid = false, legend = Chart.Legend.Hidden)
++       given Chart.Standard = Chart.Standard(grid = false, legend = Chart.Legend.Hidden)
+
+=       given Chart.Standard = Chart.Standard(grid = false, legend = Chart.Legend.Hidden)
+-       val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
++       val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
+
+-       growth.chart(Scatter()).in[Svg].in[Xml].show.contains(t"<circle")   // true
++       growth.chart(Scatter()).in[Svg].in[Xml].show.contains(t"<circle")   // true
+
+=       growth.chart(Scatter()).in[Svg].in[Xml].show.contains(t"<circle")   // true
+-       ```
++       ```
+
+-   refer tasseomancy.Lines
++   refer tasseomancy.Lines
+
+-   entry .Fit   a scatter plot's fit: the `#abscissa` and `#ordinate` scales
+-     entry #abscissa   the abscissa `Scale`
+-     entry #ordinate   the ordinate `Scale`, including any intervals
+-   entry .Style   a scatter plot's components are the ones every cartesian chart shares: `Chart.Cartesian`
+-   entry .series   one series with continuous axes is plottable as a scatter plot
+-   entry .traversable   any collection traversable by such series is plottable as a scatter plot
+-   entry #abscissa   a calibration for the abscissa, or `Unset` for the one given for its type
+-   entry #ordinate   a calibration for the ordinate, or `Unset` for the one given for its type
++   entry .Fit   散布図の適合：`#abscissa` と `#ordinate` のスケール
++     entry #abscissa   横軸の `Scale`
++     entry #ordinate   区間を含む、縦軸の `Scale`
++   entry .Style   散布図の構成要素は、すべての直交座標のチャートが共有するもの：`Chart.Cartesian`
++   entry .series   連続的な軸を持つ一つの系列は、散布図として描ける
++   entry .traversable   そのような系列でたどれる任意のコレクションは、散布図として描ける
++   entry #abscissa   横軸の較正。その型に与えられたものを使うなら `Unset`
++   entry #ordinate   縦軸の較正。その型に与えられたものを使うなら `Unset`
+
+- entry .Boxes   a box per set of samples: quartiles, median and whiskers to the extremes
++ entry .Boxes   標本の集合ごとの箱：四分位数、中央値、極値までのひげ
+
+= entry .Boxes   a box per set of samples: quartiles, median and whiskers to the extremes
+-   detail
++   detail
+
+-       A chart kind for `Samples[y]` or any collection of sample sets, where `y` is
+-       `Continuous` with a `Calibration`. Each set is a category on the abscissa, drawn as a
+-       box from its lower to its upper quartile with the median across it, and whiskers with
+-       caps to its least and greatest sample. The ordinate spans all the extremes and is not
+-       anchored at zero.
++       `Samples[y]` または標本の集合の任意のコレクションのためのチャートの種類であり、`y` は `Calibration` を伴う `Continuous` である。
++       各集合は横軸上のカテゴリーであり、下側四分位数から上側四分位数までの箱として描かれ、中央値がそれを横切り、最小と最大の標本まで端の横線付きのひげが伸びる。
++       縦軸はすべての極値にわたり、零に固定されない。
+
+=       anchored at zero.
+=
+-       ```scala
++       ```scala
+
+=       anchored at zero.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val runs = List(Samples(t"a")(1.0, 2.0, 3.0), Samples(t"b")(2.0, 4.0, 8.0))
++       val runs = List(Samples(t"a")(1.0, 2.0, 3.0), Samples(t"b")(2.0, 4.0, 8.0))
+
+-       runs.chart(Boxes()).fit.summaries.size   // 2
++       runs.chart(Boxes()).fit.summaries.size   // 2
+
+=       runs.chart(Boxes()).fit.summaries.size   // 2
+-       ```
++       ```
+
+=       runs.chart(Boxes()).fit.summaries.size   // 2
+=       ```
+-   refer tasseomancy.Samples
++   refer tasseomancy.Samples
+
+=   refer tasseomancy.Samples
+-   refer tasseomancy.Histogram
++   refer tasseomancy.Histogram
+
+-   entry .Summary   the five-number summary of one set of samples
++   entry .Summary   一つの標本の集合の五数要約
+
+=   entry .Summary   the five-number summary of one set of samples
+-     detail
++     detail
+
+-         `Summary(minimum, lowerQuartile, median, upperQuartile, maximum)`, computed by `.of`
+-         with quartiles interpolated linearly between the order statistics either side, so the
+-         lower quartile of `1, 2, 3, 4` is `1.75`.
++         `Summary(minimum, lowerQuartile, median, upperQuartile, maximum)` であり、`.of` が計算する。四分位数は両側の順序統計量の間で線形に補間されるので、`1, 2, 3, 4` の下側四分位数は `1.75` である。
+
+=         lower quartile of `1, 2, 3, 4` is `1.75`.
+=
+-         ```scala
++         ```scala
+
+=         lower quartile of `1, 2, 3, 4` is `1.75`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Boxes.Summary.of(Sequence(5.0, 1.0, 4.0, 2.0, 3.0))   // Summary(1.0, 2.0, 3.0, 4.0, 5.0)
++         Boxes.Summary.of(Sequence(5.0, 1.0, 4.0, 2.0, 3.0))   // Summary(1.0, 2.0, 3.0, 4.0, 5.0)
+
+=         Boxes.Summary.of(Sequence(5.0, 1.0, 4.0, 2.0, 3.0))   // Summary(1.0, 2.0, 3.0, 4.0, 5.0)
+-         ```
++         ```
+
+-     entry .of   the summary of a sequence of values, sorted and interpolated
+-     entry #minimum   the least value
+-     entry #lowerQuartile   the value a quarter of the way through the sorted values
+-     entry #median   the middle value
+-     entry #upperQuartile   the value three quarters of the way through
+-     entry #maximum   the greatest value
+-   entry .Fit   a box plot's fit: the sets as `#bands`, the ordinate `Scale` and each set's `#summaries`
+-     entry #bands   the `Bands` of the abscissa, one per sample set, by name
+-     entry #ordinate   the ordinate `Scale`, spanning every set's extremes
+-     entry #summaries   one `Boxes.Summary` per set, in the sets' order
+-   entry .Style   the components of a box plot beyond the axes: box, whiskers, caps and median
++     entry .of   値の並びの要約。並べ替えて補間する
++     entry #minimum   最小の値
++     entry #lowerQuartile   並べ替えた値の四分の一の位置にある値
++     entry #median   中央の値
++     entry #upperQuartile   四分の三の位置にある値
++     entry #maximum   最大の値
++   entry .Fit   箱ひげ図の適合：`#bands` としての集合、縦軸の `Scale`、各集合の `#summaries`
++     entry #bands   横軸の `Bands`。名前による、標本の集合ごとに一つの帯
++     entry #ordinate   すべての集合の極値にわたる、縦軸の `Scale`
++     entry #summaries   集合の順に、集合ごとに一つの `Boxes.Summary`
++   entry .Style   軸以外の箱ひげ図の構成要素：箱、ひげ、端の横線、中央値
+
+=   entry .Style   the components of a box plot beyond the axes: box, whiskers, caps and median
+-     detail
++     detail
+
+-         Extends `Chart.Cartesian`. Whiskers, caps and medians are drawn in the palette's axis
+-         colour; the box in the series' colour.
+-     entry #boxGap   the fraction of a set's band left empty around its box: `0.25` by default
+-     entry #box   the box between the quartiles: a filled rectangle
+-     entry #whisker   the line from a quartile to an extreme
+-     entry #whiskerCap   the short crossbar at an extreme
+-     entry #median   the line across the box at the median, stroked at `strokeWidth`
+-   entry .samples   one sample set is plottable as a box plot
+-   entry .traversable   any collection traversable by sample sets is plottable as a box plot
+-   entry #ordinate   a calibration for the ordinate, or `Unset` for the one given for the value type
++         `Chart.Cartesian` を拡張する。
++         ひげ、端の横線、中央値はパレットの軸の色で、箱は系列の色で描かれる。
++     entry #boxGap   集合の帯のうち、箱の周りに空けておく割合：既定では `0.25`
++     entry #box   四分位数の間の箱：塗りつぶした長方形
++     entry #whisker   四分位数から極値までの線
++     entry #whiskerCap   極値にある短い横線
++     entry #median   中央値で箱を横切る線。`strokeWidth` で引かれる
++   entry .samples   一つの標本の集合は、箱ひげ図として描ける
++   entry .traversable   標本の集合でたどれる任意のコレクションは、箱ひげ図として描ける
++   entry #ordinate   縦軸の較正。値の型に与えられたものを使うなら `Unset`
+
+- entry .Pie   parts of a whole: one series, each category a wedge proportional to its value
++ entry .Pie   全体の部分：一つの系列で、各カテゴリーがその値に比例した扇形になる
+
+= entry .Pie   parts of a whole: one series, each category a wedge proportional to its value
+-   detail
++   detail
+
+-       A chart kind for exactly one `Series[x, y]`, where `x` is `Categorical` and `y` is
+-       `Continuous`; a collection of series is not plottable as a pie. Wedges run clockwise from
+-       the top, each sweeping its share of the total of the non-negative values, with its
+-       percentage set inside it (or moved outward with a leader where a neighbour's label is in
+-       the way) when the share is at least the style's `labelThreshold`. A pie has no axes and
+-       needs no `Calibration`.
++       ちょうど一つの `Series[x, y]` のためのチャートの種類であり、`x` は `Categorical`、`y` は `Continuous` である。系列のコレクションは円グラフとして描けない。
++       扇形は上から時計回りに並び、それぞれが非負の値の合計に対する自身の割合だけの角度を占める。割合がスタイルの `labelThreshold` 以上であれば、その百分率が内側に組まれる（隣のラベルが邪魔になる場所では、引き出し線を付けて外側へ移される）。
++       円グラフには軸がなく、`Calibration` を必要としない。
+
+=       needs no `Calibration`.
+=
+-       ```scala
++       ```scala
+
+=       needs no `Calibration`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val share = Series(t"share")((t"a", 25.0), (t"b", 75.0))
++       val share = Series(t"share")((t"a", 25.0), (t"b", 75.0))
+
+-       share.chart(Pie()).fit.total                                   // 100.0
++       share.chart(Pie()).fit.total                                   // 100.0
+
+-       share.chart(Pie()).in[Svg].in[Xml].show.contains(t"75%")       // true
++       share.chart(Pie()).in[Svg].in[Xml].show.contains(t"75%")       // true
+
+=       share.chart(Pie()).in[Svg].in[Xml].show.contains(t"75%")       // true
+-       ```
++       ```
+
+-       `Chart.Standard(hole = 0.3)` hollows the centre to three tenths of the radius. The
+-       drawing's parts are `backdrop`, `wedges` and `legend`. A pie has no axes to hold still,
+-       so a revision keeps the fit — and replaces only `wedges` — while the categories are the
+-       same, and redraws otherwise.
++       `Chart.Standard(hole = 0.3)` は中心を半径の十分の三までくり抜く。
++       描画の部品は `backdrop`、`wedges`、`legend` である。
++       円グラフには固定しておく軸がないので、改訂はカテゴリーが同じである間は適合を保ち（`wedges` だけを置き換え）、そうでなければ描き直す。
+
+-   refer tasseomancy.Doughnut
++   refer tasseomancy.Doughnut
+
+-   entry .Fit   a pie's fit: the category `#labels` in order and the `#total` they share
+-     entry #labels   the categories, in the series' order
+-     entry #total   the sum of the non-negative values
+-   entry .Style   the components of a pie: its wedges and their percentage labels
++   entry .Fit   円グラフの適合：順に並んだカテゴリーの `#labels` と、それらが分け合う `#total`
++     entry #labels   系列の順に並んだカテゴリー
++     entry #total   非負の値の合計
++   entry .Style   円グラフの構成要素：扇形とその百分率のラベル
+
+=   entry .Style   the components of a pie: its wedges and their percentage labels
+-     detail
++     detail
+
+-         Extends `Chart.Style` (not `Chart.Cartesian`). `Chart.Standard` supplies `hole`.
+-     entry #hole   the fraction of the radius hollowed from the centre: `0.0` for a full pie
+-         Clipped to `[0, 0.95]`. A hollow pie's wedges are rings cut by the even-odd rule.
+-     entry #labelThreshold   the least share of the whole a wedge needs for its percentage to be set: `0.04`
+-     entry #wedge   one wedge, from the path operations of its outline, in the series' colour
+-         An `Outline` filled with `fill-rule: evenodd`, so that a hollow wedge keeps its hole.
+-         The operations are listed last to first, as an `Outline` holds them.
+-     entry #wedgeLabel   a wedge's percentage, at the anchoring the arrangement chose
+-         Centred in the wedge when that is clear of other labels, or moved outward with a
+-         leader when it is not.
+-   entry .series   one categorical series is plottable as a pie
++         `Chart.Style` を拡張する（`Chart.Cartesian` ではない）。
++         `Chart.Standard` が `hole` を供給する。
++     entry #hole   中心からくり抜く半径の割合：完全な円グラフなら `0.0`
++         `[0, 0.95]` に切り詰められる。
++         くり抜いた円グラフの扇形は、偶奇規則で切り取った環である。
++     entry #labelThreshold   扇形の百分率が組まれるために必要な、全体に対する最小の割合：`0.04`
++     entry #wedge   輪郭のパス操作からなる、系列の色の一つの扇形
++         `fill-rule: evenodd` で塗りつぶされる `Outline` なので、くり抜いた扇形は穴を保つ。
++         操作は `Outline` が保持するとおり、最後から最初へ並ぶ。
++     entry #wedgeLabel   配置が選んだ位置に置かれる、扇形の百分率
++         他のラベルと重ならなければ扇形の中央に置かれ、重なるなら引き出し線を付けて外側へ移される。
++   entry .series   カテゴリーの系列一つは、円グラフとして描ける
+
+- entry .Doughnut   a dependency graph as concentric bands: one per rank, each node a sector filled as far as it is complete
++ entry .Doughnut   同心の帯としての依存グラフ：段ごとに一つの帯で、各ノードは完了した分だけ塗られた扇形になる
+
+= entry .Doughnut   a dependency graph as concentric bands: one per rank, each node a sector filled as far as it is complete
+-   detail
++   detail
+
+-       A chart kind for an acyclicity `Dag[node]` whose nodes are `Weighted` and
+-       `Progressive`, with a `Ranking` in scope (acyclicity's companion default; `import
+-       rankings.balancedRanking` draws each node as close to its dependents as it can be). The
+-       nodes depending on nothing form the innermost band, each further band the nodes one
+-       rank further out, so a build fills in from the centre outward. A node's sector sweeps an
+-       angle proportional to its weight within its rank, ordered so that it sits over the
+-       dependencies it was drawn to, and a band is as thick as its rank's share of the total
+-       weight. The sector fills clockwise as far as the node is complete, with the remainder in
+-       a subdued tint; the colour is the palette's first colour shaded by where the sector
+-       lies. A doughnut has no labels, no axes and no legend.
++       ノードが `Weighted` かつ `Progressive` である acyclicity の `Dag[node]` のためのチャートの種類であり、スコープ内に `Ranking` が必要である（acyclicity のコンパニオンの既定。`import rankings.balancedRanking` は各ノードを依存元にできるだけ近く描く）。
++       何にも依存しないノードが最も内側の帯をなし、その先の各帯は一段ずつ外側のノードからなるので、ビルドは中心から外へ向かって埋まっていく。
++       ノードの扇形は、その段の中での重みに比例した角度を占め、引き寄せられた依存先の上に来るように並べられる。帯の太さは、その段が全体の重みに占める割合に等しい。
++       扇形はノードが完了した分だけ時計回りに塗られ、残りは控えめな色合いになる。色はパレットの最初の色を、扇形の位置によって陰影付けしたものである。
++       ドーナツにはラベルも軸も凡例もない。
+
+=       lies. A doughnut has no labels, no axes and no legend.
+=
+-       ```scala
++       ```scala
+
+=       lies. A doughnut has no labels, no axes and no legend.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Step(name: Text, size: Double, done: Double)
++       case class Step(name: Text, size: Double, done: Double)
+
+-       given Step is Weighted = _.size
++       given Step is Weighted = _.size
+
+-       given Step is Progressive = _.done
++       given Step is Progressive = _.done
+
+-       val parse = Step(t"parse", 2.0, 1.0)
++       val parse = Step(t"parse", 2.0, 1.0)
+
+-       val typecheck = Step(t"typecheck", 3.0, 0.5)
++       val typecheck = Step(t"typecheck", 3.0, 0.5)
+
+-       val emit = Step(t"emit", 1.0, 0.0)
++       val emit = Step(t"emit", 1.0, 0.0)
+
+-       val doughnut = Dag(typecheck -> parse, emit -> typecheck).chart(Doughnut())
++       val doughnut = Dag(typecheck -> parse, emit -> typecheck).chart(Doughnut())
+
+-       doughnut.fit.bands.size   // 3: one band per rank
++       doughnut.fit.bands.size   // 3: one band per rank
+
+-       val typechecked = typecheck.copy(done = 1.0)
++       val typechecked = typecheck.copy(done = 1.0)
+
+-       doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size   // 1: a Replace of rank-1
++       doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size   // 1: a Replace of rank-1
+
+=       doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size   // 1: a Replace of rank-1
+-       ```
++       ```
+
+-       The drawing's parts are `backdrop` and `rank-0`, `rank-1`, …, each a group of
+-       `sector-N` and `sector-N-rest` paths. The fit depends on the graph's shape and weights
+-       alone, so it survives a graph of the same shape whose nodes have only progressed, and a
+-       revision replaces only the bands whose sectors filled further.
++       描画の部品は `backdrop` と `rank-0`、`rank-1`、… であり、それぞれ `sector-N` と `sector-N-rest` のパスのグループである。
++       適合はグラフの形と重みだけに依存するので、ノードが進んだだけの同じ形のグラフに対しては保たれ、改訂は扇形がさらに塗られた帯だけを置き換える。
+
+-   refer tasseomancy.Weighted
++   refer tasseomancy.Weighted
+
+-   refer tasseomancy.Progressive
++   refer tasseomancy.Progressive
+
+-   refer tasseomancy.Pie
++   refer tasseomancy.Pie
+
+-   entry .Sector   a node's place in its band: the angles its sector starts and ends at, and its weight
++   entry .Sector   帯の中でのノードの位置：扇形の始まりと終わりの角度、およびその重み
+
+=   entry .Sector   a node's place in its band: the angles its sector starts and ends at, and its weight
+-     detail
++     detail
+
+-         Angles are in radians, clockwise from north.
+-     entry #node   the node
+-     entry #start   the angle the sector starts at
+-     entry #end   the angle the sector ends at
+-     entry #size   the weight the sector was laid out with
+-   entry .Band   a rank's band, counted outward from the centre, with its edges and its sectors
++         角度はラジアン単位で、北から時計回りである。
++     entry #node   ノード
++     entry #start   扇形が始まる角度
++     entry #end   扇形が終わる角度
++     entry #size   扇形の配置に使われた重み
++   entry .Band   中心から外へ数えた段の帯。その縁と扇形を伴う
+
+=   entry .Band   a rank's band, counted outward from the centre, with its edges and its sectors
+-     detail
++     detail
+
+-         `#inner` and `#outer` are fractions of the distance between the hole and the rim.
+-     entry #rank   the rank, from `0` at the centre
+-     entry #inner   the inner edge, as a fraction of the usable radius
+-     entry #outer   the outer edge, as a fraction of the usable radius
+-     entry #sectors   the rank's sectors, in drawing order
+-   entry .Fit   everything that holds still across revisions: the `#bands`
++         `#inner` と `#outer` は、穴と外周の間の距離に対する割合である。
++     entry #rank   中心を `0` とする段
++     entry #inner   使用できる半径に対する割合としての、内側の縁
++     entry #outer   使用できる半径に対する割合としての、外側の縁
++     entry #sectors   描画順に並んだ、その段の扇形
++   entry .Fit   改訂をまたいで固定されるすべて：`#bands`
+
+=   entry .Fit   everything that holds still across revisions: the `#bands`
+-     detail
++     detail
+
+-         Completion is not here; it is read from the nodes on every draw.
+-     entry #bands   the bands, innermost first
+-   entry .Style   the components of a doughnut: each sector's completed part and remainder, and the grout
++         完了度はここにはない。描画のたびにノードから読まれる。
++     entry #bands   内側から順に並んだ帯
++   entry .Style   ドーナツの構成要素：各扇形の完了した部分と残り、および目地
+
+=   entry .Style   the components of a doughnut: each sector's completed part and remainder, and the grout
+-     detail
++     detail
+
+-         Extends `Chart.Style`. `Chart.Standard` supplies `hole`, `sectorGap` and `bandGap`.
+-     entry #hole   the fraction of the radius hollowed from the centre, shared with `Pie.Style`
+-     entry #sectorGap   the width in pixels of the grout between neighbouring sectors
+-     entry #bandGap   the width in pixels of the grout between neighbouring bands
+-     entry #shade   a sector's colour from its position, from the palette's first colour
+-         `x` and `y` run from -1 at the left or bottom of the doughnut to 1 at the right or
+-         top: the hue turns through thirty degrees from left to right, and from bottom to top
+-         the colour passes from a fifth darker, through the pure hue, to a fifth lighter.
+-     entry #sector   the completed part of a node's sector, from its path operations: `sector-N`
+-     entry #remainder   the unfinished part, in a subdued tint: `sector-N-rest`
+-   entry .dag   a `Dag` of weighted, progressive nodes is plottable as a doughnut, given a `Ranking`
++         `Chart.Style` を拡張する。
++         `Chart.Standard` が `hole`、`sectorGap`、`bandGap` を供給する。
++     entry #hole   中心からくり抜く半径の割合。`Pie.Style` と共有される
++     entry #sectorGap   隣り合う扇形の間の目地の幅（ピクセル単位）
++     entry #bandGap   隣り合う帯の間の目地の幅（ピクセル単位）
++     entry #shade   パレットの最初の色から、その位置によって決まる扇形の色
++         `x` と `y` はドーナツの左端または下端の -1 から、右端または上端の 1 までの値を取る：色相は左から右へ三十度回り、下から上へは五分の一暗い色から、純粋な色相を経て、五分の一明るい色へ移る。
++     entry #sector   パス操作からなる、ノードの扇形の完了した部分：`sector-N`
++     entry #remainder   控えめな色合いの、未完了の部分：`sector-N-rest`
++   entry .dag   `Ranking` が与えられれば、重み付きで進捗を持つノードの `Dag` はドーナツとして描ける
+
+- entry .Ruler   the mapping of an axis: a `Scale` over a numeric range, or the `Bands` of a categorical one
++ entry .Ruler   軸の対応付け：数値の範囲の上の `Scale`、またはカテゴリーの範囲の `Bands`
+
+= entry .Ruler   the mapping of an axis: a `Scale` over a numeric range, or the `Bands` of a categorical one
+-   detail
++   detail
+
+-       A ruler says where its gradations fall, as fractions of the axis's length, given how
+-       many the axis has room for. `Scale` and `Bands` are the two rulers; a fit holds one per
+-       axis, and the layout asks each for its `gradations(budget)` to draw ticks, labels and
+-       grid lines.
+-   entry #gradations   the marks for a budget of about so many, each with its position and label
++       ルーラーは、軸にいくつの刻みを置く余地があるかが与えられたとき、刻みがどこに来るかを、軸の長さに対する割合として示す。
++       `Scale` と `Bands` が二つのルーラーである。適合は軸ごとに一つを保持し、レイアウトは目盛り、ラベル、グリッド線を描くために、それぞれに `gradations(budget)` を求める。
++   entry #gradations   およそその数を予算とした刻み。それぞれ位置とラベルを伴う
+
+- entry .Gradation   one mark on an axis: where it lies, as a fraction of the axis's length, and its label
++ entry .Gradation   軸上の一つの刻み：軸の長さに対する割合としての位置と、そのラベル
+
+= entry .Gradation   one mark on an axis: where it lies, as a fraction of the axis's length, and its label
+-   detail
++   detail
+
+-       `Gradation(position, label, major = true)`. A minor gradation — the `2`–`9` multiples
+-       between the decades of a logarithmic axis — has an empty label, is drawn as a tick
+-       without a label, and gets no grid line.
+-   entry #position   the mark's position, from `0.0` at the axis's start to `1.0` at its end
+-   entry #label   the label text, empty for a minor gradation
+-   entry #major   whether the mark is labelled and gridded
++       `Gradation(position, label, major = true)`。
++       副刻み（対数軸の十倍ごとの区切りの間にある `2`–`9` の倍数）はラベルが空であり、ラベルなしの目盛りとして描かれ、グリッド線を持たない。
++   entry #position   軸の始まりの `0.0` から終わりの `1.0` までの、刻みの位置
++   entry #label   ラベルのテキスト。副刻みでは空
++   entry #major   刻みにラベルとグリッド線が付くかどうか
+
+- entry .Bands   the categorical counterpart of a `Scale`: the axis divided into equal bands, one per category
++ entry .Bands   `Scale` に対応するカテゴリーの側のもの：軸をカテゴリーごとに一つの、等しい帯に分ける
+
+= entry .Bands   the categorical counterpart of a `Scale`: the axis divided into equal bands, one per category
+-   detail
++   detail
+
+-       A `Ruler` over a `Sequence` of category labels in first-appearance order. The axis is
+-       divided into `#count` equal bands of `#width`, and a value is placed at the `#centre` of
+-       its band; `#index` finds a label's band, or `Unset` for a category the fit never saw,
+-       which is what makes a bar chart redraw rather than revise when a new category arrives.
++       最初に現れた順に並んだカテゴリーのラベルの `Sequence` の上の `Ruler`。
++       軸は幅 `#width` の等しい `#count` 個の帯に分けられ、値はその帯の `#centre` に置かれる。`#index` はラベルの帯を見つけ、適合が一度も見なかったカテゴリーには `Unset` を返す。新しいカテゴリーが来たときに棒グラフが改訂ではなく描き直しになるのはこのためである。
+
+=       which is what makes a bar chart redraw rather than revise when a new category arrives.
+=
+-       ```scala
++       ```scala
+
+=       which is what makes a bar chart redraw rather than revise when a new category arrives.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val bands = Bands(Sequence(t"jan", t"feb", t"mar"))
++       val bands = Bands(Sequence(t"jan", t"feb", t"mar"))
+
+-       bands.index(t"feb")    // 1
++       bands.index(t"feb")    // 1
+
+-       bands.centre(1)        // 0.5
++       bands.centre(1)        // 0.5
+
+-       bands.index(t"apr")    // Unset
++       bands.index(t"apr")    // Unset
+
+=       bands.index(t"apr")    // Unset
+-       ```
++       ```
+
+=       ```
+-   refer tasseomancy.Scale
++   refer tasseomancy.Scale
+
+-   entry #categories   the category labels, in first-appearance order
+-   entry #count   the number of bands
+-   entry #width   one band's share of the axis: `1.0/count`, or `1.0` for no bands
+-   entry #centre   the position of a band's middle, from its index
+-   entry #index   the band of a label, or `Unset` if the label is not a category
+-   entry #gradations   one major gradation per category, at its centre, labelled with it
+-       The budget is ignored: every category is marked. The layout hides a label that would
+-       overlap its neighbour.
++   entry #categories   最初に現れた順に並んだカテゴリーのラベル
++   entry #count   帯の数
++   entry #width   一つの帯が軸に占める割合：`1.0/count`、帯がなければ `1.0`
++   entry #centre   インデックスから求めた、帯の中央の位置
++   entry #index   ラベルの帯。ラベルがカテゴリーでなければ `Unset`
++   entry #gradations   カテゴリーごとに一つ、その中央に置かれ、そのラベルが付く主刻み
++       予算は無視される：すべてのカテゴリーに刻みが付く。
++       隣と重なるラベルは、レイアウトが隠す。
+
+- entry .Scale   a fitted numeric axis: its range, its transform, and how it is graduated and labelled
++ entry .Scale   適合済みの数値の軸：その範囲、変換、刻みとラベルの付け方
+
+= entry .Scale   a fitted numeric axis: its range, its transform, and how it is graduated and labelled
+-   detail
++   detail
+
+-       `Scale(lower, upper, transform, notation)` is plain data, which is what lets a chart
+-       tell whether a new point still fits the axis it was drawn with (`#accommodates`). A
+-       `Calibration` produces one from the data's extent; `#unit` places a value along it; and
+-       `#gradations` chooses round steps for a budget — multiples of 1, 2 and 5 across the
+-       decades for decimal notation, clock steps (seconds, half-minutes, hours, days) for
+-       sexagesimal, powers of ten with minor marks at their multiples on a logarithmic scale.
++       `Scale(lower, upper, transform, notation)` は単純なデータであり、そのおかげでチャートは、新しい点が描画に使った軸にまだ収まるかどうかを判断できる（`#accommodates`）。
++       `Calibration` はデータの範囲からこれを作り、`#unit` は値をその上に置き、`#gradations` は予算に応じて切りのよい刻み幅を選ぶ：十進表記では各桁にわたる 1、2、5 の倍数、六十進では時計の刻み（秒、三十秒、時間、日）、対数スケールでは十の累乗とその倍数の副刻みである。
+
+=       sexagesimal, powers of ten with minor marks at their multiples on a logarithmic scale.
+=
+-       ```scala
++       ```scala
+
+=       sexagesimal, powers of ten with minor marks at their multiples on a logarithmic scale.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
++       val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
+
+-       val scale: Scale = growth.chart(Lines()).fit.ordinate
++       val scale: Scale = growth.chart(Lines()).fit.ordinate
+
+-       (scale.lower, scale.upper)                                         // (0.0, 100.0)
++       (scale.lower, scale.upper)                                         // (0.0, 100.0)
+
+-       scale.gradations(5).filter(_.major).map(_.label).to[List]         // List(t"0", t"20", t"40", t"60", t"80", t"100")
++       scale.gradations(5).filter(_.major).map(_.label).to[List]         // List(t"0", t"20", t"40", t"60", t"80", t"100")
+
+-       scale.unit(50.0)                                                   // 0.5
++       scale.unit(50.0)                                                   // 0.5
+
+=       scale.unit(50.0)                                                   // 0.5
+-       ```
++       ```
+
+-       The companion holds the number formatting the labels use — `.step`, `.format`,
+-       `.interval`, `.clock` — which is fixed decimals from the step rather than a
+-       `DecimalConverter`, since gradation labels are multiples of a known step.
++       コンパニオンは、ラベルが使う数値の書式（`.step`、`.format`、`.interval`、`.clock`）を保持する。刻みのラベルは既知の刻み幅の倍数なので、これは `DecimalConverter` ではなく、刻み幅から決まる固定の小数桁数である。
+
+=       `DecimalConverter`, since gradation labels are multiples of a known step.
+-   refer tasseomancy.Calibration
++   refer tasseomancy.Calibration
+
+=   refer tasseomancy.Calibration
+-   refer tasseomancy.Bands
++   refer tasseomancy.Bands
+
+-   refer tasseomancy.Ruler
++   refer tasseomancy.Ruler
+
+-   entry .Transform   how a position follows from a value: `Linear`, `Logarithmic` or `Exponential(curvature)`
+-       Linear is in proportion to the value; logarithmic to its logarithm, where a value at or
+-       below zero has no position and is clipped to the axis's start; exponential to an
+-       exponential of it, which opens up the top of the range so that small differences among
+-       large values show. On an exponential axis the gradations still fall at regular intervals
+-       of value, as on a linear one; it is their spacing that grows. The `curvature` is the
+-       exponent's range across the axis: the top is stretched `e^curvature` times as much as
+-       the bottom.
+-   entry .Spacing   how gradations are spaced on a linear scale: `Decimal` or `Sexagesimal`
+-       Decimal steps are 1, 2 and 5 times a power of ten, as numbers are read; sexagesimal
+-       steps are those of clock time, from a millisecond to a day, and decimal days beyond.
+-   entry .Labelling   how a gradation's value is written: a `Number(suffix)`, an `Interval` or a `Clock` time
+-       `Number(t"")` writes `250`; `Interval` writes seconds as `250ms`, `2m30s`, `1h05m`;
+-       `Clock` writes seconds since the epoch as `HH:MM:SS` in UTC.
+-   entry .Notation   how an axis of some type is read: spacing, labelling, name and unit
++   entry .Transform   値から位置がどう決まるか：`Linear`、`Logarithmic`、`Exponential(curvature)`
++       線形は値に比例し、対数はその対数に比例する。対数では零以下の値は位置を持たず、軸の始まりに切り詰められる。指数はその指数関数に比例し、範囲の上端を広げるので、大きな値の間の小さな差が見える。
++       指数の軸でも、刻みは線形の軸と同じく値の一定の間隔に来る。広がるのはその間隔のほうである。
++       `curvature` は軸にわたる指数の範囲である：上端は下端の `e^curvature` 倍引き伸ばされる。
++   entry .Spacing   線形スケール上での刻みの間隔：`Decimal` または `Sexagesimal`
++       十進の刻み幅は、数を読むとおり、十の累乗の 1、2、5 倍である。六十進の刻み幅は時計の時刻のもので、一ミリ秒から一日まであり、それを超えると日の十進の倍数になる。
++   entry .Labelling   刻みの値をどう書くか：`Number(suffix)`、`Interval`、`Clock` の時刻
++       `Number(t"")` は `250` と書き、`Interval` は秒を `250ms`、`2m30s`、`1h05m` と書き、`Clock` はエポックからの秒を UTC の `HH:MM:SS` として書く。
++   entry .Notation   ある型の軸をどう読むか：間隔、ラベルの付け方、名前、単位
+
+=   entry .Notation   how an axis of some type is read: spacing, labelling, name and unit
+-     detail
++     detail
+
+-         `Notation(spacing = Decimal, labelling = Number(t""), name = Unset, unit = Unset)`
+-         travels from a `Continuous` instance through `Calibration#scale` into the `Scale`.
+-         The name and unit make the axis title — `distance / m` — unless the style gives a
+-         title, in which case the unit is appended to that instead.
+-     entry #spacing   decimal or sexagesimal steps
+-     entry #labelling   how each gradation is written
+-     entry #name   what the quantity is called — `distance`, `time` — or `Unset`
+-     entry #unit   the unit the values are in — `m`, `kg·s¯²` — or `Unset`
+-     entry #title   the axis title: a supplied title or the name, with ` / unit` appended if there is one
+-         `Unset` if there is neither a title, a name nor a unit, as for a bare number.
+-   entry .step   the smallest of 1, 2 and 5 times a power of ten no less than a raw step
+-       `Scale.step(1.9)` is `2.0`, `Scale.step(0.3)` is `0.5`; a raw step at or below zero
+-       gives `1.0`.
+-   entry .sexagesimalStep   the smallest clock step no less than a raw step, in seconds
+-       From a millisecond through seconds, quarter- and half-minutes, minutes, hours and
+-       half-days to a day; beyond a day, decimal multiples of a day. Below a millisecond,
+-       `.step`.
+-   entry .decimals   the decimal places needed to write multiples of a step exactly
+-       `0` for a step of `1.0` or more, `1` for `0.5`, `2` for `0.05`.
+-   entry .format   a number to a fixed count of decimal places: `format(2.5, 1)` is `2.5`
+-       A whole number has no point (`format(1000.0, 0)` is `1000`), a small negative keeps its
+-       leading zero (`-0.05`), and zero is `0`.
+-   entry .interval   seconds as a short interval: `250ms`, `1.5µs`, `41s`, `1m30s`, `1h01m`, `3d02h`
+-       Below a second the unit keeps the number short and trailing zeros are trimmed; from a
+-       minute, the two largest units are paired, the minor one zero-padded, and dropped when it
+-       rounds to nothing (`2m`, not `2m00s`).
+-   entry .clock   seconds since the epoch as a time of day, `HH:MM:SS`, in UTC
+-   entry #lower   the value at the axis's start
+-   entry #upper   the value at the axis's end
+-   entry #transform   linear, logarithmic or exponential positions
+-   entry #notation   the `Scale.Notation` the axis is graduated and titled with
+-   entry #spacing   the notation's spacing
+-   entry #labelling   the notation's labelling
+-   entry #unit   where a value lies along the axis, as a fraction of its length
+-       `0.5` everywhere on an empty range; on a logarithmic scale, `0.0` for a value at or
+-       below zero.
+-   entry #accommodates   whether a value lies within `[lower, upper]`
+-   entry #label   a value's label for a given step, in the scale's labelling
+-   entry #gradations   round-stepped marks for a budget: the largest step giving about that many
+-       A linear or exponential scale steps decimally or sexagesimally per its spacing from the
+-       first multiple at or above `lower`; a logarithmic scale marks the powers of ten (every
+-       `stride`th decade when there are more decades than budget) and, when the budget allows
+-       two marks per decade, the `2`–`9` multiples as minor gradations. A logarithmic scale
+-       with a non-positive `lower` is graduated linearly.
++         `Notation(spacing = Decimal, labelling = Number(t""), name = Unset, unit = Unset)` は、`Continuous` のインスタンスから `Calibration#scale` を通じて `Scale` に渡る。
++         名前と単位は軸のタイトル（`distance / m`）になる。ただしスタイルがタイトルを与える場合は、単位はそのタイトルの後に付け加えられる。
++     entry #spacing   十進または六十進の刻み幅
++     entry #labelling   各刻みをどう書くか
++     entry #name   量の呼び名（`distance`、`time`）、または `Unset`
++     entry #unit   値の単位（`m`、`kg·s¯²`）、または `Unset`
++     entry #title   軸のタイトル：与えられたタイトルか名前に、単位があれば ` / unit` を付け加えたもの
++         数そのもののように、タイトルも名前も単位もなければ `Unset` である。
++   entry .step   生の刻み幅以上の、十の累乗の 1、2、5 倍のうち最小のもの
++       `Scale.step(1.9)` は `2.0`、`Scale.step(0.3)` は `0.5` である。零以下の生の刻み幅は `1.0` を与える。
++   entry .sexagesimalStep   生の刻み幅以上の、秒単位の時計の刻み幅のうち最小のもの
++       一ミリ秒から、秒、十五秒と三十秒、分、時間、半日を経て一日まで。一日を超えると、日の十進の倍数である。
++       一ミリ秒未満では `.step` である。
++   entry .decimals   刻み幅の倍数を正確に書くのに必要な小数桁数
++       `1.0` 以上の刻み幅では `0`、`0.5` では `1`、`0.05` では `2` である。
++   entry .format   数を固定の小数桁数で書く：`format(2.5, 1)` は `2.5`
++       整数には小数点がなく（`format(1000.0, 0)` は `1000`）、小さな負の数は先頭の零を保ち（`-0.05`）、零は `0` である。
++   entry .interval   秒を短い間隔として書く：`250ms`、`1.5µs`、`41s`、`1m30s`、`1h01m`、`3d02h`
++       一秒未満では、単位は数を短く保つように選ばれ、末尾の零は削られる。一分以上では、大きいほうから二つの単位を組にし、小さいほうは零で埋め、丸めて無になるときは省く（`2m00s` ではなく `2m`）。
++   entry .clock   エポックからの秒を、UTC の時刻 `HH:MM:SS` として書く
++   entry #lower   軸の始まりの値
++   entry #upper   軸の終わりの値
++   entry #transform   線形、対数、指数のいずれかの位置
++   entry #notation   軸の刻みとタイトルに使う `Scale.Notation`
++   entry #spacing   表記の間隔
++   entry #labelling   表記のラベルの付け方
++   entry #unit   値が軸上のどこにあるかを、軸の長さに対する割合で表したもの
++       範囲が空ならどこでも `0.5` である。対数スケールでは、零以下の値に対して `0.0` である。
++   entry #accommodates   値が `[lower, upper]` の中にあるかどうか
++   entry #label   与えられた刻み幅に対する値のラベル。スケールのラベルの付け方による
++   entry #gradations   予算に応じた切りのよい刻み：およそその数になる最大の刻み幅
++       線形または指数のスケールは、`lower` 以上の最初の倍数から、その間隔に従って十進または六十進で刻む。対数スケールは十の累乗に刻みを付け（予算より桁が多いときは `stride` 桁ごと）、予算が一桁に二つの刻みを許すときは、`2`–`9` の倍数を副刻みとする。
++       `lower` が正でない対数スケールは、線形に刻まれる。
+
+- entry .Calibration   how the extent of the data becomes the range of an axis
++ entry .Calibration   データの範囲がどのように軸の範囲になるか
+
+= entry .Calibration   how the extent of the data becomes the range of an axis
+-   detail
++   detail
+
+-       `value is Calibration` gives `scale(lower, upper, anchored, notation): Scale`: whether
+-       positions are linear, logarithmic or exponential, whether the range is padded out to
+-       whole gradation steps or tight to the data, and (when the chart kind asks, as a bar
+-       chart does) whether it must include zero. It is keyed on the type of the values on the
+-       axis, so a scoped given for one type changes every axis of that type; the methods never
+-       mention `Self`, so the polymorphic `calibrations.*` givens double as explicit
+-       `Optional[Calibration]` arguments to a chart kind, for one axis alone.
++       `value is Calibration` は `scale(lower, upper, anchored, notation): Scale` を与える：位置が線形、対数、指数のいずれか、範囲が刻み幅の整数倍まで広げられるかデータにぴったり合わせるか、そして（棒グラフのようにチャートの種類が求める場合は）零を含まなければならないかを決める。
++       これは軸上の値の型をキーとするので、ある型に対するスコープ付きの given はその型のすべての軸を変える。メソッドは決して `Self` に言及しないので、多相的な `calibrations.*` の given は、一つの軸だけのためにチャートの種類に渡す明示的な `Optional[Calibration]` 引数としても使える。
+
+=       `Optional[Calibration]` arguments to a chart kind, for one axis alone.
+=
+-       ```scala
++       ```scala
+
+=       `Optional[Calibration]` arguments to a chart kind, for one axis alone.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val sizes = Series(t"sort")((100, 1.2), (1000, 14.0), (10000, 160.0), (100000, 1900.0))
++       val sizes = Series(t"sort")((100, 1.2), (1000, 14.0), (10000, 160.0), (100000, 1900.0))
+
+-       val logged =
++       val logged =
+
+-         given Int is Calibration = calibrations.logarithmicCalibration
++         given Int is Calibration = calibrations.logarithmicCalibration
+
+-         sizes.chart(Lines())
++         sizes.chart(Lines())
+
+-       logged.fit.abscissa.transform                                  // Scale.Transform.Logarithmic
++       logged.fit.abscissa.transform                                  // Scale.Transform.Logarithmic
+
+-       sizes.chart(Lines(ordinate = calibrations.adaptiveCalibration)).fit.ordinate.transform
++       sizes.chart(Lines(ordinate = calibrations.adaptiveCalibration)).fit.ordinate.transform
+
+=       sizes.chart(Lines(ordinate = calibrations.adaptiveCalibration)).fit.ordinate.transform
+-       ```
++       ```
+
+-       The no-import default, `.linear`, is linear and padded. A logarithmic calibration over
+-       a range that includes zero or a negative falls back to linear rather than failing.
++       インポートなしの既定である `.linear` は、線形で範囲を広げる。
++       零や負の数を含む範囲に対する対数の較正は、失敗するのではなく線形に戻る。
+
+-   refer tasseomancy.calibrations
++   refer tasseomancy.calibrations
+
+=   refer tasseomancy.calibrations
+-   refer tasseomancy.Scale
++   refer tasseomancy.Scale
+
+-   entry .linear   the no-import default for every value type: linear, padded to whole steps
+-       A companion given, outranked by any `import calibrations.…` or scoped given.
+-   entry .Policy   the choices a calibration makes: `Linear`, `Logarithmic`, `Adaptive`, `Tight` or `Exponential(curvature)`
+-       `Linear` pads outward to whole gradation steps; `Tight` is linear over exactly the
+-       data's extent; `Logarithmic` spans whole decades, falling back to linear where a
+-       logarithm is undefined; `Adaptive` is logarithmic when the range's ratio is at least a
+-       thousand and linear otherwise, which is what benchmark timings over input sizes want;
+-       `Exponential` has a linear scale's range and gradations with exponentially spread
+-       positions, its curvature defaulting to `Calibration.curvature`.
+-   entry .curvature   the curvature of an exponential axis unless a policy gives one: `3.0`
+-       The top of the axis is stretched about twenty times as much as the bottom.
+-   entry .apply   `Calibration[value](policy)`: a calibration for one type from a policy
++   entry .linear   すべての値の型に対するインポートなしの既定：線形で、刻み幅の整数倍まで広げる
++       コンパニオンの given であり、どの `import calibrations.…` やスコープ付きの given もこれに優先する。
++   entry .Policy   較正が行う選択：`Linear`、`Logarithmic`、`Adaptive`、`Tight`、`Exponential(curvature)`
++       `Linear` は刻み幅の整数倍まで外側へ広げる。`Tight` はデータの範囲ちょうどにわたって線形である。`Logarithmic` は桁全体にわたり、対数が定義されない場所では線形に戻る。`Adaptive` は範囲の比が千以上なら対数、そうでなければ線形であり、入力サイズにわたるベンチマークの計時にはこれが望ましい。`Exponential` は線形スケールの範囲と刻みを持ち、位置が指数的に広がる。その曲率の既定は `Calibration.curvature` である。
++   entry .curvature   ポリシーが与えない場合の指数の軸の曲率：`3.0`
++       軸の上端は下端のおよそ二十倍引き伸ばされる。
++   entry .apply   `Calibration[value](policy)`：ポリシーから作った、一つの型に対する較正
+
+=   entry .apply   `Calibration[value](policy)`: a calibration for one type from a policy
+-       ```scala
++       ```scala
+
+=   entry .apply   `Calibration[value](policy)`: a calibration for one type from a policy
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val decimal = Scale.Notation()
++       val decimal = Scale.Notation()
+
+-       Calibration[Double](Calibration.Policy.Adaptive).scale(1.0, 5000.0, false, decimal).transform
++       Calibration[Double](Calibration.Policy.Adaptive).scale(1.0, 5000.0, false, decimal).transform
+
+-       // Scale.Transform.Logarithmic
++       // Scale.Transform.Logarithmic
+
+=       // Scale.Transform.Logarithmic
+-       ```
++       ```
+
+-   entry #scale   the `Scale` for a data extent: `scale(lower, upper, anchored, notation)`
+-       `anchored` asks for zero to be included, which a bar chart, stacked bar chart and
+-       histogram do and a line chart does not. The notation is carried into the scale.
++   entry #scale   データの範囲に対する `Scale`：`scale(lower, upper, anchored, notation)`
++       `anchored` は零を含めることを求める。棒グラフ、積み上げ棒グラフ、ヒストグラムはそうし、折れ線グラフはしない。
++       表記はスケールに引き継がれる。
+
+- entry .Kalman   a Kalman smoother for a run of measurements in order, used by a smoothed line chart
++ entry .Kalman   順に並んだ測定値の連なりのためのカルマン平滑化。平滑化した折れ線グラフが使う
+
+= entry .Kalman   a Kalman smoother for a run of measurements in order, used by a smoothed line chart
+-   detail
++   detail
+
+-       The model is a constant velocity: each value is the last plus its rate of change, both
+-       perturbed by process noise of unit variance, and observed with measurement noise of
+-       variance `ratio`, so a larger ratio trusts each measurement less and smooths more. The
+-       forward filter is followed by the Rauch–Tung–Striebel backward pass, so the estimate at
+-       each point draws on the points after it as well as those before: a smoothed line follows
+-       a rise without lagging it and settles on a plateau without overshooting.
+-       `Lines.Style#smoothing` is the ratio a line chart passes.
+-   entry .smooth   the smoothed values of a list, in order, for a noise ratio
++       モデルは等速度である：各値は直前の値にその変化率を加えたもので、どちらも分散 1 のプロセスノイズで乱され、分散 `ratio` の測定ノイズを伴って観測される。したがって、比が大きいほど各測定値を信頼せず、より強く平滑化する。
++       前向きのフィルターの後に Rauch–Tung–Striebel の後ろ向きのパスが続くので、各点での推定は前の点だけでなく後の点も用いる：平滑化した線は上昇に遅れずに追従し、平坦な部分では行き過ぎずに落ち着く。
++       `Lines.Style#smoothing` が、折れ線グラフが渡す比である。
++   entry .smooth   ノイズの比に対する、リストの平滑化した値を順に並べたもの
+
+=   entry .smooth   the smoothed values of a list, in order, for a noise ratio
+-       ```scala
++       ```scala
+
+=   entry .smooth   the smoothed values of a list, in order, for a noise ratio
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Kalman.smooth(List(5.0, 5.0, 5.0, 5.0), 4.0)     // List(5.0, 5.0, 5.0, 5.0)
++       Kalman.smooth(List(5.0, 5.0, 5.0, 5.0), 4.0)     // List(5.0, 5.0, 5.0, 5.0)
+
+-       Kalman.smooth(List(10.0, 10.0, 20.0, 10.0, 10.0), 4.0).at(Ter).or(0.0)   // between 10.0 and 20.0
++       Kalman.smooth(List(10.0, 10.0, 20.0, 10.0, 10.0), 4.0).at(Ter).or(0.0)   // between 10.0 and 20.0
+
+=       Kalman.smooth(List(10.0, 10.0, 20.0, 10.0, 10.0), 4.0).at(Ter).or(0.0)   // between 10.0 and 20.0
+-       ```
++       ```
+
+-       The result has the length and order of its input; an empty list smooths to itself.
++       結果は入力と同じ長さと順序を持つ。空のリストを平滑化すると、それ自身になる。
+
+- entry .FontMetric   the width of a run of text in ems, as the chart's typeface will set it
++ entry .FontMetric   チャートの書体が組むときの、テキストの連なりの幅（em 単位）
+
+= entry .FontMetric   the width of a run of text in ems, as the chart's typeface will set it
+-   detail
++   detail
+
+-       Multiplied by the style's font size, this decides how much room an axis's labels and a
+-       legend need, and whether an abscissa's labels would overlap. The no-import default,
+-       `.fromStyle`, follows the style's font: an embedded font file's own glyph advances, so
+-       the face measured is the face rendered and the margins fit exactly, or an average width
+-       for a font without a file to hand. `fontMetrics.averageFontMetric` and
+-       `fontMetrics.tabularFontMetric` override it by import.
++       スタイルのフォントサイズを掛けると、軸のラベルや凡例にどれだけの余地が必要か、また横軸のラベルが重なるかどうかが決まる。
++       インポートなしの既定である `.fromStyle` はスタイルのフォントに従う：埋め込まれたフォントファイルがあればそのグリフ自身の送り幅を使うので、測るフェイスと描画するフェイスが同じになり、余白がぴったり合う。手元にファイルのないフォントには平均の幅を使う。
++       `fontMetrics.averageFontMetric` と `fontMetrics.tabularFontMetric` は、インポートによってそれを上書きする。
+
+=       `fontMetrics.tabularFontMetric` override it by import.
+=
+-       ```scala
++       ```scala
+
+=       `fontMetrics.tabularFontMetric` override it by import.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       summon[FontMetric].width(t"abcde").value   // 3.0: six tenths of an em per character
++       summon[FontMetric].width(t"abcde").value   // 3.0: six tenths of an em per character
+
+=       summon[FontMetric].width(t"abcde").value   // 3.0: six tenths of an em per character
+-       ```
++       ```
+
+-   refer tasseomancy.fontMetrics
++   refer tasseomancy.fontMetrics
+
+-   refer tasseomancy.Chart.Style
++   refer tasseomancy.Chart.Style
+
+-   entry .fromStyle   the no-import default: the metric of the style's font, embedded or average
+-       Needs a `Chart.Style` in scope. Any `import fontMetrics.…` outranks it.
+-   entry .of   the metric of an `Sfnt` font's own glyph advances, or of a `Font`'s first embedded file
+-       `FontMetric.of(sfnt)` sums the advances of a text's glyphs; a character the face lacks
+-       would raise, so the average width stands in for any text containing one.
+-       `FontMetric.of(font)` uses the first `Typesettable.Source.Embedded` among the font's
+-       provision's sources, and the average metric if there is none (a `Web.local()` or
+-       generic family).
+-   entry #width   the width of a text, as a `Quantity[Ems[1]]`
++   entry .fromStyle   インポートなしの既定：スタイルのフォントの、埋め込まれたものか平均の測定値
++       スコープ内に `Chart.Style` が必要である。
++       どの `import fontMetrics.…` もこれに優先する。
++   entry .of   `Sfnt` フォントのグリフ自身の送り幅、または `Font` の最初の埋め込みファイルによる測定値
++       `FontMetric.of(sfnt)` はテキストのグリフの送り幅を合計する。フェイスにない文字はエラーを発生させるので、そのような文字を含むテキストには平均の幅が代わりに使われる。
++       `FontMetric.of(font)` は、フォントのプロビジョンのソースのうち最初の `Typesettable.Source.Embedded` を使い、それがなければ（`Web.local()` や汎用ファミリーなら）平均の測定値を使う。
++   entry #width   `Quantity[Ems[1]]` としての、テキストの幅
+
+- entry .ChartPalette   the colours a chart draws with, named by the role each plays rather than by hue
++ entry .ChartPalette   チャートが描画に使う色。色相ではなく、それぞれが果たす役割によって名付けられる
+
+= entry .ChartPalette   the colours a chart draws with, named by the role each plays rather than by hue
+-   detail
++   detail
+
+-       The series ramp (cycled when there are more series than colours), the axes and their
+-       gradations, the grid, the lettering, and — as a `Palette` — the background and
+-       foreground. One style renders under any palette. The no-import default is `.slate`, a
+-       light palette with eight distinguishable hues; `palettes.solarizedDarkChartPalette` and
+-       `palettes.solarizedLightChartPalette` are chosen by import, and `.of` makes one from an
+-       iridescence `Theme`.
++       系列の色の並び（色より系列が多ければ循環する）、軸とその刻み、グリッド、文字、そして `Palette` としての背景色と前景色。
++       一つのスタイルはどのパレットのもとでも描画される。
++       インポートなしの既定は `.slate` で、区別しやすい八つの色相を持つ明るいパレットである。`palettes.solarizedDarkChartPalette` と `palettes.solarizedLightChartPalette` はインポートで選ばれ、`.of` は iridescence の `Theme` からパレットを作る。
+
+=       iridescence `Theme`.
+=
+-       ```scala
++       ```scala
+
+=       iridescence `Theme`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import palettes.solarizedDarkChartPalette
++       import palettes.solarizedDarkChartPalette
+
+=       import palettes.solarizedDarkChartPalette
+=
+-       val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
++       val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
+
+-       growth.chart(Lines()).in[Svg].in[Xml].show.contains(t"#002b36")   // true: the backdrop
++       growth.chart(Lines()).in[Svg].in[Xml].show.contains(t"#002b36")   // true: the backdrop
+
+=       growth.chart(Lines()).in[Svg].in[Xml].show.contains(t"#002b36")   // true: the backdrop
+-       ```
++       ```
+
+-   refer tasseomancy.palettes
++   refer tasseomancy.palettes
+
+-   entry .slate   the no-import default: a light palette with a categorical ramp of eight hues
+-       A companion given, outranked by any `import palettes.…`.
+-   entry .of   a palette from an `Srgb` `Theme`: its colours for the series, its foreground for axes and text
+-       The axis colour is the foreground mixed three tenths of the way to the background; the
+-       grid, 85% of the way.
+-   entry #series   the colours for the series, in order
+-   entry #axis   the colour of the axis lines, ticks, whiskers and error bars
+-   entry #grid   the colour of grid lines
+-   entry #text   the colour of all lettering
+-   entry #color   the colour of a series by index, cycling through `#series`; the foreground if there are none
++   entry .slate   インポートなしの既定：八つの色相からなるカテゴリーの色の並びを持つ明るいパレット
++       コンパニオンの given であり、どの `import palettes.…` もこれに優先する。
++   entry .of   `Srgb` の `Theme` から作るパレット：その色を系列に、その前景色を軸とテキストに使う
++       軸の色は前景色を背景色の方へ十分の三混ぜたもので、グリッドの色は 85% 混ぜたものである。
++   entry #series   系列の色を順に並べたもの
++   entry #axis   軸線、目盛り、ひげ、誤差棒の色
++   entry #grid   グリッド線の色
++   entry #text   すべての文字の色
++   entry #color   インデックスによる系列の色。`#series` を循環し、それがなければ前景色
+
+- entry .calibrations   the standard calibrations, each a given to import by name, or to pass to a chart kind
++ entry .calibrations   標準の較正。それぞれ名前でインポートするか、チャートの種類に渡す given である
+
+= entry .calibrations   the standard calibrations, each a given to import by name, or to pass to a chart kind
+-   detail
++   detail
+
+-       Each is polymorphic in the value type, so one import changes every axis of every type,
+-       while a scoped `given Int is Calibration = calibrations.logarithmicCalibration` changes
+-       every axis of one type, and `Lines(ordinate = calibrations.tightCalibration)` changes
+-       one axis of one chart. `import tasseomancy.*` brings none of them in, and the
+-       companion default `Calibration.linear` applies until one is imported.
++       それぞれ値の型について多相的なので、一つのインポートであらゆる型のすべての軸が変わる。一方、スコープ付きの `given Int is Calibration = calibrations.logarithmicCalibration` は一つの型のすべての軸を変え、`Lines(ordinate = calibrations.tightCalibration)` は一つのチャートの一つの軸を変える。
++       `import tasseomancy.*` はこれらのどれも取り込まず、一つがインポートされるまではコンパニオンの既定 `Calibration.linear` が適用される。
+
+=       companion default `Calibration.linear` applies until one is imported.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Default
++       alternative Default
+
+=       alternative Default
+-         code
++         code
+
+=         code
+-             val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
++             val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
+
+=         code
+=             val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
+-             val fit = growth.chart(Lines()).fit
++             val fit = growth.chart(Lines()).fit
+
+-             (fit.ordinate.transform, fit.ordinate.upper)     // (Scale.Transform.Linear, 100.0)
++             (fit.ordinate.transform, fit.ordinate.upper)     // (Scale.Transform.Linear, 100.0)
+
+-       alternative Tight
++       alternative Tight
+
+=       alternative Tight
+-         code
++         code
+
+-             import calibrations.tightCalibration
++             import calibrations.tightCalibration
+
+=             import calibrations.tightCalibration
+-             val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
++             val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
+
+=             import calibrations.tightCalibration
+=             val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
+-             val fit = growth.chart(Lines()).fit
++             val fit = growth.chart(Lines()).fit
+
+-             (fit.ordinate.transform, fit.ordinate.upper)     // (Scale.Transform.Linear, 97.0)
++             (fit.ordinate.transform, fit.ordinate.upper)     // (Scale.Transform.Linear, 97.0)
+
+-       alternative Logarithmic
++       alternative Logarithmic
+
+=       alternative Logarithmic
+-         code
++         code
+
+-             import calibrations.logarithmicCalibration
++             import calibrations.logarithmicCalibration
+
+=             import calibrations.logarithmicCalibration
+-             val growth = Series(t"growth")((1.0, 3.0), (10.0, 4200.0))
++             val growth = Series(t"growth")((1.0, 3.0), (10.0, 4200.0))
+
+=             import calibrations.logarithmicCalibration
+=             val growth = Series(t"growth")((1.0, 3.0), (10.0, 4200.0))
+-             val fit = growth.chart(Lines()).fit
++             val fit = growth.chart(Lines()).fit
+
+-             (fit.ordinate.transform, fit.ordinate.upper)     // (Scale.Transform.Logarithmic, 10000.0)
++             (fit.ordinate.transform, fit.ordinate.upper)     // (Scale.Transform.Logarithmic, 10000.0)
+
+-       alternative Adaptive
++       alternative Adaptive
+
+=       alternative Adaptive
+-         code
++         code
+
+-             import calibrations.adaptiveCalibration
++             import calibrations.adaptiveCalibration
+
+=             import calibrations.adaptiveCalibration
+-             val growth = Series(t"growth")((1.0, 3.0), (10.0, 4200.0))
++             val growth = Series(t"growth")((1.0, 3.0), (10.0, 4200.0))
+
+=             import calibrations.adaptiveCalibration
+=             val growth = Series(t"growth")((1.0, 3.0), (10.0, 4200.0))
+-             val fit = growth.chart(Lines()).fit
++             val fit = growth.chart(Lines()).fit
+
+-             (fit.abscissa.transform, fit.ordinate.transform)   // (Scale.Transform.Linear, Scale.Transform.Logarithmic)
++             (fit.abscissa.transform, fit.ordinate.transform)   // (Scale.Transform.Linear, Scale.Transform.Logarithmic)
+
+=             (fit.abscissa.transform, fit.ordinate.transform)   // (Scale.Transform.Linear, Scale.Transform.Logarithmic)
+-       ##
++       ##
+
+=             (fit.abscissa.transform, fit.ordinate.transform)   // (Scale.Transform.Linear, Scale.Transform.Logarithmic)
+=       ##
+-       ```
++       ```
+
+=       ```
+-   refer tasseomancy.Calibration
++   refer tasseomancy.Calibration
+
+-   entry .linearCalibration   linear positions, padded outward to whole gradation steps: the same as the default
+-   entry .logarithmicCalibration   logarithmic positions over whole decades; linear where the range reaches zero or below
+-   entry .adaptiveCalibration   logarithmic when the range's ratio is a thousand or more, linear otherwise
+-   entry .exponentialCalibration   exponential positions with the default curvature `3.0`, over a linear scale's range
+-       Not mirrored in the `soundness` umbrella's `calibrations` package, so it is imported as
+-       `import tasseomancy.calibrations.exponentialCalibration`; `Calibration[Double]
+-       (Calibration.Policy.Exponential(2.0))` makes one with another curvature.
+-   entry .tightCalibration   linear positions over exactly the data's extent, with no padding
++   entry .linearCalibration   刻み幅の整数倍まで外側へ広げた線形の位置：既定と同じ
++   entry .logarithmicCalibration   桁全体にわたる対数の位置。範囲が零以下に及ぶ場所では線形
++   entry .adaptiveCalibration   範囲の比が千以上なら対数、そうでなければ線形
++   entry .exponentialCalibration   線形スケールの範囲にわたる、既定の曲率 `3.0` の指数の位置
++       `soundness` アンブレラの `calibrations` パッケージには反映されていないので、`import tasseomancy.calibrations.exponentialCalibration` としてインポートする。`Calibration[Double] (Calibration.Policy.Exponential(2.0))` は別の曲率のものを作る。
++   entry .tightCalibration   データの範囲ちょうどにわたる、広げない線形の位置
+
+- entry .palettes   the standard chart palettes, each a given to import by name
++ entry .palettes   標準のチャートのパレット。それぞれ名前でインポートする given である
+
+= entry .palettes   the standard chart palettes, each a given to import by name
+-   detail
++   detail
+
+-       `import tasseomancy.*` brings none in; the companion default is `ChartPalette.slate`,
+-       which `slateChartPalette` repeats. A lexically-scoped import outranks the default:
++       `import tasseomancy.*` はどれも取り込まない。コンパニオンの既定は `ChartPalette.slate` であり、`slateChartPalette` はそれを繰り返したものである。
++       レキシカルスコープのインポートは既定に優先する：
+
+=       which `slateChartPalette` repeats. A lexically-scoped import outranks the default:
+=
+-       ```scala
++       ```scala
+
+=       which `slateChartPalette` repeats. A lexically-scoped import outranks the default:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import palettes.solarizedLightChartPalette
++       import palettes.solarizedLightChartPalette
+
+=       import palettes.solarizedLightChartPalette
+-       ```
++       ```
+
+=       ```
+-   refer tasseomancy.ChartPalette
++   refer tasseomancy.ChartPalette
+
+-   entry .slateChartPalette   a light palette: white background, dark grey text and axes, eight distinct hues
+-   entry .solarizedDarkChartPalette   the Solarized dark theme: deep blue-black background, eight Solarized accents
+-   entry .solarizedLightChartPalette   the Solarized light theme: cream background, the same eight accents
++   entry .slateChartPalette   明るいパレット：白の背景、濃い灰色のテキストと軸、八つの異なる色相
++   entry .solarizedDarkChartPalette   Solarized のダークテーマ：深い青黒の背景、Solarized の八つのアクセント色
++   entry .solarizedLightChartPalette   Solarized のライトテーマ：クリーム色の背景、同じ八つのアクセント色
+
+- entry .fontMetrics   text metrics to import by name, when the style's font should not decide
++ entry .fontMetrics   スタイルのフォントに決めさせたくないときに、名前でインポートするテキストの測定値
+
+= entry .fontMetrics   text metrics to import by name, when the style's font should not decide
+-   detail
++   detail
+
+-       The companion default, `FontMetric.fromStyle`, measures with the style's font's own
+-       advances where it has an embedded file, and otherwise with the average; these two fix a
+-       metric regardless. `import tasseomancy.*` brings neither in.
++       コンパニオンの既定である `FontMetric.fromStyle` は、スタイルのフォントに埋め込みファイルがあればそれ自身の送り幅で測り、なければ平均で測る。この二つは、それに関わらず測定値を固定する。
++       `import tasseomancy.*` はどちらも取り込まない。
+
+=       metric regardless. `import tasseomancy.*` brings neither in.
+=
+-       ```scala
++       ```scala
+
+=       metric regardless. `import tasseomancy.*` brings neither in.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import fontMetrics.tabularFontMetric
++       import fontMetrics.tabularFontMetric
+
+=       import fontMetrics.tabularFontMetric
+-       ```
++       ```
+
+=       ```
+-   refer tasseomancy.FontMetric
++   refer tasseomancy.FontMetric
+
+-   entry .averageFontMetric   six tenths of an em per character: the width of an average proportional face
+-   entry .tabularFontMetric   half an em per character: a monospace face
++   entry .averageFontMetric   一文字あたり十分の六 em：平均的なプロポーショナルフェイスの幅
++   entry .tabularFontMetric   一文字あたり半 em：等幅のフェイス

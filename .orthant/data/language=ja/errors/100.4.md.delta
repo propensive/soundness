@@ -1,0 +1,70 @@
+orthant 1 language
+
+- # `↯/s.100.4` — `EmailAddress.Error`
++ # `↯/s.100.4` — `EmailAddress.Error`
+
+- Raised when a value cannot be parsed as a valid email address.
++ 値を正当な電子メールアドレスとしてパースできないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- Urticose validates email addresses against the syntax rules in
+- RFC 5321 / 5322 (with practical relaxations). The message is `the
+- email address is not valid because $reason`.
++ Urticose は電子メールアドレスを、RFC 5321 / 5322 の構文規則（実用的な緩和を加えたもの）と照合して検証する。
++ メッセージは `the email address is not valid because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Meaning
+- column  Message
+- column  Resolution
+- row  `↯/s.100.4.1`  `Empty`  The value is empty.  `[↯/s.100.4.1] the email address is not valid because it is empty`  Provide a non-empty address.
+- row  `↯/s.100.4.2`  `InvalidDomain`  The domain part is neither a valid hostname nor a valid IP literal.  `[↯/s.100.4.2] the email address is not valid because the domain is not a valid hostname: the character _ is not allowed in a hostname`  Correct the domain syntax; consult the inner `HostnameError`/`IpAddress.Error` variant for specifics.
+- row  `↯/s.100.4.3`  `LongLocalPart`  The local part exceeds 64 characters.  `[↯/s.100.4.3] the email address is not valid because the local part is more than 64 characters long`  Shorten the local part to at most 64 characters.
+- row  `↯/s.100.4.4`  `TerminalPeriod`  The local part ends in a period.  `[↯/s.100.4.4] the email address is not valid because the local part ends in a period, which is not allowed`  Remove the trailing period.
+- row  `↯/s.100.4.5`  `SuccessivePeriods`  The local part contains two adjacent periods.  `[↯/s.100.4.5] the email address is not valid because the local part contains two adjacent periods`  Remove one of the periods, or quote the local part if successive periods are required.
+- row  `↯/s.100.4.6`  `InitialPeriod`  The local part starts with a period.  `[↯/s.100.4.6] the email address is not valid because the local part starts with a period, which is not allowed`  Remove the leading period.
+- row  `↯/s.100.4.7`  `UnescapedQuote`  A double-quote in the local part was not escaped.  `[↯/s.100.4.7] the email address is not valid because the local part contains a quote character which is not escaped`  Either escape the quote with a backslash or use a properly quoted local part.
+- row  `↯/s.100.4.8`  `UnclosedQuote`  The quoted local part has no closing quote.  `[↯/s.100.4.8] the email address is not valid because the quoted local part has no closing quote`  Add the missing `"`.
+- row  `↯/s.100.4.9`  `MissingDomain`  The address has no domain part.  `[↯/s.100.4.9] the email address is not valid because the domain is missing`  Append `@` followed by the domain.
+- row  `↯/s.100.4.10`  `MissingAtSymbol`  The address contains no `@`.  `[↯/s.100.4.10] the email address is not valid because the at-symbol is missing`  Insert `@` between the local part and the domain.
+- row  `↯/s.100.4.11`  `UnclosedIpAddress`  The domain begins with `[` but does not end with `]`.  `[↯/s.100.4.11] the email address is not valid because the domain begins with [ but does not end with ]`  Close the IP-literal with `]`.
+- row  `↯/s.100.4.12`  `InvalidChar`  The local part contains a character that is not allowed.  `[↯/s.100.4.12] the email address is not valid because the local part contains the character > which is not allowed`  Remove the offending character or quote the local part to permit it.
++ column  コード
++ column  理由
++ column  意味
++ column  メッセージ
++ column  解決方法
++ row  `↯/s.100.4.1`  `Empty`  値が空である。  `[↯/s.100.4.1] the email address is not valid because it is empty`  空でないアドレスを与える。
++ row  `↯/s.100.4.2`  `InvalidDomain`  ドメイン部が、正当なホスト名でも正当な IP リテラルでもない。  `[↯/s.100.4.2] the email address is not valid because the domain is not a valid hostname: the character _ is not allowed in a hostname`  ドメインの構文を修正する。詳細は内側の `HostnameError`/`IpAddress.Error` のバリアントを参照する。
++ row  `↯/s.100.4.3`  `LongLocalPart`  ローカル部が 64 文字を超えている。  `[↯/s.100.4.3] the email address is not valid because the local part is more than 64 characters long`  ローカル部を 64 文字以内に短くする。
++ row  `↯/s.100.4.4`  `TerminalPeriod`  ローカル部がピリオドで終わっている。  `[↯/s.100.4.4] the email address is not valid because the local part ends in a period, which is not allowed`  末尾のピリオドを取り除く。
++ row  `↯/s.100.4.5`  `SuccessivePeriods`  ローカル部に隣接する二つのピリオドがある。  `[↯/s.100.4.5] the email address is not valid because the local part contains two adjacent periods`  ピリオドの一つを取り除くか、連続するピリオドが必要ならローカル部を引用符で囲む。
++ row  `↯/s.100.4.6`  `InitialPeriod`  ローカル部がピリオドで始まっている。  `[↯/s.100.4.6] the email address is not valid because the local part starts with a period, which is not allowed`  先頭のピリオドを取り除く。
++ row  `↯/s.100.4.7`  `UnescapedQuote`  ローカル部の二重引用符がエスケープされていない。  `[↯/s.100.4.7] the email address is not valid because the local part contains a quote character which is not escaped`  引用符をバックスラッシュでエスケープするか、正しく引用符で囲んだローカル部を使う。
++ row  `↯/s.100.4.8`  `UnclosedQuote`  引用符で囲んだローカル部に閉じる引用符がない。  `[↯/s.100.4.8] the email address is not valid because the quoted local part has no closing quote`  足りない `"` を加える。
++ row  `↯/s.100.4.9`  `MissingDomain`  アドレスにドメイン部がない。  `[↯/s.100.4.9] the email address is not valid because the domain is missing`  `@` とそれに続くドメインを末尾に加える。
++ row  `↯/s.100.4.10`  `MissingAtSymbol`  アドレスに `@` がない。  `[↯/s.100.4.10] the email address is not valid because the at-symbol is missing`  ローカル部とドメインの間に `@` を挿入する。
++ row  `↯/s.100.4.11`  `UnclosedIpAddress`  ドメインが `[` で始まっているが `]` で終わっていない。  `[↯/s.100.4.11] the email address is not valid because the domain begins with [ but does not end with ]`  IP リテラルを `]` で閉じる。
++ row  `↯/s.100.4.12`  `InvalidChar`  ローカル部に許されない文字がある。  `[↯/s.100.4.12] the email address is not valid because the local part contains the character > which is not allowed`  問題の文字を取り除くか、それを許すためにローカル部を引用符で囲む。
+
+- ```
++ ```
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/urticose/src/core/urticose.EmailAddress.scala`
+- - `↯/s.100.10` — hostname validation
+- - `↯/s.100.2` — IP-address validation
++ - ソース：`lib/urticose/src/core/urticose.EmailAddress.scala`
++ - `↯/s.100.10` — ホスト名の検証
++ - `↯/s.100.2` — IP アドレスの検証

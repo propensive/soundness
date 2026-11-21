@@ -1,0 +1,86 @@
+orthant 1 language
+
+- # `↯/s.112.5` — `Sse.Error`
++ # `↯/s.112.5` — `Sse.Error`
+
+- Raised when Obligatory cannot parse a server-sent event.
++ Obligatory がサーバー送信イベントをパースできないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- SSE messages are framed as `field: value` lines, with `field`
+- restricted to `event`, `data`, `id`, or `retry`. The `SseSource`
+- class also enforces a replay-buffer capacity. When any of these
+- expectations is violated, this error is raised. The constructor
+- takes a `reason: Reason`; the rendered message is `the
+- server-sent event was not valid because $reason`.
++ SSE のメッセージは `field: value` の行としてフレーム化され、`field` は `event`、`data`、`id`、`retry` のいずれかに限られる。
++ `SseSource` クラスは再生バッファの容量も強制する。
++ これらの期待のいずれかが破られると、このエラーが発生する。
++ コンストラクターは `reason: Reason` を受け取り、描画されるメッセージは `the server-sent event was not valid because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- ### `↯/s.112.5.1` — `MalformedField`
++ ### `↯/s.112.5.1` — `MalformedField`
+
+- A line in the SSE stream did not contain the required `:`
+- separator between field name and value.
++ SSE ストリームの行に、フィールド名と値の間に必要な `:` の区切りがなかった。
+
+- **Example.** `[↯/s.112.5.1] the server-sent event was not valid because a line did not contain the expected field: value separator`
++ **例。** `[↯/s.112.5.1] the server-sent event was not valid because a line did not contain the expected field: value separator`
+
+- **Resolution.** Verify the producer is emitting valid SSE frames;
+- each non-empty line must contain a colon.
++ **解決方法。** 生産者が正当な SSE のフレームを出力していることを検証する。空でない各行はコロンを含まなければならない。
+
+- ### `↯/s.112.5.2` — `UnknownField`
++ ### `↯/s.112.5.2` — `UnknownField`
+
+- A field name other than `event`, `data`, `id`, or `retry` was
+- encountered.
++ `event`、`data`、`id`、`retry` 以外のフィールド名に出会った。
+
+- **Example.** `[↯/s.112.5.2] the server-sent event was not valid because the field name was not one of event, data, id, or retry`
++ **例。** `[↯/s.112.5.2] the server-sent event was not valid because the field name was not one of event, data, id, or retry`
+
+- **Resolution.** Strip non-standard fields before parsing; or extend
+- the parser to accept the field.
++ **解決方法。** パースの前に標準でないフィールドを取り除くか、そのフィールドを受け付けるようにパーサーを拡張する。
+
+- ### `↯/s.112.5.3` — `BadRetryValue`
++ ### `↯/s.112.5.3` — `BadRetryValue`
+
+- The `retry` field's value was not a parseable integer.
++ `retry` フィールドの値が、パースできる整数ではなかった。
+
+- **Example.** `[↯/s.112.5.3] the server-sent event was not valid because the retry field value could not be parsed as an integer`
++ **例。** `[↯/s.112.5.3] the server-sent event was not valid because the retry field value could not be parsed as an integer`
+
+- **Resolution.** The `retry` value must be a plain decimal integer
+- (milliseconds).
++ **解決方法。** `retry` の値は素の十進整数（ミリ秒）でなければならない。
+
+- ### `↯/s.112.5.4` — `CapacityExceeded`
++ ### `↯/s.112.5.4` — `CapacityExceeded`
+
+- The replay range requested from `SseSource.stream(start)` was
+- larger than the source's circular buffer capacity, so older events
+- have been overwritten.
++ `SseSource.stream(start)` に要求された再生の範囲がソースの循環バッファの容量より大きかったので、古いイベントは上書きされている。
+
+- **Example.** `[↯/s.112.5.4] the server-sent event was not valid because the requested replay range exceeded the source buffer capacity`
++ **例。** `[↯/s.112.5.4] the server-sent event was not valid because the requested replay range exceeded the source buffer capacity`
+
+- **Resolution.** Increase the source's `capacity`, or request a more
+- recent `start` index.
++ **解決方法。** ソースの `capacity` を増やすか、より最近の `start` のインデックスを要求する。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/obligatory/src/json/obligatory.Sse.scala`
++ - ソース：`lib/obligatory/src/json/obligatory.Sse.scala`

@@ -1,0 +1,768 @@
+orthant 1 language
+
+- ## Web Pages
++ ## Web ページ
+
+- ### About
++ ### 概要
+
+- A web page is assembled from reusable parts: a masthead, a hero banner, a breadcrumb trail, a
+- side panel, a footer. Each contributes its own markup, its own CSS rules and its own `<head>`
+- metadata. A page is a class which mixes in the parts it wants and supplies its central content.
+- Everything else, from the `<title>` to the stylesheet, is composed from what the parts
+- contribute. The result is a complete document, typed as [HTML](html.md), which renders to text,
+- streams, or serves directly as an HTTP response.
++ Web ページは再利用可能な部品から組み立てられる。
++ マストヘッド、ヒーローバナー、パンくずリスト、サイドパネル、フッターなどである。
++ それぞれが独自のマークアップ、独自の CSS ルール、独自の `<head>` のメタデータを提供する。
++ ページは、必要な部品をミックスインし、中心となる内容を提供するクラスである。
++ `<title>` からスタイルシートまで、それ以外のものはすべて部品が提供するものから組み立てられる。
++ 結果は [HTML](html.md) として型付けされた完全なドキュメントであり、テキストへの描画、ストリーミング、あるいは HTTP レスポンスとしての直接の提供ができる。
+
+- ### On composing pages
++ ### ページの組み立てについて
+
+- Templating systems treat a page as a text file with holes in it, and reuse comes from including
+- one file in another. The structure of the page, which is what wraps what, lives in the files,
+- where it is invisible to the compiler and fragile under change. Adding a sidebar means editing
+- every template which should have one, and the CSS it needs is kept somewhere else again.
++ テンプレートシステムはページを穴の開いたテキストファイルとして扱い、再利用はあるファイルを別のファイルに取り込むことで実現する。
++ ページの構造、すなわち何が何を包むかはファイルの中にあり、そこではコンパイラから見えず、変更に対して脆い。
++ サイドバーを追加するには、それを持つべきすべてのテンプレートを編集しなければならず、それが必要とする CSS はさらに別の場所に置かれている。
+
+- A page here is a composition of *archetypes*: traits which each add one feature to a page. An
+- archetype may frame the content in a layout, put a region before or after it, add rules to the
+- stylesheet, or add elements to the head of the document. It does so by wrapping what the
+- archetypes before it produced. Mixing archetypes together nests them, so the order in which they
+- are listed is the order in which they frame each other, and independent features, such as a
+- left panel and a right panel, never collide.
++ ここでのページは*アーキタイプ*の組み合わせである。
++ アーキタイプとは、それぞれがページに一つの機能を加えるトレイトである。
++ アーキタイプは、内容をレイアウトで枠付けすることも、その前後に領域を置くことも、スタイルシートにルールを加えることも、ドキュメントの head に要素を加えることもできる。
++ それは、自分より前のアーキタイプが生成したものを包むことによって行われる。
++ アーキタイプを混ぜ合わせるとそれらが入れ子になるので、列挙した順序がそれらが互いを枠付けする順序になり、左パネルと右パネルのような独立した機能が衝突することはない。
+
+- Because the page is a class, the compiler sees its structure. A page which omits its content
+- does not compile, and two archetypes which conflict, by each defining the same slot, are
+- reported where they are combined.
++ ページはクラスなので、コンパイラにはその構造が見える。
++ 内容を省略したページはコンパイルできず、それぞれが同じスロットを定義することで衝突する二つのアーキタイプは、組み合わせた場所で報告される。
+
+- Everything comes from the `soundness` package, with the choices which the samples need in
+- scope, and the last import lets the samples print their results:
++ すべては `soundness` パッケージから得られ、サンプルに必要な選択がスコープ内にあり、最後のインポートはサンプルが結果を出力できるようにする：
+
+= scope, and the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import htmlDoms.whatwg
++ import htmlDoms.whatwg
+
+- import htmlDoms.whatwg.*
++ import htmlDoms.whatwg.*
+
+- import attributives.textAttributive
++ import attributives.textAttributive
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import formatting.indentedCssFormatting
++ import formatting.indentedCssFormatting
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import webserverErrorPages.minimalErrorPage
++ import webserverErrorPages.minimalErrorPage
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Defining a page
++ ### ページの定義
+
+- Every page extends `Archetype`, and its one obligation is `content`, the central matter of the
+- page. Each feature mixed in beside it introduces a *slot*, such as `masthead`, `colophon`,
+- `hero` or `verso`, which is empty by default and filled by overriding it:
++ すべてのページは `Archetype` を継承し、その唯一の義務は、ページの中心となる内容である `content` である。
++ その傍らにミックスインされる各機能は、`masthead`、`colophon`、`hero`、`verso` のような*スロット*を導入する。
++ スロットはデフォルトでは空であり、オーバーライドすることで埋める：
+
+= `hero` or `verso`, which is empty by default and filled by overriding it:
+=
+- ```scala
++ ```scala
+
+- class Welcome extends Archetype, Mainstay, Masthead, Colophon, Headline(t"Welcome"):
++ class Welcome extends Archetype, Mainstay, Masthead, Colophon, Headline(t"Welcome"):
+
+-   def content: Html of (? <: Flow) = P("Hello, world!")
++   def content: Html of (? <: Flow) = P("Hello, world!")
+
+=   def content: Html of (? <: Flow) = P("Hello, world!")
+-   override def masthead: Html of (? <: Flow) = Strong("Example Site")
++   override def masthead: Html of (? <: Flow) = Strong("Example Site")
+
+-   override def colophon: Html of (? <: Flow) = P("Copyright 2026")
++   override def colophon: Html of (? <: Flow) = P("Copyright 2026")
+
+=   override def colophon: Html of (? <: Flow) = P("Copyright 2026")
+- ```
++ ```
+
+=   override def colophon: Html of (? <: Flow) = P("Copyright 2026")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   override def colophon: Html of (? <: Flow) = P("Copyright 2026")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   override def colophon: Html of (? <: Flow) = P("Copyright 2026")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Welcome().html.show)
++ Out.println(Welcome().html.show)
+
+= Out.println(Welcome().html.show)
+- ```
++ ```
+
+- A page which omits its content does not compile:
++ 内容を省略したページはコンパイルできない：
+
+= A page which omits its content does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- class Empty extends Archetype, Masthead
++ class Empty extends Archetype, Masthead
+
+= class Empty extends Archetype, Masthead
+- ```
++ ```
+
+- These are the features, and the slots they introduce:
++ 機能と、それが導入するスロットは次のとおりである：
+
+= These are the features, and the slots they introduce:
+=
+- ```tabular
++ ```tabular
+
+- column  Feature
+- column  Adds
+- column  Slot
++ column  機能
++ column  追加するもの
++ column  スロット
+
+= column  Slot
+- row
++ row
+
+-   cell  `Headline(title)`
++   cell  `Headline(title)`
+
+-   cell  the document title, and an `<h1>` above the content
++   cell  ドキュメントのタイトルと、内容の上の `<h1>`
+
+=   cell  the document title, and an `<h1>` above the content
+-   cell
++   cell
+
+- row  `Masthead`  a `<header>` before the content  `masthead`
+- row  `Colophon`  a `<footer>` after the content  `colophon`
++ row  `Masthead`  内容の前の `<header>`  `masthead`
++ row  `Colophon`  内容の後の `<footer>`  `colophon`
+
+= row  `Colophon`  a `<footer>` after the content  `colophon`
+- row
++ row
+
+-   cell  `Mainstay`
++   cell  `Mainstay`
+
+-   cell  a `<main>` landmark around the content
++   cell  内容を囲む `<main>` ランドマーク
+
+=   cell  a `<main>` landmark around the content
+-   cell
++   cell
+
+=   cell
+- row
++ row
+
+-   cell  `Breadcrumbs(path*)`
++   cell  `Breadcrumbs(path*)`
+
+-   cell  a breadcrumb trail, as a `<nav>`
++   cell  `<nav>` としてのパンくずリスト
+
+=   cell  a breadcrumb trail, as a `<nav>`
+-   cell
++   cell
+
+- row  `TopMenu`  a `<nav>` bar of links, also available as `menu`  `menuItems`
+- row  `Hero(headline)`  a banner headed by its parameter  `hero`
+- row  `VersoPanel`  a side panel on the inline-start edge  `verso`
+- row  `RectoPanel`  a side panel on the inline-end edge  `recto`
+- row  `FoldableRectoPanel`  a recto panel that folds away  `recto`
++ row  `TopMenu`  リンクの `<nav>` バー。`menu` としても利用できる  `menuItems`
++ row  `Hero(headline)`  パラメーターを見出しとするバナー  `hero`
++ row  `VersoPanel`  インライン方向の始端側のサイドパネル  `verso`
++ row  `RectoPanel`  インライン方向の終端側のサイドパネル  `recto`
++ row  `FoldableRectoPanel`  折りたためる recto パネル  `recto`
+
+= row  `FoldableRectoPanel`  a recto panel that folds away  `recto`
+- row
++ row
+
+-   cell  `Logo`
++   cell  `Logo`
+
+-   cell  a `logo` mark, worded by `logoText`, for other features to place
++   cell  `logoText` で文言を与え、他の機能が配置する `logo` マーク
+
+=   cell  a `logo` mark, worded by `logoText`, for other features to place
+-   cell
++   cell
+
+=   cell
+- ```
++ ```
+
+- `html` is the whole document: a `<head>` which carries the title, the stylesheet and any
+- metadata, and a `<body>` which holds the framed content. The types of the slots are the same
+- types which govern every other HTML value, so a slot given something which does not belong
+- there is a compile error.
++ `html` はドキュメント全体である。
++ タイトル、スタイルシート、その他のメタデータを持つ `<head>` と、枠付けされた内容を保持する `<body>` からなる。
++ スロットの型は他のすべての HTML の値を支配するのと同じ型なので、そこに属さないものをスロットに与えるとコンパイルエラーになる。
+
+- The writing direction is `direction`, which is `HDir.Ltr` unless overridden. Flipping it to
+- `HDir.Rtl` sets `dir` on the body, and nothing else. The layouts use only logical properties,
+- so the browser mirrors them, and the stylesheet is identical either way.
++ 書字方向は `direction` であり、オーバーライドしない限り `HDir.Ltr` である。
++ これを `HDir.Rtl` に切り替えると、body に `dir` が設定され、それ以外は何も変わらない。
++ レイアウトは論理プロパティだけを使うので、ブラウザがそれらを反転させ、スタイルシートはどちらの場合も同一である。
+
+- ### Framing order
++ ### 枠付けの順序
+
+- Each archetype wraps the frame built by the archetypes listed before it. Listing `Mainstay`
+- before `Masthead` puts the content inside `<main>`, and then the masthead outside it. Listing
+- them the other way round would put the masthead inside the landmark. The order of the mixins is
+- the order of nesting, read from the inside out:
++ 各アーキタイプは、それより前に列挙されたアーキタイプが組み立てた枠を包む。
++ `Mainstay` を `Masthead` より前に列挙すると、内容が `<main>` の中に置かれ、次にマストヘッドがその外に置かれる。
++ 逆の順序で列挙すると、マストヘッドがランドマークの中に置かれることになる。
++ ミックスインの順序は入れ子の順序であり、内側から外側へ読む：
+
+= the order of nesting, read from the inside out:
+=
+- ```scala
++ ```scala
+
+- class Guide extends Archetype, Breadcrumbs(t"home", t"docs"), Mainstay, Masthead:
++ class Guide extends Archetype, Breadcrumbs(t"home", t"docs"), Mainstay, Masthead:
+
+-   def content: Html of (? <: Flow) = P("The guide")
++   def content: Html of (? <: Flow) = P("The guide")
+
+=   def content: Html of (? <: Flow) = P("The guide")
+-   override def masthead: Html of (? <: Flow) = Strong("Example Site")
++   override def masthead: Html of (? <: Flow) = Strong("Example Site")
+
+=   override def masthead: Html of (? <: Flow) = Strong("Example Site")
+-   override def stylesheetUrl: Optional[Text] = t"/site.css"
++   override def stylesheetUrl: Optional[Text] = t"/site.css"
+
+=   override def masthead: Html of (? <: Flow) = Strong("Example Site")
+=   override def stylesheetUrl: Optional[Text] = t"/site.css"
+- ```
++ ```
+
+- The page links its stylesheet instead of embedding it, as [described below](#stylesheets), so
+- the output is short enough to read:
++ このページは、[後述](#stylesheets)するようにスタイルシートを埋め込む代わりにリンクするので、出力は読める程度に短い：
+
+= the output is short enough to read:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the output is short enough to read:
+=
+= ```scala fuel
+- run
++ run
+
+= the output is short enough to read:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Guide().html.show)
++ Out.println(Guide().html.show)
+
+= Out.println(Guide().html.show)
+- ```
++ ```
+
+- Features which do not nest, but sit beside each other, such as the side panels, are independent
+- of their order. `VersoPanel` places a panel on the inline-start edge, and `RectoPanel` on the
+- inline-end edge, and a page may mix in both in either order. Each exposes its own hooks for
+- configuration, such as a width or a gap, so a page adjusts a feature without touching its markup
+- or its CSS:
++ サイドパネルのように、入れ子にならず互いに並んで置かれる機能は、順序に依存しない。
++ `VersoPanel` はインライン方向の始端側に、`RectoPanel` は終端側にパネルを置き、ページは両方をどちらの順序でもミックスインできる。
++ それぞれは幅や間隔のような設定のための独自のフックを公開しているので、ページはマークアップや CSS に触れることなく機能を調整できる：
+
+= or its CSS:
+=
+- ```scala
++ ```scala
+
+- class Manual extends Archetype, VersoPanel, TopMenu, Headline(t"Manual"):
++ class Manual extends Archetype, VersoPanel, TopMenu, Headline(t"Manual"):
+
+-   def content: Html of (? <: Flow) = P("Chapter one")
++   def content: Html of (? <: Flow) = P("Chapter one")
+
+-   override def menuItems: List[Html of (? <: Phrasing)] = List(Strong("Home"), Strong("About"))
++   override def menuItems: List[Html of (? <: Phrasing)] = List(Strong("Home"), Strong("About"))
+
+-   override def verso: Html of (? <: Flow) = menu
++   override def verso: Html of (? <: Flow) = menu
+
+-   override def versoWidth = 20.0*Rem
++   override def versoWidth = 20.0*Rem
+
+=   override def versoWidth = 20.0*Rem
+- ```
++ ```
+
+- `TopMenu` renders its items as a `<nav>`, and makes the result available as `menu`, which the
+- page here places in the side panel instead. A helper contributed by one feature can fill the
+- slot of another.
++ `TopMenu` は項目を `<nav>` として描画し、その結果を `menu` として利用できるようにする。
++ ここではページがそれを代わりにサイドパネルに置いている。
++ ある機能が提供する補助を、別の機能のスロットを埋めるのに使うことができる。
+
+- ### Metadata
++ ### メタデータ
+
+- A feature which contributes to the `<head>` takes its value as a trait parameter, and adds
+- nothing to the body. `StandardMetadata` supplies what nearly every page wants, and the others
+- each add one more element:
++ `<head>` に寄与する機能は、その値をトレイトのパラメーターとして受け取り、body には何も加えない。
++ `StandardMetadata` はほぼすべてのページが必要とするものを提供し、その他の機能はそれぞれ要素を一つずつ加える：
+
+= each add one more element:
+=
+- ```tabular
++ ```tabular
+
+- column  Feature
+- column  Adds to the head
+- row  `StandardMetadata(description)`  a description and a responsive viewport
++ column  機能
++ column  head に追加するもの
++ row  `StandardMetadata(description)`  説明とレスポンシブなビューポート
+
+- row  `Description(text)`  `<meta name="description">`
++ row  `Description(text)`  `<meta name="description">`
+
+- row  `Viewport`  `<meta name="viewport">`, from `viewport`
++ row  `Viewport`  `viewport` から得た `<meta name="viewport">`
+
+- row  `Author(name)`  `<meta name="author">`
++ row  `Author(name)`  `<meta name="author">`
+
+- row  `Keywords(keywords*)`  `<meta name="keywords">`, the keywords separated by commas
++ row  `Keywords(keywords*)`  `<meta name="keywords">`。キーワードはカンマで区切られる
+
+- row  `Favicon(href)`  `<link rel="icon">`
++ row  `Favicon(href)`  `<link rel="icon">`
+
+- row  `Canonical(href)`  `<link rel="canonical">`
++ row  `Canonical(href)`  `<link rel="canonical">`
+
+- row  `ThemeColor(color)`  `<meta name="theme-color">`
++ row  `ThemeColor(color)`  `<meta name="theme-color">`
+
+= row  `ThemeColor(color)`  `<meta name="theme-color">`
+- ```
++ ```
+
+- `Hero` prepends a banner headed by its parameter, with any further material in the `hero` slot,
+- and the title of the document is `pageTitle`:
++ `Hero` は、パラメーターを見出しとするバナーを先頭に加え、追加の内容は `hero` スロットに入る。
++ ドキュメントのタイトルは `pageTitle` である：
+
+= and the title of the document is `pageTitle`:
+=
+- ```scala
++ ```scala
+
+- class Landing extends Archetype, Hero(t"Build pages from parts"),
++ class Landing extends Archetype, Hero(t"Build pages from parts"),
+
+-     StandardMetadata(t"Pages composed from archetypes"), Author(t"Shakespeare"),
++     StandardMetadata(t"Pages composed from archetypes"), Author(t"Shakespeare"),
+
+-     Keywords(t"scala", t"html"), Favicon(t"/icon.png"),
++     Keywords(t"scala", t"html"), Favicon(t"/icon.png"),
+
+-     Canonical(t"https://example.com/"), ThemeColor(t"#336699"):
++     Canonical(t"https://example.com/"), ThemeColor(t"#336699"):
+
+-   override def pageTitle: Text = t"Example"
++   override def pageTitle: Text = t"Example"
+
+=   override def pageTitle: Text = t"Example"
+-   override def stylesheetUrl: Optional[Text] = t"/site.css"
++   override def stylesheetUrl: Optional[Text] = t"/site.css"
+
+-   def content: Html of (? <: Flow) = P("Welcome aboard")
++   def content: Html of (? <: Flow) = P("Welcome aboard")
+
+-   override def hero: Html of (? <: Flow) = P("Compose, don't template")
++   override def hero: Html of (? <: Flow) = P("Compose, don't template")
+
+- Landing().html
++ Landing().html
+
+= Landing().html
+- ```
++ ```
+
+= Landing().html
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= Landing().html
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= Landing().html
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Landing().html.show)
++ Out.println(Landing().html.show)
+
+= Out.println(Landing().html.show)
+- ```
++ ```
+
+- A favicon or a canonical address is a path, so these take `Text` directly, and not a parsed URL.
++ ファビコンや正規のアドレスはパスなので、これらはパースされた URL ではなく `Text` を直接受け取る。
+
+- ### Stylesheets
++ ### スタイルシート
+
+- Every feature carries its own [CSS](css.md) rules, and the page accumulates them into one
+- stylesheet, available as `css`. By default it is embedded in a `<style>` element in the head, so
+- a page is self-contained:
++ 各機能は独自の [CSS](css.md) ルールを持ち、ページはそれらを一つのスタイルシートに集約して、`css` として利用できるようにする。
++ デフォルトでは、それは head の `<style>` 要素に埋め込まれるので、ページは自己完結している：
+
+= a page is self-contained:
+=
+- ```scala fuel
++ ```scala fuel
+
+= a page is self-contained:
+=
+= ```scala fuel
+- run
++ run
+
+= a page is self-contained:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Welcome().css.show)
++ Out.println(Welcome().css.show)
+
+= Out.println(Welcome().css.show)
+- ```
++ ```
+
+- The rules of a feature are a hook like any other, such as `mastheadStyles`, `menuStyles` or
+- `heroStyles`, so a page restyles one feature by overriding its rules, and leaves the others
+- untouched. The rules are checked as the code compiles, like any `css"…"` literal:
++ 機能のルールは、`mastheadStyles`、`menuStyles`、`heroStyles` のように他と同じフックなので、ページはある機能のルールをオーバーライドすることでその機能のスタイルを変え、他には手を付けずにおける。
++ ルールは、他の `css"…"` リテラルと同様に、コードのコンパイル時に検査される：
+
+= untouched. The rules are checked as the code compiles, like any `css"…"` literal:
+=
+- ```scala
++ ```scala
+
+- class Branded extends Welcome:
++ class Branded extends Welcome:
+
+-   override def mastheadStyles: Css =
++   override def mastheadStyles: Css =
+
+-     super.mastheadStyles + css".graffiti-masthead { padding-block: 1rem }"
++     super.mastheadStyles + css".graffiti-masthead { padding-block: 1rem }"
+
+=     super.mastheadStyles + css".graffiti-masthead { padding-block: 1rem }"
+- ```
++ ```
+
+- A site with many pages serves one stylesheet, instead of embedding a copy in each. Setting
+- `stylesheetUrl` makes the head refer to it with `<link rel="stylesheet">` in place of the inline
+- `<style>`, and the application serves `css` at that address:
++ 多くのページを持つサイトは、各ページにコピーを埋め込む代わりに、一つのスタイルシートを提供する。
++ `stylesheetUrl` を設定すると、head はインラインの `<style>` の代わりに `<link rel="stylesheet">` でそれを参照し、アプリケーションはそのアドレスで `css` を提供する：
+
+= `<style>`, and the application serves `css` at that address:
+=
+- ```scala
++ ```scala
+
+- class Linked extends Welcome:
++ class Linked extends Welcome:
+
+= class Linked extends Welcome:
+-   override def stylesheetUrl: Optional[Text] = t"/site.css"
++   override def stylesheetUrl: Optional[Text] = t"/site.css"
+
+= class Linked extends Welcome:
+=   override def stylesheetUrl: Optional[Text] = t"/site.css"
+- ```
++ ```
+
+= class Linked extends Welcome:
+=   override def stylesheetUrl: Optional[Text] = t"/site.css"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= class Linked extends Welcome:
+=   override def stylesheetUrl: Optional[Text] = t"/site.css"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= class Linked extends Welcome:
+=   override def stylesheetUrl: Optional[Text] = t"/site.css"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Linked().html.show)
++ Out.println(Linked().html.show)
+
+= Out.println(Linked().html.show)
+- ```
++ ```
+
+- ### Dashboards
++ ### ダッシュボード
+
+- Archetypes compose into larger archetypes. `Dashboard` is built from `Mainstay` and `Masthead`.
+- It titles the document after a `brand`, shows the brand in the masthead, and lays out `cards` in
+- a responsive grid as the content. A concrete dashboard supplies only those two details:
++ アーキタイプは組み合わさって、より大きなアーキタイプになる。
++ `Dashboard` は `Mainstay` と `Masthead` から組み立てられている。
++ これはドキュメントに `brand` にちなんだタイトルを付け、マストヘッドにブランド名を表示し、内容として `cards` をレスポンシブなグリッドに並べる。
++ 具体的なダッシュボードは、その二つの詳細だけを提供すればよい：
+
+= a responsive grid as the content. A concrete dashboard supplies only those two details:
+=
+- ```scala
++ ```scala
+
+- class Admin extends Dashboard:
++ class Admin extends Dashboard:
+
+-   def brand: Text = t"Admin"
++   def brand: Text = t"Admin"
+
+-   def cards: List[Dashboard.Card] =
++   def cards: List[Dashboard.Card] =
+
+-     List(Dashboard.Card(t"Users", P("128 active")), Dashboard.Card(t"Revenue", P("4200")))
++     List(Dashboard.Card(t"Users", P("128 active")), Dashboard.Card(t"Revenue", P("4200")))
+
+=
+-   override def stylesheetUrl: Optional[Text] = t"/site.css"
++   override def stylesheetUrl: Optional[Text] = t"/site.css"
+
+=
+=   override def stylesheetUrl: Optional[Text] = t"/site.css"
+- ```
++ ```
+
+=
+=   override def stylesheetUrl: Optional[Text] = t"/site.css"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=
+=   override def stylesheetUrl: Optional[Text] = t"/site.css"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=
+=   override def stylesheetUrl: Optional[Text] = t"/site.css"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Admin().html.show)
++ Out.println(Admin().html.show)
+
+= Out.println(Admin().html.show)
+- ```
++ ```
+
+- Each `Dashboard.Card` is a heading and its own flow content, rendered through `card`, which a
+- dashboard overrides to restructure a tile, while `dashboardStyles` restyles the grid.
++ 各 `Dashboard.Card` は見出しとそれ自身のフローコンテンツであり、`card` を通じて描画される。
++ ダッシュボードは `card` をオーバーライドしてタイルの構造を変え、`dashboardStyles` でグリッドのスタイルを変える。
+
+- ### Serving a page
++ ### ページの提供
+
+- A page declares its media type, `text/html`, and streams its rendered document, so it is a
+- response body in its own right. A [server](http-server.md) handler returns it directly, and the
+- `Content-Type` header follows from the value. A `Css` value serves the same way, as `text/css`,
+- which is all a linked stylesheet needs:
++ ページは自身のメディアタイプである `text/html` を宣言し、描画したドキュメントをストリーミングするので、それ自体がレスポンスの本文である。
++ [サーバー](http-server.md)のハンドラはそれを直接返し、`Content-Type` ヘッダーは値から決まる。
++ `Css` の値も同じように `text/css` として提供され、リンクされたスタイルシートに必要なのはそれだけである：
+
+= which is all a linked stylesheet needs:
+=
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+= typecheck
+- ##
++ ##
+
+- def site(): Unit = supervise:
++ def site(): Unit = supervise:
+
+-   SocketServer(8080).handle:
++   SocketServer(8080).handle:
+
+-     request.target match
++     request.target match
+
+-       case t"/"         => Http.Response(Http.Ok)(Linked())
++       case t"/"         => Http.Response(Http.Ok)(Linked())
+
+-       case t"/site.css" => Http.Response(Http.Ok)(Linked().css)
++       case t"/site.css" => Http.Response(Http.Ok)(Linked().css)
+
+-       case _            => Http.Response(Http.NotFound)(t"No such page")
++       case _            => Http.Response(Http.NotFound)(t"No such page")
+
+=       case _            => Http.Response(Http.NotFound)(t"No such page")
+- ```
++ ```
+
+- The page is rendered when the response is streamed, within the `supervise` scope the server
+- runs under, and nothing is buffered. The document flows to the client as it is produced.
++ ページはレスポンスがストリーミングされるときに、サーバーが実行される `supervise` スコープの中で描画され、何もバッファリングされない。
++ ドキュメントは生成されるそばからクライアントへ流れる。
+
+- ### Related
++ ### 関連
+
+- - [HTML](html.md) describes the typed elements which fill each slot.
+- - [CSS](css.md) describes the `css"…"` literals which restyle a feature.
+- - [HTTP server](http-server.md) serves a page as a response.
+- - [Markdown](markdown.md) renders written content into the HTML a page holds.
+- - [Internationalization](internationalization.md) describes the writing directions which
+-   `direction` chooses between.
+- - [Hyphenation](hyphenation.md) describes the soft hyphens which a page's text may carry.
++ - [HTML](html.md)では、各スロットを埋める型付きの要素について説明する。
++ - [CSS](css.md)では、機能のスタイルを変える `css"…"` リテラルについて説明する。
++ - [HTTP サーバー](http-server.md)は、ページをレスポンスとして提供する。
++ - [Markdown](markdown.md)は、書かれた内容をページが保持する HTML に描画する。
++ - [国際化](internationalization.md)では、`direction` が選ぶ書字方向について説明する。
++ - [ハイフネーション](hyphenation.md)では、ページのテキストが持ちうるソフトハイフンについて説明する。

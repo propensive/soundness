@@ -1,0 +1,218 @@
+orthant 1 language
+
+- # Soundness Message Standards
++ # Soundness のメッセージの標準
+
+- This document defines the house style for human-readable messages written with the
+- `m"…"` interpolator: the text of `fulminate` errors, the `Message` carried by an
+- `eucalyptus` log event, and the diagnostics a macro reports. All three share one style,
+- because a reader meets them in the same places — a terminal, a log, a compiler error — and
+- should not be able to tell from the prose which module wrote it. It complements
+- `logging.md` (when and what to log) and `naming.md` (how error types are named). Examples
+- are drawn from `lib/*/src/core/*.scala`.
++ この文書は、`m"…"` 補間子で書かれる、人が読むためのメッセージのハウススタイルを定める。
++ `fulminate` のエラーの本文、`eucalyptus` のログイベントが運ぶ `Message`、そしてマクロが報告する診断である。
++ 三つはすべて一つのスタイルを共有する。読者はそれらに同じ場所、つまり端末、ログ、コンパイルエラーで出会うのであり、どのモジュールが書いたかを文章から見分けられてはならないからである。
++ これは `logging.md`（いつ何をログに記録するか）と `naming.md`（エラー型をどう名付けるか）を補う。
++ 例は `lib/*/src/core/*.scala` から取っている。
+
+- ## 1. Register
++ ## 1. 文体
+
+- A message states a fact about the world at the moment it was written, as a knowledgeable
+- colleague would say it aloud: calm, specific and brief.
++ メッセージは、書かれた時点での世界についての事実を、事情に通じた同僚が口に出して言うように述べる。落ち着いて、具体的に、短くである。
+
+- - **Lowercase.** A message begins in lowercase, unless its first word is a proper noun or
+-   an identifier (`Burdock can only repackage a JAR file, not a directory`).
+- - **No trailing period.** A message is a fragment that the surrounding rendering punctuates;
+-   it is embedded in a stack trace, prefixed with a code, or listed as a bullet, and a
+-   terminal period would be wrong in each.
+- - **Present tense, indicative mood.** State what *is*, not what *happened* or what *should*
+-   be: `the JAR has no manifest`, not `the JAR did not have a manifest` or `the JAR should
+-   have a manifest`. The exception is an operation that failed as a whole, which is past
+-   tense because the failure is the fact: `could not list the releases of $repository (HTTP
+-   $status)`.
+- - **Terse.** Say the one thing the reader needs in order to act. No apology (`sorry`), no
+-   alarm (`fatal`, `!`), no advice unless the remedy is both certain and short, and no
+-   restatement of what the error type's name already says.
+- - **No jargon from the implementation.** A message names things in the reader's terms —
+-   a port, a path, a header, a field — never a class, a method or a variable of the
+-   library that raised it. `unknown variables reference` is addressed to a DAP client; `null
+-   frameRef in scopes()` would not be.
++ - **小文字。** メッセージは小文字で始める。ただし最初の語が固有名詞か識別子である場合は除く（`Burdock can only repackage a JAR file, not a directory`）。
++ - **末尾にピリオドを付けない。** メッセージは、周囲の描画が句読点を付ける断片である。スタックトレースに埋め込まれ、コードが前に付き、箇条書きとして並べられるが、そのどこでも末尾のピリオドは誤りになる。
++ - **現在時制、直説法。** 何が*起きたか*や何で*あるべきか*ではなく、何で*あるか*を述べる。`the JAR has no manifest` であって、`the JAR did not have a manifest` や `the JAR should have a manifest` ではない。例外は全体として失敗した操作で、これは失敗そのものが事実なので過去時制になる：`could not list the releases of $repository (HTTP $status)`。
++ - **簡潔。** 読者が行動するために必要な一つのことを言う。謝罪（`sorry`）も警告（`fatal`、`!`）もなく、対処法が確実かつ短い場合を除いて助言もなく、エラー型の名前がすでに言っていることの言い直しもない。
++ - **実装の専門用語を使わない。** メッセージは物事を読者の言葉で名指す。ポート、パス、ヘッダー、フィールドであり、それを発生させたライブラリのクラス、メソッド、変数では決してない。`unknown variables reference` は DAP クライアントに向けたものだが、`null frameRef in scopes()` はそうではない。
+
+- ## 2. Structure
++ ## 2. 構造
+
+- A message has a subject, which is the specific thing at fault, and a predicate, which is
+- what is wrong with it. Lead with the subject when it is the thing the reader will look for:
++ メッセージには主語と述語がある。主語は誤りのある特定のものであり、述語はそれの何が悪いかである。
++ 主語が読者の探すものであるときは、主語から始める：
+
+-     m"the value $value is not a valid ISO 8601 repeating interval"
++     m"the value $value is not a valid ISO 8601 repeating interval"
+
+-     m"dependency $hash is neither published nor cached"
++     m"dependency $hash is neither published nor cached"
+
+-     m"a command cannot end with an escape character"
++     m"a command cannot end with an escape character"
+
+- Interpolate context; do not describe it. A message that says `the file could not be read`
+- makes the reader find the file; `${path} could not be read` does not. Name the specific
+- resource at fault — a path, a port, a URL, an identifier, a header name, a line and column —
+- and quantify whenever the number is already to hand: `${items.size} CBOR issues`, not `some
+- CBOR issues`.
++ 文脈は記述せずに埋め込む。
++ `the file could not be read` と言うメッセージは、読者にファイルを探させる。`${path} could not be read` はそうしない。
++ 誤りのある特定の資源を名指す。パス、ポート、URL、識別子、ヘッダー名、行と列である。そして数がすでに手元にあるときはいつでも数量を示す：`some CBOR issues` ではなく `${items.size} CBOR issues`。
+
+- Where the cause is known and distinct from the symptom, append it in parentheses or after a
+- colon, in that order of preference:
++ 原因が分かっていて症状と区別できる場合は、括弧の中かコロンの後に付け加える。優先順位はこの順である：
+
+-     m"could not list the releases of $repository (HTTP $status)"
++     m"could not list the releases of $repository (HTTP $status)"
+
+-     m"the gRPC call failed with status $status: $detail"
++     m"the gRPC call failed with status $status: $detail"
+
+- A message that aggregates others says how many, and lets the `List[Message]` instance of
+- `Communicable` render them as bullets beneath it:
++ 他のメッセージをまとめるメッセージは、その数を言い、`Communicable` の `List[Message]` インスタンスにそれらを下に箇条書きとして描画させる：
+
+-     m"${List.size(errors)} accrued errors: $joined"
++     m"${List.size(errors)} accrued errors: $joined"
+
+- ## 3. Vocabulary
++ ## 3. 語彙
+
+- Each recurring situation has one phrase:
++ 繰り返し現れる状況には、それぞれ一つの言い回しがある：
+
+= Each recurring situation has one phrase:
+=
+- ```tabular
++ ```tabular
+
+- column  Phrase
+- column  For
+- column  Example
+- row  *is not a valid X*  a value that fails to parse as X  `the value $value is not a valid ISO 8601 repeating interval`
+- row  *is not a known X*  a value that parses but is not in the set
+- row  *could not* + verb  an operation that failed in the environment (network, filesystem, process)  `could not list the releases of $repository`
+- row  *cannot* + verb  a request the library refuses by construction  `a command cannot end with an escape character`
+- row  *has no X*  a missing part  `the JAR has no manifest`
+- row  *already has X*  a conflicting part
+- row  *must*  only a rule the reader can satisfy by changing their input  `a port number must be specified after a colon`
++ column  言い回し
++ column  用途
++ column  例
++ row  *is not a valid X*  X としてのパースに失敗する値  `the value $value is not a valid ISO 8601 repeating interval`
++ row  *is not a known X*  パースはできるが集合に含まれない値
++ row  *could not* + 動詞  環境（ネットワーク、ファイルシステム、プロセス）の中で失敗した操作  `could not list the releases of $repository`
++ row  *cannot* + 動詞  ライブラリが構造上拒む要求  `a command cannot end with an escape character`
++ row  *has no X*  欠けている部分  `the JAR has no manifest`
++ row  *already has X*  衝突する部分
++ row  *must*  読者が入力を変えることで満たせる規則に限る  `a port number must be specified after a colon`
+
+= row  *must*  only a rule the reader can satisfy by changing their input  `a port number must be specified after a colon`
+- ```
++ ```
+
+- - Prefer the singular, concrete noun (`the manifest`, `this JAR`, `the document`) to a
+-   category (`input`, `data`, `object`), and the definite article when there is one such
+-   thing in context.
+- - Never *invalid*, *illegal*, *bad* or *error* as the whole predicate: they name the fact
+-   that a message exists, not its content.
++ - カテゴリー（`input`、`data`、`object`）よりも単数の具体的な名詞（`the manifest`、`this JAR`、`the document`）を選び、文脈にそれが一つしかないときは定冠詞を使う。
++ - *invalid*、*illegal*、*bad*、*error* を述語全体にしてはならない。それらはメッセージが存在するという事実を名指すだけで、その内容を名指さない。
+
+- ## 4. What a message must not contain
++ ## 4. メッセージに含めてはならないもの
+
+= ## 4. What a message must not contain
+=
+- ```tabular
++ ```tabular
+
+- column  Never
+- column  Instead
+- row  a secret: token, password, key material, cookie or `Authorization` value, even partially  the credential's *source*, if it helps (`the GITHUB_TOKEN environment variable`)
+- row  a payload: request or response body, file contents, serialized document  the offending *fragment* (a line, a token, a field) and its position
+- row  a stack trace or exception text  the cause restated in the terms of §3, with the original attached as the error's cause
+- row  formatting: ANSI escapes, Markdown, alignment spaces  nothing; a `Message` is structured, and the renderer decides how it looks
++ column  してはならない
++ column  代わりに
++ row  秘密。トークン、パスワード、鍵の素材、Cookie や `Authorization` の値は、部分的にであっても含めない  役立つなら、資格情報の*出どころ*（`the GITHUB_TOKEN environment variable`）
++ row  ペイロード。リクエストやレスポンスの本文、ファイルの内容、直列化された文書  問題のある*断片*（行、トークン、フィールド）とその位置
++ row  スタックトレースや例外のテキスト  §3 の言葉で言い直した原因。元のものはエラーの原因として添付する
++ row  書式。ANSI エスケープ、Markdown、桁揃えの空白  何もしない。`Message` は構造化されており、見た目は描画器が決める
+
+= row  formatting: ANSI escapes, Markdown, alignment spaces  nothing; a `Message` is structured, and the renderer decides how it looks
+- ```
++ ```
+
+- ## 5. Composition through `Communicable`
++ ## 5. `Communicable` による合成
+
+- A `Message` is not a string. The `m"…"` interpolator keeps every interpolated value as a
+- `Message` part, converted through the value's `Communicable` instance, so formatting lives in
+- one place per type rather than at each message. Consequences:
++ `Message` は文字列ではない。
++ `m"…"` 補間子は、埋め込まれた値をそれぞれ、その値の `Communicable` インスタンスを通して変換した `Message` の部分として保持する。そのため書式は、メッセージごとではなく型ごとに一か所にある。
++ その帰結は次のとおりである：
+
+- - Interpolate the typed value, not its rendering: `m"…$path…"`, not `m"…${path.show}…"`.
+-   The `Path` instance decides how a path reads in prose, and every message about paths
+-   agrees.
+- - Give a type that appears in messages a `Communicable` instance in its companion, usually
+-   derived from its `Textualizable` or `Showable` instance; do not render by hand at the
+-   call site.
+- - Text that may be empty or padded is quoted by the `Text` instance (`“ ”`) so that an
+-   absent or whitespace value is visible; never add quotation marks of your own around an
+-   interpolated `Text`.
+- - A list of messages is a list, not a joined string: `List[Message]` renders as bullets, one
+-   per line. Do not `join` messages with commas.
+- - Compile-time diagnostics raised by a macro carry their bolt code in the standard prefix
+-   (`m"${bolt.label} $message"`); the message body follows this standard unchanged.
++ - 描画したものではなく、型付きの値を埋め込む。`m"…${path.show}…"` ではなく `m"…$path…"` である。`Path` のインスタンスがパスを文章の中でどう読ませるかを決め、パスについてのすべてのメッセージがそれに従う。
++ - メッセージに現れる型には、そのコンパニオンに `Communicable` インスタンスを与える。ふつうは `Textualizable` か `Showable` のインスタンスから導出する。呼び出し箇所で手で描画してはならない。
++ - 空であるかもしれないテキストやパディングされているかもしれないテキストは、`Text` のインスタンスによって引用符（`“ ”`）で囲まれるので、存在しない値や空白の値も目に見える。埋め込まれた `Text` の周りに自分で引用符を付けてはならない。
++ - メッセージのリストは、つなげた文字列ではなくリストである。`List[Message]` は一行に一つずつの箇条書きとして描画される。メッセージをコンマで `join` してはならない。
++ - マクロが発生させるコンパイル時の診断は、標準の接頭辞にその bolt コードを持つ（`m"${bolt.label} $message"`）。メッセージの本文はこの標準にそのまま従う。
+
+- ## 6. Log events
++ ## 6. ログイベント
+
+- A log event is a value of a module's `Event` type, and its `Communicable` instance renders
+- the message. The same register applies, with one addition: an event names the operation and
+- its subject (`resolved $hash to $url`, `listening on $port`), in the past tense when it has
+- completed and the present participle when it is beginning. Levels are chosen by
+- `logging.md`; the message does not restate the level (`warning:` is not part of a message).
++ ログイベントはモジュールの `Event` 型の値であり、その `Communicable` インスタンスがメッセージを描画する。
++ 同じ文体が適用されるが、一つ追加がある。イベントは操作とその対象を名指し（`resolved $hash to $url`、`listening on $port`）、完了したときは過去時制、始まるときは現在分詞にする。
++ レベルは `logging.md` に従って選ぶ。メッセージはレベルを言い直さない（`warning:` はメッセージの一部ではない）。
+
+- ## 7. Checklist
++ ## 7. チェックリスト
+
+- Before adding a message, read it as it will appear — after `[↯/s.…]`, in a list of
+- twelve, or at the end of a stack trace — and check:
++ メッセージを追加する前に、それが現れるとおりに読む。`[↯/s.…]` の後、十二個のリストの中、あるいはスタックトレースの末尾である。そして次を確かめる：
+
+- 1. lowercase first letter, no trailing period, present tense;
+- 2. the specific resource at fault is interpolated, as a typed value;
+- 3. a number is given when one is known;
+- 4. nothing secret, no payload, no implementation names;
+- 5. the error type's name and the message do not say the same thing.
++ 1. 最初の文字が小文字で、末尾にピリオドがなく、現在時制である。
++ 2. 誤りのある特定の資源が、型付きの値として埋め込まれている。
++ 3. 数が分かっているときは、それが示されている。
++ 4. 秘密も、ペイロードも、実装の名前もない。
++ 5. エラー型の名前とメッセージが同じことを言っていない。

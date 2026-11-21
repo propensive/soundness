@@ -1,0 +1,369 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base abscission
++ base abscission
+
+- import soundness
++ import soundness
+
+- info   Shrinking a classpath to the closed world its entry points reach, by recompiling it from its TASTy
++ info   クラスパスを、その TASTy から再コンパイルすることで、エントリーポイントが到達する閉じた世界にまで縮小する
+
+- detail
++ detail
+
+-     _Abscission_ takes a classpath and a set of entry points and writes the closed world they
+-     reach: the classes which can run, and no others. It is the job a bytecode shrinker does,
+-     done earlier. The classes which this compiler compiled are recompiled from the TASTy the
+-     classpath holds for them, and the members nothing reaches are taken out after inlining and
+-     before the phases which generate a trait's forwarders, a bridge or the fields behind a lazy
+-     value, so none of those is generated for a member which is not kept, and none needs a rule
+-     to keep it. Units are read as the analysis finds it needs them, so a unit nothing reaches
+-     is never read and its macros never run.
++     _Abscission_ はクラスパスとエントリーポイントの集合を受け取り、それらが到達する閉じた世界、つまり実行されうるクラスだけを、それ以外を含めずに書き出す。
++     これはバイトコードのシュリンカーが行う仕事を、より早い段階で行うものである。
++     このコンパイラがコンパイルしたクラスは、クラスパスがそれらについて保持する TASTy から再コンパイルされ、何も到達しないメンバーは、インライン化の後、トレイトのフォワーダー、ブリッジ、遅延評価の値の背後のフィールドを生成するフェーズの前に取り除かれる。そのため、保持されないメンバーに対してそれらが生成されることはなく、それらを保持するための規則も要らない。
++     ユニットは解析がそれを必要とすると分かった時点で読まれるので、何も到達しないユニットが読まれることはなく、そのマクロが実行されることもない。
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     def shrink(classpath: LocalClasspath, destination: Path on Linux): Shrink.Report =
++     def shrink(classpath: LocalClasspath, destination: Path on Linux): Shrink.Report =
+
+-       Shrink(keep = List(t"com.example.plugins.**"))
++       Shrink(keep = List(t"com.example.plugins.**"))
+
+-         ( classpath, List(fqcn"com.example.Main"), destination )
++         ( classpath, List(fqcn"com.example.Main"), destination )
+
+-     ```
++     ```
+
+-     Three kinds of class make up the closed world. A class this compiler compiled, and which
+-     is reached, is recompiled with only the members which are reached. A class this compiler
+-     compiled which is named only as a type, in a signature, a cast or a test, is written as a
+-     shell: its name, its flags and its parents. Any other class, of Java, Kotlin or the
+-     standard library, is copied as it is if bytecode which is kept refers to it.
++     閉じた世界は三種類のクラスからなる。
++     このコンパイラがコンパイルし、到達されたクラスは、到達されたメンバーだけで再コンパイルされる。
++     このコンパイラがコンパイルしたクラスのうち、シグネチャ、キャスト、型検査の中で型としてだけ名指されるものは、殻として書かれる。つまり、その名前、フラグ、親である。
++     それ以外のクラス、つまり Java、Kotlin、標準ライブラリのクラスは、保持されるバイトコードがそれを参照していれば、そのまま複製される。
+
+-     The library has three source sets. `abscission.engine` is `Shaker` and `Shrinker`,
+-     written against the compiler and the JDK alone and taking plain types, as
+-     `probably.Instrumenter` is. `abscission.core` is `Shrink`, the same with Soundness's types.
+-     `abscission.linker` makes shrinking a step of an Anthology `Toolchain`: `shrinkEdges`,
+-     `shrinkOptions` and the nodes `Shrunk` and `Shrunk.Jar`. All three are JVM-only, and need
+-     the compiler on the classpath of whatever runs them.
++     このライブラリには三つのソースセットがある。
++     `abscission.engine` は `Shaker` と `Shrinker` であり、`probably.Instrumenter` と同じく、コンパイラと JDK だけに対して書かれ、素の型を受け取る。
++     `abscission.core` は `Shrink` であり、同じものを Soundness の型で提供する。
++     `abscission.linker` は縮小を Anthology の `Toolchain` の一段階にする：`shrinkEdges`、`shrinkOptions`、そしてノード `Shrunk` と `Shrunk.Jar` である。
++     三つとも JVM 専用であり、それらを実行するもののクラスパス上にコンパイラが必要である。
+
+-     What only reflection reaches has to be said, with `keep` and `pin`. The closed world is
+-     checked before it is written, on the compiler's trees and again on the bytecode, and a
+-     reference from anything kept to something removed raises `Shrink.Error`.
++     リフレクションだけが到達するものは、`keep` と `pin` で示さなければならない。
++     閉じた世界は書き出される前に、コンパイラの木の上で、そしてもう一度バイトコードの上で検査され、保持されたものから取り除かれたものへの参照があれば `Shrink.Error` が発生する。
+
+- refer abscission.Shrink
++ refer abscission.Shrink
+
+- refer abscission.shrinkEdges
++ refer abscission.shrinkEdges
+
+- refer abscission.Shrunk
++ refer abscission.Shrunk
+
+- refer abscission.Shrinker
++ refer abscission.Shrinker
+
+- entry .Shrink   how a classpath is shrunk: the options, and the patterns of classes to keep and to pin
++ entry .Shrink   クラスパスをどう縮小するか：オプションと、保持するクラスと固定するクラスのパターン
+
+= entry .Shrink   how a classpath is shrunk: the options, and the patterns of classes to keep and to pin
+-   detail
++   detail
+
+-       A `Shrink` is a configuration, and applying it does the work:
+-       `Shrink(…)(classpath, entryPoints, out)` writes the closed world of `classpath` which
+-       `entryPoints` reach to the directory `out`, and gives a `Shrink.Report`.
++       `Shrink` は構成であり、それを適用すると仕事が行われる。
++       `Shrink(…)(classpath, entryPoints, out)` は、`entryPoints` が到達する `classpath` の閉じた世界をディレクトリ `out` に書き出し、`Shrink.Report` を返す。
+
+=       `entryPoints` reach to the directory `out`, and gives a `Shrink.Report`.
+=
+-       ```scala
++       ```scala
+
+=       `entryPoints` reach to the directory `out`, and gives a `Shrink.Report`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       def shrink(classpath: LocalClasspath, destination: Path on Linux): Shrink.Report =
++       def shrink(classpath: LocalClasspath, destination: Path on Linux): Shrink.Report =
+
+-         Shrink(pin = List(t"com.example.legacy.*"), services = false)
++         Shrink(pin = List(t"com.example.legacy.*"), services = false)
+
+-           ( classpath, List(fqcn"com.example.Main"), destination )
++           ( classpath, List(fqcn"com.example.Main"), destination )
+
+=           ( classpath, List(fqcn"com.example.Main"), destination )
+-       ```
++       ```
+
+-       In a pattern, `*` stands for part of a name and `**` for any number of packages, so
+-       `com.example.plugins.**` matches every class beneath that package and
+-       `com.example.*Codec` every class of `com.example` whose name ends in `Codec`. A pattern
+-       is matched against a class's binary name, written with dots: a nested class is
+-       `com.example.Outer$Inner`, and an object's class ends in `$`.
++       パターンの中で、`*` は名前の一部を、`**` は任意の数のパッケージを表す。そのため、`com.example.plugins.**` はそのパッケージ以下のすべてのクラスに一致し、`com.example.*Codec` は名前が `Codec` で終わる `com.example` のすべてのクラスに一致する。
++       パターンは、ドットで書いたクラスのバイナリ名に照合される。入れ子のクラスは `com.example.Outer$Inner` であり、オブジェクトのクラスは `$` で終わる。
+
+-       The entry points are classes with a `main` method. Each implementation which a
+-       `META-INF/services` file names is an entry point too, unless `services` is `false`.
++       エントリーポイントは `main` メソッドを持つクラスである。
++       `services` が `false` でない限り、`META-INF/services` ファイルが名指す各実装もエントリーポイントである。
+
+-   refer abscission.Shrinker
++   refer abscission.Shrinker
+
+-   refer abscission.shrinkEdges
++   refer abscission.shrinkEdges
+
+-   entry #options   the compiler options the classes were compiled with, beyond Soundness's own
+-       The recompilation runs with one set of options for the whole classpath: the options
+-       Soundness itself is compiled with, which are built in, followed by these. Whether a unit
+-       was capture-checked is read from its TASTy, and need not be said.
+-   entry #keep   patterns of classes to keep whole, which reflection reaches
+-       A class which matches is treated as instantiated, and every member of it is kept, with
+-       all that those members reach. It is what a class found by name at run time needs: one
+-       loaded with a `Class.forName` whose argument is not a literal, or read as a resource.
+-   entry #pin   patterns of top-level classes whose units are copied as they are
+-       A unit which matches is not recompiled. Its classes are copied whole, and everything
+-       their bytecode names in the classes which are recompiled is kept. It is the way round a
+-       unit the analysis gets wrong, and it is what the shrinker does of its own accord with a
+-       unit which cannot be recompiled.
+-   entry #services   whether every implementation which a `META-INF/services` file names is an entry point
+-       `true` unless it is changed. The files are merged across the classpath and written with
+-       the implementations which were kept; with `false`, an implementation is kept only if
+-       something else reaches it.
+-   entry #fine   whether a library with no TASTy is taken a class at a time
+-       A library of Scala is always taken a class at a time. One with no TASTy, of Java or
+-       Kotlin, is taken whole as soon as one class of it is reached, since such a library may
+-       load its own classes by name; with `fine`, it is taken a class at a time too.
+-   entry #apply   writes the closed world of a classpath to a directory, and reports what was done
+-       Raises `Shrink.Error` with reason `Unsound` if anything kept refers to something
+-       removed, or if a unit can be neither recompiled nor pinned, and with reason `Failed` if
+-       the shrinker itself fails. An entry point which is not a class of the classpath is a
+-       problem, not an empty result.
+-   entry .Report   what shrinking a classpath did, in numbers
++   entry #options   Soundness 自身のもの以外に、クラスのコンパイルに使われたコンパイラのオプション
++       再コンパイルは、クラスパス全体に対して一組のオプションで実行される。
++       組み込まれている Soundness 自身のコンパイルに使われるオプションに、これらが続く。
++       ユニットがキャプチャ検査されたかどうかは TASTy から読まれるので、示す必要はない。
++   entry #keep   リフレクションが到達する、丸ごと保持するクラスのパターン
++       一致するクラスはインスタンス化されたものとして扱われ、そのすべてのメンバーが、それらのメンバーが到達するすべてとともに保持される。
++       実行時に名前で見つけられるクラスに必要なのはこれである。引数がリテラルでない `Class.forName` で読み込まれるもの、またはリソースとして読まれるものがそうである。
++   entry #pin   ユニットがそのまま複製されるトップレベルのクラスのパターン
++       一致するユニットは再コンパイルされない。
++       そのクラスは丸ごと複製され、再コンパイルされるクラスの中でそのバイトコードが名指すものはすべて保持される。
++       これは解析が誤るユニットを回避する方法であり、再コンパイルできないユニットに対してシュリンカーが自ら行うことでもある。
++   entry #services   `META-INF/services` ファイルが名指すすべての実装をエントリーポイントとするかどうか
++       変えなければ `true` である。
++       ファイルはクラスパス全体にわたって併合され、保持された実装とともに書き出される。
++       `false` なら、実装はほかの何かが到達する場合にだけ保持される。
++   entry #fine   TASTy を持たないライブラリをクラス単位で扱うかどうか
++       Scala のライブラリは常にクラス単位で扱われる。
++       TASTy を持たない Java や Kotlin のライブラリは、そのクラスが一つでも到達されるとすぐに丸ごと扱われる。そのようなライブラリは自身のクラスを名前で読み込むことがあるからである。
++       `fine` を使えば、それもクラス単位で扱われる。
++   entry #apply   クラスパスの閉じた世界をディレクトリに書き出し、何をしたかを報告する
++       保持されたものが取り除かれたものを参照していたり、ユニットを再コンパイルも固定もできなかったりすれば、理由 `Unsound` の `Shrink.Error` を発生させ、シュリンカー自体が失敗すれば理由 `Failed` で発生させる。
++       クラスパスのクラスでないエントリーポイントは、空の結果ではなく問題である。
++   entry .Report   クラスパスの縮小が何をしたかを数で示す
+
+-     detail
++     detail
+
+-         `units` are the units which could be recompiled from their TASTy and `read` those
+-         which were, because something reached them. `classes` and `size` are the classpath's,
+-         and `kept` and `written` the closed world's. Of the classes kept, `recompiled` came
+-         from TASTy, `shells` are only a name and its parents, and `copied` are as they were.
+-         `members` and `removed` count the methods and fields of the recompiled classes.
+-         `pinned` are the units which were not recompiled, whether by request or because they
+-         could not be, and `notes` say why of the latter. `packages` are the packages of the
+-         classpath, in the order of their names.
+-     entry #why   the chain of classes which led to a class being kept
+-         Each class of the chain refers to the one before it; the last is one which was
+-         recompiled, or was an entry point. A class which was not kept is a chain of itself.
+-   entry .Package   a package of the classpath, with its classes there and in the closed world
+-   entry .Error   raised when a classpath cannot be shrunk: error `↯/s.146.1`, _the classpath could not be shrunk because `reason`_
+-     entry .Reason   why: the closed world would not be sound, or the shrinker failed
++         `units` は TASTy から再コンパイルできたユニットであり、`read` はそのうち何かが到達したので実際に読まれたものである。
++         `classes` と `size` はクラスパスのものであり、`kept` と `written` は閉じた世界のものである。
++         保持されたクラスのうち、`recompiled` は TASTy から来たもの、`shells` は名前と親だけのもの、`copied` は元のままのものである。
++         `members` と `removed` は、再コンパイルされたクラスのメソッドとフィールドを数える。
++         `pinned` は、求めによるにせよ再コンパイルできなかったためにせよ、再コンパイルされなかったユニットであり、`notes` は後者についてその理由を述べる。
++         `packages` はクラスパスのパッケージであり、名前の順に並ぶ。
++     entry #why   あるクラスが保持されるに至ったクラスの連鎖
++         連鎖の各クラスはその前のクラスを参照する。
++         最後のものは、再コンパイルされたクラスか、エントリーポイントだったクラスである。
++         保持されなかったクラスは、それ自身だけの連鎖になる。
++   entry .Package   クラスパスのパッケージ。そこにあるクラスと、閉じた世界にあるクラスとともに
++   entry .Error   クラスパスを縮小できないときに発生する：エラー `↯/s.146.1`、_the classpath could not be shrunk because `reason`_
++     entry .Reason   理由：閉じた世界が健全でないか、シュリンカーが失敗した
+
+-       detail
++       detail
+
+-           ```tabular
++           ```tabular
+
+-           column  Case
+-           column  Code
+-           column  Message
+-           row  `Unsound(problems)`  1  _a problem was found: `problem`_, or _`n` problems were found, of which the first was: `problem`_
++           column  ケース
++           column  コード
++           column  メッセージ
++           row  `Unsound(problems)`  1  _a problem was found: `problem`_ または _`n` problems were found, of which the first was: `problem`_
+
+-           row  `Failed(trace)`  2  _the shrinker terminated abnormally_
++           row  `Failed(trace)`  2  _the shrinker terminated abnormally_
+
+-           ```
++           ```
+
+- entry .Shrunk   a closed world of classfiles: the toolchain node reached from `Classfile` through `shrinkEdges`
++ entry .Shrunk   クラスファイルの閉じた世界：`Classfile` から `shrinkEdges` を通じて到達するツールチェーンのノード
+
+= entry .Shrunk   a closed world of classfiles: the toolchain node reached from `Classfile` through `shrinkEdges`
+-   detail
++   detail
+
+-       An `Artifact.Ir` with id `shrunk`: a directory which is a classpath of its own, holding
+-       the classes the entry points reach, the resources of the libraries which gave them, and
+-       no TASTy.
+-   entry .Jar   an executable JAR of a closed world: the application node reached from `Shrunk`
+-       An `Artifact.Application` with id `shrunk-jar`. It is a node of its own, and not
+-       `Artifact.Jar`, so that a toolchain which has both `jarEdges` and `shrinkEdges` has one
+-       path to each.
++       ID が `shrunk` の `Artifact.Ir` である。
++       それ自体が一つのクラスパスであるディレクトリで、エントリーポイントが到達するクラスと、それらを提供したライブラリのリソースを保持し、TASTy は保持しない。
++   entry .Jar   閉じた世界の実行可能な JAR：`Shrunk` から到達するアプリケーションのノード
++       ID が `shrunk-jar` の `Artifact.Application` である。
++       `jarEdges` と `shrinkEdges` の両方を持つツールチェーンがそれぞれへの経路を一つずつ持つように、`Artifact.Jar` ではなく独立したノードになっている。
+
+- entry .shrinkEdges   the edges which make shrinking a step of a toolchain
++ entry .shrinkEdges   縮小をツールチェーンの一段階にするエッジ
+
+= entry .shrinkEdges   the edges which make shrinking a step of a toolchain
+-   detail
++   detail
+
+-       `shrinkEdges(scalac)` registers two edges: from `Toolchain.Universe.Classfile` to
+-       `Shrunk`, and from `Shrunk` to `Shrunk.Jar`. The first carries the options of the
+-       `Scalac` which compiled the classes, since it compiles them again, and takes the
+-       toolchain's entry points as the roots of what is kept. The second packages the closed
+-       world as `jarEdges` packages a classpath, with at most one entry point as its
+-       `Main-Class`.
++       `shrinkEdges(scalac)` は二つのエッジを登録する。
++       `Toolchain.Universe.Classfile` から `Shrunk` へのエッジと、`Shrunk` から `Shrunk.Jar` へのエッジである。
++       一つ目は、クラスを再びコンパイルするので、それらをコンパイルした `Scalac` のオプションを運び、ツールチェーンのエントリーポイントを保持するものの根とする。
++       二つ目は、`jarEdges` がクラスパスをパッケージするのと同じように閉じた世界をパッケージし、多くとも一つのエントリーポイントをその `Main-Class` とする。
+
+=       `Main-Class`.
+=
+-       ```scala
++       ```scala
+
+=       `Main-Class`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val steps = Toolchain(shrinkEdges(Scalac[3.9](Nil))).path(Toolchain.Universe.Classfile, Shrunk.Jar).map(_.target.id)
++       val steps = Toolchain(shrinkEdges(Scalac[3.9](Nil))).path(Toolchain.Universe.Classfile, Shrunk.Jar).map(_.target.id)
+
+=       val steps = Toolchain(shrinkEdges(Scalac[3.9](Nil))).path(Toolchain.Universe.Classfile, Shrunk.Jar).map(_.target.id)
+-       ```
++       ```
+
+-       Here `steps` is `List(t"shrunk", t"shrunk-jar")`. A `Shrink.Error` is raised to the
+-       toolchain as a `Link.Error`, with reason `Packaging` for a closed world which would not
+-       be sound and `Failed` for a shrinker which failed.
++       ここで `steps` は `List(t"shrunk", t"shrunk-jar")` である。
++       `Shrink.Error` はツールチェーンに対して `Link.Error` として発生し、健全でない閉じた世界では理由 `Packaging`、失敗したシュリンカーでは理由 `Failed` になる。
+
+- entry .shrinkOptions   settings for the shrinking edges
+-   entry .keep   a pattern of the classes to keep whole, for the `Shrunk` node
+-   entry .pin   a pattern of the top-level classes whose units are copied as they are, for the `Shrunk` node
+-   entry .services   whether every implementation a `META-INF/services` file names is an entry point
+-   entry .fine   whether a library with no TASTy is taken a class at a time
+-   entry .name   the JAR's filename within the output directory, for the `Shrunk.Jar` node
+-       The default is `main.jar`.
++ entry .shrinkOptions   縮小のエッジの設定
++   entry .keep   `Shrunk` ノードのための、丸ごと保持するクラスのパターン
++   entry .pin   `Shrunk` ノードのための、ユニットがそのまま複製されるトップレベルのクラスのパターン
++   entry .services   `META-INF/services` ファイルが名指すすべての実装をエントリーポイントとするかどうか
++   entry .fine   TASTy を持たないライブラリをクラス単位で扱うかどうか
++   entry .name   `Shrunk.Jar` ノードのための、出力ディレクトリ内の JAR のファイル名
++       既定は `main.jar` である。
+
+- entry .Shrinker   the engine: shrinks a classpath, taking and returning plain types
++ entry .Shrinker   エンジン：素の型を受け取って返しながら、クラスパスを縮小する
+
+= entry .Shrinker   the engine: shrinks a classpath, taking and returning plain types
+-   detail
++   detail
+
+-       What `Shrink` calls, for a host which has paths and names and wants numbers back, and
+-       would not have Soundness's types on its own classpath. A `Shrinker.Request` is the
+-       classpath's entries, the output directory, the options, the entry points and the
+-       patterns; `Shrinker.shrink` gives a `Shrinker.Report`, whose `problems` are empty if the
+-       closed world was written.
+-   entry .shrink   shrinks a classpath, telling `progress` what is being done as it is begun
+-   entry .classpath   the entries a classloader loads from, as absolute paths
+-       A `URLClassLoader`'s own URLs, or the JVM's `java.class.path` for any other loader.
++       `Shrink` が呼ぶものであり、パスと名前を持ち、数を返してほしいが、自身のクラスパスに Soundness の型を持たないホストのためのものである。
++       `Shrinker.Request` は、クラスパスのエントリー、出力ディレクトリ、オプション、エントリーポイント、パターンである。
++       `Shrinker.shrink` は `Shrinker.Report` を返し、閉じた世界が書き出されていればその `problems` は空である。
++   entry .shrink   クラスパスを縮小し、行っていることを始めるたびに `progress` に伝える
++   entry .classpath   クラスローダーが読み込むエントリーを、絶対パスとして返す
++       `URLClassLoader` ならそれ自身の URL、それ以外のローダーなら JVM の `java.class.path` である。
+
+- entry .Shaker   the compiler's part: recompiles units from TASTy without what nothing reaches
++ entry .Shaker   コンパイラの部分：何も到達しないものを除いて、TASTy からユニットを再コンパイルする
+
+= entry .Shaker   the compiler's part: recompiles units from TASTy without what nothing reaches
+-   detail
++   detail
+
+-       `Shaker.shake` recompiles what a set of `Shaker.Root`s reach, of the units it is told
+-       it may read, into a directory; `Shaker.recompile` recompiles every unit it is given and
+-       removes nothing. Both leave out the TASTy of what they write. `Shrinker` is what
+-       decides the roots and what becomes of the result.
+-   entry .compiler   the compiler this is, as a TASTy file records the one which wrote it
++       `Shaker.shake` は、読んでよいと告げられたユニットのうち、一組の `Shaker.Root` が到達するものをディレクトリに再コンパイルする。
++       `Shaker.recompile` は与えられたすべてのユニットを再コンパイルし、何も取り除かない。
++       どちらも書き出すものの TASTy を省く。
++       根を決め、結果をどうするかを決めるのは `Shrinker` である。
++   entry .compiler   このコンパイラ。TASTy ファイルがそれを書いたコンパイラを記録するのと同じ形で

@@ -1,0 +1,66 @@
+orthant 1 language
+
+- # `↯/s.101.1` — `Bind.Error`
++ # `↯/s.101.1` — `Bind.Error`
+
+- Raised when Coaxial cannot bind a socket.
++ Coaxial がソケットをバインドできないときに発生する。
+
+- ## Cause
++ ## 原因
+
+- The OS refused to allocate the requested socket. The constructor
+- takes a `reason: Reason`; the rendered message is `the socket
+- could not be bound because $reason`.
++ OS が、要求されたソケットの割り当てを拒否した。
++ コンストラクターは `reason: Reason` を受け取り、描画されるメッセージは `the socket could not be bound because $reason` である。
+
+- ## Variants
++ ## バリアント
+
+- ### `↯/s.101.1.1` — `PortInUse`
++ ### `↯/s.101.1.1` — `PortInUse`
+
+- Another process is already bound to the requested port.
++ 別のプロセスがすでに要求されたポートにバインドしている。
+
+- **Example.** `[↯/s.101.1.1] the socket could not be bound because another process is already bound to the port`
++ **例。** `[↯/s.101.1.1] the socket could not be bound because another process is already bound to the port`
+
+- **Resolution.** Free the port (stop the conflicting process) or
+- choose a different port.
++ **解決方法。** ポートを解放する（衝突しているプロセスを停止する）か、別のポートを選ぶ。
+
+- ### `↯/s.101.1.2` — `PermissionDenied`
++ ### `↯/s.101.1.2` — `PermissionDenied`
+
+- The current user does not have permission to bind the requested
+- port — typically the case for ports below 1024 on POSIX systems.
++ 現在のユーザーに、要求されたポートをバインドするパーミッションがない。典型的には、POSIX システムにおける 1024 未満のポートの場合である。
+
+- **Example.** `[↯/s.101.1.2] the socket could not be bound because the user does not have permission to bind the port`
++ **例。** `[↯/s.101.1.2] the socket could not be bound because the user does not have permission to bind the port`
+
+- **Resolution.** Run with elevated privileges, or choose an
+- unprivileged port.
++ **解決方法。** 昇格した特権で実行するか、特権の要らないポートを選ぶ。
+
+- ### `↯/s.101.1.3` — `AddressUnavailable`
++ ### `↯/s.101.1.3` — `AddressUnavailable`
+
+- The requested address is not available on this host (e.g. binding
+- to an IP that no interface owns).
++ 要求されたアドレスがこのホストで利用できない（たとえば、どのインターフェースも持たない IP にバインドしようとした場合）。
+
+- **Example.** `[↯/s.101.1.3] the socket could not be bound because the requested address is not available on this host`
++ **例。** `[↯/s.101.1.3] the socket could not be bound because the requested address is not available on this host`
+
+- **Resolution.** Verify the address is configured on a local
+- interface, or bind to `0.0.0.0` / `::` for any interface.
++ **解決方法。** アドレスがローカルのインターフェースに設定されていることを確かめるか、任意のインターフェースを表す `0.0.0.0` / `::` にバインドする。
+
+- ## See also
++ ## 関連項目
+
+- - Source: `lib/coaxial/src/core/coaxial.Bind.scala`
++ - ソース：`lib/coaxial/src/core/coaxial.Bind.scala`

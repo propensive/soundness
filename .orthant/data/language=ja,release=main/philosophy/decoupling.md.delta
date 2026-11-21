@@ -1,0 +1,12 @@
+orthant 1 language
+
+- `FilesystemBackend` collects stat, open, read, write, list, link and delete; everything
+- in the [filesystem](/doc/soundness/modules/filesystem.md) API is defined in terms of them. The
+- `java.nio` implementation, the WASI implementation over `wasi:filesystem`, and any
+- future one are interchangeable, and the user-facing API mentions no platform at all. The
+- same shape gives [sockets](/doc/soundness/modules/sockets.md) a `SocketBackend`,
+- [compression](/doc/soundness/modules/compression.md) its per-platform DEFLATE engines, and
+- [images](/doc/soundness/modules/images.md) their codecs.
++ `FilesystemBackend` は stat、open、read、write、list、link、delete を集めたものであり、[ファイルシステム](/doc/soundness/modules/filesystem.md)の API のすべてはそれらによって定義されている。
++ `java.nio` による実装も、`wasi:filesystem` の上の WASI による実装も、将来のどの実装も交換可能であり、ユーザーに向けた API はどのプラットフォームにも全く言及しない。
++ 同じ形が、[ソケット](/doc/soundness/modules/sockets.md)に `SocketBackend` を、[圧縮](/doc/soundness/modules/compression.md)にプラットフォームごとの DEFLATE エンジンを、[画像](/doc/soundness/modules/images.md)にそのコーデックを与えている。

@@ -1,0 +1,244 @@
+orthant 1 language
+
+- # Infix Types
++ # 中置型
+
+- Soundness uses infix types throughout, so that a type reads as a phrase rather than a
+- tangle of brackets. Written as prepositions and verbs — `Path on Linux`, `Html of
+- "br"`, `Text is Decodable in Json`, `Quantity is Multiplicable by Duration`, a method
+- that `raises HttpError` or `logs ExecEvent` — they let a signature say in plain words
+- what a value is and what an operation needs, which is part of making code read like
+- [elegant prose](elegant-prose.md). Their real power is that they
+- [compose](composability.md): each adds one more clause to a type without nesting, so
+- `Html.Element of "ul" over "li" in Whatwg` builds up exactly as an English description
+- would, and the same `of`, `in`, `by`, or `over` carries the same meaning wherever it
+- appears. A reader who has understood one such type can read the next by analogy, and a
+- writer can describe a precise type by naming its parts in turn rather than assembling a
+- deeply parameterised one.
++ Soundness は全体を通じて中置型を使うので、型は括弧のもつれではなく句として読める。
++ 前置詞と動詞として書かれた型（`Path on Linux`、`Html of "br"`、`Text is Decodable in Json`、`Quantity is Multiplicable by Duration`、`raises HttpError` や `logs ExecEvent` するメソッド）によって、シグネチャは値が何であり、操作が何を必要とするかを平易な言葉で述べられる。これはコードを[優雅な散文](elegant-prose.md)のように読めるようにすることの一部である。
++ その本当の力は、[合成できる](composability.md)ことにある。それぞれが入れ子なしに型に節を一つ加えるので、`Html.Element of "ul" over "li" in Whatwg` はちょうど英語の記述と同じように組み上がり、同じ `of`、`in`、`by`、`over` は現れる場所にかかわらず同じ意味を運ぶ。
++ そのような型を一つ理解した読み手は、次の型を類推で読めるし、書き手は深くパラメーター化された型を組み立てるのではなく、その部分を順に名指すことで正確な型を記述できる。
+
+- ## How they work
++ ## 仕組み
+
+- Each preposition is a type alias that refines one type member. `in` sets `Form`, `on`
+- sets `Plane`, `by` sets `Operand`, `to` sets `Result`:
++ 各前置詞は、一つの型メンバーを細分化する型エイリアスである。
++ `in` は `Form` を、`on` は `Plane` を、`by` は `Operand` を、`to` は `Result` を設定する。
+
+= sets `Plane`, `by` sets `Operand`, `to` sets `Result`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= sets `Plane`, `by` sets `Operand`, `to` sets `Result`:
+=
+= ```scala fuel
+- parse
++ parse
+
+= sets `Plane`, `by` sets `Operand`, `to` sets `Result`:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- infix type in   [refined, form]                             = refined { type Form = form }
++ infix type in   [refined, form]                             = refined { type Form = form }
+
+- infix type on   [refined <: { type Plane }, plane]          = refined { type Plane = plane }
++ infix type on   [refined <: { type Plane }, plane]          = refined { type Plane = plane }
+
+- infix type by   [refined <: { type Operand }, operand]      = refined { type Operand = operand }
++ infix type by   [refined <: { type Operand }, operand]      = refined { type Operand = operand }
+
+- infix type to   [refined <: { type Result }, result]        = refined { type Result = result }
++ infix type to   [refined <: { type Result }, result]        = refined { type Result = result }
+
+= infix type to   [refined <: { type Result }, result]        = refined { type Result = result }
+- ```
++ ```
+
+- That is the whole mechanism. Because each refines a *different* member, they can be
+- applied in succession without nesting, and the order does not matter:
++ 仕組みはそれだけである。
++ それぞれが*異なる*メンバーを細分化するので、入れ子なしに続けて適用でき、順序は問題にならない。
+
+= applied in succession without nesting, and the order does not matter:
+=
+- ```scala fuel
++ ```scala fuel
+
+= applied in succession without nesting, and the order does not matter:
+=
+= ```scala fuel
+- parse
++ parse
+
+= applied in succession without nesting, and the order does not matter:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- Text is Decodable in Json
++ Text is Decodable in Json
+
+- value is Streamable by Data over Credit
++ value is Streamable by Data over Credit
+
+- Html.Element of "ul" over "li" in Whatwg
++ Html.Element of "ul" over "li" in Whatwg
+
+= Html.Element of "ul" over "li" in Whatwg
+- ```
++ ```
+
+- The set is small and fixed, and each preposition keeps its meaning everywhere: `over` is
+- always the transport, `by` is always the operand, `on` is always the plane.
++ その集合は小さく固定されており、各前置詞はどこでも意味を保つ。`over` は常にトランスポートであり、`by` は常にオペランドであり、`on` は常にプレーンである。
+
+- ```tabular
++ ```tabular
+
+- column  Preposition
+- column  Refines
+- column  Names the
+- column  Example
+- row  `in`  `Form`  form or format  `Text is Decodable in Json`
+- row  `on`  `Plane`  plane  `Path on Linux`
+- row  `of`  `Topic`  topic  `Html of "br"`
+- row  `by`  `Operand`  operand  `Quantity is Multiplicable by Duration`
+- row  `to`  `Result`  result  `Text is Extractable to Int`
+- row  `from`  `Origin`  origin  `Ordinal is Optical from Yaml`
+- row  `over`  `Transport`  transport  `value is Streamable by Data over Credit`
+- row  `across`  `Domain`  domain  `Xml is Instantiable across HttpRequests`
+- row  `onto`  `Target`  target  `Http.Client onto Origin["http"]`
+- row  `against`  `Contrast`  contrast  `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7`
+- row  `under`  `Limit`  limit  `Tar is Nominative under Rules`
+- row  `at`  `Locus`  locus  `value is Decodable in Json at Json.Focus`
++ column  前置詞
++ column  細分化するもの
++ column  名指すもの
++ column  例
++ row  `in`  `Form`  形式またはフォーマット  `Text is Decodable in Json`
++ row  `on`  `Plane`  プレーン  `Path on Linux`
++ row  `of`  `Topic`  トピック  `Html of "br"`
++ row  `by`  `Operand`  オペランド  `Quantity is Multiplicable by Duration`
++ row  `to`  `Result`  結果  `Text is Extractable to Int`
++ row  `from`  `Origin`  起点  `Ordinal is Optical from Yaml`
++ row  `over`  `Transport`  トランスポート  `value is Streamable by Data over Credit`
++ row  `across`  `Domain`  ドメイン  `Xml is Instantiable across HttpRequests`
++ row  `onto`  `Target`  ターゲット  `Http.Client onto Origin["http"]`
++ row  `against`  `Contrast`  対照  `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7`
++ row  `under`  `Limit`  制限  `Tar is Nominative under Rules`
++ row  `at`  `Locus`  位置  `value is Decodable in Json at Json.Focus`
+
+= row  `at`  `Locus`  locus  `value is Decodable in Json at Json.Focus`
+- ```
++ ```
+
+- ## What the alternative costs
++ ## 代わりの方法のコスト
+
+- The same types, written conventionally:
++ 同じ型を、慣習的に書くとこうなる。
+
+= The same types, written conventionally:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The same types, written conventionally:
+=
+= ```scala fuel
+- parse
++ parse
+
+= The same types, written conventionally:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- Decodable[Text, Json]
++ Decodable[Text, Json]
+
+- Streamable[value, Data, Credit]
++ Streamable[value, Data, Credit]
+
+- Element["ul", "li", Whatwg]
++ Element["ul", "li", Whatwg]
+
+= Element["ul", "li", Whatwg]
+- ```
++ ```
+
+- Three problems, each of which the infix form avoids.
++ 三つの問題があり、中置の形式はそのそれぞれを避ける。
+
+- **Position carries the meaning.** In `Element["ul", "li", Whatwg]` a reader must know
+- that the first parameter is the tag, the second the permitted children and the third the
+- specification. In `Html.Element of "ul" over "li" in Whatwg` the prepositions say so.
++ **位置が意味を運ぶ。** `Element["ul", "li", Whatwg]` では、読み手は最初のパラメーターがタグであり、二番目が許される子であり、三番目が仕様であることを知っていなければならない。
++ `Html.Element of "ul" over "li" in Whatwg` では、前置詞がそう述べる。
+
+- **Every parameter must be supplied.** A conventional type constructor takes all its
+- arguments or none, so a partially-specified type needs a wildcard for each unmentioned
+- position. The infix form mentions only what it constrains: `Text is Decodable` is a
+- perfectly good type, and `in Json` narrows it.
++ **すべてのパラメーターを与えなければならない。** 慣習的な型コンストラクターはすべての引数を取るか、何も取らないかのどちらかなので、部分的に指定された型には、言及しない位置ごとにワイルドカードが必要になる。
++ 中置の形式は、制約するものだけに言及する。`Text is Decodable` はまったく正当な型であり、`in Json` がそれを絞り込む。
+
+- **Extending is a breaking change.** Adding a fourth type parameter to `Element[…]`
+- invalidates every use. Adding a fourth refinement adds a preposition that existing code
+- need not mention.
++ **拡張は破壊的な変更になる。** `Element[…]` に四番目の型パラメーターを加えると、すべての使用箇所が無効になる。
++ 四番目の細分化を加えることは、既存のコードが言及する必要のない前置詞を一つ加えることである。
+
+- ## Where they read badly
++ ## 読みにくくなる場所
+
+- The convention is not free of failure modes, and two are worth knowing.
++ この慣習にも失敗の仕方がないわけではなく、知っておく価値のあるものが二つある。
+
+- A type with many clauses can run long, and a long infix type wraps awkwardly across
+- lines — `(value is Streamable by Data over Credit) { type Transport = Credit }` is not
+- prose by anyone's standard. Where that happens, the answer is usually a named alias
+- rather than a longer phrase.
++ 多くの節を持つ型は長くなることがあり、長い中置型は行をまたいでぎこちなく折り返される。`(value is Streamable by Data over Credit) { type Transport = Credit }` は、誰の基準でも散文ではない。
++ そうなる場所では、たいていの場合、より長い句ではなく名前付きのエイリアスが答えになる。
+
+- And a preposition is only as good as the analogy it invites. `over` meaning "transport"
+- reads naturally in `Stream[Data] over Credit` and less naturally in `Instant over Unix`,
+- where the timeline is not transporting anything. The vocabulary is small enough that such
+- strains are visible, and they are accepted rather than hidden — the alternative is a
+- larger vocabulary in which each word is used less often and remembered less well.
++ また、前置詞はそれが誘う類推と同じ程度にしか良くない。
++ 「トランスポート」を意味する `over` は、`Stream[Data] over Credit` では自然に読めるが、時刻系が何も運んでいない `Instant over Unix` ではそれほど自然ではない。
++ 語彙は十分に小さいので、そのような無理は目に見え、隠されるのではなく受け入れられている。代わりの方法は、各語が使われる頻度が低く、覚えられにくい、より大きな語彙である。
+
+- ## What it costs
++ ## コスト
+
+- Infix types are unfamiliar. A reader arriving from ordinary Scala has met `A => B` and
+- `A & B` and not much else in infix position, so `Text is Decodable in Json` looks like
+- several things before it looks like a type. That cost is front-loaded and paid once.
++ 中置型はなじみがない。
++ 普通の Scala から来た読み手は、中置の位置にあるものとしては `A => B` と `A & B` くらいしか見たことがないので、`Text is Decodable in Json` は型に見える前にいくつもの別のものに見える。
++ そのコストは最初に集中しており、一度払えば済む。
+
+- Error messages are the more persistent cost: the compiler reports the *desugared*
+- refinement, so a mismatch is described in terms of `{ type Form = Json }` rather than
+- `in Json`, and the reader must perform the translation the syntax was meant to spare
+- them.
++ エラーメッセージはより持続的なコストである。コンパイラは*脱糖された*細分化を報告するので、不一致は `in Json` ではなく `{ type Form = Json }` によって記述され、読み手は構文が省くはずだった翻訳を自分で行わなければならない。
+
+- See [composability](composability.md) for the property this is in service of, and
+- [elegant prose](elegant-prose.md) for the reading experience it aims at.
++ これが奉仕する性質については[合成可能性](composability.md)を、目指す読書体験については[優雅な散文](elegant-prose.md)を参照すること。

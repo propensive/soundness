@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.27.13` — `S8` value above `Byte.MaxValue`
++ # `↯/s.27.13` — `Byte.MaxValue` を超える `S8` の値
+
+- Raised at compile time by Hypotenuse's `s8` macro when the value
+- exceeds `127`.
++ 値が `127` を超えるときに、Hypotenuse の `s8` マクロがコンパイル時に発生させる。
+
+- ## Cause
++ ## 原因
+
+- An `S8` (signed 8-bit) is bounded above by `Byte.MaxValue`.
++ `S8`（符号付き 8 ビット）の上限は `Byte.MaxValue` である。
+
+- ## Example message
++ ## メッセージの例
+
+=
+- ```
++ ```
+
+- [↯/s.27.13] an S8 may not be greater than 127
++ [↯/s.27.13] an S8 may not be greater than 127
+
+= [↯/s.27.13] an S8 may not be greater than 127
+- ```
++ ```
+
+- ## Resolution
++ ## 解決方法
+
+- Provide a value in the range `-128`–`127`.
++ `-128`–`127` の範囲の値を与える。
+
+- ## See also
++ ## 関連項目
+
+- - The other integer literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - その他の整数リテラルのエラー：[系列](README.md#families)
++ - ソース：`lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
