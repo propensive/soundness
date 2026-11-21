@@ -1,0 +1,157 @@
+orthant 1 language
+
+- column  Kind
+- column  Draws
+- column  Abscissa
+- column  Ordinate
+- column  Style
+- row  `Bars()`  a series, or a collection of series  categorical  continuous  `Bars.Style`
+- row  `StackedBars()`  a collection of series  categorical  continuous  `StackedBars.Style`
+- row  `Lines()`  a series, or a collection of series  continuous  continuous  `Lines.Style`
+- row  `Scatter()`  a series, or a collection of series  continuous  continuous  `Scatter.Style`
+- row  `Pie()`  exactly one series  categorical  continuous  `Pie.Style`
+- row  `Histogram()`  `Samples`, or a collection of them  continuous  counts  `Histogram.Style`
+- row  `Boxes()`  `Samples`, or a collection of them  one box per set  continuous  `Boxes.Style`
+- row  `Annulus()`  a `Dag` of `Weighted`, `Progressive` nodes  none  none  `Annulus.Style`
++ column  種類
++ column  描くもの
++ column  横軸
++ column  縦軸
++ column  スタイル
++ row  `Bars()`  一つの系列、または系列のコレクション  カテゴリー的  連続的  `Bars.Style`
++ row  `StackedBars()`  系列のコレクション  カテゴリー的  連続的  `StackedBars.Style`
++ row  `Lines()`  一つの系列、または系列のコレクション  連続的  連続的  `Lines.Style`
++ row  `Scatter()`  一つの系列、または系列のコレクション  連続的  連続的  `Scatter.Style`
++ row  `Pie()`  ちょうど一つの系列  カテゴリー的  連続的  `Pie.Style`
++ row  `Histogram()`  `Samples`、またはそのコレクション  連続的  度数  `Histogram.Style`
++ row  `Boxes()`  `Samples`、またはそのコレクション  集合ごとに一つの箱  連続的  `Boxes.Style`
++ row  `Annulus()`  `Weighted` かつ `Progressive` なノードの `Dag`  なし  なし  `Annulus.Style`
+
+- column  Hook
+- column  Draws
+- column  Defined on
+- row  `fontStyle`, `lettering`  the size and colour of text; every run of text  `Chart.Style`
+- row  `backdrop`  the canvas behind the chart  `Chart.Style`
+- row  `swatch`, `legendLabel`  a legend entry  `Chart.Style`
+- row  `leader`  the line from a moved label back to its point  `Chart.Style`
+- row  `axisLine`  the stroke of each axis  `Chart.Cartesian`
+- row  `axisBreak`  a break mark where a linear axis starts away from zero  `Chart.Cartesian`
+- row  `arrowhead`  the end of an axis  `Chart.Cartesian`
+- row  `tick`, `gridLine`  a gradation and its grid line  `Chart.Cartesian`
+- row  `tickLabel`  a tick's label, where it sits and whether it is rotated  `Chart.Cartesian`
+- row  `axisTitle`  an axis's title  `Chart.Cartesian`
+- row  `marker`, `errorBar`  a point and its interval  `Chart.Cartesian`
+- row  `pointLabel`  the note of a `Noted` point  `Chart.Cartesian`
+- row  `bar`  a bar  `Bars.Style`
+- row  `line`, `band`  a series line and an estimate's band  `Lines.Style`
+- row  `box`, `whisker`, `median`  a box plot's parts  `Boxes.Style`
+- row  `wedge`, `wedgeLabel`  a wedge and its percentage  `Pie.Style`
+- row  `shade`, `sector`, `remainder`  a sector's colour and its two parts  `Annulus.Style`
++ column  フック
++ column  描くもの
++ column  定義されている場所
++ row  `fontStyle`、`lettering`  テキストの大きさと色。テキストのあらゆる連なり  `Chart.Style`
++ row  `backdrop`  チャートの背後のキャンバス  `Chart.Style`
++ row  `swatch`、`legendLabel`  凡例のエントリー  `Chart.Style`
++ row  `leader`  移動したラベルからその点へ戻る線  `Chart.Style`
++ row  `axisLine`  各軸の線  `Chart.Cartesian`
++ row  `axisBreak`  線形の軸がゼロから離れて始まる場所の切れ目の印  `Chart.Cartesian`
++ row  `arrowhead`  軸の端  `Chart.Cartesian`
++ row  `tick`、`gridLine`  刻みとそのグリッド線  `Chart.Cartesian`
++ row  `tickLabel`  目盛りのラベル、その位置、回転するかどうか  `Chart.Cartesian`
++ row  `axisTitle`  軸のタイトル  `Chart.Cartesian`
++ row  `marker`、`errorBar`  点とその区間  `Chart.Cartesian`
++ row  `pointLabel`  `Noted` な点の注記  `Chart.Cartesian`
++ row  `bar`  棒  `Bars.Style`
++ row  `line`、`band`  系列の線と推定値の帯  `Lines.Style`
++ row  `box`、`whisker`、`median`  箱ひげ図の部品  `Boxes.Style`
++ row  `wedge`、`wedgeLabel`  扇形とその百分率  `Pie.Style`
++ row  `shade`、`sector`、`remainder`  扇形区画の色とその二つの部分  `Annulus.Style`
+
+- column  Identifier
+- column  Holds
+- column  In
+- row  `backdrop`  the canvas, in the palette's background colour  every chart
+- row  `grid`  the grid lines  cartesian charts
+- row  `abscissa`, `ordinate`  each axis, its gradations and its title  cartesian charts
+- row  `legend`  the legend  charts with a legend
+- row  `series-0`, `series-1`, …  each series  cartesian charts
+- row  `wedges`  every wedge and its label  `Pie`
+- row  `rank-0`, `rank-1`, …  each band  `Annulus`
++ column  識別子
++ column  持つもの
++ column  対象
++ row  `backdrop`  パレットの背景色によるキャンバス  すべてのチャート
++ row  `grid`  グリッド線  直交座標のチャート
++ row  `abscissa`、`ordinate`  各軸、その刻み、そのタイトル  直交座標のチャート
++ row  `legend`  凡例  凡例を持つチャート
++ row  `series-0`、`series-1`、…  各系列  直交座標のチャート
++ row  `wedges`  すべての扇形とそのラベル  `Pie`
++ row  `rank-0`、`rank-1`、…  各帯  `Annulus`
+
+- ### Annuli
++ ### 環状グラフ
+
+- An `Annulus` draws a dependency graph, a [`Dag`](graphs.md), as concentric bands. The nodes
+- which depend on nothing are in the innermost band, and each further band holds the nodes one
+- rank further out, so a build fills in from the center outwards. Each node is a sector of its
+- band, which sweeps an angle proportional to its size within the rank, and a band is as thick as
+- its rank's share of the total size.
++ `Annulus` は依存グラフ、つまり [`Dag`](graphs.md) を同心の帯として描く。
++ 何にも依存しないノードは最も内側の帯にあり、外側の各帯は一段ずつ外のノードを持つので、ビルドは中心から外へ向かって埋まっていく。
++ 各ノードはその帯の扇形区画であり、段の中での大きさに比例した角度を占め、帯の厚さは全体の大きさに対するその段の割合である。
+
+- The size of a node and its progress, from `0.0` to `1.0`, come from two typeclasses on the node
+- type, `Weighted` and `Progressive`. The sector fills clockwise as far as the node is complete,
+- with the remainder in a subdued tint of the sector's color. That color is the first color of the
+- palette, shaded by where the sector lies: its hue turns through thirty degrees from left to
+- right, and it is darker below the middle and lighter above. An annulus has no labels and no
+- legend. Each band is a `rank-0`, `rank-1`, … group, each sector a `sector-0`, `sector-1`, …
+- path, and the unfinished part of a sector is `sector-0-rest`.
++ ノードの大きさとその進捗（`0.0` から `1.0` まで）は、ノードの型に対する二つの型クラス `Weighted` と `Progressive` から来る。
++ 扇形区画はノードが完了した分だけ時計回りに埋まり、残りは扇形区画の色の控えめな色合いになる。
++ その色はパレットの最初の色であり、扇形区画の位置によって陰影が付けられる。その色相は左から右へ三十度回り、中央より下では暗く、上では明るい。
++ 環状グラフにはラベルも凡例もない。
++ 各帯は `rank-0`、`rank-1`、… のグループであり、各扇形区画は `sector-0`、`sector-1`、… のパスであり、扇形区画の未完了の部分は `sector-0-rest` である。
+
+- A node carries its progress, so an annulus is revised like any chart, with new data. The fit
+- survives any graph of the same shape and sizes, and only the bands whose sectors have filled
+- further are replaced:
++ ノードは自身の進捗を持つので、環状グラフは他のチャートと同様に新しいデータで改訂される。
++ 適合は同じ形と大きさのどのグラフに対しても保たれ、扇形区画がさらに埋まった帯だけが置き換えられる：
+
+- val annulus = Dag(typecheck -> parse, emit -> typecheck).chart(Annulus())
++ val annulus = Dag(typecheck -> parse, emit -> typecheck).chart(Annulus())
+
+- Out.println(annulus.fit.bands.size.show)
++ Out.println(annulus.fit.bands.size.show)
+
+- Out.println(annulus.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size.show)
++ Out.println(annulus.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size.show)
+
+- `Chart.Standard(hole = 0.3)` hollows the center. `sectorGap` and `bandGap` are the widths of the
+- grout between sectors and between bands. `Annulus.Style` has `shade` for the color of a sector
+- from its position, and `sector` and `remainder` for its two parts. The ranking is the one
+- [graphs](graphs.md#layering) describes: `import rankings.balancedRanking` draws each node as
+- close to its dependents as it can be, rather than as close to the center.
++ `Chart.Standard(hole = 0.3)` は中心をくり抜く。
++ `sectorGap` と `bandGap` は、扇形区画の間と帯の間の目地の幅である。
++ `Annulus.Style` には、位置から扇形区画の色を決める `shade` と、その二つの部分のための `sector` と `remainder` がある。
++ 段付けは[グラフ](graphs.md#layering)が説明するものである。`import rankings.balancedRanking` は、各ノードを中心にできるだけ近づけるのではなく、その依存元にできるだけ近づけて描く。
+
+- - [SVG](svg.md) describes the drawing which a chart renders to.
+- - [Label placement](label-placement.md) describes how the labels of a chart avoid each other.
+- - [Fonts](fonts.md) describes the typefaces a chart may be set in.
+- - [Quantities](quantities.md) describes the units which title an axis.
+- - [Graphs](graphs.md) describes the `Dag` which an annulus draws.
+- - [Colors](colors.md) describes the palette's colors.
+- - [Time](time.md) describes the durations and instants which a continuous axis may hold.
+- - [Gauges](gauges.md) and [tables](tables.md) present values in the terminal, and [testing](testing.md) charts benchmark results.
++ - [SVG](svg.md) は、チャートの描画先である図を説明している。
++ - [ラベルの配置](label-placement.md)は、チャートのラベルが互いを避ける方法を説明している。
++ - [フォント](fonts.md)は、チャートを組める書体を説明している。
++ - [物理量](quantities.md)は、軸のタイトルとなる単位を説明している。
++ - [グラフ](graphs.md)は、環状グラフが描く `Dag` を説明している。
++ - [色](colors.md)は、パレットの色を説明している。
++ - [時間](time.md)は、連続的な軸が持ちうる継続時間と時点を説明している。
++ - [ゲージ](gauges.md)と[表](tables.md)は端末で値を示し、[テスト](testing.md)はベンチマークの結果をチャートにする。

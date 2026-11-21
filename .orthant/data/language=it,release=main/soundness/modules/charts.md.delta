@@ -1,0 +1,157 @@
+orthant 1 language
+
+- column  Kind
+- column  Draws
+- column  Abscissa
+- column  Ordinate
+- column  Style
+- row  `Bars()`  a series, or a collection of series  categorical  continuous  `Bars.Style`
+- row  `StackedBars()`  a collection of series  categorical  continuous  `StackedBars.Style`
+- row  `Lines()`  a series, or a collection of series  continuous  continuous  `Lines.Style`
+- row  `Scatter()`  a series, or a collection of series  continuous  continuous  `Scatter.Style`
+- row  `Pie()`  exactly one series  categorical  continuous  `Pie.Style`
+- row  `Histogram()`  `Samples`, or a collection of them  continuous  counts  `Histogram.Style`
+- row  `Boxes()`  `Samples`, or a collection of them  one box per set  continuous  `Boxes.Style`
+- row  `Annulus()`  a `Dag` of `Weighted`, `Progressive` nodes  none  none  `Annulus.Style`
++ column  Tipo
++ column  Disegna
++ column  Ascissa
++ column  Ordinata
++ column  Stile
++ row  `Bars()`  una serie, o una collezione di serie  categoriale  continua  `Bars.Style`
++ row  `StackedBars()`  una collezione di serie  categoriale  continua  `StackedBars.Style`
++ row  `Lines()`  una serie, o una collezione di serie  continua  continua  `Lines.Style`
++ row  `Scatter()`  una serie, o una collezione di serie  continua  continua  `Scatter.Style`
++ row  `Pie()`  esattamente una serie  categoriale  continua  `Pie.Style`
++ row  `Histogram()`  `Samples`, o una loro collezione  continua  conteggi  `Histogram.Style`
++ row  `Boxes()`  `Samples`, o una loro collezione  un box per insieme  continua  `Boxes.Style`
++ row  `Annulus()`  un `Dag` di nodi `Weighted` e `Progressive`  nessuna  nessuna  `Annulus.Style`
+
+- column  Draws
+- column  Defined on
+- row  `fontStyle`, `lettering`  the size and colour of text; every run of text  `Chart.Style`
+- row  `backdrop`  the canvas behind the chart  `Chart.Style`
+- row  `swatch`, `legendLabel`  a legend entry  `Chart.Style`
+- row  `leader`  the line from a moved label back to its point  `Chart.Style`
+- row  `axisLine`  the stroke of each axis  `Chart.Cartesian`
+- row  `axisBreak`  a break mark where a linear axis starts away from zero  `Chart.Cartesian`
+- row  `arrowhead`  the end of an axis  `Chart.Cartesian`
+- row  `tick`, `gridLine`  a gradation and its grid line  `Chart.Cartesian`
+- row  `tickLabel`  a tick's label, where it sits and whether it is rotated  `Chart.Cartesian`
+- row  `axisTitle`  an axis's title  `Chart.Cartesian`
+- row  `marker`, `errorBar`  a point and its interval  `Chart.Cartesian`
+- row  `pointLabel`  the note of a `Noted` point  `Chart.Cartesian`
+- row  `bar`  a bar  `Bars.Style`
+- row  `line`, `band`  a series line and an estimate's band  `Lines.Style`
+- row  `box`, `whisker`, `median`  a box plot's parts  `Boxes.Style`
+- row  `wedge`, `wedgeLabel`  a wedge and its percentage  `Pie.Style`
+- row  `shade`, `sector`, `remainder`  a sector's colour and its two parts  `Annulus.Style`
++ column  Disegna
++ column  Definito in
++ row  `fontStyle`, `lettering`  la dimensione e il colore del testo; ogni frammento di testo  `Chart.Style`
++ row  `backdrop`  la tela dietro il grafico  `Chart.Style`
++ row  `swatch`, `legendLabel`  una voce della legenda  `Chart.Style`
++ row  `leader`  la linea da un'etichetta spostata fino al suo punto  `Chart.Style`
++ row  `axisLine`  la linea di ciascun asse  `Chart.Cartesian`
++ row  `axisBreak`  un segno di interruzione dove un asse lineare non comincia da zero  `Chart.Cartesian`
++ row  `arrowhead`  l'estremità di un asse  `Chart.Cartesian`
++ row  `tick`, `gridLine`  una graduazione e la sua linea della griglia  `Chart.Cartesian`
++ row  `tickLabel`  l'etichetta di una tacca, dove sta e se è ruotata  `Chart.Cartesian`
++ row  `axisTitle`  il titolo di un asse  `Chart.Cartesian`
++ row  `marker`, `errorBar`  un punto e il suo intervallo  `Chart.Cartesian`
++ row  `pointLabel`  la nota di un punto `Noted`  `Chart.Cartesian`
++ row  `bar`  una barra  `Bars.Style`
++ row  `line`, `band`  la linea di una serie e la banda di una stima  `Lines.Style`
++ row  `box`, `whisker`, `median`  le parti di un box plot  `Boxes.Style`
++ row  `wedge`, `wedgeLabel`  uno spicchio e la sua percentuale  `Pie.Style`
++ row  `shade`, `sector`, `remainder`  il colore di un settore e le sue due parti  `Annulus.Style`
+
+- row  `backdrop`  the canvas, in the palette's background colour  every chart
+- row  `grid`  the grid lines  cartesian charts
+- row  `abscissa`, `ordinate`  each axis, its gradations and its title  cartesian charts
+- row  `legend`  the legend  charts with a legend
+- row  `series-0`, `series-1`, …  each series  cartesian charts
+- row  `wedges`  every wedge and its label  `Pie`
+- row  `rank-0`, `rank-1`, …  each band  `Annulus`
++ row  `backdrop`  la tela, nel colore di sfondo della tavolozza  ogni grafico
++ row  `grid`  le linee della griglia  grafici cartesiani
++ row  `abscissa`, `ordinate`  ciascun asse, le sue graduazioni e il suo titolo  grafici cartesiani
++ row  `legend`  la legenda  grafici con una legenda
++ row  `series-0`, `series-1`, …  ciascuna serie  grafici cartesiani
++ row  `wedges`  ogni spicchio e la sua etichetta  `Pie`
++ row  `rank-0`, `rank-1`, …  ciascuna banda  `Annulus`
+
+- ### Annuli
++ ### Anelli
+
+- An `Annulus` draws a dependency graph, a [`Dag`](graphs.md), as concentric bands. The nodes
+- which depend on nothing are in the innermost band, and each further band holds the nodes one
+- rank further out, so a build fills in from the center outwards. Each node is a sector of its
+- band, which sweeps an angle proportional to its size within the rank, and a band is as thick as
+- its rank's share of the total size.
++ Un `Annulus` disegna un grafo delle dipendenze, un [`Dag`](graphs.md), come bande concentriche. I
++ nodi che non dipendono da nulla stanno nella banda più interna, e ogni banda successiva contiene
++ i nodi di un rango più all'esterno, così una build si riempie dal centro verso l'esterno. Ogni
++ nodo è un settore della sua banda, che copre un angolo proporzionale alla sua dimensione entro il
++ rango, e una banda è spessa quanto la quota del suo rango sulla dimensione totale.
+
+- The size of a node and its progress, from `0.0` to `1.0`, come from two typeclasses on the node
+- type, `Weighted` and `Progressive`. The sector fills clockwise as far as the node is complete,
+- with the remainder in a subdued tint of the sector's color. That color is the first color of the
+- palette, shaded by where the sector lies: its hue turns through thirty degrees from left to
+- right, and it is darker below the middle and lighter above. An annulus has no labels and no
+- legend. Each band is a `rank-0`, `rank-1`, … group, each sector a `sector-0`, `sector-1`, …
+- path, and the unfinished part of a sector is `sector-0-rest`.
++ La dimensione di un nodo e il suo avanzamento, da `0.0` a `1.0`, vengono da due typeclass sul
++ tipo del nodo, `Weighted` e `Progressive`. Il settore si riempie in senso orario quanto il nodo
++ è completo, con il resto in una tinta attenuata del colore del settore. Quel colore è il primo
++ colore della tavolozza, sfumato secondo la posizione del settore: la sua tinta ruota di trenta
++ gradi da sinistra a destra, ed è più scuro sotto il centro e più chiaro sopra. Un anello non ha
++ etichette né legenda. Ogni banda è un gruppo `rank-0`, `rank-1`, …, ogni settore un tracciato
++ `sector-0`, `sector-1`, …, e la parte non finita di un settore è `sector-0-rest`.
+
+- A node carries its progress, so an annulus is revised like any chart, with new data. The fit
+- survives any graph of the same shape and sizes, and only the bands whose sectors have filled
+- further are replaced:
++ Un nodo porta con sé il proprio avanzamento, così un anello si rivede come qualsiasi grafico, con
++ nuovi dati. L'adattamento sopravvive a qualsiasi grafo della stessa forma e delle stesse
++ dimensioni, e si sostituiscono solo le bande i cui settori si sono riempiti ulteriormente:
+
+- val annulus = Dag(typecheck -> parse, emit -> typecheck).chart(Annulus())
++ val annulus = Dag(typecheck -> parse, emit -> typecheck).chart(Annulus())
+
+- Out.println(annulus.fit.bands.size.show)
++ Out.println(annulus.fit.bands.size.show)
+
+- Out.println(annulus.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size.show)
++ Out.println(annulus.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size.show)
+
+- `Chart.Standard(hole = 0.3)` hollows the center. `sectorGap` and `bandGap` are the widths of the
+- grout between sectors and between bands. `Annulus.Style` has `shade` for the color of a sector
+- from its position, and `sector` and `remainder` for its two parts. The ranking is the one
+- [graphs](graphs.md#layering) describes: `import rankings.balancedRanking` draws each node as
+- close to its dependents as it can be, rather than as close to the center.
++ `Chart.Standard(hole = 0.3)` svuota il centro. `sectorGap` e `bandGap` sono le larghezze della
++ fuga tra i settori e tra le bande. `Annulus.Style` ha `shade` per il colore di un settore in base
++ alla sua posizione, e `sector` e `remainder` per le sue due parti. Il ranking è quello descritto
++ in [grafi](graphs.md#layering): `import rankings.balancedRanking` disegna ogni nodo il più vicino
++ possibile ai suoi dipendenti, anziché il più vicino possibile al centro.
+
+- - [SVG](svg.md) describes the drawing which a chart renders to.
+- - [Label placement](label-placement.md) describes how the labels of a chart avoid each other.
+- - [Fonts](fonts.md) describes the typefaces a chart may be set in.
+- - [Quantities](quantities.md) describes the units which title an axis.
+- - [Graphs](graphs.md) describes the `Dag` which an annulus draws.
+- - [Colors](colors.md) describes the palette's colors.
+- - [Time](time.md) describes the durations and instants which a continuous axis may hold.
+- - [Gauges](gauges.md) and [tables](tables.md) present values in the terminal, and [testing](testing.md) charts benchmark results.
++ - [SVG](svg.md) descrive il disegno in cui un grafico si rende.
++ - [Collocazione delle etichette](label-placement.md) descrive come le etichette di un grafico si
++   evitano a vicenda.
++ - [Font](fonts.md) descrive i caratteri tipografici in cui un grafico può essere composto.
++ - [Grandezze](quantities.md) descrive le unità che danno il titolo a un asse.
++ - [Grafi](graphs.md) descrive il `Dag` che un anello disegna.
++ - [Colori](colors.md) descrive i colori della tavolozza.
++ - [Tempo](time.md) descrive le durate e gli istanti che un asse continuo può contenere.
++ - [Indicatori](gauges.md) e [tabelle](tables.md) presentano valori nel terminale, e
++   [test](testing.md) traccia grafici dei risultati dei benchmark.

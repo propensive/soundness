@@ -54,3 +54,161 @@ orthant 1 language
 + bloc : en conserver une référence pour plus tard est une erreur de compilation. La map est donc
 + immuable dès que `build` rend la main, et égale à toute autre map ayant les mêmes entrées, de
 + quelque façon que celle-ci ait été créée.
+
+- ### Maps with keys known in advance
++ ### Maps aux clés connues d'avance
+
+- A map whose keys are all written where it is made can be read faster still. `Map.fixed` finds a
+- *perfect hash* of its keys while the code is compiled: a small calculation which sends each key
+- to a slot of its own. A read is then that calculation and one comparison, whether or not the
+- key is there:
++ Une map dont toutes les clés sont écrites là où elle est créée se lit plus vite encore.
++ `Map.fixed` trouve un *hachage parfait* de ses clés pendant la compilation du code : un petit
++ calcul qui envoie chaque clé vers un emplacement qui lui est propre. Une lecture se réduit alors à
++ ce calcul et à une comparaison, que la clé soit présente ou non :
+
+= key is there:
+=
+- ```scala fuel
++ ```scala fuel
+
+= key is there:
+=
+= ```scala fuel
+- run
++ run
+
+= key is there:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val cast = Map.fixed(t"Lear" -> 80, t"Kent" -> 48, t"Gloucester" -> 60, t"Edgar" -> 28)
++ val cast = Map.fixed(t"Lear" -> 80, t"Kent" -> 48, t"Gloucester" -> 60, t"Edgar" -> 28)
+
+- Out.println(cast.at(t"Edgar").inspect)
++ Out.println(cast.at(t"Edgar").inspect)
+
+- Out.println(cast.at(t"Fool").inspect)
++ Out.println(cast.at(t"Fool").inspect)
+
+- Out.println((cast == court.define(t"Edgar", 28)).inspect)
++ Out.println((cast == court.define(t"Edgar", 28)).inspect)
+
+= Out.println((cast == court.define(t"Edgar", 28)).inspect)
+- ```
++ ```
+
+- The keys must be literals: texts, `Int`s, `Long`s or `Char`s, all of one kind, and each given
+- once. The values can be any expressions. A fixed map is an ordinary `Map` to everything which
+- uses it, and `define` and `omit` work on it as on any other.
++ Les clés doivent être des littéraux : des textes, des `Int`s, des `Long`s ou des `Char`s, tous
++ d'une même sorte, et chacun donné une seule fois. Les valeurs peuvent être des expressions
++ quelconques. Une map fixe est une `Map` ordinaire pour tout ce qui l'utilise, et `define` et
++ `omit` y fonctionnent comme sur n'importe quelle autre.
+
+- A map which cannot be fixed does not compile, so a map made with `fixed` is never a slower one
+- in disguise. Giving a key twice is one such error:
++ Une map qui ne peut pas être fixée ne compile pas : une map créée avec `fixed` n'est donc jamais
++ une map plus lente déguisée. Donner deux fois la même clé est l'une de ces erreurs :
+
+= in disguise. Giving a key twice is one such error:
+=
+- ```scala fuel
++ ```scala fuel
+
+= in disguise. Giving a key twice is one such error:
+=
+= ```scala fuel
+- compile
++ compile
+
+= in disguise. Giving a key twice is one such error:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= in disguise. Giving a key twice is one such error:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Map.fixed(t"Lear" -> 80, t"Kent" -> 48, t"Lear" -> 81)
++ Map.fixed(t"Lear" -> 80, t"Kent" -> 48, t"Lear" -> 81)
+
+= Map.fixed(t"Lear" -> 80, t"Kent" -> 48, t"Lear" -> 81)
+- ```
++ ```
+
+- A key which is not a literal is another, as are keys of different kinds, and two texts which
+- happen to share a hash code. A map of more than 1,024 entries is too large to write out this
+- way, and is better filled with `Map.build`.
++ Une clé qui n'est pas un littéral en est une autre, tout comme des clés de sortes différentes,
++ et deux textes qui se trouvent partager le même code de hachage. Une map de plus de 1 024 entrées
++ est trop grande pour être écrite ainsi, et mieux vaut la remplir avec `Map.build`.
+
+- When the keys are only known once the program is running, `optimize` gives an existing map the
+- same treatment. It finds the hash then, and compiles it with the Scala compiler:
++ Quand les clés ne sont connues qu'une fois le programme lancé, `optimize` applique le même
++ traitement à une map existante. Il trouve alors le hachage, et le compile avec le compilateur
++ Scala :
+
+= same treatment. It finds the hash then, and compiles it with the Scala compiler:
+=
+- ```scala
++ ```scala
+
+- import murmuration.optimize
++ import murmuration.optimize
+
+= import murmuration.optimize
+- ```
++ ```
+
+= import murmuration.optimize
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+= typecheck
+- ##
++ ##
+
+- val quick = court.optimize
++ val quick = court.optimize
+
+= val quick = court.optimize
+- ```
++ ```
+
+- The compiler must therefore be on the classpath when the program runs, which is why `optimize`
+- comes from a module of its own, in the `staged` bundle, and only on the JVM. Compiling takes
+- about a tenth of a second for each map, and several seconds for the first, so it suits a map
+- which is made once and read a great many times.
++ Le compilateur doit donc se trouver dans le classpath à l'exécution du programme ; c'est pourquoi
++ `optimize` provient d'un module à part, dans le lot `staged`, et seulement sur la JVM. La
++ compilation prend environ un dixième de seconde par map, et plusieurs secondes pour la première :
++ elle convient donc à une map créée une fois et lue un très grand nombre de fois.
+
+- It helps a map keyed by numbers most, which reads about twice as fast. A map keyed by text
+- reads faster when its keys are usually found, and slower when they usually are not, since a
+- text which is absent must still be compared with the one in its slot. A map of four entries or
+- fewer, or one whose keys are not all texts, all `Int`s, all `Long`s or all `Char`s, is given
+- back as it was.
++ Ce traitement profite surtout à une map dont les clés sont des nombres, qui se lit environ deux fois plus
++ vite. Une map dont les clés sont des textes se lit plus vite quand ses clés sont généralement
++ trouvées, et plus lentement quand elles ne le sont généralement pas, car un texte absent doit
++ tout de même être comparé à celui de son emplacement. Une map de quatre entrées ou moins, ou dont
++ les clés ne sont pas toutes des textes, toutes des `Int`s, toutes des `Long`s ou toutes des
++ `Char`s, est rendue telle quelle.

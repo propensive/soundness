@@ -50,6 +50,20 @@ orthant 1 language
 +   и сравнивается один раз за проверяемое чтение, а не дважды, что заметно только для типа ключа,
 +   у которого `hashCode` или `equals` имеют побочные эффекты. (#2531)
 
+- ## distillate
++ ## distillate
+
+- - `distillate.Enumerable` gains two protected members, `indexed(name: Text): Optional[Self]` and
+-   `numbered(index: Int): Optional[Self]`, and `value(name: Text)` now delegates to `indexed`. A
+-   derived instance (`Enumerable.derived`) for an enumeration of six or more cases overrides
+-   `value(name: Text)` with a generated lookup; results are unchanged. A hand-written `Enumerable`
+-   needs no change.
++ - `distillate.Enumerable` получает два защищённых члена, `indexed(name: Text): Optional[Self]` и
++   `numbered(index: Int): Optional[Self]`, а `value(name: Text)` теперь делегирует `indexed`.
++   Производный экземпляр (`Enumerable.derived`) для перечисления из шести и более кейсов
++   переопределяет `value(name: Text)` сгенерированным поиском; результаты не изменились.
++   Написанный вручную `Enumerable` не требует изменений.
+
 - ## jacinta
 + ## jacinta
 
@@ -129,6 +143,51 @@ orthant 1 language
 -   `Ledger`. (#2532)
 +   `Ledger`. (#2532)
 
+- - `proscenium.Map.read(map, index)` and `proscenium.Ledger.read(ledger, index)` return
+-   `value | Null` — the value, or `null` for a key that is not defined; they returned
+-   `scala.Option[value]`. Replace `Map.read(m, k) match { case Some(v) => a(v); case None => b }`
+-   with `val v = Map.read(m, k); if v == null then b else a(v)`. A map whose value type itself
+-   admits `null` cannot tell a stored `null` from an absent key this way; use
+-   `proscenium.Map.probe(map, index, absent)` with a sentinel there.
++ - `proscenium.Map.read(map, index)` и `proscenium.Ledger.read(ledger, index)` возвращают
++   `value | Null` — значение или `null` для ключа, который не определён; раньше они возвращали
++   `scala.Option[value]`. Замените `Map.read(m, k) match { case Some(v) => a(v); case None => b }`
++   на `val v = Map.read(m, k); if v == null then b else a(v)`. Словарь, тип значений которого сам
++   допускает `null`, не может так отличить сохранённый `null` от отсутствующего ключа; в этом
++   случае используйте `proscenium.Map.probe(map, index, absent)` со значением-маркером.
+
+- - New, and requiring no change:
+-   - `proscenium.PerfectHash` (exported to `soundness`): a perfect hash function for a fixed set
+-     of keys, found by `PerfectHash.search` and spliced into generated code with `quoted`;
+-     `PerfectHash.dispatch` generates a whole lookup among keys a macro knows.
+-   - `proscenium.Map.fixed(key -> value, …)`: a macro which makes a map read through a perfect hash
+-     of its keys, found at compile time. The keys must be literals, all `Text`, all `Int`, all
+-     `Long` or all `Char`, each given once, and at most 1,024 of them; anything else is a compile
+-     error. The result equals the ordinary `Map` of the same entries.
+-   - `proscenium.PerfectMap`: the abstract map both are read through, and `proscenium.Map.perfect`,
+-     which lays an existing map out for one.
+-   - The JVM-only component `murmuration.staged`, in the opt-in `staged` bundle, adds the extension
+-     `murmuration.optimize` on a `Map`, which compiles a perfect hash of the map's keys at runtime
+-     with the staging compiler; it needs the compiler on the classpath.
+-   - `Map.from` hands a `PerfectMap` back unchanged, as it does any map.
++ - Новое, не требующее изменений:
++   - `proscenium.PerfectHash` (экспортируется в `soundness`): совершенная хеш-функция для
++     фиксированного набора ключей, которую находит `PerfectHash.search` и которая вклеивается в
++     сгенерированный код через `quoted`; `PerfectHash.dispatch` генерирует целый поиск среди
++     ключей, известных макросу.
++   - `proscenium.Map.fixed(key -> value, …)`: макрос, создающий словарь, который читается через
++     совершенный хеш его ключей, найденный во время компиляции. Ключи должны быть литералами,
++     все `Text`, все `Int`, все `Long` или все `Char`, каждый указан один раз, и их не больше
++     1 024; всё остальное — ошибка компиляции. Результат равен обычному `Map` с теми же
++     элементами.
++   - `proscenium.PerfectMap`: абстрактный словарь, через который читаются оба, и
++     `proscenium.Map.perfect`, который раскладывает существующий словарь для него.
++   - Компонент `murmuration.staged`, только для JVM, в подключаемом по выбору наборе `staged`,
++     добавляет расширение `murmuration.optimize` для `Map`, которое во время выполнения
++     компилирует совершенный хеш ключей словаря компилятором стадирования; для этого компилятор
++     должен быть в classpath.
++   - `Map.from` возвращает `PerfectMap` без изменений, как и любой словарь.
+
 - ## stratiform
 + ## stratiform
 
@@ -142,6 +201,22 @@ orthant 1 language
 +   плоской хеш-таблице, поэтому порядок его обхода отличается от прежнего; ни один из порядков не
 +   специфицирован, а результат из четырёх и менее элементов по-прежнему обходится в порядке
 +   документа. Содержимое, равенство и `hashCode` не изменились. (#2532)
+
+- ## tasseomancy
++ ## tasseomancy
+
+- - The chart kind `tasseomancy.Doughnut` is renamed `tasseomancy.Annulus`, and with it the members
+-   of its companion: `Doughnut()` is `Annulus()`, `Doughnut.Fit[node]` is `Annulus.Fit[node]`,
+-   `Doughnut.Style` is `Annulus.Style` and the given `Doughnut.dag` is `Annulus.dag`. The `soundness`
+-   package exports `Annulus` in place of `Doughnut`. Replace the identifier `Doughnut` with
+-   `Annulus` wherever it refers to this type; nothing else about the chart, its fit, its style or
+-   the SVG it draws has changed. (#2534)
++ - Вид диаграммы `tasseomancy.Doughnut` переименован в `tasseomancy.Annulus`, а вместе с ним и
++   члены его компаньона: `Doughnut()` стал `Annulus()`, `Doughnut.Fit[node]` — `Annulus.Fit[node]`,
++   `Doughnut.Style` — `Annulus.Style`, а given `Doughnut.dag` — `Annulus.dag`. Пакет `soundness`
++   экспортирует `Annulus` вместо `Doughnut`. Замените идентификатор `Doughnut` на `Annulus`
++   везде, где он относится к этому типу; больше ничего в диаграмме, её подгонке, её стиле и
++   рисуемом ею SVG не изменилось. (#2534)
 
 - ## xylophone
 + ## xylophone

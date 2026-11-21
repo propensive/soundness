@@ -51,6 +51,20 @@ orthant 1 language
 +   y se compara una vez por lectura comprobada en lugar de dos, lo cual solo es observable con un
 +   tipo de clave cuyo `hashCode` o `equals` tenga efectos secundarios. (#2531)
 
+- ## distillate
++ ## distillate
+
+- - `distillate.Enumerable` gains two protected members, `indexed(name: Text): Optional[Self]` and
+-   `numbered(index: Int): Optional[Self]`, and `value(name: Text)` now delegates to `indexed`. A
+-   derived instance (`Enumerable.derived`) for an enumeration of six or more cases overrides
+-   `value(name: Text)` with a generated lookup; results are unchanged. A hand-written `Enumerable`
+-   needs no change.
++ - `distillate.Enumerable` gana dos miembros protegidos, `indexed(name: Text): Optional[Self]` y
++   `numbered(index: Int): Optional[Self]`, y `value(name: Text)` delega ahora en `indexed`. Una
++   instancia derivada (`Enumerable.derived`) para una enumeración de seis o más casos sobrescribe
++   `value(name: Text)` con una búsqueda generada; los resultados no cambian. Un `Enumerable` escrito
++   a mano no necesita ningún cambio.
+
 - ## jacinta
 + ## jacinta
 
@@ -128,6 +142,50 @@ orthant 1 language
 +   `omit` no cambian; la clase en tiempo de ejecución del `.stdlib` de un resultado así ya no es
 +   `HashMap`. El código que dependa del orden de un mapa debe ordenar, o usar `Ledger`. (#2532)
 
+- - `proscenium.Map.read(map, index)` and `proscenium.Ledger.read(ledger, index)` return
+-   `value | Null` — the value, or `null` for a key that is not defined; they returned
+-   `scala.Option[value]`. Replace `Map.read(m, k) match { case Some(v) => a(v); case None => b }`
+-   with `val v = Map.read(m, k); if v == null then b else a(v)`. A map whose value type itself
+-   admits `null` cannot tell a stored `null` from an absent key this way; use
+-   `proscenium.Map.probe(map, index, absent)` with a sentinel there.
++ - `proscenium.Map.read(map, index)` y `proscenium.Ledger.read(ledger, index)` devuelven
++   `value | Null`: el valor, o `null` para una clave que no está definida; antes devolvían
++   `scala.Option[value]`. Sustituye `Map.read(m, k) match { case Some(v) => a(v); case None => b }`
++   por `val v = Map.read(m, k); if v == null then b else a(v)`. Un mapa cuyo propio tipo de valor
++   admite `null` no puede distinguir así un `null` almacenado de una clave ausente; usa ahí
++   `proscenium.Map.probe(map, index, absent)` con un centinela.
+
+- - New, and requiring no change:
+-   - `proscenium.PerfectHash` (exported to `soundness`): a perfect hash function for a fixed set
+-     of keys, found by `PerfectHash.search` and spliced into generated code with `quoted`;
+-     `PerfectHash.dispatch` generates a whole lookup among keys a macro knows.
+-   - `proscenium.Map.fixed(key -> value, …)`: a macro which makes a map read through a perfect hash
+-     of its keys, found at compile time. The keys must be literals, all `Text`, all `Int`, all
+-     `Long` or all `Char`, each given once, and at most 1,024 of them; anything else is a compile
+-     error. The result equals the ordinary `Map` of the same entries.
+-   - `proscenium.PerfectMap`: the abstract map both are read through, and `proscenium.Map.perfect`,
+-     which lays an existing map out for one.
+-   - The JVM-only component `murmuration.staged`, in the opt-in `staged` bundle, adds the extension
+-     `murmuration.optimize` on a `Map`, which compiles a perfect hash of the map's keys at runtime
+-     with the staging compiler; it needs the compiler on the classpath.
+-   - `Map.from` hands a `PerfectMap` back unchanged, as it does any map.
++ - Novedades que no requieren ningún cambio:
++   - `proscenium.PerfectHash` (exportado a `soundness`): una función hash perfecta para un conjunto
++     fijo de claves, que encuentra `PerfectHash.search` y que se inserta en código generado con
++     `quoted`; `PerfectHash.dispatch` genera una búsqueda completa entre claves que conoce una macro.
++   - `proscenium.Map.fixed(key -> value, …)`: una macro que crea un mapa que se lee a través de un
++     hash perfecto de sus claves, encontrado en tiempo de compilación. Las claves deben ser
++     literales, todas `Text`, todas `Int`, todas `Long` o todas `Char`, cada una dada una sola vez,
++     y como mucho 1.024; cualquier otra cosa es un error de compilación. El resultado es igual al
++     `Map` corriente con las mismas entradas.
++   - `proscenium.PerfectMap`: el mapa abstracto a través del cual se leen ambos, y
++     `proscenium.Map.perfect`, que dispone un mapa existente para uno.
++   - El componente `murmuration.staged`, solo para la JVM, en la agrupación de adhesión voluntaria
++     `staged`, añade la extensión `murmuration.optimize` sobre un `Map`, que compila un hash
++     perfecto de las claves del mapa en tiempo de ejecución con el compilador de ejecución por
++     etapas; necesita el compilador en el classpath.
++   - `Map.from` devuelve un `PerfectMap` sin cambios, como hace con cualquier mapa.
+
 - ## stratiform
 + ## stratiform
 
@@ -141,6 +199,22 @@ orthant 1 language
 +   tabla hash plana, de modo que su orden de iteración difiere del de antes; ninguno de los dos
 +   órdenes está especificado, y un resultado de cuatro entradas o menos sigue iterándose en el orden
 +   del documento. El contenido, la igualdad y `hashCode` no cambian. (#2532)
+
+- ## tasseomancy
++ ## tasseomancy
+
+- - The chart kind `tasseomancy.Doughnut` is renamed `tasseomancy.Annulus`, and with it the members
+-   of its companion: `Doughnut()` is `Annulus()`, `Doughnut.Fit[node]` is `Annulus.Fit[node]`,
+-   `Doughnut.Style` is `Annulus.Style` and the given `Doughnut.dag` is `Annulus.dag`. The `soundness`
+-   package exports `Annulus` in place of `Doughnut`. Replace the identifier `Doughnut` with
+-   `Annulus` wherever it refers to this type; nothing else about the chart, its fit, its style or
+-   the SVG it draws has changed. (#2534)
++ - La clase de gráfico `tasseomancy.Doughnut` pasa a llamarse `tasseomancy.Annulus`, y con ella
++   los miembros de su objeto compañero: `Doughnut()` es `Annulus()`, `Doughnut.Fit[node]` es
++   `Annulus.Fit[node]`, `Doughnut.Style` es `Annulus.Style` y el given `Doughnut.dag` es
++   `Annulus.dag`. El paquete `soundness` exporta `Annulus` en lugar de `Doughnut`. Sustituye el
++   identificador `Doughnut` por `Annulus` allí donde se refiera a este tipo; nada más ha cambiado en
++   el gráfico, su ajuste, su estilo ni el SVG que dibuja. (#2534)
 
 - ## xylophone
 + ## xylophone
