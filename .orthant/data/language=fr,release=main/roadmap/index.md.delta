@@ -1,0 +1,58 @@
+orthant 1 language
+
+- column  Criterion
+- column  Items
+- row  `proscenium.compat` is empty  `core-2`
+- row  No file outside proscenium imports `scala.collection`  `core-3`
+- row  No `caps.unsafe` escape hatch remains in `lib/`  `safety-4`
+- row  The platform manifest is enforced in CI, its exclusions carry reasons, and an Android APK is built and signed in CI  `plat-1`, `plat-2`, `plat-3`
+- row  `etc/api-reduction-candidates.md` no longer exists  `api-5`
+- row  Every error type has a bolt code and a documentation page, checked in CI  `doc-1`
+- row  Every published module is covered by a `doc/work/soundness/modules/` topic  `doc-4`
+- row  API documentation is generated and published for every component  `doc-5`
+- row  `fury build` builds Soundness itself, attestation-equal to the Mill build  `tool-4`
+- row  fume runs the full test suite, and no suite is disabled  `tool-2`
+- row  A scripted LSP editor session passes in CI  `tool-3`
+- row  Every breaking change in the last ten consecutive releases shipped with agent-executable migration instructions  `dist-2`
+- row  Every release is published as attested LIRA files  `dist-7`
+- row  JOSE, TOML and WebAuthn are shipped  `brd-1`, `brd-2`, `brd-3`
+- row  An agent, following only the documentation in `doc/`, takes a new project from nothing to a tested, deployed JVM-and-JavaScript web application using only ecosystem tools, and this walkthrough is executed and recorded in CI  `doc-8`
++ column  Critère
++ column  Éléments
++ row  `proscenium.compat` est vide  `core-2`
++ row  Aucun fichier hors de proscenium n'importe `scala.collection`  `core-3`
++ row  Aucune échappatoire `caps.unsafe` ne subsiste dans `lib/`  `safety-4`
++ row  Le manifeste des plateformes est imposé en CI, ses exclusions portent des raisons, et un APK Android est construit et signé en CI  `plat-1`, `plat-2`, `plat-3`
++ row  `etc/api-reduction-candidates.md` n'existe plus  `api-5`
++ row  Chaque type d'erreur a un code bolt et une page de documentation, vérifiés en CI  `doc-1`
++ row  Chaque module publié est couvert par un sujet de `doc/work/soundness/modules/`  `doc-4`
++ row  La documentation d'API est générée et publiée pour chaque composant  `doc-5`
++ row  `fury build` construit Soundness lui-même, avec une attestation égale à celle du build Mill  `tool-4`
++ row  fume exécute la suite de tests complète, et aucune suite n'est désactivée  `tool-2`
++ row  Une session d'éditeur LSP scriptée passe en CI  `tool-3`
++ row  Chaque changement incompatible des dix dernières versions consécutives a été livré avec des instructions de migration exécutables par un agent  `dist-2`
++ row  Chaque version est publiée sous forme de fichiers LIRA attestés  `dist-7`
++ row  JOSE, TOML et WebAuthn sont livrés  `brd-1`, `brd-2`, `brd-3`
++ row  Un agent, en ne suivant que la documentation de `doc/`, mène un nouveau projet de rien jusqu'à une application web JVM et JavaScript testée et déployée, avec les seuls outils de l'écosystème, et cette démonstration est exécutée et consignée en CI  `doc-8`
+
+- - Item identifiers are stable anchors; cite them (`core-3`, `dist-2`) rather than describing
+-   work in prose.
+- - Verify any claim of progress by running the item's `Done when:` command; never trust prose or
+-   memory over the command's output. Re-measure baselines before relying on them and report
+-   drift.
+- - Read [`status.tel`](status.tel) for current status; update it in the same commit as the work
+-   it describes.
+- - When a roadmap item changes a public API, follow the migration-instruction convention defined
+-   by `dist-2` in `doc/work/standards/migration.md` — that convention is what makes "APIs change
+-   freely" and "code keeps working" compatible.
++ - Les identifiants des éléments sont des ancres stables ; les citer (`core-3`, `dist-2`) plutôt que
++   de décrire le travail en prose.
++ - Vérifier toute déclaration de progrès en exécutant la commande `Done when:` de l'élément ; ne
++   jamais se fier à la prose ou à la mémoire plutôt qu'à la sortie de la commande. Mesurer de nouveau
++   les points de départ avant de s'y fier, et signaler la dérive.
++ - Lire [`status.tel`](status.tel) pour connaître l'état actuel ; le mettre à jour dans le même commit
++   que le travail qu'il décrit.
++ - Lorsqu'un élément de la feuille de route modifie une API publique, suivre la convention des
++   instructions de migration définie par `dist-2` dans `doc/work/standards/migration.md` — c'est cette
++   convention qui rend compatibles « les API changent librement » et « le code continue de
++   fonctionner ».

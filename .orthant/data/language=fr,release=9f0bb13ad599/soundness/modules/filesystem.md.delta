@@ -10,7 +10,6 @@ orthant 1 language
 + enfants, copier, déplacer et supprimer. Chaque opération déclare les erreurs qu'elle peut
 + lever.
 
-! import filesystemOptions.createNonexistentParents
 - import filesystemOptions.createParents
 + import filesystemOptions.createParents
 
@@ -38,6 +37,15 @@ orthant 1 language
 
 - val directory = temporaryDirectory[Path on Local] / "soundness-filesystem-tutorial"
 + val directory = temporaryDirectory[Path on Local] / "soundness-filesystem-tutorial"
+
+- By default, creating refuses to destroy anything. Creating over something which exists is an
+- `Io.Error`, and so is creating under a parent which does not exist, unless
+- `filesystemOptions.createParents` is imported, as it is here. A flag states either
+- intent at the place where it happens, whatever is imported:
++ Par défaut, la création refuse de détruire quoi que ce soit. Créer par-dessus quelque
++ chose qui existe est une `Io.Error`, et créer sous un parent qui n'existe pas l'est aussi, sauf
++ si `filesystemOptions.createParents` est importé, comme c'est le cas ici. Une option exprime
++ l'une ou l'autre intention à l'endroit où cela se produit, quoi qu'on ait importé :
 
 - `hold` maps a whole file for changing where it lies, and lends a `Holding`: a `Terrain` which
 - is stored to as well as loaded from. `set8`, `set16`, `set32` and `set64` store an integer at
@@ -164,6 +172,23 @@ orthant 1 language
 + programmes coopérants sur les systèmes de fichiers propres à une machine, mais pas sur un
 + système de fichiers en réseau.
 
+- column  Question
+- column  Yes
+- column  No
+- row  Replace what is already at the destination?  `overwritePreexisting`  `failOnPreexisting`
+- row  Empty a directory before deleting it?  `deleteRecursively`  `deleteOnlyEmpty`
+- row  Create missing parent directories?  `createParents`  `requireParents`
+- row  Follow symbolic links?  `dereferenceSymlinks`  `preserveSymlinks`
+- row  Move atomically?  `moveAtomically`  `moveNonAtomically`
++ column  Question
++ column  Oui
++ column  Non
++ row  Remplacer ce qui se trouve déjà à la destination ?  `overwritePreexisting`  `failOnPreexisting`
++ row  Vider un répertoire avant de le supprimer ?  `deleteRecursively`  `deleteOnlyEmpty`
++ row  Créer les répertoires parents manquants ?  `createParents`  `requireParents`
++ row  Suivre les liens symboliques ?  `dereferenceSymlinks`  `preserveSymlinks`
++ row  Déplacer atomiquement ?  `moveAtomically`  `moveNonAtomically`
+
 - val store: Cas in Sha2[256] on (Path on Local) = Cas[Sha2[256]](directory, t".blob")
 + val store: Cas in Sha2[256] on (Path on Local) = Cas[Sha2[256]](directory, t".blob")
 
@@ -182,23 +207,117 @@ orthant 1 language
 - Home.Cashe[Path on Local]()
 + Home.Cashe[Path on Local]()
 
-! A layout is a fixed place. `Home.Config` is always `$HOME/.config`, and only `$HOME` is read
-! from the environment. The locations which the
-! [XDG specification](environment.md#standard-directories) lets the user move, such as
-! `$XDG_CONFIG_HOME`, are given by `Xdg` instead. Applying a layout constructs a value of
-! whichever directory type is asked for, so the same names serve a `Path on Local` and any
-! other representation.
+- column  Layout
+- column  Directory
+- column  Read-only
+- row  `Home`  `~`  no
+- row  `Home.Cache`  `~/.cache`, or `$XDG_CACHE_HOME`  no
+- row  `Home.Config`  `~/.config`, or `$XDG_CONFIG_HOME`  no
+- row  `Home.Local`  `~/.local`  no
+- row  `Home.Local.Bin`  `~/.local/bin`, or `$XDG_BIN_HOME`  no
+- row  `Home.Local.Lib`  `~/.local/lib`  no
+- row  `Home.Local.Share`  `~/.local/share`, or `$XDG_DATA_HOME`  no
+- row  `Home.Local.State`  `~/.local/state`, or `$XDG_STATE_HOME`  no
+- row  `Base`  `/`  no
+- row  `Base.Boot`  `/boot`  yes
+- row  `Base.Dev`  `/dev`  no
+- row  `Base.Dev.Shm`  `/dev/shm`  no
+- row  `Base.Efi`  `/efi`  yes
+- row  `Base.Etc`  `/etc`  no
+- row  `Base.Home`  `/home`  no
+- row  `Base.Proc`  `/proc`  no
+- row  `Base.Proc(pid)`  `/proc/<pid>`  yes
+- row  `Base.Proc.Sys`  `/proc/sys`  yes
+- row  `Base.Root`  `/root`  no
+- row  `Base.Run`  `/run`  no
+- row  `Base.Run.Log`  `/run/log`  no
+- row  `Base.Run.User`  `/run/user`  no
+- row  `Base.Srv`  `/srv`  no
+- row  `Base.Sys`  `/sys`  yes
+- row  `Base.Tmp`  `/tmp`  no
+- row  `Base.Usr`  `/usr`  yes
+- row  `Base.Usr.Bin`  `/usr/bin`  yes
+- row  `Base.Usr.Include`  `/usr/include`  yes
+- row  `Base.Usr.Lib`  `/usr/lib`  yes
+- row  `Base.Usr.Share`  `/usr/share`  yes
+- row  `Base.Usr.Share.Doc`  `/usr/share/doc`  yes
+- row  `Base.Usr.Share.Factory`  `/usr/share/factory`  yes
+- row  `Base.Usr.Share.Factory.Etc`  `/usr/share/factory/etc`  yes
+- row  `Base.Usr.Share.Factory.Var`  `/usr/share/factory/var`  yes
+- row  `Base.Var`  `/var`  no
+- row  `Base.Var.Cache`  `/var/cache`  no
+- row  `Base.Var.Lib`  `/var/lib`  no
+- row  `Base.Var.Log`  `/var/log`  no
+- row  `Base.Var.Spool`  `/var/spool`  no
+- row  `Base.Var.Tmp`  `/var/tmp`  no
++ column  Disposition
++ column  Répertoire
++ column  Lecture seule
++ row  `Home`  `~`  non
++ row  `Home.Cache`  `~/.cache`, ou `$XDG_CACHE_HOME`  non
++ row  `Home.Config`  `~/.config`, ou `$XDG_CONFIG_HOME`  non
++ row  `Home.Local`  `~/.local`  non
++ row  `Home.Local.Bin`  `~/.local/bin`, ou `$XDG_BIN_HOME`  non
++ row  `Home.Local.Lib`  `~/.local/lib`  non
++ row  `Home.Local.Share`  `~/.local/share`, ou `$XDG_DATA_HOME`  non
++ row  `Home.Local.State`  `~/.local/state`, ou `$XDG_STATE_HOME`  non
++ row  `Base`  `/`  non
++ row  `Base.Boot`  `/boot`  oui
++ row  `Base.Dev`  `/dev`  non
++ row  `Base.Dev.Shm`  `/dev/shm`  non
++ row  `Base.Efi`  `/efi`  oui
++ row  `Base.Etc`  `/etc`  non
++ row  `Base.Home`  `/home`  non
++ row  `Base.Proc`  `/proc`  non
++ row  `Base.Proc(pid)`  `/proc/<pid>`  oui
++ row  `Base.Proc.Sys`  `/proc/sys`  oui
++ row  `Base.Root`  `/root`  non
++ row  `Base.Run`  `/run`  non
++ row  `Base.Run.Log`  `/run/log`  non
++ row  `Base.Run.User`  `/run/user`  non
++ row  `Base.Srv`  `/srv`  non
++ row  `Base.Sys`  `/sys`  oui
++ row  `Base.Tmp`  `/tmp`  non
++ row  `Base.Usr`  `/usr`  oui
++ row  `Base.Usr.Bin`  `/usr/bin`  oui
++ row  `Base.Usr.Include`  `/usr/include`  oui
++ row  `Base.Usr.Lib`  `/usr/lib`  oui
++ row  `Base.Usr.Share`  `/usr/share`  oui
++ row  `Base.Usr.Share.Doc`  `/usr/share/doc`  oui
++ row  `Base.Usr.Share.Factory`  `/usr/share/factory`  oui
++ row  `Base.Usr.Share.Factory.Etc`  `/usr/share/factory/etc`  oui
++ row  `Base.Usr.Share.Factory.Var`  `/usr/share/factory/var`  oui
++ row  `Base.Var`  `/var`  non
++ row  `Base.Var.Cache`  `/var/cache`  non
++ row  `Base.Var.Lib`  `/var/lib`  non
++ row  `Base.Var.Log`  `/var/log`  non
++ row  `Base.Var.Spool`  `/var/spool`  non
++ row  `Base.Var.Tmp`  `/var/tmp`  non
+
+- Most layouts are fixed places. The five which the
 - [XDG specification](environment.md#standard-directories) lets the user move are not:
 - `Home.Config` is normally `$HOME/.config`, but is `$XDG_CONFIG_HOME` where the user has set
 - that to an absolute path. Applying a layout constructs a value of
 - whichever directory type is asked for, so the same names serve a `Path on Local` and any
 - other representation.
-+ Une disposition est un emplacement fixe. `Home.Config` vaut toujours `$HOME/.config`, et
-+ seul `$HOME` est lu dans l'environnement. Les emplacements que la
-+ [spécification XDG](environment.md#standard-directories) permet à l'utilisateur de
-+ déplacer, comme `$XDG_CONFIG_HOME`, sont plutôt donnés par `Xdg`. Appliquer une
-+ disposition construit une valeur du type de répertoire demandé, quel qu'il soit, si bien
-+ que les mêmes noms servent pour un `Path on Local` et pour toute autre représentation.
++ La plupart des dispositions sont des emplacements fixes. Les cinq que la
++ [spécification XDG](environment.md#standard-directories) permet à l'utilisateur de déplacer
++ ne le sont pas : `Home.Config` vaut normalement `$HOME/.config`, mais vaut `$XDG_CONFIG_HOME`
++ là où l'utilisateur l'a défini à un chemin absolu. Appliquer une disposition construit une
++ valeur du type de répertoire demandé, quel qu'il soit, si bien que les mêmes noms servent pour
++ un `Path on Local` et pour toute autre représentation.
+
+- Many files are looked up not at one location, but along a list of them: an icon in whichever
+- of the XDG data directories holds it, or a configuration file in the first of several places.
+- A `Searchpaths.Stems` instance names the directories to try, in order. A relative path on the
+- corresponding plane is resolved with `discover` to the first of them which holds it, or to
+- `Unset`:
++ De nombreux fichiers ne se recherchent pas à un seul emplacement, mais le long d'une liste
++ d'emplacements : une icône dans celui des répertoires de données XDG qui la contient, ou un
++ fichier de configuration au premier de plusieurs endroits. Une instance
++ `Searchpaths.Stems` nomme les répertoires à essayer, dans l'ordre. Un chemin relatif sur le
++ plan correspondant est résolu avec `discover` vers le premier d'entre eux qui le contient, ou
++ vers `Unset` :
 
 - given stems: (Searchpaths.Stems on Xdg.Data onto Local) = new Searchpaths.Stems:
 + given stems: (Searchpaths.Stems on Xdg.Data onto Local) = new Searchpaths.Stems:

@@ -1,0 +1,71 @@
+orthant 1 language
+
+- # `↯/s.27.15` — `Arithmetic.Error`
++ # `↯/s.27.15` — `Arithmetic.Error`
+
+- Raised when an arithmetic operation cannot produce a representable result.
++ Levée lorsqu'une opération arithmétique ne peut pas produire un résultat représentable.
+
+- This is distinct from a *value* that cannot be represented, which is
+- `Decimal.Error` or `Rational.Error` depending on the type.
++ Elle se distingue d'une *valeur* qui ne peut pas être représentée, qui est
++ `Decimal.Error` ou `Rational.Error` selon le type.
+
+- ## Cause
++ ## Cause
+
+- Hypotenuse's checked division raises this error for cases such as
+- integer division by zero or `MinValue / -1` (which overflows the
+- positive range).
++ La division contrôlée d'Hypotenuse lève cette erreur dans des cas comme la
++ division entière par zéro ou `MinValue / -1` (qui déborde de l'intervalle
++ positif).
+
+- ## Example message
++ ## Exemple de message
+
+=
+- ```
++ ```
+
+- [↯/s.27.15] the result is unrepresentable
++ [↯/s.27.15] the result is unrepresentable
+
+= [↯/s.27.15] the result is unrepresentable
+- ```
++ ```
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.27.15.1` — `DivisionByZero`
++ ### `↯/s.27.15.1` — `DivisionByZero`
+
+- The divisor was zero. Raised only under `import arithmeticOptions.checkedDivision`;
+- the unchecked default lets the platform's own division semantics apply.
++ Le diviseur était nul. Levée seulement sous `import arithmeticOptions.checkedDivision` ;
++ le comportement par défaut, non contrôlé, laisse s'appliquer la sémantique de division propre à la plateforme.
+
+- ### `↯/s.27.15.2` — `Overflow`
++ ### `↯/s.27.15.2` — `Overflow`
+
+- The result exceeded the range of its type. Raised only under
+- `import arithmeticOptions.checkedOverflow`. This was `SN-331` (`OverflowError`)
+- until the two were unified.
++ Le résultat dépassait l'intervalle de son type. Levée seulement sous
++ `import arithmeticOptions.checkedOverflow`. C'était `SN-331` (`OverflowError`)
++ jusqu'à ce que les deux soient unifiées.
+
+- ## Resolution
++ ## Résolution
+
+- Guard against zero divisors; for the `MinValue / -1` case, widen
+- the dividend before dividing.
++ Protégez-vous contre les diviseurs nuls ; pour le cas `MinValue / -1`, élargissez
++ le dividende avant de diviser.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/hypotenuse/src/core/hypotenuse.Arithmetic.scala`
++ - Source : `lib/hypotenuse/src/core/hypotenuse.Arithmetic.scala`

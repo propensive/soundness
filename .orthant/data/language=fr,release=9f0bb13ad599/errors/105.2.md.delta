@@ -1,0 +1,65 @@
+orthant 1 language
+
+- The cryptographic primitive (cipher, signature, or MAC) rejected the
+- input. The constructor takes a `reason: Reason` indicating why the
+- operation failed; the rendered message is `could not decode the
+- encrypted data because $reason`.
++ La primitive cryptographique (algorithme de chiffrement, signature ou MAC) a rejeté l'entrée.
++ Le constructeur prend une `reason: Reason` qui indique pourquoi l'opération a échoué ; le
++ message est `could not decode the encrypted data because $reason`.
+
+- **Resolution.** Confirm the key and IV match those used at encryption
+- time; verify the ciphertext has not been truncated or modified in
+- transit.
++ **Résolution.** Vérifiez que la clé et l'IV sont ceux utilisés lors du chiffrement ; vérifiez
++ que le texte chiffré n'a été ni tronqué ni modifié en transit.
+
+- The key bytes were rejected by the cipher — wrong size, invalid
+- format, or unsupported parameters.
++ L'algorithme de chiffrement a rejeté les octets de la clé : mauvaise taille, format invalide ou
++ paramètres non pris en charge.
+
+- **Resolution.** Install or enable a JCA provider that supports the
+- algorithm; check `java.security` policy.
++ **Résolution.** Installez ou activez un fournisseur JCA qui prend en charge l'algorithme ;
++ vérifiez la politique `java.security`.
+
+- ### `↯/s.105.2.6` — `BadTag`
++ ### `↯/s.105.2.6` — `BadTag`
+
+- An authenticated cipher's tag did not verify: the ciphertext, the associated data or the
+- nonce is not what was sealed, or the key is not the one it was sealed with.
++ L'étiquette d'un algorithme de chiffrement authentifié ne s'est pas vérifiée : le texte
++ chiffré, les données associées ou le nonce ne sont pas ceux qui ont été scellés, ou la clé
++ n'est pas celle avec laquelle ils l'ont été.
+
+- **Example.** `[↯/s.105.2.6] could not decrypt the data because the authentication tag did not verify`
++ **Exemple.** `[↯/s.105.2.6] could not decrypt the data because the authentication tag did not verify`
+
+- **Resolution.** Treat the data as forged or corrupt, and do not use any part of it. Confirm
+- that the nonce and the associated data are exactly those given to `seal`.
++ **Résolution.** Considérez les données comme falsifiées ou corrompues, et n'en utilisez
++ aucune partie. Vérifiez que le nonce et les données associées sont exactement ceux donnés à
++ `seal`.
+
+- ### `↯/s.105.2.7` — `BadWrap`
++ ### `↯/s.105.2.7` — `BadWrap`
+
+- Wrapped key material did not pass the integrity check that key wrapping builds in: it was
+- wrapped under a different key, or has been altered, or is not a whole number of 64-bit blocks.
++ Le matériel de clé enveloppé n'a pas passé le contrôle d'intégrité qu'intègre l'enveloppement
++ de clé : il a été enveloppé sous une autre clé, ou a été modifié, ou n'est pas un nombre entier
++ de blocs de 64 bits.
+
+- **Example.** `[↯/s.105.2.7] could not decrypt the data because the wrapped key did not pass its integrity check`
++ **Exemple.** `[↯/s.105.2.7] could not decrypt the data because the wrapped key did not pass its integrity check`
+
+- **Resolution.** Confirm that the key-encryption key is the one the material was wrapped
+- under, and that the wrapped material arrived complete.
++ **Résolution.** Vérifiez que la clé de chiffrement de clé est celle sous laquelle le matériel
++ a été enveloppé, et que le matériel enveloppé est arrivé complet.
+
+- - Source: `lib/enigmatic/src/core/enigmatic.Crypto.scala`
+- - `↯/s.105.1` — `PemError`, raised when PEM-encoded keys cannot be parsed
++ - Source : `lib/enigmatic/src/core/enigmatic.Crypto.scala`
++ - `↯/s.105.1` — `PemError`, levée lorsque des clés encodées en PEM ne peuvent pas être analysées

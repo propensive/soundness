@@ -1,0 +1,56 @@
+orthant 1 language
+
+- # `↯/s.102.2` — `Mdns.Error`
++ # `↯/s.102.2` — `Mdns.Error`
+
+- Raised when the socket-based mDNS responder (`syndesis`) cannot start.
++ Levée lorsque le répondeur mDNS fondé sur des sockets (`syndesis`) ne peut pas démarrer.
+
+- ## Cause
++ ## Cause
+
+- The responder joins the mDNS multicast group (`224.0.0.251:5353`) on every interface that is up
+- and multicast-capable. With no such interface, or a join the operating system refuses, there is
+- nothing to speak through. The message is `the mDNS responder could not start because $reason`.
++ Le répondeur rejoint le groupe multicast mDNS (`224.0.0.251:5353`) sur chaque interface active
++ et capable de multicast. Sans interface de ce genre, ou si le système d'exploitation refuse
++ l'adhésion, il n'a aucun moyen de communiquer. Le message est `the mDNS responder could not start because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.102.2.1` — `Join`
++ ### `↯/s.102.2.1` — `Join`
+
+- The multicast group could not be joined: binding port 5353 with reuse failed, or the join was
+- refused on every interface.
++ Le groupe multicast n'a pas pu être rejoint : la liaison du port 5353 avec réutilisation a
++ échoué, ou l'adhésion a été refusée sur toutes les interfaces.
+
+- **Example.** `[↯/s.102.2.1] the mDNS responder could not start because the multicast group 224.0.0.251:5353 could not be joined`
++ **Exemple.** `[↯/s.102.2.1] the mDNS responder could not start because the multicast group 224.0.0.251:5353 could not be joined`
+
+- **Resolution.** Check that port 5353 is not held without reuse by another program, and that the
+- interfaces have IPv4 addresses.
++ **Résolution.** Vérifiez que le port 5353 n'est pas occupé sans réutilisation par un autre
++ programme, et que les interfaces ont des adresses IPv4.
+
+- ### `↯/s.102.2.2` — `NoInterface`
++ ### `↯/s.102.2.2` — `NoInterface`
+
+- No network interface is up and multicast-capable (loopback does not count).
++ Aucune interface réseau n'est active et capable de multicast (l'interface de bouclage ne compte
++ pas).
+
+- **Example.** `[↯/s.102.2.2] the mDNS responder could not start because no interface is up and capable of multicast`
++ **Exemple.** `[↯/s.102.2.2] the mDNS responder could not start because no interface is up and capable of multicast`
+
+- **Resolution.** mDNS needs a link; in a sandbox without one, use the in-memory `Mdns.Transport.Bus`.
++ **Résolution.** mDNS a besoin d'un lien ; dans un bac à sable qui n'en a pas, utilisez le
++ `Mdns.Transport.Bus` en mémoire.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/syndesis/src/core/syndesis.Mdns.scala`
++ - Source : `lib/syndesis/src/core/syndesis.Mdns.scala`

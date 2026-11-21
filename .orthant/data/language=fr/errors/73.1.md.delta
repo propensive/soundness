@@ -1,0 +1,44 @@
+orthant 1 language
+
+- # `↯/s.73.1` — Time literal: hour value above 12
++ # `↯/s.73.1` — Littéral horaire : heure supérieure à 12
+
+- Raised by Aviation's `validTime` macro when an hour value exceeds
+- 12.
++ Levée par la macro `validTime` d'Aviation lorsqu'une valeur d'heure dépasse 12.
+
+- ## Cause
++ ## Cause
+
+- The literal time syntax uses 12-hour notation, qualified by `am`/
+- `pm`. Hours above 12 cannot be encoded.
++ La syntaxe des littéraux horaires utilise la notation sur 12 heures, précisée par `am`/`pm`. Les
++ heures supérieures à 12 ne peuvent pas être encodées.
+
+- ## Example message
++ ## Exemple de message
+
+=
+- ```
++ ```
+
+- [↯/s.73.1] a time cannot have an hour value above 12
++ [↯/s.73.1] a time cannot have an hour value above 12
+
+= [↯/s.73.1] a time cannot have an hour value above 12
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- Use an hour value 0–12; specify `am`/`pm` to disambiguate.
++ Utilisez une heure comprise entre 0 et 12 ; précisez `am`/`pm` pour lever l'ambiguïté.
+
+- ## See also
++ ## Voir aussi
+
+- - The other time literal errors: [Families](README.md#families)
+- - Source: `lib/aviation/src/core/aviation.internal.scala`
++ - Les autres erreurs de littéraux horaires : [Familles](README.md#families)
++ - Source : `lib/aviation/src/core/aviation.internal.scala`

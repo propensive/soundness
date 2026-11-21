@@ -1,0 +1,76 @@
+orthant 1 language
+
+- # `↯/s.73.9` — `Timestamp.Error`
++ # `↯/s.73.9` — `Timestamp.Error`
+
+- Raised when Aviation cannot parse a timestamp string.
++ Levée lorsque Aviation ne peut pas analyser une chaîne d'horodatage.
+
+- ## Cause
++ ## Cause
+
+- Aviation's timestamp parser expects an ISO-8601-style timestamp.
+- The constructor records the offending `value` and a `reason: Reason`
+- indicating which step of the parse failed; the rendered message is
+- `the time $value could not be parsed because $reason`.
++ L'analyseur d'horodatages d'Aviation attend un horodatage de style ISO-8601. Le constructeur
++ enregistre la `value` fautive et une `reason: Reason` indiquant l'étape de l'analyse qui a échoué ;
++ le message affiché est `the time $value could not be parsed because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.73.9.1` — `BadFormat`
++ ### `↯/s.73.9.1` — `BadFormat`
+
+- The input did not match the expected ISO-8601 timestamp pattern at
+- all.
++ L'entrée ne correspondait pas du tout au motif d'horodatage ISO-8601 attendu.
+
+- **Example.** `[↯/s.73.9.1] the time not-a-timestamp could not be parsed because the input did not match the expected timestamp format`
++ **Exemple.** `[↯/s.73.9.1] the time not-a-timestamp could not be parsed because the input did not match the expected timestamp format`
+
+- **Resolution.** Provide the timestamp in ISO-8601 form
+- (`YYYY-MM-DD[T ]HH:MM:SS`); pre-process non-standard inputs.
++ **Résolution.** Fournissez l'horodatage sous forme ISO-8601 (`YYYY-MM-DD[T ]HH:MM:SS`) ;
++ prétraitez les entrées non standard.
+
+- ### `↯/s.73.9.2` — `BadNumber`
++ ### `↯/s.73.9.2` — `BadNumber`
+
+- The input matched the timestamp pattern but one of its numeric
+- components could not be parsed as an integer (a `Number.Error` was
+- raised internally).
++ L'entrée correspondait au motif d'horodatage, mais l'une de ses composantes numériques n'a pas pu
++ être analysée comme un entier (une `Number.Error` a été levée en interne).
+
+- **Example.** `[↯/s.73.9.2] the time 2024-XX-15T14:30:59 could not be parsed because a numeric component could not be parsed as an integer`
++ **Exemple.** `[↯/s.73.9.2] the time 2024-XX-15T14:30:59 could not be parsed because a numeric component could not be parsed as an integer`
+
+- **Resolution.** Confirm each component (year, month, day, hour,
+- minute, second) is a plain decimal integer.
++ **Résolution.** Vérifiez que chaque composante (année, mois, jour, heure, minute, seconde) est un
++ simple entier décimal.
+
+- ### `↯/s.73.9.3` — `BadTime`
++ ### `↯/s.73.9.3` — `BadTime`
+
+- A date or time component was outside its valid range — e.g. month
+- 13, day 32, or hour 25 (a `Moment.Error` was raised internally).
++ Une composante de date ou d'heure était hors de son intervalle valide — par exemple le mois 13,
++ le jour 32 ou l'heure 25 (une `Moment.Error` a été levée en interne).
+
+- **Example.** `[↯/s.73.9.3] the time 2024-13-15T14:30:59 could not be parsed because a date or time component was outside the valid range`
++ **Exemple.** `[↯/s.73.9.3] the time 2024-13-15T14:30:59 could not be parsed because a date or time component was outside the valid range`
+
+- **Resolution.** Validate the component values before formatting,
+- or compute them from a calendar that constrains them to legal
+- ranges.
++ **Résolution.** Validez les valeurs des composantes avant le formatage, ou calculez-les à partir
++ d'un calendrier qui les contraint aux intervalles autorisés.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/embarcadero/src/containerd/embarcadero.Timestamp.scala`
++ - Source : `lib/embarcadero/src/containerd/embarcadero.Timestamp.scala`

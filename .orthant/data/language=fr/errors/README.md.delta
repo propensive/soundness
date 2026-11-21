@@ -1,0 +1,212 @@
+orthant 1 language
+
+- # Soundness error codes
++ # Codes d'erreur de Soundness
+
+- Every error Soundness numbers carries a stable identifier, its
+- [bolt code](https://github.com/propensive/bolt), of the form `↯/s.m.n` or
+- `↯/s.m.n.v`, where:
++ Chaque erreur que Soundness numérote porte un identifiant stable, son
++ [code bolt](https://github.com/propensive/bolt), de la forme `↯/s.m.n` ou
++ `↯/s.m.n.v`, où :
+
+- - `s` is the letter by which bolt codes name Soundness;
+- - `m` is the number of the module the error is in, as [the list of
+-   modules](modules.md) and the `bolt` registry's `s.tel` give it: modules are
+-   numbered in an order in which each comes after those it depends on, as
+-   they stood when each was numbered, and a new module takes the next number;
+- - `n` is the number of the error within its module, the next free one when
+-   the error is written;
+- - `v`, when present, identifies a specific variant of the error (typically
+-   the case of a `Reason` enum).
++ - `s` est la lettre par laquelle les codes bolt désignent Soundness ;
++ - `m` est le numéro du module où se trouve l'erreur, tel que le donnent
++   [la liste des modules](modules.md) et le `s.tel` du registre `bolt` : les
++   modules sont numérotés dans un ordre où chacun vient après ceux dont il
++   dépend, tels qu'ils étaient au moment où chacun a été numéroté, et un nouveau
++   module prend le numéro suivant ;
++ - `n` est le numéro de l'erreur au sein de son module, le prochain numéro libre
++   au moment où l'erreur est écrite ;
++ - `v`, lorsqu'il est présent, identifie une variante précise de l'erreur
++   (généralement le cas d'une énumération `Reason`).
+
+- An error which is reported on account of another project's carries that
+- error's code after its own: Stratiform's `Tel.Error` for a document the TEL
+- Specification rejects with `↯/t.1.7` is `↯/s.118.1/t.1.7`.
++ Une erreur signalée à cause de celle d'un autre projet porte le code de cette
++ erreur après le sien : la `Tel.Error` de Stratiform pour un document que la
++ spécification TEL rejette avec `↯/t.1.7` est `↯/s.118.1/t.1.7`.
+
+- The rendered prefix appears in compile output as `[↯/s.m.n.v]`, coloured if
+- the compiler's `-color` setting is on. In the source, the numbers are the
+- first arguments of `fulminate.Error` and of `halt`: `Error(118, 1,
+- reason.number)`.
++ Le préfixe rendu apparaît dans la sortie de compilation sous la forme
++ `[↯/s.m.n.v]`, en couleur si le réglage `-color` du compilateur est activé. Dans
++ le source, les numéros sont les premiers arguments de `fulminate.Error` et de
++ `halt` : `Error(118, 1, reason.number)`.
+
+- Each error is documented in a markdown file at `<m>.<n>.md`. When an
+- error has variants, every `↯/s.m.n.v` is documented in the same file,
+- under `## Variants`: as a row of a `tabular` table, with the
+- columns `Code`, `Reason`, and whichever of `Meaning`, `Message` (an
+- example), `Resolution` and `Wire code` its variants have; or, when
+- there are five or fewer and each needs an explanation and a resolution
+- of its own, as a `### ↯/s.m.n.v` sub-section, with `**Example.**` and
+- `**Resolution.**` paragraphs. A variant described only by its example
+- message is always a row.
++ Chaque erreur est documentée dans un fichier Markdown nommé `<m>.<n>.md`.
++ Lorsqu'une erreur a des variantes, chaque `↯/s.m.n.v` est documenté dans le même
++ fichier, sous `## Variants` : sous forme de ligne d'un tableau `tabular`, avec
++ les colonnes `Code`, `Reason`, et celles parmi `Meaning`, `Message` (un
++ exemple), `Resolution` et `Wire code` qu'ont ses variantes ; ou bien, lorsqu'il
++ y en a cinq ou moins et que chacune a besoin de sa propre explication et de sa
++ propre résolution, sous forme de sous-section `### ↯/s.m.n.v`, avec des
++ paragraphes `**Example.**` et `**Resolution.**`. Une variante décrite seulement
++ par son exemple de message est toujours une ligne.
+
+- A code is never reused. When an error is removed, its page stays, marked
+- `(retired)`, saying what became of it, and its number is marked retired in
+- `s.tel`: a reference to the code from an older release still resolves, and
+- the number cannot be allocated again by accident. A retired page says what
+- replaced the code in a `Was` and `Now` table, with a row for the code and
+- for each of its variants that has a successor, even when there is only one.
++ Un code n'est jamais réutilisé. Lorsqu'une erreur est supprimée, sa page reste,
++ marquée `(retired)`, et dit ce qu'elle est devenue, et son numéro est marqué
++ retiré dans `s.tel` : une référence au code depuis une version plus ancienne se
++ résout toujours, et le numéro ne peut pas être réattribué par accident. Une page
++ retirée indique ce qui a remplacé le code dans un tableau `Was` et `Now`, avec
++ une ligne pour le code et pour chacune de ses variantes qui a un successeur,
++ même lorsqu'il n'y en a qu'une.
+
+- Every page names the source file its error is raised from. It does not
+- give a line number, since a line number is invalidated by any edit above
+- it and nothing checks that it is still right.
++ Chaque page nomme le fichier source depuis lequel son erreur est levée. Elle ne
++ donne pas de numéro de ligne, puisqu'un numéro de ligne est invalidé par toute
++ modification située au-dessus et que rien ne vérifie qu'il est toujours juste.
+
+- ## The `SN-` codes
++ ## Les codes `SN-`
+
+- Until Soundness adopted bolt codes, an error was `SN-ddd`, a three-digit
+- number unique across every module. [`sn.md`](sn.md) gives the bolt code of
+- each `SN-` code which was live then. The pages named with three digits
+- (`013.md`) are those of the `SN-` codes retired before then, which never
+- had a bolt code; they are kept so that a reference from an older release
+- still resolves.
++ Jusqu'à ce que Soundness adopte les codes bolt, une erreur s'écrivait `SN-ddd`,
++ un nombre à trois chiffres unique dans tous les modules. [`sn.md`](sn.md) donne
++ le code bolt de chaque code `SN-` encore en vigueur à ce moment-là. Les pages
++ nommées par trois chiffres (`013.md`) sont celles des codes `SN-` retirés
++ auparavant, qui n'ont jamais eu de code bolt ; elles sont conservées afin qu'une
++ référence depuis une version plus ancienne se résolve toujours.
+
+- ## Families
++ ## Familles
+
+- Some errors are raised by one check against different limits, so each
+- has a page of its own, but they are easiest to compare together.
++ Certaines erreurs sont levées par une même vérification contre des limites
++ différentes : chacune a donc sa propre page, mais elles se comparent plus
++ facilement ensemble.
+
+- The integer literals of Hypotenuse are checked against the range of
+- their type:
++ Les littéraux entiers de Hypotenuse sont vérifiés par rapport à l'intervalle de
++ leur type :
+
+= their type:
+=
+- ```tabular
++ ```tabular
+
+- column  Type
++ column  Type
+
+- column  Least
+- column  Greatest
+- column  Below the range
+- column  Above the range
++ column  Minimum
++ column  Maximum
++ column  Sous l'intervalle
++ column  Au-dessus de l'intervalle
+
+- row  `S8`  -128  127  [`↯/s.27.6`](27.6.md)  [`↯/s.27.13`](27.13.md)
++ row  `S8`  -128  127  [`↯/s.27.6`](27.6.md)  [`↯/s.27.13`](27.13.md)
+
+- row  `S16`  -32768  32767  [`↯/s.27.1`](27.1.md)  [`↯/s.27.7`](27.7.md)
++ row  `S16`  -32768  32767  [`↯/s.27.1`](27.1.md)  [`↯/s.27.7`](27.7.md)
+
+- row  `U8`  0  255  [`↯/s.27.8`](27.8.md)  [`↯/s.27.9`](27.9.md)
++ row  `U8`  0  255  [`↯/s.27.8`](27.8.md)  [`↯/s.27.9`](27.9.md)
+
+- row  `U16`  0  65535  [`↯/s.27.12`](27.12.md)  [`↯/s.27.14`](27.14.md)
++ row  `U16`  0  65535  [`↯/s.27.12`](27.12.md)  [`↯/s.27.14`](27.14.md)
+
+= row  `U16`  0  65535  [`↯/s.27.12`](27.12.md)  [`↯/s.27.14`](27.14.md)
+- ```
++ ```
+
+- The binary and hexadecimal literals of Hypotenuse:
++ Les littéraux binaires et hexadécimaux de Hypotenuse :
+
+= The binary and hexadecimal literals of Hypotenuse:
+=
+- ```tabular
++ ```tabular
+
+= The binary and hexadecimal literals of Hypotenuse:
+=
+= ```tabular
+- column  Code
++ column  Code
+
+- column  Literal
+- column  Rejects
+- row  [`↯/s.27.2`](27.2.md)  `bin"…"`  a character other than `0` or `1`
+- row  [`↯/s.27.5`](27.5.md)  `bin"…"`  a width other than 8, 16, 32 or 64 bits
+- row  [`↯/s.27.3`](27.3.md)  `hex"…"`  an odd number of digits
+- row  [`↯/s.27.4`](27.4.md)  `hex"…"`  a character that is not a hexadecimal digit
++ column  Littéral
++ column  Rejette
++ row  [`↯/s.27.2`](27.2.md)  `bin"…"`  un caractère autre que `0` ou `1`
++ row  [`↯/s.27.5`](27.5.md)  `bin"…"`  une largeur autre que 8, 16, 32 ou 64 bits
++ row  [`↯/s.27.3`](27.3.md)  `hex"…"`  un nombre impair de chiffres
++ row  [`↯/s.27.4`](27.4.md)  `hex"…"`  un caractère qui n'est pas un chiffre hexadécimal
+
+= row  [`↯/s.27.4`](27.4.md)  `hex"…"`  a character that is not a hexadecimal digit
+- ```
++ ```
+
+- The time literals checked by Aviation's `validTime` macro:
++ Les littéraux d'heure vérifiés par la macro `validTime` d'Aviation :
+
+= The time literals checked by Aviation's `validTime` macro:
+=
+- ```tabular
++ ```tabular
+
+= The time literals checked by Aviation's `validTime` macro:
+=
+= ```tabular
+- column  Code
++ column  Code
+
+- column  Rejects
+- row  [`↯/s.73.8`](73.8.md)  an argument which is not a literal `Double`
+- row  [`↯/s.73.11`](73.11.md)  a negative time
+- row  [`↯/s.73.1`](73.1.md)  an hour above 12
+- row  [`↯/s.73.2`](73.2.md)  a minute value above 59
+- row  [`↯/s.73.7`](73.7.md)  minutes not written as exactly two digits
++ column  Rejette
++ row  [`↯/s.73.8`](73.8.md)  un argument qui n'est pas un `Double` littéral
++ row  [`↯/s.73.11`](73.11.md)  une heure négative
++ row  [`↯/s.73.1`](73.1.md)  une heure supérieure à 12
++ row  [`↯/s.73.2`](73.2.md)  une valeur de minutes supérieure à 59
++ row  [`↯/s.73.7`](73.7.md)  des minutes qui ne sont pas écrites avec exactement deux chiffres
+
+= row  [`↯/s.73.7`](73.7.md)  minutes not written as exactly two digits
+- ```
++ ```

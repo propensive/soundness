@@ -1,0 +1,243 @@
+orthant 1 language
+
+- # Documentation and Learnability
++ # Documentation et facilité d'apprentissage
+
+- Documentation is part of the safety story. An undocumented API invites guessing, and guessing
+- is how surprising failures happen — for people and, more acutely, for AI agents, which will
+- confidently synthesise whatever the documentation fails to say. The standard is total coverage:
+- every module documented, every error code explained, every novel idea specified, and every
+- message following a written convention.
++ La documentation fait partie de la sûreté. Une API non documentée invite aux suppositions, et
++ c'est par les suppositions que surviennent les échecs surprenants — pour les personnes et, de
++ façon plus aiguë, pour les agents d'IA, qui synthétisent avec assurance tout ce que la
++ documentation omet de dire. La norme est une couverture totale : chaque module documenté, chaque
++ code d'erreur expliqué, chaque idée nouvelle spécifiée, et chaque message conforme à une
++ convention écrite.
+
+- The prose exists in three parallel systems today: the topic guides in `doc/en/modules/` — the
+- direction of travel, and where the substantial writing happens — the legacy per-module
+- templates in `lib/*/doc/`, inherited from when each module was its own repository, and a
+- separate copy of the philosophy material under `web/res/content/`. Three systems means
+- divergence, and divergence means one of them is lying. This track collapses them to one,
+- completes coverage, and adds the layer that prose cannot provide: generated, searchable API
+- documentation — infrastructure that fluence and LIRA's API-derived versioning also depend on.
+- It ends with the strongest learnability test there is: an agent, given only the documentation,
+- builds and deploys a working application.
++ La prose existe aujourd'hui dans trois systèmes parallèles : les guides thématiques de
++ `doc/en/modules/` — la direction suivie, et l'endroit où s'écrit l'essentiel —, les anciens
++ modèles par module de `lib/*/doc/`, hérités de l'époque où chaque module avait son propre dépôt,
++ et une copie séparée des textes de philosophie sous `web/res/content/`. Trois systèmes signifient
++ des divergences, et une divergence signifie que l'un d'eux ment. Ce chantier les réduit à un seul,
++ complète la couverture et ajoute la couche que la prose ne peut pas fournir : une documentation
++ d'API générée et consultable — une infrastructure dont dépendent aussi fluence et le versionnage
++ de LIRA dérivé de l'API. Il se termine par le test de facilité d'apprentissage le plus exigeant
++ qui soit : un agent, muni de la seule documentation, construit et déploie une application qui
++ fonctionne.
+
+- The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
++ Les éléments du chantier, avec leurs horizons et leurs dépendances fortes ; [`status.tel`](status.tel) indique où en est chacun :
+
+- ```tabular
++ ```tabular
+
+- column  Item
+- column  Title
++ column  Élément
++ column  Titre
+
+- column  Horizon
++ column  Horizon
+
+- column  Needs
+- row  doc-1  every error type has a code and a page  near
+- row  doc-2  the messages standard is written  near
+- row  doc-3  the legacy documentation systems retire  near
+- row  doc-4  every module is covered by a topic  mid
+- row  doc-5  API documentation is generated and published  mid
+- row  doc-6  the website derives from `doc/`  mid
+- row  doc-7  novel ideas are one hop away  long
+- row  doc-8  the walkthrough  long  tool-2, tool-4
++ column  Prérequis
++ row  doc-1  chaque type d'erreur a un code et une page  proche
++ row  doc-2  la norme des messages est rédigée  proche
++ row  doc-3  les anciens systèmes de documentation sont retirés  proche
++ row  doc-4  chaque module est couvert par un sujet  moyen
++ row  doc-5  la documentation d'API est générée et publiée  moyen
++ row  doc-6  le site web dérive de `doc/`  moyen
++ row  doc-7  les idées nouvelles sont à un saut  lointain
++ row  doc-8  le parcours guidé  lointain  tool-2, tool-4
+
+- ```
++ ```
+
+- ## doc-1: every error type has a code and a page
++ ## doc-1 : chaque type d'erreur a un code et une page
+
+- Horizon: near
+- Baseline: 41 error types carry no bolt code; 247 error pages exist (measured 2026-10-21; 40 and 241 on 2026-09-25; 39 and 233 on 2026-08-01)
++ Horizon : proche
++ Référence : 41 types d'erreurs ne portent aucun code bolt ; 247 pages d'erreurs existent (mesuré le 2026-10-21 ; 40 et 241 le 2026-09-25 ; 39 et 233 le 2026-08-01)
+
+- The bolt codes cover the macro-raised compile errors; the remaining runtime error types get
+- codes and pages under the same never-reuse discipline, and parity between types, codes and
+- pages becomes a CI check so it cannot drift. Nothing in `etc/` checks the parity yet.
++ Les codes bolt couvrent les erreurs de compilation levées par les macros ; les types d'erreurs
++ d'exécution restants reçoivent des codes et des pages selon la même discipline de non-réutilisation,
++ et la parité entre types, codes et pages devient une vérification de la CI, pour ne pas pouvoir
++ dériver. Rien dans `etc/` ne vérifie encore cette parité.
+
+- Done when: the parity check runs in CI and
++ Terminé lorsque : la vérification de parité s'exécute dans la CI et
+
+-     git grep -hE 'extends +Error\((m"|[a-z])' -- lib | wc -l    # 0
++     git grep -hE 'extends +Error\((m"|[a-z])' -- lib | wc -l    # 0
+
+- ## doc-2: the messages standard is written
++ ## doc-2 : la norme des messages est rédigée
+
+= ## doc-2: the messages standard is written
+=
+- Done: #2306 (2026-10-21)
++ Terminé : #2306 (2026-10-21)
+
+- `doc/standards/messages.md` was a self-declared stub, despite the message convention being
+- load-bearing across every module. The standard is now written: register, structure, vocabulary,
+- what a message must not contain, composition through `Communicable`, and log events.
++ `doc/standards/messages.md` se déclarait lui-même comme une ébauche, alors que la convention des
++ messages est porteuse dans tous les modules. La norme est désormais rédigée : registre, structure,
++ vocabulaire, ce qu'un message ne doit pas contenir, composition par `Communicable`, et événements
++ de journal.
+
+= what a message must not contain, composition through `Communicable`, and log events.
+=
+- Done when:
++ Terminé lorsque :
+
+-     grep -c 'Stub' doc/standards/messages.md    # 0
++     grep -c 'Stub' doc/standards/messages.md    # 0
+
+- ## doc-3: the legacy documentation systems retire
++ ## doc-3 : les anciens systèmes de documentation sont retirés
+
+- Done: #1791 (2026-08-14)
+- Baseline was 92 files of per-module readme boilerplate, and 98 `lib/*/doc/` directories
+- (measured 2026-08-01). The boilerplate predated the monorepo; whatever in `lib/*/doc/` was
+- worth keeping moved into `doc/modules/` topics, and the rest was deleted rather than left to
+- mislead. No `lib/*/doc/` directory remains, and the boilerplate phrase matches nothing.
++ Terminé : #1791 (2026-08-14)
++ La référence était de 92 fichiers de readme passe-partout par module, et de 98 répertoires
++ `lib/*/doc/` (mesuré le 2026-08-01). Ce texte passe-partout était antérieur au monodépôt ; ce
++ qui, dans `lib/*/doc/`, valait d'être conservé est passé dans les sujets de `doc/modules/`, et le
++ reste a été supprimé plutôt que laissé là pour induire en erreur. Il ne reste aucun répertoire
++ `lib/*/doc/`, et la phrase passe-partout ne correspond plus à rien.
+
+- ## doc-4: every module is covered by a topic
++ ## doc-4 : chaque module est couvert par un sujet
+
+- Done: #2306 (2026-10-21)
+- Baseline was 99 topics in `doc/modules/` and 1 of 144 libraries uncovered (measured 2026-09-25; 91 topics and 35 uncovered on 2026-08-01); 101 topics cover 145 of 145 on 2026-10-21
++ Terminé : #2306 (2026-10-21)
++ La référence était de 99 sujets dans `doc/modules/` et d'une bibliothèque sur 144 non couverte (mesuré le 2026-09-25 ; 91 sujets et 35 non couvertes le 2026-08-01) ; 101 sujets couvrent 145 bibliothèques sur 145 le 2026-10-21
+
+- Every published module is covered by at least one `doc/modules/` topic, and a coverage script
+- maps modules to topics so orphans are visible: `etc/check-doc-coverage.py`, run by `make
+- build`, exits non-zero on an orphan. The last one, burdock, is covered by `packaging.md`; the
+- `COVERED_BY` entry that named that topic for ziggurat (a library #1973 removed) now names
+- burdock.
++ Chaque module publié est couvert par au moins un sujet de `doc/modules/`, et un script de
++ couverture associe les modules aux sujets pour rendre visibles les orphelins :
++ `etc/check-doc-coverage.py`, lancé par `make build`, se termine avec un code non nul en présence
++ d'un orphelin. Le dernier, burdock, est couvert par `packaging.md` ; l'entrée `COVERED_BY` qui
++ nommait ce sujet pour ziggurat (une bibliothèque que #1973 a supprimée) nomme désormais burdock.
+
+= burdock.
+=
+- Done when:
++ Terminé lorsque :
+
+-     python3 etc/check-doc-coverage.py    # every library covered, exit 0
++     python3 etc/check-doc-coverage.py    # every library covered, exit 0
+
+- ## doc-5: API documentation is generated and published
++ ## doc-5 : la documentation d'API est générée et publiée
+
+- Horizon: mid
+- Baseline: every published `docJar` is empty — `build.mill` overrides the task to write an empty jar (measured 2026-09-25, unchanged since 2026-08-01)
++ Horizon : moyen
++ Référence : chaque `docJar` publié est vide — `build.mill` redéfinit la tâche pour écrire un jar vide (mesuré le 2026-09-25, inchangé depuis le 2026-08-01)
+
+- The extraction pipeline is the shared foundation: fluence searches it (`tool-7`) and
+- API-derived versioning diffs it (`dist-4`). Published API documentation is the immediate
+- deliverable.
++ Le pipeline d'extraction est le socle commun : fluence y fait ses recherches (`tool-7`) et le
++ versionnage dérivé de l'API en calcule les différences (`dist-4`). La documentation d'API publiée
++ en est le livrable immédiat.
+
+- Done when: every published component's documentation artifact is non-empty, and the API
+- documentation is published for every release.
++ Terminé lorsque : l'artefact de documentation de chaque composant publié n'est pas vide, et la
++ documentation d'API est publiée pour chaque publication.
+
+- ## doc-6: the website derives from `doc/`
++ ## doc-6 : le site web dérive de `doc/`
+
+= ## doc-6: the website derives from `doc/`
+=
+- Horizon: mid
++ Horizon : moyen
+
+- The prose under `web/res/content/` duplicates philosophy material by hand: ten pages, last
+- touched in #801, each an older and shorter copy of a `doc/philosophy/` page. The website
+- renders from `doc/` — one source, no parallel copies.
++ La prose sous `web/res/content/` duplique à la main les textes de philosophie : dix pages,
++ modifiées pour la dernière fois dans #801, chacune étant une copie plus ancienne et plus courte
++ d'une page de `doc/philosophy/`. Le site web est rendu à partir de `doc/` — une seule source, sans
++ copies parallèles.
+
+- Done when: `web/res/content/` contains no hand-maintained duplicate of any `doc/` page.
++ Terminé lorsque : `web/res/content/` ne contient aucun doublon maintenu à la main d'une page de
++ `doc/`.
+
+- ## doc-7: novel ideas are one hop away
++ ## doc-7 : les idées nouvelles sont à un saut
+
+= ## doc-7: novel ideas are one hop away
+=
+- Horizon: long
++ Horizon : lointain
+
+- Every novel idea in Soundness — capture checking in practice, separation-checked mutability,
+- delimited scopes, declared errors — has a philosophy page, and every API that embodies the idea
+- links to it. A reader is never more than one hop from the explanation.
++ Chaque idée nouvelle de Soundness — le contrôle des captures en pratique, la mutabilité soumise au
++ contrôle de séparation, les portées délimitées, les erreurs déclarées — a une page de philosophie,
++ et chaque API qui incarne l'idée renvoie vers elle. Un lecteur n'est jamais à plus d'un saut de
++ l'explication.
+
+- Done when: a link check verifies that each philosophy page is referenced from the topic guides
+- of the modules that embody it, and it runs in the ordinary build.
++ Terminé lorsque : une vérification des liens s'assure que chaque page de philosophie est
++ référencée depuis les guides thématiques des modules qui l'incarnent, et elle s'exécute dans le
++ build ordinaire.
+
+- ## doc-8: the walkthrough
++ ## doc-8 : le parcours guidé
+
+- Horizon: long
+- Needs: tool-2, tool-4
++ Horizon : lointain
++ Prérequis : tool-2, tool-4
+
+- The integrative test of learnability, and the gate's final criterion: a from-nothing tutorial
+- that an agent can execute end-to-end — new project, build with fury, test with fume, deploy a
+- JVM-and-JavaScript web application — using only `doc/` and ecosystem tools.
++ Le test intégrateur de la facilité d'apprentissage, et le dernier critère du seuil : un tutoriel
++ partant de rien qu'un agent peut exécuter de bout en bout — nouveau projet, build avec fury,
++ tests avec fume, déploiement d'une application web JVM et JavaScript — en utilisant uniquement
++ `doc/` et les outils de l'écosystème.
+
+- Done when: the walkthrough is executed by an agent in CI and the run is recorded with each
+- release.
++ Terminé lorsque : le parcours guidé est exécuté par un agent dans la CI, et l'exécution est
++ consignée avec chaque publication.

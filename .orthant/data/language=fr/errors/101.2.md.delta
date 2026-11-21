@@ -1,0 +1,71 @@
+orthant 1 language
+
+- # `↯/s.101.2` — `Socket.Error`
++ # `↯/s.101.2` — `Socket.Error`
+
+- Raised when an established socket connection fails during use.
++ Levée lorsqu'une connexion socket établie échoue en cours d'utilisation.
+
+- ## Cause
++ ## Cause
+
+- This is distinct from a failure to connect, which is a `ConnectError`. A `Socket.Error`
+- means the connection was made and then failed — during an accept, a transmission, or a
+- close.
++ Elle se distingue d'un échec de connexion, qui est une `ConnectError`. Une `Socket.Error`
++ signifie que la connexion a été établie puis a échoué, lors d'une acceptation, d'une
++ transmission ou d'une fermeture.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.101.2.1` — `Accept`
++ ### `↯/s.101.2.1` — `Accept`
+
+- **Example.** `[↯/s.101.2.1] a new connection could not be accepted`
++ **Exemple.** `[↯/s.101.2.1] a new connection could not be accepted`
+
+- ### `↯/s.101.2.2` — `Transmit`
++ ### `↯/s.101.2.2` — `Transmit`
+
+- **Example.** `[↯/s.101.2.2] data could not be transmitted to the connection`
++ **Exemple.** `[↯/s.101.2.2] data could not be transmitted to the connection`
+
+- ### `↯/s.101.2.3` — `Close`
++ ### `↯/s.101.2.3` — `Close`
+
+- **Example.** `[↯/s.101.2.3] the connection could not be closed cleanly`
++ **Exemple.** `[↯/s.101.2.3] the connection could not be closed cleanly`
+
+- ### `↯/s.101.2.4` — `Handshake`
++ ### `↯/s.101.2.4` — `Handshake`
+
+- **Example.** `[↯/s.101.2.4] the TLS handshake with the peer failed`
++ **Exemple.** `[↯/s.101.2.4] the TLS handshake with the peer failed`
+
+- ### `↯/s.101.2.5` — `Timeout`
++ ### `↯/s.101.2.5` — `Timeout`
+
+- A datagram exchange (`Socket.Backend#exchangeUdp`) or a receive on a socket configured with
+- `Socket.Option.Timeout` waited the whole timeout without a datagram arriving.
++ Un échange de datagrammes (`Socket.Backend#exchangeUdp`) ou une réception sur un socket configuré
++ avec `Socket.Option.Timeout` a attendu tout le délai sans qu'aucun datagramme n'arrive.
+
+- **Example.** `[↯/s.101.2.5] no response arrived before the timeout`
++ **Exemple.** `[↯/s.101.2.5] no response arrived before the timeout`
+
+- ## Resolution
++ ## Résolution
+
+- The reason distinguishes the operation that failed. A connection failing during
+- transmission is usually the peer closing, a timeout, or the network; retrying is reasonable
+- where the protocol is idempotent.
++ La raison indique l'opération qui a échoué. Une connexion qui échoue pendant une transmission
++ s'explique généralement par la fermeture du pair, un délai expiré ou le réseau ; réessayer est
++ raisonnable lorsque le protocole est idempotent.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/coaxial/src/core/coaxial.Socket.scala`
++ - Source : `lib/coaxial/src/core/coaxial.Socket.scala`

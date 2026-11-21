@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.20.4` — `Optional.Error`
++ # `↯/s.20.4` — `Optional.Error`
+
+- Raised when an `Optional` value that is `Unset` is read as if it
+- were defined.
++ Levée lorsqu'une valeur `Optional` qui vaut `Unset` est lue comme si elle était définie.
+
+- ## Cause
++ ## Cause
+
+- Vacuous's strict access methods throw this error rather than
+- returning a sentinel when the value is unset.
++ Les méthodes d'accès strictes de Vacuous lancent cette erreur plutôt que de renvoyer une valeur
++ sentinelle lorsque la valeur n'est pas définie.
+
+- ## Example message
++ ## Exemple de message
+
+=
+- ```
++ ```
+
+- [↯/s.20.4] the value was not set
++ [↯/s.20.4] the value was not set
+
+= [↯/s.20.4] the value was not set
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- Either guard the access with `.lay`/`.let`, or supply a default
+- via `.or`.
++ Protégez l'accès avec `.lay`/`.let`, ou fournissez une valeur par défaut avec `.or`.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/vacuous/src/core/vacuous.Optional.scala`
++ - Source : `lib/vacuous/src/core/vacuous.Optional.scala`

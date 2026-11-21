@@ -1,0 +1,64 @@
+orthant 1 language
+
+- # `↯/s.103.2` — `Http.Request.Error`
++ # `↯/s.103.2` — `Http.Request.Error`
+
+- Raised when an HTTP request cannot be constructed or sent.
++ Levée lorsqu'une requête HTTP ne peut pas être construite ou envoyée.
+
+- ## Cause
++ ## Cause
+
+- This covers faults in the request itself — a URL that cannot be expressed, an invalid
+- header, a body that cannot be framed — as distinct from a failing response, which is an
+- `HttpError`, or a failing connection, which is a `ConnectError`.
++ Elle couvre les défauts de la requête elle-même (une URL qui ne peut pas être exprimée, un
++ en-tête invalide, un corps qui ne peut pas être tramé), par opposition à une réponse en échec,
++ qui est une `HttpError`, ou à une connexion en échec, qui est une `ConnectError`.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
++ column  Raison
+
+- column  Message
++ column  Message
+
+- row  `↯/s.103.2.1`  `Expectation`  `[↯/s.103.2.1] <found> was found when <expected> was expected`
++ row  `↯/s.103.2.1`  `Expectation`  `[↯/s.103.2.1] <found> was found when <expected> was expected`
+
+- row  `↯/s.103.2.2`  `Version`  `[↯/s.103.2.2] the HTTP version <value> was invalid`
++ row  `↯/s.103.2.2`  `Version`  `[↯/s.103.2.2] the HTTP version <value> was invalid`
+
+- row  `↯/s.103.2.3`  `Host`  `[↯/s.103.2.3] the host <value> was missing or invalid`
++ row  `↯/s.103.2.3`  `Host`  `[↯/s.103.2.3] the host <value> was missing or invalid`
+
+- row  `↯/s.103.2.4`  `UriTooLong`  `[↯/s.103.2.4] the request line exceeded the maximum length`
++ row  `↯/s.103.2.4`  `UriTooLong`  `[↯/s.103.2.4] the request line exceeded the maximum length`
+
+- row  `↯/s.103.2.5`  `HeadersTooLarge`  `[↯/s.103.2.5] the request headers exceeded the maximum size`
++ row  `↯/s.103.2.5`  `HeadersTooLarge`  `[↯/s.103.2.5] the request headers exceeded the maximum size`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- The reason names the part of the request at fault. A header value containing a line break,
+- or a method the transport does not support, are the common cases.
++ La raison désigne la partie fautive de la requête. Les cas courants sont une valeur d'en-tête
++ contenant un saut de ligne, ou une méthode que le transport ne prend pas en charge.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/telekinesis/src/core/telekinesis.Http.scala`
++ - Source : `lib/telekinesis/src/core/telekinesis.Http.scala`

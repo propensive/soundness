@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.27.5` — Binary literal must be 8, 16, 32, or 64 bits
++ # `↯/s.27.5` — Un littéral binaire doit faire 8, 16, 32 ou 64 bits
+
+- Raised at compile time by Hypotenuse's `bin"…"` literal macro when
+- the literal's bit count is not one of the supported widths.
++ Levée à la compilation par la macro de littéral `bin"…"` d'Hypotenuse
++ lorsque le nombre de bits du littéral n'est pas l'une des largeurs prises en charge.
+
+- ## Cause
++ ## Cause
+
+- Binary literals are typed by their bit count; only `8`, `16`,
+- `32`, and `64` are supported.
++ Les littéraux binaires sont typés selon leur nombre de bits ; seuls `8`, `16`,
++ `32` et `64` sont pris en charge.
+
+- ## Example message
++ ## Exemple de message
+
+=
+- ```
++ ```
+
+- [↯/s.27.5] a binary literal must be 8, 16, 32 or 64 bits long
++ [↯/s.27.5] a binary literal must be 8, 16, 32 or 64 bits long
+
+= [↯/s.27.5] a binary literal must be 8, 16, 32 or 64 bits long
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- Pad or trim the literal to one of the supported widths.
++ Complétez ou tronquez le littéral à l'une des largeurs prises en charge.
+
+- ## See also
++ ## Voir aussi
+
+- - The other binary and hexadecimal literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - Les autres erreurs de littéraux binaires et hexadécimaux : [Familles](README.md#families)
++ - Source : `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

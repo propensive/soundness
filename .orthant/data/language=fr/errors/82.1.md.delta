@@ -1,0 +1,60 @@
+orthant 1 language
+
+- # `↯/s.82.1` — `Outlet.Error`
++ # `↯/s.82.1` — `Outlet.Error`
+
+- Raised when audio cannot be played to an output device.
++ Levée lorsque de l'audio ne peut pas être joué sur un périphérique de sortie.
+
+- ## Cause
++ ## Cause
+
+- An outlet is a physical or virtual audio output. This error covers a device that is not
+- available, one that is in use, and one that cannot accept the audio's sample rate, bit
+- depth or channel layout.
++ Une sortie est une sortie audio physique ou virtuelle. Cette erreur couvre un périphérique
++ indisponible, un périphérique déjà utilisé, et un périphérique qui ne peut pas accepter la
++ fréquence d'échantillonnage, la profondeur de bits ou l'agencement des canaux de l'audio.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
++ column  Raison
+
+- column  Message
++ column  Message
+
+- row  `↯/s.82.1.1`  `Unavailable`  `[↯/s.82.1.1] the audio line could not be opened`
++ row  `↯/s.82.1.1`  `Unavailable`  `[↯/s.82.1.1] the audio line could not be opened`
+
+- row  `↯/s.82.1.2`  `UnsupportedConfiguration`  `[↯/s.82.1.2] the requested configuration is not supported`
++ row  `↯/s.82.1.2`  `UnsupportedConfiguration`  `[↯/s.82.1.2] the requested configuration is not supported`
+
+- row  `↯/s.82.1.3`  `Closed`  `[↯/s.82.1.3] the playback has already been stopped`
++ row  `↯/s.82.1.3`  `Closed`  `[↯/s.82.1.3] the playback has already been stopped`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- Check the device is present and not exclusively held by another process. Where the
+- configuration is at fault, convert the audio to a format the device accepts, or query the
+- outlet before playing.
++ Vérifiez que le périphérique est présent et qu'un autre processus ne le détient pas en
++ exclusivité. Si la configuration est en cause, convertissez l'audio dans un format que le
++ périphérique accepte, ou interrogez la sortie avant la lecture.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/cacophony/src/core/cacophony.Outlet.scala`
++ - Source : `lib/cacophony/src/core/cacophony.Outlet.scala`

@@ -1,0 +1,258 @@
+orthant 1 language
+
+- # Soundness Message Standards
++ # Normes de Soundness pour les messages
+
+- This document defines the house style for human-readable messages written with the
+- `m"…"` interpolator: the text of `fulminate` errors, the `Message` carried by an
+- `eucalyptus` log event, and the diagnostics a macro reports. All three share one style,
+- because a reader meets them in the same places — a terminal, a log, a compiler error — and
+- should not be able to tell from the prose which module wrote it. It complements
+- `logging.md` (when and what to log) and `naming.md` (how error types are named). Examples
+- are drawn from `lib/*/src/core/*.scala`.
++ Ce document définit le style maison des messages lisibles par un humain écrits avec
++ l'interpolateur `m"…"` : le texte des erreurs de `fulminate`, le `Message` porté par un
++ événement de journal d'`eucalyptus`, et les diagnostics que signale une macro. Tous trois
++ partagent un même style, car le lecteur les rencontre aux mêmes endroits (un terminal, un
++ journal, une erreur du compilateur) et ne doit pas pouvoir deviner, d'après la prose, quel
++ module les a écrits. Il complète `logging.md` (quand journaliser, et quoi) et `naming.md`
++ (comment nommer les types d'erreur). Les exemples sont tirés de `lib/*/src/core/*.scala`.
+
+- ## 1. Register
++ ## 1. Registre
+
+- A message states a fact about the world at the moment it was written, as a knowledgeable
+- colleague would say it aloud: calm, specific and brief.
++ Un message énonce un fait sur le monde au moment où il a été écrit, comme le dirait à voix
++ haute un collègue compétent : calmement, précisément et brièvement.
+
+- - **Lowercase.** A message begins in lowercase, unless its first word is a proper noun or
+-   an identifier (`Burdock can only repackage a JAR file, not a directory`).
+- - **No trailing period.** A message is a fragment that the surrounding rendering punctuates;
+-   it is embedded in a stack trace, prefixed with a code, or listed as a bullet, and a
+-   terminal period would be wrong in each.
+- - **Present tense, indicative mood.** State what *is*, not what *happened* or what *should*
+-   be: `the JAR has no manifest`, not `the JAR did not have a manifest` or `the JAR should
+-   have a manifest`. The exception is an operation that failed as a whole, which is past
+-   tense because the failure is the fact: `could not list the releases of $repository (HTTP
++ - **Minuscules.** Un message commence par une minuscule, sauf si son premier mot est un nom
++   propre ou un identifiant (`Burdock can only repackage a JAR file, not a directory`).
++ - **Pas de point final.** Un message est un fragment que le rendu qui l'entoure ponctue ; il
++   est inséré dans une trace de pile, précédé d'un code ou listé comme une puce, et un point
++   final serait déplacé dans chacun de ces cas.
++ - **Présent de l'indicatif.** Énoncer ce qui *est*, et non ce qui *s'est produit* ou ce qui
++   *devrait* être : `the JAR has no manifest`, et non `the JAR did not have a manifest` ni `the JAR should
++   have a manifest`. L'exception est une opération qui a échoué dans son ensemble, au passé, car
++   c'est l'échec qui constitue le fait : `could not list the releases of $repository (HTTP
+
+-   $status)`.
++   $status)`.
+
+- - **Terse.** Say the one thing the reader needs in order to act. No apology (`sorry`), no
+-   alarm (`fatal`, `!`), no advice unless the remedy is both certain and short, and no
+-   restatement of what the error type's name already says.
+- - **No jargon from the implementation.** A message names things in the reader's terms —
+-   a port, a path, a header, a field — never a class, a method or a variable of the
+-   library that raised it. `unknown variables reference` is addressed to a DAP client; `null
+-   frameRef in scopes()` would not be.
++ - **Concision.** Dire la seule chose dont le lecteur a besoin pour agir. Pas d'excuse (`sorry`),
++   pas d'alarme (`fatal`, `!`), pas de conseil sauf si le remède est à la fois certain et court,
++   et pas de reformulation de ce que dit déjà le nom du type d'erreur.
++ - **Pas de jargon de l'implémentation.** Un message nomme les choses dans les termes du
++   lecteur (un port, un chemin, un en-tête, un champ), jamais une classe, une méthode ou une
++   variable de la bibliothèque qui l'a levé. `unknown variables reference` s'adresse à un client
++   DAP ; `null
++   frameRef in scopes()` ne s'y adresserait pas.
+
+- ## 2. Structure
++ ## 2. Structure
+
+- A message has a subject, which is the specific thing at fault, and a predicate, which is
+- what is wrong with it. Lead with the subject when it is the thing the reader will look for:
++ Un message a un sujet, la chose précise qui est en faute, et un prédicat, ce qui ne va pas avec
++ elle. Commencer par le sujet quand c'est lui que le lecteur va chercher :
+
+-     m"the value $value is not a valid ISO 8601 repeating interval"
++     m"the value $value is not a valid ISO 8601 repeating interval"
+
+-     m"dependency $hash is neither published nor cached"
++     m"dependency $hash is neither published nor cached"
+
+-     m"a command cannot end with an escape character"
++     m"a command cannot end with an escape character"
+
+- Interpolate context; do not describe it. A message that says `the file could not be read`
+- makes the reader find the file; `${path} could not be read` does not. Name the specific
+- resource at fault — a path, a port, a URL, an identifier, a header name, a line and column —
+- and quantify whenever the number is already to hand: `${items.size} CBOR issues`, not `some
++ Interpoler le contexte, ne pas le décrire. Un message qui dit `the file could not be read`
++ oblige le lecteur à trouver le fichier ; `${path} could not be read` ne l'y oblige pas. Nommer
++ la ressource précise qui est en faute (un chemin, un port, une URL, un identifiant, un nom
++ d'en-tête, une ligne et une colonne) et quantifier chaque fois que le nombre est déjà à
++ disposition : `${items.size} CBOR issues`, et non `some
+
+- CBOR issues`.
++ CBOR issues`.
+
+- Where the cause is known and distinct from the symptom, append it in parentheses or after a
+- colon, in that order of preference:
++ Quand la cause est connue et distincte du symptôme, l'ajouter entre parenthèses ou après un
++ deux-points, par ordre de préférence :
+
+-     m"could not list the releases of $repository (HTTP $status)"
++     m"could not list the releases of $repository (HTTP $status)"
+
+-     m"the gRPC call failed with status $status: $detail"
++     m"the gRPC call failed with status $status: $detail"
+
+- A message that aggregates others says how many, and lets the `List[Message]` instance of
+- `Communicable` render them as bullets beneath it:
++ Un message qui en regroupe d'autres dit combien, et laisse l'instance `List[Message]` de
++ `Communicable` les afficher en puces sous lui :
+
+-     m"${List.size(errors)} accrued errors: $joined"
++     m"${List.size(errors)} accrued errors: $joined"
+
+- ## 3. Vocabulary
++ ## 3. Vocabulaire
+
+- Each recurring situation has one phrase:
++ Chaque situation récurrente a une seule formule :
+
+= Each recurring situation has one phrase:
+=
+- ```tabular
++ ```tabular
+
+- column  Phrase
+- column  For
+- column  Example
+- row  *is not a valid X*  a value that fails to parse as X  `the value $value is not a valid ISO 8601 repeating interval`
+- row  *is not a known X*  a value that parses but is not in the set
+- row  *could not* + verb  an operation that failed in the environment (network, filesystem, process)  `could not list the releases of $repository`
+- row  *cannot* + verb  a request the library refuses by construction  `a command cannot end with an escape character`
+- row  *has no X*  a missing part  `the JAR has no manifest`
+- row  *already has X*  a conflicting part
+- row  *must*  only a rule the reader can satisfy by changing their input  `a port number must be specified after a colon`
++ column  Formule
++ column  Pour
++ column  Exemple
++ row  *is not a valid X*  une valeur qui ne s'analyse pas comme un X  `the value $value is not a valid ISO 8601 repeating interval`
++ row  *is not a known X*  une valeur qui s'analyse mais n'appartient pas à l'ensemble
++ row  *could not* + verbe  une opération qui a échoué dans l'environnement (réseau, système de fichiers, processus)  `could not list the releases of $repository`
++ row  *cannot* + verbe  une demande que la bibliothèque refuse par construction  `a command cannot end with an escape character`
++ row  *has no X*  une partie manquante  `the JAR has no manifest`
++ row  *already has X*  une partie en conflit
++ row  *must*  uniquement une règle que le lecteur peut satisfaire en modifiant son entrée  `a port number must be specified after a colon`
+
+= row  *must*  only a rule the reader can satisfy by changing their input  `a port number must be specified after a colon`
+- ```
++ ```
+
+- - Prefer the singular, concrete noun (`the manifest`, `this JAR`, `the document`) to a
+-   category (`input`, `data`, `object`), and the definite article when there is one such
+-   thing in context.
+- - Never *invalid*, *illegal*, *bad* or *error* as the whole predicate: they name the fact
+-   that a message exists, not its content.
++ - Préférer le nom singulier et concret (`the manifest`, `this JAR`, `the document`) à une
++   catégorie (`input`, `data`, `object`), et l'article défini quand il n'y a qu'une seule telle
++   chose dans le contexte.
++ - Jamais *invalid*, *illegal*, *bad* ni *error* comme prédicat entier : ces mots nomment le fait
++   qu'un message existe, et non son contenu.
+
+- ## 4. What a message must not contain
++ ## 4. Ce qu'un message ne doit pas contenir
+
+= ## 4. What a message must not contain
+=
+- ```tabular
++ ```tabular
+
+- column  Never
+- column  Instead
+- row  a secret: token, password, key material, cookie or `Authorization` value, even partially  the credential's *source*, if it helps (`the GITHUB_TOKEN environment variable`)
+- row  a payload: request or response body, file contents, serialized document  the offending *fragment* (a line, a token, a field) and its position
+- row  a stack trace or exception text  the cause restated in the terms of §3, with the original attached as the error's cause
+- row  formatting: ANSI escapes, Markdown, alignment spaces  nothing; a `Message` is structured, and the renderer decides how it looks
++ column  Jamais
++ column  À la place
++ row  un secret : jeton, mot de passe, matériel de clé, cookie ou valeur `Authorization`, même partiellement  la *source* de l'identifiant, si cela aide (`the GITHUB_TOKEN environment variable`)
++ row  une charge utile : corps de requête ou de réponse, contenu de fichier, document sérialisé  le *fragment* fautif (une ligne, un jeton, un champ) et sa position
++ row  une trace de pile ou le texte d'une exception  la cause reformulée dans les termes du §3, l'originale étant jointe comme cause de l'erreur
++ row  de la mise en forme : séquences d'échappement ANSI, Markdown, espaces d'alignement  rien ; un `Message` est structuré, et c'est le moteur de rendu qui décide de son apparence
+
+= row  formatting: ANSI escapes, Markdown, alignment spaces  nothing; a `Message` is structured, and the renderer decides how it looks
+- ```
++ ```
+
+- ## 5. Composition through `Communicable`
++ ## 5. Composition par `Communicable`
+
+- A `Message` is not a string. The `m"…"` interpolator keeps every interpolated value as a
+- `Message` part, converted through the value's `Communicable` instance, so formatting lives in
+- one place per type rather than at each message. Consequences:
++ Un `Message` n'est pas une chaîne. L'interpolateur `m"…"` garde chaque valeur interpolée comme
++ une partie de `Message`, convertie par l'instance `Communicable` de la valeur, si bien que la
++ mise en forme se trouve en un seul endroit par type plutôt que dans chaque message.
++ Conséquences :
+
+- - Interpolate the typed value, not its rendering: `m"…$path…"`, not `m"…${path.show}…"`.
+-   The `Path` instance decides how a path reads in prose, and every message about paths
+-   agrees.
+- - Give a type that appears in messages a `Communicable` instance in its companion, usually
+-   derived from its `Textualizable` or `Showable` instance; do not render by hand at the
+-   call site.
+- - Text that may be empty or padded is quoted by the `Text` instance (`“ ”`) so that an
+-   absent or whitespace value is visible; never add quotation marks of your own around an
+-   interpolated `Text`.
+- - A list of messages is a list, not a joined string: `List[Message]` renders as bullets, one
+-   per line. Do not `join` messages with commas.
+- - Compile-time diagnostics raised by a macro carry their bolt code in the standard prefix
+-   (`m"${bolt.label} $message"`); the message body follows this standard unchanged.
++ - Interpoler la valeur typée, et non son rendu : `m"…$path…"`, et non `m"…${path.show}…"`.
++   L'instance de `Path` décide de la manière dont un chemin se lit dans la prose, et tous les
++   messages qui concernent des chemins concordent.
++ - Donner à un type qui apparaît dans les messages une instance `Communicable` dans son
++   compagnon, généralement dérivée de son instance `Textualizable` ou `Showable` ; ne pas faire
++   le rendu à la main au site d'appel.
++ - Le texte qui peut être vide ou complété d'espaces est mis entre guillemets par l'instance de
++   `Text` (`“ ”`), de sorte qu'une valeur absente ou faite d'espaces soit visible ; ne jamais
++   ajouter ses propres guillemets autour d'un `Text` interpolé.
++ - Une liste de messages est une liste, et non une chaîne jointe : `List[Message]` s'affiche en
++   puces, une par ligne. Ne pas joindre les messages par des virgules avec `join`.
++ - Les diagnostics de compilation levés par une macro portent leur code d'éclair dans le préfixe
++   standard (`m"${bolt.label} $message"`) ; le corps du message suit cette norme sans
++   changement.
+
+- ## 6. Log events
++ ## 6. Événements de journal
+
+- A log event is a value of a module's `Event` type, and its `Communicable` instance renders
+- the message. The same register applies, with one addition: an event names the operation and
+- its subject (`resolved $hash to $url`, `listening on $port`), in the past tense when it has
+- completed and the present participle when it is beginning. Levels are chosen by
+- `logging.md`; the message does not restate the level (`warning:` is not part of a message).
++ Un événement de journal est une valeur du type `Event` d'un module, et son instance
++ `Communicable` produit le message. Le même registre s'applique, avec un ajout : un événement
++ nomme l'opération et son sujet (`resolved $hash to $url`, `listening on $port`), au passé quand
++ elle est terminée et au participe présent quand elle commence. Les niveaux sont choisis selon
++ `logging.md` ; le message ne répète pas le niveau (`warning:` ne fait pas partie d'un message).
+
+- ## 7. Checklist
++ ## 7. Liste de vérification
+
+- Before adding a message, read it as it will appear — after `[↯/s.…]`, in a list of
+- twelve, or at the end of a stack trace — and check:
++ Avant d'ajouter un message, le lire tel qu'il apparaîtra (après `[↯/s.…]`, dans une liste de
++ douze, ou à la fin d'une trace de pile) et vérifier :
+
+- 1. lowercase first letter, no trailing period, present tense;
+- 2. the specific resource at fault is interpolated, as a typed value;
+- 3. a number is given when one is known;
+- 4. nothing secret, no payload, no implementation names;
+- 5. the error type's name and the message do not say the same thing.
++ 1. première lettre en minuscule, pas de point final, présent ;
++ 2. la ressource précise qui est en faute est interpolée, sous forme de valeur typée ;
++ 3. un nombre est donné quand il est connu ;
++ 4. rien de secret, pas de charge utile, pas de noms de l'implémentation ;
++ 5. le nom du type d'erreur et le message ne disent pas la même chose.

@@ -1,0 +1,187 @@
+orthant 1 language
+
+- # Correctness
++ # La correction
+
+- Correctness is the end that Soundness's other principles serve: a program should be
+- constrained to behave correctly, and the language should help ensure that it does.
+- Where most libraries make correctness merely possible, Soundness tries to make
+- incorrectness impossible — moving checks to compiletime, ruling out invalid states, and
+- making failure visible in the types — so that a program which compiles is already known
+- to be right about a great deal. This is what "sound by default" means: safety is the
+- starting point, not an extra to be bolted on later.
++ La correction est la fin que servent les autres principes de Soundness : un programme
++ doit être contraint de se comporter correctement, et le langage doit aider à s'en
++ assurer. Là où la plupart des bibliothèques rendent la correction simplement possible,
++ Soundness s'efforce de rendre l'incorrection impossible — en déplaçant les vérifications
++ à la compilation, en excluant les états invalides et en rendant l'échec visible dans
++ les types — de sorte qu'un programme qui compile est déjà réputé juste sur bien des
++ points. C'est ce que signifie « correct par défaut » : la sûreté est le point de départ,
++ et non un supplément à greffer plus tard.
+
+- ## What "a great deal" amounts to
++ ## Ce que représentent « bien des points »
+
+- The claim is worth making concrete. In a program built on Soundness — each line below
+- with the relevant module's names in scope — the following are compile errors rather than
+- possibilities:
++ L'affirmation mérite d'être rendue concrète. Dans un programme construit sur Soundness
++ — chaque ligne ci-dessous ayant dans sa portée les noms du module concerné — les cas
++ suivants sont des erreurs de compilation plutôt que des possibilités :
+
+- ```scala fuel
++ ```scala fuel
+
+- parse
++ parse
+
+- ##
++ ##
+
+- 2012-Feb-30                            // a date that does not exist
++ 2012-Feb-30                            // a date that does not exist
+
+- Eur(3.01) + Gbp(2.50)                  // money in mismatched currencies
++ Eur(3.01) + Gbp(2.50)                  // money in mismatched currencies
+
+- url"https:/example.com"                // a malformed URL
++ url"https:/example.com"                // a malformed URL
+
+- (3*Metre) + (4*Second)                 // incoherent dimensions
++ (3*Metre) + (4*Second)                 // incoherent dimensions
+
+- Br(Hr)                                 // a void element given children
++ Br(Hr)                                 // a void element given children
+
+- json.verify[Person].nope               // a field the schema does not declare
++ json.verify[Person].nope               // a field the schema does not declare
+
+- ```
++ ```
+
+- And the following are *visible in a signature*, so a caller cannot fail to know about
+- them: that an operation might fail and how; that it might block; that it needs the
+- network, the filesystem, or a random source; that it logs, and what.
++ Et les points suivants sont *visibles dans une signature*, si bien qu'un appelant ne
++ peut pas les ignorer : qu'une opération peut échouer, et comment ; qu'elle peut
++ bloquer ; qu'elle a besoin du réseau, du système de fichiers ou d'une source
++ d'aléatoire ; qu'elle journalise, et quoi.
+
+- None of this is exotic. Each is an ordinary mistake that ordinary programs make, caught
+- by construction rather than by review.
++ Rien de tout cela n'est exotique. Chacun est une erreur ordinaire que commettent des
++ programmes ordinaires, interceptée par construction plutôt que par relecture.
+
+- ## Where the checking happens
++ ## Où la vérification a lieu
+
+- Three mechanisms carry most of the weight, and they are described in their own right
+- elsewhere.
++ Trois mécanismes portent l'essentiel du poids, et ils sont décrits pour eux-mêmes
++ ailleurs.
+
+- Values are checked **as they are constructed**, so possessing one is proof it is
+- well-formed — the subject of [safety by construction](safety-by-construction.md).
++ Les valeurs sont vérifiées **au moment de leur construction**, si bien que posséder une
++ valeur prouve qu'elle est bien formée — le sujet de
++ [la sûreté par construction](safety-by-construction.md).
+
+- Types are shaped so that **invalid states have no representation**, and every transition
+- between states is **total** — the two golden rules, in
+- [impossible states](impossible-states.md) and [total transitions](total-transitions.md).
++ Les types sont conçus de sorte que **les états invalides n'aient aucune
++ représentation**, et chaque transition entre états est **totale** — les deux règles
++ d'or, dans [les états impossibles](impossible-states.md) et
++ [les transitions totales](total-transitions.md).
+
+- Requirements are stated **honestly in signatures**, so nothing an operation needs is
+- hidden and nothing it declares is unused — [honest signatures](honest-signatures.md).
++ Les exigences sont énoncées **honnêtement dans les signatures**, si bien que rien de ce
++ dont une opération a besoin n'est caché et que rien de ce qu'elle déclare n'est
++ inutilisé — [les signatures honnêtes](honest-signatures.md).
+
+- ## The conviction underneath
++ ## La conviction sous-jacente
+
+- Any static analysis a programmer can perform, the compiler can perform better; and any
+- analysis the compiler can perform, it should.
++ Toute analyse statique qu'un programmeur peut effectuer, le compilateur peut
++ l'effectuer mieux ; et toute analyse que le compilateur peut effectuer, il doit
++ l'effectuer.
+
+- A programmer checking by eye that every `match` covers every case does the compiler's
+- job, less reliably, and does it again after every change. The compiler does it on every
+- build, exhaustively, and reports every site affected by adding an enumeration case. The
+- question is therefore never *whether* to do the analysis but *who* does it — and the
+- answer is the same every time.
++ Un programmeur qui vérifie à l'œil que chaque `match` couvre chaque cas fait le travail
++ du compilateur, moins fiablement, et le refait après chaque modification. Le
++ compilateur le fait à chaque build, de façon exhaustive, et signale chaque site affecté
++ par l'ajout d'un cas d'énumération. La question n'est donc jamais *s'il faut* faire
++ l'analyse, mais *qui* la fait — et la réponse est chaque fois la même.
+
+- This is why exhaustivity warnings are treated as errors rather than as noise, why
+- `-Wunused` is on, and why a deliberately partial match must say so with `.absolve`
+- rather than being silently permitted. The discipline costs nothing except accidental
+- partiality, which is the kind that becomes a bug.
++ C'est pourquoi les avertissements d'exhaustivité sont traités comme des erreurs plutôt
++ que comme du bruit, pourquoi `-Wunused` est activé, et pourquoi un filtrage
++ délibérément partiel doit le dire avec `.absolve` au lieu d'être permis en silence. La
++ discipline ne coûte rien, hormis la partialité accidentelle, qui est celle qui devient
++ un bogue.
+
+- ## What correctness is not
++ ## Ce que la correction n'est pas
+
+- **It is not verification.** Soundness does not prove that a program computes the right
+- answer. It rules out large, well-understood classes of wrongness — malformed values,
+- impossible states, unhandled failures, escaped resources — and leaves the domain logic
+- to the programmer and the tests.
++ **Ce n'est pas de la vérification formelle.** Soundness ne prouve pas qu'un programme
++ calcule la bonne réponse. Il exclut de grandes classes d'erreurs bien comprises —
++ valeurs malformées, états impossibles, échecs non traités, ressources échappées — et
++ laisse la logique métier au programmeur et aux tests.
+
+- **It is not a guarantee about the outside world.** A `Hostname` is syntactically valid;
+- whether it resolves is not a static question. The discipline is to encode what is
+- genuinely determined by the value and to report the rest as typed failures, rather than
+- to invent a type that promises more than it can deliver.
++ **Ce n'est pas une garantie sur le monde extérieur.** Un `Hostname` est syntaxiquement
++ valide ; savoir s'il se résout n'est pas une question statique. La discipline consiste à
++ encoder ce qui est réellement déterminé par la valeur et à signaler le reste par des
++ échecs typés, plutôt qu'à inventer un type qui promet plus qu'il ne peut tenir.
+
+- **It is not free of judgement.** Every check moved to compiletime is a constraint on what
+- can be written, and a constraint that rules out more mistakes than it rules out
+- legitimate programs is a good one. That trade is made case by case, and it is possible to
+- get wrong in both directions.
++ **Ce n'est pas exempt de jugement.** Chaque vérification déplacée à la compilation est
++ une contrainte sur ce que l'on peut écrire, et une contrainte qui exclut plus d'erreurs
++ qu'elle n'exclut de programmes légitimes est une bonne contrainte. Ce compromis se fait
++ au cas par cas, et l'on peut se tromper dans les deux sens.
+
+- ## What it costs
++ ## Ce que cela coûte
+
+- Compiletime, mostly. Type-level computation, inlining and macro expansion are work the
+- compiler does on every build so the machine need not do it on every run, and a Soundness
+- project compiles more slowly than an equivalent one written loosely.
++ Du temps de compilation, surtout. Le calcul au niveau des types, l'inlining et
++ l'expansion des macros sont un travail que le compilateur fait à chaque build pour que
++ la machine n'ait pas à le faire à chaque exécution, et un projet Soundness compile plus
++ lentement qu'un projet équivalent écrit de façon plus lâche.
+
+- The second cost is a steeper start. A library that accepts `String` everywhere is easier
+- to begin with than one that wants a `Path on Linux`, a `Port` and a `MediaType`; the
+- payment comes back at the point where the loose version would have been debugging a
+- production incident. That is a real trade, and worth making knowingly rather than by
+- assumption.
++ Le second coût est un démarrage plus raide. Une bibliothèque qui accepte `String`
++ partout est plus facile à prendre en main qu'une bibliothèque qui veut un
++ `Path on Linux`, un `Port` et un `MediaType` ; le remboursement arrive au moment où la
++ version lâche en serait à déboguer un incident en production. C'est un vrai compromis,
++ qui mérite d'être fait en connaissance de cause plutôt que par présupposé.
+
+- See [zero cost](zero-cost.md) for why the runtime bill, at least, is close to nothing.
++ Voir [le coût nul](zero-cost.md) pour savoir pourquoi la facture à l'exécution, du
++ moins, est presque nulle.

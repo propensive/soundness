@@ -1,0 +1,59 @@
+orthant 1 language
+
+- # `↯/s.20.2` — Type cannot be proven distinct from a union
++ # `↯/s.20.2` — Le type ne peut pas être prouvé distinct d'une union
+
+- Raised at compiletime when a type cannot be shown to be distinct from the members of a
++ Levée à la compilation lorsqu'on ne peut pas montrer qu'un type est distinct des membres d'une
+
+- union.
++ union.
+
+- ## Cause
++ ## Cause
+
+- `Optional[value]` is the union `Unset | value`, which relies on the compiler being able to
+- see that `value` is not itself `Unset`. For an abstract type it cannot, so the evidence is
+- requested explicitly.
++ `Optional[value]` est l'union `Unset | value`, qui suppose que le compilateur puisse voir que
++ `value` n'est pas lui-même `Unset`. Pour un type abstrait, il ne le peut pas : la preuve est
++ donc demandée explicitement.
+
+- ## Example message
++ ## Exemple de message
+
+=
+- ```
++ ```
+
+- [↯/s.20.2] type <T> cannot be proven distinct from <union>
++ [↯/s.20.2] type <T> cannot be proven distinct from <union>
+
+= [↯/s.20.2] type <T> cannot be proven distinct from <union>
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- Require `Concrete` evidence for the type parameter:
++ Exigez une preuve `Concrete` pour le paramètre de type :
+
+- ```scala
++ ```scala
+
+- def firstOrElse[value: Concrete](values: List[Optional[value]], fallback: value): value =
++ def firstOrElse[value: Concrete](values: List[Optional[value]], fallback: value): value =
+
+-   values.seek(_.present).or(fallback)
++   values.seek(_.present).or(fallback)
+
+=   values.seek(_.present).or(fallback)
+- ```
++ ```
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/vacuous/src/core/vacuous.internal.scala`
++ - Source : `lib/vacuous/src/core/vacuous.internal.scala`

@@ -1,0 +1,59 @@
+orthant 1 language
+
+- # `↯/s.120.1` — `Pojo.Error`
++ # `↯/s.120.1` — `Pojo.Error`
+
+- Raised when Austronesian cannot deserialize a value from its
+- classloader-neutral "Pojo" representation.
++ Levée lorsque Austronesian ne peut pas désérialiser une valeur à partir de
++ sa représentation « Pojo », indépendante du chargeur de classes.
+
+- ## Cause
++ ## Cause
+
+- Austronesian encodes Scala values into a representation built only
+- from JDK-standard types — boxed primitives, `String`, and
+- `Array[Object]` — so they can cross classloader or process
+- boundaries. This error is raised during decoding, when a Pojo value
+- does not match the shape the target type expects: a scalar where an
+- array of fields was expected, an array of the wrong length, or a
+- sum value that is not a `(label, payload)` pair.
++ Austronesian encode les valeurs Scala dans une représentation construite
++ uniquement à partir de types standard du JDK — primitives boxées, `String`
++ et `Array[Object]` — afin qu'elles puissent franchir les frontières entre
++ chargeurs de classes ou entre processus. Cette erreur est levée au décodage,
++ lorsqu'une valeur Pojo ne correspond pas à la forme qu'attend le type cible :
++ un scalaire là où un tableau de champs était attendu, un tableau de mauvaise
++ longueur, ou une valeur de somme qui n'est pas une paire `(label, payload)`.
+
+- ## Example message
++ ## Exemple de message
+
+=
+- ```
++ ```
+
+- [↯/s.120.1] could not deserialize from Java POJO types
++ [↯/s.120.1] could not deserialize from Java POJO types
+
+= [↯/s.120.1] could not deserialize from Java POJO types
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- Confirm that the value was encoded from the same type it is being
+- decoded to, and that both sides agree on the type's definition —
+- field order and variant names are part of the encoding. More
+- specific reasons may be added as the module evolves.
++ Vérifiez que la valeur a été encodée à partir du type même vers lequel on la
++ décode, et que les deux côtés s'accordent sur la définition du type — l'ordre
++ des champs et les noms des variantes font partie de l'encodage. Des raisons
++ plus précises pourront être ajoutées à mesure que le module évolue.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/austronesian/src/core/austronesian.internal.scala`
++ - Source : `lib/austronesian/src/core/austronesian.internal.scala`

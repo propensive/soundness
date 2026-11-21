@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.25.3` — `Enumerable.Error`
++ # `↯/s.25.3` — `Enumerable.Error`
+
+- Raised when a text is decoded as a value of a Scala enumeration but is not the name of any of its
+- values.
++ Levée lorsqu'un texte est décodé comme une valeur d'une énumération Scala mais n'est le nom
++ d'aucune de ses valeurs.
+
+- ## Cause
++ ## Cause
+
+- `distillate.Decodable.enumeration` decodes a `reflect.Enum` by its (possibly relabelled) name.
+- The rendered message is `the specified variant ($inputLabel) is not one of the valid variants
+- ($validVariants) of the enumeration $sum`.
++ `distillate.Decodable.enumeration` décode un `reflect.Enum` par son nom (éventuellement
++ réétiqueté). Le message est
++ `the specified variant ($inputLabel) is not one of the valid variants ($validVariants) of the enumeration $sum`.
+
+- **Example.** `[↯/s.25.3] the specified variant (blue) is not one of the valid variants (red,
++ **Exemple.** `[↯/s.25.3] the specified variant (blue) is not one of the valid variants (red,
+
+- green) of the enumeration Colour`
++ green) of the enumeration Colour`
+
+- ## Resolution
++ ## Résolution
+
+- Use one of the listed names; if the wire form differs from the Scala name, relabel the value with
+- `@name` or an `Identifiable` instance.
++ Utilisez l'un des noms listés ; si la forme de transmission diffère du nom Scala, réétiquetez la
++ valeur avec `@name` ou une instance d'`Identifiable`.
+
+- Before this error existed, the same failure raised `wisteria.Variant.Error`.
++ Avant que cette erreur n'existe, le même échec levait `wisteria.Variant.Error`.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/distillate/src/core/distillate.Enumerable.scala`
++ - Source : `lib/distillate/src/core/distillate.Enumerable.scala`

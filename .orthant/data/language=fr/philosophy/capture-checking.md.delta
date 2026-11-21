@@ -1,0 +1,255 @@
+orthant 1 language
+
+- # Capture Checking
++ # Contrôle des captures
+
+- Soundness uses Scala's capture checking to strengthen the guarantees that its
+- [scoped capabilities](delimited-scopes.md) already express. Capture checking tracks
+- which capabilities a value depends on, so the compiler can prove that a resource, an
+- error handler, or a concurrency context does not escape the block that established it.
+- What scoping states by structure, capture checking enforces by type.
++ Soundness utilise le contrôle des captures de Scala pour renforcer les garanties
++ qu'expriment déjà ses [capacités délimitées](delimited-scopes.md). Le contrôle des
++ captures suit les capacités dont dépend une valeur, si bien que le compilateur peut
++ prouver qu'une ressource, un gestionnaire d'erreurs ou un contexte de concurrence ne
++ s'échappe pas du bloc qui l'a établi. Ce que la délimitation énonce par la structure,
++ le contrôle des captures l'impose par le type.
+
+- What becomes impossible is the family of escape bugs that scoping alone cannot stop —
+- each one a value smuggling a dead capability out of its block:
++ Ce qui devient impossible, c'est la famille des bogues d'échappement que la
++ délimitation seule ne peut arrêter — chacun étant une valeur qui fait sortir en
++ contrebande une capacité morte de son bloc :
+
+= each one a value smuggling a dead capability out of its block:
+=
+- ```scala fuel
++ ```scala fuel
+
+= each one a value smuggling a dead capability out of its block:
+=
+= ```scala fuel
+- parse
++ parse
+
+= each one a value smuggling a dead capability out of its block:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- // a lazy stream escaping the file that feeds it
++ // a lazy stream escaping the file that feeds it
+
+- val lines = file.open(_.stream[Text])
++ val lines = file.open(_.stream[Text])
+
+- lines.head   // without capture checking: reads from a closed handle
++ lines.head   // without capture checking: reads from a closed handle
+
+- // a closure escaping its error handler
++ // a closure escaping its error handler
+
+- val f = safely(() => parse(input))
++ val f = safely(() => parse(input))
+
+- f()          // without capture checking: raises with no handler in scope
++ f()          // without capture checking: raises with no handler in scope
+
+- // a task escaping its supervision
++ // a task escaping its supervision
+
+- val task = supervise(async(compute()))
++ val task = supervise(async(compute()))
+
+- task.await() // without capture checking: awaits under a completed supervisor
++ task.await() // without capture checking: awaits under a completed supervisor
+
+= task.await() // without capture checking: awaits under a completed supervisor
+- ```
++ ```
+
+- Under capture checking, each of these is a compile error, because each value captures a
+- capability that may not outlive its scope. The fix the compiler forces is the right one:
++ Sous le contrôle des captures, chacun de ces cas est une erreur de compilation, parce
++ que chaque valeur capture une capacité qui ne doit pas survivre à sa portée. La
++ correction que le compilateur impose est la bonne :
+
+- ```tabular
++ ```tabular
+
+- column  Escaping value
+- column  Captures
+- column  The fix
+- row  the lazy stream  the open handle  consume the stream inside the block
+- row  the closure  the `Tactic`  run the fallible code where its handler lives
+- row  the task  the `Monitor`  await the task under its supervisor
++ column  Valeur qui s'échappe
++ column  Capture
++ column  La correction
++ row  le flux paresseux  la poignée ouverte  consommer le flux à l'intérieur du bloc
++ row  la fermeture  le `Tactic`  exécuter le code faillible là où vit son gestionnaire
++ row  la tâche  le `Monitor`  attendre la tâche sous son superviseur
+
+= row  the task  the `Monitor`  await the task under its supervisor
+- ```
++ ```
+
+- The guarantee runs deeper than discipline could: laziness, closures and concurrency are
+- exactly the features that defeat by-eye reasoning about lifetimes, because they detach
+- *when* code runs from *where* it was written. Capture checking reattaches them — the
+- capability's scope travels in the type, so an escape is impossible to write rather than
+- inadvisable to attempt.
++ La garantie va plus loin que ne le pourrait la discipline : la paresse, les fermetures
++ et la concurrence sont exactement les fonctionnalités qui mettent en échec le
++ raisonnement à l'œil sur les durées de vie, parce qu'elles détachent le *moment* où le
++ code s'exécute de l'*endroit* où il a été écrit. Le contrôle des captures les rattache
++ — la portée de la capacité voyage dans le type, si bien qu'un échappement est
++ impossible à écrire plutôt que déconseillé.
+
+- ## Separation checking
++ ## Contrôle de séparation
+
+- Capture checking answers "may this value outlive that scope?". Its companion,
+- *separation* checking, answers a second question: "may two references to this value exist
+- at once?"
++ Le contrôle des captures répond à la question « cette valeur peut-elle survivre à
++ cette portée ? ». Son compagnon, le contrôle de *séparation*, répond à une seconde
++ question : « deux références à cette valeur peuvent-elles exister en même temps ? »
+
+- Some resources are safe to share and some are not. A `Stream` in the streaming kernel
+- exposes a mutable window into a buffer without copying it, which is what makes the kernel
+- fast — and which is only sound if exactly one consumer reads it. Two aliases would each
+- consume bytes the other expected.
++ Certaines ressources peuvent être partagées sans danger, d'autres non. Un `Stream` du
++ noyau de flux expose une fenêtre mutable sur un tampon sans le copier, ce qui rend le
++ noyau rapide — et qui n'est correct que si un seul consommateur le lit. Deux alias
++ consommeraient chacun des octets que l'autre attendait.
+
+- So a `Stream` is an *exclusive* capability, and aliasing one does not compile:
++ Un `Stream` est donc une capacité *exclusive*, et en créer un alias ne compile pas :
+
+= So a `Stream` is an *exclusive* capability, and aliasing one does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= So a `Stream` is an *exclusive* capability, and aliasing one does not compile:
+=
+= ```scala fuel
+- parse
++ parse
+
+= So a `Stream` is an *exclusive* capability, and aliasing one does not compile:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- val stream = file.stream
++ val stream = file.stream
+
+- val other = stream          // does not compile: the stream is exclusive
++ val other = stream          // does not compile: the stream is exclusive
+
+= val other = stream          // does not compile: the stream is exclusive
+- ```
++ ```
+
+- The modules that depend on this — the kernel itself and its immediate consumers — are
+- compiled with separation checking enabled, so the guarantee is checked rather than
+- documented. This is what allows a zero-copy design to be offered as an ordinary API
+- instead of as an unsafe one with a warning attached.
++ Les modules qui en dépendent — le noyau lui-même et ses consommateurs immédiats — sont
++ compilés avec le contrôle de séparation activé, si bien que la garantie est vérifiée
++ plutôt que documentée. C'est ce qui permet de proposer une conception sans copie comme
++ une API ordinaire, plutôt que comme une API non sûre assortie d'un avertissement.
+
+- ## What the compiler asks of you
++ ## Ce que le compilateur vous demande
+
+- The honest part of this document. Capture checking is not free, and the costs fall on the
+- person writing the code, not the person reading it.
++ La partie honnête de ce document. Le contrôle des captures n'est pas gratuit, et les
++ coûts retombent sur la personne qui écrit le code, non sur celle qui le lit.
+
+- **Annotations appear in signatures.** A method returning a value that captures something
+- says so — `(Stream[Data] over Credit)^` — and a parameter that will be consumed rather
+- than borrowed is marked `consume`. These are real syntax that a reader must learn, and
+- they propagate: a signature that returns a capturing value forces its callers'
+- signatures to acknowledge it.
++ **Des annotations apparaissent dans les signatures.** Une méthode qui renvoie une
++ valeur capturant quelque chose le dit — `(Stream[Data] over Credit)^` — et un
++ paramètre qui sera consommé plutôt qu'emprunté est marqué `consume`. C'est une vraie
++ syntaxe qu'un lecteur doit apprendre, et elle se propage : une signature qui renvoie
++ une valeur capturante force les signatures de ses appelants à en tenir compte.
+
+- **The errors are hard.** A capture violation is reported in terms of capture sets and
+- sometimes of skolem variables, which is a considerable distance from "this stream would
+- outlive its file". Reading such an error fluently takes practice, and the practice is not
+- transferable from ordinary Scala.
++ **Les erreurs sont difficiles.** Une violation de capture est signalée en termes
++ d'ensembles de capture et parfois de variables de Skolem, ce qui est assez éloigné de
++ « ce flux survivrait à son fichier ». Lire couramment une telle erreur demande de la
++ pratique, et cette pratique ne se transfère pas depuis le Scala ordinaire.
+
+- **It is still maturing.** Capture checking is a research-grade feature of the compiler,
+- and Soundness uses a fork with fixes not yet upstream. Some idioms that ought to work do
+- not yet — the aliasing-heavy zlib port in the compression module is compiled with capture
+- checking but not separation checking, because the stricter ruleset rejects a faithful
+- port of code that is nonetheless correct.
++ **Il est encore en cours de maturation.** Le contrôle des captures est une
++ fonctionnalité du compilateur de niveau recherche, et Soundness utilise une version
++ dérivée comportant des corrections pas encore intégrées en amont. Certains idiomes qui
++ devraient fonctionner ne fonctionnent pas encore — le portage de zlib du module de
++ compression, riche en alias, est compilé avec le contrôle des captures mais sans le
++ contrôle de séparation, parce que les règles plus strictes rejettent un portage fidèle
++ d'un code pourtant correct.
+
+- **Some escape hatches remain.** `caps.unsafe.unsafeAssumePure` and
+- `@caps.unsafe.untrackedCaptures` exist for the places where the checker cannot yet see
+- what the author can prove. Each use is a small hole in the guarantee, and each is
+- commented with the argument for why it is sound — which is the right way to hold such a
+- thing, but it is not the same as not needing them.
++ **Quelques échappatoires subsistent.** `caps.unsafe.unsafeAssumePure` et
++ `@caps.unsafe.untrackedCaptures` existent pour les endroits où le vérificateur ne voit
++ pas encore ce que l'auteur peut prouver. Chaque utilisation est un petit trou dans la
++ garantie, et chacune est commentée avec l'argument qui la justifie — ce qui est la
++ bonne manière de tenir une telle chose, mais ce n'est pas la même chose que de ne pas
++ en avoir besoin.
+
+- ## Why it is worth the cost
++ ## Pourquoi cela vaut son coût
+
+- Because the alternative is not "no cost" but "the same cost, paid later and by someone
+- else".
++ Parce que l'alternative n'est pas « aucun coût », mais « le même coût, payé plus tard
++ et par quelqu'un d'autre ».
+
+- A stream read after its file closed is a bug that reproduces intermittently, under load,
+- in a stack trace pointing at the read rather than at the escape. A closure that raises
+- with no handler in scope fails at a call site far from where the closure was made. These
+- are among the hardest classes of bug to diagnose, precisely because the cause and the
+- symptom are separated by exactly the mechanisms — laziness, closures, concurrency — that
+- capture checking exists to track.
++ Un flux lu après la fermeture de son fichier est un bogue qui se reproduit de manière
++ intermittente, sous charge, avec une trace de pile qui pointe vers la lecture plutôt
++ que vers l'échappement. Une fermeture qui lève une erreur sans gestionnaire dans la
++ portée échoue à un site d'appel éloigné de l'endroit où la fermeture a été créée. Ce
++ sont parmi les classes de bogues les plus difficiles à diagnostiquer, précisément
++ parce que la cause et le symptôme sont séparés par exactement les mécanismes —
++ paresse, fermetures, concurrence — que le contrôle des captures existe pour suivre.
+
+- The compiler's complaint is early, local, and about the actual mistake. That is a better
+- trade than it first looks.
++ La plainte du compilateur est précoce, locale, et porte sur l'erreur réelle. C'est un
++ meilleur marché qu'il n'y paraît d'abord.
+
+- See [delimited scopes](delimited-scopes.md) for the structure this enforces, and
+- [expressive errors](expressive-errors.md) for why errors must be pure — `throw` being the
+- one channel this analysis cannot see.
++ Voir [les portées délimitées](delimited-scopes.md) pour la structure que cela impose,
++ et [les erreurs expressives](expressive-errors.md) pour savoir pourquoi les erreurs
++ doivent être pures — `throw` étant le seul canal que cette analyse ne peut pas voir.

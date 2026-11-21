@@ -1,0 +1,280 @@
+orthant 1 language
+
+- # Soundness Benchmarking Standards
++ # Normes de benchmark de Soundness
+
+- This document defines how benchmarks are written and organised in the Soundness
+- libraries. Benchmarks build on [Probably](https://github.com/propensive/probably/)
+- and, for staged compiletime work, on [Sedentary](https://github.com/propensive/sedentary/).
+- It complements `testing.md`. Examples are drawn from `lib/*/src/bench/*.scala`.
++ Ce document définit la façon dont les benchmarks sont écrits et organisés dans les
++ bibliothèques Soundness. Les benchmarks reposent sur [Probably](https://github.com/propensive/probably/)
++ et, pour le travail de compilation mis en étapes, sur [Sedentary](https://github.com/propensive/sedentary/).
++ Il complète `testing.md`. Les exemples sont tirés de `lib/*/src/bench/*.scala`.
+
+- ## 1. Location and naming
++ ## 1. Emplacement et nommage
+
+- Benchmarks live in a module's `src/bench` directory, in a file named
+- `<module>.Benchmarks.scala`. The object extends `Suite` and is conventionally
+- named `Benchmarks`:
++ Les benchmarks se trouvent dans le répertoire `src/bench` d'un module, dans un fichier nommé
++ `<module>.Benchmarks.scala`. L'objet étend `Suite` et se nomme, par convention,
++ `Benchmarks` :
+
+= named `Benchmarks`:
+=
+- ```scala fuel
++ ```scala fuel
+
+- substitute ???  ...
++ substitute ???  ...
+
+= substitute ???  ...
+- ##
++ ##
+
+- object Benchmarks extends Suite("paths-bench", m"Serpentine benchmarks"):
++ object Benchmarks extends Suite("paths-bench", m"Serpentine benchmarks"):
+
+-   def run(): Unit = ???
++   def run(): Unit = ???
+
+=   def run(): Unit = ???
+- ```
++ ```
+
+- The suite's id is the id of the module's tests with `-bench` after it.
++ L'identifiant de la suite est celui des tests du module, suivi de `-bench`.
+
+- ## 2. Structure
++ ## 2. Structure
+
+- A benchmark is declared with a `Bench` rig, which measures a body in place of the
+- assertion a test would make. The rig needs a `BenchmarkDevice` to dispatch to, and,
+- in scope where it is applied, a classloader, an environment, a system, a temporary
+- directory to stage in, and an error strategy for a body that fails to compile or run. Group related benchmarks with `suite`:
++ Un benchmark se déclare avec un rig `Bench`, qui mesure un corps à la place de l'assertion que
++ ferait un test. Le rig a besoin d'un `BenchmarkDevice` auquel répartir le travail et, dans la
++ portée où il est appliqué, d'un chargeur de classes, d'un environnement, d'un système, d'un
++ répertoire temporaire dans lequel opérer la mise en étapes, et d'une stratégie d'erreur pour un corps qui ne compile pas ou ne s'exécute pas. On regroupe les benchmarks apparentés avec `suite` :
+
+= directory to stage in, and an error strategy for a body that fails to compile or run. Group related benchmarks with `suite`:
+=
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+= typecheck
+- ##
++ ##
+
+- import classloaders.threadContextClassloader
++ import classloaders.threadContextClassloader
+
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import systems.javaBaseSystem
++ import systems.javaBaseSystem
+
+- import temporaryDirectories.systemTemporaryDirectory
++ import temporaryDirectories.systemTemporaryDirectory
+
+- object PathBenchmarks extends Suite("paths-bench", m"Serpentine benchmarks"):
++ object PathBenchmarks extends Suite("paths-bench", m"Serpentine benchmarks"):
+
+-   given device: BenchmarkDevice = LocalhostDevice
++   given device: BenchmarkDevice = LocalhostDevice
+
+-   def run(): Unit =
++   def run(): Unit =
+
+-     val bench = Bench()
++     val bench = Bench()
+
+-     suite(m"Conjunctions"):
++     suite(m"Conjunctions"):
+
+-       bench(m"find the conjunction of two paths")(target = 500*Milli(Second)):
++       bench(m"find the conjunction of two paths")(target = 500*Milli(Second)):
+
+-         '{ (% / "verona" / "capulet").conjunction(% / "verona" / "montague") }
++         '{ (% / "verona" / "capulet").conjunction(% / "verona" / "montague") }
+
+=         '{ (% / "verona" / "capulet").conjunction(% / "verona" / "montague") }
+- ```
++ ```
+
+- The rig first runs the body untimed so that the JIT can reach a steady state, then
+- calibrates and times it in batches, as these parameters say:
++ Le rig exécute d'abord le corps sans le chronométrer, afin que le JIT atteigne un régime
++ stable, puis le calibre et le chronomètre par lots, comme l'indiquent ces paramètres :
+
+- ```tabular
++ ```tabular
+
+- column  Parameter
+- column  Default
+- column  Meaning
+- row  `target`  none; required  how long the measured phase runs, all timed batches together
+- row  `warmups`  the value of `iterations`  calibration batches, which settle how many operations fit in one batch
+- row  `iterations`  `5`  timed batches
++ column  Paramètre
++ column  Valeur par défaut
++ column  Signification
++ row  `target`  aucune ; requis  la durée de la phase mesurée, tous lots chronométrés confondus
++ row  `warmups`  la valeur d'`iterations`  les lots de calibrage, qui déterminent combien d'opérations tiennent dans un lot
++ row  `iterations`  `5`  les lots chronométrés
+
+= row  `iterations`  `5`  timed batches
+- ```
++ ```
+
+- Choose a target large enough for a stable figure.
++ Choisissez une cible assez grande pour obtenir un chiffre stable.
+
+- ## 3. Measure a result, not a side effect
++ ## 3. Mesurer un résultat, pas un effet de bord
+
+- The body must produce a value that the benchmark consumes; otherwise the JIT may
+- prove the work unused and eliminate it, measuring nothing. Return the result of
+- the operation under test rather than discarding it, and never benchmark a body
+- whose value is thrown away.
++ Le corps doit produire une valeur que le benchmark consomme ; sinon, le JIT peut prouver que le
++ travail est inutilisé et l'éliminer, et l'on ne mesure rien. Renvoyez le résultat de l'opération
++ testée au lieu de l'ignorer, et ne mesurez jamais un corps dont la valeur est jetée.
+
+- ## 4. Staged benchmarks
++ ## 4. Benchmarks mis en étapes
+
+- A benchmark's body is a quote, compiled again in the measuring JVM. Write the work
+- being measured in full inside the quote, so that each body reads as a self-contained
+- fragment, as Honeycomb's benchmarks do:
++ Le corps d'un benchmark est une quote, compilée à nouveau dans la JVM qui mesure. Écrivez en
++ entier, à l'intérieur de la quote, le travail mesuré, de sorte que chaque corps se lise comme un
++ fragment autonome, comme le font les benchmarks de Honeycomb :
+
+= fragment, as Honeycomb's benchmarks do:
+=
+- ```scala fuel
++ ```scala fuel
+
+= fragment, as Honeycomb's benchmarks do:
+=
+= ```scala fuel
+- parse
++ parse
+
+= fragment, as Honeycomb's benchmarks do:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- bench(m"Parse with jsoup")(target = 1*Second, operationSize = size):
++ bench(m"Parse with jsoup")(target = 1*Second, operationSize = size):
+
+-   '{ org.jsoup.Jsoup.parse(honeycomb.Benchmarks.htmlText1).nn }
++   '{ org.jsoup.Jsoup.parse(honeycomb.Benchmarks.htmlText1).nn }
+
+=   '{ org.jsoup.Jsoup.parse(honeycomb.Benchmarks.htmlText1).nn }
+- ```
++ ```
+
+- A body may refer to anything reachable by a static path, so it names members of the
+- benchmark object by their fully-qualified names (`honeycomb.Benchmarks.htmlText1`),
+- and values chosen in `run()` reach it only through a splice (`$size`). It cannot
+- refer to a `private` member. Reserve such members for:
++ Un corps peut faire référence à tout ce qui est accessible par un chemin statique, de sorte qu'il
++ nomme les membres de l'objet de benchmark par leur nom pleinement qualifié
++ (`honeycomb.Benchmarks.htmlText1`), et les valeurs choisies dans `run()` ne l'atteignent que par
++ une insertion (`$size`). Il ne peut pas faire référence à un membre `private`. Réservez de tels
++ membres pour :
+
+- - the data a body works on: corpora, caches and their builders;
+- - instances derived once, such as a codec from a derivation macro, so that a body
+-   measures their use rather than their expansion or allocation;
+- - instruments that many bodies share without being what they measure, such as a fixed
+-   `Buffering` or a rival's run adapter;
+- - arms that `run()` also calls, to check before timing that the rivals agree. These
+-   stay as methods, so that the code checked and the code timed are the same.
++ - les données sur lesquelles travaille un corps : corpus, caches et leurs constructeurs ;
++ - les instances dérivées une fois pour toutes, comme un codec issu d'une macro de dérivation, afin
++   qu'un corps mesure leur utilisation plutôt que leur expansion ou leur allocation ;
++ - les instruments que de nombreux corps partagent sans être ce qu'ils mesurent, comme un
++   `Buffering` fixe ou l'adaptateur d'exécution d'un concurrent ;
++ - les branches que `run()` appelle aussi, pour vérifier avant le chronométrage que les
++   concurrents concordent. Elles restent des méthodes, afin que le code vérifié et le code
++   chronométré soient le même.
+
+- The quote is typed where it is written, but an inline method that resolves an instance
+- as it expands (through `summonFrom` or `summonInline`) only does so when the staged
+- tree is compiled, where none of the file's imports are in scope. An `import` written
+- inside the quote travels with it, so import there whatever such a method needs:
++ La quote est typée là où elle est écrite, mais une méthode inline qui résout une instance au
++ cours de son expansion (par `summonFrom` ou `summonInline`) ne le fait qu'au moment où l'arbre mis
++ en étapes est compilé, là où aucun des imports du fichier n'est dans la portée. Un `import` écrit
++ à l'intérieur de la quote voyage avec elle : importez donc là ce dont une telle méthode a besoin :
+
+= inside the quote travels with it, so import there whatever such a method needs:
+=
+- ```scala fuel
++ ```scala fuel
+
+= inside the quote travels with it, so import there whatever such a method needs:
+=
+= ```scala fuel
+- parse
++ parse
+
+= inside the quote travels with it, so import there whatever such a method needs:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- '{
++ '{
+
+-     import htmlDoms.whatwg
++     import htmlDoms.whatwg
+
+-     unsafely(honeycomb.Benchmarks.html1.load[Html])
++     unsafely(honeycomb.Benchmarks.html1.load[Html])
+
+- }
++ }
+
+= }
+- ```
++ ```
+
+- A transparent inline macro given cannot be expanded inside a quote at all, so a call
+- that needs one (Panopticon's `lens` resolves an optic per path segment this way) must
+- be made in a method of the benchmark object, which the body then calls.
++ Un given macro transparent inline ne peut pas du tout être expansé à l'intérieur d'une quote, de
++ sorte qu'un appel qui en requiert un (le `lens` de Panopticon résout ainsi une optique par segment
++ de chemin) doit être fait dans une méthode de l'objet de benchmark, que le corps appelle ensuite.
+
+- The harness binds the body as a method of its own, so a body written inline is
+- JIT-compiled exactly as one which delegates to a method.
++ Le harnais lie le corps comme une méthode à part entière, de sorte qu'un corps écrit en ligne est
++ compilé par le JIT exactement comme un corps qui délègue à une méthode.
+
+- ## 5. Keep benchmarks out of the test suite
++ ## 5. Tenir les benchmarks à l'écart de la suite de tests
+
+- Benchmarks are not run as part of `make test` or the attested CI build; they are
+- run deliberately when measuring performance. Keep them in `src/bench` so they do
+- not slow the ordinary test cycle.
++ Les benchmarks ne sont exécutés ni par `make test` ni par le build attesté de la CI ; on les
++ exécute délibérément pour mesurer les performances. Gardez-les dans `src/bench` pour qu'ils ne
++ ralentissent pas le cycle de test ordinaire.

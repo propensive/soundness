@@ -1,0 +1,181 @@
+orthant 1 language
+
+- # Declarative Context
++ # Contexte déclaratif
+
+- Soundness configures behaviour declaratively, through contextual values in scope rather
+- than through arguments threaded by hand or flags consulted at runtime. Choosing an
+- output format, an error strategy, a character encoding, or a particular implementation
+- is a matter of bringing the right `given` into scope, after which the choice applies
+- automatically to everything within that scope. Because the configuration is
+- declarative, it is independent of control flow and easy to reason about: what is in
+- scope determines what happens, wherever the affected code runs.
++ Soundness configure le comportement de manière déclarative, par des valeurs contextuelles
++ présentes dans la portée, plutôt que par des arguments transmis à la main ou des indicateurs
++ consultés à l'exécution. Choisir un format de sortie, une stratégie d'erreur, un encodage de
++ caractères ou une implémentation particulière revient à mettre le bon `given` dans la portée,
++ après quoi le choix s'applique automatiquement à tout ce qui se trouve dans cette portée. Comme
++ la configuration est déclarative, elle est indépendante du flot de contrôle et facile à
++ comprendre : ce qui est dans la portée détermine ce qui se passe, où que s'exécute le code
++ concerné.
+
+- The power of the approach is that scope is a precise instrument. A given imported at the
+- top of a file configures the file; one declared inside a block configures only that
+- block, overriding any wider choice; and a `locally` block confines an exception to a few
+- lines. [Delimited scopes](delimited-scopes.md#scope-is-a-precise-instrument) shows all three in one
+- example.
++ La force de cette approche tient à ce que la portée est un instrument précis. Un given importé
++ en tête d'un fichier configure le fichier ; un given déclaré dans un bloc ne configure que ce
++ bloc, en prenant le pas sur tout choix plus large ; et un bloc `locally` confine une exception à
++ quelques lignes. [Les portées délimitées](delimited-scopes.md#scope-is-a-precise-instrument)
++ montrent les trois dans un même exemple.
+
+- Configuration composes like the code it configures. A project defines its house choices
+- once and shares them with `export`, so `import myproject.conventions.*` equips any file
+- with the team's error strategy, encodings and formats — configuration as a library,
+- versioned and reviewed like one.
++ La configuration se compose comme le code qu'elle configure. Un projet définit une fois ses
++ choix maison et les partage avec `export`, si bien que `import myproject.conventions.*` dote
++ n'importe quel fichier de la stratégie d'erreur, des encodages et des formats de l'équipe — la
++ configuration comme bibliothèque, versionnée et relue comme telle.
+
+- Two pieces of tooling keep the approach honest. Contextual values that represent
+- capabilities or configuration extend the `Findable` marker, which the Soundness compiler
+- plugin uses to distinguish *findable* context — things a user is expected to supply or
+- import — from internal machinery. And when a required given is missing, importing
+- `explainMissingContext` turns the compiler's bare "no implicit found" into a diagnosis:
+- it searches the classpath for the instances that *would* satisfy the search and names
+- the imports that provide them, so the response to a missing context is a one-line
+- import, not an archaeology session.
++ Deux outils gardent l'approche honnête. Les valeurs contextuelles qui représentent des capacités
++ ou de la configuration étendent le marqueur `Findable`, dont le plugin de compilateur de Soundness
++ se sert pour distinguer le contexte *trouvable* — ce que l'utilisateur est censé fournir ou
++ importer — de la mécanique interne. Et lorsqu'un given requis manque, importer
++ `explainMissingContext` transforme le laconique « no implicit found » du compilateur en
++ diagnostic : il cherche dans le classpath les instances qui *satisferaient* la recherche et nomme
++ les imports qui les fournissent, si bien que la réponse à un contexte manquant est un import d'une
++ ligne, et non une séance d'archéologie.
+
+- ## What goes into scope
++ ## Ce qui va dans la portée
+
+- The range is worth seeing at once, because the uniformity is the point. A single
+- mechanism carries choices that other designs would spread across constructor arguments,
+- global settings, builder methods and runtime flags:
++ Il vaut la peine de voir l'éventail d'un seul coup d'œil, car c'est l'uniformité qui compte. Un
++ mécanisme unique porte des choix que d'autres conceptions répartiraient entre arguments de
++ constructeur, réglages globaux, méthodes de builder et indicateurs à l'exécution :
+
+- ```tabular
++ ```tabular
+
+- column  Choice
++ column  Choix
+
+- column  Import
++ column  Import
+
+- row  what a failure does  `strategies.throwUnsafely`
+- row  how text becomes bytes  `codepages.utf8Codepage`
+- row  how JSON is rendered  `formatting.compactJsonFormatting`
+- row  how dates are shown  `dateFormats.iso8601DateFormat`
+- row  how a boolean is shown  `affirmations.yesNoAffirmation`
+- row  what a task runs on  `threads.virtualThreads`
+- row  what happens to unfinished tasks  `probates.cancelProbate`
+- row  which HTTP transport is used  `httpBackends.soundnessHttp`
+- row  which filesystem implementation  `filesystemBackends.javaBaseFilesystem`
+- row  which calendar a date literal means  `calendars.gregorianCalendar`
++ row  ce que fait un échec  `strategies.throwUnsafely`
++ row  comment le texte devient des octets  `codepages.utf8Codepage`
++ row  comment le JSON est rendu  `formatting.compactJsonFormatting`
++ row  comment les dates sont affichées  `dateFormats.iso8601DateFormat`
++ row  comment un booléen est affiché  `affirmations.yesNoAffirmation`
++ row  sur quoi s'exécute une tâche  `threads.virtualThreads`
++ row  ce qu'il advient des tâches inachevées  `probates.cancelProbate`
++ row  quel transport HTTP est utilisé  `httpBackends.soundnessHttp`
++ row  quelle implémentation de système de fichiers  `filesystemBackends.javaBaseFilesystem`
++ row  quel calendrier désigne un littéral de date  `calendars.gregorianCalendar`
+
+- ```
++ ```
+
+- One idiom to learn, and the same reasoning — "what is in scope determines what happens" —
+- applies to all of them.
++ Un seul idiome à apprendre, et le même raisonnement — « ce qui est dans la portée détermine ce
++ qui se passe » — s'applique à tous.
+
+- ## Naming makes the choice legible
++ ## Le nommage rend le choix lisible
+
+- A given is named for what it *selects*, not for its type, because the import line is what
+- a reader sees. `import strategies.throwUnsafely` says something about the code below it;
+- `import strategies.given` would not.
++ Un given est nommé d'après ce qu'il *sélectionne*, et non d'après son type, car la ligne
++ d'import est ce que voit le lecteur. `import strategies.throwUnsafely` dit quelque chose du code
++ qui suit ; `import strategies.given` ne le dirait pas.
+
+- This is why the convention matters more here than elsewhere: a contextual value is
+- invoked without being written at the call site, so the import is the only place its
+- choice is visible. A poorly-named given makes contextual configuration exactly as opaque
+- as its critics claim it is.
++ C'est pourquoi la convention compte plus ici qu'ailleurs : une valeur contextuelle est invoquée
++ sans être écrite au site d'appel, si bien que l'import est le seul endroit où son choix est
++ visible. Un given mal nommé rend la configuration contextuelle exactement aussi opaque que ses
++ détracteurs le prétendent.
+
+- ## What it costs
++ ## Ce que cela coûte
+
+- The honest objection to contextual configuration is action at a distance, and it is not
+- wrong.
++ L'objection honnête à la configuration contextuelle est l'action à distance, et elle n'est pas
++ fausse.
+
+- **The effect is not local to the call site.** A `json.show` renders differently depending
+- on an import possibly a hundred lines above, and nothing at the call site says so. A
+- reader must know to look. The mitigation is scope precision — the narrower the scope, the
+- closer the given is to what it affects — but the tension is real, and a given imported
+- file-wide genuinely is action at a distance.
++ **L'effet n'est pas local au site d'appel.** Un `json.show` s'affiche différemment selon un
++ import situé peut-être cent lignes plus haut, et rien au site d'appel ne le signale. Le lecteur
++ doit savoir où regarder. La parade est la précision de la portée — plus la portée est étroite,
++ plus le given est proche de ce qu'il affecte —, mais la tension est réelle, et un given importé
++ pour tout un fichier est réellement une action à distance.
+
+- **Ambiguity is a compile error, and a confusing one.** Two givens of the same type in
+- scope make the code ambiguous, which is safe but reported in terms of implicit
+- resolution rather than "you have chosen two JSON formats". Importing two convention
+- bundles that disagree produces exactly this.
++ **L'ambiguïté est une erreur de compilation, et une erreur déroutante.** Deux givens du même type
++ dans la portée rendent le code ambigu, ce qui est sûr, mais signalé en termes de résolution
++ implicite plutôt que par « vous avez choisi deux formats JSON ». Importer deux lots de
++ conventions qui se contredisent produit exactement cela.
+
+- **Refactoring can silently change behaviour.** Moving a function to another file moves it
+- out of one set of imports and into another. The types still check; the behaviour may
+- differ. This is the sharpest edge of the approach, and the reason a project's conventions
+- are better collected into one shared object than assembled ad hoc per file.
++ **Une refactorisation peut changer silencieusement le comportement.** Déplacer une fonction dans
++ un autre fichier la fait sortir d'un ensemble d'imports pour entrer dans un autre. Les types
++ passent toujours ; le comportement peut différer. C'est le tranchant le plus vif de l'approche,
++ et la raison pour laquelle il vaut mieux rassembler les conventions d'un projet dans un objet
++ partagé unique que les assembler au cas par cas dans chaque fichier.
+
+- **There is no runtime override.** Because the configuration is resolved as the code
+- compiles, it cannot be changed by a command-line flag or a configuration file without
+- threading the decision explicitly. Where runtime configurability is genuinely wanted, the
+- value must be an ordinary parameter — and recognising which of the two a given choice
+- needs is a design decision, not an automatic one.
++ **Il n'y a pas de surcharge à l'exécution.** Comme la configuration est résolue pendant la
++ compilation du code, elle ne peut pas être modifiée par une option de ligne
++ de commande ou un fichier de configuration sans transmettre explicitement la décision. Là où la
++ configurabilité à l'exécution est réellement souhaitée, la valeur doit être un paramètre
++ ordinaire — et reconnaître lequel des deux un choix donné exige est une décision de conception,
++ et non une décision automatique.
+
+- See [delimited scopes](delimited-scopes.md) for how the scope is established, and
+- [honest signatures](honest-signatures.md) for why the requirements being in the signature
+- is what makes this legible at all.
++ Voir les [portées délimitées](delimited-scopes.md) pour la façon dont la portée est établie, et
++ les [signatures honnêtes](honest-signatures.md) pour comprendre pourquoi c'est la présence des
++ exigences dans la signature qui rend tout cela lisible.

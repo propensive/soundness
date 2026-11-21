@@ -1,0 +1,1261 @@
+orthant 1 language
+
+- # Changes since 0.75.0
++ # Changements depuis 0.75.0
+
+- This file is read by an LLM agent to upgrade code that consumes Soundness libraries from
+- 0.75.0 to the next release. Each entry states precisely what changed; see `AGENTS.md` for the
+- format. Entries are grouped by module, most-recently-added last within a module.
++ Ce fichier est lu par un agent LLM pour mettre à niveau du code qui utilise les bibliothèques
++ Soundness de 0.75.0 vers la version suivante. Chaque entrée indique précisément ce qui a changé ;
++ voir `AGENTS.md` pour le format. Les entrées sont regroupées par module, la plus récente en
++ dernier au sein d'un module.
+
+- ## caesura
++ ## caesura
+
+- - `caesura.dsvRedesignations.lowerDottedRedesignation` now joins the lower-cased words of a field
+-   name with `.` (`targetPerson` → `target.person`), and
+-   `caesura.dsvRedesignations.lowerSlashedRedesignation` with `/` (`targetPerson` →
+-   `target/person`); both previously joined them with a space, as `lowerWordsRedesignation` does.
+-   A file read or written under either given must use the dotted or slashed headers. (#2439)
++ - `caesura.dsvRedesignations.lowerDottedRedesignation` joint désormais les mots en minuscules d'un
++   nom de champ avec `.` (`targetPerson` → `target.person`), et
++   `caesura.dsvRedesignations.lowerSlashedRedesignation` avec `/` (`targetPerson` →
++   `target/person`) ; tous deux les joignaient auparavant avec une espace, comme le fait
++   `lowerWordsRedesignation`. Un fichier lu ou écrit sous l'un de ces givens doit utiliser les
++   en-têtes à points ou à barres obliques. (#2439)
+
+=   A file read or written under either given must use the dotted or slashed headers. (#2439)
+=
+- ## perihelion
++ ## perihelion
+
+- - `perihelion.Websocket.Error.Reason.Truncated` now renders as "the connection closed before the
+-   frame was complete"; its `Communicable` instance previously had no case for it, so describing
+-   such an error threw a `MatchError`. (#2439)
++ - `perihelion.Websocket.Error.Reason.Truncated` s'affiche désormais "the connection closed before
++   the frame was complete" ; son instance `Communicable` n'avait auparavant aucun cas pour lui, si
++   bien que décrire une telle erreur levait une `MatchError`. (#2439)
+
+- ## contingency
++ ## contingency
+
+- - `contingency.survive` on a `scala.collection.Iterable[element]` receiver
++ - `contingency.survive` sur un receveur `scala.collection.Iterable[element]`
+
+-   (`extension [element](sequence: Iterable[element]) transparent inline def survive[result](using
++   (`extension [element](sequence: Iterable[element]) transparent inline def survive[result](using
+
+-   erased Void)[error <: Hazard](lambda): Iterable[result]`) removed. The remaining
+-   `contingency.survive` on any `self is murmuration.Traversable by element` (which includes every
+-   stdlib `Iterable`) applies, returning `proscenium.List[result]` instead of `Iterable[result]`.
+-   (#2442)
++   erased Void)[error <: Hazard](lambda): Iterable[result]`) supprimé. Le `contingency.survive`
++   restant, sur tout `self is murmuration.Traversable by element` (ce qui inclut chaque `Iterable`
++   de la bibliothèque standard), s'applique, et renvoie `proscenium.List[result]` au lieu de
++   `Iterable[result]`. (#2442)
+
+- ## mercator
++ ## mercator
+
+- - `mercator.sequence` changed from `extension [monad[_], collection[element] <: Iterable[element],
++ - `mercator.sequence` passe de `extension [monad[_], collection[element] <: Iterable[element],
+
+-   element](elems: collection[monad[element]])(using Monad[monad]) def sequence(using
++   element](elems: collection[monad[element]])(using Monad[monad]) def sequence(using
+
+-   BuildFrom[scala.collection.immutable.List[element], element, collection[element]]):
++   BuildFrom[scala.collection.immutable.List[element], element, collection[element]]):
+
+-   monad[collection[element]]` to `extension [self](self: self)(using traversable: self is
++   monad[collection[element]]` à `extension [self](self: self)(using traversable: self is
+
+-   murmuration.Traversable) def sequence[monad[_], element, result](using traversable.Operand <:<
++   murmuration.Traversable) def sequence[monad[_], element, result](using traversable.Operand <:<
+
+-   monad[element], Monad[monad], self is murmuration.Reshapable by element to result):
++   monad[element], Monad[monad], self is murmuration.Reshapable by element to result):
+
+-   monad[result]`. It now applies to `proscenium.List`, `Set`, `Sequence`, `Chain`, frozen `Array`
+-   and every other `Traversable` with a `Reshapable` instance, rebuilding the same shape; it no
+-   longer applies to stdlib collections (`scala.collection.immutable.List`, `Seq`, `Set`, …),
+-   which have no `Reshapable`, except `scala.collection.immutable.IndexedSeq`: convert them with
+-   `proscenium.List.from(…)` first. (#2442)
+- - `mercator.traverse` changed in the same way: from `extension [collection[element] <:
++   monad[result]`. Il s'applique désormais à `proscenium.List`, `Set`, `Sequence`, `Chain`, à
++   l'`Array` gelé et à tout autre `Traversable` doté d'une instance `Reshapable`, en reconstruisant
++   la même forme ; il ne s'applique plus aux collections de la bibliothèque standard
++   (`scala.collection.immutable.List`, `Seq`, `Set`, …), qui n'ont pas de `Reshapable`, sauf
++   `scala.collection.immutable.IndexedSeq` : les convertir d'abord avec
++   `proscenium.List.from(…)`. (#2442)
++ - `mercator.traverse` change de la même manière : de `extension [collection[element] <:
+
+-   Iterable[element], element](elems: collection[element]) def traverse[element2,
++   Iterable[element], element](elems: collection[element]) def traverse[element2,
+
+-   monad[_]](lambda: element => monad[element2])(using Monad[monad],
++   monad[_]](lambda: element => monad[element2])(using Monad[monad],
+
+-   BuildFrom[scala.collection.immutable.List[element2], element2, collection[element2]]):
++   BuildFrom[scala.collection.immutable.List[element2], element2, collection[element2]]):
+
+-   monad[collection[element2]]` to `extension [self](self: self)(using traversable: self is
++   monad[collection[element2]]` à `extension [self](self: self)(using traversable: self is
+
+-   murmuration.Traversable) def traverse[element2, monad[_], result](lambda: traversable.Operand
++   murmuration.Traversable) def traverse[element2, monad[_], result](lambda: traversable.Operand
+
+-   => monad[element2])(using Monad[monad], self is murmuration.Reshapable by element2 to result):
++   => monad[element2])(using Monad[monad], self is murmuration.Reshapable by element2 to result):
+
+-   monad[result]`. Same receivers as `sequence`; stdlib collections other than
+-   `scala.collection.immutable.IndexedSeq` no longer apply. (#2442)
++   monad[result]`. Mêmes receveurs que `sequence` ; les collections de la bibliothèque standard
++   autres que `scala.collection.immutable.IndexedSeq` ne s'appliquent plus. (#2442)
+
+- ## polysyllabic
++ ## polysyllabic
+
+- - `polysyllabic.Hyphenation#extending(patterns: Iterable[Text] = Iterable(), exceptions:
++ - `polysyllabic.Hyphenation#extending(patterns: Iterable[Text] = Iterable(), exceptions:
+
+-   Iterable[Text] = Iterable(), leftMin: Optional[Int] = Unset, rightMin: Optional[Int] = Unset)`
++   Iterable[Text] = Iterable(), leftMin: Optional[Int] = Unset, rightMin: Optional[Int] = Unset)`
+
+-   now takes `patterns: proscenium.List[Text] = List()` and `exceptions: proscenium.List[Text] =
+-   List()`. Behaviour unchanged. (#2442)
++   prend désormais `patterns: proscenium.List[Text] = List()` et `exceptions: proscenium.List[Text] =
++   List()`. Comportement inchangé. (#2442)
+
+- ## vacuous
++ ## vacuous
+
+- - `vacuous.compact` on `Iterable[Optional[value]]` (`transparent inline def compact:
+-   Iterable[value]`) replaced by `extension [self](self: self)(using traversable: self is
++ - `vacuous.compact` sur `Iterable[Optional[value]]` (`transparent inline def compact:
++   Iterable[value]`) remplacé par `extension [self](self: self)(using traversable: self is
+
+-   murmuration.Traversable) def compact[value, result](using traversable.Operand <:<
++   murmuration.Traversable) def compact[value, result](using traversable.Operand <:<
+
+-   Optional[value], self is murmuration.Reshapable by value to result): result`. It now applies to
+-   `proscenium.List`, `Set`, `Sequence`, `Chain`, frozen `Array` and other `Traversable`s with a
+-   `Reshapable`, returning the same shape (`List[Optional[Text]]` → `List[Text]`), and no longer
+-   applies to stdlib collections other than `scala.collection.immutable.IndexedSeq`, including
+-   varargs `Seq`s: convert them with `.to(proscenium.List)` (or `proscenium.List.from(…)`) first. Code calling `.stdlib.compact` should drop the `.stdlib`. The
+-   `compact` on `murmuration.Iterator[Optional[value]]^` is unchanged. (#2442)
+- - `vacuous.entire` on `Iterable[Optional[value]]` (`def entire: Optional[proscenium.List[value]]`)
+-   replaced by `extension [self](self: self)(using traversable: self is murmuration.Traversable)
++   Optional[value], self is murmuration.Reshapable by value to result): result`. Il s'applique
++   désormais à `proscenium.List`, `Set`, `Sequence`, `Chain`, à l'`Array` gelé et aux autres
++   `Traversable` dotés d'un `Reshapable`, en renvoyant la même forme
++   (`List[Optional[Text]]` → `List[Text]`), et ne s'applique plus aux collections de la
++   bibliothèque standard autres que `scala.collection.immutable.IndexedSeq`, y compris les `Seq`
++   de varargs : les convertir d'abord avec `.to(proscenium.List)` (ou `proscenium.List.from(…)`).
++   Le code qui appelle `.stdlib.compact` doit supprimer le `.stdlib`. Le `compact` sur
++   `murmuration.Iterator[Optional[value]]^` est inchangé. (#2442)
++ - `vacuous.entire` sur `Iterable[Optional[value]]` (`def entire: Optional[proscenium.List[value]]`)
++   remplacé par `extension [self](self: self)(using traversable: self is murmuration.Traversable)
+
+-   def entire[value, result](using traversable.Operand <:< Optional[value], self is
++   def entire[value, result](using traversable.Operand <:< Optional[value], self is
+
+-   murmuration.Reshapable by value to result): Optional[result]`: the result has the receiver's
+-   shape rather than always being a `List`: a `scala.collection.immutable.IndexedSeq` receiver
+-   (such as `(0 until n).map(…)`) now yields `Optional[IndexedSeq[value]]`, and other stdlib
+-   collections no longer apply. (#2442)
++   murmuration.Reshapable by value to result): Optional[result]` : le résultat a la forme du
++   receveur au lieu d'être toujours une `List` : un receveur `scala.collection.immutable.IndexedSeq`
++   (comme `(0 until n).map(…)`) produit désormais `Optional[IndexedSeq[value]]`, et les autres
++   collections de la bibliothèque standard ne s'appliquent plus. (#2442)
+
+- ## digression
++ ## digression
+
+- - `digression.StackTrace.legend: Map[Text, Text]` is now keyed by the bare glyph (`λ`, `ⲛ`, `δ`,
+-   `⁅⁆`) rather than the glyph padded to two characters (`λₙ`, `ⲛ `, `δ `); it is derived from the
+-   new `digression.StackTrace.Marker.all`. `ⲛ` is described as "constructor" (previously "class
+-   initializer"); `Σ` is listed as before, `ζ` is no longer produced, and `Ξ`, `Λ`, `ι`, `ℓ`,
+-   `⇢`, `≔`, `∂`, `⊡` and `⊙` are listed. (#2442)
+- - `digression.StackTrace.rewrite(name: String, method: Boolean = false): Text` changes its output
+-   for these inputs: `$adapted` marks the preceding `λ` as `Λ` (`lam$$anonfun$1$adapted` →
+-   `lam.Λ₁()`, previously `lam.λ₁.adapted()`); `<clinit>` and `$init$` → `ι` (previously
+-   unchanged and `.init.`); `$lzyINIT`, `$lzy` and `$lzyHandle` → `ℓ` (previously `#ℓ`, `#lzy`,
+-   `#lzyHandle`); `protected$`, `inline$` and `$accessor` → `⇢`; `$_setter_$` → `≔`;
+-   `$retainedBody` → `⊡`; `$outer` → `⊙`; `$$Lambda` → `#λ`/`.λ`; `$uXXXX` → the character;
+-   `$mc…$sp` consumes the tags, so `apply$mcII$sp` → `applyΣ(Int -> Int)()` (previously
+-   `applyΣ(Int -> Int)IIζ()`) and the parameters of a specialized method of arity above one are
+-   now in order with the result last (`apply$mcJII$sp` → `applyΣ((Int, Int) -> Long)()`, likewise
+-   `scala.runtime.java8.JFunction2$mcJII$sp` → `((Int, Int) => Long)`); a bare `$sp` is no longer
+-   `ζ`; `Play$$cue` (an expanded private name) → `Play.cue()` with one separator (previously
+-   `Play..cue()`), though `$$` followed by an operator encoding still decodes as the operator;
+-   `initial$` and `$_avoid_name_clash_$`, which the compiler no longer emits, are no longer
+-   rewritten to `ι` and `′`. Numbers after `$`, operators, `$anonfun`, `$anon`, `<init>`,
+-   `super$`, `$extension`, `$direct`, `$default`, `$package` and module classes are unchanged.
+-   (#2442)
+- - `digression.StackTrace.Marker` added: `case class Marker(jvm: Text, glyph: Text, meaning: Text,
+-   kind: Optional[StackTrace.Frame.Kind] = Unset)`, with `Marker.all: List[Marker]` and
++ - `digression.StackTrace.legend: Map[Text, Text]` a désormais pour clés le glyphe nu (`λ`, `ⲛ`, `δ`,
++   `⁅⁆`) plutôt que le glyphe complété à deux caractères (`λₙ`, `ⲛ `, `δ `) ; il est dérivé du
++   nouveau `digression.StackTrace.Marker.all`. `ⲛ` est décrit comme « constructor » (auparavant
++   « class initializer ») ; `Σ` est listé comme auparavant, `ζ` n'est plus produit, et `Ξ`, `Λ`,
++   `ι`, `ℓ`, `⇢`, `≔`, `∂`, `⊡` et `⊙` sont listés. (#2442)
++ - `digression.StackTrace.rewrite(name: String, method: Boolean = false): Text` change sa sortie
++   pour les entrées suivantes : `$adapted` marque le `λ` qui le précède comme `Λ`
++   (`lam$$anonfun$1$adapted` → `lam.Λ₁()`, auparavant `lam.λ₁.adapted()`) ; `<clinit>` et
++   `$init$` → `ι` (auparavant inchangé et `.init.`) ; `$lzyINIT`, `$lzy` et `$lzyHandle` → `ℓ`
++   (auparavant `#ℓ`, `#lzy`, `#lzyHandle`) ; `protected$`, `inline$` et `$accessor` → `⇢` ;
++   `$_setter_$` → `≔` ; `$retainedBody` → `⊡` ; `$outer` → `⊙` ; `$$Lambda` → `#λ`/`.λ` ;
++   `$uXXXX` → le caractère ; `$mc…$sp` consomme les tags, si bien que `apply$mcII$sp` →
++   `applyΣ(Int -> Int)()` (auparavant `applyΣ(Int -> Int)IIζ()`) et que les paramètres d'une
++   méthode spécialisée d'arité supérieure à un sont désormais dans l'ordre, avec le résultat en
++   dernier (`apply$mcJII$sp` → `applyΣ((Int, Int) -> Long)()`, de même
++   `scala.runtime.java8.JFunction2$mcJII$sp` → `((Int, Int) => Long)`) ; un `$sp` nu n'est plus
++   `ζ` ; `Play$$cue` (un nom privé développé) → `Play.cue()` avec un seul séparateur (auparavant
++   `Play..cue()`), même si `$$` suivi d'un encodage d'opérateur se décode toujours comme
++   l'opérateur ; `initial$` et `$_avoid_name_clash_$`, que le compilateur n'émet plus, ne sont plus
++   réécrits en `ι` et `′`. Les nombres après `$`, les opérateurs, `$anonfun`, `$anon`, `<init>`,
++   `super$`, `$extension`, `$direct`, `$default`, `$package` et les classes de modules sont
++   inchangés. (#2442)
++ - `digression.StackTrace.Marker` ajouté : `case class Marker(jvm: Text, glyph: Text, meaning: Text,
++   kind: Optional[StackTrace.Frame.Kind] = Unset)`, avec `Marker.all: List[Marker]` et
+
+-   `Marker.operators: List[(Text, Char)]`. (#2442)
++   `Marker.operators: List[(Text, Char)]`. (#2442)
+
+- ## hyperbole
++ ## hyperbole
+
+- - `hyperbole.StackResolver.hint(method: Text): Optional[StackTrace.Frame.Kind]` now reads
+-   `digression.StackTrace.Marker.all`: a name containing `$adapted` is `Bridge` even when it also
+-   contains `$anonfun` (previously `Lambda`); `super$`, `protected$`, `inline$` and `$accessor`
+-   give `Forwarder` and `$_setter_$` and `$retainedBody` give `Synthetic` (previously `Unset`);
+-   `$lzy` without `INIT` no longer gives `Initializer`. (#2442)
++ - `hyperbole.StackResolver.hint(method: Text): Optional[StackTrace.Frame.Kind]` lit désormais
++   `digression.StackTrace.Marker.all` : un nom qui contient `$adapted` est `Bridge` même s'il
++   contient aussi `$anonfun` (auparavant `Lambda`) ; `super$`, `protected$`, `inline$` et
++   `$accessor` donnent `Forwarder`, et `$_setter_$` et `$retainedBody` donnent `Synthetic`
++   (auparavant `Unset`) ; `$lzy` sans `INIT` ne donne plus `Initializer`. (#2442)
+
+- ## jacinta
++ ## jacinta
+
+- - `jacinta.JsonSchema.requiredLabels(labels: proscenium.Array[Optional[Text]]^{}):
++ - `jacinta.JsonSchema.requiredLabels(labels: proscenium.Array[Optional[Text]]^{}):
+
+-   proscenium.List[Text]` added: the present labels of a derived schema's fields, which
+-   `jacinta.JsonSchema.conjunction` calls. Nothing existing changes. (#2442)
++   proscenium.List[Text]` ajouté : les étiquettes présentes des champs d'un schéma dérivé, que
++   `jacinta.JsonSchema.conjunction` appelle. Rien d'existant ne change. (#2442)
+
+- ## build
++ ## build
+
+- - The pinned compiler is Proscala `1.1.4` (`3.10.0-pro-1.1.4`, was `3.10.0-pro-1.0.7`). Soundness's
+-   published artifacts are compiled with it, so a consumer compiling against them pins the same
+-   build. (#2443, #2489, #2505)
+- - Every Soundness module above `proscenium` is compiled with Proscala's `-Zgatherable-varargs`:
+-   inside a method, a repeated parameter (`parts: Text*`) is a `proscenium.List[Text]` rather than
+-   a `scala.collection.immutable.Seq[Text]`. No signature changes, and no call site is affected:
+-   callers pass and splice arguments exactly as before. A consumer who wants the same in their own
+-   code adds `-Zgatherable-varargs` and `-experimental` to their compiler options and brings
+-   `proscenium.listGatherable` into scope (`-Yimports:java.lang,proscenium`, or
+-   `import proscenium.listGatherable`); without the flag nothing changes for them. (#2443)
++ - Le compilateur épinglé est Proscala `1.1.4` (`3.10.0-pro-1.1.4`, auparavant `3.10.0-pro-1.0.7`).
++   Les artefacts publiés de Soundness sont compilés avec lui, si bien qu'un consommateur qui
++   compile avec eux épingle le même build. (#2443, #2489, #2505)
++ - Chaque module Soundness au-dessus de `proscenium` est compilé avec l'option
++   `-Zgatherable-varargs` de Proscala : à l'intérieur d'une méthode, un paramètre répété
++   (`parts: Text*`) est une `proscenium.List[Text]` plutôt qu'une
++   `scala.collection.immutable.Seq[Text]`. Aucune signature ne change, et aucun site d'appel
++   n'est affecté : les appelants passent et décomposent les arguments exactement comme
++   auparavant. Un consommateur qui veut la même chose dans son propre code ajoute
++   `-Zgatherable-varargs` et `-experimental` à ses options de compilation et met
++   `proscenium.listGatherable` dans la portée (`-Yimports:java.lang,proscenium`, ou
++   `import proscenium.listGatherable`) ; sans l'option, rien ne change pour lui. (#2443)
+
+- ## proscenium
++ ## proscenium
+
+- - `proscenium.listGatherable` added: `given listGatherable: [element] => (scala.Gatherable[element]
+-   { type Out = proscenium.List[element] })`, the instance `-Zgatherable-varargs` receives repeated
+-   parameters through. (#2443)
++ - `proscenium.listGatherable` ajouté : `given listGatherable: [element] => (scala.Gatherable[element]
++   { type Out = proscenium.List[element] })`, l'instance par laquelle `-Zgatherable-varargs` reçoit
++   les paramètres répétés. (#2443)
+
+- ## adversaria
++ ## adversaria
+
+- - `adversaria.relabelling[self, format]: Map[Text, Text]` and
+-   `adversaria.variantRelabelling[self, format]: Map[Text, Text]` are now macros resolved when the
+-   calling derivation expands, with the same signatures and results: a `@name` argument written as
+-   a literal (`@name(t"…")`, `@name("…")`) is a string constant in the generated code, and any other
+-   is rebuilt and read once at the expansion site rather than every time the derived instance runs.
+-   No caller changes. (#2475)
+- - `adversaria.annotatedFields[self, annotation <: StaticAnnotation]: Set[Text]` added: the names
+-   of the fields of `self` carrying an `annotation`, as a literal `Set`. Use it instead of
+-   `fieldAnnotations[self, annotation].defines(label)` when only the *presence* of an annotation on
+-   a field matters; `fieldAnnotations` is unchanged. (#2475)
+- - `adversaria.typeAnnotation[self, annotation <: StaticAnnotation]: Optional[annotation]` added:
+-   the `annotation` on the type `self` itself (the last declared), or `Unset`. Use it instead of
+-   `summonInline[self is Annotated by annotation]` followed by `.annotations.head`. (#2475)
+- - Annotations are now spliced into the expansion as written, where they were previously
+-   reconstructed node by node and silently omitted if their tree was not a constructor application
+-   over identifiers, selections, literals, named arguments and nested applications of those. An
+-   annotation whose arguments have any other form (a lambda, a block, a type ascription, an `if`,
+-   a string interpolation that is not a constant) is therefore now present where it was absent, in
+-   `Annotated#annotations`, `Annotated#fields`, `Annotated#subtypes`, `adversaria.relabelling`,
+-   `adversaria.variantRelabelling`, `adversaria.typeAnnotation`, `fieldAnnotations` and
+-   `subtypeAnnotations`. Code that relied on such an annotation being skipped must now filter it.
+-   The compiler-added `scala.annotation.experimental` is never reported by `Annotated`, as before.
+-   (#2487)
++ - `adversaria.relabelling[self, format]: Map[Text, Text]` et
++   `adversaria.variantRelabelling[self, format]: Map[Text, Text]` sont désormais des macros
++   résolues au développement de la dérivation appelante, avec les mêmes signatures et les mêmes
++   résultats : un argument `@name` écrit sous forme littérale (`@name(t"…")`, `@name("…")`) est
++   une constante de chaîne dans le code généré, et tout autre est reconstruit et lu une seule
++   fois au site de développement plutôt qu'à chaque exécution de l'instance dérivée. Aucun
++   changement pour les appelants. (#2475)
++ - `adversaria.annotatedFields[self, annotation <: StaticAnnotation]: Set[Text]` ajouté : les noms
++   des champs de `self` qui portent une `annotation`, sous la forme d'un `Set` littéral.
++   L'utiliser au lieu de `fieldAnnotations[self, annotation].defines(label)` quand seule la
++   *présence* d'une annotation sur un champ importe ; `fieldAnnotations` est inchangé. (#2475)
++ - `adversaria.typeAnnotation[self, annotation <: StaticAnnotation]: Optional[annotation]` ajouté :
++   l'`annotation` portée par le type `self` lui-même (la dernière déclarée), ou `Unset`.
++   L'utiliser au lieu de `summonInline[self is Annotated by annotation]` suivi de
++   `.annotations.head`. (#2475)
++ - Les annotations sont désormais insérées dans le développement telles qu'elles sont écrites,
++   alors qu'elles étaient auparavant reconstruites nœud par nœud et silencieusement omises si leur
++   arbre n'était pas une application de constructeur sur des identifiants, des sélections, des
++   littéraux, des arguments nommés et des applications imbriquées de ceux-ci. Une annotation dont
++   les arguments ont toute autre forme (une lambda, un bloc, une ascription de type, un `if`, une
++   interpolation de chaîne qui n'est pas une constante) est donc désormais présente là où elle
++   était absente, dans `Annotated#annotations`, `Annotated#fields`, `Annotated#subtypes`,
++   `adversaria.relabelling`, `adversaria.variantRelabelling`, `adversaria.typeAnnotation`,
++   `fieldAnnotations` et `subtypeAnnotations`. Le code qui comptait sur l'omission d'une telle
++   annotation doit désormais la filtrer. L'annotation `scala.annotation.experimental` ajoutée par
++   le compilateur n'est jamais signalée par `Annotated`, comme auparavant. (#2487)
+
+- ## xylophone
++ ## xylophone
+
+- - `Xml.DecodableDerivation` and `Xml.EncodableDerivation` read a type's `@attribute`,
+-   `@unqualified`, `@xmlns` and `@name[Xml]` annotations through `adversaria.annotatedFields`,
+-   `adversaria.typeAnnotation` and the macro `adversaria.relabelling`; wire names and the attribute
+-   and namespace decisions are unchanged. (#2475)
++ - `Xml.DecodableDerivation` et `Xml.EncodableDerivation` lisent les annotations `@attribute`,
++   `@unqualified`, `@xmlns` et `@name[Xml]` d'un type au moyen d'`adversaria.annotatedFields`,
++   d'`adversaria.typeAnnotation` et de la macro `adversaria.relabelling` ; les noms de
++   transmission et les décisions d'attribut et d'espace de noms sont inchangés. (#2475)
+
+- ## probably
++ ## probably
+
+- - `soundness.Arithmetic` and `soundness.Geometric` no longer refer to probably's
+-   `Baseline.Mode` cases, and `probably.Arithmetic`/`probably.Geometric` are removed: write
+-   `Baseline.Mode.Arithmetic` and `Baseline.Mode.Geometric`. `soundness.Arithmetic` is now
+-   unambiguously hypotenuse's `Arithmetic` (holding `Arithmetic.Error`).
+- - `Value`, a coordinate on a test axis, is renamed `Axis.Value`: `Value.Discrete(label)` becomes
+-   `Axis.Value.Discrete(label)`.
+- - `probably.Autopsy` (trait, with `type Analyse <: Boolean`), its companion given
+-   `probably.Autopsy.contrastByDefault`, and the package `probably.autopsies` with its givens
+-   `contrastAutopsy` and `noAutopsy` (also exported as `soundness.Autopsy` and
+-   `soundness.autopsies.{contrastAutopsy, noAutopsy}`) removed. Delete any import of them: an
+-   assertion no longer resolves a `Contrastable` or `Decomposable` at compile time. A failed
+-   assertion is diagnosed at run time instead, when the suite is invoked with the selection
+-   term `--diagnose=<presentations>` (a comma-separated list of `inspect`, `show`, `contrast`,
+-   `dissect`) and a `probably.Diagnostician` is installed.
+- - New component `probably-diagnosis` (JVM only; depends on `scala3-compiler` and
+-   `scala3-staging`) with `probably.Dissector`, a `probably.Diagnostician`. A test classpath
+-   must include it for failures to be diagnosed; `probably.Streamer.stream` installs it when it
+-   is present. Without it, a diagnosed failure records `TestEvent.DetailMessage` with the
+-   value's `toString`.
+- - New in `probably-core`: `probably.Diagnosis` (`Presentation`, `Request`, `Site`),
++ - `soundness.Arithmetic` et `soundness.Geometric` ne désignent plus les cas `Baseline.Mode` de
++   probably, et `probably.Arithmetic`/`probably.Geometric` sont supprimés : écrire
++   `Baseline.Mode.Arithmetic` et `Baseline.Mode.Geometric`. `soundness.Arithmetic` est désormais
++   sans ambiguïté l'`Arithmetic` d'hypotenuse (qui contient `Arithmetic.Error`).
++ - `Value`, une coordonnée sur un axe de test, est renommé `Axis.Value` : `Value.Discrete(label)`
++   devient `Axis.Value.Discrete(label)`.
++ - `probably.Autopsy` (trait, avec `type Analyse <: Boolean`), son given compagnon
++   `probably.Autopsy.contrastByDefault`, et le package `probably.autopsies` avec ses givens
++   `contrastAutopsy` et `noAutopsy` (aussi exportés sous les noms `soundness.Autopsy` et
++   `soundness.autopsies.{contrastAutopsy, noAutopsy}`) supprimés. Supprimer tout import de
++   ceux-ci : une assertion ne résout plus de `Contrastable` ni de `Decomposable` à la compilation.
++   Une assertion échouée est plutôt diagnostiquée à l'exécution, quand la suite est invoquée avec
++   le terme de sélection `--diagnose=<presentations>` (une liste, séparée par des virgules, de
++   `inspect`, `show`, `contrast`, `dissect`) et qu'un `probably.Diagnostician` est installé.
++ - Nouveau composant `probably-diagnosis` (JVM uniquement ; dépend de `scala3-compiler` et de
++   `scala3-staging`) avec `probably.Dissector`, un `probably.Diagnostician`. Le classpath d'un test
++   doit l'inclure pour que les échecs soient diagnostiqués ; `probably.Streamer.stream`
++   l'installe quand il est présent. Sans lui, un échec diagnostiqué enregistre
++   `TestEvent.DetailMessage` avec le `toString` de la valeur.
++ - Nouveau dans `probably-core` : `probably.Diagnosis` (`Presentation`, `Request`, `Site`),
+
+-   `probably.Diagnostician` (`install`, `apply`, `#diagnose`), `probably.Runner#diagnosis`
++   `probably.Diagnostician` (`install`, `apply`, `#diagnose`), `probably.Runner#diagnosis`
+
+-   (abstract: a custom `Runner` must define it), `probably.Selection#diagnosis` (a new last
+-   constructor parameter, default `Diagnosis.Request.none`),
++   (abstrait : un `Runner` personnalisé doit le définir), `probably.Selection#diagnosis` (un
++   nouveau dernier paramètre du constructeur, par défaut `Diagnosis.Request.none`),
+
+-   `probably.Verdict.Detail.Dissection(source, rows, reproducible)`,
++   `probably.Verdict.Detail.Dissection(source, rows, reproducible)`,
+
+-   `probably.TestEvent.DissectRow(depth, code, start, end, value, kind)`,
++   `probably.TestEvent.DissectRow(depth, code, start, end, value, kind)`,
+
+-   `probably.TestEvent.DetailDissection(test, source, rows, reproducible)` and
++   `probably.TestEvent.DetailDissection(test, source, rows, reproducible)` et
+
+-   `probably.Streamer.diagnostic`.
++   `probably.Streamer.diagnostic`.
+
+- - The `TestEvent` wire schema gained the `DetailDissection` case, so
+-   `probably.Streamer.fingerprint` changed: a host built against 0.75.0 reports suites built
+-   against this release as incompatible. Rebuild the host against this release.
+- - `probably.internal.assertion` changed from `[test, test2 <: test, report, result](runner,
++ - Le schéma de transmission de `TestEvent` a reçu le cas `DetailDissection`, si bien que
++   `probably.Streamer.fingerprint` a changé : un hôte construit sur 0.75.0 déclare incompatibles
++   les suites construites sur cette version. Reconstruire l'hôte sur cette version.
++ - `probably.internal.assertion` passe de `[test, test2 <: test, report, result](runner,
+
+-   test, predicate, result, expectation, inc, inc2, decomposable, coordinates, discard,
++   test, predicate, result, expectation, inc, inc2, decomposable, coordinates, discard,
+
+-   verified)` to `[test, report, result](runner, test, predicate, result, inc, inc2,
+-   coordinates, discard, verified, owner, start, end, source, names, captures)`. It is called
+-   only by the `assert`/`check` macros and `Spread`; recompile.
++   verified)` à `[test, report, result](runner, test, predicate, result, inc, inc2,
++   coordinates, discard, verified, owner, start, end, source, names, captures)`. Elle n'est
++   appelée que par les macros `assert`/`check` et par `Spread` ; recompiler.
+
+- ## ultimatum
++ ## ultimatum
+
+- - ultimatum's layout types are nested in a new `object Tui`, and are no longer exported
+-   individually: `Pane`, `Panes`, `Frame`, `Placement`, `Sizing`, `Limits`, `Arrangement` and
+-   `Occupancy` become `Tui.Pane`, `Tui.Panes`, `Tui.Frame`, `Tui.Placement`,
+-   `Tui.Sizing`, `Tui.Limits`, `Tui.Arrangement` and `Tui.Occupancy`; write the
+-   qualified name, or `import ultimatum.Tui.{Pane, Sizing}` (naming only what is used).
+-   For example, `conduct(Occupancy.Inline)(…)` becomes `conduct(Tui.Occupancy.Inline)(…)`
+-   and `val body: Pane = …` becomes `val body: Tui.Pane = …`.
+- - `ultimatum.Rect` is renamed `Tui.Region`, and every member named `rect` is renamed
+-   `region`: `Tui.Placement#region`, `Extent#region`, `FlowExtent#region` and
+-   `Form.Entry#region`. `Rect(left, top, width, height)` becomes
++ - Les types de disposition d'ultimatum sont imbriqués dans un nouvel `object Tui`, et ne sont
++   plus exportés individuellement : `Pane`, `Panes`, `Frame`, `Placement`, `Sizing`, `Limits`,
++   `Arrangement` et `Occupancy` deviennent `Tui.Pane`, `Tui.Panes`, `Tui.Frame`, `Tui.Placement`,
++   `Tui.Sizing`, `Tui.Limits`, `Tui.Arrangement` et `Tui.Occupancy` ; écrire le nom qualifié, ou
++   `import ultimatum.Tui.{Pane, Sizing}` (en ne nommant que ce qui est utilisé). Par exemple,
++   `conduct(Occupancy.Inline)(…)` devient `conduct(Tui.Occupancy.Inline)(…)`
++   et `val body: Pane = …` devient `val body: Tui.Pane = …`.
++ - `ultimatum.Rect` est renommé `Tui.Region`, et chaque membre nommé `rect` est renommé
++   `region` : `Tui.Placement#region`, `Extent#region`, `FlowExtent#region` et
++   `Form.Entry#region`. `Rect(left, top, width, height)` devient
+
+-   `Tui.Region(left, top, width, height)`.
++   `Tui.Region(left, top, width, height)`.
+
+- - The root boards are nested in `Tui`: `InlineRoot`, the board for inline mode, becomes
+-   `Tui.Block`, and `ScreenRoot`, the board for fullscreen mode, becomes `Tui.Screen`. The inline
+-   rendering policies are nested in the block: `InlineAnchoring`, `InlineGrowth` and
+-   `InlineShrink` become `Tui.Block.Anchoring`, `Tui.Block.Growth` and `Tui.Block.Shrink`. The
+-   `inlineAnchoring`, `inlineGrowth` and `inlineShrink` givens are unchanged.
+- - The `ultimatum.gauges` component is merged into `ultimatum.core`, which now depends on
+-   `aviation` and `quantitative`; a build depending on `ultimatum.gauges` should depend on
+-   `ultimatum.core`.
+- - The gauge types are nested in `Tui`: `Bar`, `Dial`, `Meter`, `Spinner`, `Sparkline`,
++ - Les tableaux racines sont imbriqués dans `Tui` : `InlineRoot`, le tableau du mode en ligne,
++   devient `Tui.Block`, et `ScreenRoot`, le tableau du mode plein écran, devient `Tui.Screen`. Les
++   politiques de rendu en ligne sont imbriquées dans le bloc : `InlineAnchoring`, `InlineGrowth`
++   et `InlineShrink` deviennent `Tui.Block.Anchoring`, `Tui.Block.Growth` et `Tui.Block.Shrink`.
++   Les givens `inlineAnchoring`, `inlineGrowth` et `inlineShrink` sont inchangés.
++ - Le composant `ultimatum.gauges` est fusionné dans `ultimatum.core`, qui dépend désormais
++   d'`aviation` et de `quantitative` ; un build qui dépend d'`ultimatum.gauges` doit dépendre
++   d'`ultimatum.core`.
++ - Les types de jauges sont imbriqués dans `Tui` : `Bar`, `Dial`, `Meter`, `Spinner`, `Sparkline`,
+
+-   `Checklist`, `Stopwatch`, `Facet`, `Gradient`, `Inlay`, `Magnitude`, `CaptionLayout`,
++   `Checklist`, `Stopwatch`, `Facet`, `Gradient`, `Inlay`, `Magnitude`, `CaptionLayout`,
+
+-   `Captioned`, `Reading`, `Reckoning`, `Standing`, `Step`, `Transfer`, `Tick`, `Fraction` and
+-   `Countdown` become `Tui.Bar` and so on. `gauge`, `gaugeLine`, `gaugeRows`, `whilst`,
+-   `Gaugeable`, `Gauging` and `GaugePalette` are unchanged. Code using several can import them:
+-   `import ultimatum.Tui.{Fraction, Reading}`.
++   `Captioned`, `Reading`, `Reckoning`, `Standing`, `Step`, `Transfer`, `Tick`, `Fraction` et
++   `Countdown` deviennent `Tui.Bar`, et ainsi de suite. `gauge`, `gaugeLine`, `gaugeRows`,
++   `whilst`, `Gaugeable`, `Gauging` et `GaugePalette` sont inchangés. Le code qui en utilise
++   plusieurs peut les importer : `import ultimatum.Tui.{Fraction, Reading}`.
+
+- ## octogenarian
++ ## octogenarian
+
+- - `soundness.Commandline` and `soundness.Native` no longer refer to octogenarian's git
+-   backends: the names are exoskeleton's parsed command line and xenophile's C interface. Select
+-   a backend with `gitBackends.commandlineGit` or `gitBackends.soundnessGit` as before, or write
+-   the classes qualified: `octogenarian.Native(List(SmartHttp(), SshCommand()))`,
+-   `octogenarian.Commandline.Event`.
+- - The patch and remote types are nested in `Git`: `Remote`, `Patch` and `Hunk` become
+-   `Git.Remote`, `Git.Patch` and `Git.Hunk`; `Patch.parse(text)` becomes `Git.Patch.parse(text)`.
+-   `FileDiff`, one file's part of a diff, is renamed `Git.Delta` (libgit2's term), and its
+-   `ChangeKind` is `Git.Delta.Status`, with the same cases; the field `changeKind` is `status`.
++ - `soundness.Commandline` et `soundness.Native` ne désignent plus les backends git
++   d'octogenarian : ces noms sont la ligne de commande analysée d'exoskeleton et l'interface C de
++   xenophile. Sélectionner un backend avec `gitBackends.commandlineGit` ou
++   `gitBackends.soundnessGit` comme auparavant, ou écrire les classes sous leur nom qualifié :
++   `octogenarian.Native(List(SmartHttp(), SshCommand()))`, `octogenarian.Commandline.Event`.
++ - Les types de patch et de dépôt distant sont imbriqués dans `Git` : `Remote`, `Patch` et `Hunk`
++   deviennent `Git.Remote`, `Git.Patch` et `Git.Hunk` ; `Patch.parse(text)` devient
++   `Git.Patch.parse(text)`. `FileDiff`, la partie d'un diff qui concerne un fichier, est renommé
++   `Git.Delta` (le terme de libgit2), et son `ChangeKind` est `Git.Delta.Status`, avec les mêmes
++   cas ; le champ `changeKind` est `status`.
+
+- ## embarcadero
++ ## embarcadero
+
+- - The containerd protobuf records are nested in `object Containerd` and no longer exported
+-   individually: `Container`, `Mount`, `Namespace`, `Runtime`, `Empty`, `AnyMessage`,
+-   `ContentDescriptor`, `ImageRecord`, `ProcessStatus`, `Timestamp`, and every service request
+-   and response (`ListContainersRequest`, `CreateTaskResponse`, `WaitResponse`, …) become
+-   `Containerd.Container`, `Containerd.Mount` and so on. `embarcadero.Timestamp` becomes
+-   `Containerd.Timestamp`. Write the qualified name, or import the members used, e.g.
+-   `import embarcadero.Containerd.{Container, Mount}`.
+- - `DockerEvent` is renamed `Containerd.Event`; a `DockerEvent is Loggable` given becomes
+-   `Containerd.Event is Loggable`. Its cases are unchanged.
+- - The OCI document types are nested in `Oci` and no longer exported individually: `Image`,
+-   `Index`, `Layer`, `Descriptor`, `History`, `RootFs`, `ContainerConfig`, `WasmConfig` and
+-   `WasmComponent` become `Oci.Image`, `Oci.Index` and so on; `path.open[Image]()` becomes
+-   `path.open[Oci.Image]()` and `Image.wasm(…)` becomes `Oci.Image.wasm(…)`.
++ - Les enregistrements protobuf de containerd sont imbriqués dans `object Containerd` et ne sont
++   plus exportés individuellement : `Container`, `Mount`, `Namespace`, `Runtime`, `Empty`,
++   `AnyMessage`, `ContentDescriptor`, `ImageRecord`, `ProcessStatus`, `Timestamp`, et chaque
++   requête et réponse de service (`ListContainersRequest`, `CreateTaskResponse`, `WaitResponse`,
++   …) deviennent `Containerd.Container`, `Containerd.Mount`, et ainsi de suite.
++   `embarcadero.Timestamp` devient `Containerd.Timestamp`. Écrire le nom qualifié, ou importer
++   les membres utilisés, par exemple `import embarcadero.Containerd.{Container, Mount}`.
++ - `DockerEvent` est renommé `Containerd.Event` ; un given `DockerEvent is Loggable` devient
++   `Containerd.Event is Loggable`. Ses cas sont inchangés.
++ - Les types de documents OCI sont imbriqués dans `Oci` et ne sont plus exportés
++   individuellement : `Image`, `Index`, `Layer`, `Descriptor`, `History`, `RootFs`,
++   `ContainerConfig`, `WasmConfig` et `WasmComponent` deviennent `Oci.Image`, `Oci.Index`, et
++   ainsi de suite ; `path.open[Image]()` devient `path.open[Oci.Image]()` et `Image.wasm(…)`
++   devient `Oci.Image.wasm(…)`.
+
+- ## coaxial
++ ## coaxial
+
+- - `coaxial.DomainSocket` is renamed `Uds` (a UNIX domain socket), and `DomainSocket.Endpoint`
+-   becomes `Uds.Endpoint`: `DomainSocket(% / "var" / "run" / "docker.sock")` becomes
+-   `Uds(% / "var" / "run" / "docker.sock")`. The companion givens `Bindable.domainSocket`,
+-   `Connectable.domainSocket` and `Serviceable.domainSocket` are renamed `uds`.
++ - `coaxial.DomainSocket` est renommé `Uds` (un socket de domaine UNIX), et `DomainSocket.Endpoint`
++   devient `Uds.Endpoint` : `DomainSocket(% / "var" / "run" / "docker.sock")` devient
++   `Uds(% / "var" / "run" / "docker.sock")`. Les givens compagnons `Bindable.domainSocket`,
++   `Connectable.domainSocket` et `Serviceable.domainSocket` sont renommés `uds`.
+
+- ## telekinesis
++ ## telekinesis
+
+- - `telekinesis.domainSocketFetchable` and `telekinesis.domainSocketHttpClient` are renamed
+-   `udsFetchable` and `udsHttpClient`; update any by-name import of them
++ - `telekinesis.domainSocketFetchable` et `telekinesis.domainSocketHttpClient` sont renommés
++   `udsFetchable` et `udsHttpClient` ; mettre à jour tout import par nom de ceux-ci
+
+-   (`import soundness.{udsFetchable, udsHttpClient}`).
++   (`import soundness.{udsFetchable, udsHttpClient}`).
+
+- ## rudiments
++ ## rudiments
+
+- - `rudiments.Bytes`, the opaque byte count made by `4.b`, `8.kib`, `data.bytes` and so on, is
+-   renamed `Memory`: `Bytes(1024L)` becomes `Memory(1024L)`, and a `Bytes` type ascription
+-   becomes `Memory`. Its operations are unchanged. The givens named after it are renamed
+-   `memory`: `hypotenuse.Commensurable.memory` (`Memory is Orderable`),
+-   `spectacular.Showable.memory`, `spectacular.Inspectable.memory`, jacinta's `Json.memory` and
+-   ypsiloid's `Yaml.memory` decoders.
++ - `rudiments.Bytes`, le nombre d'octets opaque produit par `4.b`, `8.kib`, `data.bytes`, etc.,
++   est renommé `Memory` : `Bytes(1024L)` devient `Memory(1024L)`, et une ascription de type
++   `Bytes` devient `Memory`. Ses opérations sont inchangées. Les givens nommés d'après lui sont
++   renommés `memory` : `hypotenuse.Commensurable.memory` (`Memory is Orderable`),
++   `spectacular.Showable.memory`, `spectacular.Inspectable.memory`, et les décodeurs `Json.memory`
++   de jacinta et `Yaml.memory` d'ypsiloid.
+
+- ## quantitative
++ ## quantitative
+
+- - The `Information` dimension, its unit `Bytes[power]`, the `MetricUnit` `Byte`, and the
+-   `B` designation (`Designation.bytes`) now belong to quantitative. They were ultimatum's
+-   (`ultimatum.Information`, `ultimatum.Bytes`, `ultimatum.Byte`, `ultimatum.informationDesignation`),
+-   which are removed; code using `soundness.*` needs no change, but a by-name
+-   `import soundness.informationDesignation` should be deleted, since the designation is now
+-   found in `Designation`'s companion. A local re-declaration of `Information`, `Bytes` and
+-   `Byte` may be deleted in favour of these.
++ - La dimension `Information`, son unité `Bytes[power]`, la `MetricUnit` `Byte` et la désignation
++   `B` (`Designation.bytes`) appartiennent désormais à quantitative. Elles appartenaient à
++   ultimatum (`ultimatum.Information`, `ultimatum.Bytes`, `ultimatum.Byte`,
++   `ultimatum.informationDesignation`), qui sont supprimés ; le code qui utilise `soundness.*`
++   n'a besoin d'aucun changement, mais un `import soundness.informationDesignation` par nom doit
++   être supprimé, puisque la désignation se trouve désormais dans le compagnon de `Designation`.
++   Une redéclaration locale d'`Information`, de `Bytes` et de `Byte` peut être supprimée au
++   profit de celles-ci.
+
+- ## espionage
++ ## espionage
+
+- - `Acp.Agent`, the enum saying where an agent is, is renamed `Acp.Endpoint`:
+-   `Acp.connect(Acp.Agent(sh"…"))` becomes `Acp.connect(Acp.Endpoint(sh"…"))`,
+-   `Acp.Agent.streams(input, output)` becomes `Acp.Endpoint.streams(input, output)`, and the
+-   cases are `Acp.Endpoint.Process` and `Acp.Endpoint.Streams`.
+- - The `@rpc` wire traits are nested in `Acp` and no longer exported individually: `AcpAgent`
+-   becomes `Acp.Agent`, `AcpAgentLifecycle` and `AcpAgentSession` become `Acp.Agent.Lifecycle`
+-   and `Acp.Agent.Session`, `AcpClient` becomes `Acp.Client`, and `AcpClientSession`,
+-   `AcpClientFs` and `AcpClientTerminal` become `Acp.Client.Session`, `Acp.Client.Fs` and
+-   `Acp.Client.Terminal`.
++ - `Acp.Agent`, l'énumération qui dit où se trouve un agent, est renommé `Acp.Endpoint` :
++   `Acp.connect(Acp.Agent(sh"…"))` devient `Acp.connect(Acp.Endpoint(sh"…"))`,
++   `Acp.Agent.streams(input, output)` devient `Acp.Endpoint.streams(input, output)`, et les cas
++   sont `Acp.Endpoint.Process` et `Acp.Endpoint.Streams`.
++ - Les traits de transmission `@rpc` sont imbriqués dans `Acp` et ne sont plus exportés
++   individuellement : `AcpAgent` devient `Acp.Agent`, `AcpAgentLifecycle` et `AcpAgentSession`
++   deviennent `Acp.Agent.Lifecycle` et `Acp.Agent.Session`, `AcpClient` devient `Acp.Client`, et
++   `AcpClientSession`, `AcpClientFs` et `AcpClientTerminal` deviennent `Acp.Client.Session`,
++   `Acp.Client.Fs` et `Acp.Client.Terminal`.
+
+- ## enigmatic
++ ## enigmatic
+
+- - The block-cipher modes and paddings are nested in `BlockCipher` and no longer exported
+-   individually: `Cbc`, `Ecb`, `Ctr`, `Cfb`, `Ofb`, `Pkcs7`, `Iso10126` and `NoPadding` become
+-   `BlockCipher.Cbc` and so on, and the typeclasses `BlockCipherMode` and `BlockCipherPadding`
+-   become `BlockCipher.Mode` and `BlockCipher.Padding`. `Aes[256] over Cbc against Pkcs7`
+-   becomes `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7`, or import the members:
+-   `import enigmatic.BlockCipher.{Cbc, Pkcs7}`. The `blockCipherModes` and
+-   `blockCipherPaddings` givens are unchanged.
++ - Les modes et remplissages de chiffrement par blocs sont imbriqués dans `BlockCipher` et ne sont
++   plus exportés individuellement : `Cbc`, `Ecb`, `Ctr`, `Cfb`, `Ofb`, `Pkcs7`, `Iso10126` et
++   `NoPadding` deviennent `BlockCipher.Cbc`, et ainsi de suite, et les classes de types
++   `BlockCipherMode` et `BlockCipherPadding` deviennent `BlockCipher.Mode` et
++   `BlockCipher.Padding`. `Aes[256] over Cbc against Pkcs7` devient
++   `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7`, ou bien importer les membres :
++   `import enigmatic.BlockCipher.{Cbc, Pkcs7}`. Les givens `blockCipherModes` et
++   `blockCipherPaddings` sont inchangés.
+
+- ## anthology
++ ## anthology
+
+- - The compilation types are nested in `Compiler` and no longer exported individually:
+-   `CompileProcess`, `CompileResult`, `CompileEvent` and `CompileProgress` become
+-   `Compiler.Process`, `Compiler.Result`, `Compiler.Event` and `Compiler.Progress`, and
+-   `CompileEvents.relay` becomes `Compiler.Event.relay`. A `given (CompileEvent is Loggable)`
+-   becomes `given (Compiler.Event is Loggable)`.
+- - `Notice` is renamed `Compiler.Notice`, and `Universe`, `Tool` and `Triple` are nested in
+-   `Toolchain`: `Scalac[3.8, Universe.Classfile]` becomes
+-   `Scalac[3.8, Toolchain.Universe.Classfile]`, `extends Tool` becomes `extends Toolchain.Tool`,
+-   and `Triple.X64Linux` becomes `Toolchain.Triple.X64Linux`. Or import the members:
++ - Les types de compilation sont imbriqués dans `Compiler` et ne sont plus exportés
++   individuellement : `CompileProcess`, `CompileResult`, `CompileEvent` et `CompileProgress`
++   deviennent `Compiler.Process`, `Compiler.Result`, `Compiler.Event` et `Compiler.Progress`, et
++   `CompileEvents.relay` devient `Compiler.Event.relay`. Un `given (CompileEvent is Loggable)`
++   devient `given (Compiler.Event is Loggable)`.
++ - `Notice` est renommé `Compiler.Notice`, et `Universe`, `Tool` et `Triple` sont imbriqués dans
++   `Toolchain` : `Scalac[3.8, Universe.Classfile]` devient
++   `Scalac[3.8, Toolchain.Universe.Classfile]`, `extends Tool` devient `extends Toolchain.Tool`,
++   et `Triple.X64Linux` devient `Toolchain.Triple.X64Linux`. Ou bien importer les membres :
+
+-   `import anthology.Toolchain.{Tool, Universe}`.
++   `import anthology.Toolchain.{Tool, Universe}`.
+
+- ## escritoire
++ ## escritoire
+
+- - The table types are nested in `Table` and no longer exported individually: `TableCell`,
+-   `TableRow`, `TableSection`, `TableStyle` and `TableRelabelling` become `Table.Cell`,
+-   `Table.Row`, `Table.Section`, `Table.Style` and `Table.Relabelling`. A
+-   `given TableRelabelling[Codebase]` becomes `given Table.Relabelling[Codebase]`; the
+-   `tableStyles` givens are unchanged.
++ - Les types de tableaux sont imbriqués dans `Table` et ne sont plus exportés individuellement :
++   `TableCell`, `TableRow`, `TableSection`, `TableStyle` et `TableRelabelling` deviennent
++   `Table.Cell`, `Table.Row`, `Table.Section`, `Table.Style` et `Table.Relabelling`. Un
++   `given TableRelabelling[Codebase]` devient `given Table.Relabelling[Codebase]` ; les givens
++   `tableStyles` sont inchangés.
+
+- ## dendrology
++ ## dendrology
+
+- - The diagram tiles and styles are nested in their diagrams and no longer exported
+-   individually: `TreeTile`, `TreeStyle` and `TextualTreeStyle` become `TreeDiagram.Tile`,
+-   `TreeDiagram.Style` and `TreeDiagram.TextualStyle`; `DagTile`, `DagStyle` and
+-   `TextualDagStyle` become `DagDiagram.Tile`, `DagDiagram.Style` and
+-   `DagDiagram.TextualStyle`; `LaneDagStyle` and `TextualLaneDagStyle` become
+-   `LaneDagDiagram.Style` and `LaneDagDiagram.TextualStyle`. The `treeStyles`, `dagStyles` and
+-   `laneDagStyles` givens are unchanged.
++ - Les tuiles et styles des diagrammes sont imbriqués dans leurs diagrammes et ne sont plus
++   exportés individuellement : `TreeTile`, `TreeStyle` et `TextualTreeStyle` deviennent
++   `TreeDiagram.Tile`, `TreeDiagram.Style` et `TreeDiagram.TextualStyle` ; `DagTile`, `DagStyle`
++   et `TextualDagStyle` deviennent `DagDiagram.Tile`, `DagDiagram.Style` et
++   `DagDiagram.TextualStyle` ; `LaneDagStyle` et `TextualLaneDagStyle` deviennent
++   `LaneDagDiagram.Style` et `LaneDagDiagram.TextualStyle`. Les givens `treeStyles`, `dagStyles`
++   et `laneDagStyles` sont inchangés.
+
+- ## exoskeleton
++ ## exoskeleton
+
+- - `MissingFlagError` and `InvalidFlagError` are merged into `Flag.Error(flag, reason)`, whose
+-   `reason` is `Flag.Error.Reason.Missing` or `Flag.Error.Reason.Invalid(detail)` (the former
+-   `InvalidFlagError#reason` is now `detail`). `catch case error: MissingFlagError =>` becomes
+-   `catch case error: Flag.Error =>`, testing `error.reason` if the distinction matters; a
+-   `Tactic[MissingFlagError]` or `Tactic[InvalidFlagError]` becomes `Tactic[Flag.Error]`.
++ - `MissingFlagError` et `InvalidFlagError` sont fusionnés en `Flag.Error(flag, reason)`, dont la
++   `reason` est `Flag.Error.Reason.Missing` ou `Flag.Error.Reason.Invalid(detail)` (l'ancien
++   `InvalidFlagError#reason` est désormais `detail`). `catch case error: MissingFlagError =>`
++   devient `catch case error: Flag.Error =>`, en testant `error.reason` si la distinction
++   importe ; un `Tactic[MissingFlagError]` ou un `Tactic[InvalidFlagError]` devient
++   `Tactic[Flag.Error]`.
+
+- ## kaleidoscope
++ ## kaleidoscope
+
+- - `RegexBackend` is renamed `Regex.Backend`: a `RegexBackend[Re2]` type becomes
+-   `Regex.Backend[Re2]`. The `regexBackends` givens are unchanged.
++ - `RegexBackend` est renommé `Regex.Backend` : un type `RegexBackend[Re2]` devient
++   `Regex.Backend[Re2]`. Les givens `regexBackends` sont inchangés.
+
+- ## parasite
++ ## parasite
+
+- - `SharedProbate` is renamed `Probate.Shared`: a `using SharedProbate` parameter becomes
+-   `using Probate.Shared`. It is the same alias, `Probate^{caps.any.only[Durable]}`.
++ - `SharedProbate` est renommé `Probate.Shared` : un paramètre `using SharedProbate` devient
++   `using Probate.Shared`. C'est le même alias, `Probate^{caps.any.only[Durable]}`.
+
+- ## aviation
++ ## aviation
+
+- - `RecurrenceLiteral`, the type of a `rec"…"` literal, is renamed `Recurrence.Literal`.
++ - `RecurrenceLiteral`, le type d'un littéral `rec"…"`, est renommé `Recurrence.Literal`.
+
+- ## cataclysm
++ ## cataclysm
+
+- - `SyntaxMatcher` is renamed `Css.Syntax.Matcher`: `SyntaxMatcher.check(grammar, value)`
+-   becomes `Css.Syntax.Matcher.check(grammar, value)`.
+- - The selector grammar is nested in `Selector`: `Compound`, `Simple`, `Combinator`,
+-   `AttributeTest`, `AttributeMatcher`, `Prefix` and `PseudoArgument` become `Selector.Compound`,
+-   `Selector.Simple` and so on.
+- - `Outcome`, the result of `Css.Syntax.Matcher.check`, is renamed `Css.Outcome`:
+-   `Outcome.Valid` becomes `Css.Outcome.Valid`.
++ - `SyntaxMatcher` est renommé `Css.Syntax.Matcher` : `SyntaxMatcher.check(grammar, value)`
++   devient `Css.Syntax.Matcher.check(grammar, value)`.
++ - La grammaire des sélecteurs est imbriquée dans `Selector` : `Compound`, `Simple`, `Combinator`,
++   `AttributeTest`, `AttributeMatcher`, `Prefix` et `PseudoArgument` deviennent
++   `Selector.Compound`, `Selector.Simple`, et ainsi de suite.
++ - `Outcome`, le résultat de `Css.Syntax.Matcher.check`, est renommé `Css.Outcome` :
++   `Outcome.Valid` devient `Css.Outcome.Valid`.
+
+=   `Outcome.Valid` becomes `Css.Outcome.Valid`.
+=
+- ## fulminate
++ ## fulminate
+
+- - `UncheckedError`, the `Error` that wraps a JDK exception, is renamed `Error.Unchecked`; it is
+-   still made by `Error(throwable)`. A `case error: UncheckedError` pattern becomes
++ - `UncheckedError`, l'`Error` qui enveloppe une exception du JDK, est renommé `Error.Unchecked` ;
++   il est toujours produit par `Error(throwable)`. Un motif `case error: UncheckedError` devient
+
+-   `case error: Error.Unchecked`.
++   `case error: Error.Unchecked`.
+
+- ## degustation
++ ## degustation
+
+- - `degustation.Universe` is now exported as `soundness.Universe` (anthology's compiler
+-   universe is `Toolchain.Universe`), and `ClassSource` and `ClassInfo` are nested in it:
+-   `ClassSource` becomes `Universe.Source` and `ClassInfo` becomes `Universe.ClassInfo`.
++ - `degustation.Universe` est désormais exporté sous le nom `soundness.Universe` (l'univers de
++   compilation d'anthology est `Toolchain.Universe`), et `ClassSource` et `ClassInfo` y sont
++   imbriqués : `ClassSource` devient `Universe.Source` et `ClassInfo` devient
++   `Universe.ClassInfo`.
+
+=   `ClassSource` becomes `Universe.Source` and `ClassInfo` becomes `Universe.ClassInfo`.
+=
+- ## dissonance
++ ## dissonance
+
+- - The edit taxonomy is nested in `Diff` and no longer exported individually: `Change`, `Edit`,
+-   `Ins`, `Del`, `Par`, `Sub` and `Chunk` become `Diff.Change`, `Diff.Edit`, `Diff.Ins`,
+-   `Diff.Del`, `Diff.Par`, `Diff.Sub` and `Diff.Chunk`. Code that matches on edits can import
+-   them: `import dissonance.Diff.{Del, Ins, Par}`.
++ - La taxonomie des modifications est imbriquée dans `Diff` et n'est plus exportée
++   individuellement : `Change`, `Edit`, `Ins`, `Del`, `Par`, `Sub` et `Chunk` deviennent
++   `Diff.Change`, `Diff.Edit`, `Diff.Ins`, `Diff.Del`, `Diff.Par`, `Diff.Sub` et `Diff.Chunk`. Le
++   code qui filtre les modifications peut les importer : `import dissonance.Diff.{Del, Ins, Par}`.
+
+=   them: `import dissonance.Diff.{Del, Ins, Par}`.
+=
+- ## gesticulate
++ ## gesticulate
+
+- - `Part`, one part of a multipart body, is renamed `Multipart.Part`.
++ - `Part`, une partie d'un corps multipart, est renommé `Multipart.Part`.
+
+= - `Part`, one part of a multipart body, is renamed `Multipart.Part`.
+=
+- ## perihelion
++ ## perihelion
+
+- - `Masking`, the WebSocket frame-masking policy, is renamed `Websocket.Masking`.
++ - `Masking`, la politique de masquage des trames WebSocket, est renommé `Websocket.Masking`.
+
+- ## orthodoxy
++ ## orthodoxy
+
+- - `Scope`, an OAuth scope, is renamed `OAuth.Scope`.
++ - `Scope`, une portée OAuth, est renommé `OAuth.Scope`.
+
+- ## facsimile
++ ## facsimile
+
+- - `Destination`, a PDF link target, is renamed `Pdf.Destination`.
++ - `Destination`, une cible de lien PDF, est renommée `Pdf.Destination`.
+
+= - `Destination`, a PDF link target, is renamed `Pdf.Destination`.
+=
+- ## stratiform
++ ## stratiform
+
+- - `Mutation` and `Revision`, the §22.2 edit operations and the composable log of them, are
+-   renamed `Tel.Mutation` and `Tel.Revision`; `Mutation.Error` becomes `Tel.Mutation.Error`.
++ - `Mutation` et `Revision`, les opérations de modification du §22.2 et leur journal composable,
++   sont renommés `Tel.Mutation` et `Tel.Revision` ; `Mutation.Error` devient
++   `Tel.Mutation.Error`.
+
+- ## praxinoscope
++ ## praxinoscope
+
+- - `Program` and `Ranges`, a compiled regex program and its character ranges, are renamed
+-   `Motif.Program` and `Motif.Ranges`.
++ - `Program` et `Ranges`, un programme d'expression régulière compilé et ses plages de
++   caractères, sont renommés `Motif.Program` et `Motif.Ranges`.
+
+- ## tasseomancy
++ ## tasseomancy
+
+- - `Category` and `Estimate` are renamed `Chart.Category` and `Chart.Estimate`.
++ - `Category` et `Estimate` sont renommés `Chart.Category` et `Chart.Estimate`.
+
+- ## cacophony
++ ## cacophony
+
+- - The device types are nested in `Audio`: `Feed`, `Outlet`, `Device` and `Configuration` become
+-   `Audio.Feed`, `Audio.Outlet`, `Audio.Device` and `Audio.Configuration`; `Feed.list` becomes
+-   `Audio.Feed.list`, and `Feed.Error` and `Outlet.Error` become `Audio.Feed.Error` and
+-   `Audio.Outlet.Error`.
++ - Les types de périphériques sont imbriqués dans `Audio` : `Feed`, `Outlet`, `Device` et
++   `Configuration` deviennent `Audio.Feed`, `Audio.Outlet`, `Audio.Device` et
++   `Audio.Configuration` ; `Feed.list` devient `Audio.Feed.list`, et `Feed.Error` et
++   `Outlet.Error` deviennent `Audio.Feed.Error` et `Audio.Outlet.Error`.
+
+- ## archimedes
++ ## archimedes
+
+- - `Display` and `Cell` are renamed `Mathml.Display` and `Mathml.Cell`.
++ - `Display` et `Cell` sont renommés `Mathml.Display` et `Mathml.Cell`.
+
+= - `Display` and `Cell` are renamed `Mathml.Display` and `Mathml.Cell`.
+=
+- ## polyvinyl
++ ## polyvinyl
+
+- - `Member` and `Multiplicity`, a specification's field description and cardinality, are renamed
+-   `Specification.Member` and `Specification.Multiplicity`; a provider implementation can import
+-   them: `import polyvinyl.Specification.{Member, Multiplicity}`.
++ - `Member` et `Multiplicity`, la description d'un champ d'une spécification et sa cardinalité,
++   sont renommés `Specification.Member` et `Specification.Multiplicity` ; une implémentation de
++   fournisseur peut les importer : `import polyvinyl.Specification.{Member, Multiplicity}`.
+
+- ## harlequin
++ ## harlequin
+
+- - `Token`, one token of highlighted source, is renamed `SourceCode.Token`, and `Role` (whether
+-   a token binds a name or refers to one) is renamed `SourceCode.Token.Role`.
++ - `Token`, un jeton de code source coloré, est renommé `SourceCode.Token`, et `Role` (qui dit si
++   un jeton lie un nom ou y fait référence) est renommé `SourceCode.Token.Role`.
+
+- ## synesthesia
++ ## synesthesia
+
+- - `Human` and `Agent`, the two kinds of `Discourse`, are renamed `Discourse.Human` and
++ - `Human` et `Agent`, les deux sortes de `Discourse`, sont renommés `Discourse.Human` et
+
+-   `Discourse.Agent`.
++   `Discourse.Agent`.
+
+=   `Discourse.Agent`.
+=
+- ## savagery
++ ## savagery
+
+- - The unit directions `Up`, `Down`, `Left` and `Right` are moved into `Delta`: `7*Up + 3*Right`
+-   becomes `7*Delta.Up + 3*Delta.Right`. Bare `Left` and `Right` no longer shadow the
+-   constructors of `Either`.
+- - The drawable shapes are nested in `Svg`: `Figure`, `Rectangle`, `Outline`, `Ellipse`, `Group`,
+-   `Polyline` and `Lettering` become `Svg.Figure`, `Svg.Rectangle` and so on. Drawing code can
+-   import them: `import savagery.Svg.{Group, Rectangle}`.
++ - Les directions unitaires `Up`, `Down`, `Left` et `Right` sont déplacées dans `Delta` :
++   `7*Up + 3*Right` devient `7*Delta.Up + 3*Delta.Right`. `Left` et `Right` seuls ne masquent
++   plus les constructeurs d'`Either`.
++ - Les formes dessinables sont imbriquées dans `Svg` : `Figure`, `Rectangle`, `Outline`,
++   `Ellipse`, `Group`, `Polyline` et `Lettering` deviennent `Svg.Figure`, `Svg.Rectangle`, et
++   ainsi de suite. Le code de dessin peut les importer : `import savagery.Svg.{Group, Rectangle}`.
+
+- ## anticipation
++ ## anticipation
+
+- - `Level`, the severity of a log event, is renamed `Log.Level`: `Logger(out, level = Level.Warn)`
+-   becomes `Logger(out, level = Log.Level.Warn)`, and a `Loggable` implementation's
+-   `def log(level: Level, …)` becomes `def log(level: Log.Level, …)`.
+- - The pixel channels are nested in `Channel`, which is now exported: `Red`, `Green`, `Blue`,
+-   `Alpha`, `Cyan`, `Magenta`, `Yellow`, `Key` and `Grey` become `Channel.Red` and so on.
+-   `type Rgb565 = (Red[5], Green[6], Blue[5])` needs `import Channel.{Blue, Green, Red}`, or the
+-   qualified names.
++ - `Level`, la gravité d'un événement de journal, est renommé `Log.Level` :
++   `Logger(out, level = Level.Warn)` devient `Logger(out, level = Log.Level.Warn)`, et le
++   `def log(level: Level, …)` d'une implémentation de `Loggable` devient
++   `def log(level: Log.Level, …)`.
++ - Les canaux de pixels sont imbriqués dans `Channel`, qui est désormais exporté : `Red`, `Green`,
++   `Blue`, `Alpha`, `Cyan`, `Magenta`, `Yellow`, `Key` et `Grey` deviennent `Channel.Red`, et
++   ainsi de suite. `type Rgb565 = (Red[5], Green[6], Blue[5])` nécessite
++   `import Channel.{Blue, Green, Red}`, ou les noms qualifiés.
+
+=   qualified names.
+=
+- ## perihelion
++ ## perihelion
+
+- - perihelion's `Message`, `Channel` and `Reader`, which were not exported to `soundness`, are
+-   nested in `Websocket`: `perihelion.Message` becomes `perihelion.Websocket.Message`.
++ - `Message`, `Channel` et `Reader` de perihelion, qui n'étaient pas exportés vers `soundness`,
++   sont imbriqués dans `Websocket` : `perihelion.Message` devient `perihelion.Websocket.Message`.
+
+- ## galilei
++ ## galilei
+
+- - `galilei.FilesystemBackend` gained the abstract member `def mapping(path: Path on
+-   Plane)(using Tactic[Io.Error]): FilesystemBackend.Mapping^`, which maps a file read-only into
+-   memory. A class which implements `FilesystemBackend` must define it; one with no memory
+-   mapping defines it as `abort(Io.Error(path, Io.Error.Operation.Open,
++ - `galilei.FilesystemBackend` a reçu le membre abstrait `def mapping(path: Path on
++   Plane)(using Tactic[Io.Error]): FilesystemBackend.Mapping^`, qui projette un fichier en mémoire
++   en lecture seule. Une classe qui implémente `FilesystemBackend` doit le définir ; une classe
++   sans projection en mémoire le définit comme `abort(Io.Error(path, Io.Error.Operation.Open,
+
+-   Io.Error.Reason.Unsupported))`. (#2474)
++   Io.Error.Reason.Unsupported))`. (#2474)
+
+- - `path.open[galilei.Ram](…)` and `path.create[galilei.Ram](RamFlag.Size(n))` no longer raise
+-   `Io.Error` with `Reason.Unsupported` for a file or size above `Int.MaxValue` bytes; the file is
+-   mapped whatever its size. The mapping is now released when the block ends, and no longer
+-   when the garbage collector reclaims it, so a `ram.expanse` kept beyond the block fails with an
+-   `IllegalStateException` when it is read, where it previously went on working. (#2474)
++ - `path.open[galilei.Ram](…)` et `path.create[galilei.Ram](RamFlag.Size(n))` ne lèvent plus
++   `Io.Error` avec `Reason.Unsupported` pour un fichier ou une taille au-delà de `Int.MaxValue`
++   octets ; le fichier est projeté quelle que soit sa taille. La projection est désormais libérée
++   à la fin du bloc, et non plus quand le ramasse-miettes la récupère, si bien qu'un
++   `ram.expanse` conservé au-delà du bloc échoue avec une `IllegalStateException` à la lecture,
++   là où il continuait auparavant de fonctionner. (#2474)
+
+=   `IllegalStateException` when it is read, where it previously went on working. (#2474)
+=
+- ## stratiform
++ ## stratiform
+
+- - `stratiform.Tels.Field` gained an eighth parameter, `indexes: List[Tels.Index] = Nil`, and
+-   `stratiform.Tels.Scalar` a fourth and fifth, `width: Optional[Int] = Unset` and `intern:
+-   Boolean = false`. Construction is unaffected; a positional pattern needs the added
+-   wildcards: `case Tels.Field(_, _, keyword, _, _, _, _)` becomes `case Tels.Field(_, _,
+-   keyword, _, _, _, _, _)`, and `case Tels.Scalar(_, encoding, _)` becomes `case Tels.Scalar(_,
+-   encoding, _, _, _)`. `stratiform.Tels.ScalarDefinition` gained `width` and `intern` likewise,
+-   after `patterns`. (#2477)
+- - `stratiform.Tel.Pragma.Reference.tels` is now `specification.tel/tels:2.1.0` (was
+-   `tels:2.0.0`), and `stratiform.SchemaResolver.telsSignature` the signature of that revision.
+-   The earlier values are `Tel.Pragma.Reference.telsEarlier` and
+-   `SchemaResolver.telsEarlierSignature`; a document which pins either is still resolved to the
+-   built-in schema. The value hash of `Tels.Axiom.tels` changed with it; the signature of
+-   `Tels.Axiom.acceptance`, and of every existing schema document, did not. (#2477)
+- - `stratiform.Tel.Error.Reason` gained seven cases, numbered 225 to 231: `WidthNotDecimal`,
++ - `stratiform.Tels.Field` a reçu un huitième paramètre, `indexes: List[Tels.Index] = Nil`, et
++   `stratiform.Tels.Scalar` un quatrième et un cinquième, `width: Optional[Int] = Unset` et `intern:
++   Boolean = false`. La construction n'est pas affectée ; un motif positionnel a besoin des
++   jokers ajoutés : `case Tels.Field(_, _, keyword, _, _, _, _)` devient `case Tels.Field(_, _,
++   keyword, _, _, _, _, _)`, et `case Tels.Scalar(_, encoding, _)` devient `case Tels.Scalar(_,
++   encoding, _, _, _)`. `stratiform.Tels.ScalarDefinition` a de même reçu `width` et `intern`,
++   après `patterns`. (#2477)
++ - `stratiform.Tel.Pragma.Reference.tels` vaut désormais `specification.tel/tels:2.1.0` (auparavant
++   `tels:2.0.0`), et `stratiform.SchemaResolver.telsSignature` la signature de cette révision.
++   Les valeurs antérieures sont `Tel.Pragma.Reference.telsEarlier` et
++   `SchemaResolver.telsEarlierSignature` ; un document qui épingle l'une ou l'autre est toujours
++   résolu vers le schéma intégré. Le hachage de valeur de `Tels.Axiom.tels` a changé en
++   conséquence ; la signature de `Tels.Axiom.acceptance`, et celle de chaque document de schéma
++   existant, n'ont pas changé. (#2477)
++ - `stratiform.Tel.Error.Reason` a reçu sept cas, numérotés de 225 à 231 : `WidthNotDecimal`,
+
+-   `WidthConflict`, `WidthWithoutEncoding`, `IndexNotApplicable`, `IndexPathInvalid`,
++   `WidthConflict`, `WidthWithoutEncoding`, `IndexNotApplicable`, `IndexPathInvalid`,
+
+-   `IndexPathUnresolved` and `WidthWithIntern`. An exhaustive match on `Reason` needs them. (#2477)
++   `IndexPathUnresolved` et `WidthWithIntern`. Un filtrage exhaustif sur `Reason` en a besoin. (#2477)
+
+- ## zephyrine
++ ## zephyrine
+
+- - An `Expanse` is now lent as a tracked capability: the lambda of `path.expanse { … }`, and of
+-   `FilesystemBackend#expanse`, takes a `zephyrine.Expanse^` where it took a `zephyrine.Expanse`.
+-   In a capture-checked module, a method which is passed that expanse declares its parameter as
+-   `Expanse^`, and a value which holds it cannot be returned from the block. A capture-checked
+-   class which implements `FilesystemBackend` changes the type of `expanse`'s `lambda` parameter
+-   to match. Code compiled without capture checking is unaffected. (#2489)
++ - Un `Expanse` est désormais prêté comme une capacité suivie : la lambda de `path.expanse { … }`,
++   et celle de `FilesystemBackend#expanse`, prend un `zephyrine.Expanse^` là où elle prenait un
++   `zephyrine.Expanse`. Dans un module soumis au contrôle des captures, une méthode à laquelle on
++   passe cet expanse déclare son paramètre comme `Expanse^`, et une valeur qui le contient ne
++   peut pas être renvoyée hors du bloc. Une classe soumise au contrôle des captures qui
++   implémente `FilesystemBackend` change en conséquence le type du paramètre `lambda`
++   d'`expanse`. Le code compilé sans contrôle des captures n'est pas affecté. (#2489)
+
+=   to match. Code compiled without capture checking is unaffected. (#2489)
+=
+- ## dissonance
++ ## dissonance
+
+- - `Diff#chunks` (and so `Diff#serialize`) now gives the correct right-hand position for a chunk
+-   which directly follows another chunk with no `Par` between them; it was previously computed
+-   from the left-hand position, so such a chunk's `a`/`d`/`c` command could name the wrong
+-   right-hand line. (#2401)
++ - `Diff#chunks` (et donc `Diff#serialize`) donne désormais la position correcte à droite pour un
++   morceau qui suit directement un autre morceau sans `Par` entre eux ; elle était auparavant
++   calculée à partir de la position à gauche, si bien que la commande `a`/`d`/`c` d'un tel
++   morceau pouvait nommer la mauvaise ligne à droite. (#2401)
+
+- ## turbulence
++ ## turbulence
+
+- - `lineSeparation.strictLinefeedsLineSeparation` now ends a line at a bare LF and keeps a CR as
+-   text, the mirror image of `strictCarriageReturnLineSeparation`. It previously had that
+-   policy's table, so it ended lines at CR and kept LF. Code which imported it for the old
+-   behaviour should import `lineSeparation.strictCarriageReturnLineSeparation`, which differs
+-   only in writing CR. (#2408)
++ - `lineSeparation.strictLinefeedsLineSeparation` termine désormais une ligne à un LF seul et
++   garde un CR comme texte, à l'image inverse de `strictCarriageReturnLineSeparation`. Elle avait
++   auparavant la table de cette politique, et terminait donc les lignes à CR en gardant LF. Le
++   code qui l'importait pour l'ancien comportement doit importer
++   `lineSeparation.strictCarriageReturnLineSeparation`, qui ne diffère qu'en écrivant CR. (#2408)
+
+- ## imperial
++ ## imperial
+
+- - `imperial.Base.Root`'s type-level path label is now `"root"` (was the misspelt `"roto"`),
+-   matching the directory it names. Only code which names the layout's `Topic` type explicitly
+-   is affected. (#2411)
++ - L'étiquette de chemin au niveau des types de `imperial.Base.Root` est désormais `"root"`
++   (auparavant `"roto"`, mal orthographié), conformément au répertoire qu'elle nomme. Seul le code
++   qui nomme explicitement le type `Topic` de la disposition est affecté. (#2411)
+
+=   is affected. (#2411)
+=
+- ## monotonous
++ ## monotonous
+
+- - `alphabets.base32ExtendedHexUpperCase` now also accepts the lower-case extended-hex digits
+-   when decoding, and `alphabets.base32ExtendedHexLowerCase` the upper-case ones, each with the
+-   value of the same letter in its own case. They previously tolerated the *standard* Base32
+-   alphabet of the other case instead, so `a` decoded as 0 rather than 10, and `w`–`z` (or
+-   `W`–`Z`) were accepted; those four letters now raise `Serialization.Error`. (#2434)
+- - `alphabets.base32Crockford` now decodes a lower-case `l` as 1, as it already did `L`, `i` and
+-   `I`; it previously raised `Serialization.Error`. (#2434)
++ - `alphabets.base32ExtendedHexUpperCase` accepte désormais aussi au décodage les chiffres
++   hexadécimaux étendus en minuscules, et `alphabets.base32ExtendedHexLowerCase` ceux en
++   majuscules, chacun avec la valeur de la même lettre dans sa propre casse. Ils toléraient
++   auparavant, à la place, l'alphabet Base32 *standard* de l'autre casse, si bien que `a` se
++   décodait en 0 plutôt qu'en 10, et que `w`–`z` (ou `W`–`Z`) étaient acceptés ; ces quatre
++   lettres lèvent désormais `Serialization.Error`. (#2434)
++ - `alphabets.base32Crockford` décode désormais un `l` minuscule en 1, comme il le faisait déjà
++   pour `L`, `i` et `I` ; il levait auparavant `Serialization.Error`. (#2434)
+
+=   `I`; it previously raised `Serialization.Error`. (#2434)
+=
+- ## monotonous
++ ## monotonous
+
+- - `alphabets.base64Uuencoding` now has the 64 characters of uuencoding, from `` ` `` (zero)
+-   through `!` to `_`. It previously had 63, each one place too low, so serializing a whole
+-   value with it threw `StringIndexOutOfBoundsException` and a stream was encoded five bits to
+-   a character; text written by the old alphabet does not decode to the same bytes. (#2412)
+- - `alphabets.octalStandard` no longer accepts `=` when decoding; it was read as a ninth digit,
+-   and now raises `Serialization.Error` as any other foreign character does. (#2412)
++ - `alphabets.base64Uuencoding` a désormais les 64 caractères de l'uuencodage, de `` ` `` (zéro)
++   à `_` en passant par `!`. Il en avait auparavant 63, chacun décalé d'une place vers le bas, si
++   bien que sérialiser une valeur entière avec lui levait `StringIndexOutOfBoundsException` et
++   qu'un flux était encodé à raison de cinq bits par caractère ; le texte écrit avec l'ancien
++   alphabet ne se décode pas en les mêmes octets. (#2412)
++ - `alphabets.octalStandard` n'accepte plus `=` au décodage ; il était lu comme un neuvième
++   chiffre, et lève désormais `Serialization.Error` comme tout autre caractère étranger. (#2412)
+
+=   and now raises `Serialization.Error` as any other foreign character does. (#2412)
+=
+- ## gesticulate
++ ## gesticulate
+
+- - `Media.Suffix.FastInfoset` is now written `fastinfoset`, the spelling IANA registers (RFC
+-   6839), by `Suffix#name`, its `Showable` and a shown or encoded `MediaType`; it was
+-   `fast-infoset`. `MediaType.parse` (and so `Text#as[MediaType]` and `media"…"`) now accepts
+-   `+fastinfoset`, which previously raised `MediaType.Error` with `InvalidSuffix`; the
+-   hyphenated `+fast-infoset` is still read. (#2437)
++ - `Media.Suffix.FastInfoset` s'écrit désormais `fastinfoset`, l'orthographe enregistrée par
++   l'IANA (RFC 6839), dans `Suffix#name`, son `Showable` et un `MediaType` affiché ou encodé ; il
++   s'écrivait `fast-infoset`. `MediaType.parse` (et donc `Text#as[MediaType]` et `media"…"`)
++   accepte désormais `+fastinfoset`, qui levait auparavant `MediaType.Error` avec
++   `InvalidSuffix` ; la forme avec trait d'union `+fast-infoset` est toujours lue. (#2437)
+
+=   hyphenated `+fast-infoset` is still read. (#2437)
+=
+- ## savagery
++ ## savagery
+
+- - `Svg.Outline`'s directional steps now move in the direction they name, in SVG's axes (`y`
+-   grows downwards): `lineUp(n)` is `Draw(Delta(0, -n))`, `lineDown(n)` `Draw(Delta(0, n))`,
+-   `lineLeft(n)` `Draw(Delta(-n, 0))` and `lineRight(n)` `Draw(Delta(n, 0))`, and
+-   `moveUp`/`moveDown`/`moveLeft`/`moveRight` likewise with `Move`. They were rotated a quarter
+-   turn: `lineUp(n)` drew `Delta(n, 0)`, `lineDown(n)` `Delta(-n, 0)`, `lineLeft(n)`
+-   `Delta(0, -n)` and `lineRight(n)` `Delta(0, n)`. To keep a path's existing shape, replace
+-   `lineUp` with `lineRight`, `lineDown` with `lineLeft`, `lineLeft` with `lineUp` and
+-   `lineRight` with `lineDown` (and the `move…` methods the same way). (#2449)
++ - Les pas directionnels de `Svg.Outline` se déplacent désormais dans la direction qu'ils
++   nomment, dans les axes de SVG (`y` croît vers le bas) : `lineUp(n)` est `Draw(Delta(0, -n))`,
++   `lineDown(n)` `Draw(Delta(0, n))`, `lineLeft(n)` `Draw(Delta(-n, 0))` et `lineRight(n)`
++   `Draw(Delta(n, 0))`, et de même `moveUp`/`moveDown`/`moveLeft`/`moveRight` avec `Move`. Ils
++   étaient tournés d'un quart de tour : `lineUp(n)` traçait `Delta(n, 0)`, `lineDown(n)`
++   `Delta(-n, 0)`, `lineLeft(n)` `Delta(0, -n)` et `lineRight(n)` `Delta(0, n)`. Pour conserver
++   la forme existante d'un tracé, remplacer `lineUp` par `lineRight`, `lineDown` par `lineLeft`,
++   `lineLeft` par `lineUp` et `lineRight` par `lineDown` (et les méthodes `move…` de la même
++   manière). (#2449)
+
+- ## inimitable
++ ## inimitable
+
+- - `Uuid.parse`, `Uuid.extract`, the `Uuid` extractor, decoding a `Uuid` from `Text` and the
+-   `uuid"…"` literal now accept only the canonical form, five groups of 8, 4, 4, 4 and 12
+-   hexadecimal digits. A text with a shorter group, such as a 31-digit UUID, was previously
+-   read as if the group were zero-padded; it now raises `Uuid.Error` (or is `Unset`, or a
+-   compile error for a literal). (#2462)
++ - `Uuid.parse`, `Uuid.extract`, l'extracteur `Uuid`, le décodage d'un `Uuid` depuis `Text` et le
++   littéral `uuid"…"` n'acceptent désormais que la forme canonique, cinq groupes de 8, 4, 4, 4 et
++   12 chiffres hexadécimaux. Un texte avec un groupe plus court, comme un UUID de 31 chiffres,
++   était auparavant lu comme si le groupe était complété par des zéros ; il lève désormais
++   `Uuid.Error` (ou vaut `Unset`, ou provoque une erreur de compilation pour un littéral). (#2462)
+
+=   compile error for a literal). (#2462)
+=
+- ## polyvinyl
++ ## polyvinyl
+
+- - `polyvinyl.Specification.Multiplicity` gained a case, `Series`: a member read as a collection
+-   of the specification's own. A match on `Multiplicity` which is to be exhaustive needs a case
+-   for it; an existing specification never produces it. (#2491)
++ - `polyvinyl.Specification.Multiplicity` a reçu un cas, `Series` : un membre lu comme une
++   collection d'éléments de la spécification elle-même. Un filtrage sur `Multiplicity` qui doit
++   être exhaustif a besoin d'un cas pour lui ; une spécification existante ne le produit jamais.
++   (#2491)
+
+=   for it; an existing specification never produces it. (#2491)
+=
+- ## fulminate
++ ## fulminate
+
+- - `fulminate.Error`'s primary constructor changed from `Error(val d: Int, val e: Int)(val message:
+-   Message, private val cause: Throwable | Null)(using val diagnostics: Diagnostics)` to
++ - Le constructeur principal de `fulminate.Error` passe de `Error(val d: Int, val e: Int)(val message:
++   Message, private val cause: Throwable | Null)(using val diagnostics: Diagnostics)` à
+
+-   `Error(val module: Int, val number: Int, val variant: Int)(val message: Message, private val
++   `Error(val module: Int, val number: Int, val variant: Int)(val message: Message, private val
+
+-   cause: Throwable | Null)(using val diagnostics: Diagnostics)`, and its secondary constructor
+-   from `this(d: Int, e: Int)(message: Message)(using Diagnostics)` to `this(module: Int, number:
++   cause: Throwable | Null)(using val diagnostics: Diagnostics)`, et son constructeur secondaire
++   de `this(d: Int, e: Int)(message: Message)(using Diagnostics)` à `this(module: Int, number:
+
+-   Int, variant: Int)(message: Message)(using Diagnostics)`. `this(message: Message, cause:
++   Int, variant: Int)(message: Message)(using Diagnostics)`. `this(message: Message, cause:
+
+-   Throwable | Null = null)(using Diagnostics)` is unchanged. The members `d` and `e` are removed;
+-   `e` is now `variant`, and `d` has no equivalent: an error is identified by `module` (the number
+-   of its library) and `number` (its number within the library). A subclass written `extends
+-   Error(d, e)(…)` must be given a module number and a number within it, or be written `extends
+-   Error(…)` with no numbers. (#2493)
+- - Every numbered error's code changed from `SN-ddd` or `SN-ddd.e` to a bolt code, `↯/s.m.n` or
+-   `↯/s.m.n.e`, with `m` the number of the error's library and `n` the error's number within it;
+-   `e` is unchanged. `doc/errors/sn.md` gives the new code of every former `SN-` code. This changes
+-   the result of `fulminate.Error#errorCode` (`t"SN-077.3"` → `t"↯/s.100.2.3"`),
+-   `fulminate.Error#colourCode`, `fulminate.Error#labelled` and `fulminate.Error#getMessage`
+-   (`"[↯SN-077.3] …"` → `"[↯/s.100.2.3] …"`), and the prefix of every compile error a Soundness
+-   macro reports with a number. Text which matches an error's message with its prefix must be
+-   updated. The new member `fulminate.Error#bolt`, a `fulminate.Bolt`, gives the code as a value.
++   Throwable | Null = null)(using Diagnostics)` est inchangé. Les membres `d` et `e` sont
++   supprimés ; `e` est désormais `variant`, et `d` n'a pas d'équivalent : une erreur est
++   identifiée par `module` (le numéro de sa bibliothèque) et `number` (son numéro au sein de la
++   bibliothèque). Une sous-classe écrite `extends Error(d, e)(…)` doit recevoir un numéro de
++   module et un numéro au sein de celui-ci, ou être écrite `extends Error(…)` sans numéros.
+
+=   updated. The new member `fulminate.Error#bolt`, a `fulminate.Bolt`, gives the code as a value.
+-   (#2493)
++   (#2493)
+
+- - `fulminate.halt` and `fulminate.warn`: the overloads taking an error number changed from
+-   `(d: Int, message: Message)`, `(d: Int, message: Message, position: Matchable)`, `(d: Int,
+-   reason: Clarification, message: Message)` and `(d: Int, reason: Clarification, message: Message,
+-   position: Matchable)` to the same with `d: Int` replaced by `module: Int, number: Int`. The
+-   overload `(message: Message, position: quotes.reflect.Position | Null = null)` is unchanged.
++ - Le code de chaque erreur numérotée passe de `SN-ddd` ou `SN-ddd.e` à un code d'éclair,
++   `↯/s.m.n` ou `↯/s.m.n.e`, où `m` est le numéro de la bibliothèque de l'erreur et `n` le numéro
++   de l'erreur au sein de celle-ci ; `e` est inchangé. `doc/errors/sn.md` donne le nouveau code
++   de chaque ancien code `SN-`. Cela change le résultat de `fulminate.Error#errorCode`
++   (`t"SN-077.3"` → `t"↯/s.100.2.3"`), `fulminate.Error#colourCode`, `fulminate.Error#labelled`
++   et `fulminate.Error#getMessage` (`"[↯SN-077.3] …"` → `"[↯/s.100.2.3] …"`), ainsi que le
++   préfixe de chaque erreur de compilation qu'une macro Soundness signale avec un numéro. Le
++   texte qui reconnaît le message d'une erreur avec son préfixe doit être mis à jour. Le nouveau
++   membre `fulminate.Error#bolt`, un `fulminate.Bolt`, donne le code sous forme de valeur.
+
+=   overload `(message: Message, position: quotes.reflect.Position | Null = null)` is unchanged.
+-   (#2493)
++   (#2493)
+
+=   overload `(message: Message, position: quotes.reflect.Position | Null = null)` is unchanged.
+=   (#2493)
++ - `fulminate.halt` et `fulminate.warn` : les surcharges qui prennent un numéro d'erreur passent
++   de `(d: Int, message: Message)`, `(d: Int, message: Message, position: Matchable)`, `(d: Int,
++   reason: Clarification, message: Message)` et `(d: Int, reason: Clarification, message: Message,
++   position: Matchable)` aux mêmes avec `d: Int` remplacé par `module: Int, number: Int`. La
++   surcharge `(message: Message, position: quotes.reflect.Position | Null = null)` est inchangée.
++   (#2493)
+
+=   (#2493)
+=
+- ## stratiform
++ ## stratiform
+
+- - The codes of `stratiform.Tel.Error`, `stratiform.Bintel.Error` and `stratiform.Ratel.Error` for
+-   a reason the TEL, BinTEL or RaTEL Specification numbers are compound bolt codes carrying the
+-   specification's own code: `SN-605.107` → `↯/s.118.1/t.1.7`, `SN-609.5` (BinTEL) →
+-   `↯/s.118.5/t.4.5`, and `SN-615.12` (RaTEL) → `↯/s.118.11/t.5.12`. A reason which is the
+-   implementation's own is a variant, as before: `SN-605.402` → `↯/s.118.1.402`. The reasons'
+-   own numbers are unchanged. (#2493)
++ - Les codes de `stratiform.Tel.Error`, `stratiform.Bintel.Error` et `stratiform.Ratel.Error`
++   pour une raison que la spécification TEL, BinTEL ou RaTEL numérote sont des codes d'éclair
++   composés qui portent le code propre de la spécification : `SN-605.107` → `↯/s.118.1/t.1.7`,
++   `SN-609.5` (BinTEL) → `↯/s.118.5/t.4.5`, et `SN-615.12` (RaTEL) → `↯/s.118.11/t.5.12`. Une
++   raison propre à l'implémentation est une variante, comme auparavant : `SN-605.402` →
++   `↯/s.118.1.402`. Les numéros propres des raisons sont inchangés. (#2493)

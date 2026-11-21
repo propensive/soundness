@@ -1,0 +1,79 @@
+orthant 1 language
+
+- # `↯/s.63.1` — `Fqcn.Error`
++ # `↯/s.63.1` — `Fqcn.Error`
+
+- Raised when a value is not a valid fully-qualified class name.
++ Levée lorsqu'une valeur n'est pas un nom de classe pleinement qualifié valide.
+
+- ## Cause
++ ## Cause
+
+- Digression validates FQCNs as a sequence of dot-separated identifier
+- segments, each conforming to Java identifier rules. The message is
++ Digression valide un FQCN comme une suite de segments d'identifiants séparés par des points,
++ chacun conforme aux règles des identifiants Java. Le message est
+
+- `the class name $name is not valid because $reason`.
++ `the class name $name is not valid because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.63.1.1` — `InvalidChar`
++ ### `↯/s.63.1.1` — `InvalidChar`
+
+- A character in a name segment is not legal in a Java identifier.
++ Un caractère d'un segment du nom n'est pas autorisé dans un identifiant Java.
+
+- **Example.** `[↯/s.63.1.1] the class name globe.st-ge.Hamlet is not valid because a package name may not contain the character -`
++ **Exemple.** `[↯/s.63.1.1] the class name globe.st-ge.Hamlet is not valid because a package name may not contain the character -`
+
+- **Resolution.** Remove or replace the offending character.
++ **Résolution.** Supprimez ou remplacez le caractère fautif.
+
+- ### `↯/s.63.1.2` — `InvalidStart`
++ ### `↯/s.63.1.2` — `InvalidStart`
+
+- A name segment starts with a character not legal as the first
+- character of an identifier (typically a digit).
++ Un segment du nom commence par un caractère qui n'est pas autorisé comme premier caractère d'un
++ identifiant (généralement un chiffre).
+
+- **Example.** `[↯/s.63.1.2] the class name globe.1stage.Hamlet is not valid because a package name may not start with the character 1`
++ **Exemple.** `[↯/s.63.1.2] the class name globe.1stage.Hamlet is not valid because a package name may not start with the character 1`
+
+- **Resolution.** Begin each segment with a letter, `_`, or `$`.
++ **Résolution.** Commencez chaque segment par une lettre, `_` ou `$`.
+
+- ### `↯/s.63.1.3` — `EmptyName`
++ ### `↯/s.63.1.3` — `EmptyName`
+
+- A name segment is empty — typically caused by `..` in the input or a
+- leading or trailing dot.
++ Un segment du nom est vide, généralement à cause de `..` dans l'entrée ou d'un point initial ou
++ final.
+
+- **Example.** `[↯/s.63.1.3] the class name globe..Hamlet is not valid because a package name cannot be empty`
++ **Exemple.** `[↯/s.63.1.3] the class name globe..Hamlet is not valid because a package name cannot be empty`
+
+- **Resolution.** Remove the empty segment.
++ **Résolution.** Supprimez le segment vide.
+
+- ### `↯/s.63.1.4` — `JavaKeyword`
++ ### `↯/s.63.1.4` — `JavaKeyword`
+
+- A name segment is a reserved Java keyword.
++ Un segment du nom est un mot-clé réservé de Java.
+
+- **Example.** `[↯/s.63.1.4] the class name globe.class.Hamlet is not valid because a package name cannot be the Java keyword, class`
++ **Exemple.** `[↯/s.63.1.4] the class name globe.class.Hamlet is not valid because a package name cannot be the Java keyword, class`
+
+- **Resolution.** Choose a non-keyword segment.
++ **Résolution.** Choisissez un segment qui ne soit pas un mot-clé.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/digression/src/core/digression.Fqcn.scala`
++ - Source : `lib/digression/src/core/digression.Fqcn.scala`

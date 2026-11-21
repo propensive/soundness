@@ -1,0 +1,90 @@
+orthant 1 language
+
+- # `↯/s.118.7` — `Tels.Resolution.Error`
++ # `↯/s.118.7` — `Tels.Resolution.Error`
+
+- Raised when a TEL document's schema identification does not resolve to a schema.
++ Levée lorsque l'identification de schéma d'un document TEL ne se résout pas en un schéma.
+
+- ## Cause
++ ## Cause
+
+- Schema resolution (TEL §8.2) turns the pragma's identification — a LIRA reference, layer
+- selections, and/or a BASE-256 signature — into a composed schema, through the embedded,
+- built-in, store, library and LIRA steps. Its failures are runtime resolution errors, outside
+- the document's E1xx–E3xx taxonomy (the one exception is E124, out-of-order layer selections,
+- which is a `Tel.Error` raised during resolution because it needs the schema's declaration
+- order).
++ La résolution de schéma (TEL §8.2) transforme l'identification du pragma — une référence LIRA,
++ des sélections de couches et/ou une signature BASE-256 — en un schéma composé, au fil des étapes
++ intégrée, prédéfinie, magasin, bibliothèque et LIRA. Ses échecs sont des erreurs de résolution à
++ l'exécution, hors de la taxonomie E1xx–E3xx du document (la seule exception est E124, des
++ sélections de couches dans le désordre, qui est une `Tel.Error` levée pendant la résolution parce
++ qu'elle a besoin de l'ordre de déclaration du schéma).
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
++ column  Raison
+
+- column  Message
++ column  Message
+
+- row  `↯/s.118.7.1`  `UnknownLayer`  the selected layer is not declared by the schema
++ row  `↯/s.118.7.1`  `UnknownLayer`  the selected layer is not declared by the schema
+
+- row  `↯/s.118.7.2`  `ComponentCount`  the signature has the wrong number of components
++ row  `↯/s.118.7.2`  `ComponentCount`  the signature has the wrong number of components
+
+- row  `↯/s.118.7.3`  `BaseMismatch`  the signature's base component does not match the schema's base hash
++ row  `↯/s.118.7.3`  `BaseMismatch`  the signature's base component does not match the schema's base hash
+
+- row  `↯/s.118.7.4`  `LayerMismatch`  the signature's component for a layer does not match its hash
++ row  `↯/s.118.7.4`  `LayerMismatch`  the signature's component for a layer does not match its hash
+
+- row  `↯/s.118.7.5`  `ReferenceDisagrees`  the reference's lineage does not serve the authoritative signature
++ row  `↯/s.118.7.5`  `ReferenceDisagrees`  the reference's lineage does not serve the authoritative signature
+
+- row  `↯/s.118.7.6`  `Unresolved`  the identifier was not resolved, naming the failing step
++ row  `↯/s.118.7.6`  `Unresolved`  the identifier was not resolved, naming the failing step
+
+- row  `↯/s.118.7.7`  `NotSchema`  the resolved body is not a valid schema document
++ row  `↯/s.118.7.7`  `NotSchema`  the resolved body is not a valid schema document
+
+- row  `↯/s.118.7.8`  `Unverified`  signature verification failed
++ row  `↯/s.118.7.8`  `Unverified`  signature verification failed
+
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- A signature is authoritative: when layer selections precede it, it must decompose into
+- exactly the base hash plus the selected layers' hashes, in order. A bare reference (no
+- selector, no signature) resolves only against local state, by design; make a document
+- portable by appending a signature or publishing the schema and using a `:version` or `:tag`
+- selector. A non-network resolver answers `Unresolved` at the LIRA step for anything absent
+- from local stores.
++ Une signature fait autorité : lorsque des sélections de couches la précèdent, elle doit se
++ décomposer exactement en le hachage de base suivi des hachages des couches sélectionnées, dans
++ l'ordre. Une référence nue (sans sélecteur ni signature) ne se résout, par conception, que contre
++ l'état local ; rendez un document portable en y ajoutant une signature, ou en publiant le schéma
++ et en utilisant un sélecteur `:version` ou `:tag`. Un résolveur sans réseau répond `Unresolved` à
++ l'étape LIRA pour tout ce qui est absent des magasins locaux.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/stratiform/src/core/stratiform.Tels.scala` (`Tels.Resolution`), engine in
++ - Source : `lib/stratiform/src/core/stratiform.Tels.scala` (`Tels.Resolution`), moteur dans
+
+-   `lib/stratiform/src/core/stratiform.SchemaResolver.scala`
++   `lib/stratiform/src/core/stratiform.SchemaResolver.scala`

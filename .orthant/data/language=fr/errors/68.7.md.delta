@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.68.7` — Name fails rule validation at compile time
++ # `↯/s.68.7` — Un nom échoue à la validation d'une règle à la compilation
+
+- Raised at compile time by Nomenclature's `parse` macro when a
+- literal value does not satisfy the rule for the system being
+- parsed against.
++ Levée à la compilation par la macro `parse` de Nomenclature lorsqu'une valeur littérale ne
++ satisfait pas la règle du système selon lequel elle est analysée.
+
+- ## Cause
++ ## Cause
+
+- The macro evaluates the rule against the literal text. When the
+- rule rejects it, the macro halts with a message generated from
+- `rule.describe(text)`.
++ La macro évalue la règle sur le texte littéral. Lorsque la règle le rejette, la macro s'arrête
++ avec un message généré par `rule.describe(text)`.
+
+- ## Example message
++ ## Exemple de message
+
+=
+- ```
++ ```
+
+- [↯/s.68.7] the name is not valid because it contains the prohibited character /
++ [↯/s.68.7] the name is not valid because it contains the prohibited character /
+
+= [↯/s.68.7] the name is not valid because it contains the prohibited character /
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- Edit the literal so it satisfies the rule.
++ Modifiez le littéral pour qu'il satisfasse la règle.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/nomenclature/src/core/nomenclature.protointernal.scala`
++ - Source : `lib/nomenclature/src/core/nomenclature.protointernal.scala`

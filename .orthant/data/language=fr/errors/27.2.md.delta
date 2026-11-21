@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.27.2` — Binary literal contains non-binary character
++ # `↯/s.27.2` — Un littéral binaire contient un caractère non binaire
+
+- Raised at compile time by Hypotenuse's `bin"…"` literal macro when
+- the body contains a character that is not `0` or `1`.
++ Levée à la compilation par la macro du littéral `bin"…"` d'Hypotenuse lorsque
++ le corps contient un caractère autre que `0` ou `1`.
+
+- ## Cause
++ ## Cause
+
+- Binary literals must be exclusively `0` and `1`.
++ Les littéraux binaires ne doivent contenir que des `0` et des `1`.
+
+- ## Example message
++ ## Exemple de message
+
+=
+- ```
++ ```
+
+- [↯/s.27.2] a binary value can only contain characters '0' or '1'
++ [↯/s.27.2] a binary value can only contain characters '0' or '1'
+
+= [↯/s.27.2] a binary value can only contain characters '0' or '1'
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- Remove or correct the offending character.
++ Supprimez ou corrigez le caractère fautif.
+
+- ## See also
++ ## Voir aussi
+
+- - The other binary and hexadecimal literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - Les autres erreurs de littéraux binaires et hexadécimaux : [Familles](README.md#families)
++ - Source : `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

@@ -1,0 +1,59 @@
+orthant 1 language
+
+- # `↯/s.78.2` — `Redraft.Error`
++ # `↯/s.78.2` — `Redraft.Error`
+
+- Raised when a redraft cannot be applied to a source.
++ Levée lorsqu'une réécriture ne peut pas être appliquée à une source.
+
+- ## Cause
++ ## Cause
+
+- A redraft states only the lines to remove and add, and finds where they belong. This error
+- covers a redraft whose removals do not appear in the source, and one whose placement is
+- ambiguous because they appear more than once.
++ Une réécriture n'indique que les lignes à supprimer et à ajouter, et trouve où elles se placent.
++ Cette erreur couvre une réécriture dont les suppressions n'apparaissent pas dans la source, et
++ une réécriture dont le placement est ambigu parce qu'elles y apparaissent plus d'une fois.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
++ column  Raison
+
+- column  Message
++ column  Message
+
+- row  `↯/s.78.2.1`  `NoMatch`  `[↯/s.78.2.1] no matching line could be found in the original`
++ row  `↯/s.78.2.1`  `NoMatch`  `[↯/s.78.2.1] no matching line could be found in the original`
+
+- row  `↯/s.78.2.2`  `Ambiguous`  `[↯/s.78.2.2] the change could be interpreted in more than one way`
++ row  `↯/s.78.2.2`  `Ambiguous`  `[↯/s.78.2.2] the change could be interpreted in more than one way`
+
+- row  `↯/s.78.2.3`  `Unanchored`  `[↯/s.78.2.3] there is not enough context to locate the change unambiguously`
++ row  `↯/s.78.2.3`  `Unanchored`  `[↯/s.78.2.3] there is not enough context to locate the change unambiguously`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- Ambiguity is reported rather than resolved by guessing, so an edit is never applied in the
+- wrong place. Add surrounding context lines to make the placement unique.
++ Une ambiguïté est signalée plutôt que résolue au hasard, si bien qu'une modification n'est
++ jamais appliquée au mauvais endroit. Ajoutez des lignes de contexte environnantes pour rendre le
++ placement unique.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/dissonance/src/core/dissonance.Redraft.scala`
++ - Source : `lib/dissonance/src/core/dissonance.Redraft.scala`

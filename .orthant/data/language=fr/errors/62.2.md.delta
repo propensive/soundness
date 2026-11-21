@@ -1,0 +1,48 @@
+orthant 1 language
+
+- # `↯/s.62.2` — Environment variable not defined
++ # `↯/s.62.2` — Variable d'environnement non définie
+
+- Raised when an environment variable required by the program is not
+- defined in the current `Environment`.
++ Levée lorsqu'une variable d'environnement exigée par le programme n'est pas
++ définie dans l'`Environment` courant.
+
+- ## Cause
++ ## Cause
+
+- Ambience looks up environment variables via the `Environment` typeclass.
+- If the variable named is absent — i.e. `System.getenv` returns no value —
+- this error is thrown.
++ Ambience recherche les variables d'environnement au moyen de la classe de types
++ `Environment`. Si la variable nommée est absente — c'est-à-dire si
++ `System.getenv` ne renvoie aucune valeur —, cette erreur est lancée.
+
+- ## Example message
++ ## Exemple de message
+
+=
+- ```
++ ```
+
+- [↯/s.62.2] the environment variable HOME was not defined
++ [↯/s.62.2] the environment variable HOME was not defined
+
+= [↯/s.62.2] the environment variable HOME was not defined
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- Set the environment variable before running the program, or provide a
+- default by using `Optional` access methods rather than the strict ones.
++ Définissez la variable d'environnement avant de lancer le programme, ou
++ fournissez une valeur par défaut en utilisant les méthodes d'accès `Optional`
++ plutôt que les méthodes strictes.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/ambience/src/core/ambience.Environment.scala`
++ - Source : `lib/ambience/src/core/ambience.Environment.scala`

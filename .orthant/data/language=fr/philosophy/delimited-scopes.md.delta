@@ -1,0 +1,249 @@
+orthant 1 language
+
+- # Delimited Scopes
++ # Les portées délimitées
+
+- Soundness uses context functions to delimit the blocks within which an extra capability
+- or piece of context is available. Entering such a block — to handle errors, to run
+- concurrent tasks, to hold a resource open — makes the relevant contextual values
+- available inside it and withdraws them at its boundary. The reach of a capability is
+- therefore visible in the structure of the code itself: a capability applies exactly
+- where the block says it does, and not beyond. This structural confinement is what
+- [capture checking](capture-checking.md) then enforces in the types.
++ Soundness utilise des fonctions contextuelles pour délimiter les blocs au sein desquels une capacité
++ ou un élément de contexte supplémentaire est disponible. Entrer dans un tel bloc — pour gérer des
++ erreurs, exécuter des tâches concurrentes, garder une ressource ouverte — rend les valeurs
++ contextuelles pertinentes disponibles à l'intérieur et les retire à sa frontière. La portée d'une
++ capacité est donc visible dans la structure même du code : une capacité s'applique exactement là où
++ le bloc l'indique, et pas au-delà. C'est ce confinement structurel que le [contrôle des
++ captures](capture-checking.md) impose ensuite dans les types.
+
+- ## One shape, everywhere
++ ## Une seule forme, partout
+
+- The same pattern introduces a resource, an error handler, a concurrency context and a
+- lent secret. Recognising it once means recognising all of them:
++ Le même motif introduit une ressource, un gestionnaire d'erreurs, un contexte de concurrence et un
++ secret prêté. Le reconnaître une fois, c'est les reconnaître tous :
+
+= lent secret. Recognising it once means recognising all of them:
+=
+- ```scala fuel
++ ```scala fuel
+
+= lent secret. Recognising it once means recognising all of them:
+=
+= ```scala fuel
+- parse
++ parse
+
+= lent secret. Recognising it once means recognising all of them:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- path.open[File](Write): handle ?=>       // a file, open for this block
++ path.open[File](Write): handle ?=>       // a file, open for this block
+
+-   handle.write(data)
++   handle.write(data)
+
+- recover:
++ recover:
+
+-   case error: Io.Error => fallback
++   case error: Io.Error => fallback
+
+- . protect(readConfiguration())           // a handler, for this block
++ . protect(readConfiguration())           // a handler, for this block
+
+- supervise:                               // a supervisor, for this block
++ supervise:                               // a supervisor, for this block
+
+-   async(compute())
++   async(compute())
+
+- key.uncloak:                             // a key, lent to this block
++ key.uncloak:                             // a key, lent to this block
+
+-   message.encrypt(InitializationVector.random)
++   message.encrypt(InitializationVector.random)
+
+=   message.encrypt(InitializationVector.random)
+- ```
++ ```
+
+- In each case the capability exists inside the braces and nowhere else, and the block's
+- extent is the capability's extent — visible on the page, without reading any
+- documentation about lifetimes.
++ Dans chaque cas, la capacité existe à l'intérieur du bloc et nulle part ailleurs, et l'étendue du
++ bloc est l'étendue de la capacité — visible sur la page, sans lire la moindre documentation sur les
++ durées de vie.
+
+- ## Why a block rather than a constructor
++ ## Pourquoi un bloc plutôt qu'un constructeur
+
+- The alternative is to construct the capability, use it, and release it:
++ L'alternative consiste à construire la capacité, à l'utiliser, puis à la libérer :
+
+= The alternative is to construct the capability, use it, and release it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The alternative is to construct the capability, use it, and release it:
+=
+= ```scala fuel
+- parse
++ parse
+
+= The alternative is to construct the capability, use it, and release it:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- val handle = open(path)
++ val handle = open(path)
+
+- try handle.write(data) finally handle.close()
++ try handle.write(data) finally handle.close()
+
+= try handle.write(data) finally handle.close()
+- ```
++ ```
+
+- This has three defects that the block form does not. The `close` can be forgotten, or
+- placed where an early return skips it. The handle exists as a value *before* it is valid
+- and *after* it is not, so its type says nothing about when it may be used. And nesting
+- two of them doubles the ceremony, with the release order stated by hand.
++ Cela présente trois défauts que la forme en bloc n'a pas. Le `close` peut être oublié, ou placé là
++ où un retour anticipé le saute. La poignée existe comme valeur *avant* d'être valide et *après*
++ avoir cessé de l'être ; son type ne dit donc rien du moment où elle peut être utilisée. Et en
++ imbriquer deux double la cérémonie, avec l'ordre de libération indiqué à la main.
+
+- The block form fixes each: there is no release to write, the capability is only in scope
+- where it is valid, and nesting two resources is nesting two blocks.
++ La forme en bloc corrige chacun d'eux : il n'y a aucune libération à écrire, la capacité n'est
++ disponible que là où elle est valide, et imbriquer deux ressources revient à imbriquer deux blocs.
+
+- ## Scope is a precise instrument
++ ## La portée est un instrument précis
+
+- Because the mechanism is ordinary lexical scope, the granularity is whatever the code
+- needs. A given imported at the top of a file configures the file; one declared in a
+- method configures the method, overriding the wider choice; a `locally` block confines an
+- exception to a few lines:
++ Comme le mécanisme est la portée lexicale ordinaire, la granularité est celle dont le code a besoin.
++ Un given importé en tête d'un fichier configure le fichier ; un given déclaré dans une méthode
++ configure la méthode, en remplaçant le choix plus large ; un bloc `locally` confine une exception à
++ quelques lignes :
+
+= exception to a few lines:
+=
+- ```scala fuel
++ ```scala fuel
+
+= exception to a few lines:
+=
+= ```scala fuel
+- parse
++ parse
+
+= exception to a few lines:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- import formatting.compactJsonFormatting        // this file
++ import formatting.compactJsonFormatting        // this file
+
+- def debugDump(json: Json): Text =
++ def debugDump(json: Json): Text =
+
+-   given Json.Formatting = indentedJsonFormatting  // this method only
++   given Json.Formatting = indentedJsonFormatting  // this method only
+
+-   json.show
++   json.show
+
+- locally:
++ locally:
+
+-   import textSanitizers.strictSanitizer        // these two lines
++   import textSanitizers.strictSanitizer        // these two lines
+
+-   decoder.decoded(untrustedBytes)
++   decoder.decoded(untrustedBytes)
+
+=   decoder.decoded(untrustedBytes)
+- ```
++ ```
+
+- Nothing has to support this granularity specially. It falls out of using the language's
+- own scoping rather than a bespoke configuration mechanism.
++ Rien n'a besoin de prendre en charge spécialement cette granularité. Elle découle de l'utilisation
++ des portées du langage lui-même plutôt que d'un mécanisme de configuration sur mesure.
+
+- ## What "withdrawn at the boundary" really means
++ ## Ce que « retiré à la frontière » signifie vraiment
+
+- Structurally, the capability leaves scope when the block ends. That alone would not stop
+- a value from *carrying* it out — a lazy stream still holding an open file, a closure
+- still holding an error handler, a task still holding its supervisor. Those escapes are
+- exactly what by-eye reasoning misses, because laziness, closures and concurrency detach
+- when code runs from where it was written.
++ Structurellement, la capacité sort de la portée lorsque le bloc se termine. Cela seul n'empêcherait
++ pas une valeur de l'*emporter* au-dehors — un flux paresseux qui tient encore un fichier ouvert, une
++ clôture qui tient encore un gestionnaire d'erreurs, une tâche qui tient encore son superviseur. Ces
++ échappements sont exactement ce que le raisonnement à l'œil manque, car la paresse, les clôtures et
++ la concurrence dissocient le moment où le code s'exécute de l'endroit où il a été écrit.
+
+- [Capture checking](capture-checking.md) closes the gap: the capability's scope travels
+- in the value's type, so an escape is a compile error rather than a runtime surprise.
+- Delimited scopes state the intent; capture checking makes it a guarantee.
++ Le [contrôle des captures](capture-checking.md) comble cette lacune : la portée de la capacité
++ voyage dans le type de la valeur, si bien qu'un échappement est une erreur de compilation plutôt
++ qu'une surprise à l'exécution. Les portées délimitées énoncent l'intention ; le contrôle des captures
++ en fait une garantie.
+
+- ## What it costs
++ ## Ce que cela coûte
+
+- Two costs, both real.
++ Deux coûts, tous deux réels.
+
+- **Rightward drift.** Each nested capability indents the code, and a function needing four
+- of them is four levels in before it begins. Scala's colon-lambda syntax keeps this to one
+- level per capability rather than one level plus a closing brace, but deeply capable code
+- still looks deeply nested — and where that becomes unreadable, the answer is to factor
+- the inner work into a method that declares what it needs, not to widen the scopes.
++ **La dérive vers la droite.** Chaque capacité imbriquée indente le code, et une fonction qui en a
++ besoin de quatre se trouve à quatre niveaux avant même de commencer. La syntaxe des lambdas avec
++ deux-points de Scala limite cela à un niveau par capacité plutôt qu'un niveau plus une accolade
++ fermante, mais un code très doté en capacités paraît toujours profondément imbriqué — et là où cela
++ devient illisible, la réponse est d'extraire le travail intérieur dans une méthode qui déclare ce
++ dont elle a besoin, et non d'élargir les portées.
+
+- **The capability cannot simply be stored.** A value that needs a file handle at some
+- later, unrelated moment cannot hold one; it must either do its work inside the scope or
+- take a memoized copy of what it needed. That is a genuine constraint, and it is the
+- constraint doing the work: "hold this resource indefinitely and hope" is precisely the
+- pattern being ruled out.
++ **La capacité ne peut pas simplement être stockée.** Une valeur qui a besoin d'une poignée de fichier
++ à un moment ultérieur, sans rapport, ne peut pas en garder une ; elle doit soit faire son travail
++ dans la portée, soit prendre une copie mémoïsée de ce dont elle avait besoin. C'est une véritable
++ contrainte, et c'est la contrainte qui fait le travail : « garder cette ressource indéfiniment et
++ espérer » est précisément le motif qui est exclu.
+
+- See [declarative context](declarative-context.md) for what is put into these scopes, and
+- [structured concurrency](structured-concurrency.md) for the case where the scoped thing
+- is a set of running tasks.
++ Voir [le contexte déclaratif](declarative-context.md) pour ce qui est placé dans ces portées, et [la
++ concurrence structurée](structured-concurrency.md) pour le cas où la chose délimitée est un ensemble
++ de tâches en cours d'exécution.

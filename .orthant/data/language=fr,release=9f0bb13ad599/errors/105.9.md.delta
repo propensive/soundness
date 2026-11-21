@@ -1,0 +1,86 @@
+orthant 1 language
+
+- # `↯/s.105.9` — `Certificate.Path.Error`
++ # `↯/s.105.9` — `Certificate.Path.Error`
+
+- Raised when a chain of certificates does not lead to a trusted one.
++ Levée lorsqu'une chaîne de certificats ne mène pas à un certificat de confiance.
+
+- ## Cause
++ ## Cause
+
+- `Certificate.validate` takes a chain — the certificate being relied on, then the certificate
+- of each authority that issued the one before — and a set of trusted anchors. Each certificate
+- must be within its validity period, name the next as its issuer and be signed by it; every
+- issuer must be a certificate authority; and the last must be an anchor, or be issued by one.
++ `Certificate.validate` prend une chaîne — le certificat auquel on se fie, puis le certificat de
++ chaque autorité qui a émis le précédent — et un ensemble d'ancres de confiance. Chaque
++ certificat doit être dans sa période de validité, nommer le suivant comme son émetteur et être
++ signé par lui ; chaque émetteur doit être une autorité de certification ; et le dernier doit être
++ une ancre, ou avoir été émis par l'une d'elles.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
++ column  Raison
+
+- column  Message
++ column  Message
+
+- row  `↯/s.105.9.1`  `Empty`  it holds no certificate
++ row  `↯/s.105.9.1`  `Empty`  it holds no certificate
+
+- row  `↯/s.105.9.2`  `Malformed`  a certificate in it is not well-formed
++ row  `↯/s.105.9.2`  `Malformed`  a certificate in it is not well-formed
+
+- row  `↯/s.105.9.3`  `Expired`  a certificate in it is outside its validity period
++ row  `↯/s.105.9.3`  `Expired`  a certificate in it is outside its validity period
+
+- row  `↯/s.105.9.4`  `BadSignature`  a certificate in it was not signed by the next
++ row  `↯/s.105.9.4`  `BadSignature`  a certificate in it was not signed by the next
+
+- row  `↯/s.105.9.5`  `Unlinked`  a certificate in it was not issued by the next
++ row  `↯/s.105.9.5`  `Unlinked`  a certificate in it was not issued by the next
+
+- row  `↯/s.105.9.6`  `NotAuthority`  a certificate in it was issued by one that is not an authority
++ row  `↯/s.105.9.6`  `NotAuthority`  a certificate in it was issued by one that is not an authority
+
+- row  `↯/s.105.9.7`  `Untrusted`  it does not lead to a trusted certificate
++ row  `↯/s.105.9.7`  `Untrusted`  it does not lead to a trusted certificate
+
+- ```
++ ```
+
+- ## Resolution
++ ## Résolution
+
+- `Untrusted` means the chain is sound as far as it goes but ends somewhere that is not among
+- the anchors: an intermediate certificate is missing from the chain, or the right root is
+- missing from the anchors. `Unlinked` usually means the chain is in the wrong order; it runs
+- from the leaf towards the root. `Expired` is judged by the `Clock` in scope.
++ `Untrusted` signifie que la chaîne est valable aussi loin qu'elle va, mais qu'elle se termine
++ ailleurs que parmi les ancres : un certificat intermédiaire manque dans la chaîne, ou la bonne
++ racine manque parmi les ancres. `Unlinked` signifie généralement que la chaîne est dans le
++ mauvais ordre ; elle va de la feuille vers la racine. `Expired` est jugé d'après la `Clock` dans
++ la portée.
+
+- Revocation, name constraints, policies and path-length limits are not examined, so this
+- validation suits a closed set of anchors chosen for one purpose, not the public web's.
++ La révocation, les contraintes de noms, les politiques et les limites de longueur de chemin ne
++ sont pas examinées ; cette validation convient donc à un ensemble fermé d'ancres choisies dans
++ un seul but, et non à celles du web public.
+
+- ## See also
++ ## Voir aussi
+
+- - Source: `lib/enigmatic/src/x509/enigmatic.Certificate.scala`
+- - `↯/s.105.5` — `Certificate.Error`, raised when a certificate cannot be built
++ - Source : `lib/enigmatic/src/x509/enigmatic.Certificate.scala`
++ - `↯/s.105.5` — `Certificate.Error`, levée lorsqu'un certificat ne peut pas être construit
