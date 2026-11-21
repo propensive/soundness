@@ -18,6 +18,30 @@ axis
     name ja
     parent en
     translation true
+  value
+    name ru
+    parent en
+    translation true
+  value
+    name es/ES
+    parent en
+    translation true
+  value
+    name pt/BR
+    parent en
+    translation true
+  value
+    name it
+    parent en
+    translation true
+  value
+    name zh
+    parent en
+    translation true
+  value
+    name pl
+    parent en
+    translation true
 axis
   name release
   kind git
