@@ -1,0 +1,3123 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base obligatory
++ base obligatory
+
+- import soundness
++ import soundness
+
+- info   typed remote procedure calls: JSON-RPC, gRPC, server-sent events and message framing
++ info   llamadas a procedimientos remotos tipadas: JSON-RPC, gRPC, eventos enviados por el servidor y entramado de mensajes
+
+- detail
++ detail
+
+-     _Obligatory_ makes a remote procedure call typed at both ends. An RPC interface is an
+-     ordinary trait whose methods carry the `@rpc` annotation; from that one definition, a
+-     macro derives a **server-side dispatcher** which routes incoming requests to an
+-     implementation, and a **client stub** which turns each method call into a wire message, so
+-     the two sides cannot disagree about a method's name, its parameters or its result. The
+-     same shape serves two protocols: JSON-RPC 2.0, whose payloads are `Json`, and gRPC over
+-     HTTP/2, whose payloads are Protocol Buffers messages.
++     _Obligatory_ hace que una llamada a procedimiento remoto esté tipada en ambos extremos. Una
++     interfaz RPC es un trait corriente cuyos métodos llevan la anotación `@rpc`; a partir de esa
++     única definición, una macro deriva un **despachador del lado del servidor**, que encamina las
++     peticiones entrantes hacia una implementación, y un **stub de cliente**, que convierte cada
++     llamada a un método en un mensaje de transmisión, de modo que los dos lados no pueden
++     discrepar sobre el nombre de un método, sus parámetros o su resultado. La misma forma sirve a
++     dos protocolos: JSON-RPC 2.0, cuyas cargas útiles son `Json`, y gRPC sobre HTTP/2, cuyas
++     cargas útiles son mensajes de Protocol Buffers.
+
+-     Beneath the protocols sits the plumbing of message streams. **Framing** carves a text or
+-     byte stream into its messages by a convention named as a type — `LengthPrefix`,
+-     `ContentLength`, `CrLf`, `Linefeed`, `CarriageReturn`, `Sse` or `Grpc.Framing` — through
+-     the `frames` extension and the `Framable` typeclass; and an `Sse` value is one server-sent
+-     event, with `Sse.Source` holding a replayable buffer of them for a `text/event-stream`
+-     response.
++     Bajo los protocolos se encuentra la fontanería de los flujos de mensajes. El **entramado**
++     divide un flujo de texto o de bytes en sus mensajes según una convención que se nombra como
++     un tipo — `LengthPrefix`, `ContentLength`, `CrLf`, `Linefeed`, `CarriageReturn`, `Sse` o
++     `Grpc.Framing` — mediante la extensión `frames` y la clase de tipos `Framable`; y un valor
++     `Sse` es un evento enviado por el servidor, con `Sse.Source` como búfer reproducible de ellos
++     para una respuesta `text/event-stream`.
+
+=     response.
+=
+-     ```scala
++     ```scala
+
+=     response.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     response.
+=
+=     ```scala
+=     import soundness.*
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=     import strategies.throwUnsafely
+=
+-     case class Ping(message: Text)
++     case class Ping(message: Text)
+
+=     import strategies.throwUnsafely
+=
+=     case class Ping(message: Text)
+-     case class Pong(message: Text)
++     case class Pong(message: Text)
+
+=     import strategies.throwUnsafely
+=
+=     case class Ping(message: Text)
+=     case class Pong(message: Text)
+=
+-     trait Echo:
++     trait Echo:
+
+=     import strategies.throwUnsafely
+=
+=     case class Ping(message: Text)
+=     case class Pong(message: Text)
+=
+=     trait Echo:
+-       @rpc def call(request: Ping): Pong
++       @rpc def call(request: Ping): Pong
+
+-     object EchoService extends Echo:
++     object EchoService extends Echo:
+
+-       def call(request: Ping): Pong = Pong(request.message)
++       def call(request: Ping): Pong = Pong(request.message)
+
+-     val dispatch = JsonRpc.serve[Echo](EchoService)
++     val dispatch = JsonRpc.serve[Echo](EchoService)
+
+-     val request: Json = t"""{"jsonrpc":"2.0","method":"call","params":{"request":{"message":"hi"}},"id":1}""".read[Json]
++     val request: Json = t"""{"jsonrpc":"2.0","method":"call","params":{"request":{"message":"hi"}},"id":1}""".read[Json]
+
+-     dispatch(request)   // the response document, {"jsonrpc":"2.0","result":{"message":"hi"},"id":1}
++     dispatch(request)   // the response document, {"jsonrpc":"2.0","result":{"message":"hi"},"id":1}
+
+=     dispatch(request)   // the response document, {"jsonrpc":"2.0","result":{"message":"hi"},"id":1}
+-     ```
++     ```
+
+-     A method whose result type is `Unit` is a *notification*: the client sends it without an
+-     id and awaits no response, and the dispatcher answers it with `Unset`. Every other method
+-     is a request, correlated by id. On the calling side, `remote[Echo](url)` manufactures a
+-     client which POSTs each call to an HTTP URL as JSON-RPC, and a `JsonRpc` instance's
+-     `client`/`proxy` manufactures one over a bidirectional channel of `Json` messages, which is
+-     how a language-server (`exegesis`), an agent (`espionage`) or an MCP session
+-     (`synesthesia`) talks to its peer. For gRPC, `Grpc.remote[Echo](channel, t"echo.Echo")`
+-     derives the stub over a `Grpc.Channel`, which is a single persistent HTTP/2 connection: a
+-     method returning a value makes a unary call, one returning a `Chain` a server-streaming
+-     call, and a non-`Ok` status arrives as a `Grpc.Error` carrying the canonical
+-     `Grpc.Status`.
++     Un método cuyo tipo de resultado es `Unit` es una *notificación*: el cliente la envía sin id
++     y no espera respuesta, y el despachador la responde con `Unset`. Cualquier otro método es una
++     petición, correlacionada por id. En el lado que llama, `remote[Echo](url)` fabrica un cliente
++     que envía cada llamada con POST a una URL HTTP como JSON-RPC, y el `client`/`proxy` de una
++     instancia de `JsonRpc` fabrica uno sobre un canal bidireccional de mensajes `Json`, que es
++     como un servidor de lenguaje (`exegesis`), un agente (`espionage`) o una sesión MCP
++     (`synesthesia`) se comunica con su interlocutor. Para gRPC, `Grpc.remote[Echo](channel,
++     t"echo.Echo")` deriva el stub sobre un `Grpc.Channel`, que es una única conexión HTTP/2
++     persistente: un método que devuelve un valor hace una llamada unaria, uno que devuelve una
++     `Chain` hace una llamada con flujo del servidor, y un estado distinto de `Ok` llega como un
++     `Grpc.Error` que lleva el `Grpc.Status` canónico.
+
+-     MCP builds on the JSON-RPC half: `Mcp.Server` in `synesthesia` is a `JsonRpc` whose
+-     `Origin` is the client's interface, every request is dispatched by `JsonRpc.serve`, faults
+-     are answered with `JsonRpc.failure`, and the server-to-client half of MCP's streamable HTTP
+-     transport is the `JsonRpc#stream` of `Sse` events, served as `text/event-stream` by
+-     `Sse.servable`. The Language Server Protocol does the same over `ContentLength`-framed
+-     standard streams, and the Agent Client Protocol over `Linefeed`-framed ones.
++     MCP se apoya en la mitad JSON-RPC: `Mcp.Server` en `synesthesia` es un `JsonRpc` cuyo
++     `Origin` es la interfaz del cliente, cada petición se despacha mediante `JsonRpc.serve`, los
++     fallos se responden con `JsonRpc.failure`, y la mitad de servidor a cliente del transporte
++     HTTP transmisible de MCP es el `JsonRpc#stream` de eventos `Sse`, servido como
++     `text/event-stream` por `Sse.servable`. El Language Server Protocol hace lo mismo sobre flujos
++     estándar entramados con `ContentLength`, y el Agent Client Protocol sobre flujos entramados
++     con `Linefeed`.
+
+-     The library is split into three source sets:
++     La biblioteca se divide en tres conjuntos de fuentes:
+
+-     - `obligatory.core` — the framing typeclass `Framable`, the `frames` extension, the
+-       framers `CarriageReturn`, `Linefeed`, `CrLf`, `ContentLength` and `LengthPrefix`,
+-       `Framing.Error`, the `@rpc` and `@bare` annotations and `Rpc.Error`. It compiles for the
+-       JVM, Scala.js and Scala Native.
+-     - `obligatory.json` — `JsonRpc`, `remote` and `Sse`. JVM-only, as it reaches HTTP through
+-       `telekinesis` and `jacinta.http`.
+-     - `obligatory.grpc` — `Grpc` and `GrpcSessional`, over `telekinesis`'s HTTP/2 client and
+-       `locomotion`'s Protocol Buffers. JVM-only.
++     - `obligatory.core` — la clase de tipos de entramado `Framable`, la extensión `frames`, los
++       entramadores `CarriageReturn`, `Linefeed`, `CrLf`, `ContentLength` y `LengthPrefix`,
++       `Framing.Error`, las anotaciones `@rpc` y `@bare` y `Rpc.Error`. Compila para la JVM,
++       Scala.js y Scala Native.
++     - `obligatory.json` — `JsonRpc`, `remote` y `Sse`. Solo para la JVM, ya que llega a HTTP a
++       través de `telekinesis` y `jacinta.http`.
++     - `obligatory.grpc` — `Grpc` y `GrpcSessional`, sobre el cliente HTTP/2 de `telekinesis` y
++       los Protocol Buffers de `locomotion`. Solo para la JVM.
+
+-     Everything is exported to the `soundness` umbrella. The library has no choice packages:
+-     every given lives in the companion of its subject (`Sse.framable`, `LengthPrefix.framable`,
+-     `Grpc.Endpoint.sessional`, …) and is found through implicit scope with no import. What a
+-     sample does need is a `Tactic` for the errors a framer or a call raises — `import
+-     strategies.throwUnsafely` at the least — and, for anything over a connection, a
+-     `supervise` scope supplying a `Monitor` and a `Probate`.
++     Todo se exporta al paraguas `soundness`. La biblioteca no tiene paquetes de elección: cada
++     given vive en el objeto compañero de su sujeto (`Sse.framable`, `LengthPrefix.framable`,
++     `Grpc.Endpoint.sessional`, …) y se encuentra mediante el ámbito implícito sin ninguna
++     importación. Lo que sí necesita un ejemplo es una `Tactic` para los errores que lanza un
++     entramador o una llamada — `import strategies.throwUnsafely` como mínimo — y, para cualquier
++     cosa sobre una conexión, un ámbito `supervise` que proporcione un `Monitor` y un `Probate`.
+
+- refer obligatory.JsonRpc
++ refer obligatory.JsonRpc
+
+- refer obligatory.Sse
++ refer obligatory.Sse
+
+- refer obligatory.Grpc
++ refer obligatory.Grpc
+
+- refer obligatory.Framable
++ refer obligatory.Framable
+
+- refer obligatory.frames
++ refer obligatory.frames
+
+- refer obligatory.remote
++ refer obligatory.remote
+
+- entry .Framable   the typeclass which carves a stream into frames by a named convention
++ entry .Framable   la clase de tipos que divide un flujo en tramas según una convención con nombre
+
+= entry .Framable   the typeclass which carves a stream into frames by a named convention
+-   detail
++   detail
+
+-       `element is Framable by frame` is the evidence that a stream of `element`s (`Text` or
+-       `Data`) can be split into messages by the convention `frame` names — `CrLf`, `Linefeed`,
+-       `CarriageReturn`, `ContentLength`, `LengthPrefix`, `Sse` or `Grpc.Framing` — each a
+-       sealed, uninhabited type whose companion holds the given. The `frames` extension on an
+-       `Iterator[element]^` or a `Chain[element]` applies it: `chain.frames[Linefeed]`.
++       `element is Framable by frame` es la evidencia de que un flujo de `element`s (`Text` o
++       `Data`) puede dividirse en mensajes según la convención que nombra `frame` — `CrLf`,
++       `Linefeed`, `CarriageReturn`, `ContentLength`, `LengthPrefix`, `Sse` o `Grpc.Framing` —,
++       cada una un tipo sellado y deshabitado cuyo objeto compañero contiene el given. La
++       extensión `frames` sobre un `Iterator[element]^` o una `Chain[element]` la aplica:
++       `chain.frames[Linefeed]`.
+
+-       A framer keeps its own position in a `Cursor` over the input, so chunk boundaries mean
+-       nothing to it: a message split across three chunks, two messages in one chunk, and a
+-       final message with no terminator are all delivered whole.
++       Un entramador mantiene su propia posición en un `Cursor` sobre la entrada, así que los
++       límites entre fragmentos no significan nada para él: un mensaje partido en tres fragmentos,
++       dos mensajes en un mismo fragmento y un mensaje final sin terminador se entregan enteros.
+
+=       final message with no terminator are all delivered whole.
+=
+-       ```scala
++       ```scala
+
+=       final message with no terminator are all delivered whole.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+=
+-       Chain(t"one\ntwo\nth", t"ree").frames[Linefeed].to[List]   // List(t"one", t"two", t"three")
++       Chain(t"one\ntwo\nth", t"ree").frames[Linefeed].to[List]   // List(t"one", t"two", t"three")
+
+=       Chain(t"one\ntwo\nth", t"ree").frames[Linefeed].to[List]   // List(t"one", t"two", t"three")
+-       ```
++       ```
+
+-       The framed iterator pulls lazily from its input and so captures it, and captures the
+-       framer too, since a framer built from a `Tactic[Framing.Error]` raises through it during
+-       iteration rather than up front. A framer which needs a tactic (`CrLf`, `ContentLength`,
+-       `LengthPrefix`, `Grpc.Framing`) therefore needs one in scope where `frames` is called;
+-       `CarriageReturn`, `Linefeed` and `Sse` cannot fail and need none.
++       El iterador entramado extrae de su entrada de forma perezosa y por eso la captura, y
++       captura también el entramador, ya que un entramador construido a partir de una
++       `Tactic[Framing.Error]` lanza a través de ella durante la iteración y no de antemano. Por
++       tanto, un entramador que necesita una táctica (`CrLf`, `ContentLength`, `LengthPrefix`,
++       `Grpc.Framing`) la necesita en el ámbito donde se llama a `frames`; `CarriageReturn`,
++       `Linefeed` y `Sse` no pueden fallar y no necesitan ninguna.
+
+-       A user-defined framer is a `new Framable` with `Self` and `Operand` set and `frames`
+-       implemented, most easily over `Framable.frames` and a `Cursor`.
++       Un entramador definido por el usuario es un `new Framable` con `Self` y `Operand`
++       establecidos y `frames` implementado, lo más sencillo sobre `Framable.frames` y un
++       `Cursor`.
+
+=       implemented, most easily over `Framable.frames` and a `Cursor`.
+-   refer obligatory.frames
++   refer obligatory.frames
+
+-   refer obligatory.Framing
++   refer obligatory.Framing
+
+-   entry .frames   wraps a thunk which reads one frame, or `Unset` at the end, as an iterator
+-       `Framable.frames[data](frame)` turns a by-name expression — which reads and returns the
+-       next frame, or `Unset` once the input is exhausted — into a `murmuration.Iterator[data]`,
+-       hiding the one-ahead buffering every framer would otherwise duplicate. The thunk
+-       typically closes over the caller's `Cursor`, so the iterator captures the thunk
+-       (`^{frame, caps.any}`). This is how every framer in the library, and `Sse.framable`, is
+-       written.
+-   entry #frames   the framed messages of an input stream, as a lazy one-shot iterator
+-       Takes an `Iterator[Self]^` and returns the `Iterator[Self]^{input, this}` of its frames.
+-       Called through the `frames` extension rather than directly.
++   entry .frames   envuelve un thunk que lee una trama, o `Unset` al final, como un iterador
++       `Framable.frames[data](frame)` convierte una expresión por nombre — que lee y devuelve la
++       siguiente trama, o `Unset` cuando la entrada se agota — en un
++       `murmuration.Iterator[data]`, ocultando el búfer de un elemento por delante que, de otro
++       modo, todo entramador duplicaría. El thunk suele cerrar sobre el `Cursor` de quien llama,
++       así que el iterador captura el thunk (`^{frame, caps.any}`). Así se escriben todos los
++       entramadores de la biblioteca, y `Sse.framable`.
++   entry #frames   los mensajes entramados de un flujo de entrada, como un iterador perezoso de un solo uso
++       Toma un `Iterator[Self]^` y devuelve el `Iterator[Self]^{input, this}` de sus tramas. Se
++       llama mediante la extensión `frames` y no directamente.
+
+- entry .frames   `stream.frames[Convention]`: the messages of a stream, by a framing convention
+-     An extension on an `Iterator[element]^` and on a `Chain[element]`, each returning the
+-     one-shot `Iterator[element]` of messages the `element is Framable by frame` given in scope
+-     delimits. The type argument names the convention: `frames[LengthPrefix]`,
+-     `frames[ContentLength]`, `frames[CrLf]`, `frames[Linefeed]`, `frames[CarriageReturn]`,
+-     `frames[Sse]` or `frames[Grpc.Framing]`. The receiver is consumed: a framed iterator is the
+-     only reader of its input.
++ entry .frames   `stream.frames[Convention]`: los mensajes de un flujo, según una convención de entramado
++     Una extensión sobre un `Iterator[element]^` y sobre una `Chain[element]`, cada una de las
++     cuales devuelve el `Iterator[element]` de un solo uso de los mensajes que delimita el given
++     `element is Framable by frame` del ámbito. El argumento de tipo nombra la convención:
++     `frames[LengthPrefix]`, `frames[ContentLength]`, `frames[CrLf]`, `frames[Linefeed]`,
++     `frames[CarriageReturn]`, `frames[Sse]` o `frames[Grpc.Framing]`. El receptor se consume: un
++     iterador entramado es el único lector de su entrada.
+
+=     only reader of its input.
+=
+-     ```scala
++     ```scala
+
+=     only reader of its input.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     only reader of its input.
+=
+=     ```scala
+=     import soundness.*
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     val prefixed = Chain(Data(0, 0, 0, 2, 104, 105))
++     val prefixed = Chain(Data(0, 0, 0, 2, 104, 105))
+
+-     val headed = Chain(t"Content-Length: 2\r\n\r\nhi".in[Data])
++     val headed = Chain(t"Content-Length: 2\r\n\r\nhi".in[Data])
+
+-     val lines = Chain(t"one\r\ntwo\r\n")
++     val lines = Chain(t"one\r\ntwo\r\n")
+
+-     prefixed.frames[LengthPrefix].to[List]     // one frame, the bytes of "hi"
++     prefixed.frames[LengthPrefix].to[List]     // one frame, the bytes of "hi"
+
+-     headed.frames[ContentLength].to[List]      // one frame, byte-counted: "hi"
++     headed.frames[ContentLength].to[List]      // one frame, byte-counted: "hi"
+
+-     lines.frames[CrLf].to[List]                // List(t"one", t"two")
++     lines.frames[CrLf].to[List]                // List(t"one", t"two")
+
+-     lines.frames[Linefeed].to[List]            // List(t"one\r", t"two\r")
++     lines.frames[Linefeed].to[List]            // List(t"one\r", t"two\r")
+
+=     lines.frames[Linefeed].to[List]            // List(t"one\r", t"two\r")
+-     ```
++     ```
+
+-     The evidence is capture-polymorphic: a framer which raises `Framing.Error` (`CrLf`,
+-     `ContentLength`, `LengthPrefix`) needs a `Tactic[Framing.Error]` in scope at the call, and
+-     the iterator retains it, raising a truncated or malformed frame as it is read rather than
+-     when `frames` is called. A `Chain` receiver is how a stream's `.chain` arrives:
+-     `stream.chain.frames[Linefeed]` reads a subprocess's output line by line.
++     La evidencia es polimórfica en capturas: un entramador que lanza `Framing.Error` (`CrLf`,
++     `ContentLength`, `LengthPrefix`) necesita una `Tactic[Framing.Error]` en el ámbito de la
++     llamada, y el iterador la retiene, de modo que lanza una trama truncada o mal formada en el
++     momento de leerla y no cuando se llama a `frames`. Un receptor `Chain` es la forma en que
++     llega el `.chain` de un flujo: `stream.chain.frames[Linefeed]` lee la salida de un
++     subproceso línea a línea.
+
+- entry .Framing   the act of delimiting messages in a stream, and the error when it fails
++ entry .Framing   el acto de delimitar mensajes en un flujo, y el error cuando falla
+
+= entry .Framing   the act of delimiting messages in a stream, and the error when it fails
+-   detail
++   detail
+
+-       `Framing` is the home of `Framing.Error`, the error every framer raises on a stream it
+-       cannot deframe. It is named for the act rather than the frame — obligatory has no `Frame`
+-       type — and is distinct from `Grpc.Framing`, the gRPC message convention, which raises
+-       `Grpc.Error` instead.
++       `Framing` es el hogar de `Framing.Error`, el error que lanza todo entramador ante un flujo
++       que no puede desentramar. Se llama así por el acto y no por la trama — obligatory no tiene
++       ningún tipo `Frame` — y es distinto de `Grpc.Framing`, la convención de mensajes de gRPC,
++       que en su lugar lanza `Grpc.Error`.
+
+=       `Grpc.Error` instead.
+-   refer obligatory.Framable
++   refer obligatory.Framable
+
+-   entry .Error   raised when a stream cannot be split into frames: error `↯/s.112.2`
++   entry .Error   se lanza cuando un flujo no puede dividirse en tramas: error `↯/s.112.2`
+
+=   entry .Error   raised when a stream cannot be split into frames: error `↯/s.112.2`
+-     detail
++     detail
+
+-         Error `↯/s.112.2`: _could not deframe the message because `reason`_. Raised, through the
+-         `Tactic[Framing.Error]` the framer's given captured, as the framed iterator is read.
+-         The `reason` says what was wrong: `ShortRead` when the input ended inside a frame
+-         (`LengthPrefix` with fewer bytes than its header promised, `ContentLength` with a
+-         truncated header or body); `MissingLineFeed` when `CrLf` met a carriage return not
+-         followed by a line feed; `MalformedLength` when a `Content-Length` header's value was
+-         absent or not a number; and `UnknownHeader`, reserved for a header the protocol
+-         rejects (`ContentLength` currently skips unrecognised headers rather than raising it).
+-     entry .Reason   why a frame could not be read
+-         The number is the error's detail number:
++         Error `↯/s.112.2`: _could not deframe the message because `reason`_. Se lanza, a través
++         de la `Tactic[Framing.Error]` que capturó el given del entramador, al leer el iterador
++         entramado. El `reason` indica qué estaba mal: `ShortRead` cuando la entrada terminó
++         dentro de una trama (`LengthPrefix` con menos bytes de los que prometía su cabecera,
++         `ContentLength` con una cabecera o un cuerpo truncados); `MissingLineFeed` cuando `CrLf`
++         encontró un retorno de carro no seguido de un salto de línea; `MalformedLength` cuando
++         el valor de una cabecera `Content-Length` faltaba o no era un número; y `UnknownHeader`,
++         reservado para una cabecera que el protocolo rechaza (actualmente `ContentLength` omite
++         las cabeceras no reconocidas en lugar de lanzarlo).
++     entry .Reason   por qué no pudo leerse una trama
++         El número es el número de detalle del error:
+
+=     entry .Reason   why a frame could not be read
+=         The number is the error's detail number:
+=
+-         ```tabular
++         ```tabular
+
+=     entry .Reason   why a frame could not be read
+=         The number is the error's detail number:
+=
+=         ```tabular
+-         column  Case
+-         column  Code
+-         column  Message
+-         column  Note
++         column  Caso
++         column  Código
++         column  Mensaje
++         column  Nota
+
+-         row  `ShortRead`  1  _the input ended before a complete frame could be read_
++         row  `ShortRead`  1  _the input ended before a complete frame could be read_
+
+-         row  `MissingLineFeed`  2  _a carriage return was not followed by a line feed_
++         row  `MissingLineFeed`  2  _a carriage return was not followed by a line feed_
+
+-         row  `MalformedLength`  3  _the content-length header value could not be parsed_
++         row  `MalformedLength`  3  _the content-length header value could not be parsed_
+
+-         row  `UnknownHeader`  4  _an unrecognized header was encountered_
++         row  `UnknownHeader`  4  _an unrecognized header was encountered_
+
+=         row  `UnknownHeader`  4  _an unrecognized header was encountered_
+-         ```
++         ```
+
+-     entry .communicable   renders each `Framing.Error.Reason` as its message
+-     entry #reason   why the frame could not be read
++     entry .communicable   representa cada `Framing.Error.Reason` como su mensaje
++     entry #reason   por qué no pudo leerse la trama
+
+- entry .CarriageReturn   the framing convention of lines ended by a bare carriage return
++ entry .CarriageReturn   la convención de entramado de líneas terminadas por un retorno de carro solo
+
+= entry .CarriageReturn   the framing convention of lines ended by a bare carriage return
+-   detail
++   detail
+
+-       A sealed type naming the convention `frames[CarriageReturn]` applies to a `Text` stream:
+-       each frame is the text before a `\r`, which is consumed; a final fragment with no
+-       terminator is yielded as it stands, and an empty input yields nothing. The convention
+-       cannot fail, so no tactic is needed.
++       Un tipo sellado que nombra la convención que `frames[CarriageReturn]` aplica a un flujo de
++       `Text`: cada trama es el texto anterior a un `\r`, que se consume; un fragmento final sin
++       terminador se entrega tal cual, y una entrada vacía no produce nada. La convención no
++       puede fallar, así que no se necesita ninguna táctica.
+
+=       cannot fail, so no tactic is needed.
+=
+-       ```scala
++       ```scala
+
+=       cannot fail, so no tactic is needed.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Chain(t"one\rtwo\r", t"three").frames[CarriageReturn].to[List]   // List(t"one", t"two", t"three")
++       Chain(t"one\rtwo\r", t"three").frames[CarriageReturn].to[List]   // List(t"one", t"two", t"three")
+
+=       Chain(t"one\rtwo\r", t"three").frames[CarriageReturn].to[List]   // List(t"one", t"two", t"three")
+-       ```
++       ```
+
+-   entry .framable   the `Text is Framable by CarriageReturn` given, in implicit scope
++   entry .framable   el given `Text is Framable by CarriageReturn`, en el ámbito implícito
+
+- entry .Linefeed   the framing convention of lines ended by a line feed, for text or bytes
++ entry .Linefeed   la convención de entramado de líneas terminadas por un salto de línea, para texto o bytes
+
+= entry .Linefeed   the framing convention of lines ended by a line feed, for text or bytes
+-   detail
++   detail
+
+-       A sealed type naming the convention `frames[Linefeed]` applies: each frame is the
+-       content before a `\n`, which is consumed; a final unterminated fragment is yielded as it
+-       stands, and empty lines are retained as empty frames. It cannot fail, so no tactic is
+-       needed. Two givens serve it: `.framable` for a `Text` stream, and `.framableData` for a
+-       `Data` stream, which splits on the raw byte before any text decoding, so multi-byte
+-       UTF-8 content passes through intact — the shape of newline-delimited JSON over a binary
+-       stream, as the Agent Client Protocol uses.
++       Un tipo sellado que nombra la convención que aplica `frames[Linefeed]`: cada trama es el
++       contenido anterior a un `\n`, que se consume; un fragmento final sin terminar se entrega
++       tal cual, y las líneas vacías se conservan como tramas vacías. No puede fallar, así que no
++       se necesita ninguna táctica. Lo sirven dos givens: `.framable` para un flujo de `Text`, y
++       `.framableData` para un flujo de `Data`, que divide por el byte en bruto antes de cualquier
++       decodificación de texto, de modo que el contenido UTF-8 multibyte pasa intacto — la forma
++       del JSON delimitado por saltos de línea sobre un flujo binario, como el que usa el Agent
++       Client Protocol.
+
+=       stream, as the Agent Client Protocol uses.
+=
+-       ```scala
++       ```scala
+
+=       stream, as the Agent Client Protocol uses.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import codepages.utf8Codepage
++       import codepages.utf8Codepage
+
+=       import codepages.utf8Codepage
+=
+-       Chain(t"one\ntwo\nth", t"ree").frames[Linefeed].to[List]   // List(t"one", t"two", t"three")
++       Chain(t"one\ntwo\nth", t"ree").frames[Linefeed].to[List]   // List(t"one", t"two", t"three")
+
+-       Chain(t"""{"text":"café"}\n{"text":"naïve"}\n""".in[Data]).frames[Linefeed].map(_.utf8).to[List]
++       Chain(t"""{"text":"café"}\n{"text":"naïve"}\n""".in[Data]).frames[Linefeed].map(_.utf8).to[List]
+
+=       Chain(t"""{"text":"café"}\n{"text":"naïve"}\n""".in[Data]).frames[Linefeed].map(_.utf8).to[List]
+-       ```
++       ```
+
+-       The byte framer reads *live* streams, such as a subprocess's output: it consumes a
+-       terminator with the cursor's non-refilling `advance()`, so a line which ends flush with
+-       its chunk is delivered at once rather than blocking for bytes beyond it; the refill is
+-       paid at the head of the next line.
+-   entry .framable   the `Text is Framable by Linefeed` given, in implicit scope
+-   entry .framableData   the `Data is Framable by Linefeed` given: splits bytes on the raw `\n` byte
+-       In implicit scope. Splits on byte 10 before any decoding, so UTF-8 content is never cut
+-       inside a character; a final unterminated fragment is yielded as-is.
++       El entramador de bytes lee flujos *en vivo*, como la salida de un subproceso: consume un
++       terminador con el `advance()` del cursor, que no recarga, de modo que una línea que
++       termina justo al final de su fragmento se entrega de inmediato en lugar de bloquearse a la
++       espera de bytes posteriores; la recarga se paga al principio de la línea siguiente.
++   entry .framable   el given `Text is Framable by Linefeed`, en el ámbito implícito
++   entry .framableData   el given `Data is Framable by Linefeed`: divide los bytes por el byte `\n` en bruto
++       En el ámbito implícito. Divide por el byte 10 antes de cualquier decodificación, así que el
++       contenido UTF-8 nunca se corta dentro de un carácter; un fragmento final sin terminar se
++       entrega tal cual.
+
+- entry .CrLf   the framing convention of lines ended by a carriage return and line feed
++ entry .CrLf   la convención de entramado de líneas terminadas por un retorno de carro y un salto de línea
+
+= entry .CrLf   the framing convention of lines ended by a carriage return and line feed
+-   detail
++   detail
+
+-       A sealed type naming the convention `frames[CrLf]` applies to a `Text` stream: each
+-       frame is the text before `\r\n`, both of which are consumed; a final fragment with no
+-       terminator is yielded as it stands. A `\r` which is not followed by `\n` is a protocol
+-       violation, raised as `Framing.Error(MissingLineFeed)`, so the given needs a
+-       `Tactic[Framing.Error]` in scope, which the framed iterator retains.
++       Un tipo sellado que nombra la convención que `frames[CrLf]` aplica a un flujo de `Text`:
++       cada trama es el texto anterior a `\r\n`, y ambos se consumen; un fragmento final sin
++       terminador se entrega tal cual. Un `\r` no seguido de `\n` es una violación del protocolo,
++       que se lanza como `Framing.Error(MissingLineFeed)`, así que el given necesita una
++       `Tactic[Framing.Error]` en el ámbito, que el iterador entramado retiene.
+
+=       `Tactic[Framing.Error]` in scope, which the framed iterator retains.
+=
+-       ```scala
++       ```scala
+
+=       `Tactic[Framing.Error]` in scope, which the framed iterator retains.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Tactic[Framing.Error]` in scope, which the framed iterator retains.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       Chain(t"one\r\ntwo\r\nthree").frames[CrLf].to[List]   // List(t"one", t"two", t"three")
++       Chain(t"one\r\ntwo\r\nthree").frames[CrLf].to[List]   // List(t"one", t"two", t"three")
+
+=       Chain(t"one\r\ntwo\r\nthree").frames[CrLf].to[List]   // List(t"one", t"two", t"three")
+-       ```
++       ```
+
+-   entry .framable   the `Text is Framable by CrLf` given; needs a `Tactic[Framing.Error]`
++   entry .framable   el given `Text is Framable by CrLf`; necesita una `Tactic[Framing.Error]`
+
+- entry .ContentLength   the framing convention of a `Content-Length` header block before each body
++ entry .ContentLength   la convención de entramado de un bloque de cabeceras `Content-Length` antes de cada cuerpo
+
+= entry .ContentLength   the framing convention of a `Content-Length` header block before each body
+-   detail
++   detail
+
+-       A sealed type naming the convention `frames[ContentLength]` applies to a `Data` stream:
+-       the base protocol of the Language Server Protocol, and the HTTP-style framing it derives
+-       from. Each message is a block of `Name: value` headers, each ended by `\r\n`, a blank
+-       `\r\n`, then exactly `Content-Length` bytes of body, yielded as `Data`. The count is of
+-       *bytes*, as the specification defines it, which is why the framer works on `Data` and
+-       leaves text decoding to the caller: counting characters coincides with bytes only for
+-       ASCII and corrupts the stream on any multi-byte UTF-8 body. Header names are matched
+-       case-insensitively, and headers other than `Content-Length` (`Content-Type`, say) are
+-       skipped.
++       Un tipo sellado que nombra la convención que `frames[ContentLength]` aplica a un flujo de
++       `Data`: el protocolo base del Language Server Protocol, y el entramado al estilo de HTTP
++       del que deriva. Cada mensaje es un bloque de cabeceras `Name: value`, cada una terminada
++       por `\r\n`, un `\r\n` en blanco y después exactamente `Content-Length` bytes de cuerpo,
++       que se entregan como `Data`. La cuenta es de *bytes*, como la define la especificación, y
++       por eso el entramador trabaja sobre `Data` y deja la decodificación del texto a quien
++       llama: contar caracteres solo coincide con contar bytes en ASCII, y corrompe el flujo ante
++       cualquier cuerpo UTF-8 multibyte. Los nombres de las cabeceras se comparan sin distinguir
++       mayúsculas de minúsculas, y las cabeceras distintas de `Content-Length` (`Content-Type`,
++       por ejemplo) se omiten.
+
+=       skipped.
+=
+-       ```scala
++       ```scala
+
+=       skipped.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       skipped.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       import strategies.throwUnsafely
+-       import codepages.utf8Codepage
++       import codepages.utf8Codepage
+
+-       val input = t"Content-Type: x\r\nContent-Length: 5\r\n\r\n12345Content-Length: 3\r\n\r\nabc"
++       val input = t"Content-Type: x\r\nContent-Length: 5\r\n\r\n12345Content-Length: 3\r\n\r\nabc"
+
+-       Chain(input.in[Data]).frames[ContentLength].map(_.utf8).to[List]   // List(t"12345", t"abc")
++       Chain(input.in[Data]).frames[ContentLength].map(_.utf8).to[List]   // List(t"12345", t"abc")
+
+=       Chain(input.in[Data]).frames[ContentLength].map(_.utf8).to[List]   // List(t"12345", t"abc")
+-       ```
++       ```
+
+-       A header block with no numeric `Content-Length` raises `Framing.Error(MalformedLength)`,
+-       and an input which ends inside a header or a body raises `Framing.Error(ShortRead)`, so
+-       the given needs a `Tactic[Framing.Error]`, which the framed iterator retains.
+-   entry .framable   the `Data is Framable by ContentLength` given; needs a `Tactic[Framing.Error]`
++       Un bloque de cabeceras sin un `Content-Length` numérico lanza
++       `Framing.Error(MalformedLength)`, y una entrada que termina dentro de una cabecera o de un
++       cuerpo lanza `Framing.Error(ShortRead)`, así que el given necesita una
++       `Tactic[Framing.Error]`, que el iterador entramado retiene.
++   entry .framable   el given `Data is Framable by ContentLength`; necesita una `Tactic[Framing.Error]`
+
+- entry .LengthPrefix   the framing convention of a four-byte big-endian length before each record
++ entry .LengthPrefix   la convención de entramado de una longitud big-endian de cuatro bytes antes de cada registro
+
+= entry .LengthPrefix   the framing convention of a four-byte big-endian length before each record
+-   detail
++   detail
+
+-       A sealed type naming the convention `frames[LengthPrefix]` applies to a `Data` stream:
+-       each record is four bytes of big-endian length, then that many bytes, yielded as `Data`.
+-       `.encode` is the writing half, prefixing one record for the wire, so a framed stream can
+-       be produced as well as read; a `Duplex` carrying BinTEL messages is framed this way.
++       Un tipo sellado que nombra la convención que `frames[LengthPrefix]` aplica a un flujo de
++       `Data`: cada registro son cuatro bytes de longitud big-endian y después esa cantidad de
++       bytes, que se entregan como `Data`. `.encode` es la mitad de escritura, que antepone el
++       prefijo a un registro para la transmisión, de modo que un flujo entramado puede producirse
++       además de leerse; un `Duplex` que lleva mensajes BinTEL se entrama de esta forma.
+
+=       be produced as well as read; a `Duplex` carrying BinTEL messages is framed this way.
+=
+-       ```scala
++       ```scala
+
+=       be produced as well as read; a `Duplex` carrying BinTEL messages is framed this way.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       be produced as well as read; a `Duplex` carrying BinTEL messages is framed this way.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val records = List(Data(1, 2, 3), Data(), Data(-1, -2))
++       val records = List(Data(1, 2, 3), Data(), Data(-1, -2))
+
+-       Chain(records.map(LengthPrefix.encode)*).frames[LengthPrefix].to[List].map(_.to[List])
++       Chain(records.map(LengthPrefix.encode)*).frames[LengthPrefix].to[List].map(_.to[List])
+
+=       Chain(records.map(LengthPrefix.encode)*).frames[LengthPrefix].to[List].map(_.to[List])
+-       ```
++       ```
+
+-       An input which ends inside a header or a record raises `Framing.Error(ShortRead)`, so the
+-       given needs a `Tactic[Framing.Error]`, which the framed iterator retains. Lengths are
+-       read with each byte masked before it is shifted, so a record of 128 bytes or more, or
+-       longer than 32767, is framed correctly despite `Data`'s signed bytes.
+-   entry .encode   prefixes one record with its length as four big-endian bytes
+-       `LengthPrefix.encode(record)` is the `Data` of the four-byte header followed by the
+-       record: the inverse of `.framable`, and what a writer of a length-prefixed stream calls
+-       for each record.
+-   entry .framable   the `Data is Framable by LengthPrefix` given; needs a `Tactic[Framing.Error]`
++       Una entrada que termina dentro de una cabecera o de un registro lanza
++       `Framing.Error(ShortRead)`, así que el given necesita una `Tactic[Framing.Error]`, que el
++       iterador entramado retiene. Las longitudes se leen enmascarando cada byte antes de
++       desplazarlo, de modo que un registro de 128 bytes o más, o de más de 32767, se entrama
++       correctamente pese a que los bytes de `Data` tienen signo.
++   entry .encode   antepone a un registro su longitud como cuatro bytes big-endian
++       `LengthPrefix.encode(record)` es el `Data` de la cabecera de cuatro bytes seguida del
++       registro: la inversa de `.framable`, y lo que llama quien escribe un flujo con prefijo de
++       longitud para cada registro.
++   entry .framable   el given `Data is Framable by LengthPrefix`; necesita una `Tactic[Framing.Error]`
+
+- entry .Associable   a typeclass pairing a session value with the response it governs
++ entry .Associable   una clase de tipos que empareja un valor de sesión con la respuesta que gobierna
+
+= entry .Associable   a typeclass pairing a session value with the response it governs
+-   detail
++   detail
+
+-       `Self is Associable by Operand to Target`: `association(operand)` makes a session value
+-       from an operand, and `associate(session)(response)` attaches that session to a response
+-       of the `Target` type. It is a hook for a transport which must mark each response with the
+-       session it belongs to (as MCP marks a response with its session id header); the library
+-       declares the typeclass and no instance of it.
+-   entry #association   makes the `Self` session value from an `Operand`
+-   entry #associate   attaches a session to a `Target` response, returning the marked response
++       `Self is Associable by Operand to Target`: `association(operand)` crea un valor de sesión
++       a partir de un operando, y `associate(session)(response)` asocia esa sesión a una
++       respuesta del tipo `Target`. Es un punto de enganche para un transporte que debe marcar
++       cada respuesta con la sesión a la que pertenece (como MCP marca una respuesta con la
++       cabecera de su id de sesión); la biblioteca declara la clase de tipos y ninguna instancia
++       de ella.
++   entry #association   crea el valor de sesión `Self` a partir de un `Operand`
++   entry #associate   asocia una sesión a una respuesta `Target` y devuelve la respuesta marcada
+
+- entry .Rpc   the home of `Rpc.Error`, the generic failure of a remote call
++ entry .Rpc   el hogar de `Rpc.Error`, el fallo genérico de una llamada remota
+
+= entry .Rpc   the home of `Rpc.Error`, the generic failure of a remote call
+-   detail
++   detail
+
+-       The object holds only `Rpc.Error`. The protocol-specific failures are `JsonRpc.Error` and
+-       `Grpc.Error`, each carrying what its wire format reports; `Rpc.Error` says only that a
+-       call failed.
+-   entry .Error   raised when a remote procedure call fails: error `↯/s.112.8`
+-       Error `↯/s.112.8`: _the remote procedure call failed_. A generic failure with no detail, for a
+-       transport which cannot say more; `JsonRpc.Error` and `Grpc.Error` carry the peer's code
+-       and message.
++       El objeto contiene solo `Rpc.Error`. Los fallos específicos de cada protocolo son
++       `JsonRpc.Error` y `Grpc.Error`, cada uno con lo que informa su formato de transmisión;
++       `Rpc.Error` solo dice que una llamada falló.
++   entry .Error   se lanza cuando falla una llamada a procedimiento remoto: error `↯/s.112.8`
++       Error `↯/s.112.8`: _the remote procedure call failed_. Un fallo genérico sin detalle, para
++       un transporte que no puede decir más; `JsonRpc.Error` y `Grpc.Error` llevan el código y el
++       mensaje del interlocutor.
+
+- entry .rpc   the `@rpc` annotation: marks a method of an interface as a remote procedure
+-     `@rpc def call(request: Ping): Pong` declares that `call` is a method the protocol exposes.
+-     `JsonRpc.serve`, `JsonRpc#proxy`, `remote` and `Grpc.remote` each read an interface's
+-     `@rpc` methods (including those it inherits) and ignore every other member. The method's
+-     name is the wire method name — a JSON-RPC name with a slash is written as a backquoted
+-     identifier, `` @rpc def `prompts/list`(…) `` — its parameter names are the members of a
+-     JSON-RPC `params` object, and a `Unit` result marks a notification, which expects no
+-     response. A gRPC `@rpc` method takes exactly one request message. The annotation is
+-     declared in the `annotations` object and exported.
++ entry .rpc   la anotación `@rpc`: marca un método de una interfaz como procedimiento remoto
++     `@rpc def call(request: Ping): Pong` declara que `call` es un método que expone el
++     protocolo. `JsonRpc.serve`, `JsonRpc#proxy`, `remote` y `Grpc.remote` leen cada uno los
++     métodos `@rpc` de una interfaz (incluidos los heredados) e ignoran cualquier otro miembro.
++     El nombre del método es el nombre del método en la transmisión — un nombre JSON-RPC con
++     una barra se escribe como un identificador entre comillas invertidas, `` @rpc def
++     `prompts/list`(…) `` —, los nombres de sus parámetros son los miembros de un objeto
++     `params` de JSON-RPC, y un resultado `Unit` marca una notificación, que no espera
++     respuesta. Un método `@rpc` de gRPC toma exactamente un mensaje de petición. La anotación
++     se declara en el objeto `annotations` y se exporta.
+
+- entry .bare   the `@bare` annotation: a JSON-RPC parameter which is the whole `params` value
+-     Marks one parameter of an `@rpc` method as decoded from the entire `params` value, rather
+-     than from the like-named field of a `params` object; the client side sends it as the whole
+-     `params` likewise. For a wire protocol whose `params` is a bare object decoded straight
+-     into one type, such as the LSP's `*/resolve` family. A method may declare at most one
+-     `@bare` parameter: a second is a compile error in `JsonRpc#proxy`. The annotation is
+-     declared in the `annotations` object and exported.
++ entry .bare   la anotación `@bare`: un parámetro JSON-RPC que es el valor `params` entero
++     Marca un parámetro de un método `@rpc` como decodificado a partir del valor `params`
++     entero, en lugar del campo homónimo de un objeto `params`; del mismo modo, el lado cliente
++     lo envía como el `params` entero. Para un protocolo de transmisión cuyo `params` es un
++     objeto sin envolver que se decodifica directamente en un tipo, como la familia `*/resolve`
++     del LSP. Un método puede declarar como mucho un parámetro `@bare`: un segundo es un error
++     de compilación en `JsonRpc#proxy`. La anotación se declara en el objeto `annotations` y se
++     exporta.
+
+- entry .annotations   the home of the `@rpc` and `@bare` annotations
++ entry .annotations   el hogar de las anotaciones `@rpc` y `@bare`
+
+= entry .annotations   the home of the `@rpc` and `@bare` annotations
+-   detail
++   detail
+
+-       The two annotations are declared here, rather than at the top level of the package, so
+-       that `rpc` does not share a classfile name with `Rpc` on a case-insensitive filesystem;
+-       both are exported to `obligatory` and the `soundness` umbrella, so `@rpc` and `@bare`
+-       are written without qualification.
+-   entry .rpc   marks a method of an interface as a remote procedure; see `obligatory.rpc`
+-   entry .bare   marks a parameter as the whole JSON-RPC `params` value; see `obligatory.bare`
++       Las dos anotaciones se declaran aquí, y no en el nivel superior del paquete, para que
++       `rpc` no comparta nombre de fichero de clase con `Rpc` en un sistema de ficheros que no
++       distingue mayúsculas de minúsculas; ambas se exportan a `obligatory` y al paraguas
++       `soundness`, así que `@rpc` y `@bare` se escriben sin cualificar.
++   entry .rpc   marca un método de una interfaz como procedimiento remoto; véase `obligatory.rpc`
++   entry .bare   marca un parámetro como el valor `params` entero de JSON-RPC; véase `obligatory.bare`
+
+- entry .JsonRpc   JSON-RPC 2.0: a dispatcher and client stub derived from an `@rpc` interface, over HTTP or a channel
++ entry .JsonRpc   JSON-RPC 2.0: un despachador y un stub de cliente derivados de una interfaz `@rpc`, sobre HTTP o un canal
+
+= entry .JsonRpc   JSON-RPC 2.0: a dispatcher and client stub derived from an `@rpc` interface, over HTTP or a channel
+-   detail
++   detail
+
+-       `JsonRpc` is two things. As an **object**, it is the JSON-RPC 2.0 toolkit: `.serve`
+-       derives a dispatcher from an interface of `@rpc` methods, `.Request`, `.Response` and
+-       `.Failure` are the three message shapes, `.failure` writes a conformant error response,
+-       and `.call`, `.request`, `.notification`, `.outcome` and `.answer` are the
+-       correlation machinery a client is built from. As a **trait**, it is a bidirectional
+-       connection: a protocol class extends `JsonRpc`, names the peer's interface as its
+-       `Origin`, and gets `#client` (a stub of that interface whose calls are queued on the
+-       connection's outgoing channel), `#put` for messages of its own, and `#outgoing` or
+-       `#stream` for the transport to drain.
++       `JsonRpc` es dos cosas. Como **objeto**, es el kit de herramientas de JSON-RPC 2.0:
++       `.serve` deriva un despachador a partir de una interfaz de métodos `@rpc`, `.Request`,
++       `.Response` y `.Failure` son las tres formas de mensaje, `.failure` escribe una respuesta
++       de error conforme, y `.call`, `.request`, `.notification`, `.outcome` y `.answer` son la
++       maquinaria de correlación con la que se construye un cliente. Como **trait**, es una
++       conexión bidireccional: una clase de protocolo extiende `JsonRpc`, nombra la interfaz del
++       interlocutor como su `Origin` y obtiene `#client` (un stub de esa interfaz cuyas llamadas
++       se encolan en el canal de salida de la conexión), `#put` para mensajes propios, y
++       `#outgoing` o `#stream` para que el transporte los vacíe.
+
+=       `#stream` for the transport to drain.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       `#stream` for the transport to drain.
+=
+=       ```scala fuel
+-       frame
++       frame
+
+-         label An interface of remote methods
++         label Una interfaz de métodos remotos
+
+=         label An interface of remote methods
+-         code
++         code
+
+=         label An interface of remote methods
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label An interface of remote methods
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label An interface of remote methods
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             case class Ping(message: Text)
++             case class Ping(message: Text)
+
+=         label An interface of remote methods
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+-             case class Pong(message: Text)
++             case class Pong(message: Text)
+
+=         label An interface of remote methods
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+-             trait Echo:
++             trait Echo:
+
+=         label An interface of remote methods
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+-               @rpc def call(request: Ping): Pong
++               @rpc def call(request: Ping): Pong
+
+=         label An interface of remote methods
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+-               @rpc def notify(request: Ping): Unit
++               @rpc def notify(request: Ping): Unit
+
+=               @rpc def notify(request: Ping): Unit
+-       frame
++       frame
+
+-         label An implementation becomes a dispatcher
++         label Una implementación se convierte en un despachador
+
+=         label An implementation becomes a dispatcher
+-         code
++         code
+
+=         label An implementation becomes a dispatcher
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label An implementation becomes a dispatcher
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label An implementation becomes a dispatcher
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             case class Ping(message: Text)
++             case class Ping(message: Text)
+
+=         label An implementation becomes a dispatcher
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+-             case class Pong(message: Text)
++             case class Pong(message: Text)
+
+=         label An implementation becomes a dispatcher
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+-             trait Echo:
++             trait Echo:
+
+=         label An implementation becomes a dispatcher
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+-               @rpc def call(request: Ping): Pong
++               @rpc def call(request: Ping): Pong
+
+=         label An implementation becomes a dispatcher
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+-               @rpc def notify(request: Ping): Unit
++               @rpc def notify(request: Ping): Unit
+
+=         label An implementation becomes a dispatcher
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+=               @rpc def notify(request: Ping): Unit
+=
+-             object EchoService extends Echo:
++             object EchoService extends Echo:
+
+=         label An implementation becomes a dispatcher
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+=               @rpc def notify(request: Ping): Unit
+=
+=             object EchoService extends Echo:
+-               def call(request: Ping): Pong = Pong(request.message)
++               def call(request: Ping): Pong = Pong(request.message)
+
+=         label An implementation becomes a dispatcher
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+=               @rpc def notify(request: Ping): Unit
+=
+=             object EchoService extends Echo:
+=               def call(request: Ping): Pong = Pong(request.message)
+-               def notify(request: Ping): Unit = ()
++               def notify(request: Ping): Unit = ()
+
+=         label An implementation becomes a dispatcher
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+=               @rpc def notify(request: Ping): Unit
+=
+=             object EchoService extends Echo:
+=               def call(request: Ping): Pong = Pong(request.message)
+=               def notify(request: Ping): Unit = ()
+=
+-             val dispatch: Json => Optional[Json] = JsonRpc.serve[Echo](EchoService)
++             val dispatch: Json => Optional[Json] = JsonRpc.serve[Echo](EchoService)
+
+=             val dispatch: Json => Optional[Json] = JsonRpc.serve[Echo](EchoService)
+-       frame
++       frame
+
+-         label A request is dispatched and answered
++         label Una petición se despacha y se responde
+
+=         label A request is dispatched and answered
+-         code
++         code
+
+=         label A request is dispatched and answered
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A request is dispatched and answered
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label A request is dispatched and answered
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             case class Ping(message: Text)
++             case class Ping(message: Text)
+
+=         label A request is dispatched and answered
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+-             case class Pong(message: Text)
++             case class Pong(message: Text)
+
+=         label A request is dispatched and answered
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+-             trait Echo:
++             trait Echo:
+
+=         label A request is dispatched and answered
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+-               @rpc def call(request: Ping): Pong
++               @rpc def call(request: Ping): Pong
+
+=         label A request is dispatched and answered
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+-               @rpc def notify(request: Ping): Unit
++               @rpc def notify(request: Ping): Unit
+
+=         label A request is dispatched and answered
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+=               @rpc def notify(request: Ping): Unit
+=
+-             object EchoService extends Echo:
++             object EchoService extends Echo:
+
+=         label A request is dispatched and answered
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+=               @rpc def notify(request: Ping): Unit
+=
+=             object EchoService extends Echo:
+-               def call(request: Ping): Pong = Pong(request.message)
++               def call(request: Ping): Pong = Pong(request.message)
+
+=         label A request is dispatched and answered
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+=               @rpc def notify(request: Ping): Unit
+=
+=             object EchoService extends Echo:
+=               def call(request: Ping): Pong = Pong(request.message)
+-               def notify(request: Ping): Unit = ()
++               def notify(request: Ping): Unit = ()
+
+=         label A request is dispatched and answered
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+=               @rpc def notify(request: Ping): Unit
+=
+=             object EchoService extends Echo:
+=               def call(request: Ping): Pong = Pong(request.message)
+=               def notify(request: Ping): Unit = ()
+=
+-             val dispatch: Json => Optional[Json] = JsonRpc.serve[Echo](EchoService)
++             val dispatch: Json => Optional[Json] = JsonRpc.serve[Echo](EchoService)
+
+=         label A request is dispatched and answered
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+=               @rpc def notify(request: Ping): Unit
+=
+=             object EchoService extends Echo:
+=               def call(request: Ping): Pong = Pong(request.message)
+=               def notify(request: Ping): Unit = ()
+=
+=             val dispatch: Json => Optional[Json] = JsonRpc.serve[Echo](EchoService)
+=
+-             val request = t"""{"jsonrpc":"2.0","method":"call","params":{"request":{"message":"hi"}},"id":1}""".read[Json]
++             val request = t"""{"jsonrpc":"2.0","method":"call","params":{"request":{"message":"hi"}},"id":1}""".read[Json]
+
+=         label A request is dispatched and answered
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+=               @rpc def notify(request: Ping): Unit
+=
+=             object EchoService extends Echo:
+=               def call(request: Ping): Pong = Pong(request.message)
+=               def notify(request: Ping): Unit = ()
+=
+=             val dispatch: Json => Optional[Json] = JsonRpc.serve[Echo](EchoService)
+=
+=             val request = t"""{"jsonrpc":"2.0","method":"call","params":{"request":{"message":"hi"}},"id":1}""".read[Json]
+-             dispatch(request)   // {"jsonrpc":"2.0","result":{"message":"hi"},"id":1}
++             dispatch(request)   // {"jsonrpc":"2.0","result":{"message":"hi"},"id":1}
+
+=             dispatch(request)   // {"jsonrpc":"2.0","result":{"message":"hi"},"id":1}
+-       frame
++       frame
+
+-         label A notification is dispatched and produces no response
++         label Una notificación se despacha y no produce respuesta
+
+=         label A notification is dispatched and produces no response
+-         code
++         code
+
+=         label A notification is dispatched and produces no response
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label A notification is dispatched and produces no response
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label A notification is dispatched and produces no response
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             case class Ping(message: Text)
++             case class Ping(message: Text)
+
+=         label A notification is dispatched and produces no response
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+-             case class Pong(message: Text)
++             case class Pong(message: Text)
+
+=         label A notification is dispatched and produces no response
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+-             trait Echo:
++             trait Echo:
+
+=         label A notification is dispatched and produces no response
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+-               @rpc def call(request: Ping): Pong
++               @rpc def call(request: Ping): Pong
+
+=         label A notification is dispatched and produces no response
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+-               @rpc def notify(request: Ping): Unit
++               @rpc def notify(request: Ping): Unit
+
+=         label A notification is dispatched and produces no response
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+=               @rpc def notify(request: Ping): Unit
+=
+-             object EchoService extends Echo:
++             object EchoService extends Echo:
+
+=         label A notification is dispatched and produces no response
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+=               @rpc def notify(request: Ping): Unit
+=
+=             object EchoService extends Echo:
+-               def call(request: Ping): Pong = Pong(request.message)
++               def call(request: Ping): Pong = Pong(request.message)
+
+=         label A notification is dispatched and produces no response
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+=               @rpc def notify(request: Ping): Unit
+=
+=             object EchoService extends Echo:
+=               def call(request: Ping): Pong = Pong(request.message)
+-               def notify(request: Ping): Unit = ()
++               def notify(request: Ping): Unit = ()
+
+=         label A notification is dispatched and produces no response
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+=               @rpc def notify(request: Ping): Unit
+=
+=             object EchoService extends Echo:
+=               def call(request: Ping): Pong = Pong(request.message)
+=               def notify(request: Ping): Unit = ()
+=
+-             val dispatch: Json => Optional[Json] = JsonRpc.serve[Echo](EchoService)
++             val dispatch: Json => Optional[Json] = JsonRpc.serve[Echo](EchoService)
+
+=         label A notification is dispatched and produces no response
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+=               @rpc def notify(request: Ping): Unit
+=
+=             object EchoService extends Echo:
+=               def call(request: Ping): Pong = Pong(request.message)
+=               def notify(request: Ping): Unit = ()
+=
+=             val dispatch: Json => Optional[Json] = JsonRpc.serve[Echo](EchoService)
+=
+-             val request = t"""{"jsonrpc":"2.0","method":"call","params":{"request":{"message":"hi"}},"id":1}""".read[Json]
++             val request = t"""{"jsonrpc":"2.0","method":"call","params":{"request":{"message":"hi"}},"id":1}""".read[Json]
+
+=         label A notification is dispatched and produces no response
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+=             case class Ping(message: Text)
+=             case class Pong(message: Text)
+=
+=             trait Echo:
+=               @rpc def call(request: Ping): Pong
+=               @rpc def notify(request: Ping): Unit
+=
+=             object EchoService extends Echo:
+=               def call(request: Ping): Pong = Pong(request.message)
+=               def notify(request: Ping): Unit = ()
+=
+=             val dispatch: Json => Optional[Json] = JsonRpc.serve[Echo](EchoService)
+=
+=             val request = t"""{"jsonrpc":"2.0","method":"call","params":{"request":{"message":"hi"}},"id":1}""".read[Json]
+-             dispatch(request)   // {"jsonrpc":"2.0","result":{"message":"hi"},"id":1}
++             dispatch(request)   // {"jsonrpc":"2.0","result":{"message":"hi"},"id":1}
+
+-             val notification = t"""{"jsonrpc":"2.0","method":"notify","params":{"request":{"message":"hi"}}}""".read[Json]
++             val notification = t"""{"jsonrpc":"2.0","method":"notify","params":{"request":{"message":"hi"}}}""".read[Json]
+
+-             dispatch(notification)   // Unset
++             dispatch(notification)   // Unset
+
+=             dispatch(notification)   // Unset
+-       ##
++       ##
+
+=             dispatch(notification)   // Unset
+=       ##
+-       ```
++       ```
+
+-       A method's parameters are the members of the request's `params` object, by name, each
+-       decoded with its type's `Json.Decodable`; a `@bare` parameter is the whole `params`
+-       value instead. The result is encoded with its type's `Encodable in Json` and wrapped in
+-       a `Response` echoing the request's id. A method returning `Unit` is a notification,
+-       answered with `Unset`. A request whose method the interface does not declare throws
+-       `JsonRpc.Error(UnknownMethod)`, and one whose parameters do not decode throws a
+-       `Json.Error`, each for the serving loop to catch and answer with `.failure` (`-32601`
+-       and `-32602` in the specification's vocabulary). A message with no `method` member is a
+-       response, which the dispatcher routes to `.answer` and returns `Unset` for, so one
+-       dispatcher can read a bidirectional stream.
++       Los parámetros de un método son los miembros del objeto `params` de la petición, por
++       nombre, cada uno decodificado con el `Json.Decodable` de su tipo; un parámetro `@bare` es,
++       en cambio, el valor `params` entero. El resultado se codifica con el `Encodable in Json` de
++       su tipo y se envuelve en una `Response` que repite el id de la petición. Un método que
++       devuelve `Unit` es una notificación, que se responde con `Unset`. Una petición cuyo método
++       no declara la interfaz lanza `JsonRpc.Error(UnknownMethod)`, y una cuyos parámetros no se
++       decodifican lanza un `Json.Error`, en cada caso para que el bucle de servicio lo capture y
++       responda con `.failure` (`-32601` y `-32602` en el vocabulario de la especificación). Un
++       mensaje sin miembro `method` es una respuesta, que el despachador encamina hacia `.answer`
++       y para la que devuelve `Unset`, de modo que un mismo despachador puede leer un flujo
++       bidireccional.
+
+-       The dispatcher closes over the implementation alone and retains only durable
+-       capabilities, so it may be called from a task. Each expansion of `.serve` inlines a
+-       schema-carrying codec for every method, and a very large interface — the Language
+-       Server Protocol's — can exceed the JVM's per-class constant pool: split it across
+-       several traits, derive a dispatcher per trait, and route by `.methods`.
++       El despachador cierra solo sobre la implementación y retiene únicamente capacidades
++       duraderas, así que puede llamarse desde una tarea. Cada expansión de `.serve` inserta en
++       línea un códec portador de esquema para cada método, y una interfaz muy grande — la del
++       Language Server Protocol — puede superar el pool de constantes por clase de la JVM:
++       divídela en varios traits, deriva un despachador por trait y encamina según `.methods`.
+
+-       **Over HTTP.** `remote[Echo](url)` is the client for a dispatcher mounted behind an HTTP
+-       route: each call POSTs a `Request` to the URL and decodes the `Response`. **Over a
+-       channel.** For a long-lived bidirectional connection — standard streams framed by
+-       `ContentLength` or `Linefeed`, a socket, or an MCP session — a class extends the
+-       `JsonRpc` trait, and the transport's writer drains `#outgoing` while its reader feeds
+-       each incoming document to the dispatcher. `synesthesia`'s `Mcp.Server` is such a class,
+-       with `Origin = Mcp.Client`: its `serve` dispatches every POSTed request through `.serve`,
+-       answers faults with `.failure`, and streams its `#stream` of `Sse` events back as
+-       `text/event-stream`.
++       **Sobre HTTP.** `remote[Echo](url)` es el cliente de un despachador montado tras una ruta
++       HTTP: cada llamada envía con POST una `Request` a la URL y decodifica la `Response`.
++       **Sobre un canal.** Para una conexión bidireccional de larga duración — flujos estándar
++       entramados con `ContentLength` o `Linefeed`, un socket o una sesión MCP —, una clase
++       extiende el trait `JsonRpc`, y el escritor del transporte vacía `#outgoing` mientras su
++       lector entrega cada documento entrante al despachador. El `Mcp.Server` de `synesthesia`
++       es una clase así, con `Origin = Mcp.Client`: su `serve` despacha cada petición recibida por
++       POST mediante `.serve`, responde a los fallos con `.failure` y transmite de vuelta su
++       `#stream` de eventos `Sse` como `text/event-stream`.
+
+-   refer obligatory.remote
++   refer obligatory.remote
+
+=   refer obligatory.remote
+-   refer obligatory.rpc
++   refer obligatory.rpc
+
+-   refer obligatory.bare
++   refer obligatory.bare
+
+-   refer obligatory.Sse
++   refer obligatory.Sse
+
+-   entry .serve   derives a dispatcher, `Json => Optional[Json]`, from an interface implementation
+-       `JsonRpc.serve[Interface](implementation)` is a macro which reads the `@rpc` methods of
+-       `Interface` and returns a function from a request document to its response document —
+-       `Unset` for a notification, or for a response routed to `.answer`. Its result type is
+-       `Json ->{caps.any.only[Durable]} Optional[Json]`: the dispatcher retains only durable
+-       capabilities and the implementation, so it may be held by a task.
++   entry .serve   deriva un despachador, `Json => Optional[Json]`, a partir de la implementación de una interfaz
++       `JsonRpc.serve[Interface](implementation)` es una macro que lee los métodos `@rpc` de
++       `Interface` y devuelve una función de un documento de petición a su documento de
++       respuesta — `Unset` para una notificación, o para una respuesta encaminada hacia
++       `.answer`. Su tipo de resultado es `Json ->{caps.any.only[Durable]} Optional[Json]`: el
++       despachador retiene solo capacidades duraderas y la implementación, así que puede
++       guardarlo una tarea.
+
+-       The macro needs an `Encodable in Json` for every method's result type at the expansion
+-       site — a missing one is a compile error naming the method — and summons each parameter's
+-       `Json.Decodable` inside the generated dispatcher under a per-call tactic, so a missing
+-       decoder is reported by the compiler's own "no given instance" message at the `serve`
+-       site. An unknown method is thrown as `JsonRpc.Error(UnknownMethod)` and a parameter
+-       which does not decode as `Json.Error`, for the serving loop to catch and answer with
+-       `.failure`; no tactic is needed at the expansion site.
+-   entry .methods   the names of an interface's `@rpc` methods, for routing across several dispatchers
+-       `JsonRpc.methods[Interface]` is a `List[Text]` of the interface's `@rpc` method names,
+-       inherited ones included. A protocol too large for one dispatcher class derives one with
+-       `.serve` per sub-interface and routes each request to the dispatcher whose `methods`
+-       contain its `method`; `exegesis` does this for the LSP's seven groups of methods.
+-   entry .Request   a JSON-RPC request or notification document, as a value
++       La macro necesita un `Encodable in Json` para el tipo de resultado de cada método en el
++       punto de expansión — si falta uno, es un error de compilación que nombra el método — y
++       convoca el `Json.Decodable` de cada parámetro dentro del despachador generado bajo una
++       táctica por llamada, de modo que un decodificador que falta lo informa el propio mensaje
++       "no given instance" del compilador en el punto de `serve`. Un método desconocido se lanza
++       como `JsonRpc.Error(UnknownMethod)` y un parámetro que no se decodifica como `Json.Error`,
++       para que el bucle de servicio los capture y responda con `.failure`; no se necesita
++       ninguna táctica en el punto de expansión.
++   entry .methods   los nombres de los métodos `@rpc` de una interfaz, para encaminar entre varios despachadores
++       `JsonRpc.methods[Interface]` es una `List[Text]` de los nombres de los métodos `@rpc` de
++       la interfaz, incluidos los heredados. Un protocolo demasiado grande para una sola clase de
++       despachador deriva uno con `.serve` por cada subinterfaz y encamina cada petición hacia el
++       despachador cuyos `methods` contienen su `method`; `exegesis` lo hace para los siete
++       grupos de métodos del LSP.
++   entry .Request   un documento de petición o notificación JSON-RPC, como valor
+
+=   entry .Request   a JSON-RPC request or notification document, as a value
+-     detail
++     detail
+
+-         `Request(jsonrpc, method, params, id)`: the `jsonrpc` version (`"2.0"`), the `method`
+-         name, the `params` document, and the `id`, which is `Unset` for a notification. The
+-         companion's `.decodable` reads one from a `Json`, so `safely(json.as[JsonRpc.Request])`
+-         tells a request from a response — a response has no `method` member and fails to decode
+-         — and `json.as[JsonRpc.Request].id` is the id to echo in a failure.
+-     entry .decodable   the `JsonRpc.Request is Json.Decodable` given, in implicit scope
+-         A pure, throwing derivation anchor: it throws `Json.Error` rather than raising it
+-         through a scoped tactic, so it can be summoned inside `safely` without the summon
+-         capturing the tactic.
+-     entry #jsonrpc   the protocol version, `"2.0"`
+-     entry #method   the method name
+-     entry #params   the parameters: an object of named members, or a bare value for a `@bare` parameter
+-     entry #id   the correlation id, or `Unset` for a notification
+-   entry .Response   a successful JSON-RPC response document, as a value
++         `Request(jsonrpc, method, params, id)`: la versión `jsonrpc` (`"2.0"`), el nombre del
++         `method`, el documento `params` y el `id`, que es `Unset` para una notificación. El
++         `.decodable` del objeto compañero lee una a partir de un `Json`, de modo que
++         `safely(json.as[JsonRpc.Request])` distingue una petición de una respuesta — una
++         respuesta no tiene miembro `method` y no se decodifica — y
++         `json.as[JsonRpc.Request].id` es el id que se repite en un fallo.
++     entry .decodable   el given `JsonRpc.Request is Json.Decodable`, en el ámbito implícito
++         Un ancla de derivación pura que lanza excepciones: lanza `Json.Error` en lugar de
++         lanzarlo a través de una táctica del ámbito, así que puede convocarse dentro de `safely`
++         sin que la convocatoria capture la táctica.
++     entry #jsonrpc   la versión del protocolo, `"2.0"`
++     entry #method   el nombre del método
++     entry #params   los parámetros: un objeto de miembros con nombre, o un valor sin envolver para un parámetro `@bare`
++     entry #id   el id de correlación, o `Unset` para una notificación
++   entry .Response   un documento de respuesta JSON-RPC satisfactoria, como valor
+
+=   entry .Response   a successful JSON-RPC response document, as a value
+-     detail
++     detail
+
+-         `Response(jsonrpc, result, id)`: the version, the encoded `result`, and the `id` of
+-         the request it answers. `JsonRpc.serve` builds one for each request it dispatches; a protocol
+-         which answers requests itself (a proxy, say) builds one with `JsonRpc.Response("2.0",
+-         result, id).in[Json]`. A fault is not a `Response` but a `JsonRpc.failure` document.
+-     entry #jsonrpc   the protocol version, `"2.0"`
+-     entry #result   the method's encoded result
+-     entry #id   the id of the request answered
+-   entry .Failure   the `error` member of a JSON-RPC error response: a code, a message and optional data
++         `Response(jsonrpc, result, id)`: la versión, el `result` codificado y el `id` de la
++         petición a la que responde. `JsonRpc.serve` construye una por cada petición que
++         despacha; un protocolo que responde él mismo a las peticiones (un proxy, por ejemplo)
++         construye una con `JsonRpc.Response("2.0", result, id).in[Json]`. Un fallo no es una
++         `Response`, sino un documento de `JsonRpc.failure`.
++     entry #jsonrpc   la versión del protocolo, `"2.0"`
++     entry #result   el resultado codificado del método
++     entry #id   el id de la petición respondida
++   entry .Failure   el miembro `error` de una respuesta de error JSON-RPC: un código, un mensaje y datos opcionales
+
+=   entry .Failure   the `error` member of a JSON-RPC error response: a code, a message and optional data
+-     detail
++     detail
+
+-         `Failure(code, message, data)` is the object a conformant peer puts in the `error`
+-         member of a response in place of `result`. The codes are the specification's, and a
+-         protocol may define its own beyond them:
++         `Failure(code, message, data)` es el objeto que un interlocutor conforme coloca en el
++         miembro `error` de una respuesta en lugar de `result`. Los códigos son los de la
++         especificación, y un protocolo puede definir los suyos además de ellos:
+
+=         protocol may define its own beyond them:
+=
+-         ```tabular
++         ```tabular
+
+-         column  Code
+-         column  Meaning
+-         row  -32700  the JSON could not be parsed
+-         row  -32600  an invalid request
+-         row  -32601  an unknown method
+-         row  -32602  invalid parameters
+-         row  -32603  an internal error
++         column  Código
++         column  Significado
++         row  -32700  no se pudo analizar el JSON
++         row  -32600  una petición no válida
++         row  -32601  un método desconocido
++         row  -32602  parámetros no válidos
++         row  -32603  un error interno
+
+=         row  -32603  an internal error
+-         ```
++         ```
+
+-         `JsonRpc.failure` builds the whole response document around one; `JsonRpc.answer`
+-         reads one back from a response and hands it to `JsonRpc.receiveFailure`, where
+-         `JsonRpc.outcome` turns it into a `JsonRpc.Error(Failed)` carrying the code and
+-         message.
+-     entry .decodable   the `JsonRpc.Failure is Json.Decodable` given, in implicit scope
+-         A pure, throwing derivation anchor, as `JsonRpc.Request.decodable` is, so
+-         `safely(json.error.as[JsonRpc.Failure])` works at a use site.
+-     entry #code   the numeric error code
+-     entry #message   the human-readable error message
+-     entry #data   any further detail the peer attached, or `Unset`
+-   entry .failure   a specification-correct error response document, echoing the failing request's id
+-       `JsonRpc.failure(code, message, id)` is the `Json` of an error response: the fault is
+-       carried in the `error` member as a `.Failure`, there is no `result` member, and `id`
+-       echoes the failing request's id — as an explicit JSON `null`, as the specification
+-       requires, when it is omitted because the request was unparseable and its id unknowable.
++         `JsonRpc.failure` construye el documento de respuesta completo alrededor de uno;
++         `JsonRpc.answer` lo vuelve a leer de una respuesta y se lo entrega a
++         `JsonRpc.receiveFailure`, donde `JsonRpc.outcome` lo convierte en un
++         `JsonRpc.Error(Failed)` que lleva el código y el mensaje.
++     entry .decodable   el given `JsonRpc.Failure is Json.Decodable`, en el ámbito implícito
++         Un ancla de derivación pura que lanza excepciones, como `JsonRpc.Request.decodable`,
++         así que `safely(json.error.as[JsonRpc.Failure])` funciona en un punto de uso.
++     entry #code   el código de error numérico
++     entry #message   el mensaje de error legible
++     entry #data   cualquier detalle adicional que haya adjuntado el interlocutor, o `Unset`
++   entry .failure   un documento de respuesta de error conforme a la especificación, que repite el id de la petición fallida
++       `JsonRpc.failure(code, message, id)` es el `Json` de una respuesta de error: el fallo va
++       en el miembro `error` como un `.Failure`, no hay miembro `result`, e `id` repite el id de
++       la petición fallida — como un `null` de JSON explícito, tal como exige la especificación,
++       cuando se omite porque la petición no pudo analizarse y su id no puede conocerse.
+
+=       requires, when it is omitted because the request was unparseable and its id unknowable.
+=
+-       ```scala
++       ```scala
+
+=       requires, when it is omitted because the request was unparseable and its id unknowable.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       JsonRpc.failure(-32601, t"Method not found", 7.in[Json])   // {"jsonrpc":"2.0","error":{"code":-32601,"message":"Method not found"},"id":7}
++       JsonRpc.failure(-32601, t"Method not found", 7.in[Json])   // {"jsonrpc":"2.0","error":{"code":-32601,"message":"Method not found"},"id":7}
+
+-       JsonRpc.failure(-32700, t"Parse error")                    // …,"id":null}
++       JsonRpc.failure(-32700, t"Parse error")                    // …,"id":null}
+
+=       JsonRpc.failure(-32700, t"Parse error")                    // …,"id":null}
+-       ```
++       ```
+
+-   entry .notification   sends a notification, to a `JsonRpc` channel or by POST to an HTTP URL
+-       Two overloads, each sending a `Request` with no id and returning an already-offered
+-       `Promise[Unit]`, since a notification expects no answer.
+-       `JsonRpc.notification(target: JsonRpc, method, payload)` puts the document on the
+-       target's outgoing channel. `JsonRpc.notification(url: HttpUrl, method, payload)` POSTs
+-       it to the URL and discards the response; it needs a `Monitor`, a `Probate` and an
+-       `Online` in scope, and a connection, HTTP, media-type or truncation failure is ignored,
+-       as a notification's delivery is not confirmed. The `@rpc` client stubs call these for a
+-       `Unit` method.
+-   entry .call   sends a request on a `JsonRpc` channel and returns the `Pending` call to await
+-       `JsonRpc.call(target, method, payload)` mints a UUID id, registers a promise under it,
+-       puts the `Request` on the target's outgoing channel, and returns the `.Pending` pair of
+-       id and promise. `.outcome` awaits it; `.answer` fulfils or cancels it when the response
+-       arrives. The id is retained because an error response cannot fulfil the promise and
+-       must be matched back to the caller by id.
+-   entry .request   sends a request, on a `JsonRpc` channel or by POST to an HTTP URL, as a promise of the result
+-       Two overloads. `JsonRpc.request(target: JsonRpc, method, payload)` is `.call` without
+-       the id: the `Promise[Json]` of the result, which `.answer` fulfils when the response
+-       arrives on the connection's reader, or cancels if the peer answered with an error (the
+-       fault is then only recoverable through `.outcome` on the `.Pending`).
+-       `JsonRpc.request(url: HttpUrl, method, payload)` POSTs the `Request` to the URL in a task
+-       and fulfils the promise with the response document; it needs a `Monitor`, a `Probate` and
+-       an `Online` in scope, and a connection, HTTP, media-type or parse failure cancels the
+-       promise, so the awaiting caller sees an `Async.Error`.
+-   entry .outcome   awaits a `Pending` call's response, raising the peer's fault as a `JsonRpc.Error`
+-       `JsonRpc.outcome(pending)` awaits the promise, needing a `Monitor` and a
+-       `Tactic[JsonRpc.Error]`. A response with a `result` is returned as `Json`; one with an
+-       `error` arrives as `JsonRpc.Error(Failed, code, message)`, with the peer's code and
+-       message for the caller to map onto its own vocabulary; and a promise cancelled with no
+-       fault recorded — the connection ended first — is `JsonRpc.Error(Abandoned)`. The
+-       generated `#proxy` methods call this.
+-   entry .answer   routes an incoming response to the `.call` awaiting it, by id
+-       `JsonRpc.answer(json)` reads the response's `id` and exactly one of `result` and
+-       `error`: a `result` fulfils the pending promise with `.receive`, and an `error` records
+-       the `.Failure` and cancels it with `.receiveFailure`. A document with no readable `id`,
+-       or an id nothing is waiting on, is ignored. A `.serve` dispatcher calls this for any
+-       document without a `method` member, so a connection's reader can feed every incoming
+-       document to one dispatcher.
+-   entry .receive   fulfils the pending call of the given id with its result
+-       `JsonRpc.receive(id, result)` completes and forgets the promise registered under `id`;
+-       an unknown id is ignored. `.answer` is the usual caller.
+-   entry .receiveFailure   records a fault for the pending call of the given id and cancels it
+-       `JsonRpc.receiveFailure(id, failure)` stores the `.Failure` for `.outcome` to find and
+-       cancels the promise registered under `id`, since an error response carries no result to
+-       fulfil it with. `.answer` is the usual caller.
+-   entry .Pending   a request in flight: its correlation id and the promise of its response
++   entry .notification   envía una notificación, a un canal `JsonRpc` o con POST a una URL HTTP
++       Dos sobrecargas, cada una de las cuales envía una `Request` sin id y devuelve una
++       `Promise[Unit]` ya ofrecida, puesto que una notificación no espera respuesta.
++       `JsonRpc.notification(target: JsonRpc, method, payload)` pone el documento en el canal de
++       salida del destino. `JsonRpc.notification(url: HttpUrl, method, payload)` lo envía con
++       POST a la URL y descarta la respuesta; necesita un `Monitor`, un `Probate` y un `Online`
++       en el ámbito, y un fallo de conexión, de HTTP, de tipo de medio o de truncamiento se
++       ignora, ya que la entrega de una notificación no se confirma. Los stubs de cliente `@rpc`
++       llaman a estas para un método `Unit`.
++   entry .call   envía una petición en un canal `JsonRpc` y devuelve la llamada `Pending` que se espera
++       `JsonRpc.call(target, method, payload)` acuña un id UUID, registra una promesa bajo él,
++       pone la `Request` en el canal de salida del destino y devuelve el par `.Pending` de id y
++       promesa. `.outcome` lo espera; `.answer` lo cumple o lo cancela cuando llega la
++       respuesta. El id se conserva porque una respuesta de error no puede cumplir la promesa y
++       debe emparejarse con quien llamó por su id.
++   entry .request   envía una petición, en un canal `JsonRpc` o con POST a una URL HTTP, como promesa del resultado
++       Dos sobrecargas. `JsonRpc.request(target: JsonRpc, method, payload)` es `.call` sin el
++       id: la `Promise[Json]` del resultado, que `.answer` cumple cuando la respuesta llega al
++       lector de la conexión, o cancela si el interlocutor respondió con un error (el fallo
++       entonces solo puede recuperarse mediante `.outcome` sobre el `.Pending`).
++       `JsonRpc.request(url: HttpUrl, method, payload)` envía la `Request` con POST a la URL en
++       una tarea y cumple la promesa con el documento de respuesta; necesita un `Monitor`, un
++       `Probate` y un `Online` en el ámbito, y un fallo de conexión, de HTTP, de tipo de medio o
++       de análisis cancela la promesa, de modo que quien la espera ve un `Async.Error`.
++   entry .outcome   espera la respuesta de una llamada `Pending` y lanza el fallo del interlocutor como un `JsonRpc.Error`
++       `JsonRpc.outcome(pending)` espera la promesa, y necesita un `Monitor` y una
++       `Tactic[JsonRpc.Error]`. Una respuesta con un `result` se devuelve como `Json`; una con un
++       `error` llega como `JsonRpc.Error(Failed, code, message)`, con el código y el mensaje del
++       interlocutor para que quien llama los traduzca a su propio vocabulario; y una promesa
++       cancelada sin ningún fallo registrado — la conexión terminó antes — es
++       `JsonRpc.Error(Abandoned)`. Los métodos `#proxy` generados llaman a esto.
++   entry .answer   encamina una respuesta entrante hacia el `.call` que la espera, por id
++       `JsonRpc.answer(json)` lee el `id` de la respuesta y exactamente uno de `result` y
++       `error`: un `result` cumple la promesa pendiente con `.receive`, y un `error` registra el
++       `.Failure` y la cancela con `.receiveFailure`. Un documento sin `id` legible, o con un id
++       que nadie espera, se ignora. Un despachador `.serve` llama a esto para cualquier
++       documento sin miembro `method`, de modo que el lector de una conexión puede entregar cada
++       documento entrante a un único despachador.
++   entry .receive   cumple con su resultado la llamada pendiente del id dado
++       `JsonRpc.receive(id, result)` completa y olvida la promesa registrada bajo `id`; un id
++       desconocido se ignora. `.answer` es quien suele llamarlo.
++   entry .receiveFailure   registra un fallo para la llamada pendiente del id dado y la cancela
++       `JsonRpc.receiveFailure(id, failure)` guarda el `.Failure` para que `.outcome` lo
++       encuentre y cancela la promesa registrada bajo `id`, ya que una respuesta de error no
++       lleva ningún resultado con el que cumplirla. `.answer` es quien suele llamarlo.
++   entry .Pending   una petición en curso: su id de correlación y la promesa de su respuesta
+
+=   entry .Pending   a request in flight: its correlation id and the promise of its response
+-     detail
++     detail
+
+-         Returned by `JsonRpc.call` and consumed by `JsonRpc.outcome`. The id is kept beside the promise
+-         because an error response cannot fulfil the promise and is matched back by id.
+-     entry #id   the UUID the request was sent under
+-     entry #promise   the promise `JsonRpc.answer` fulfils with the result, or cancels on a fault
+-   entry .Error   raised when a JSON-RPC operation fails: error `↯/s.112.7`
++         Lo devuelve `JsonRpc.call` y lo consume `JsonRpc.outcome`. El id se guarda junto a la
++         promesa porque una respuesta de error no puede cumplir la promesa y se empareja por id.
++     entry #id   el UUID con el que se envió la petición
++     entry #promise   la promesa que `JsonRpc.answer` cumple con el resultado, o cancela ante un fallo
++   entry .Error   se lanza cuando falla una operación JSON-RPC: error `↯/s.112.7`
+
+=   entry .Error   raised when a JSON-RPC operation fails: error `↯/s.112.7`
+-     detail
++     detail
+
+-         Error `↯/s.112.7`: _the JSON-RPC operation failed because `reason`_. Thrown by a `JsonRpc.serve`
+-         dispatcher for a method the interface does not declare (`UnknownMethod`), and raised
+-         by `JsonRpc.outcome` — and so by every generated `#proxy` method — when the peer answered
+-         with an error (`Failed`, with `#code` and `#detail` carrying the peer's `error.code`
+-         and `error.message`) or when the request was never answered because its promise was
+-         cancelled (`Abandoned`). A protocol client recovers its own error vocabulary from the
+-         code: an LSP client maps `code` onto an `Lsp.Error.Reason`.
+-     entry .Reason   why the operation failed
++         Error `↯/s.112.7`: _the JSON-RPC operation failed because `reason`_. Lo lanza un
++         despachador `JsonRpc.serve` para un método que la interfaz no declara
++         (`UnknownMethod`), y `JsonRpc.outcome` — y por tanto todo método `#proxy` generado —
++         cuando el interlocutor respondió con un error (`Failed`, con `#code` y `#detail`
++         llevando el `error.code` y el `error.message` del interlocutor) o cuando la petición
++         nunca se respondió porque su promesa se canceló (`Abandoned`). Un cliente de protocolo
++         recupera su propio vocabulario de errores a partir del código: un cliente LSP traduce
++         `code` a un `Lsp.Error.Reason`.
++     entry .Reason   por qué falló la operación
+
+-         `UnknownMethod` (1), _the method name was not recognised by the dispatcher_; `Failed`
++         `UnknownMethod` (1), _the method name was not recognised by the dispatcher_; `Failed`
+
+-         (2), _the peer answered the request with an error_; `Abandoned` (3), _the request was
++         (2), _the peer answered the request with an error_; `Abandoned` (3), _the request was
+
+-         never answered_. The number is the error's detail number.
+-     entry .communicable   renders each `JsonRpc.Error.Reason` as its message
+-     entry #reason   why the operation failed
+-     entry #code   the peer's `error.code`, when the fault came back over the wire; else `Unset`
+-     entry #detail   the peer's `error.message`, when the fault came back over the wire; else `Unset`
+-   entry #client   a stub of the `Origin` interface whose calls are sent on this connection
+-       `proxy[Origin]`: an `Origin^` whose `@rpc` methods each put a `JsonRpc.Request` on this
+-       instance's outgoing channel. Its result is a capability, since it retains the
+-       connection.
+-   entry #proxy   a stub of any `@rpc` interface whose calls are sent on this connection
+-       `proxy[Interface]` is a macro which builds an object implementing `Interface`: each
+-       `@rpc` method encodes its parameters as a `params` object (or a `@bare` parameter as the
+-       whole `params`), puts the request on this instance's channel with `JsonRpc.call`, awaits
+-       it with `JsonRpc.outcome`, and decodes the result with the type's `Json.Decodable`,
+-       summoned inside the generated method under the call's own tactic. A `Unit` method sends
+-       a notification and returns at once. The macro needs a `Monitor` at its expansion site
+-       and an `Encodable in Json` for every parameter; a peer's error response throws
+-       `JsonRpc.Error(Failed)` from the call. A protocol whose surface is split across several
+-       interfaces builds one proxy per interface, all sharing the one outgoing channel.
+-   entry #put   queues a document on this connection's outgoing channel
+-       For messages the stubs do not make: a response a protocol answers itself, a failure
+-       from `JsonRpc.failure`, a server-initiated notification.
+-   entry #stop   ends the outgoing channel, so `#outgoing` and `#stream` finish once drained
+-       A reader of the channel completes after what was already put, rather than waiting for
+-       more. A subclass which already had a member named `stop()` must override it.
+-   entry #outgoing   the outgoing documents, as a `Chain[Json]` for the transport's writer to drain
+-       Each accessor drains the shared queue through a fresh single-owner view: use `outgoing`
+-       or `stream`, not both, on one instance.
+-   entry #stream   the outgoing documents as `Sse` events, for a `text/event-stream` response
+-       Each document becomes an `Sse` whose single `data` line is its compact JSON, which
+-       `Sse.servable` serves as `text/event-stream`: the server-to-client half of MCP's
+-       streamable HTTP transport. Use `stream` or `outgoing`, not both, on one instance.
++         never answered_. El número es el número de detalle del error.
++     entry .communicable   representa cada `JsonRpc.Error.Reason` como su mensaje
++     entry #reason   por qué falló la operación
++     entry #code   el `error.code` del interlocutor, cuando el fallo volvió por la transmisión; si no, `Unset`
++     entry #detail   el `error.message` del interlocutor, cuando el fallo volvió por la transmisión; si no, `Unset`
++   entry #client   un stub de la interfaz `Origin` cuyas llamadas se envían por esta conexión
++       `proxy[Origin]`: un `Origin^` cuyos métodos `@rpc` ponen cada uno una `JsonRpc.Request`
++       en el canal de salida de esta instancia. Su resultado es una capacidad, ya que retiene la
++       conexión.
++   entry #proxy   un stub de cualquier interfaz `@rpc` cuyas llamadas se envían por esta conexión
++       `proxy[Interface]` es una macro que construye un objeto que implementa `Interface`: cada
++       método `@rpc` codifica sus parámetros como un objeto `params` (o un parámetro `@bare`
++       como el `params` entero), pone la petición en el canal de esta instancia con
++       `JsonRpc.call`, la espera con `JsonRpc.outcome` y decodifica el resultado con el
++       `Json.Decodable` del tipo, convocado dentro del método generado bajo la táctica propia de
++       la llamada. Un método `Unit` envía una notificación y regresa de inmediato. La macro
++       necesita un `Monitor` en su punto de expansión y un `Encodable in Json` para cada
++       parámetro; una respuesta de error del interlocutor lanza `JsonRpc.Error(Failed)` desde la
++       llamada. Un protocolo cuya superficie se reparte entre varias interfaces construye un
++       proxy por interfaz, y todos comparten el único canal de salida.
++   entry #put   encola un documento en el canal de salida de esta conexión
++       Para los mensajes que no crean los stubs: una respuesta que un protocolo da por sí mismo,
++       un fallo de `JsonRpc.failure`, una notificación iniciada por el servidor.
++   entry #stop   termina el canal de salida, de modo que `#outgoing` y `#stream` acaban una vez vaciados
++       Un lector del canal termina después de lo que ya se había puesto, en lugar de esperar
++       más. Una subclase que ya tenía un miembro llamado `stop()` debe sobrescribirlo.
++   entry #outgoing   los documentos de salida, como una `Chain[Json]` para que la vacíe el escritor del transporte
++       Cada accesor vacía la cola compartida a través de una vista nueva de propietario único:
++       usa `outgoing` o `stream`, no ambos, en una misma instancia.
++   entry #stream   los documentos de salida como eventos `Sse`, para una respuesta `text/event-stream`
++       Cada documento se convierte en un `Sse` cuya única línea `data` es su JSON compacto, que
++       `Sse.servable` sirve como `text/event-stream`: la mitad de servidor a cliente del
++       transporte HTTP transmisible de MCP. Usa `stream` o `outgoing`, no ambos, en una misma
++       instancia.
+
+- entry .remote   `remote[Interface](url)`: a JSON-RPC client stub which POSTs each call to an HTTP URL
+-     A macro which builds an object implementing `Interface` from its `@rpc` methods, for a
+-     dispatcher mounted behind an HTTP route. Each method encodes its parameters as a `params`
+-     object, POSTs a `JsonRpc.Request` to `url` with `JsonRpc.request`, awaits the response and
+-     decodes the `result` with the result type's `Json.Decodable`; a `Unit` method sends a
+-     notification with `JsonRpc.notification` and returns once it is posted.
++ entry .remote   `remote[Interface](url)`: un stub de cliente JSON-RPC que envía cada llamada con POST a una URL HTTP
++     Una macro que construye un objeto que implementa `Interface` a partir de sus métodos `@rpc`,
++     para un despachador montado tras una ruta HTTP. Cada método codifica sus parámetros como un
++     objeto `params`, envía con POST una `JsonRpc.Request` a `url` con `JsonRpc.request`, espera
++     la respuesta y decodifica el `result` con el `Json.Decodable` del tipo de resultado; un
++     método `Unit` envía una notificación con `JsonRpc.notification` y regresa en cuanto se ha
++     enviado.
+
+-     ```scala fuel
++     ```scala fuel
+
+-     typecheck
++     typecheck
+
+-     ##
++     ##
+
+=     ##
+-     import soundness.*
++     import soundness.*
+
+=     ##
+=     import soundness.*
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import threads.virtualThreads
++     import threads.virtualThreads
+
+-     import probates.cancelProbate
++     import probates.cancelProbate
+
+-     import internetAccess.online
++     import internetAccess.online
+
+=     import internetAccess.online
+=
+-     case class Ping(message: Text)
++     case class Ping(message: Text)
+
+=     import internetAccess.online
+=
+=     case class Ping(message: Text)
+-     case class Pong(message: Text)
++     case class Pong(message: Text)
+
+=     import internetAccess.online
+=
+=     case class Ping(message: Text)
+=     case class Pong(message: Text)
+=
+-     trait Echo:
++     trait Echo:
+
+=     import internetAccess.online
+=
+=     case class Ping(message: Text)
+=     case class Pong(message: Text)
+=
+=     trait Echo:
+-       @rpc def call(request: Ping): Pong
++       @rpc def call(request: Ping): Pong
+
+-     supervise:
++     supervise:
+
+-       val echo = remote[Echo](url"https://api.example.com/rpc")
++       val echo = remote[Echo](url"https://api.example.com/rpc")
+
+-       echo.call(Ping(t"hello"))   // a JSON-RPC request over HTTP, and its typed response
++       echo.call(Ping(t"hello"))   // a JSON-RPC request over HTTP, and its typed response
+
+=       echo.call(Ping(t"hello"))   // a JSON-RPC request over HTTP, and its typed response
+-     ```
++     ```
+
+-     The expansion site must have a `Monitor`, a `Probate` and an `Online` in scope — each
+-     missing one is a compile error — and an `Encodable in Json` for every parameter and a
+-     `Json.Decodable` for every result. A connection, HTTP or parse failure cancels the
+-     request's promise, which the generated method throws from the call as an `Async.Error`.
+-     For a client over a bidirectional channel rather than HTTP, see `JsonRpc#proxy`.
++     El punto de expansión debe tener en el ámbito un `Monitor`, un `Probate` y un `Online` —
++     cada uno que falte es un error de compilación — y un `Encodable in Json` para cada
++     parámetro y un `Json.Decodable` para cada resultado. Un fallo de conexión, de HTTP o de
++     análisis cancela la promesa de la petición, que el método generado lanza desde la llamada
++     como un `Async.Error`. Para un cliente sobre un canal bidireccional en lugar de HTTP, véase
++     `JsonRpc#proxy`.
+
+- entry .Sse   one server-sent event: its event name, data lines, id and retry interval
++ entry .Sse   un evento enviado por el servidor: su nombre de evento, sus líneas de datos, su id y su intervalo de reintento
+
+= entry .Sse   one server-sent event: its event name, data lines, id and retry interval
+-   detail
++   detail
+
+-       `Sse(event, data, id, retry)` is one event of a `text/event-stream`: the `event` name
+-       (`"message"` unless set), the `data` lines, and the optional `id` and `retry` interval
+-       in milliseconds. Its companion holds everything for reading and writing the stream:
+-       `.framable` splits a text stream into events at blank lines, `.decodable` parses one
+-       event's fields, `.encodable` renders one, `.servable` serves a `Chain[Sse]` as a
+-       streaming HTTP response, and `.jsonEncodable` and `.textEncodable` make an event from a
+-       JSON document or a line of text. `Sse.Source` is a replayable buffer of events for a
+-       client which reconnects with its last-seen id.
++       `Sse(event, data, id, retry)` es un evento de un `text/event-stream`: el nombre `event`
++       (`"message"` si no se establece), las líneas `data` y el `id` y el intervalo `retry`
++       opcionales, en milisegundos. Su objeto compañero contiene todo lo necesario para leer y
++       escribir el flujo: `.framable` divide un flujo de texto en eventos en las líneas en
++       blanco, `.decodable` analiza los campos de un evento, `.encodable` representa uno,
++       `.servable` sirve una `Chain[Sse]` como respuesta HTTP en flujo, y `.jsonEncodable` y
++       `.textEncodable` crean un evento a partir de un documento JSON o de una línea de texto.
++       `Sse.Source` es un búfer reproducible de eventos para un cliente que se reconecta con el
++       último id que vio.
+
+=       client which reconnects with its last-seen id.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       client which reconnects with its last-seen id.
+=
+=       ```scala fuel
+-       frame
++       frame
+
+-         label The text of an event stream
++         label El texto de un flujo de eventos
+
+=         label The text of an event stream
+-         code
++         code
+
+=         label The text of an event stream
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label The text of an event stream
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label The text of an event stream
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             val input = t"event: one\nid: 123\ndata: hamlet\ndata: yorick\n\ndata: hello world\nretry: 54321"
++             val input = t"event: one\nid: 123\ndata: hamlet\ndata: yorick\n\ndata: hello world\nretry: 54321"
+
+=             val input = t"event: one\nid: 123\ndata: hamlet\ndata: yorick\n\ndata: hello world\nretry: 54321"
+-       frame
++       frame
+
+-         label Framed into events at each blank line
++         label Entramado en eventos en cada línea en blanco
+
+=         label Framed into events at each blank line
+-         code
++         code
+
+=         label Framed into events at each blank line
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Framed into events at each blank line
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label Framed into events at each blank line
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             val input = t"event: one\nid: 123\ndata: hamlet\ndata: yorick\n\ndata: hello world\nretry: 54321"
++             val input = t"event: one\nid: 123\ndata: hamlet\ndata: yorick\n\ndata: hello world\nretry: 54321"
+
+-             Chain(input).frames[Sse].to[List]
++             Chain(input).frames[Sse].to[List]
+
+-             // List(t"event: one\nid: 123\ndata: hamlet\ndata: yorick", t"data: hello world\nretry: 54321")
++             // List(t"event: one\nid: 123\ndata: hamlet\ndata: yorick", t"data: hello world\nretry: 54321")
+
+=             // List(t"event: one\nid: 123\ndata: hamlet\ndata: yorick", t"data: hello world\nretry: 54321")
+-       frame
++       frame
+
+-         label Each event decoded into its fields
++         label Cada evento decodificado en sus campos
+
+=         label Each event decoded into its fields
+-         code
++         code
+
+=         label Each event decoded into its fields
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Each event decoded into its fields
+=         code
+=             import soundness.*
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+=         label Each event decoded into its fields
+=         code
+=             import soundness.*
+=             import strategies.throwUnsafely
+=
+-             val input = t"event: one\nid: 123\ndata: hamlet\ndata: yorick\n\ndata: hello world\nretry: 54321"
++             val input = t"event: one\nid: 123\ndata: hamlet\ndata: yorick\n\ndata: hello world\nretry: 54321"
+
+-             Chain(input).frames[Sse].map(_.as[Sse]).to[List]
++             Chain(input).frames[Sse].map(_.as[Sse]).to[List]
+
+-             // List(Sse(t"one", List(t"hamlet", t"yorick"), t"123"), Sse(t"message", List(t"hello world"), Unset, 54321L))
++             // List(Sse(t"one", List(t"hamlet", t"yorick"), t"123"), Sse(t"message", List(t"hello world"), Unset, 54321L))
+
+=             // List(Sse(t"one", List(t"hamlet", t"yorick"), t"123"), Sse(t"message", List(t"hello world"), Unset, 54321L))
+-       ##
++       ##
+
+=             // List(Sse(t"one", List(t"hamlet", t"yorick"), t"123"), Sse(t"message", List(t"hello world"), Unset, 54321L))
+=       ##
+-       ```
++       ```
+
+-       A `JsonRpc#stream` is a `Chain[Sse]` of a connection's outgoing documents, which is how an
+-       MCP server streams its notifications to the client; `Sse.servable` is the given which
+-       lets an HTTP handler return that chain as the response.
++       Un `JsonRpc#stream` es una `Chain[Sse]` de los documentos de salida de una conexión, que
++       es como un servidor MCP transmite sus notificaciones al cliente; `Sse.servable` es el
++       given que permite a un manejador HTTP devolver esa cadena como respuesta.
+
+-   refer obligatory.JsonRpc
++   refer obligatory.JsonRpc
+
+=   refer obligatory.JsonRpc
+-   refer obligatory.frames
++   refer obligatory.frames
+
+-   entry .servable   serves a `Chain[Sse]` as a streaming `text/event-stream` HTTP response
+-       The `Chain[Sse] is Servable` given, in implicit scope: an HTTP handler which returns a
+-       `Chain[Sse]` sends a flowing body of each event's `.encodable` text, UTF-8 encoded, under
+-       the media type `text/event-stream`, delivering each event as the chain yields it.
+-   entry .framable   the `Text is Framable by Sse` given: one frame per event, split at blank lines
+-       In implicit scope; `text.frames[Sse]` yields each event's lines as one `Text`, without
+-       the blank line which ended it, and a final event with no terminating blank line as it
+-       stands. It cannot fail. The frames are then decoded with `.decodable`: `frame.as[Sse]`.
+-   entry .decodable   parses one event's `field: value` lines into an `Sse`; needs a `Tactic[Sse.Error]`
+-       The `Sse is Decodable in Text` given, in implicit scope, so `text.as[Sse]` reads one
+-       framed event. Each line is `field: value`, with one optional space after the colon;
+-       `event` sets the name, each `data` line is appended in order, `id` is kept as text, and
+-       `retry` is parsed as a `Long`. A line with no colon raises `Sse.Error(MalformedField)`,
+-       an unknown field name `Sse.Error(UnknownField)`, and a non-numeric `retry`
+-       `Sse.Error(BadRetryValue)`; every error in a frame is raised, and a frame with any error
+-       is never delivered as a half-populated event.
+-   entry .encodable   renders an `Sse` as its wire text: `event:`, `data:`, `id:` and `retry:` lines, then a blank line
+-       The `Sse is Encodable in Text` given, in implicit scope: `sse.encode` is `event: name`,
+-       one `data: line` per data line, `id: …` and `retry: …` when set, each ended by `\n`, and
+-       a final `\n` to end the event. `.servable` writes this for each event it serves.
+-   entry .jsonEncodable   makes an `Sse` from a `Json` document: a `message` event with the compact JSON as its data
+-       The `Json is Encodable in Sse` given, in implicit scope: `json.encode` as an `Sse` has
+-       the event name `message` and one data line of the document's compact rendering, which is
+-       what `Sse.Source#put(json)` stores and `JsonRpc#stream` produces.
+-   entry .textEncodable   makes an `Sse` from a `Text`: a `message` event with the text as its one data line
+-       The `Text is Encodable in Sse` given, in implicit scope, so `Sse.Source#put(t"…")` works.
+-   entry .Error   raised when a server-sent event is not valid, or a replay exceeds a source's buffer: error `↯/s.112.5`
++   entry .servable   sirve una `Chain[Sse]` como respuesta HTTP `text/event-stream` en flujo
++       El given `Chain[Sse] is Servable`, en el ámbito implícito: un manejador HTTP que devuelve
++       una `Chain[Sse]` envía un cuerpo continuo con el texto `.encodable` de cada evento,
++       codificado en UTF-8, bajo el tipo de medio `text/event-stream`, y entrega cada evento a
++       medida que la cadena lo produce.
++   entry .framable   el given `Text is Framable by Sse`: una trama por evento, divididas en las líneas en blanco
++       En el ámbito implícito; `text.frames[Sse]` entrega las líneas de cada evento como un único
++       `Text`, sin la línea en blanco que lo terminó, y un evento final sin línea en blanco de
++       cierre tal cual. No puede fallar. Las tramas se decodifican después con `.decodable`:
++       `frame.as[Sse]`.
++   entry .decodable   analiza las líneas `field: value` de un evento en un `Sse`; necesita una `Tactic[Sse.Error]`
++       El given `Sse is Decodable in Text`, en el ámbito implícito, de modo que `text.as[Sse]` lee
++       un evento entramado. Cada línea es `field: value`, con un espacio opcional tras los dos
++       puntos; `event` establece el nombre, cada línea `data` se añade en orden, `id` se
++       conserva como texto y `retry` se analiza como un `Long`. Una línea sin dos puntos lanza
++       `Sse.Error(MalformedField)`, un nombre de campo desconocido `Sse.Error(UnknownField)` y un
++       `retry` no numérico `Sse.Error(BadRetryValue)`; se lanzan todos los errores de una trama,
++       y una trama con algún error nunca se entrega como un evento a medio rellenar.
++   entry .encodable   representa un `Sse` como su texto de transmisión: líneas `event:`, `data:`, `id:` y `retry:`, y después una línea en blanco
++       El given `Sse is Encodable in Text`, en el ámbito implícito: `sse.encode` es
++       `event: name`, una `data: line` por cada línea de datos, `id: …` y `retry: …` cuando se
++       han establecido, cada una terminada por `\n`, y un `\n` final que termina el evento.
++       `.servable` escribe esto para cada evento que sirve.
++   entry .jsonEncodable   crea un `Sse` a partir de un documento `Json`: un evento `message` con el JSON compacto como datos
++       El given `Json is Encodable in Sse`, en el ámbito implícito: `json.encode` como `Sse` tiene
++       el nombre de evento `message` y una línea de datos con la representación compacta del
++       documento, que es lo que guarda `Sse.Source#put(json)` y lo que produce `JsonRpc#stream`.
++   entry .textEncodable   crea un `Sse` a partir de un `Text`: un evento `message` con el texto como su única línea de datos
++       El given `Text is Encodable in Sse`, en el ámbito implícito, de modo que
++       `Sse.Source#put(t"…")` funciona.
++   entry .Error   se lanza cuando un evento enviado por el servidor no es válido, o una reproducción supera el búfer de una fuente: error `↯/s.112.5`
+
+=   entry .Error   raised when a server-sent event is not valid, or a replay exceeds a source's buffer: error `↯/s.112.5`
+-     detail
++     detail
+
+-         Error `↯/s.112.5`: _the server-sent event was not valid because `reason`_. Raised by
+-         `Sse.decodable` for a malformed line (`MalformedField`), an unknown field name
+-         (`UnknownField`) or a `retry` which is not an integer (`BadRetryValue`), and by
+-         `Sse.Source#stream` when the requested replay reaches further back than the source's
+-         capacity (`CapacityExceeded`).
+-     entry .Reason   why the event, or the replay, was not valid
+-         The number is the error's detail number:
++         Error `↯/s.112.5`: _the server-sent event was not valid because `reason`_. Lo lanza
++         `Sse.decodable` ante una línea mal formada (`MalformedField`), un nombre de campo
++         desconocido (`UnknownField`) o un `retry` que no es un entero (`BadRetryValue`), y
++         `Sse.Source#stream` cuando la reproducción solicitada llega más atrás de la capacidad de
++         la fuente (`CapacityExceeded`).
++     entry .Reason   por qué el evento, o la reproducción, no era válido
++         El número es el número de detalle del error:
+
+=     entry .Reason   why the event, or the replay, was not valid
+=         The number is the error's detail number:
+=
+-         ```tabular
++         ```tabular
+
+=     entry .Reason   why the event, or the replay, was not valid
+=         The number is the error's detail number:
+=
+=         ```tabular
+-         column  Case
+-         column  Code
+-         column  Message
+-         column  Note
++         column  Caso
++         column  Código
++         column  Mensaje
++         column  Nota
+
+-         row  `MalformedField`  1  _a line did not contain the expected `field: value` separator_
++         row  `MalformedField`  1  _a line did not contain the expected `field: value` separator_
+
+-         row  `UnknownField`  2  _the field name was not one of `event`, `data`, `id`, or `retry`_
++         row  `UnknownField`  2  _the field name was not one of `event`, `data`, `id`, or `retry`_
+
+-         row  `BadRetryValue`  3  _the `retry` field value could not be parsed as an integer_
++         row  `BadRetryValue`  3  _the `retry` field value could not be parsed as an integer_
+
+-         row  `CapacityExceeded`  4  _the requested replay range exceeded the source buffer capacity_
++         row  `CapacityExceeded`  4  _the requested replay range exceeded the source buffer capacity_
+
+=         row  `CapacityExceeded`  4  _the requested replay range exceeded the source buffer capacity_
+-         ```
++         ```
+
+-     entry .communicable   renders each `Sse.Error.Reason` as its message
+-     entry #reason   why the event, or the replay, was not valid
+-   entry .Source   a replayable buffer of events, numbered by id, for a client which reconnects
++     entry .communicable   representa cada `Sse.Error.Reason` como su mensaje
++     entry #reason   por qué el evento, o la reproducción, no era válido
++   entry .Source   un búfer reproducible de eventos, numerados por id, para un cliente que se reconecta
+
+=   entry .Source   a replayable buffer of events, numbered by id, for a client which reconnects
+-     detail
++     detail
+
+-         `Sse.Source(capacity)` holds the last `capacity` events in a ring and feeds a live
+-         stream of them. `#put` stamps each event with its sequence number as its `id`, and
+-         `#stream(start)` is the chain of events after the id `start` — replayed from the ring,
+-         then live as they are put — which is the reconnection behaviour the protocol calls
+-         for: a client sends the `Last-Event-ID` it saw, and the source resumes from it.
++         `Sse.Source(capacity)` guarda los últimos `capacity` eventos en un anillo y alimenta con
++         ellos un flujo en vivo. `#put` marca cada evento con su número de secuencia como su `id`,
++         y `#stream(start)` es la cadena de eventos posteriores al id `start` — reproducidos desde
++         el anillo y después en vivo a medida que se ponen —, que es el comportamiento de
++         reconexión que pide el protocolo: un cliente envía el `Last-Event-ID` que vio, y la
++         fuente continúa a partir de él.
+
+=         for: a client sends the `Last-Event-ID` it saw, and the source resumes from it.
+=
+-         ```scala
++         ```scala
+
+=         for: a client sends the `Last-Event-ID` it saw, and the source resumes from it.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         for: a client sends the `Last-Event-ID` it saw, and the source resumes from it.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         val source = Sse.Source(capacity = 128)
++         val source = Sse.Source(capacity = 128)
+
+-         source.put(t"first update")    // id 0
++         source.put(t"first update")    // id 0
+
+-         source.put(t"second update")   // id 1
++         source.put(t"second update")   // id 1
+
+-         source.put(t"third update")    // id 2
++         source.put(t"third update")    // id 2
+
+-         source.stream(start = 0)       // the events with ids 1 and 2, then those put later
++         source.stream(start = 0)       // the events with ids 1 and 2, then those put later
+
+=         source.stream(start = 0)       // the events with ids 1 and 2, then those put later
+-         ```
++         ```
+
+-         The source is synchronised, so events may be put from any thread; but each
+-         `#stream(start)` call with a start replaces the live spool, ending the stream of any
+-         earlier consumer, so a source feeds one consumer at a time.
+-     entry #put   stores and publishes an event, stamping it with its sequence number as its id
+-         `put(value)` takes anything `Encodable in Sse` — a `Text`, a `Json` or an `Sse` — sets
+-         its `id` to the next sequence number, keeps it in the ring (evicting the oldest once
+-         `capacity` is exceeded) and sends it to the live stream.
+-     entry #stream   the events after a last-seen id, replayed from the buffer and then live
+-         `stream(start)` with a start id replays every buffered event whose id is greater than
+-         `start`, then continues with each event put afterwards, as a `Chain[Sse]`; it raises
+-         `Sse.Error(CapacityExceeded)` if more than `capacity` events have been put since
+-         `start`, since the replay would have a gap. With no start, it is the live events
+-         alone. Starting a replay ends any earlier consumer's stream.
+-   entry #event   the event name, `message` unless the stream named one
+-   entry #data   the data lines, in order; a consumer joins them with newlines
+-   entry #id   the event id, if the stream set one, which a client sends back as `Last-Event-ID`
+-   entry #retry   the reconnection interval in milliseconds, if the stream set one
++         La fuente está sincronizada, así que pueden ponerse eventos desde cualquier hilo; pero
++         cada llamada a `#stream(start)` con un inicio sustituye la bobina en vivo y termina el
++         flujo de cualquier consumidor anterior, de modo que una fuente alimenta a un solo
++         consumidor cada vez.
++     entry #put   guarda y publica un evento, marcándolo con su número de secuencia como id
++         `put(value)` toma cualquier cosa `Encodable in Sse` — un `Text`, un `Json` o un `Sse` —,
++         establece su `id` al siguiente número de secuencia, lo guarda en el anillo (desalojando
++         el más antiguo una vez superada `capacity`) y lo envía al flujo en vivo.
++     entry #stream   los eventos posteriores a un último id visto, reproducidos desde el búfer y después en vivo
++         `stream(start)` con un id de inicio reproduce cada evento del búfer cuyo id es mayor que
++         `start` y continúa después con cada evento que se ponga, como una `Chain[Sse]`; lanza
++         `Sse.Error(CapacityExceeded)` si se han puesto más de `capacity` eventos desde `start`,
++         ya que la reproducción tendría un hueco. Sin inicio, son solo los eventos en vivo.
++         Iniciar una reproducción termina el flujo de cualquier consumidor anterior.
++   entry #event   el nombre del evento, `message` salvo que el flujo haya nombrado uno
++   entry #data   las líneas de datos, en orden; un consumidor las une con saltos de línea
++   entry #id   el id del evento, si el flujo estableció uno, que un cliente devuelve como `Last-Event-ID`
++   entry #retry   el intervalo de reconexión en milisegundos, si el flujo estableció uno
+
+- entry .internal   the macro implementations behind `JsonRpc.serve`, `JsonRpc.methods`, `JsonRpc#proxy` and `remote`
++ entry .internal   las implementaciones de macro detrás de `JsonRpc.serve`, `JsonRpc.methods`, `JsonRpc#proxy` y `remote`
+
+= entry .internal   the macro implementations behind `JsonRpc.serve`, `JsonRpc.methods`, `JsonRpc#proxy` and `remote`
+-   hidden
++   hidden
+
+= entry .internal   the macro implementations behind `JsonRpc.serve`, `JsonRpc.methods`, `JsonRpc#proxy` and `remote`
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object exists so that the JSON-RPC macros have a stable home.
+-       Each reads an interface's `@rpc` methods (inherited ones included) and generates code
+-       which `JsonRpc` and `remote` splice.
+-   entry .methodNames   the macro behind `JsonRpc.methods`: an interface's `@rpc` method names
+-   entry .dispatcher   the macro behind `JsonRpc.serve`: a match over method names, decoding and encoding each
+-   entry .remote   the macro behind `remote`: an object implementing the interface over HTTP POSTs
+-   entry .client   the macro behind `JsonRpc#proxy`: an object implementing the interface over a channel
++       No es para uso directo: el objeto existe para que las macros de JSON-RPC tengan un hogar
++       estable. Cada una lee los métodos `@rpc` de una interfaz (incluidos los heredados) y
++       genera código que insertan `JsonRpc` y `remote`.
++   entry .methodNames   la macro detrás de `JsonRpc.methods`: los nombres de los métodos `@rpc` de una interfaz
++   entry .dispatcher   la macro detrás de `JsonRpc.serve`: una coincidencia sobre los nombres de los métodos que decodifica y codifica cada uno
++   entry .remote   la macro detrás de `remote`: un objeto que implementa la interfaz mediante POST HTTP
++   entry .client   la macro detrás de `JsonRpc#proxy`: un objeto que implementa la interfaz sobre un canal
+
+- entry .Grpc   gRPC over HTTP/2: channels, endpoints, the canonical statuses, message framing and derived stubs
++ entry .Grpc   gRPC sobre HTTP/2: canales, endpoints, los estados canónicos, el entramado de mensajes y stubs derivados
+
+= entry .Grpc   gRPC over HTTP/2: channels, endpoints, the canonical statuses, message framing and derived stubs
+-   detail
++   detail
+
+-       `Grpc` groups the gRPC vocabulary — `Status`, `Method`, `Metadata`, `Endpoint`,
+-       `Channel`, `Error` and `Framing` — under one name, as `telekinesis` groups its types
+-       under `Http` and `Http2`. A `Grpc.Channel` is a single persistent HTTP/2 connection on
+-       which each call opens one multiplexed stream: the request is one length-prefixed
+-       Protocol Buffers message, the response is one message (`Channel#unary`) or a lazily
+-       decoded sequence of them (`Channel#serverStreaming`), and the canonical status arrives in
+-       the response's `grpc-status` trailer. `Grpc.remote` derives a typed stub for a service
+-       interface of `@rpc` methods over a channel, so a call is a method call.
++       `Grpc` agrupa el vocabulario de gRPC —`Status`, `Method`, `Metadata`, `Endpoint`,
++       `Channel`, `Error` y `Framing`— bajo un solo nombre, igual que `telekinesis` agrupa sus
++       tipos bajo `Http` y `Http2`. Un `Grpc.Channel` es una única conexión HTTP/2 persistente
++       en la que cada llamada abre un flujo multiplexado: la petición es un mensaje de Protocol
++       Buffers con prefijo de longitud, la respuesta es un mensaje (`Channel#unary`) o una
++       secuencia de ellos decodificada de forma perezosa (`Channel#serverStreaming`), y el
++       estado canónico llega en el tráiler `grpc-status` de la respuesta. `Grpc.remote` deriva
++       un stub tipado para una interfaz de servicio de métodos `@rpc` sobre un canal, así que
++       una llamada es una llamada a un método.
+
+=       interface of `@rpc` methods over a channel, so a call is a method call.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       typecheck
++       typecheck
+
+=       typecheck
+-       ##
++       ##
+
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       ##
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+-       import probates.cancelProbate
++       import probates.cancelProbate
+
+-       import logging.silentLogging
++       import logging.silentLogging
+
+-       case class Ping(message: Text)
++       case class Ping(message: Text)
+
+-       case class Pong(message: Text)
++       case class Pong(message: Text)
+
+-       trait Echo:
++       trait Echo:
+
+-         @rpc def call(request: Ping): Pong
++         @rpc def call(request: Ping): Pong
+
+-       supervise:
++       supervise:
+
+-         val endpoint = Endpoint(t"localhost", Port[Tcp](50051))
++         val endpoint = Endpoint(t"localhost", Port[Tcp](50051))
+
+-         val channel = Grpc.Channel(Http2.Endpoint(endpoint, t"localhost"))
++         val channel = Grpc.Channel(Http2.Endpoint(endpoint, t"localhost"))
+
+-         val echo = Grpc.remote[Echo](channel, t"echo.Echo")
++         val echo = Grpc.remote[Echo](channel, t"echo.Echo")
+
+-         echo.call(Ping(t"ping"))   // POST /echo.Echo/call, one message each way
++         echo.call(Ping(t"ping"))   // POST /echo.Echo/call, one message each way
+
+=         echo.call(Ping(t"ping"))   // POST /echo.Echo/call, one message each way
+-       ```
++       ```
+
+-       Messages are encoded and decoded with `locomotion`'s `Encodable in Protobuf` and
+-       `Decodable in Protobuf`, derived for case classes. The request is always one message:
+-       client-streaming and bidirectional calls wait on an `Http2` enhancement. A channel
+-       retains its connection, which holds the ambient `Monitor`, so a channel is a capability
+-       and lives inside a `supervise` scope; `Grpc.Endpoint(…).session: channel ?=> …` scopes
+-       one to a block instead, tearing the connection down when the block ends. A response
+-       with a non-`Ok` status, a non-200 HTTP status, a truncated body or no message raises
+-       `Grpc.Error`, whose `status` is the canonical `Grpc.Status`.
++       Los mensajes se codifican y decodifican con `Encodable in Protobuf` y
++       `Decodable in Protobuf` de `locomotion`, derivados para las case classes. La petición
++       es siempre un mensaje: las llamadas con flujo del cliente y bidireccionales esperan a
++       una mejora de `Http2`. Un canal retiene su conexión, que contiene el `Monitor`
++       ambiental, así que un canal es una capacidad y vive dentro de un ámbito `supervise`;
++       `Grpc.Endpoint(…).session: channel ?=> …` limita en cambio uno a un bloque, y cierra la
++       conexión cuando termina el bloque. Una respuesta con un estado distinto de `Ok`, un
++       estado HTTP distinto de 200, un cuerpo truncado o sin mensaje lanza `Grpc.Error`, cuyo
++       `status` es el `Grpc.Status` canónico.
+
+-   refer obligatory.GrpcSessional
++   refer obligatory.GrpcSessional
+
+=   refer obligatory.GrpcSessional
+-   refer obligatory.rpc
++   refer obligatory.rpc
+
+=   refer obligatory.rpc
+-   refer obligatory.Framable
++   refer obligatory.Framable
+
+-   entry .Status   the seventeen canonical gRPC status codes, carried in the `grpc-status` trailer
++   entry .Status   los diecisiete códigos de estado canónicos de gRPC, transportados en el tráiler `grpc-status`
+
+=   entry .Status   the seventeen canonical gRPC status codes, carried in the `grpc-status` trailer
+-     detail
++     detail
+
+-         An enum of the canonical codes, each with its numeric `#code`: `Ok` (0) is success and
+-         every other is a failure — `Cancelled` (1), `Unknown` (2), `InvalidArgument` (3),
+-         `DeadlineExceeded` (4), `NotFound` (5), `AlreadyExists` (6), `PermissionDenied` (7),
+-         `ResourceExhausted` (8), `FailedPrecondition` (9), `Aborted` (10), `OutOfRange` (11),
+-         `Unimplemented` (12), `Internal` (13), `Unavailable` (14), `DataLoss` (15) and
+-         `Unauthenticated` (16). A `Grpc.Error` carries the status the server returned, so a
+-         caller matches on it: `case Grpc.Error(Grpc.Status.NotFound, _) => …`. A
+-         transport-level failure the channel detects itself is reported as `Internal`.
+-     entry .of   the status of a numeric code, or `Unset` for an unrecognised one
+-         `Grpc.Status.of(5)` is `Grpc.Status.NotFound`. A channel reads the `grpc-status`
+-         trailer with this, treating a missing or unrecognised code as `Unknown`.
+-     entry .communicable   renders a status as its name, for `Grpc.Error`'s message
+-     entry #code   the numeric code, `0` to `16`
+-   entry .Method   a fully-qualified gRPC method: a service name and an rpc name
++         Un enum de los códigos canónicos, cada uno con su `#code` numérico: `Ok` (0) es el
++         éxito y todos los demás son fallos: `Cancelled` (1), `Unknown` (2),
++         `InvalidArgument` (3), `DeadlineExceeded` (4), `NotFound` (5), `AlreadyExists` (6),
++         `PermissionDenied` (7), `ResourceExhausted` (8), `FailedPrecondition` (9),
++         `Aborted` (10), `OutOfRange` (11), `Unimplemented` (12), `Internal` (13),
++         `Unavailable` (14), `DataLoss` (15) y `Unauthenticated` (16). Un `Grpc.Error` lleva el
++         estado que devolvió el servidor, así que quien llama hace coincidencia sobre él:
++         `case Grpc.Error(Grpc.Status.NotFound, _) => …`. Un fallo en el nivel del transporte
++         que detecta el propio canal se notifica como `Internal`.
++     entry .of   el estado de un código numérico, o `Unset` para uno no reconocido
++         `Grpc.Status.of(5)` es `Grpc.Status.NotFound`. Un canal lee con esto el tráiler
++         `grpc-status`, y trata un código ausente o no reconocido como `Unknown`.
++     entry .communicable   representa un estado como su nombre, para el mensaje de `Grpc.Error`
++     entry #code   el código numérico, de `0` a `16`
++   entry .Method   un método gRPC totalmente cualificado: un nombre de servicio y un nombre de rpc
+
+=   entry .Method   a fully-qualified gRPC method: a service name and an rpc name
+-     detail
++     detail
+
+-         `Grpc.Method(service, rpc)` names a method as the wire addresses it, by the HTTP/2
+-         `:path` `/<package>.<Service>/<Method>` — `Grpc.Method(t"grpc.health.v1.Health",
+-         t"Check")` for `/grpc.health.v1.Health/Check`. `Channel#unary` and
+-         `Channel#serverStreaming` take one; `Grpc.remote` builds one per `@rpc` method from the
+-         service name and the method's own name.
+-     entry #service   the fully-qualified service name, the package and the `Service`
+-     entry #rpc   the method's name within the service
+-     entry #path   the HTTP/2 `:path`, `/service/rpc`
+-   entry .Metadata   custom call metadata: key/value pairs sent as HTTP/2 headers with the call
++         `Grpc.Method(service, rpc)` nombra un método tal como lo direcciona la transmisión,
++         por el `:path` de HTTP/2 `/<package>.<Service>/<Method>`:
++         `Grpc.Method(t"grpc.health.v1.Health", t"Check")` para
++         `/grpc.health.v1.Health/Check`. `Channel#unary` y `Channel#serverStreaming` toman uno;
++         `Grpc.remote` construye uno por cada método `@rpc` a partir del nombre del servicio y
++         del propio nombre del método.
++     entry #service   el nombre totalmente cualificado del servicio, el paquete y el `Service`
++     entry #rpc   el nombre del método dentro del servicio
++     entry #path   el `:path` de HTTP/2, `/service/rpc`
++   entry .Metadata   metadatos personalizados de la llamada: pares clave/valor enviados como cabeceras HTTP/2 con la llamada
+
+=   entry .Metadata   custom call metadata: key/value pairs sent as HTTP/2 headers with the call
+-     detail
++     detail
+
+-         `Grpc.Metadata(entries)` is a list of header name and value pairs sent alongside the
+-         gRPC pseudo-headers — containerd's `containerd-namespace`, an authorisation token. A
+-         channel's `defaults` are sent with every call, and a call's own metadata is appended
+-         after them.
+-     entry #entries   the header name and value pairs, in order
+-   entry .Endpoint   a gRPC endpoint: the target of a scoped channel, `Grpc.Endpoint(…).session`
++         `Grpc.Metadata(entries)` es una lista de pares de nombre y valor de cabecera que se
++         envían junto a las pseudocabeceras de gRPC: el `containerd-namespace` de containerd,
++         un token de autorización. Los `defaults` de un canal se envían con cada llamada, y los
++         metadatos propios de una llamada se añaden tras ellos.
++     entry #entries   los pares de nombre y valor de cabecera, en orden
++   entry .Endpoint   un endpoint gRPC: el destino de un canal limitado a un ámbito, `Grpc.Endpoint(…).session`
+
+=   entry .Endpoint   a gRPC endpoint: the target of a scoped channel, `Grpc.Endpoint(…).session`
+-     detail
++     detail
+
+-         `Grpc.Endpoint(endpoint, defaults)` pairs an `Http2.Endpoint` — any `Connectable`,
+-         `Showable` address, such as a TCP `Endpoint` or a Unix socket — with the `Metadata`
+-         every call should carry. Its only use is as the subject of a session: the companion's
+-         `.sessional` given makes it `Sessional`, so `Grpc.Endpoint(…).session: channel ?=> …`
+-         opens the HTTP/2 connection, completes the handshake, lends a `Grpc.Channel^` to the
+-         block, and tears the connection down when the block ends — where `Grpc.Channel.apply`
+-         holds its connection open until the enclosing `supervise` scope ends.
++         `Grpc.Endpoint(endpoint, defaults)` empareja un `Http2.Endpoint` —cualquier dirección
++         `Connectable` y `Showable`, como un `Endpoint` TCP o un socket Unix— con los
++         `Metadata` que debe llevar cada llamada. Su único uso es como sujeto de una sesión: el
++         given `.sessional` del objeto compañero lo hace `Sessional`, así que
++         `Grpc.Endpoint(…).session: channel ?=> …` abre la conexión HTTP/2, completa el
++         handshake, presta un `Grpc.Channel^` al bloque y cierra la conexión cuando termina el
++         bloque, mientras que `Grpc.Channel.apply` mantiene su conexión abierta hasta que
++         termina el ámbito `supervise` que lo envuelve.
+
+=         holds its connection open until the enclosing `supervise` scope ends.
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         holds its connection open until the enclosing `supervise` scope ends.
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         holds its connection open until the enclosing `supervise` scope ends.
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         holds its connection open until the enclosing `supervise` scope ends.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+=         holds its connection open until the enclosing `supervise` scope ends.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         holds its connection open until the enclosing `supervise` scope ends.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=         import strategies.throwUnsafely
+-         import threads.virtualThreads
++         import threads.virtualThreads
+
+=         holds its connection open until the enclosing `supervise` scope ends.
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=         import strategies.throwUnsafely
+=         import threads.virtualThreads
+-         import probates.cancelProbate
++         import probates.cancelProbate
+
+-         import logging.silentLogging
++         import logging.silentLogging
+
+=         import logging.silentLogging
+=
+-         case class Ping(message: Text)
++         case class Ping(message: Text)
+
+=         import logging.silentLogging
+=
+=         case class Ping(message: Text)
+-         case class Pong(message: Text)
++         case class Pong(message: Text)
+
+=         import logging.silentLogging
+=
+=         case class Ping(message: Text)
+=         case class Pong(message: Text)
+=
+-         supervise:
++         supervise:
+
+-           val endpoint = Http2.Endpoint(Endpoint(t"localhost", Port[Tcp](50051)), t"localhost")
++           val endpoint = Http2.Endpoint(Endpoint(t"localhost", Port[Tcp](50051)), t"localhost")
+
+-           Grpc.Endpoint(endpoint).session: channel ?=>
++           Grpc.Endpoint(endpoint).session: channel ?=>
+
+-             channel.unary[Ping, Pong](Grpc.Method(t"echo.Echo", t"Call"), Ping(t"ping"))
++             channel.unary[Ping, Pong](Grpc.Method(t"echo.Echo", t"Call"), Ping(t"ping"))
+
+=             channel.unary[Ping, Pong](Grpc.Method(t"echo.Echo", t"Call"), Ping(t"ping"))
+-         ```
++         ```
+
+-         The channel is a fresh capability of the block: returning it, or anything which
+-         captures it, from the block is rejected by the capture checker.
+-     entry .sessional   the given which makes a `Grpc.Endpoint` the subject of a scoped channel session
+-         A `GrpcSessional[endpoint]`, in implicit scope, for any `Connectable`, `Showable`
+-         endpoint type. It needs a `Monitor`, a `Probate`, a `Tactic[Async.Error]`, a
+-         `Tactic[Socket.Error]` and a `Socket.Event is Loggable` in scope, and captures them,
+-         since the connection's reader and writer daemons run under them.
+-     entry #endpoint   the HTTP/2 endpoint to connect to
+-     entry #defaults   the metadata sent with every call on the channel
+-   entry .remote   `Grpc.remote[Interface](channel, service)`: a typed client stub over a channel
+-       A macro which builds an object implementing `Interface` from its `@rpc` methods, each
+-       of which must take exactly one request message. A method returning a value makes a
+-       `Channel#unary` call; one returning a `Chain[Response]` makes a `Channel#serverStreaming`
+-       call. The `:path` of each is `/service/method`, from the fully-qualified proto service
+-       name given and the method's own name, so `Grpc.remote[Echo](channel, t"echo.Echo")`
+-       sends `call` to `/echo.Echo/call`.
++         El canal es una capacidad nueva del bloque: el comprobador de capturas rechaza que se
++         devuelva desde el bloque, a él o a cualquier cosa que lo capture.
++     entry .sessional   el given que hace de un `Grpc.Endpoint` el sujeto de una sesión de canal limitada a un ámbito
++         Un `GrpcSessional[endpoint]`, en el ámbito implícito, para cualquier tipo de endpoint
++         `Connectable` y `Showable`. Necesita en el ámbito un `Monitor`, un `Probate`, una
++         `Tactic[Async.Error]`, una `Tactic[Socket.Error]` y un `Socket.Event is Loggable`, y
++         los captura, ya que los demonios lector y escritor de la conexión se ejecutan bajo
++         ellos.
++     entry #endpoint   el endpoint HTTP/2 al que conectarse
++     entry #defaults   los metadatos que se envían con cada llamada en el canal
++   entry .remote   `Grpc.remote[Interface](channel, service)`: un stub de cliente tipado sobre un canal
++       Una macro que construye un objeto que implementa `Interface` a partir de sus métodos
++       `@rpc`, cada uno de los cuales debe tomar exactamente un mensaje de petición. Un método
++       que devuelve un valor hace una llamada `Channel#unary`; uno que devuelve un
++       `Chain[Response]` hace una llamada `Channel#serverStreaming`. El `:path` de cada uno es
++       `/service/method`, a partir del nombre totalmente cualificado del servicio proto dado y
++       del propio nombre del método, así que `Grpc.remote[Echo](channel, t"echo.Echo")` envía
++       `call` a `/echo.Echo/call`.
+
+-       The Protocol Buffers codecs (`Encodable in Protobuf` for each request, `Decodable in
+-       Protobuf` for each response) and the call's capabilities — a `Monitor` and tactics for
+-       `Grpc.Error`, `Http2.Error`, `Async.Error` and `Protobuf.Error` — are summoned at the
+-       `remote` call site, so it must be invoked where they are in scope; the stub's methods
+-       then have the interface's plain signatures, and a failed call throws through the tactic
+-       captured there. A method with zero or several parameters is a compile error.
+-   entry .Channel   a gRPC channel over one persistent HTTP/2 connection, for unary and server-streaming calls
++       Los códecs de Protocol Buffers (`Encodable in Protobuf` para cada petición,
++       `Decodable in Protobuf` para cada respuesta) y las capacidades de la llamada —un
++       `Monitor` y tácticas para `Grpc.Error`, `Http2.Error`, `Async.Error` y
++       `Protobuf.Error`— se convocan en el punto de llamada de `remote`, así que debe
++       invocarse donde estén en el ámbito; los métodos del stub tienen entonces las
++       signaturas simples de la interfaz, y una llamada fallida lanza a través de la táctica
++       capturada allí. Un método con cero o con varios parámetros es un error de compilación.
++   entry .Channel   un canal gRPC sobre una conexión HTTP/2 persistente, para llamadas unarias y con flujo del servidor
+
+=   entry .Channel   a gRPC channel over one persistent HTTP/2 connection, for unary and server-streaming calls
+-     detail
++     detail
+
+-         A `Channel` wraps an `Http2.Connection`, the `:authority` to send, and the `Metadata`
+-         every call carries. `Channel.apply(endpoint)` opens one inside a `supervise` scope and
+-         leaves its connection open until the scope ends; `Grpc.Endpoint(…).session` lends one
+-         for the duration of a block. Each call is one HTTP/2 stream: a `POST` to the method's
+-         `:path` with `content-type: application/grpc+proto`, `te: trailers` and the metadata
+-         as headers, a body of exactly one `Grpc.Framing`-prefixed message, and a response
+-         whose messages are deframed from the body and whose status is read from the
+-         `grpc-status` and `grpc-message` fields of the trailers (or of the headers, for a
+-         Trailers-Only response).
++         Un `Channel` envuelve una `Http2.Connection`, la `:authority` que se envía y los
++         `Metadata` que lleva cada llamada. `Channel.apply(endpoint)` abre uno dentro de un
++         ámbito `supervise` y deja su conexión abierta hasta que termina el ámbito;
++         `Grpc.Endpoint(…).session` presta uno durante un bloque. Cada llamada es un flujo
++         HTTP/2: un `POST` al `:path` del método con `content-type: application/grpc+proto`,
++         `te: trailers` y los metadatos como cabeceras, un cuerpo de exactamente un mensaje con
++         el prefijo de `Grpc.Framing`, y una respuesta cuyos mensajes se desentraman del cuerpo
++         y cuyo estado se lee de los campos `grpc-status` y `grpc-message` de los tráileres (o
++         de las cabeceras, en una respuesta Trailers-Only).
+
+=         Trailers-Only response).
+=
+-         ```scala fuel
++         ```scala fuel
+
+=         Trailers-Only response).
+=
+=         ```scala fuel
+-         typecheck
++         typecheck
+
+=         Trailers-Only response).
+=
+=         ```scala fuel
+=         typecheck
+-         ##
++         ##
+
+=         Trailers-Only response).
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+-         import soundness.*
++         import soundness.*
+
+=         Trailers-Only response).
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+=         Trailers-Only response).
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=         import strategies.throwUnsafely
+-         import threads.virtualThreads
++         import threads.virtualThreads
+
+=         Trailers-Only response).
+=
+=         ```scala fuel
+=         typecheck
+=         ##
+=         import soundness.*
+=         import strategies.throwUnsafely
+=         import threads.virtualThreads
+-         import probates.cancelProbate
++         import probates.cancelProbate
+
+=         import probates.cancelProbate
+=
+-         case class Ping(message: Text)
++         case class Ping(message: Text)
+
+=         import probates.cancelProbate
+=
+=         case class Ping(message: Text)
+-         case class Pong(message: Text)
++         case class Pong(message: Text)
+
+=         import probates.cancelProbate
+=
+=         case class Ping(message: Text)
+=         case class Pong(message: Text)
+=
+-         supervise:
++         supervise:
+
+-           val channel = Grpc.Channel(Http2.Endpoint(Endpoint(t"localhost", Port[Tcp](50051)), t"localhost"))
++           val channel = Grpc.Channel(Http2.Endpoint(Endpoint(t"localhost", Port[Tcp](50051)), t"localhost"))
+
+-           val method = Grpc.Method(t"echo.Echo", t"Call")
++           val method = Grpc.Method(t"echo.Echo", t"Call")
+
+-           val pong: Pong = channel.unary[Ping, Pong](method, Ping(t"ping"))
++           val pong: Pong = channel.unary[Ping, Pong](method, Ping(t"ping"))
+
+-           val pongs: Chain[Pong] = channel.serverStreaming[Ping, Pong](method, Ping(t"ping"))
++           val pongs: Chain[Pong] = channel.serverStreaming[Ping, Pong](method, Ping(t"ping"))
+
+=           val pongs: Chain[Pong] = channel.serverStreaming[Ping, Pong](method, Ping(t"ping"))
+-         ```
++         ```
+
+-         A channel is a capability (`Channel^{monitor, caps.any}`), since its connection holds
+-         the ambient `Monitor`. The constructor `new Channel(connection, authority, defaults)`
+-         is public, for a connection opened by other means; the `Host` of the requests it
+-         builds is taken from the part of `authority` before any `:`, or is `Localhost` when
+-         that is not a hostname (a bracketed IPv6 literal, say), which is harmless as the
+-         HTTP/2 transport sends `authority` as `:authority` and ignores it.
+-     entry .apply   opens a channel to a cleartext (h2c) endpoint, completing the HTTP/2 handshake
+-         `Grpc.Channel(endpoint, defaults)` connects the `Http2.Endpoint`, completes the
+-         handshake and returns the channel. The connection's read and write daemons capture
+-         the ambient `Monitor` and `Probate`, so it must be called inside a `supervise` scope,
+-         and it needs a `Tactic[Async.Error]` and a `Tactic[Socket.Error]` for a connection
+-         which cannot be made. The connection stays open until the scope ends; for one scoped
+-         to a block, use `Grpc.Endpoint(…).session`.
+-     entry #unary   sends one message and reads exactly one response message, then checks the status
+-         `channel.unary[Request, Response](method, value, metadata)` encodes `value` with its
+-         `Encodable in Protobuf`, sends it, decodes the first response message with the
+-         `Decodable in Protobuf` for `Response` and returns it. It needs a `Monitor` and tactics
+-         for `Grpc.Error`, `Http2.Error`, `Async.Error` and `Protobuf.Error`. The trailing
+-         status is checked before a message is demanded, so a Trailers-Only error response
+-         raises `Grpc.Error` with its real status rather than `Internal` for a missing message;
+-         an HTTP status other than 200, a truncated body, or a successful status with no
+-         message each raise `Grpc.Error(Internal, …)`.
+-     entry #serverStreaming   sends one message and lazily decodes each response message as a `Chain`
+-         `channel.serverStreaming[Request, Response](method, value, metadata)` is as `#unary`,
+-         but returns the `Chain[Response]` of every message in the response body, decoded as
+-         the chain is forced. The trailing status is verified only once the body is exhausted,
+-         so a non-`Ok` status is raised at the chain's end, and the chain must be consumed
+-         within the `supervise` scope which owns the channel.
+-   entry .Error   raised when a gRPC call fails: the canonical status and the server's message
++         Un canal es una capacidad (`Channel^{monitor, caps.any}`), ya que su conexión contiene
++         el `Monitor` ambiental. El constructor `new Channel(connection, authority, defaults)`
++         es público, para una conexión abierta por otros medios; el `Host` de las peticiones
++         que construye se toma de la parte de `authority` anterior a cualquier `:`, o es
++         `Localhost` cuando no es un nombre de host (un literal IPv6 entre corchetes, por
++         ejemplo), lo cual es inofensivo, ya que el transporte HTTP/2 envía `authority` como
++         `:authority` y lo ignora.
++     entry .apply   abre un canal a un endpoint en claro (h2c) y completa el handshake de HTTP/2
++         `Grpc.Channel(endpoint, defaults)` conecta el `Http2.Endpoint`, completa el handshake
++         y devuelve el canal. Los demonios de lectura y escritura de la conexión capturan el
++         `Monitor` y el `Probate` ambientales, así que debe llamarse dentro de un ámbito
++         `supervise`, y necesita una `Tactic[Async.Error]` y una `Tactic[Socket.Error]` para
++         una conexión que no pueda establecerse. La conexión permanece abierta hasta que termina
++         el ámbito; para una limitada a un bloque, usa `Grpc.Endpoint(…).session`.
++     entry #unary   envía un mensaje, lee exactamente un mensaje de respuesta y después comprueba el estado
++         `channel.unary[Request, Response](method, value, metadata)` codifica `value` con su
++         `Encodable in Protobuf`, lo envía, decodifica el primer mensaje de respuesta con el
++         `Decodable in Protobuf` de `Response` y lo devuelve. Necesita un `Monitor` y tácticas
++         para `Grpc.Error`, `Http2.Error`, `Async.Error` y `Protobuf.Error`. El estado final se
++         comprueba antes de exigir un mensaje, así que una respuesta de error Trailers-Only
++         lanza `Grpc.Error` con su estado real en lugar de `Internal` por un mensaje ausente;
++         un estado HTTP distinto de 200, un cuerpo truncado o un estado de éxito sin mensaje
++         lanzan cada uno `Grpc.Error(Internal, …)`.
++     entry #serverStreaming   envía un mensaje y decodifica de forma perezosa cada mensaje de respuesta como una `Chain`
++         `channel.serverStreaming[Request, Response](method, value, metadata)` es como
++         `#unary`, pero devuelve la `Chain[Response]` de todos los mensajes del cuerpo de la
++         respuesta, decodificados a medida que se fuerza la cadena. El estado final solo se
++         verifica una vez agotado el cuerpo, así que un estado distinto de `Ok` se lanza al
++         final de la cadena, y la cadena debe consumirse dentro del ámbito `supervise` al que
++         pertenece el canal.
++   entry .Error   se lanza cuando falla una llamada gRPC: el estado canónico y el mensaje del servidor
+
+=   entry .Error   raised when a gRPC call fails: the canonical status and the server's message
+-     detail
++     detail
+
+-         _the gRPC call failed with status `status`: `detail`_. Raised by `Channel#unary` and
+-         `Channel#serverStreaming` (and so by every `Grpc.remote` stub method) when the
+-         response's `grpc-status` is not `Ok`, with `#status` the canonical `Grpc.Status` and
+-         `#detail` the `grpc-message` text; and with `Grpc.Status.Internal` and a local
+-         diagnostic when the server returned an HTTP status other than 200, sent no message to
+-         a unary call, cut the response short, or sent a truncated message frame
+-         (`Grpc.Framing.framable`). The error carries no fulminate error number.
+-     entry #status   the canonical status, mirroring the `grpc-status` code
+-     entry #detail   the `grpc-message` text, or a local diagnostic
+-   entry .Framing   gRPC's message framing: a compression flag byte, a four-byte length, then the payload
++         _the gRPC call failed with status `status`: `detail`_. Lo lanzan `Channel#unary` y
++         `Channel#serverStreaming` (y, por tanto, todos los métodos de stub de `Grpc.remote`)
++         cuando el `grpc-status` de la respuesta no es `Ok`, con `#status` el `Grpc.Status`
++         canónico y `#detail` el texto de `grpc-message`; y con `Grpc.Status.Internal` y un
++         diagnóstico local cuando el servidor devolvió un estado HTTP distinto de 200, no envió
++         ningún mensaje a una llamada unaria, cortó la respuesta o envió una trama de mensaje
++         truncada (`Grpc.Framing.framable`). El error no lleva número de error de fulminate.
++     entry #status   el estado canónico, que refleja el código de `grpc-status`
++     entry #detail   el texto de `grpc-message`, o un diagnóstico local
++   entry .Framing   el entramado de mensajes de gRPC: un byte de indicador de compresión, una longitud de cuatro bytes y después la carga útil
+
+=   entry .Framing   gRPC's message framing: a compression flag byte, a four-byte length, then the payload
+-     detail
++     detail
+
+-         Every gRPC message, whatever its codec, is prefixed on the wire by one byte which is
+-         `1` if the payload is compressed with the call's `grpc-encoding` (gzip here) and `0`
+-         otherwise, then its length as four big-endian bytes. `.encode` prefixes one message,
+-         and `.framable` reassembles whole messages from an arbitrarily chunked response body,
+-         so `body.frames[Grpc.Framing]` is the `Iterator[Data]` of its messages, decompressed
+-         where flagged. `Grpc.Framing` is the sealed type the convention is named by; its
+-         failures are `Grpc.Error`, not `Framing.Error`.
++         Todo mensaje gRPC, sea cual sea su códec, lleva en la transmisión el prefijo de un
++         byte que es `1` si la carga útil está comprimida con el `grpc-encoding` de la llamada
++         (aquí, gzip) y `0` en caso contrario, y después su longitud en cuatro bytes big-endian.
++         `.encode` pone el prefijo a un mensaje, y `.framable` vuelve a montar mensajes
++         completos a partir de un cuerpo de respuesta dividido en fragmentos arbitrarios, así
++         que `body.frames[Grpc.Framing]` es el `Iterator[Data]` de sus mensajes, descomprimidos
++         donde lo indica el indicador. `Grpc.Framing` es el tipo sellado con el que se nombra
++         la convención; sus fallos son `Grpc.Error`, no `Framing.Error`.
+
+=         failures are `Grpc.Error`, not `Framing.Error`.
+=
+-         ```scala
++         ```scala
+
+=         failures are `Grpc.Error`, not `Framing.Error`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         failures are `Grpc.Error`, not `Framing.Error`.
+=
+=         ```scala
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         import codepages.utf8Codepage
++         import codepages.utf8Codepage
+
+-         val framed: Data = Grpc.Framing.encode(t"hello".in[Data])   // 00 00 00 00 05, then the five bytes
++         val framed: Data = Grpc.Framing.encode(t"hello".in[Data])   // 00 00 00 00 05, then the five bytes
+
+-         Chain(framed).frames[Grpc.Framing].to[List].map(_.utf8)     // List(t"hello")
++         Chain(framed).frames[Grpc.Framing].to[List].map(_.utf8)     // List(t"hello")
+
+-         Chain(Grpc.Framing.encode(t"compress me please".in[Data], compress = true))
++         Chain(Grpc.Framing.encode(t"compress me please".in[Data], compress = true))
+
+-         . frames[Grpc.Framing].to[List].map(_.utf8)                 // List(t"compress me please")
++         . frames[Grpc.Framing].to[List].map(_.utf8)                 // List(t"compress me please")
+
+=         . frames[Grpc.Framing].to[List].map(_.utf8)                 // List(t"compress me please")
+-         ```
++         ```
+
+-     entry .encode   prefixes one message for the wire, gzip-compressing it if asked
+-         `Grpc.Framing.encode(message, compress)` is the five-byte header followed by the
+-         payload: the message as given, or its gzip compression with the flag byte set when
+-         `compress` is `true` (it is `false` unless set). The channel sends every request
+-         message uncompressed.
+-     entry .framable   the `Data is Framable by Grpc.Framing` given; needs a `Tactic[Grpc.Error]`
+-         In implicit scope. Reads each five-byte header and takes that many bytes, gunzipping
+-         a payload whose flag is set; the input ending at a message boundary ends the
+-         iterator, and ending inside a header or a payload raises `Grpc.Error(Internal,
+-         "the gRPC message frame was truncated")`. Lengths are masked byte by byte, so a
+-         message of 128 bytes or more is framed correctly.
++     entry .encode   pone el prefijo a un mensaje para la transmisión, y lo comprime con gzip si se pide
++         `Grpc.Framing.encode(message, compress)` es la cabecera de cinco bytes seguida de la
++         carga útil: el mensaje tal como se da, o su compresión gzip con el byte de indicador
++         activado cuando `compress` es `true` (es `false` salvo que se active). El canal envía
++         todos los mensajes de petición sin comprimir.
++     entry .framable   el given `Data is Framable by Grpc.Framing`; necesita una `Tactic[Grpc.Error]`
++         En el ámbito implícito. Lee cada cabecera de cinco bytes y toma ese número de bytes,
++         descomprimiendo con gunzip una carga útil cuyo indicador esté activado; si la entrada
++         termina en una frontera de mensaje, termina el iterador, y si termina dentro de una
++         cabecera o de una carga útil, se lanza `Grpc.Error(Internal,
++         "the gRPC message frame was truncated")`. Las longitudes se enmascaran byte a byte,
++         así que un mensaje de 128 bytes o más se entrama correctamente.
+
+- entry .GrpcSessional   the `Sessional` instance which lends a scoped `Grpc.Channel` for a `Grpc.Endpoint`
++ entry .GrpcSessional   la instancia de `Sessional` que presta un `Grpc.Channel` limitado a un ámbito para un `Grpc.Endpoint`
+
+= entry .GrpcSessional   the `Sessional` instance which lends a scoped `Grpc.Channel` for a `Grpc.Endpoint`
+-   detail
++   detail
+
+-       `GrpcSessional[endpoint]` is the class behind `Grpc.Endpoint.sessional`: its `Self` is
+-       `Grpc.Endpoint[endpoint]` and its `Result` is a fresh `Grpc.Channel^`. `session(target)`
+-       opens the endpoint's HTTP/2 connection through `Http2.EndpointSessional`, completes the
+-       handshake, lends a channel over it to the block, and tears the connection and its
+-       reader and writer daemons down when the block ends — unlike `Grpc.Channel.apply`,
+-       whose connection a parked daemon holds open until the enclosing `supervise` scope ends.
+-       It is a named class rather than an anonymous given because an anonymous instance would
+-       freshen the capability types in its inferred `Result`.
++       `GrpcSessional[endpoint]` es la clase detrás de `Grpc.Endpoint.sessional`: su `Self` es
++       `Grpc.Endpoint[endpoint]` y su `Result` es un `Grpc.Channel^` nuevo. `session(target)`
++       abre la conexión HTTP/2 del endpoint mediante `Http2.EndpointSessional`, completa el
++       handshake, presta al bloque un canal sobre ella y cierra la conexión y sus demonios
++       lector y escritor cuando termina el bloque, a diferencia de `Grpc.Channel.apply`, cuya
++       conexión mantiene abierta un demonio aparcado hasta que termina el ámbito `supervise`
++       que lo envuelve. Es una clase con nombre y no un given anónimo porque una instancia
++       anónima refrescaría los tipos de capacidad de su `Result` inferido.
+
+-       It is constructed with a `Monitor`, a `Probate`, a `Tactic[Async.Error]`, a
+-       `Tactic[Socket.Error]` and a `Socket.Event is Loggable`, all of which
+-       `Grpc.Endpoint.sessional` takes from scope; a user writes
+-       `Grpc.Endpoint(endpoint).session: channel ?=> …` and never names the class.
++       Se construye con un `Monitor`, un `Probate`, una `Tactic[Async.Error]`, una
++       `Tactic[Socket.Error]` y un `Socket.Event is Loggable`, todos los cuales toma
++       `Grpc.Endpoint.sessional` del ámbito; un usuario escribe
++       `Grpc.Endpoint(endpoint).session: channel ?=> …` y nunca nombra la clase.
+
+-   refer obligatory.Grpc
++   refer obligatory.Grpc
+
+-   entry #Self   the subject type, `Grpc.Endpoint[endpoint]`
+-   entry #Result   the lent value, a fresh `Grpc.Channel^` which may not escape the block
+-   entry #session   opens the connection, lends a channel to the block, and closes it after
+-       `session(target)(lambda)`: the block receives the `Grpc.Channel^` as a contextual
+-       value, so a call inside it is `channel.unary[…](…)` with `channel` the context parameter
+-       the block names. A connection which cannot be made raises `Socket.Error` or
+-       `Async.Error` through the tactics the instance captured.
++   entry #Self   el tipo del sujeto, `Grpc.Endpoint[endpoint]`
++   entry #Result   el valor prestado, un `Grpc.Channel^` nuevo que no puede escapar del bloque
++   entry #session   abre la conexión, presta un canal al bloque y después la cierra
++       `session(target)(lambda)`: el bloque recibe el `Grpc.Channel^` como valor contextual,
++       así que una llamada dentro de él es `channel.unary[…](…)`, donde `channel` es el
++       parámetro de contexto que nombra el bloque. Una conexión que no puede establecerse
++       lanza `Socket.Error` o `Async.Error` a través de las tácticas que capturó la
++       instancia.
+
+- entry .grpcInternal   the macro implementation behind `Grpc.remote`
++ entry .grpcInternal   la implementación de macro detrás de `Grpc.remote`
+
+= entry .grpcInternal   the macro implementation behind `Grpc.remote`
+-   hidden
++   hidden
+
+= entry .grpcInternal   the macro implementation behind `Grpc.remote`
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object exists so that the gRPC stub macro has a stable home.
+-   entry .remote   the macro behind `Grpc.remote`: an object implementing the interface over a channel
+-       For each `@rpc` method of the interface, generates a body which summons the Protocol
+-       Buffers codecs, the `Monitor` and the four tactics at the expansion site and calls
+-       `Grpc.Channel#unary` or, for a `Chain` result, `Grpc.Channel#serverStreaming`.
++       No es para uso directo: el objeto existe para que la macro de stubs de gRPC tenga un
++       hogar estable.
++   entry .remote   la macro detrás de `Grpc.remote`: un objeto que implementa la interfaz sobre un canal
++       Para cada método `@rpc` de la interfaz, genera un cuerpo que convoca los códecs de
++       Protocol Buffers, el `Monitor` y las cuatro tácticas en el punto de expansión, y llama a
++       `Grpc.Channel#unary` o, para un resultado `Chain`, a `Grpc.Channel#serverStreaming`.

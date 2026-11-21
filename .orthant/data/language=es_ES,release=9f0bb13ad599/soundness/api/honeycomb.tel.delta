@@ -1,0 +1,780 @@
+orthant 1 language
+
+-   entry .globalAttribute   makes the given for an attribute valid on every element
+-       `globalAttribute["title", Textual]()` builds a `"title" is Attribute of Textual in
+-       Whatwg` with no element set and `global` true, so it `targets` every element. The
+-       specification's global attributes (`id`, `class`, `style`, `title`, `lang`, `dir`,
+-       `hidden`, `tabindex`, `accesskey`, and the rest) are all defined with it.
+-   entry .AccessKeys   the value marker of `accesskey`: an ordered set of key labels
+-   entry .Affirmation   the value marker of `translate`: `yes` or `no`
+-   entry .Autocapitalization   the value marker of `autocapitalize`: `off`, `none`, `on`, `sentences`, `words` or `characters`
+-   entry .ButtonType   the value marker of a `<button>`'s `type`: `submit`, `reset` or `button`
+-   entry .Closedby   the value marker of a `<dialog>`'s `closedby`: `any`, `closerequest` or `none`
+-   entry .Color   the value marker of a CSS colour, as `<link color>` takes
+-   entry .Colorspace   the value marker of an `<input type="color">`'s `colorspace`
+-   entry .Command   the value marker of a `<button>`'s `command`: a built-in command name or a custom `--name`
+-   entry .ContentEditable   the value marker of `contenteditable`: `true`, `false`, `plaintext-only` or empty
+-   entry .Coords   the value marker of an `<area>`'s `coords`: a comma-separated list of numbers
+-   entry .Crossorigin   the value marker of `crossorigin`: `anonymous` or `use-credentials`
+-       The marker only; the `honeycomb.Crossorigin` enum has the two values, but has no
+-       `Attributive` of its own, so it is passed as `.show` with `attributives.textAttributive`
+-       in scope.
+-   entry .CustomElementName   the value marker of `is`: a custom element name, containing a hyphen
+-   entry .Css   the value marker of `style`: inline CSS declarations
+-       `Attributive.style` accepts a `Text` for it.
+-   entry .CssClassList   the value marker of `class`: space-separated CSS class names
+-       Accepts a `Name[CssClass]`, a `List[Name[CssClass]]` or a `ClassList`
+-       (`Attributive.cssClass`, `.cssClassList` and `.classList`); an empty list omits the
+-       attribute altogether.
+-   entry .Datetime   the value marker of a `<del>` or `<ins>`'s `datetime`: a date, or a date and time
+-   entry .Decimal   the value marker of a floating-point attribute: `step`, `min`, `max` and `value` of `<meter>`, `high`, `low`, `optimum`
+-       `Attributive.double` accepts a `Double` for it.
+-   entry .Decoding   the value marker of an `<img>`'s `decoding`: `sync`, `async` or `auto`
+-   entry .Dir   the value marker of `dir`: `ltr`, `rtl` or `auto`
+-       `HDir` is the enum of its values, and carries its own `Attributive`, so
+-       `Body(dir = HDir.Rtl)` compiles with no further import.
+-   entry .Enctype   the value marker of `enctype` and `formenctype`: a form-encoding MIME type
+-   entry .EnterKeyHint   the value marker of `enterkeyhint`: `enter`, `done`, `go`, `next`, `previous`, `search` or `send`
+-   entry .FetchPriority   the value marker of `fetchpriority`: `high`, `low` or `auto`
+-   entry .HashName   the value marker of `usemap`: a `#`-prefixed reference to a `<map>`'s name
+-   entry .Hidden   the value marker of `hidden`: present, or `until-found`
+-   entry .HttpEquiv   the value marker of a `<meta>`'s `http-equiv`: a pragma directive name
+-       The `honeycomb.HttpEquiv` enum has the four directives, passed as `.show`.
+-   entry .Id   the value marker of `id`, and of attributes which name one element by its id
+-       `for`, `form`, `list`, `commandfor` and `popovertarget` all take an `Id`.
+-       `Attributive.domId` accepts a `Name[DomId]` for it.
+-   entry .Ids   the value marker of a space-separated list of ids: `headers`, `itemref`, an `<output>`'s `for`
+-       `Attributive.domIds` accepts a `List[Name[DomId]]`, omitting the attribute when the
+-       list is empty.
+-   entry .ImageSizes   the value marker of a `<link>`'s `imagesizes`: a source-size list for a preloaded image
+-   entry .ImageSrcSet   the value marker of a `<link>`'s `imagesrcset`: a srcset for a preloaded image
+-   entry .InputMode   the value marker of `inputmode`: `none`, `text`, `tel`, `url`, `email`, `numeric`, `decimal` or `search`
+-   entry .InputType   the value marker of an `<input>`'s `type`
+-       The `#Input` object offers each type as a preset tag (`Input.Email`, `Input.Checkbox`,
+-       …) so the attribute is rarely written directly.
+-   entry .InputValue   the value marker of an `<input>`'s `value`, whose form depends on the input's type
+-   entry .Integral   the value marker of a signed integer attribute: `tabindex`, `start`, an `<li>`'s `value`
+-       `Attributive.int` accepts an `Int` for it.
+-   entry .ItemProp   the value marker of `itemprop`: microdata property names
+-   entry .Kind   the value marker of a `<track>`'s `kind`: `subtitles`, `captions`, `descriptions`, `chapters` or `metadata`
+-       The `#Track` object offers each kind as a preset tag; the `honeycomb.Kind` enum has the
+-       values.
+-   entry .Language   the value marker of `lang`, `hreflang` and `srclang`: a BCP 47 language tag
+-   entry .Laziness   the value marker of `loading`: `lazy` or `eager`
+-   entry .MediaQueryList   the value marker of `media`: a CSS media query list
+-   entry .Method   the value marker of `method` and `formmethod`: `get`, `post` or `dialog`
+-       The `honeycomb.Method` enum has the three values, passed as `.show`.
+-   entry .Minmax   the value marker of an `<input>`'s `min` and `max`, whose form depends on the input's type
+-   entry .MimeList   the value marker of `accept`: a comma-separated list of MIME types and extensions
+-   entry .Mime   the value marker of a single MIME type: `type` on `<a>`, `<link>`, `<embed>`, `<object>` and `<source>`
+-   entry .Name   the value marker of `name`: a form-control, form, map, meta or slot name
+-   entry .OlType   the value marker of an `<ol>`'s `type`: `1`, `a`, `A`, `i` or `I`
+-   entry .Openness   the value marker of a `<template>`'s `shadowrootmode`: `open` or `closed`
+-   entry .PermissionsPolicy   the value marker of an `<iframe>`'s `allow`: a permissions policy
+-   entry .Popover   the value marker of `popover`: `auto`, `manual` or `hint`
+-   entry .PopoverAction   the value marker of `popovertargetaction`: `toggle`, `show` or `hide`
+-   entry .PositiveInt   the value marker of a non-negative integer attribute: `width`, `height`, `rows`, `cols`, `colspan`, `span`, `size`, …
+-       `Attributive.posInt` accepts an `Int` for it; the value is not checked for sign.
+-   entry .Presence   the value marker of a boolean attribute: present or absent, with no value
+-       `disabled`, `checked`, `hidden`'s plain form, `required`, `autofocus`, `controls`,
+-       `open`, and every other attribute whose presence is its meaning. `Attributive.boolean`
+-       accepts a `Boolean`: `true` writes the bare attribute (`<input disabled>`) and `false`
+-       omits it.
+-   entry .Preload   the value marker of `preload`: `none`, `metadata` or `auto`
+-       The `honeycomb.Preload` enum has the values, passed as `.show`.
+-   entry .ReferrerPolicy   the value marker of `referrerpolicy`: a referrer policy name
+-   entry .Regex   the value marker of an `<input>`'s `pattern`: a JavaScript regular expression
+-   entry .Sandbox   the value marker of an `<iframe>`'s `sandbox`: space-separated `allow-…` tokens
+-       The `honeycomb.Sandbox` enum has the tokens, passed as `.show`.
+-   entry .ScriptType   the value marker of a `<script>`'s `type`: `module`, `importmap`, a MIME type, or a data block type
+-   entry .Scripting   the value marker of an event-handler attribute, which takes a script rather than text
+-       No `Attributive` for `Text` exists for it, deliberately: a handler is supplied as a
+-       typed scripting value, such as a querencia foreign DOM expression, for which the
+-       scripting library provides the `Attributive to Whatwg.Scripting`. The WHATWG vocabulary
+-       declares no `on…` attribute givens itself; `Html4Transitional` does.
+-   entry .Shape   the value marker of an `<area>`'s `shape`: `circle`, `default`, `poly` or `rect`
+-   entry .Sizes   the value marker of a `<link rel="icon">`'s `sizes`: `any` or `WxH` tokens
+-   entry .Softness   the value marker of a `<textarea>`'s `wrap`: `soft` or `hard`
+-       The `honeycomb.Wrap` enum has the two values, passed as `.show`.
+-   entry .SourceSizeList   the value marker of an `<img>` or `<source>`'s `sizes`
+-   entry .Srcdoc   the value marker of an `<iframe>`'s `srcdoc`: a whole HTML document, as text
+-   entry .SrcSet   the value marker of `srcset`: candidate image sources with their descriptors
+-   entry .Switch   the value marker of `autocomplete`: `on` or `off`
+-       `Attributive.switch` accepts a `Boolean`, written as `on` or `off`; the
+-       `honeycomb.Autocomplete` enum has the same two values.
+-   entry .Target   the value marker of `target` and `formtarget`: a browsing-context name or keyword
+-       The `honeycomb.Target` enum has `_self`, `_blank`, `_parent`, `_top` and a named
+-       context, passed as `.show`.
+-   entry .Temporal   the value marker of a `<time>`'s `datetime`: any of the specification's date, time and duration forms
+-   entry .Textual   the value marker of an attribute which takes any text
+-       `alt`, `title`, `placeholder`, `content`, `label`, `slot`, `nonce`, `integrity`, and
+-       the rest. `Attributive.textTextual` and `.stringTextual` accept a `Text` or a `String`
+-       for it, without any import; the `attributives.textAttributive` choice given extends the
+-       same acceptance to every other marker.
+-   entry .ThScope   the value marker of a `<th>`'s `scope`: `row`, `col`, `rowgroup` or `colgroup`
+-   entry .Tokens   the value marker of a space-separated token list: `rel`, `blocking`
+-       The `honeycomb.Rel` enum has the link types, passed as `.show`.
+-   entry .Truth   the value marker of an attribute written `true` or `false`: `draggable`, `spellcheck`, `writingsuggestions`
+-       `Attributive.truth` accepts a `Boolean`, written as the word `true` or `false`, unlike a
+-       `Presence` attribute which is written or omitted.
+-   entry .Upto8   the value marker of `headingoffset`: an integer from 0 to 8
+-   entry .Url   the value marker of a URL-valued attribute: `href`, `src`, `action`, `cite`, `poster`, `data`, `itemid`, …
+-       `Attributive.url` accepts any value which is `Abstractable across Urls to Text` — an
+-       `HttpUrl`, or any typed URL — and a `Text` once `attributives.textAttributive` is in
+-       scope.
+-   entry .Urls   the value marker of a space-separated list of URLs: `ping`, `itemtype`
+-   entry .Utf8   the value marker of `charset` and `accept-charset`, whose only valid value is `utf-8`
+-   entry .abbr   `abbr` on `<th>`: an abbreviated header, as `Textual`
+-   entry .accept   `accept` on `<input>`: the file types accepted, as `MimeList`
+-   entry .acceptCharset   `accept-charset` on `<form>`: the form's accepted encoding, as `Utf8`
+-       The given is named `acceptCharset`; the attribute it registers is `accept-charset`.
+-   entry .accesskey   `accesskey` on every element: keyboard shortcut labels, as `AccessKeys`
+-   entry .action   `action` on `<form>`: the URL the form submits to, as `Url`
+-   entry .allow   `allow` on `<iframe>`: the frame's permissions policy, as `PermissionsPolicy`
+-   entry .allowfullscreen   `allowfullscreen` on `<iframe>`: a `Presence`
+-   entry .alpha   `alpha` on `<input>`: whether a colour input has an alpha channel, as `Presence`
+-   entry .alt   `alt` on `<area>`, `<img>` and `<input>`: replacement text, as `Textual`
+-   entry .as   `as` on `<link>`: the destination type of a preload, as `Textual`
+-   entry .async   `async` on `<script>`: a `Presence`
+-   entry .autocapitalize   `autocapitalize` on every element, as `Autocapitalization`
+-   entry .autocomplete   `autocomplete` on `<form>`: `on` or `off`, as `Switch`
+-   entry .autocomplete2   `autocomplete` on `<input>`, `<select>` and `<textarea>`, as `Switch`
+-   entry .autocorrect   `autocorrect` on every element, as `Textual`
+-   entry .autofocus   `autofocus` on every element: a `Presence`
+-   entry .autoplay   `autoplay` on `<audio>` and `<video>`: a `Presence`
+-   entry .blocking   `blocking` on `<link>`, `<script>` and `<style>`: render-blocking tokens, as `Tokens`
+-   entry .charset   `charset` on `<meta>`: the document encoding, as `Utf8`
+-   entry .checked   `checked` on `<input>`: a `Presence`
+-   entry .cite   `cite` on `<blockquote>`, `<del>`, `<ins>` and `<q>`: the source URL, as `Url`
+-   entry .class   `class` on every element: CSS class names, as `CssClassList`
+-       Written as `` `class` = … `` since `class` is a keyword; the usual way is the
+-       `Tag.name(children)` form (`Div.panel(…)`), which an `Attribution` in scope permits.
+-   entry .closedby   `closedby` on `<dialog>`, as `Closedby`
+-   entry .color   `color` on `<link>`: a mask icon's colour, as `Color`
+-   entry .colorspace   `colorspace` on `<input>`, as `Colorspace`
+-   entry .cols   `cols` on `<textarea>`: the visible width in characters, as `PositiveInt`
+-   entry .colspan   `colspan` on `<td>` and `<th>`, as `PositiveInt`
+-   entry .command   `command` on `<button>`: the command to invoke, as `Command`
+-   entry .commandfor   `commandfor` on `<button>`: the id of the target element, as `Id`
+-   entry .content   `content` on `<meta>`: the metadata value, as `Textual`
+-   entry .contenteditable   `contenteditable` on every element, as `ContentEditable`
+-   entry .controls   `controls` on `<audio>` and `<video>`: a `Presence`
+-   entry .coords   `coords` on `<area>`, as `Coords`
+-   entry .crossorigin   `crossorigin` on `<audio>`, `<img>`, `<link>`, `<script>` and `<video>`, as `Crossorigin`
+-   entry .data   `data` on `<object>`: the resource URL, as `Url`
+-   entry .datetime   `datetime` on `<del>` and `<ins>`: when the change was made, as `Datetime`
+-   entry .datetime2   `datetime` on `<time>`: the machine-readable form, as `Temporal`
+-   entry .decoding   `decoding` on `<img>`, as `Decoding`
+-   entry .default   `default` on `<track>`: a `Presence`
+-   entry .defer   `defer` on `<script>`: a `Presence`
+-   entry .dir   `dir` on every element: text direction, as `Dir`
+-       `Body(dir = HDir.Rtl)` compiles without an import, through `HDir.attributive`.
+-   entry .dirname   `dirname` on `<input>` and `<textarea>`: the field name for the direction, as `Textual`
+-   entry .disabled   `disabled` on `<button>`, `<input>`, `<optgroup>`, `<option>`, `<select>` and `<textarea>`: a `Presence`
+-   entry .disabled2   `disabled` on `<fieldset>`: a `Presence`
+-   entry .disabled3   `disabled` on `<link>`: a `Presence`
+-   entry .download4   `download` on `<a>` and `<area>`: the suggested filename, as `Textual`
+-   entry .draggable   `draggable` on every element: `true` or `false`, as `Truth`
+-   entry .enctype   `enctype` on `<form>`, as `Enctype`
+-   entry .enterkeyhint   `enterkeyhint` on every element, as `EnterKeyHint`
+-   entry .fetchpriority   `fetchpriority` on `<img>`, `<link>` and `<script>`, as `FetchPriority`
+-   entry .for   `for` on `<label>`: the id of the labelled control, as `Id`
+-       Written as `` `for` = … `` since `for` is a keyword.
+-   entry .for2   `for` on `<output>`: the ids of the contributing controls, as `Ids`
+-   entry .form   `form` on a form control: the id of the form it belongs to, as `Id`
+-       On `<button>`, `<fieldset>`, `<input>`, `<object>`, `<output>`, `<select>` and
++   entry .globalAttribute   crea el given de un atributo válido en todos los elementos
++       `globalAttribute["title", Textual]()` construye un `"title" is Attribute of Textual in
++       Whatwg` sin conjunto de elementos y con `global` a true, de modo que `targets` todos los
++       elementos. Los atributos globales de la especificación (`id`, `class`, `style`, `title`,
++       `lang`, `dir`, `hidden`, `tabindex`, `accesskey` y los demás) se definen todos con él.
++   entry .AccessKeys   el marcador de valor de `accesskey`: un conjunto ordenado de nombres de teclas
++   entry .Affirmation   el marcador de valor de `translate`: `yes` o `no`
++   entry .Autocapitalization   el marcador de valor de `autocapitalize`: `off`, `none`, `on`, `sentences`, `words` o `characters`
++   entry .ButtonType   el marcador de valor del `type` de un `<button>`: `submit`, `reset` o `button`
++   entry .Closedby   el marcador de valor del `closedby` de un `<dialog>`: `any`, `closerequest` o `none`
++   entry .Color   el marcador de valor de un color CSS, como el que admite `<link color>`
++   entry .Colorspace   el marcador de valor del `colorspace` de un `<input type="color">`
++   entry .Command   el marcador de valor del `command` de un `<button>`: un nombre de orden predefinido o un `--name` personalizado
++   entry .ContentEditable   el marcador de valor de `contenteditable`: `true`, `false`, `plaintext-only` o vacío
++   entry .Coords   el marcador de valor del `coords` de un `<area>`: una lista de números separados por comas
++   entry .Crossorigin   el marcador de valor de `crossorigin`: `anonymous` o `use-credentials`
++       Solo el marcador; el enum `honeycomb.Crossorigin` tiene los dos valores, pero no tiene
++       `Attributive` propio, así que se pasa como `.show` con `attributives.textAttributive` en
++       el ámbito.
++   entry .CustomElementName   el marcador de valor de `is`: un nombre de elemento personalizado, que contiene un guion
++   entry .Css   el marcador de valor de `style`: declaraciones CSS en línea
++       `Attributive.style` acepta un `Text` para él.
++   entry .CssClassList   el marcador de valor de `class`: nombres de clases CSS separados por espacios
++       Acepta un `Name[CssClass]`, una `List[Name[CssClass]]` o una `ClassList`
++       (`Attributive.cssClass`, `.cssClassList` y `.classList`); una lista vacía omite el
++       atributo por completo.
++   entry .Datetime   el marcador de valor del `datetime` de un `<del>` o un `<ins>`: una fecha, o una fecha y una hora
++   entry .Decimal   el marcador de valor de un atributo de coma flotante: `step`, `min`, `max` y `value` de `<meter>`, `high`, `low`, `optimum`
++       `Attributive.double` acepta un `Double` para él.
++   entry .Decoding   el marcador de valor del `decoding` de un `<img>`: `sync`, `async` o `auto`
++   entry .Dir   el marcador de valor de `dir`: `ltr`, `rtl` o `auto`
++       `HDir` es el enum de sus valores, y lleva su propio `Attributive`, de modo que
++       `Body(dir = HDir.Rtl)` compila sin ninguna otra importación.
++   entry .Enctype   el marcador de valor de `enctype` y `formenctype`: un tipo MIME de codificación de formularios
++   entry .EnterKeyHint   el marcador de valor de `enterkeyhint`: `enter`, `done`, `go`, `next`, `previous`, `search` o `send`
++   entry .FetchPriority   el marcador de valor de `fetchpriority`: `high`, `low` o `auto`
++   entry .HashName   el marcador de valor de `usemap`: una referencia con prefijo `#` al nombre de un `<map>`
++   entry .Hidden   el marcador de valor de `hidden`: presente, o `until-found`
++   entry .HttpEquiv   el marcador de valor del `http-equiv` de un `<meta>`: el nombre de una directiva pragma
++       El enum `honeycomb.HttpEquiv` tiene las cuatro directivas, que se pasan como `.show`.
++   entry .Id   el marcador de valor de `id`, y de los atributos que nombran un elemento por su id
++       `for`, `form`, `list`, `commandfor` y `popovertarget` admiten todos un `Id`.
++       `Attributive.domId` acepta un `Name[DomId]` para él.
++   entry .Ids   el marcador de valor de una lista de ids separados por espacios: `headers`, `itemref`, el `for` de un `<output>`
++       `Attributive.domIds` acepta una `List[Name[DomId]]`, y omite el atributo cuando la lista
++       está vacía.
++   entry .ImageSizes   el marcador de valor del `imagesizes` de un `<link>`: una lista de tamaños de origen para una imagen precargada
++   entry .ImageSrcSet   el marcador de valor del `imagesrcset` de un `<link>`: un srcset para una imagen precargada
++   entry .InputMode   el marcador de valor de `inputmode`: `none`, `text`, `tel`, `url`, `email`, `numeric`, `decimal` o `search`
++   entry .InputType   el marcador de valor del `type` de un `<input>`
++       El objeto `#Input` ofrece cada tipo como etiqueta predefinida (`Input.Email`,
++       `Input.Checkbox`, …), así que el atributo rara vez se escribe directamente.
++   entry .InputValue   el marcador de valor del `value` de un `<input>`, cuya forma depende del tipo de la entrada
++   entry .Integral   el marcador de valor de un atributo entero con signo: `tabindex`, `start`, el `value` de un `<li>`
++       `Attributive.int` acepta un `Int` para él.
++   entry .ItemProp   el marcador de valor de `itemprop`: nombres de propiedades de microdatos
++   entry .Kind   el marcador de valor del `kind` de un `<track>`: `subtitles`, `captions`, `descriptions`, `chapters` o `metadata`
++       El objeto `#Track` ofrece cada clase como etiqueta predefinida; el enum `honeycomb.Kind`
++       tiene los valores.
++   entry .Language   el marcador de valor de `lang`, `hreflang` y `srclang`: una etiqueta de idioma BCP 47
++   entry .Laziness   el marcador de valor de `loading`: `lazy` o `eager`
++   entry .MediaQueryList   el marcador de valor de `media`: una lista de consultas de medios CSS
++   entry .Method   el marcador de valor de `method` y `formmethod`: `get`, `post` o `dialog`
++       El enum `honeycomb.Method` tiene los tres valores, que se pasan como `.show`.
++   entry .Minmax   el marcador de valor del `min` y el `max` de un `<input>`, cuya forma depende del tipo de la entrada
++   entry .MimeList   el marcador de valor de `accept`: una lista de tipos MIME y extensiones separados por comas
++   entry .Mime   el marcador de valor de un único tipo MIME: `type` en `<a>`, `<link>`, `<embed>`, `<object>` y `<source>`
++   entry .Name   el marcador de valor de `name`: el nombre de un control de formulario, un formulario, un mapa, un meta o un slot
++   entry .OlType   el marcador de valor del `type` de un `<ol>`: `1`, `a`, `A`, `i` o `I`
++   entry .Openness   el marcador de valor del `shadowrootmode` de un `<template>`: `open` o `closed`
++   entry .PermissionsPolicy   el marcador de valor del `allow` de un `<iframe>`: una política de permisos
++   entry .Popover   el marcador de valor de `popover`: `auto`, `manual` o `hint`
++   entry .PopoverAction   el marcador de valor de `popovertargetaction`: `toggle`, `show` o `hide`
++   entry .PositiveInt   el marcador de valor de un atributo entero no negativo: `width`, `height`, `rows`, `cols`, `colspan`, `span`, `size`, …
++       `Attributive.posInt` acepta un `Int` para él; no se comprueba el signo del valor.
++   entry .Presence   el marcador de valor de un atributo booleano: presente o ausente, sin valor
++       `disabled`, `checked`, la forma simple de `hidden`, `required`, `autofocus`, `controls`,
++       `open` y cualquier otro atributo cuya presencia es su significado. `Attributive.boolean`
++       acepta un `Boolean`: `true` escribe el atributo sin valor (`<input disabled>`) y `false`
++       lo omite.
++   entry .Preload   el marcador de valor de `preload`: `none`, `metadata` o `auto`
++       El enum `honeycomb.Preload` tiene los valores, que se pasan como `.show`.
++   entry .ReferrerPolicy   el marcador de valor de `referrerpolicy`: el nombre de una política de referente
++   entry .Regex   el marcador de valor del `pattern` de un `<input>`: una expresión regular de JavaScript
++   entry .Sandbox   el marcador de valor del `sandbox` de un `<iframe>`: tokens `allow-…` separados por espacios
++       El enum `honeycomb.Sandbox` tiene los tokens, que se pasan como `.show`.
++   entry .ScriptType   el marcador de valor del `type` de un `<script>`: `module`, `importmap`, un tipo MIME o un tipo de bloque de datos
++   entry .Scripting   el marcador de valor de un atributo manejador de eventos, que admite un script en lugar de texto
++       No existe a propósito ningún `Attributive` para `Text` en este caso: un manejador se
++       suministra como un valor de scripting con tipo, como una expresión de DOM foráneo de
++       querencia, para la que la biblioteca de scripting proporciona el
++       `Attributive to Whatwg.Scripting`. El vocabulario de WHATWG no declara por sí mismo ningún
++       given de atributo `on…`; `Html4Transitional`, sí.
++   entry .Shape   el marcador de valor del `shape` de un `<area>`: `circle`, `default`, `poly` o `rect`
++   entry .Sizes   el marcador de valor del `sizes` de un `<link rel="icon">`: `any` o tokens `WxH`
++   entry .Softness   el marcador de valor del `wrap` de un `<textarea>`: `soft` o `hard`
++       El enum `honeycomb.Wrap` tiene los dos valores, que se pasan como `.show`.
++   entry .SourceSizeList   el marcador de valor del `sizes` de un `<img>` o un `<source>`
++   entry .Srcdoc   el marcador de valor del `srcdoc` de un `<iframe>`: un documento HTML completo, como texto
++   entry .SrcSet   el marcador de valor de `srcset`: fuentes de imagen candidatas con sus descriptores
++   entry .Switch   el marcador de valor de `autocomplete`: `on` u `off`
++       `Attributive.switch` acepta un `Boolean`, escrito como `on` u `off`; el enum
++       `honeycomb.Autocomplete` tiene los mismos dos valores.
++   entry .Target   el marcador de valor de `target` y `formtarget`: el nombre o la palabra clave de un contexto de navegación
++       El enum `honeycomb.Target` tiene `_self`, `_blank`, `_parent`, `_top` y un contexto con
++       nombre, que se pasan como `.show`.
++   entry .Temporal   el marcador de valor del `datetime` de un `<time>`: cualquiera de las formas de fecha, hora y duración de la especificación
++   entry .Textual   el marcador de valor de un atributo que admite cualquier texto
++       `alt`, `title`, `placeholder`, `content`, `label`, `slot`, `nonce`, `integrity` y los
++       demás. `Attributive.textTextual` y `.stringTextual` aceptan un `Text` o un `String` para
++       él, sin ninguna importación; el given de elección `attributives.textAttributive` extiende
++       la misma aceptación a todos los demás marcadores.
++   entry .ThScope   el marcador de valor del `scope` de un `<th>`: `row`, `col`, `rowgroup` o `colgroup`
++   entry .Tokens   el marcador de valor de una lista de tokens separados por espacios: `rel`, `blocking`
++       El enum `honeycomb.Rel` tiene los tipos de enlace, que se pasan como `.show`.
++   entry .Truth   el marcador de valor de un atributo que se escribe `true` o `false`: `draggable`, `spellcheck`, `writingsuggestions`
++       `Attributive.truth` acepta un `Boolean`, escrito como la palabra `true` o `false`, a
++       diferencia de un atributo `Presence`, que se escribe o se omite.
++   entry .Upto8   el marcador de valor de `headingoffset`: un entero de 0 a 8
++   entry .Url   el marcador de valor de un atributo cuyo valor es una URL: `href`, `src`, `action`, `cite`, `poster`, `data`, `itemid`, …
++       `Attributive.url` acepta cualquier valor que sea `Abstractable across Urls to Text` —una
++       `HttpUrl`, o cualquier URL con tipo— y un `Text` en cuanto
++       `attributives.textAttributive` está en el ámbito.
++   entry .Urls   el marcador de valor de una lista de URL separadas por espacios: `ping`, `itemtype`
++   entry .Utf8   el marcador de valor de `charset` y `accept-charset`, cuyo único valor válido es `utf-8`
++   entry .abbr   `abbr` en `<th>`: un encabezado abreviado, como `Textual`
++   entry .accept   `accept` en `<input>`: los tipos de fichero aceptados, como `MimeList`
++   entry .acceptCharset   `accept-charset` en `<form>`: la codificación aceptada por el formulario, como `Utf8`
++       El given se llama `acceptCharset`; el atributo que registra es `accept-charset`.
++   entry .accesskey   `accesskey` en todos los elementos: nombres de atajos de teclado, como `AccessKeys`
++   entry .action   `action` en `<form>`: la URL a la que se envía el formulario, como `Url`
++   entry .allow   `allow` en `<iframe>`: la política de permisos del marco, como `PermissionsPolicy`
++   entry .allowfullscreen   `allowfullscreen` en `<iframe>`: un `Presence`
++   entry .alpha   `alpha` en `<input>`: si una entrada de color tiene canal alfa, como `Presence`
++   entry .alt   `alt` en `<area>`, `<img>` y `<input>`: texto alternativo, como `Textual`
++   entry .as   `as` en `<link>`: el tipo de destino de una precarga, como `Textual`
++   entry .async   `async` en `<script>`: un `Presence`
++   entry .autocapitalize   `autocapitalize` en todos los elementos, como `Autocapitalization`
++   entry .autocomplete   `autocomplete` en `<form>`: `on` u `off`, como `Switch`
++   entry .autocomplete2   `autocomplete` en `<input>`, `<select>` y `<textarea>`, como `Switch`
++   entry .autocorrect   `autocorrect` en todos los elementos, como `Textual`
++   entry .autofocus   `autofocus` en todos los elementos: un `Presence`
++   entry .autoplay   `autoplay` en `<audio>` y `<video>`: un `Presence`
++   entry .blocking   `blocking` en `<link>`, `<script>` y `<style>`: tokens que bloquean el renderizado, como `Tokens`
++   entry .charset   `charset` en `<meta>`: la codificación del documento, como `Utf8`
++   entry .checked   `checked` en `<input>`: un `Presence`
++   entry .cite   `cite` en `<blockquote>`, `<del>`, `<ins>` y `<q>`: la URL de la fuente, como `Url`
++   entry .class   `class` en todos los elementos: nombres de clases CSS, como `CssClassList`
++       Se escribe como `` `class` = … `` porque `class` es una palabra clave; la forma habitual
++       es `Tag.name(children)` (`Div.panel(…)`), que permite una `Attribution` en el ámbito.
++   entry .closedby   `closedby` en `<dialog>`, como `Closedby`
++   entry .color   `color` en `<link>`: el color de un icono de máscara, como `Color`
++   entry .colorspace   `colorspace` en `<input>`, como `Colorspace`
++   entry .cols   `cols` en `<textarea>`: la anchura visible en caracteres, como `PositiveInt`
++   entry .colspan   `colspan` en `<td>` y `<th>`, como `PositiveInt`
++   entry .command   `command` en `<button>`: la orden que se invoca, como `Command`
++   entry .commandfor   `commandfor` en `<button>`: el id del elemento de destino, como `Id`
++   entry .content   `content` en `<meta>`: el valor de los metadatos, como `Textual`
++   entry .contenteditable   `contenteditable` en todos los elementos, como `ContentEditable`
++   entry .controls   `controls` en `<audio>` y `<video>`: un `Presence`
++   entry .coords   `coords` en `<area>`, como `Coords`
++   entry .crossorigin   `crossorigin` en `<audio>`, `<img>`, `<link>`, `<script>` y `<video>`, como `Crossorigin`
++   entry .data   `data` en `<object>`: la URL del recurso, como `Url`
++   entry .datetime   `datetime` en `<del>` e `<ins>`: cuándo se hizo el cambio, como `Datetime`
++   entry .datetime2   `datetime` en `<time>`: la forma legible por máquina, como `Temporal`
++   entry .decoding   `decoding` en `<img>`, como `Decoding`
++   entry .default   `default` en `<track>`: un `Presence`
++   entry .defer   `defer` en `<script>`: un `Presence`
++   entry .dir   `dir` en todos los elementos: la dirección del texto, como `Dir`
++       `Body(dir = HDir.Rtl)` compila sin importación, mediante `HDir.attributive`.
++   entry .dirname   `dirname` en `<input>` y `<textarea>`: el nombre del campo para la dirección, como `Textual`
++   entry .disabled   `disabled` en `<button>`, `<input>`, `<optgroup>`, `<option>`, `<select>` y `<textarea>`: un `Presence`
++   entry .disabled2   `disabled` en `<fieldset>`: un `Presence`
++   entry .disabled3   `disabled` en `<link>`: un `Presence`
++   entry .download4   `download` en `<a>` y `<area>`: el nombre de fichero sugerido, como `Textual`
++   entry .draggable   `draggable` en todos los elementos: `true` o `false`, como `Truth`
++   entry .enctype   `enctype` en `<form>`, como `Enctype`
++   entry .enterkeyhint   `enterkeyhint` en todos los elementos, como `EnterKeyHint`
++   entry .fetchpriority   `fetchpriority` en `<img>`, `<link>` y `<script>`, como `FetchPriority`
++   entry .for   `for` en `<label>`: el id del control rotulado, como `Id`
++       Se escribe como `` `for` = … `` porque `for` es una palabra clave.
++   entry .for2   `for` en `<output>`: los ids de los controles que contribuyen, como `Ids`
++   entry .form   `form` en un control de formulario: el id del formulario al que pertenece, como `Id`
++       En `<button>`, `<fieldset>`, `<input>`, `<object>`, `<output>`, `<select>` y
+
+-   entry .formaction   `formaction` on `<input>` and `<button>`, as `Url`
+-   entry .formenctype   `formenctype` on `<input>` and `<button>`, as `Enctype`
+-   entry .formmethod   `formmethod` on `<input>` and `<button>`, as `Method`
+-   entry .formnovalidate   `formnovalidate` on `<input>` and `<button>`: a `Presence`
+-   entry .formtarget   `formtarget` on `<input>` and `<button>`, as `Target`
+-   entry .headers   `headers` on `<td>` and `<th>`: the ids of the cell's header cells, as `Ids`
+-   entry .headingoffset   `headingoffset` on every element: 0 to 8, as `Upto8`
+-   entry .headingreset   `headingreset` on every element, as `Presence`
+-   entry .height   `height` on `<canvas>`, `<embed>`, `<iframe>`, `<img>`, `<input>`, `<object>`, `<video>` and `<svg>`, as `PositiveInt`
+-   entry .hidden   `hidden` on every element: present, or `until-found`, as `Hidden`
+-       Its marker is `Hidden`, not `Presence`, so `hidden = true` needs a given from
+-       `Boolean` to `Hidden`, which the library does not provide; with
+-       `attributives.textAttributive` in scope, `hidden = t""` writes the bare attribute.
+-   entry .high   `high` on `<meter>`, as `Decimal`
+-   entry .href   `href` on `<a>` and `<area>`: the link target, as `Url`
+-   entry .href2   `href` on `<base>`: the document base URL, as `Url`
+-   entry .href3   `href` on `<link>`: the linked resource, as `Url`
+-   entry .hreflang   `hreflang` on `<a>` and `<link>`, as `Language`
+-   entry .httpEquiv   `http-equiv` on `<meta>`: a pragma directive, as `HttpEquiv`
+-       Written `httpEquiv = …`; the attribute serializes as `http-equiv`.
+-   entry .id   `id` on every element, as `Id`
+-       Takes a `Name[DomId]` through `Attributive.domId`, or a `Text` with
++   entry .formaction   `formaction` en `<input>` y `<button>`, como `Url`
++   entry .formenctype   `formenctype` en `<input>` y `<button>`, como `Enctype`
++   entry .formmethod   `formmethod` en `<input>` y `<button>`, como `Method`
++   entry .formnovalidate   `formnovalidate` en `<input>` y `<button>`: un `Presence`
++   entry .formtarget   `formtarget` en `<input>` y `<button>`, como `Target`
++   entry .headers   `headers` en `<td>` y `<th>`: los ids de las celdas de encabezado de la celda, como `Ids`
++   entry .headingoffset   `headingoffset` en todos los elementos: de 0 a 8, como `Upto8`
++   entry .headingreset   `headingreset` en todos los elementos, como `Presence`
++   entry .height   `height` en `<canvas>`, `<embed>`, `<iframe>`, `<img>`, `<input>`, `<object>`, `<video>` y `<svg>`, como `PositiveInt`
++   entry .hidden   `hidden` en todos los elementos: presente, o `until-found`, como `Hidden`
++       Su marcador es `Hidden`, no `Presence`, así que `hidden = true` necesita un given de
++       `Boolean` a `Hidden`, que la biblioteca no proporciona; con
++       `attributives.textAttributive` en el ámbito, `hidden = t""` escribe el atributo sin valor.
++   entry .high   `high` en `<meter>`, como `Decimal`
++   entry .href   `href` en `<a>` y `<area>`: el destino del enlace, como `Url`
++   entry .href2   `href` en `<base>`: la URL base del documento, como `Url`
++   entry .href3   `href` en `<link>`: el recurso enlazado, como `Url`
++   entry .hreflang   `hreflang` en `<a>` y `<link>`, como `Language`
++   entry .httpEquiv   `http-equiv` en `<meta>`: una directiva pragma, como `HttpEquiv`
++       Se escribe `httpEquiv = …`; el atributo se serializa como `http-equiv`.
++   entry .id   `id` en todos los elementos, como `Id`
++       Admite un `Name[DomId]` mediante `Attributive.domId`, o un `Text` con
+
+-   entry .imagesizes   `imagesizes` on `<link>`, as `ImageSizes`
+-   entry .imagesrcset   `imagesrcset` on `<link>`, as `ImageSrcSet`
+-   entry .inert   `inert` on every element: a `Presence`
+-   entry .inputmode   `inputmode` on every element, as `InputMode`
+-   entry .integrity   `integrity` on `<link>` and `<script>`: a subresource integrity hash, as `Textual`
+-   entry .is   `is` on every element: the custom element name, as `CustomElementName`
+-   entry .ismap   `ismap` on `<img>`: a `Presence`
+-   entry .itemid   `itemid` on every element: a microdata item's global identifier, as `Url`
+-   entry .itemprop   `itemprop` on every element, as `ItemProp`
+-   entry .itemref   `itemref` on every element, as `Ids`
+-   entry .itemscope   `itemscope` on every element: a `Presence`
+-   entry .itemtype   `itemtype` on every element, as `Urls`
+-   entry .kind   `kind` on `<track>`, as `Kind`
+-   entry .label   `label` on `<optgroup>`, `<option>` and `<track>`: a user-visible label, as `Textual`
+-       A given named `label` is also exported by other Soundness libraries, so in the
+-       `soundness` umbrella the name is reached through `Whatwg.label` where a bare reference
+-       would be ambiguous; attribute resolution itself never needs the name.
+-   entry .lang   `lang` on every element, as `Language`
+-   entry .list   `list` on `<input>`: the id of a `<datalist>`, as `Id`
+-   entry .loading   `loading` on `<img>` and `<iframe>`: `lazy` or `eager`, as `Laziness`
+-   entry .loop   `loop` on `<audio>` and `<video>`: a `Presence`
+-   entry .low   `low` on `<meter>`, as `Decimal`
+-   entry .max   `max` on `<input>`, as `Minmax`
+-   entry .max2   `max` on `<meter>` and `<progress>`, as `Decimal`
+-   entry .maxlength   `maxlength` on `<input>` and `<textarea>`, as `PositiveInt`
+-   entry .media   `media` on `<a>`, `<area>`, `<link>`, `<source>` and `<style>`, as `MediaQueryList`
+-   entry .method   `method` on `<form>`: `get`, `post` or `dialog`, as `Method`
+-   entry .min   `min` on `<input>`, as `Minmax`
+-   entry .min2   `min` on `<meter>`, as `Decimal`
+-   entry .minlength   `minlength` on `<input>` and `<textarea>`, as `PositiveInt`
+-   entry .multiple   `multiple` on `<input>` and `<select>`: a `Presence`
+-   entry .muted   `muted` on `<audio>` and `<video>`: a `Presence`
+-   entry .name   `name` on `<button>`, `<fieldset>`, `<input>`, `<output>`, `<select>` and `<textarea>`, as `Name`
+-   entry .name2   `name` on `<details>`: the exclusive-accordion group, as `Name`
+-   entry .name3   `name` on `<form>`, as `Name`
+-   entry .name4   `name` on `<iframe>` and `<object>`: a browsing-context name, as `Target`
+-   entry .name5   `name` on `<map>`, as `Name`
+-   entry .name6   `name` on `<meta>`: the metadata name, as `Name`
+-       The `#Meta` object offers the standard names as preset tags (`Meta.Viewport`,
+-       `Meta.Description`, …).
+-   entry .name7   `name` on `<slot>`, as `Name`
+-   entry .nomodule   `nomodule` on `<script>`: a `Presence`
+-   entry .nonce   `nonce` on every element: a cryptographic nonce, as `Textual`
+-   entry .novalidate   `novalidate` on `<form>`: a `Presence`
+-   entry .open   `open` on `<details>` and `<dialog>`: a `Presence`
+-   entry .optimum   `optimum` on `<meter>`, as `Decimal`
+-   entry .pattern   `pattern` on `<input>`, as `Regex`
+-   entry .ping   `ping` on `<a>` and `<area>`: URLs to notify, as `Urls`
+-   entry .placeholder   `placeholder` on `<input>` and `<textarea>`, as `Textual`
+-   entry .playsinline   `playsinline` on `<video>`: a `Presence`
+-   entry .popover   `popover` on every element, as `Popover`
+-   entry .popovertarget   `popovertarget` on `<button>` and `<input>`: the popover's id, as `Id`
+-   entry .pta   `popovertargetaction` on `<button>` and `<input>`, as `PopoverAction`
+-   entry .poster   `poster` on `<video>`: the placeholder image, as `Url`
+-   entry .preload   `preload` on `<audio>` and `<video>`, as `Preload`
+-   entry .readonly   `readonly` on `<input>` and `<textarea>`: a `Presence`
+-   entry .referrerpolicy   `referrerpolicy` on `<a>`, `<area>`, `<iframe>`, `<img>`, `<link>` and `<script>`, as `ReferrerPolicy`
+-   entry .rel   `rel` on `<a>` and `<area>`: link types, as `Tokens`
+-   entry .rel2   `rel` on `<link>`: link types, as `Tokens`
+-       The `#Link` object offers each link type as a preset tag (`Link.Stylesheet`,
+-       `Link.Icon`, …).
+-   entry .required   `required` on `<input>`, `<select>` and `<textarea>`: a `Presence`
+-   entry .reversed   `reversed` on `<ol>`: a `Presence`
+-   entry .rows   `rows` on `<textarea>`, as `PositiveInt`
+-   entry .rowspan   `rowspan` on `<td>` and `<th>`, as `PositiveInt`
+-   entry .sandbox   `sandbox` on `<iframe>`, as `Sandbox`
+-   entry .scope   `scope` on `<th>`, as `ThScope`
+-   entry .selected   `selected` on `<option>`: a `Presence`
+-   entry .shadowrootclonable   `shadowrootclonable` on `<template>`: a `Presence`
+-   entry .srcer   `shadowrootcustomelementregistry` on `<template>`: a `Presence`
+-   entry .srdf   `shadowrootdelegatesfocus` on `<template>`: a `Presence`
+-   entry .shadowrootmode   `shadowrootmode` on `<template>`: `open` or `closed`, as `Openness`
+-   entry .shadowrootserializable   `shadowrootserializable` on `<template>`: a `Presence`
+-   entry .shape   `shape` on `<area>`, as `Shape`
+-   entry .size   `size` on `<input>` and `<select>`, as `PositiveInt`
+-   entry .sizes   `sizes` on `<img>` and `<source>`, as `SourceSizeList`
+-   entry .sizes2   `sizes` on `<link>`: icon sizes, as `Sizes`
+-   entry .slot   `slot` on every element: the shadow-tree slot name, as `Textual`
+-   entry .span   `span` on `<col>` and `<colgroup>`, as `PositiveInt`
+-   entry .spellcheck   `spellcheck` on every element: `true` or `false`, as `Truth`
+-   entry .src   `src` on `<audio>`, `<embed>`, `<iframe>`, `<img>`, `<input>`, `<script>`, `<source>`, `<track>` and `<video>`, as `Url`
+-   entry .srcdoc   `srcdoc` on `<iframe>`: an inline document, as `Srcdoc`
+-   entry .srclang   `srclang` on `<track>`, as `Language`
+-   entry .srcset   `srcset` on `<img>` and `<source>`, as `SrcSet`
+-   entry .start   `start` on `<ol>`: the first item's number, as `Integral`
+-   entry .step   `step` on `<input>`, as `Decimal`
+-   entry .style   `style` on every element: inline CSS, as `Css`
+-   entry .tabindex   `tabindex` on every element, as `Integral`
+-   entry .target   `target` on `<a>` and `<area>`, as `Target`
+-   entry .target2   `target` on `<base>`: the default browsing context, as `Target`
+-   entry .target3   `target` on `<form>`, as `Target`
+-   entry .title   `title` on every element: advisory text, as `Textual`
+-   entry .translate   `translate` on every element: `yes` or `no`, as `Affirmation`
+-   entry .type   `type` on `<a>` and `<link>`: the linked resource's MIME type, as `Mime`
+-       Written as `` `type` = … `` since `type` is a keyword.
+-   entry .type2   `type` on `<button>`: `submit`, `reset` or `button`, as `ButtonType`
+-   entry .type3   `type` on `<embed>`, `<object>` and `<source>`, as `Mime`
+-   entry .type4   `type` on `<input>`, as `InputType`
+-       Rarely written: `#Input` has a preset tag per type (`Input.Email`, `Input.Range`, …).
+-   entry .type5   `type` on `<ol>`: the numbering style, as `OlType`
+-   entry .type6   `type` on `<script>`, as `ScriptType`
+-   entry .usemap   `usemap` on `<img>`, `<input>` and `<object>`: the image-map reference, as `HashName`
+-   entry .value   `value` on `<button>` and `<option>`, as `Textual`
+-   entry .value2   `value` on `<data>`: the machine-readable value, as `Textual`
+-   entry .value3   `value` on `<input>`, as `InputValue`
+-   entry .value4   `value` on `<li>`: the item's ordinal, as `Integral`
+-   entry .value5   `value` on `<meter>` and `<progress>`, as `Decimal`
+-   entry .width   `width` on `<canvas>`, `<embed>`, `<iframe>`, `<img>`, `<input>`, `<object>`, `<video>` and `<svg>`, as `PositiveInt`
+-   entry .wrap   `wrap` on `<textarea>`: `soft` or `hard`, as `Softness`
+-   entry .writingsuggestions   `writingsuggestions` on every element: `true` or `false`, as `Truth`
+-   entry #doctype   the `<!doctype html>` doctype a `Document[Html]` of this dialect carries
+-   entry #Interactive   the interactive content category, as a union of tag names
++   entry .imagesizes   `imagesizes` en `<link>`, como `ImageSizes`
++   entry .imagesrcset   `imagesrcset` en `<link>`, como `ImageSrcSet`
++   entry .inert   `inert` en todos los elementos: un `Presence`
++   entry .inputmode   `inputmode` en todos los elementos, como `InputMode`
++   entry .integrity   `integrity` en `<link>` y `<script>`: un hash de integridad de subrecursos, como `Textual`
++   entry .is   `is` en todos los elementos: el nombre del elemento personalizado, como `CustomElementName`
++   entry .ismap   `ismap` en `<img>`: un `Presence`
++   entry .itemid   `itemid` en todos los elementos: el identificador global de un elemento de microdatos, como `Url`
++   entry .itemprop   `itemprop` en todos los elementos, como `ItemProp`
++   entry .itemref   `itemref` en todos los elementos, como `Ids`
++   entry .itemscope   `itemscope` en todos los elementos: un `Presence`
++   entry .itemtype   `itemtype` en todos los elementos, como `Urls`
++   entry .kind   `kind` en `<track>`, como `Kind`
++   entry .label   `label` en `<optgroup>`, `<option>` y `<track>`: un rótulo visible para el usuario, como `Textual`
++       Otras bibliotecas de Soundness también exportan un given llamado `label`, así que en el
++       paraguas `soundness` se llega al nombre mediante `Whatwg.label` donde una referencia sin
++       cualificar sería ambigua; la resolución de atributos en sí nunca necesita el nombre.
++   entry .lang   `lang` en todos los elementos, como `Language`
++   entry .list   `list` en `<input>`: el id de un `<datalist>`, como `Id`
++   entry .loading   `loading` en `<img>` y `<iframe>`: `lazy` o `eager`, como `Laziness`
++   entry .loop   `loop` en `<audio>` y `<video>`: un `Presence`
++   entry .low   `low` en `<meter>`, como `Decimal`
++   entry .max   `max` en `<input>`, como `Minmax`
++   entry .max2   `max` en `<meter>` y `<progress>`, como `Decimal`
++   entry .maxlength   `maxlength` en `<input>` y `<textarea>`, como `PositiveInt`
++   entry .media   `media` en `<a>`, `<area>`, `<link>`, `<source>` y `<style>`, como `MediaQueryList`
++   entry .method   `method` en `<form>`: `get`, `post` o `dialog`, como `Method`
++   entry .min   `min` en `<input>`, como `Minmax`
++   entry .min2   `min` en `<meter>`, como `Decimal`
++   entry .minlength   `minlength` en `<input>` y `<textarea>`, como `PositiveInt`
++   entry .multiple   `multiple` en `<input>` y `<select>`: un `Presence`
++   entry .muted   `muted` en `<audio>` y `<video>`: un `Presence`
++   entry .name   `name` en `<button>`, `<fieldset>`, `<input>`, `<output>`, `<select>` y `<textarea>`, como `Name`
++   entry .name2   `name` en `<details>`: el grupo de acordeón exclusivo, como `Name`
++   entry .name3   `name` en `<form>`, como `Name`
++   entry .name4   `name` en `<iframe>` y `<object>`: el nombre de un contexto de navegación, como `Target`
++   entry .name5   `name` en `<map>`, como `Name`
++   entry .name6   `name` en `<meta>`: el nombre de los metadatos, como `Name`
++       El objeto `#Meta` ofrece los nombres estándar como etiquetas predefinidas
++       (`Meta.Viewport`, `Meta.Description`, …).
++   entry .name7   `name` en `<slot>`, como `Name`
++   entry .nomodule   `nomodule` en `<script>`: un `Presence`
++   entry .nonce   `nonce` en todos los elementos: un nonce criptográfico, como `Textual`
++   entry .novalidate   `novalidate` en `<form>`: un `Presence`
++   entry .open   `open` en `<details>` y `<dialog>`: un `Presence`
++   entry .optimum   `optimum` en `<meter>`, como `Decimal`
++   entry .pattern   `pattern` en `<input>`, como `Regex`
++   entry .ping   `ping` en `<a>` y `<area>`: URL que se notifican, como `Urls`
++   entry .placeholder   `placeholder` en `<input>` y `<textarea>`, como `Textual`
++   entry .playsinline   `playsinline` en `<video>`: un `Presence`
++   entry .popover   `popover` en todos los elementos, como `Popover`
++   entry .popovertarget   `popovertarget` en `<button>` e `<input>`: el id del popover, como `Id`
++   entry .pta   `popovertargetaction` en `<button>` e `<input>`, como `PopoverAction`
++   entry .poster   `poster` en `<video>`: la imagen provisional, como `Url`
++   entry .preload   `preload` en `<audio>` y `<video>`, como `Preload`
++   entry .readonly   `readonly` en `<input>` y `<textarea>`: un `Presence`
++   entry .referrerpolicy   `referrerpolicy` en `<a>`, `<area>`, `<iframe>`, `<img>`, `<link>` y `<script>`, como `ReferrerPolicy`
++   entry .rel   `rel` en `<a>` y `<area>`: tipos de enlace, como `Tokens`
++   entry .rel2   `rel` en `<link>`: tipos de enlace, como `Tokens`
++       El objeto `#Link` ofrece cada tipo de enlace como etiqueta predefinida
++       (`Link.Stylesheet`, `Link.Icon`, …).
++   entry .required   `required` en `<input>`, `<select>` y `<textarea>`: un `Presence`
++   entry .reversed   `reversed` en `<ol>`: un `Presence`
++   entry .rows   `rows` en `<textarea>`, como `PositiveInt`
++   entry .rowspan   `rowspan` en `<td>` y `<th>`, como `PositiveInt`
++   entry .sandbox   `sandbox` en `<iframe>`, como `Sandbox`
++   entry .scope   `scope` en `<th>`, como `ThScope`
++   entry .selected   `selected` en `<option>`: un `Presence`
++   entry .shadowrootclonable   `shadowrootclonable` en `<template>`: un `Presence`
++   entry .srcer   `shadowrootcustomelementregistry` en `<template>`: un `Presence`
++   entry .srdf   `shadowrootdelegatesfocus` en `<template>`: un `Presence`
++   entry .shadowrootmode   `shadowrootmode` en `<template>`: `open` o `closed`, como `Openness`
++   entry .shadowrootserializable   `shadowrootserializable` en `<template>`: un `Presence`
++   entry .shape   `shape` en `<area>`, como `Shape`
++   entry .size   `size` en `<input>` y `<select>`, como `PositiveInt`
++   entry .sizes   `sizes` en `<img>` y `<source>`, como `SourceSizeList`
++   entry .sizes2   `sizes` en `<link>`: tamaños de icono, como `Sizes`
++   entry .slot   `slot` en todos los elementos: el nombre del slot del árbol sombra, como `Textual`
++   entry .span   `span` en `<col>` y `<colgroup>`, como `PositiveInt`
++   entry .spellcheck   `spellcheck` en todos los elementos: `true` o `false`, como `Truth`
++   entry .src   `src` en `<audio>`, `<embed>`, `<iframe>`, `<img>`, `<input>`, `<script>`, `<source>`, `<track>` y `<video>`, como `Url`
++   entry .srcdoc   `srcdoc` en `<iframe>`: un documento en línea, como `Srcdoc`
++   entry .srclang   `srclang` en `<track>`, como `Language`
++   entry .srcset   `srcset` en `<img>` y `<source>`, como `SrcSet`
++   entry .start   `start` en `<ol>`: el número del primer elemento, como `Integral`
++   entry .step   `step` en `<input>`, como `Decimal`
++   entry .style   `style` en todos los elementos: CSS en línea, como `Css`
++   entry .tabindex   `tabindex` en todos los elementos, como `Integral`
++   entry .target   `target` en `<a>` y `<area>`, como `Target`
++   entry .target2   `target` en `<base>`: el contexto de navegación por defecto, como `Target`
++   entry .target3   `target` en `<form>`, como `Target`
++   entry .title   `title` en todos los elementos: texto orientativo, como `Textual`
++   entry .translate   `translate` en todos los elementos: `yes` o `no`, como `Affirmation`
++   entry .type   `type` en `<a>` y `<link>`: el tipo MIME del recurso enlazado, como `Mime`
++       Se escribe como `` `type` = … `` porque `type` es una palabra clave.
++   entry .type2   `type` en `<button>`: `submit`, `reset` o `button`, como `ButtonType`
++   entry .type3   `type` en `<embed>`, `<object>` y `<source>`, como `Mime`
++   entry .type4   `type` en `<input>`, como `InputType`
++       Rara vez se escribe: `#Input` tiene una etiqueta predefinida por tipo (`Input.Email`,
++       `Input.Range`, …).
++   entry .type5   `type` en `<ol>`: el estilo de numeración, como `OlType`
++   entry .type6   `type` en `<script>`, como `ScriptType`
++   entry .usemap   `usemap` en `<img>`, `<input>` y `<object>`: la referencia al mapa de imagen, como `HashName`
++   entry .value   `value` en `<button>` y `<option>`, como `Textual`
++   entry .value2   `value` en `<data>`: el valor legible por máquina, como `Textual`
++   entry .value3   `value` en `<input>`, como `InputValue`
++   entry .value4   `value` en `<li>`: el ordinal del elemento, como `Integral`
++   entry .value5   `value` en `<meter>` y `<progress>`, como `Decimal`
++   entry .width   `width` en `<canvas>`, `<embed>`, `<iframe>`, `<img>`, `<input>`, `<object>`, `<video>` y `<svg>`, como `PositiveInt`
++   entry .wrap   `wrap` en `<textarea>`: `soft` o `hard`, como `Softness`
++   entry .writingsuggestions   `writingsuggestions` en todos los elementos: `true` o `false`, como `Truth`
++   entry #doctype   el doctype `<!doctype html>` que lleva un `Document[Html]` de este dialecto
++   entry #Interactive   la categoría de contenido interactivo, como unión de nombres de etiqueta
+
+-         A `Tag.Void` whose `Topic` is `"area"`, taking `alt`, `coords`, `shape`, `href`,
+-         `target`, `download`, `ping`, `rel` and `referrerpolicy`. Its four members preset
+-         the `shape` attribute, so `Area.Rect` serializes as `<area shape="rect">`.
+-     entry .Default   a `shape="default"` area: the whole image
+-     entry .Rect   a `shape="rect"` area, with `coords` as left, top, right, bottom
+-     entry .Circle   a `shape="circle"` area, with `coords` as centre x, centre y, radius
+-     entry .Poly   a `shape="poly"` area, with `coords` as a list of vertex pairs
++         Un `Tag.Void` cuyo `Topic` es `"area"`, que admite `alt`, `coords`, `shape`, `href`,
++         `target`, `download`, `ping`, `rel` y `referrerpolicy`. Sus cuatro miembros predefinen
++         el atributo `shape`, de modo que `Area.Rect` se serializa como `<area shape="rect">`.
++     entry .Default   un área `shape="default"`: la imagen entera
++     entry .Rect   un área `shape="rect"`, con `coords` como izquierda, arriba, derecha, abajo
++     entry .Circle   un área `shape="circle"`, con `coords` como x del centro, y del centro, radio
++     entry .Poly   un área `shape="poly"`, con `coords` como lista de pares de vértices
+
+-       `popovertarget` and `popovertargetaction`.
+-   entry #Canvas   `<canvas>`: a scriptable bitmap; transparent, so it holds fallback content
+-       Takes `width` and `height`.
+-   entry #Caption   `<caption>`: a table's title, over flow content; first child of `<table>`
+-   entry #Cite   `<cite>`: the title of a work, over phrasing content
+-   entry #Code   `<code>`: a fragment of computer code, over phrasing content
+-   entry #Col   `<col>`: a table column; void, inside `<colgroup>`; `span` covers several
+-   entry #Colgroup   `<colgroup>`: a group of columns, over `<col>` elements
+-       Only whitespace may appear between its children (`Html.Mode.Whitespace`), and it is
+-       insertable, so a `<col>` met directly in a `<table>` gets one.
+-   entry #Data   `<data>`: content with a machine-readable `value`, over phrasing content
+-   entry #Datalist   `<datalist>`: predefined options for an `<input list=…>`, over phrasing content and `<option>`s
+-   entry #Dd   `<dd>`: a description in a `<dl>`, over flow content; autoclosing
+-   entry #Del   `<del>`: removed text; transparent, with `cite` and `datetime`
+-   entry #Details   `<details>`: a disclosure widget: a `<summary>` then flow content
+-       Takes `open` and `name`, the latter grouping several into an exclusive accordion.
+-   entry #Dfn   `<dfn>`: the defining instance of a term, over phrasing content
+-   entry #Dialog   `<dialog>`: a dialog box, over flow content; takes `open` and `closedby`
+-   entry #Div   `<div>`: a generic container, over flow content
+-   entry #Dl   `<dl>`: a description list, over `<dt>`, `<dd>` and `<div>` groups
+-       Only whitespace may appear between its children, and it autocloses.
+-   entry #Dt   `<dt>`: a term in a `<dl>`, over flow content; autoclosing
+-   entry #Em   `<em>`: stress emphasis, over phrasing content
+-   entry #Embed   `<embed>`: an external application or interactive content; void
+-       Takes `src`, `type`, `width` and `height`.
+-   entry #Fieldset   `<fieldset>`: a group of form controls: an optional `<legend>` then flow content
+-       Takes `disabled`, `form` and `name`.
+-   entry #Figcaption   `<figcaption>`: a figure's caption, over flow content
+-   entry #Figure   `<figure>`: self-contained content with an optional `<figcaption>`, over flow content
+-   entry #Footer   `<footer>`: a footer for its nearest ancestor section, over flow content
+-   entry #Form   `<form>`: a form, over flow content
+-       Takes `action`, `method`, `enctype`, `accept-charset` (as `acceptCharset`),
+-       `autocomplete`, `name`, `novalidate` and `target`.
+-   entry #H1   `<h1>`: a heading of the first rank, over phrasing content
+-   entry #H2   `<h2>`: a heading of the second rank, over phrasing content
+-   entry #H3   `<h3>`: a heading of the third rank, over phrasing content
+-   entry #H4   `<h4>`: a heading of the fourth rank, over phrasing content
+-   entry #H5   `<h5>`: a heading of the fifth rank, over phrasing content
+-   entry #H6   `<h6>`: a heading of the sixth rank, over phrasing content
+-   entry #Head   `<head>`: the document's metadata, over `#Metadata` content
+-       Only whitespace may appear between its children; it autocloses, and is insertable, so
+-       a `<title>` met at the start of a document gets a `<head>` around it.
+-   entry #Header   `<header>`: introductory content for its nearest ancestor section, over flow content; autoclosing
+-   entry #Hgroup   `<hgroup>`: a heading with its subheadings, over `<p>` and `<h1>` to `<h6>`
+-   entry #Hr   `<hr>`: a thematic break; void
+-   entry #I   `<i>`: text in an alternate voice, over phrasing content
+-   entry #Iframe   `<iframe>`: a nested browsing context, with no content
+-       Takes `src`, `srcdoc`, `name`, `sandbox`, `allow`, `allowfullscreen`, `width`,
+-       `height`, `referrerpolicy` and `loading`. It admits no children, but it is not a void
+-       element: it serializes as `<iframe …></iframe>`, with the end tag the specification
+-       requires.
+-   entry #Img   `<img>`: an image; void
+-       Takes `src`, `alt`, `srcset`, `sizes`, `crossorigin`, `usemap`, `ismap`, `width`,
+-       `height`, `referrerpolicy`, `decoding`, `loading` and `fetchpriority`. `alt` is read
+-       back with `img.alt` and `width` with `img.width` (an `Optional[Int]`), through
++       `popovertarget` y `popovertargetaction`.
++   entry #Canvas   `<canvas>`: un mapa de bits programable; transparente, así que contiene contenido alternativo
++       Admite `width` y `height`.
++   entry #Caption   `<caption>`: el título de una tabla, sobre contenido de flujo; primer hijo de `<table>`
++   entry #Cite   `<cite>`: el título de una obra, sobre contenido de fraseo
++   entry #Code   `<code>`: un fragmento de código informático, sobre contenido de fraseo
++   entry #Col   `<col>`: una columna de tabla; vacía, dentro de `<colgroup>`; `span` abarca varias
++   entry #Colgroup   `<colgroup>`: un grupo de columnas, sobre elementos `<col>`
++       Entre sus hijos solo puede haber espacio en blanco (`Html.Mode.Whitespace`), y es
++       insertable, de modo que un `<col>` encontrado directamente en una `<table>` recibe uno.
++   entry #Data   `<data>`: contenido con un `value` legible por máquina, sobre contenido de fraseo
++   entry #Datalist   `<datalist>`: opciones predefinidas para un `<input list=…>`, sobre contenido de fraseo y elementos `<option>`
++   entry #Dd   `<dd>`: una descripción en un `<dl>`, sobre contenido de flujo; de cierre automático
++   entry #Del   `<del>`: texto eliminado; transparente, con `cite` y `datetime`
++   entry #Details   `<details>`: un widget desplegable: un `<summary>` y después contenido de flujo
++       Admite `open` y `name`; este último agrupa varios en un acordeón exclusivo.
++   entry #Dfn   `<dfn>`: la instancia que define un término, sobre contenido de fraseo
++   entry #Dialog   `<dialog>`: un cuadro de diálogo, sobre contenido de flujo; admite `open` y `closedby`
++   entry #Div   `<div>`: un contenedor genérico, sobre contenido de flujo
++   entry #Dl   `<dl>`: una lista de descripciones, sobre grupos `<dt>`, `<dd>` y `<div>`
++       Entre sus hijos solo puede haber espacio en blanco, y es de cierre automático.
++   entry #Dt   `<dt>`: un término en un `<dl>`, sobre contenido de flujo; de cierre automático
++   entry #Em   `<em>`: énfasis acentuado, sobre contenido de fraseo
++   entry #Embed   `<embed>`: una aplicación externa o contenido interactivo; vacía
++       Admite `src`, `type`, `width` y `height`.
++   entry #Fieldset   `<fieldset>`: un grupo de controles de formulario: un `<legend>` opcional y después contenido de flujo
++       Admite `disabled`, `form` y `name`.
++   entry #Figcaption   `<figcaption>`: el pie de una figura, sobre contenido de flujo
++   entry #Figure   `<figure>`: contenido autónomo con un `<figcaption>` opcional, sobre contenido de flujo
++   entry #Footer   `<footer>`: un pie para su sección antecesora más cercana, sobre contenido de flujo
++   entry #Form   `<form>`: un formulario, sobre contenido de flujo
++       Admite `action`, `method`, `enctype`, `accept-charset` (como `acceptCharset`),
++       `autocomplete`, `name`, `novalidate` y `target`.
++   entry #H1   `<h1>`: un encabezado de primer nivel, sobre contenido de fraseo
++   entry #H2   `<h2>`: un encabezado de segundo nivel, sobre contenido de fraseo
++   entry #H3   `<h3>`: un encabezado de tercer nivel, sobre contenido de fraseo
++   entry #H4   `<h4>`: un encabezado de cuarto nivel, sobre contenido de fraseo
++   entry #H5   `<h5>`: un encabezado de quinto nivel, sobre contenido de fraseo
++   entry #H6   `<h6>`: un encabezado de sexto nivel, sobre contenido de fraseo
++   entry #Head   `<head>`: los metadatos del documento, sobre contenido `#Metadata`
++       Entre sus hijos solo puede haber espacio en blanco; es de cierre automático e
++       insertable, de modo que un `<title>` encontrado al principio de un documento recibe un
++       `<head>` a su alrededor.
++   entry #Header   `<header>`: contenido introductorio para su sección antecesora más cercana, sobre contenido de flujo; de cierre automático
++   entry #Hgroup   `<hgroup>`: un encabezado con sus subencabezados, sobre `<p>` y de `<h1>` a `<h6>`
++   entry #Hr   `<hr>`: una ruptura temática; vacía
++   entry #I   `<i>`: texto en una voz alternativa, sobre contenido de fraseo
++   entry #Iframe   `<iframe>`: un contexto de navegación anidado, sin contenido
++       Admite `src`, `srcdoc`, `name`, `sandbox`, `allow`, `allowfullscreen`, `width`,
++       `height`, `referrerpolicy` y `loading`. No admite hijos, pero no es un elemento vacío:
++       se serializa como `<iframe …></iframe>`, con la etiqueta de cierre que exige la
++       especificación.
++   entry #Img   `<img>`: una imagen; vacía
++       Admite `src`, `alt`, `srcset`, `sizes`, `crossorigin`, `usemap`, `ismap`, `width`,
++       `height`, `referrerpolicy`, `decoding`, `loading` y `fetchpriority`. `alt` se vuelve a
++       leer con `img.alt` y `width` con `img.width` (un `Optional[Int]`), mediante
+
+-   entry #Ins   `<ins>`: inserted text; transparent, with `cite` and `datetime`
+-   entry #Kbd   `<kbd>`: user input, over phrasing content
+-   entry #Label   `<label>`: a caption for a form control, over phrasing content; `for` names the control
+-   entry #Legend   `<legend>`: a `<fieldset>`'s caption, over phrasing content and headings
+-   entry #Li   `<li>`: a list item, over flow content; autoclosing; `value` sets its ordinal in an `<ol>`
+-   entry #Link   `<link>`: a link to an external resource; a void tag with a preset for every `rel`
++   entry #Ins   `<ins>`: texto insertado; transparente, con `cite` y `datetime`
++   entry #Kbd   `<kbd>`: entrada del usuario, sobre contenido de fraseo
++   entry #Label   `<label>`: el rótulo de un control de formulario, sobre contenido de fraseo; `for` nombra el control
++   entry #Legend   `<legend>`: el rótulo de un `<fieldset>`, sobre contenido de fraseo y encabezados
++   entry #Li   `<li>`: un elemento de lista, sobre contenido de flujo; de cierre automático; `value` fija su ordinal en un `<ol>`
++   entry #Link   `<link>`: un enlace a un recurso externo; una etiqueta vacía con una forma predefinida para cada `rel`

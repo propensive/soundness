@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.27.4` — Hex literal contains non-hex character
++ # `↯/s.27.4` — El literal hexadecimal contiene un carácter no hexadecimal
+
+- Raised at compile time by Hypotenuse's `hex"…"` literal macro when
+- the body contains a character that is not a hexadecimal digit.
++ Lo lanza en tiempo de compilación la macro de literales `hex"…"` de Hypotenuse cuando el cuerpo
++ contiene un carácter que no es un dígito hexadecimal.
+
+- ## Cause
++ ## Causa
+
+- Hex literals admit only `0`-`9`, `a`-`f`, and `A`-`F`.
++ Los literales hexadecimales solo admiten `0`-`9`, `a`-`f` y `A`-`F`.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.27.4] xy is not a valid hexadecimal character
++ [↯/s.27.4] xy is not a valid hexadecimal character
+
+= [↯/s.27.4] xy is not a valid hexadecimal character
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Remove or correct the offending character.
++ Elimina o corrige el carácter problemático.
+
+- ## See also
++ ## Véase también
+
+- - The other binary and hexadecimal literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - Los demás errores de literales binarios y hexadecimales: [Familias](README.md#families)
++ - Fuente: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

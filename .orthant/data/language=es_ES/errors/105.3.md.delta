@@ -1,0 +1,53 @@
+orthant 1 language
+
+- # `↯/s.105.3` — `Keystore.Error`
++ # `↯/s.105.3` — `Keystore.Error`
+
+- Raised when a PKCS#12 keystore cannot be opened or read.
++ Se lanza cuando no se puede abrir o leer un almacén de claves PKCS#12.
+
+- ## Cause
++ ## Causa
+
+- A keystore is opened for the duration of a scope, with its password supplied as a flag.
+- This error covers a store that cannot be read and a write that is not supported.
++ Un almacén de claves se abre durante un ámbito, y su contraseña se proporciona como indicador.
++ Este error cubre un almacén que no se puede leer y una escritura que no está admitida.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Código
++ column  Motivo
++ column  Mensaje
+
+- row  `↯/s.105.3.1`  `Unreadable`  `[↯/s.105.3.1] the keystore could not be read with the given password`
++ row  `↯/s.105.3.1`  `Unreadable`  `[↯/s.105.3.1] the keystore could not be read with the given password`
+
+- row  `↯/s.105.3.2`  `WriteUnsupported`  `[↯/s.105.3.2] keystores cannot yet be opened for writing`
++ row  `↯/s.105.3.2`  `WriteUnsupported`  `[↯/s.105.3.2] keystores cannot yet be opened for writing`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- A wrong password and a corrupt store are deliberately indistinguishable — both are
+- `Unreadable` — since telling them apart would reveal which of the two went wrong to someone
+- guessing. Writing to a keystore is not yet supported.
++ Una contraseña incorrecta y un almacén corrupto son deliberadamente indistinguibles —ambos son
++ `Unreadable`—, ya que distinguirlos revelaría a quien intente adivinar cuál de los dos falló.
++ Todavía no se admite escribir en un almacén de claves.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/enigmatic/src/core-jvm/enigmatic.Keystore.scala`
++ - Código fuente: `lib/enigmatic/src/core-jvm/enigmatic.Keystore.scala`

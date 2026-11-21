@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.27.14` — `U16` value above 65535
++ # `↯/s.27.14` — Valor `U16` mayor que 65535
+
+- Raised at compile time by Hypotenuse's `u16` macro when the value
+- is greater than 65535.
++ Lo lanza en tiempo de compilación la macro `u16` de Hypotenuse cuando el valor es mayor que
++ 65535.
+
+- ## Cause
++ ## Causa
+
+- A `U16` (unsigned 16-bit) is bounded above by `0xffff`.
++ Un `U16` (entero sin signo de 16 bits) tiene `0xffff` como cota superior.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.27.14] a U16 may not be greater than 65535
++ [↯/s.27.14] a U16 may not be greater than 65535
+
+= [↯/s.27.14] a U16 may not be greater than 65535
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Provide a value in the range 0-65535.
++ Proporciona un valor en el rango 0-65535.
+
+- ## See also
++ ## Véase también
+
+- - The other integer literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - Los demás errores de literales enteros: [Familias](README.md#families)
++ - Código fuente: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

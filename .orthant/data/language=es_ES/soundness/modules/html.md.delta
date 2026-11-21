@@ -1,0 +1,1308 @@
+orthant 1 language
+
+- ## HTML
++ ## HTML
+
+- ### About
++ ### Descripción
+
+- [HTML](https://en.wikipedia.org/wiki/HTML) is constructed, parsed, transformed and written
+- out through a representation which the compiler understands. An element is built by applying
+- a tag to its attributes and children. The construction is checked against the HTML
+- specification at [compiletime], so a `<br>` which is given children, or an `<li>` outside a
+- list, is a compile error, not malformed output.
++ El [HTML](https://en.wikipedia.org/wiki/HTML) se construye, se analiza, se transforma y se
++ escribe a través de una representación que el compilador entiende. Un elemento se construye
++ aplicando una etiqueta a sus atributos y a sus hijos. La construcción se comprueba contra la
++ especificación de HTML en [tiempo de compilación], así que un `<br>` al que se le dan hijos, o
++ un `<li>` fuera de una lista, es un error de compilación, no una salida mal formada.
+
+- The same representation reads HTML back from text, from files, or from a URL, matches it
+- with patterns, and writes it out, directly or as a stream. Above the level of single tags,
+- whole pages are assembled from reusable parts: a masthead, a hero banner and a set of panels,
+- each of which contributes its own markup, styles and metadata.
++ La misma representación vuelve a leer HTML a partir de texto, de ficheros o de una URL, lo
++ compara con patrones y lo escribe, directamente o como un flujo. Por encima del nivel de las
++ etiquetas sueltas, se montan páginas enteras a partir de partes reutilizables: un masthead, un
++ banner principal y un conjunto de paneles, cada uno de los cuales aporta su propio marcado, sus
++ estilos y sus metadatos.
+
+- ### On HTML
++ ### Sobre HTML
+
+- HTML is a tree of nodes, which are elements, text and comments. It is governed by a
+- specification, which says which elements may contain which others, which attributes each
+- element accepts, and how the text inside each is treated. Most libraries hold that tree
+- loosely. Any element may be nested in any other, and attributes are arbitrary strings. A
+- document which violates the specification is discovered only when a browser displays it
+- wrongly, if then.
++ El HTML es un árbol de nodos, que son elementos, texto y comentarios. Lo rige una
++ especificación, que dice qué elementos pueden contener a qué otros, qué atributos acepta cada
++ elemento y cómo se trata el texto que hay dentro de cada uno. La mayoría de las bibliotecas
++ manejan ese árbol con laxitud. Cualquier elemento puede anidarse en cualquier otro, y los
++ atributos son cadenas arbitrarias. Un documento que viola la especificación solo se descubre
++ cuando un navegador lo muestra mal, y ni siquiera entonces siempre.
+
+- Here the specification is encoded in the types, so an invalid document becomes an
+- [impossible state](../../philosophy/impossible-states.md), not something to validate
+- afterwards. Each tag is a value whose type knows its name, what it may contain, and what
+- attributes it admits, and the rules of the specification are enforced where the markup is
+- written.
++ Aquí la especificación está codificada en los tipos, así que un documento inválido se convierte
++ en un [estado imposible](../../philosophy/impossible-states.md), no en algo que haya que validar
++ después. Cada etiqueta es un valor cuyo tipo conoce su nombre, lo que puede contener y qué
++ atributos admite, y las reglas de la especificación se hacen cumplir allí donde se escribe el
++ marcado.
+
+- The vocabulary, the rules of containment, and the behavior of parsing and writing all come
+- from a contextual description of the specification. That is currently the
+- [WHATWG HTML Living Standard](https://html.spec.whatwg.org/), which is what most people mean
+- by "HTML" today, and which other specifications could replace.
++ El vocabulario, las reglas de contención y el comportamiento del análisis y de la escritura
++ proceden todos de una descripción contextual de la especificación. Actualmente es el
++ [WHATWG HTML Living Standard](https://html.spec.whatwg.org/), que es lo que la mayoría de la
++ gente entiende hoy por «HTML», y al que podrían sustituir otras especificaciones.
+
+- Everything comes from the `soundness` package, together with a choice of specification, and
+- the vocabulary of tags which it defines. The last import lets the samples print their
+- results:
++ Todo procede del paquete `soundness`, junto con una elección de especificación y el vocabulario
++ de etiquetas que esta define. La última importación permite que los ejemplos impriman sus
++ resultados:
+
+= results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import htmlDoms.whatwg
++ import htmlDoms.whatwg
+
+- import htmlDoms.whatwg.*
++ import htmlDoms.whatwg.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import attributives.textAttributive
++ import attributives.textAttributive
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- An HTML value has the general type `Html`, and its kinds of node have types in the `Html`
+- companion:
++ Un valor HTML tiene el tipo general `Html`, y sus clases de nodo tienen tipos en el objeto
++ compañero `Html`:
+
+= companion:
+=
+- ```tabular
++ ```tabular
+
+- column  Type
+- column  Node
+- row  `Html.Element`  an element, with its attributes and children
+- row  `Html.Text`  text
+- row  `Html.Comment`  a comment
+- row  `Html.Doctype`  a doctype
+- row  `Html.Fragment`  a sequence of several nodes
++ column  Tipo
++ column  Nodo
++ row  `Html.Element`  un elemento, con sus atributos y sus hijos
++ row  `Html.Text`  texto
++ row  `Html.Comment`  un comentario
++ row  `Html.Doctype`  un doctype
++ row  `Html.Fragment`  una secuencia de varios nodos
+
+= row  `Html.Fragment`  a sequence of several nodes
+- ```
++ ```
+
+- Every node is [immutable], so transforming one gives a new value, and leaves the old one as
+- it was.
++ Todo nodo es [inmutable], así que transformar uno da un valor nuevo y deja el antiguo como
++ estaba.
+
+- ### Constructing elements
++ ### Construcción de elementos
+
+- A builder object exists for each of the roughly 110 tag names in the specification. Applying
+- one to named arguments sets those attributes. Applying it to `Html` values, or to values
+- which convert to HTML, such as `Text`, adds children:
++ Existe un objeto constructor para cada uno de los aproximadamente 110 nombres de etiqueta de la
++ especificación. Aplicarlo a argumentos con nombre establece esos atributos. Aplicarlo a valores
++ `Html`, o a valores que se convierten en HTML, como `Text`, añade hijos:
+
+= which convert to HTML, such as `Text`, adds children:
+=
+- ```scala fuel
++ ```scala fuel
+
+= which convert to HTML, such as `Text`, adds children:
+=
+= ```scala fuel
+- run
++ run
+
+= which convert to HTML, such as `Text`, adds children:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Br.show)
++ Out.println(Br.show)
+
+- Out.println(Img(src = t"image.jpg").show)
++ Out.println(Img(src = t"image.jpg").show)
+
+- Out.println(Div(Hr, P("Hello world")).show)
++ Out.println(Div(Hr, P("Hello world")).show)
+
+- Out.println(Textarea(name = t"details", rows = 5)("Details go here").show)
++ Out.println(Textarea(name = t"details", rows = 5)("Details go here").show)
+
+= Out.println(Textarea(name = t"details", rows = 5)("Details go here").show)
+- ```
++ ```
+
+- Attributes and children form separate groups of arguments. Either may be omitted, neither
+- may appear more than once, and the attributes must come before the children.
++ Los atributos y los hijos forman grupos de argumentos separados. Cualquiera de los dos puede
++ omitirse, ninguno puede aparecer más de una vez, y los atributos deben ir antes que los hijos.
+
+- ### Compiletime checking
++ ### Comprobación en tiempo de compilación
+
+- The construction is typechecked against the specification, and a construction which does
+- not conform is usually a compile error. A `<br>` takes no children:
++ La construcción se comprueba en cuanto a tipos contra la especificación, y una construcción que
++ no se ajusta a ella suele ser un error de compilación. Un `<br>` no admite hijos:
+
+= not conform is usually a compile error. A `<br>` takes no children:
+=
+- ```scala fuel
++ ```scala fuel
+
+= not conform is usually a compile error. A `<br>` takes no children:
+=
+= ```scala fuel
+- compile
++ compile
+
+= not conform is usually a compile error. A `<br>` takes no children:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= not conform is usually a compile error. A `<br>` takes no children:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Br(Hr)
++ Br(Hr)
+
+= Br(Hr)
+- ```
++ ```
+
+- An `<li>` belongs only in an `<ol>` or a `<ul>`:
++ Un `<li>` solo tiene cabida en un `<ol>` o en un `<ul>`:
+
+= An `<li>` belongs only in an `<ol>` or a `<ul>`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= An `<li>` belongs only in an `<ol>` or a `<ul>`:
+=
+= ```scala fuel
+- compile
++ compile
+
+= An `<li>` belongs only in an `<ol>` or a `<ul>`:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= An `<li>` belongs only in an `<ol>` or a `<ul>`:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- P(Li)
++ P(Li)
+
+= P(Li)
+- ```
++ ```
+
+- And a `<ul>` may not contain text directly:
++ Y un `<ul>` no puede contener texto directamente:
+
+= And a `<ul>` may not contain text directly:
+=
+- ```scala fuel
++ ```scala fuel
+
+= And a `<ul>` may not contain text directly:
+=
+= ```scala fuel
+- compile
++ compile
+
+= And a `<ul>` may not contain text directly:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= And a `<ul>` may not contain text directly:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Ul("hello")
++ Ul("hello")
+
+= Ul("hello")
+- ```
++ ```
+
+- What an element may hold, and which attributes it accepts, follow from the static type of
+- its tag. Not every rule of the specification can be captured in that way, since some are
+- stated in terms of more than a simple relationship of nesting. Where a rule cannot be
+- encoded, the checking is *more permissive*, not more restrictive. A construction which
+- compiles may therefore, in rare cases, still not conform. But a construction which the
+- specification allows is never rejected.
++ Lo que un elemento puede contener, y qué atributos acepta, se deduce del tipo estático de su
++ etiqueta. No todas las reglas de la especificación pueden capturarse de ese modo, ya que algunas
++ se enuncian en términos de algo más que una simple relación de anidamiento. Donde una regla no
++ puede codificarse, la comprobación es *más permisiva*, no más restrictiva. Por tanto, una
++ construcción que compila puede, en casos raros, no ajustarse aun así. Pero una construcción que
++ la especificación permite nunca se rechaza.
+
+- ### Writing HTML literally
++ ### Escribir HTML de forma literal
+
+- Markup which is known when the code is written is better written as itself. The `h"…"`
+- [interpolator] parses HTML at compiletime, and reports any error where it is written. It
+- builds the nodes directly at [runtime], so there is no cost of parsing, and no loss of
+- checking:
++ El marcado que se conoce cuando se escribe el código es mejor escribirlo tal cual. El
++ [interpolador] `h"…"` analiza HTML en tiempo de compilación y notifica cualquier error allí donde
++ está escrito. Construye los nodos directamente en [tiempo de ejecución], así que no hay coste de
++ análisis ni se pierde ninguna comprobación:
+
+= checking:
+=
+- ```scala
++ ```scala
+
+- val list = h"<ol><li>Alpha</li><li>Beta</li><li>Gamma</li></ol>"
++ val list = h"<ol><li>Alpha</li><li>Beta</li><li>Gamma</li></ol>"
+
+= val list = h"<ol><li>Alpha</li><li>Beta</li><li>Gamma</li></ol>"
+- ```
++ ```
+
+- The standard rules of parsing apply inside the literal, so the closing tags which the
+- specification makes optional may be left out, and the result is the same value:
++ Dentro del literal se aplican las reglas estándar de análisis, así que las etiquetas de cierre
++ que la especificación hace opcionales pueden omitirse, y el resultado es el mismo valor:
+
+= specification makes optional may be left out, and the result is the same value:
+=
+- ```scala fuel
++ ```scala fuel
+
+= specification makes optional may be left out, and the result is the same value:
+=
+= ```scala fuel
+- run
++ run
+
+= specification makes optional may be left out, and the result is the same value:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((h"<ol><li>Alpha<li>Beta<li>Gamma</ol>" == list).inspect)
++ Out.println((h"<ol><li>Alpha<li>Beta<li>Gamma</ol>" == list).inspect)
+
+= Out.println((h"<ol><li>Alpha<li>Beta<li>Gamma</ol>" == list).inspect)
+- ```
++ ```
+
+- Markup which the specification does not allow is rejected in a literal too:
++ El marcado que la especificación no permite también se rechaza en un literal:
+
+= Markup which the specification does not allow is rejected in a literal too:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Markup which the specification does not allow is rejected in a literal too:
+=
+= ```scala fuel
+- compile
++ compile
+
+= Markup which the specification does not allow is rejected in a literal too:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= Markup which the specification does not allow is rejected in a literal too:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- h"<ul><p>Alpha</p></ul>"
++ h"<ul><p>Alpha</p></ul>"
+
+= h"<ul><p>Alpha</p></ul>"
+- ```
++ ```
+
+- Substitutions are allowed wherever they fit the surrounding markup, and each is checked in
+- its position:
++ Se permiten sustituciones allí donde encajen con el marcado que las rodea, y cada una se
++ comprueba en su posición:
+
+= its position:
+=
+- ```scala
++ ```scala
+
+- val content = t"important"
++ val content = t"important"
+
+- val location = url"https://example.com/dog.jpg"
++ val location = url"https://example.com/dog.jpg"
+
+= val location = url"https://example.com/dog.jpg"
+- ```
++ ```
+
+= val location = url"https://example.com/dog.jpg"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val location = url"https://example.com/dog.jpg"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val location = url"https://example.com/dog.jpg"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(h"<p>$content</p>".show)
++ Out.println(h"<p>$content</p>".show)
+
+- Out.println(h"<img src=$location>".show)
++ Out.println(h"<img src=$location>".show)
+
+- Out.println(h"<!--$content-->".show)
++ Out.println(h"<!--$content-->".show)
+
+= Out.println(h"<!--$content-->".show)
+- ```
++ ```
+
+- Each position asks something different of the value which is substituted into it:
++ Cada posición exige algo distinto del valor que se sustituye en ella:
+
+= Each position asks something different of the value which is substituted into it:
+=
+- ```tabular
++ ```tabular
+
+- column  Substitution
+- column  Must be
+- row  body content  HTML acceptable as a child of the enclosing element
+- row  attribute value  a value the attribute accepts
+- row  comment  showable
++ column  Sustitución
++ column  Debe ser
++ row  contenido del cuerpo  HTML aceptable como hijo del elemento que lo encierra
++ row  valor de atributo  un valor que el atributo acepta
++ row  comentario  mostrable
+
+= row  comment  showable
+- ```
++ ```
+
+- `src` takes a [URL](network-addresses.md#urls), for instance. Without a `Text` attributive
+- in scope, a `Text` in its place would be rejected.
++ `src` admite una [URL](network-addresses.md#urls), por ejemplo. Sin un atributivo de `Text` en
++ el ámbito, un `Text` en su lugar se rechazaría.
+
+- ### Attributes
++ ### Atributos
+
+- The values of attributes are stored as text, but are supplied from typed values, because the
+- specification gives different attributes different types of value. Some take an integer, and
+- some a member of a fixed set. Each attribute name has a type which describes what it
+- accepts. `width` takes a positive integer, so it admits an `Int`:
++ Los valores de los atributos se almacenan como texto, pero se suministran a partir de valores
++ tipados, porque la especificación da a cada atributo un tipo de valor distinto. Algunos admiten
++ un entero, y otros un miembro de un conjunto fijo. Cada nombre de atributo tiene un tipo que
++ describe lo que acepta. `width` admite un entero positivo, así que admite un `Int`:
+
+= accepts. `width` takes a positive integer, so it admits an `Int`:
+=
+- ```scala
++ ```scala
+
+- val pixels = 64
++ val pixels = 64
+
+= val pixels = 64
+- ```
++ ```
+
+= val pixels = 64
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val pixels = 64
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val pixels = 64
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Img(width = pixels).show)
++ Out.println(Img(width = pixels).show)
+
+= Out.println(Img(width = pixels).show)
+- ```
++ ```
+
+- It rejects a `Double`:
++ Rechaza un `Double`:
+
+= It rejects a `Double`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= It rejects a `Double`:
+=
+= ```scala fuel
+- compile
++ compile
+
+= It rejects a `Double`:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= It rejects a `Double`:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Img(width = 64.5)
++ Img(width = 64.5)
+
+= Img(width = 64.5)
+- ```
++ ```
+
+- The set of types which are accepted without an import is still incomplete. Until it is
+- filled, the simplest course is to make `Text` acceptable for every attribute, with one
+- import. That is `attributives.textAttributive`, which is already in scope above, and is what
+- lets `src = t"image.jpg"` stand where a URL is expected.
++ El conjunto de tipos que se aceptan sin ninguna importación todavía está incompleto. Hasta que
++ se complete, lo más sencillo es hacer que `Text` sea aceptable para cualquier atributo, con una
++ sola importación. Es `attributives.textAttributive`, que ya está en el ámbito más arriba, y es lo
++ que permite que `src = t"image.jpg"` aparezca donde se espera una URL.
+
+- The `class` attribute is awkward, because `class` is a keyword in Scala. Instead of writing
+- it in backticks, name the class as a method on the tag:
++ El atributo `class` es incómodo, porque `class` es una palabra clave en Scala. En lugar de
++ escribirlo entre comillas invertidas, se nombra la clase como un método de la etiqueta:
+
+= it in backticks, name the class as a method on the tag:
+=
+- ```scala
++ ```scala
+
+- import stylesheets.uncheckedClasses
++ import stylesheets.uncheckedClasses
+
+= import stylesheets.uncheckedClasses
+- ```
++ ```
+
+= import stylesheets.uncheckedClasses
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import stylesheets.uncheckedClasses
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import stylesheets.uncheckedClasses
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(P.info("body text").show)
++ Out.println(P.info("body text").show)
+
+= Out.println(P.info("body text").show)
+- ```
++ ```
+
+- `uncheckedClasses` permits any class name. Binding a [stylesheet](css.md) instead makes the
+- names which it defines the only legitimate ones. A mistyped class is then caught as the code
+- compiles, and a name which the stylesheet declares as an id is written as one.
+- [Names](names.md#built-in-planes) describes the rules for a class name and an id.
++ `uncheckedClasses` permite cualquier nombre de clase. Vincular una
++ [hoja de estilo](css.md) en su lugar hace que los nombres que esta define sean los únicos
++ legítimos. Una clase mal escrita se detecta entonces mientras se compila el código, y un nombre
++ que la hoja de estilo declara como id se escribe como tal. [Nombres](names.md#built-in-planes)
++ describe las reglas para un nombre de clase y para un id.
+
+- ### Fragments
++ ### Fragmentos
+
+- An `Html` value is either an `Html.Node`, which is exactly one element, comment or text, or
+- an `Html.Fragment`, which is an arbitrary sequence of nodes. HTML is a text format, so
+- insisting on exactly one node is usually an artificial constraint, and `Html` admits
+- sequences everywhere. The type `Html.Node` marks the few places where a single node really
+- is required. Fragments behave intuitively. One is unwrapped when it is supplied as children,
+- and a fragment of a single node equals that node.
++ Un valor `Html` es o bien un `Html.Node`, que es exactamente un elemento, un comentario o un
++ texto, o bien un `Html.Fragment`, que es una secuencia arbitraria de nodos. El HTML es un formato
++ de texto, así que insistir en exactamente un nodo suele ser una restricción artificial, y `Html`
++ admite secuencias en todas partes. El tipo `Html.Node` marca los pocos lugares donde de verdad se
++ requiere un único nodo. Los fragmentos se comportan de forma intuitiva. Uno se desenvuelve cuando
++ se suministra como hijos, y un fragmento de un único nodo es igual a ese nodo.
+
+- ### Rendering other types as HTML
++ ### Representar otros tipos como HTML
+
+- The `Renderable` [typeclass] lets a value of any type stand wherever HTML is expected. An
+- instance declares both how the value converts, and what HTML it produces. A list of text
+- which is rendered as list items declares that it produces `"li"` content:
++ La [clase de tipos] `Renderable` permite que un valor de cualquier tipo aparezca allí donde se
++ espera HTML. Una instancia declara tanto cómo se convierte el valor como qué HTML produce. Una
++ lista de textos que se representa como elementos de lista declara que produce contenido `"li"`:
+
+= which is rendered as list items declares that it produces `"li"` content:
+=
+- ```scala
++ ```scala
+
+- given listRenderable: (List[Text] is Renderable in "li") =
++ given listRenderable: (List[Text] is Renderable in "li") =
+
+-   list => Html.Fragment(list.map(Li(_))*)
++   list => Html.Fragment(list.map(Li(_))*)
+
+- val items = List(t"one", t"two", t"three")
++ val items = List(t"one", t"two", t"three")
+
+= val items = List(t"one", t"two", t"three")
+- ```
++ ```
+
+- With that in scope, a `List[Text]` can be placed inside a `<ul>`:
++ Con eso en el ámbito, se puede colocar una `List[Text]` dentro de un `<ul>`:
+
+= With that in scope, a `List[Text]` can be placed inside a `<ul>`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= With that in scope, a `List[Text]` can be placed inside a `<ul>`:
+=
+= ```scala fuel
+- run
++ run
+
+= With that in scope, a `List[Text]` can be placed inside a `<ul>`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Ul(items).show)
++ Out.println(Ul(items).show)
+
+= Out.println(Ul(items).show)
+- ```
++ ```
+
+- It cannot be placed in a `<div>`, which cannot hold list items.
++ No se puede colocar en un `<div>`, que no puede contener elementos de lista.
+
+- ### Transforming
++ ### Transformación
+
+- Values are combined and amended with operators. The caret in `^+` and `+^` marks the end at
+- which the child joins:
++ Los valores se combinan y se modifican con operadores. El acento circunflejo de `^+` y de `+^`
++ marca el extremo por el que se une el hijo:
+
+= which the child joins:
+=
+- ```tabular
++ ```tabular
+
+- column  Operation
+- column  Applies to
+- column  Gives
+- row  `a + b`  any two `Html` values  a fragment of both
+- row  `element ^+ child`  an `Html.Element`, statically known  the element with a new first child
+- row  `element +^ child`  an `Html.Element`, statically known  the element with a new last child
+- row  `element.name = value`  an `Html.Element`  the element with the attribute added or replaced
++ column  Operación
++ column  Se aplica a
++ column  Da
++ row  `a + b`  dos valores `Html` cualesquiera  un fragmento con ambos
++ row  `element ^+ child`  un `Html.Element`, conocido estáticamente  el elemento con un nuevo primer hijo
++ row  `element +^ child`  un `Html.Element`, conocido estáticamente  el elemento con un nuevo último hijo
++ row  `element.name = value`  un `Html.Element`  el elemento con el atributo añadido o sustituido
+
+= row  `element.name = value`  an `Html.Element`  the element with the attribute added or replaced
+- ```
++ ```
+
+- Here an attribute is added by assignment:
++ Aquí se añade un atributo mediante una asignación:
+
+= Here an attribute is added by assignment:
+=
+- ```scala
++ ```scala
+
+- val image: Html.Element of "img" in Whatwg = Img(src = t"puppy.jpg")
++ val image: Html.Element of "img" in Whatwg = Img(src = t"puppy.jpg")
+
+- val described = image.alt = t"An image of a young dog"
++ val described = image.alt = t"An image of a young dog"
+
+= val described = image.alt = t"An image of a young dog"
+- ```
++ ```
+
+= val described = image.alt = t"An image of a young dog"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val described = image.alt = t"An image of a young dog"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val described = image.alt = t"An image of a young dog"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(image.show)
++ Out.println(image.show)
+
+- Out.println(described.show)
++ Out.println(described.show)
+
+= Out.println(described.show)
+- ```
++ ```
+
+- Values are immutable, so `image` is unchanged, and `described` is the new value.
++ Los valores son inmutables, así que `image` no cambia, y `described` es el valor nuevo.
+
+- ### Parsing
++ ### Análisis
+
+- HTML is read from any textual source, such as a `Text`, a
+- [file](filesystem.md#reading-and-writing), a URL or a [classpath](classpath.md) resource,
+- with `read` or `load`. `load` reads a whole document. It gives a `Document[Html]`, with an
+- `Html.Doctype` header and a root `<html>` node:
++ El HTML se lee de cualquier fuente textual, como un `Text`, un
++ [fichero](filesystem.md#reading-and-writing), una URL o un recurso del
++ [classpath](classpath.md), con `read` o con `load`. `load` lee un documento entero. Da un
++ `Document[Html]`, con una cabecera `Html.Doctype` y un nodo raíz `<html>`:
+
+= `Html.Doctype` header and a root `<html>` node:
+=
+- ```scala
++ ```scala
+
+- val document = t"<html><head><title>Hello</title></head><body><p>Hello</p></body></html>".load[Html]
++ val document = t"<html><head><title>Hello</title></head><body><p>Hello</p></body></html>".load[Html]
+
+= val document = t"<html><head><title>Hello</title></head><body><p>Hello</p></body></html>".load[Html]
+- ```
++ ```
+
+- `read` is for fragments. Called as `read[Html]`, it accepts anything from a single node to
+- several, and gives whichever of `Html.Element`, `Html.Comment`, `Html.Text` or
+- `Html.Fragment` the source yields:
++ `read` es para fragmentos. Llamado como `read[Html]`, acepta desde un único nodo hasta varios, y
++ da aquel de entre `Html.Element`, `Html.Comment`, `Html.Text` o `Html.Fragment` que produzca la
++ fuente:
+
+= `Html.Fragment` the source yields:
+=
+- ```scala
++ ```scala
+
+- val text = t"This is some <em>important</em> text"
++ val text = t"This is some <em>important</em> text"
+
+= val text = t"This is some <em>important</em> text"
+- ```
++ ```
+
+= val text = t"This is some <em>important</em> text"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val text = t"This is some <em>important</em> text"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val text = t"This is some <em>important</em> text"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(text.read[Html].show)
++ Out.println(text.read[Html].show)
+
+= Out.println(text.read[Html].show)
+- ```
++ ```
+
+- Naming the tags which are expected at the top level makes the result more precise, and
+- guides the parser. Reading as `Html of "ul"` accepts an unordered list, and fails on
+- anything else. Reading as `Html of "ul" | "ol"` accepts either. The specification's rules
+- for inferring omitted tags apply, so reading `<p>Hello world</p>` as a whole document
+- supplies the missing `<html>` and `<body>`.
++ Nombrar las etiquetas que se esperan en el nivel superior hace que el resultado sea más preciso
++ y guía al analizador. Leer como `Html of "ul"` acepta una lista no ordenada y falla con
++ cualquier otra cosa. Leer como `Html of "ul" | "ol"` acepta cualquiera de las dos. Se aplican las
++ reglas de la especificación para inferir las etiquetas omitidas, así que leer
++ `<p>Hello world</p>` como un documento entero suministra los `<html>` y `<body>` que faltan.
+
+- ### Source positions
++ ### Posiciones en el código fuente
+
+- Ordinary parsing keeps no record of where each element sat in the text. A program which
+- needs that, to underline the element at fault in a linter, say, brings
+- `parsing.trackPositions` into scope. `load` then records positions on the `Document[Html]`
+- which it returns, and `locate` resolves a path to the line and column of the element which
+- it names:
++ El análisis ordinario no guarda ningún registro de dónde estaba cada elemento en el texto. Un
++ programa que lo necesita, por ejemplo para subrayar en un linter el elemento erróneo, pone
++ `parsing.trackPositions` en el ámbito. `load` registra entonces las posiciones en el
++ `Document[Html]` que devuelve, y `locate` resuelve una ruta a la línea y la columna del elemento
++ que nombra:
+
+= it names:
+=
+- ```scala
++ ```scala
+
+- import parsing.trackPositions
++ import parsing.trackPositions
+
+- val tracked = t"<html>\n  <body>\n    <p class=\"x\">Hi</p>\n  </body>\n</html>".load[Html]
++ val tracked = t"<html>\n  <body>\n    <p class=\"x\">Hi</p>\n  </body>\n</html>".load[Html]
+
+- val paragraph = Html.Path().element(t"html").element(t"body").element(t"p")
++ val paragraph = Html.Path().element(t"html").element(t"body").element(t"p")
+
+= val paragraph = Html.Path().element(t"html").element(t"body").element(t"p")
+- ```
++ ```
+
+= val paragraph = Html.Path().element(t"html").element(t"body").element(t"p")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val paragraph = Html.Path().element(t"html").element(t"body").element(t"p")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val paragraph = Html.Path().element(t"html").element(t"body").element(t"p")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(tracked.locate(paragraph).let(_.line).inspect)
++ Out.println(tracked.locate(paragraph).let(_.line).inspect)
+
+- Out.println(tracked.locate(paragraph.attribute(t"class")).let(_.column).inspect)
++ Out.println(tracked.locate(paragraph.attribute(t"class")).let(_.column).inspect)
+
+= Out.println(tracked.locate(paragraph.attribute(t"class")).let(_.column).inspect)
+- ```
++ ```
+
+- A path begins at the root. Each step names a child element by its label and, for the second
+- and later children with that label, its position, so `element(t"p", 2)` is the second
+- paragraph. A final `attribute` step names one of the last element's attributes.
++ Una ruta empieza en la raíz. Cada paso nombra un elemento hijo por su rótulo y, para el segundo
++ hijo con ese rótulo y los siguientes, por su posición, así que `element(t"p", 2)` es el segundo
++ párrafo. Un paso `attribute` final nombra uno de los atributos del último elemento.
+
+- A position spans the whole element, from its start tag to the end of its end tag. An
+- element which the parser supplied itself, such as the `<html>` around a bare paragraph,
+- starts at the tag which prompted it. A path which does not resolve gives `Unset`. So does
+- any lookup on a document which was loaded without `parsing.trackPositions` in scope, which
+- records nothing, and costs nothing. [JSON](json.md#source-positions) tracks positions in the
+- same way.
++ Una posición abarca el elemento entero, desde su etiqueta de apertura hasta el final de su
++ etiqueta de cierre. Un elemento que el analizador suministró por sí mismo, como el `<html>` que
++ rodea un párrafo suelto, empieza en la etiqueta que lo provocó. Una ruta que no se resuelve da
++ `Unset`. Lo mismo ocurre con cualquier búsqueda en un documento que se cargó sin
++ `parsing.trackPositions` en el ámbito, que no registra nada y no cuesta nada.
++ [JSON](json.md#source-positions) registra las posiciones del mismo modo.
+
+- ### Serializing
++ ### Serialización
+
+- `show` converts an `Html` value to text, which suits most needs:
++ `show` convierte un valor `Html` en texto, lo que basta para la mayoría de las necesidades:
+
+= `show` converts an `Html` value to text, which suits most needs:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `show` converts an `Html` value to text, which suits most needs:
+=
+= ```scala fuel
+- run
++ run
+
+= `show` converts an `Html` value to text, which suits most needs:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Ol(Li("Alpha"), Li("Beta")).show)
++ Out.println(Ol(Li("Alpha"), Li("Beta")).show)
+
+= Out.println(Ol(Li("Alpha"), Li("Beta")).show)
+- ```
++ ```
+
+- For a large document, or for streaming output, a `Document[Html]` gives a
+- [`Stream[Text]`](streams.md) in chunks instead. That runs concurrently, so it needs the
+- [concurrency](concurrency.md) context in scope:
++ Para un documento grande, o para una salida en flujo, un `Document[Html]` da en su lugar un
++ [`Stream[Text]`](streams.md) en fragmentos. Eso se ejecuta de forma concurrente, así que necesita
++ el contexto de [concurrencia](concurrency.md) en el ámbito:
+
+= [concurrency](concurrency.md) context in scope:
+=
+- ```scala fuel
++ ```scala fuel
+
+- parse
++ parse
+
+= parse
+- ##
++ ##
+
+- import probates.cancelProbate
++ import probates.cancelProbate
+
+- import supervisors.globalSupervisor
++ import supervisors.globalSupervisor
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- document.stream[Text]
++ document.stream[Text]
+
+= document.stream[Text]
+- ```
++ ```
+
+- ### Pattern matching
++ ### Coincidencia de patrones
+
+- The `h"…"` interpolator is also a pattern. A literal pattern matches an equal node, whether
+- the value is that node, or a fragment which contains only it. It is checked as real HTML,
+- against the structure of the nodes, not against the source text, so a pattern which is
+- written with closing tags matches input which was written without them:
++ El interpolador `h"…"` es también un patrón. Un patrón literal coincide con un nodo igual, tanto
++ si el valor es ese nodo como si es un fragmento que solo lo contiene a él. Se comprueba como HTML
++ real, contra la estructura de los nodos, no contra el texto fuente, así que un patrón que se
++ escribe con etiquetas de cierre coincide con una entrada que se escribió sin ellas:
+
+= written with closing tags matches input which was written without them:
+=
+- ```scala
++ ```scala
+
+- val html = h"<li>two</li>"
++ val html = h"<li>two</li>"
+
+- val matched = html match
++ val matched = html match
+
+-   case h"<li>one</li>" => 1
++   case h"<li>one</li>" => 1
+
+-   case h"<li>two</li>" => 2
++   case h"<li>two</li>" => 2
+
+-   case _               => 0
++   case _               => 0
+
+=   case _               => 0
+- ```
++ ```
+
+- Substitutions bind the pieces which a pattern captures. An `<li>` may hold text or
+- elements, so a captured body is itself `Html`, which is matched in turn:
++ Las sustituciones ligan las piezas que captura un patrón. Un `<li>` puede contener texto o
++ elementos, así que un cuerpo capturado es a su vez `Html`, que se compara a su vez con patrones:
+
+= elements, so a captured body is itself `Html`, which is matched in turn:
+=
+- ```scala
++ ```scala
+
+- val nested = html match
++ val nested = html match
+
+-   case h"<li>$value</li>" => value match
++   case h"<li>$value</li>" => value match
+
+-     case Html.Text("one") => 1
++     case Html.Text("one") => 1
+
+-     case Html.Text("two") => 2
++     case Html.Text("two") => 2
+
+-     case _                => 0
++     case _                => 0
+
+-   case _                  => 0
++   case _                  => 0
+
+=   case _                  => 0
+- ```
++ ```
+
+=   case _                  => 0
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   case _                  => 0
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   case _                  => 0
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(matched.show)
++ Out.println(matched.show)
+
+- Out.println(nested.show)
++ Out.println(nested.show)
+
+= Out.println(nested.show)
+- ```
++ ```
+
+- Attributes, comments and elements can be captured too:
++ También se pueden capturar atributos, comentarios y elementos:
+
+= Attributes, comments and elements can be captured too:
+=
+- ```tabular
++ ```tabular
+
+- column  Pattern
+- column  Matches
+- row  `h"<li>$value</li>"`  an `<li>`, binding its body as `Html`
+- row  `h"<img src=$source>"`  an `<img>`, binding the value of `src`
+- row  `h"<img $attributes>"`  an `<img>`, binding its attribute map
+- row  `h"<$element>"`  any element, but no other kind of node
++ column  Patrón
++ column  Coincide con
++ row  `h"<li>$value</li>"`  un `<li>`, ligando su cuerpo como `Html`
++ row  `h"<img src=$source>"`  un `<img>`, ligando el valor de `src`
++ row  `h"<img $attributes>"`  un `<img>`, ligando su mapa de atributos
++ row  `h"<$element>"`  cualquier elemento, pero ninguna otra clase de nodo
+
+= row  `h"<$element>"`  any element, but no other kind of node
+- ```
++ ```
+
+- [Interpolation](interpolation.md#patterns) explains how one literal serves as both an
+- expression and a pattern.
++ [Interpolación](interpolation.md#patterns) explica cómo un mismo literal sirve a la vez como
++ expresión y como patrón.
+
+- ### Precise types
++ ### Tipos precisos
+
+- An HTML value at runtime conforms to `Html`, and to one of its subtypes. Its static type
+- can say far more, through three refinements:
++ Un valor HTML en tiempo de ejecución se ajusta a `Html` y a uno de sus subtipos. Su tipo
++ estático puede decir mucho más, mediante tres refinamientos:
+
+= can say far more, through three refinements:
+=
+- ```tabular
++ ```tabular
+
+- column  Refinement
+- column  Records
+- column  Example
+- row  `of`  the tag name, or a union of names  `Html of "br"`, `Html of "ul" | "ol"`
+- row  `over`  what the element may contain  `Html.Element of "ul" over "li"`
+- row  `in`  the specification in force  `Html in Whatwg`
++ column  Refinamiento
++ column  Registra
++ column  Ejemplo
++ row  `of`  el nombre de la etiqueta, o una unión de nombres  `Html of "br"`, `Html of "ul" | "ol"`
++ row  `over`  lo que puede contener el elemento  `Html.Element of "ul" over "li"`
++ row  `in`  la especificación vigente  `Html in Whatwg`
+
+= row  `in`  the specification in force  `Html in Whatwg`
+- ```
++ ```
+
+- The content models of the specification are unions of tag names, ready to use:
++ Los modelos de contenido de la especificación son uniones de nombres de etiqueta, listas para
++ usar:
+
+= The content models of the specification are unions of tag names, ready to use:
+=
+- ```tabular
++ ```tabular
+
+- column  Content model
+- column  Includes, for example
+- row  `Flow`  `div`, `p`, `ul`, `table`, and all phrasing, heading and sectioning content
+- row  `Phrasing`  `em`, `span`, `a`, `img`, `br`, and text
++ column  Modelo de contenido
++ column  Incluye, por ejemplo
++ row  `Flow`  `div`, `p`, `ul`, `table`, y todo el contenido de fraseo, de encabezado y de seccionado
++ row  `Phrasing`  `em`, `span`, `a`, `img`, `br`, y texto
+
+- row  `Interactive`  `a`, `button`, `input`, `select`, `details`
++ row  `Interactive`  `a`, `button`, `input`, `select`, `details`
+
+- row  `Embedded`  `img`, `video`, `iframe`, `svg`, `math`
++ row  `Embedded`  `img`, `video`, `iframe`, `svg`, `math`
+
+- row  `Heading`  `h1` to `h6`, `hgroup`
++ row  `Heading`  de `h1` a `h6`, `hgroup`
+
+- row  `Sectioning`  `article`, `aside`, `nav`, `section`
++ row  `Sectioning`  `article`, `aside`, `nav`, `section`
+
+- row  `Metadata`  `title`, `meta`, `link`, `style`, `script`
++ row  `Metadata`  `title`, `meta`, `link`, `style`, `script`
+
+- row  `ScriptSupporting`  `script`, `template`
++ row  `ScriptSupporting`  `script`, `template`
+
+= row  `ScriptSupporting`  `script`, `template`
+- ```
++ ```
+
+- `Html of Flow` is any flow content, which is the level of precision that most code wants:
++ `Html of Flow` es cualquier contenido de flujo, que es el nivel de precisión que quiere la mayor
++ parte del código:
+
+= `Html of Flow` is any flow content, which is the level of precision that most code wants:
+=
+- ```scala
++ ```scala
+
+- val nodes: List[Html of Flow] = List(Hr, P("Hello"), Br)
++ val nodes: List[Html of Flow] = List(Hr, P("Hello"), Br)
+
+= val nodes: List[Html of Flow] = List(Hr, P("Hello"), Br)
+- ```
++ ```
+
+- The refinements combine into types as exact as
+- `Container of "em" | "i" | "b" over Phrasing in Whatwg`. That precision is used internally.
+- Applications rarely need more than `Html of Flow`.
++ Los refinamientos se combinan en tipos tan exactos como
++ `Container of "em" | "i" | "b" over Phrasing in Whatwg`. Esa precisión se usa internamente. Las
++ aplicaciones rara vez necesitan más que `Html of Flow`.
+
+- ### Whole pages
++ ### Páginas enteras
+
+- A complete page is more than a tree of tags. It has a masthead, perhaps a hero banner,
+- navigation, side panels, and the metadata which belongs in the `<head>`. A page is assembled
+- from reusable parts. It is a type which extends `Archetype`, and supplies its central
+- `content`. Each feature is a trait which is mixed in, and each trait contributes its own
+- markup, its own styles and its own metadata for the head, which compose in the order in
+- which the traits are mixed:
++ Una página completa es más que un árbol de etiquetas. Tiene un masthead, quizá un banner
++ principal, navegación, paneles laterales y los metadatos que corresponden al `<head>`. Una
++ página se monta a partir de partes reutilizables. Es un tipo que extiende `Archetype` y
++ suministra su `content` central. Cada característica es un trait que se mezcla, y cada trait
++ aporta su propio marcado, sus propios estilos y sus propios metadatos para la cabecera, que se
++ componen en el orden en que se mezclan los traits:
+
+= which the traits are mixed:
+=
+- ```scala
++ ```scala
+
+- case class HomePage(content: Html of Flow)
++ case class HomePage(content: Html of Flow)
+
+- extends Archetype, Masthead, Hero(t"Welcome"), StandardMetadata(t"A home page"):
++ extends Archetype, Masthead, Hero(t"Welcome"), StandardMetadata(t"A home page"):
+
+-   override def pageTitle = t"Welcome"
++   override def pageTitle = t"Welcome"
+
+- val page = HomePage(P("Hello world")).document
++ val page = HomePage(P("Hello world")).document
+
+= val page = HomePage(P("Hello world")).document
+- ```
++ ```
+
+- The assembled value is a `Document[Html]`, with a leading doctype, and an inline stylesheet
+- gathered from every feature. It serves directly as a `text/html` response from an
+- [HTTP server](http-server.md#responses), so a handler can return a page, with no glue
+- between the HTML and the server. [Pages](pages.md) describes the parts in full.
++ El valor montado es un `Document[Html]`, con un doctype al principio y una hoja de estilo en
++ línea reunida a partir de todas las características. Sirve directamente como respuesta
++ `text/html` de un [servidor HTTP](http-server.md#responses), así que un manejador puede devolver
++ una página, sin ningún código de unión entre el HTML y el servidor. [Páginas](pages.md) describe
++ las partes por completo.
+
+- ### Related
++ ### Relacionado
+
+- - [CSS](css.md) writes the stylesheets which pages use, and checks class names.
+- - [DOM](dom.md) works with a live document in a browser.
+- - [XML](xml.md) and [SVG](svg.md) use the same kinds of node for other vocabularies.
+- - [Markdown](markdown.md) converts prose to HTML.
+- - [Forms](forms.md) generates an HTML form from a case class.
+- - [Web automation](web-automation.md) drives a browser over real pages.
+- - [Email](email.md), [mathematical markup](mathematical-markup.md), [syntax highlighting](syntax-highlighting.md) and [errors](errors.md) render into HTML.
++ - [CSS](css.md) escribe las hojas de estilo que usan las páginas y comprueba los nombres de clase.
++ - [DOM](dom.md) trabaja con un documento vivo en un navegador.
++ - [XML](xml.md) y [SVG](svg.md) usan las mismas clases de nodo para otros vocabularios.
++ - [Markdown](markdown.md) convierte prosa en HTML.
++ - [Formularios](forms.md) genera un formulario HTML a partir de una case class.
++ - [Automatización web](web-automation.md) controla un navegador sobre páginas reales.
++ - [Correo electrónico](email.md), [marcado matemático](mathematical-markup.md), [resaltado de sintaxis](syntax-highlighting.md) y [errores](errors.md) se representan en HTML.

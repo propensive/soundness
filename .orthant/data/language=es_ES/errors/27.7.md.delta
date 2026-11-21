@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.27.7` — `S16` value above `Short.MaxValue`
++ # `↯/s.27.7` — Valor `S16` mayor que `Short.MaxValue`
+
+- Raised at compile time by Hypotenuse's `s16` macro when the value
+- exceeds `32767`.
++ Lo lanza en tiempo de compilación la macro `s16` de Hypotenuse cuando el valor supera `32767`.
+
+- ## Cause
++ ## Causa
+
+- An `S16` (signed 16-bit) is bounded above by `Short.MaxValue`.
++ Un `S16` (entero con signo de 16 bits) tiene `Short.MaxValue` como cota superior.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.27.7] an S16 may not be greater than 32767
++ [↯/s.27.7] an S16 may not be greater than 32767
+
+= [↯/s.27.7] an S16 may not be greater than 32767
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Provide a value in the range `-32768`–`32767`.
++ Proporciona un valor en el rango `-32768`–`32767`.
+
+- ## See also
++ ## Véase también
+
+- - The other integer literal errors: [Families](README.md#families)
+- - Source: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`
++ - Los demás errores de literales enteros: [Familias](README.md#families)
++ - Código fuente: `lib/hypotenuse/src/core/hypotenuse.protointernal.scala`

@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.95.2` — `Terminal.Error`
++ # `↯/s.95.2` — `Terminal.Error`
+
+- Raised when interactive terminal operations are attempted but
+- stdin is not connected to a TTY.
++ Se lanza cuando se intentan operaciones interactivas de terminal pero la entrada estándar no está
++ conectada a un TTY.
+
+- ## Cause
++ ## Causa
+
+- Profanity needs a real terminal for interactive features. When
+- stdin is a pipe or redirect, this error is thrown.
++ Profanity necesita un terminal real para las funciones interactivas. Cuando la entrada estándar es
++ una tubería o una redirección, se lanza este error.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.95.2] STDIN is not attached to a TTY
++ [↯/s.95.2] STDIN is not attached to a TTY
+
+= [↯/s.95.2] STDIN is not attached to a TTY
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Run the program in an interactive shell, or fall back to a
+- non-interactive code path.
++ Ejecuta el programa en una shell interactiva, o recurre como alternativa a un camino de código no
++ interactivo.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/profanity/src/core/profanity.Terminal.scala`
++ - Fuente: `lib/profanity/src/core/profanity.Terminal.scala`

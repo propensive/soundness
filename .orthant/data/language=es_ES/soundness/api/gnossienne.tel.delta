@@ -1,0 +1,438 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base gnossienne
++ base gnossienne
+
+- import soundness
++ import soundness
+
+- info   typed references to entities, holding only their keys and resolved back through a store
++ info   referencias tipadas a entidades, que solo contienen sus claves y se resuelven de vuelta mediante un almacén
+
+- detail
++ detail
+
+-     _Gnossienne_ represents a reference to an entity — a person, a product, a row — as a
+-     value which holds nothing but the entity's key, typed by what it refers to. A
+-     `Reference to Person` built from `t"juliet@example.com"` is not a `Text`, and cannot be
+-     confused with a reference to anything else.
++     _Gnossienne_ representa una referencia a una entidad —una persona, un producto, una
++     fila— como un valor que no contiene nada salvo la clave de la entidad, tipado por aquello a
++     lo que se refiere. Una `Reference to Person` construida a partir de `t"juliet@example.com"`
++     no es un `Text`, y no se puede confundir con una referencia a ninguna otra cosa.
+
+-     How a key finds its entity is a `Resolvable` typeclass instance. The usual one is built
+-     from a set of values with `Resolvable(store)`, and searches them by the field marked with
+-     the `@primary` annotation. With that instance in scope, the `ref` extension takes the
+-     reference of any value, and applying a reference resolves it back, raising a
+-     `Reference.Error` if nothing in the store has that key.
++     Cómo encuentra una clave su entidad es una instancia de la clase de tipos `Resolvable`. La
++     habitual se construye a partir de un conjunto de valores con `Resolvable(store)`, y busca en
++     ellos por el campo marcado con la anotación `@primary`. Con esa instancia en el ámbito, la
++     extensión `ref` toma la referencia de cualquier valor, y aplicar una referencia la resuelve
++     de vuelta, lanzando un `Reference.Error` si nada en el almacén tiene esa clave.
+
+=     `Reference.Error` if nothing in the store has that key.
+=
+-     ```scala
++     ```scala
+
+=     `Reference.Error` if nothing in the store has that key.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=     import strategies.throwUnsafely
+=
+-     case class Person(@primary email: Text, name: Text)
++     case class Person(@primary email: Text, name: Text)
+
+-     val romeo = Person(t"romeo@example.com", t"Romeo")
++     val romeo = Person(t"romeo@example.com", t"Romeo")
+
+=     val romeo = Person(t"romeo@example.com", t"Romeo")
+-     val juliet = Person(t"juliet@example.com", t"Juliet")
++     val juliet = Person(t"juliet@example.com", t"Juliet")
+
+-     given Person is Resolvable by Text = Resolvable(Set(romeo, juliet))
++     given Person is Resolvable by Text = Resolvable(Set(romeo, juliet))
+
+-     val reference: Reference to Person = juliet.ref
++     val reference: Reference to Person = juliet.ref
+
+-     reference.key                                   // t"juliet@example.com"
++     reference.key                                   // t"juliet@example.com"
+
+-     reference()                                     // juliet
++     reference()                                     // juliet
+
+-     safely(Reference[Person](t"nobody@example.com")())   // Unset
++     safely(Reference[Person](t"nobody@example.com")())   // Unset
+
+=     safely(Reference[Person](t"nobody@example.com")())   // Unset
+-     ```
++     ```
+
+-     A reference encodes as its key and decodes from it, so it can be stored or sent as text
+-     and resolved later. It is validated only when it is applied, never when it is built.
++     Una referencia se codifica como su clave y se decodifica a partir de ella, así que se puede
++     almacenar o enviar como texto y resolver más tarde. Solo se valida cuando se aplica, nunca
++     cuando se construye.
+
+-     The library has a single source set, `gnossienne.core`, for every platform, and
+-     everything is exported to the `soundness` umbrella. The database tutorial shows
+-     references used together with relations.
++     La biblioteca tiene un único conjunto de fuentes, `gnossienne.core`, para todas las
++     plataformas, y todo se exporta al paraguas `soundness`. El tutorial de bases de datos muestra
++     referencias usadas junto con relaciones.
+
+- refer gnossienne.Reference
++ refer gnossienne.Reference
+
+- refer gnossienne.Resolvable
++ refer gnossienne.Resolvable
+
+- refer gnossienne.primary
++ refer gnossienne.primary
+
+- refer gnossienne.ref
++ refer gnossienne.ref
+
+- entry .Reference   a typed reference to an entity, holding its key and resolved through a `Resolvable`
++ entry .Reference   una referencia tipada a una entidad, que contiene su clave y se resuelve mediante un `Resolvable`
+
+= entry .Reference   a typed reference to an entity, holding its key and resolved through a `Resolvable`
+-   detail
++   detail
+
+-       A `Reference` holds the key of an entity and, as its `#Result` type member, the type
+-       of the entity it refers to: `Reference to Person` is a reference to a `Person`. It is
+-       made from a value with the `ref` extension, or from a key with `Reference[Person](key)`;
+-       either way, its `#key` is typed as the `Operand` of the `Resolvable` instance in scope.
++       Una `Reference` contiene la clave de una entidad y, como su miembro de tipo `#Result`, el
++       tipo de la entidad a la que se refiere: `Reference to Person` es una referencia a un
++       `Person`. Se crea a partir de un valor con la extensión `ref`, o a partir de una clave con
++       `Reference[Person](key)`; en ambos casos, su `#key` tiene como tipo el `Operand` de la
++       instancia de `Resolvable` que haya en el ámbito.
+
+-       Applying a reference, `reference()`, looks the key up through `Person is Resolvable`
+-       and returns the entity, raising `Reference.Error` if there is none. A reference made
+-       from a key which matches nothing is still a valid reference: the failure comes only
+-       when it is applied.
++       Aplicar una referencia, `reference()`, busca la clave mediante `Person is Resolvable` y
++       devuelve la entidad, lanzando `Reference.Error` si no hay ninguna. Una referencia creada a
++       partir de una clave que no coincide con nada sigue siendo una referencia válida: el fallo
++       solo llega cuando se aplica.
+
+=       when it is applied.
+=
+-       ```scala
++       ```scala
+
+=       when it is applied.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       when it is applied.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       case class Product(@primary code: Int, description: Text)
++       case class Product(@primary code: Int, description: Text)
+
+-       val widget = Product(1001, t"Widget")
++       val widget = Product(1001, t"Widget")
+
+-       given Product is Resolvable by Int = Resolvable(Set(widget))
++       given Product is Resolvable by Int = Resolvable(Set(widget))
+
+-       val reference = Reference[Product](1001)
++       val reference = Reference[Product](1001)
+
+-       reference().description   // t"Widget"
++       reference().description   // t"Widget"
+
+=       reference().description   // t"Widget"
+-       ```
++       ```
+
+-       A reference encodes as text through `.encodable` and decodes through `.decodable`,
+-       each by way of the key's own codec, so `t"1001".as[Reference to Product]` reads one.
++       Una referencia se codifica como texto mediante `.encodable` y se decodifica mediante
++       `.decodable`, en ambos casos a través del códec propio de la clave, así que
++       `t"1001".as[Reference to Product]` lee una.
+
+-   refer gnossienne.Resolvable
++   refer gnossienne.Resolvable
+
+-   refer gnossienne.ref
++   refer gnossienne.ref
+
+-   entry .apply   makes a reference from a key, as `Reference[Entity](key)`
+-       The key's type is the `Operand` of the `Resolvable` instance for the entity, which must
+-       be in scope. Nothing is looked up: a key which matches no entity makes a reference
+-       which raises `Reference.Error` when it is applied.
+-   entry .encodable   encodes a reference as text: the encoding of its key
+-       Available for `Reference to Entity` whenever `Entity is Resolvable` and its key type
+-       is `Encodable in Text`. It is in implicit scope.
+-   entry .decodable   decodes a reference from text, by decoding its key
+-       Available for `Reference to Entity` whenever `Entity is Resolvable` and its key type
+-       is `Decodable in Text`. The decoded reference is not checked against the store until
+-       it is applied.
++   entry .apply   crea una referencia a partir de una clave, como `Reference[Entity](key)`
++       El tipo de la clave es el `Operand` de la instancia de `Resolvable` para la entidad, que
++       debe estar en el ámbito. No se busca nada: una clave que no coincide con ninguna entidad
++       crea una referencia que lanza `Reference.Error` cuando se aplica.
++   entry .encodable   codifica una referencia como texto: la codificación de su clave
++       Disponible para `Reference to Entity` siempre que `Entity is Resolvable` y su tipo de
++       clave sea `Encodable in Text`. Está en el ámbito implícito.
++   entry .decodable   decodifica una referencia a partir de texto, decodificando su clave
++       Disponible para `Reference to Entity` siempre que `Entity is Resolvable` y su tipo de
++       clave sea `Decodable in Text`. La referencia decodificada no se comprueba contra el
++       almacén hasta que se aplica.
+
+=       it is applied.
+=
+-       ```scala
++       ```scala
+
+=       it is applied.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       it is applied.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       it is applied.
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=
+-       case class Person(@primary email: Text, name: Text)
++       case class Person(@primary email: Text, name: Text)
+
+-       given Person is Resolvable by Text = Resolvable(Set(Person(t"juliet@example.com", t"Juliet")))
++       given Person is Resolvable by Text = Resolvable(Set(Person(t"juliet@example.com", t"Juliet")))
+
+-       t"juliet@example.com".as[Reference to Person]().name   // t"Juliet"
++       t"juliet@example.com".as[Reference to Person]().name   // t"Juliet"
+
+=       t"juliet@example.com".as[Reference to Person]().name   // t"Juliet"
+-       ```
++       ```
+
+-   entry .Error   raised when a reference's key matches no entity in the store
++   entry .Error   se lanza cuando la clave de una referencia no coincide con ninguna entidad del almacén
+
+-     detail
++     detail
+
+-         Error `↯/s.31.1`: _the reference `reference` could not be resolved because `reason`_.
++         Error `↯/s.31.1`: _the reference `reference` could not be resolved because `reason`_.
+
+-         Raised by `Reference#apply` (and `Resolvable#resolve`) when the store has no entity
+-         whose `@primary` field equals the key. `#reference` is the key, encoded as text.
+-     entry #reference   the key which could not be resolved, encoded as text
+-     entry #reason   why the reference could not be resolved, a `Reference.Error.Reason`
+-     entry .Reason   why a reference could not be resolved
+-         The only case is `NotFound`: _no target with that reference was found in the
++         Lo lanza `Reference#apply` (y `Resolvable#resolve`) cuando el almacén no tiene ninguna
++         entidad cuyo campo `@primary` sea igual a la clave. `#reference` es la clave, codificada
++         como texto.
++     entry #reference   la clave que no se ha podido resolver, codificada como texto
++     entry #reason   por qué no se ha podido resolver la referencia, un `Reference.Error.Reason`
++     entry .Reason   por qué no se ha podido resolver una referencia
++         El único caso es `NotFound`: _no target with that reference was found in the
+
+-         store_.
++         store_.
+
+-     entry .communicable   renders a `Reference.Error.Reason` as a message
+-   entry #Result   the type of the entity the reference refers to
+-   entry #key   the reference's key, typed as the `Resolvable` instance's `Operand`
+-       Needs `Result is Resolvable` in scope, which fixes the key's type.
+-   entry #apply   resolves the reference to its entity, raising `Reference.Error` if there is none
+-       Needs `Result is Resolvable` in scope and a `Tactic[Reference.Error]`. Each
+-       application looks the key up afresh, so a reference made before its entity was added
+-       to the store resolves once it is there.
++     entry .communicable   representa un `Reference.Error.Reason` como un mensaje
++   entry #Result   el tipo de la entidad a la que se refiere la referencia
++   entry #key   la clave de la referencia, con el `Operand` de la instancia de `Resolvable` como tipo
++       Necesita `Result is Resolvable` en el ámbito, que fija el tipo de la clave.
++   entry #apply   resuelve la referencia en su entidad, lanzando `Reference.Error` si no hay ninguna
++       Necesita `Result is Resolvable` en el ámbito y una `Tactic[Reference.Error]`. Cada
++       aplicación busca la clave de nuevo, así que una referencia creada antes de que su entidad
++       se añadiera al almacén se resuelve en cuanto la entidad está ahí.
+
+- entry .Resolvable   a typeclass saying how a key of type `Operand` resolves to an entity of type `Self`
++ entry .Resolvable   una clase de tipos que dice cómo una clave de tipo `Operand` se resuelve en una entidad de tipo `Self`
+
+= entry .Resolvable   a typeclass saying how a key of type `Operand` resolves to an entity of type `Self`
+-   detail
++   detail
+
+-       `Person is Resolvable by Text` says that a `Text` key identifies a `Person`, which
+-       field of `Person` is that key (`#field`), and how a key is resolved (`#resolve`). The
+-       `ref` extension and `Reference#apply` both need one in scope.
++       `Person is Resolvable by Text` dice que una clave `Text` identifica a un `Person`, qué
++       campo de `Person` es esa clave (`#field`) y cómo se resuelve una clave (`#resolve`). Tanto
++       la extensión `ref` como `Reference#apply` necesitan una en el ámbito.
+
+-       The usual instance is built from a store of values with `Resolvable(store)`:
++       La instancia habitual se construye a partir de un almacén de valores con
++       `Resolvable(store)`:
+
+=       The usual instance is built from a store of values with `Resolvable(store)`:
+=
+-       ```scala
++       ```scala
+
+=       The usual instance is built from a store of values with `Resolvable(store)`:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       The usual instance is built from a store of values with `Resolvable(store)`:
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       The usual instance is built from a store of values with `Resolvable(store)`:
+=
+=       ```scala
+=       import soundness.*
+=       import strategies.throwUnsafely
+=
+-       case class Person(@primary email: Text, name: Text)
++       case class Person(@primary email: Text, name: Text)
+
+-       val people = Set(Person(t"romeo@example.com", t"Romeo"), Person(t"juliet@example.com", t"Juliet"))
++       val people = Set(Person(t"romeo@example.com", t"Romeo"), Person(t"juliet@example.com", t"Juliet"))
+
+-       given resolvable: Person is Resolvable by Text = Resolvable(people)
++       given resolvable: Person is Resolvable by Text = Resolvable(people)
+
+-       resolvable.field                          // t"email"
++       resolvable.field                          // t"email"
+
+-       resolvable.resolve(t"romeo@example.com")   // Person(t"romeo@example.com", t"Romeo")
++       resolvable.resolve(t"romeo@example.com")   // Person(t"romeo@example.com", t"Romeo")
+
+=       resolvable.resolve(t"romeo@example.com")   // Person(t"romeo@example.com", t"Romeo")
+-       ```
++       ```
+
+-       A store of another kind — a database table, a remote service — can implement the
+-       trait directly.
++       Un almacén de otra clase —una tabla de base de datos, un servicio remoto— puede
++       implementar el trait directamente.
+
+-   refer gnossienne.primary
++   refer gnossienne.primary
+
+-   refer gnossienne.Reference
++   refer gnossienne.Reference
+
+-   entry .apply   a `Resolvable` which searches a set of values by their `@primary` field
+-       `Resolvable(store)` needs the entity type to have exactly one field annotated
+-       `@primary` (so that it is `Annotated by primary`), that field to be selectable as
+-       `Dereferenceable to Operand`, and the field's type to be `Encodable in Text` (for the
+-       error message). Both the key's type and the field are inferred from the annotation.
++   entry .apply   un `Resolvable` que busca en un conjunto de valores por su campo `@primary`
++       `Resolvable(store)` necesita que el tipo de la entidad tenga exactamente un campo anotado
++       con `@primary` (de modo que sea `Annotated by primary`), que ese campo se pueda
++       seleccionar como `Dereferenceable to Operand`, y que el tipo del campo sea
++       `Encodable in Text` (para el mensaje de error). Tanto el tipo de la clave como el campo se
++       infieren a partir de la anotación.
+
+-       The store is taken by name and evaluated on every resolution, so a store which
+-       changes is searched as it is at the moment a reference is applied. The search is a
+-       linear scan of the set.
++       El almacén se toma por nombre y se evalúa en cada resolución, así que en un almacén que
++       cambia se busca tal como está en el momento en que se aplica una referencia. La búsqueda
++       es un recorrido lineal del conjunto.
+
+-       Its result type is `raises Reference.Error`, so building the instance needs a
+-       `Tactic[Reference.Error]` in scope (or `unsafely(Resolvable(store))`), although
+-       nothing can fail until a key is resolved.
+-   entry #Self   the type of the entity a key resolves to
+-   entry #Operand   the type of the key
+-   entry #resolve   finds the entity with a given key, raising `Reference.Error` if there is none
+-   entry #field   the name of the entity's key field, as text
++       Su tipo de resultado es `raises Reference.Error`, así que construir la instancia necesita
++       una `Tactic[Reference.Error]` en el ámbito (o `unsafely(Resolvable(store))`), aunque nada
++       puede fallar hasta que se resuelve una clave.
++   entry #Self   el tipo de la entidad en la que se resuelve una clave
++   entry #Operand   el tipo de la clave
++   entry #resolve   encuentra la entidad con una clave dada, lanzando `Reference.Error` si no hay ninguna
++   entry #field   el nombre del campo clave de la entidad, como texto
+
+- entry .primary   marks the field of a case class which is its key, for `Resolvable(store)`
+-     An annotation on one parameter of a case class: `case class Person(@primary email:
+-     Text, name: Text)`. `Resolvable(store)` finds the annotated field through `Annotated by
+-     primary`, and uses its type as the key type of every `Reference` to the class.
++ entry .primary   marca el campo de una case class que es su clave, para `Resolvable(store)`
++     Una anotación sobre un parámetro de una case class: `case class Person(@primary email:
++     Text, name: Text)`. `Resolvable(store)` encuentra el campo anotado mediante
++     `Annotated by primary`, y usa su tipo como tipo de clave de toda `Reference` a la clase.
+
+- entry .ref   the reference to a value: its key, typed as a `Reference` to the value's type
+-     An extension on any value whose type is `Resolvable`. It reads the value's key field
+-     (the one marked `@primary`) and wraps it as a `Reference to Entity`. Nothing is looked
+-     up, so it needs no tactic; applying the reference later resolves it back.
++ entry .ref   la referencia a un valor: su clave, tipada como una `Reference` al tipo del valor
++     Una extensión sobre cualquier valor cuyo tipo es `Resolvable`. Lee el campo clave del valor
++     (el marcado con `@primary`) y lo envuelve como una `Reference to Entity`. No se busca nada,
++     así que no necesita ninguna táctica; aplicar la referencia más tarde la resuelve de vuelta.
+
+=     up, so it needs no tactic; applying the reference later resolves it back.
+=
+-     ```scala
++     ```scala
+
+=     up, so it needs no tactic; applying the reference later resolves it back.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     import soundness.*
+=
+-     case class Person(@primary email: Text, name: Text)
++     case class Person(@primary email: Text, name: Text)
+
+=
+-     val juliet = Person(t"juliet@example.com", t"Juliet")
++     val juliet = Person(t"juliet@example.com", t"Juliet")
+
+-     given Person is Resolvable by Text = unsafely(Resolvable(Set(juliet)))
++     given Person is Resolvable by Text = unsafely(Resolvable(Set(juliet)))
+
+-     juliet.ref.key   // t"juliet@example.com"
++     juliet.ref.key   // t"juliet@example.com"
+
+=     juliet.ref.key   // t"juliet@example.com"
+-     ```
++     ```

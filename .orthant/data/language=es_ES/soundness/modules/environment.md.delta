@@ -1,0 +1,613 @@
+orthant 1 language
+
+- ## Environment
++ ## Entorno
+
+- ### About
++ ### Descripción
+
+- A program's surroundings are available as typed [contextual values][contextual value]: its
+- environment variables, the JVM's system properties, and the working directory it was started
+- in. Reading a variable gives a value of the type it should hold. That is an `Int` where an
+- integer is expected, and a path where a path is expected. A variable which is not set raises a
+- typed error. It never gives a `null` or an empty string.
++ El entorno de un programa está disponible como [valores contextuales][valor contextual]
++ tipados: sus variables de entorno, las propiedades del sistema de la JVM y el directorio de
++ trabajo en el que se inició. Leer una variable da un valor del tipo que debe contener: un `Int`
++ donde se espera un entero y una ruta donde se espera una ruta. Una variable que no está definida
++ lanza un error tipado. Nunca da un `null` ni una cadena vacía.
+
+- Each source of ambient input is a [capability], supplied as a [given]. A program's dependence
+- on its environment is therefore visible in its signatures, and a test can hand it a fixed
+- environment in place of the real one.
++ Cada fuente de entrada ambiental es una [capacidad], proporcionada como [given]. Por tanto, la
++ dependencia de un programa respecto de su entorno es visible en sus signaturas, y una prueba
++ puede entregarle un entorno fijo en lugar del real.
+
+- ### On the environment
++ ### Sobre el entorno
+
+- The values which a program inherits when it starts are, in the raw, a bag of untyped strings
+- reached through global static calls. `System.getenv` returns a `String` or `null`. A property
+- which should be a number arrives as text. Nothing records that a piece of code depends on a
+- particular variable being set. The dependence is invisible, and the parsing is left for each
+- caller to get right.
++ Los valores que hereda un programa al arrancar son, en bruto, un saco de cadenas sin tipo a las
++ que se accede mediante llamadas estáticas globales. `System.getenv` devuelve un `String` o
++ `null`. Una propiedad que debería ser un número llega como texto. Nada registra que un fragmento
++ de código dependa de que cierta variable esté definida. La dependencia es invisible, y el
++ análisis queda en manos de cada llamador, que debe hacerlo bien.
+
+- Here each source is a capability. An `Environment`, a `System` and a `WorkingDirectory` are
+- contextual values which a method requires when it reads from them, so the dependence is in the
+- type, as [honest signatures](../../philosophy/honest-signatures.md) require. Each read is decoded
+- to the expected type, and fails loudly when a required value is missing. And since the
+- capability is a given, substituting a controlled environment, for a test or to sandbox a
+- component, is a matter of a different import.
++ Aquí cada fuente es una capacidad. Un `Environment`, un `System` y un `WorkingDirectory` son
++ valores contextuales que un método requiere cuando lee de ellos, de modo que la dependencia está
++ en el tipo, como exigen las [signaturas honestas](../../philosophy/honest-signatures.md). Cada
++ lectura se decodifica al tipo esperado, y falla de forma ostensible cuando falta un valor
++ obligatorio. Y como la capacidad es un given, sustituirla por un entorno controlado, para una
++ prueba o para aislar un componente, es cuestión de una importación distinta.
+
+- Everything comes from the `soundness` package. The real environment and system properties are
+- supplied by imports, and the last import lets the samples print their results:
++ Todo procede del paquete `soundness`. El entorno real y las propiedades del sistema se
++ proporcionan mediante importaciones, y la última importación permite que los ejemplos impriman
++ sus resultados:
+
+= supplied by imports, and the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import environments.javaBaseEnvironment
++ import environments.javaBaseEnvironment
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import systems.javaBaseSystem
++ import systems.javaBaseSystem
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Environment variables
++ ### Variables de entorno
+
+- A variable is read as a member of `Environment`. Its name is written in camel case, and is
+- translated to the conventional upper-case form with underscores, so `Environment.editor` reads
+- `EDITOR`. The result has the type which the variable is known to hold, decoded from its text:
++ Una variable se lee como miembro de `Environment`. Su nombre se escribe en camel case y se
++ traduce a la forma convencional en mayúsculas separadas por guiones bajos, de modo que
++ `Environment.editor` lee `EDITOR`. El resultado tiene el tipo que se sabe que contiene la
++ variable, decodificado a partir de su texto:
+
+= `EDITOR`. The result has the type which the variable is known to hold, decoded from its text:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `EDITOR`. The result has the type which the variable is known to hold, decoded from its text:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= `EDITOR`. The result has the type which the variable is known to hold, decoded from its text:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val home: Text = Environment.home
++ val home: Text = Environment.home
+
+- val columns: Int = Environment.columns
++ val columns: Int = Environment.columns
+
+= val columns: Int = Environment.columns
+- ```
++ ```
+
+- A variable which is not set raises an `Environment.Error`. The [strategy] in scope turns that
+- into an exception, an absent value or a handled failure, as the caller chooses:
++ Una variable que no está definida lanza un `Environment.Error`. La [estrategia] del ámbito lo
++ convierte en una excepción, en un valor ausente o en un fallo tratado, según elija el llamador:
+
+= into an exception, an absent value or a handled failure, as the caller chooses:
+=
+- ```scala fuel
++ ```scala fuel
+
+= into an exception, an absent value or a handled failure, as the caller chooses:
+=
+= ```scala fuel
+- run
++ run
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- Environment.thisVariableIsNotSet[Text]
++ Environment.thisVariableIsNotSet[Text]
+
+= Environment.thisVariableIsNotSet[Text]
+- ```
++ ```
+
+- ### Overriding for a block
++ ### Sustitución para un bloque
+
+- The environment is a capability, so a block can be run against a different one. An
+- `Environment` is a single function, from the name of a variable to its
+- [optional](optional-values.md) value. One which is built for a test, or which layers overrides
+- on the real environment, is a few lines, and a given in a narrower scope takes precedence:
++ El entorno es una capacidad, así que un bloque puede ejecutarse con otro distinto. Un
++ `Environment` es una única función, del nombre de una variable a su valor
++ [opcional](optional-values.md). Uno construido para una prueba, o que superpone sustituciones
++ sobre el entorno real, ocupa unas pocas líneas, y un given en un ámbito más estrecho tiene
++ prioridad:
+
+= on the real environment, is a few lines, and a given in a narrower scope takes precedence:
+=
+- ```scala fuel
++ ```scala fuel
+
+= on the real environment, is a few lines, and a given in a narrower scope takes precedence:
+=
+= ```scala fuel
+- run
++ run
+
+= on the real environment, is a few lines, and a given in a narrower scope takes precedence:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- locally:
++ locally:
+
+-   given environment: Environment = name => if name == t"EDITOR" then t"vim" else Unset
++   given environment: Environment = name => if name == t"EDITOR" then t"vim" else Unset
+
+-   Out.println(Environment.editor[Text])
++   Out.println(Environment.editor[Text])
+
+=   Out.println(Environment.editor[Text])
+- ```
++ ```
+
+- Substituting an entirely different environment replaces every lookup within its scope.
+- `environments.emptyEnvironment` is one such, and code which reads the environment can then be
+- exercised without depending on the machine it runs on. `systems.emptySystem` does the same for
+- system properties, so a test need not depend on the JVM which happens to run it either.
+- [Testing](testing.md) covers the rest of what a test needs.
++ Sustituir un entorno completamente distinto reemplaza todas las búsquedas dentro de su ámbito.
++ `environments.emptyEnvironment` es uno de ellos, y con él el código que lee el entorno puede
++ ejercitarse sin depender de la máquina en la que se ejecuta. `systems.emptySystem` hace lo mismo
++ con las propiedades del sistema, de modo que una prueba tampoco tiene por qué depender de la JVM
++ que la ejecute. [Pruebas](testing.md) cubre el resto de lo que necesita una prueba.
+
+- Tests are not the only case. A resident [daemon](daemons.md) serves invocations from many
+- different shells over its lifetime, each with its own environment, and the JVM's global
+- environment belongs to whichever shell happened to start the daemon. Taking the environment as
+- a capability is what lets each invocation be served against the environment it actually came
+- from.
++ Las pruebas no son el único caso. Un [demonio](daemons.md) residente atiende a lo largo de su
++ vida invocaciones de muchas shells distintas, cada una con su propio entorno, y el entorno global
++ de la JVM pertenece a la shell que casualmente arrancó el demonio. Tomar el entorno como
++ capacidad es lo que permite atender cada invocación con el entorno del que realmente procede.
+
+- `variables` sets one variable for one block. The variable is named in camel case, and is set
+- in the conventional upper-case form, so `gitIndexFile` is `GIT_INDEX_FILE`. It is set on top
+- of the `Environment` in scope, so a [subprocess](processes.md) which is run within the block
+- inherits it:
++ `variables` define una variable para un bloque. La variable se nombra en camel case y se define
++ en la forma convencional en mayúsculas, de modo que `gitIndexFile` es `GIT_INDEX_FILE`. Se define
++ por encima del `Environment` del ámbito, así que un [subproceso](processes.md) que se ejecute
++ dentro del bloque la hereda:
+
+= inherits it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= inherits it:
+=
+= ```scala fuel
+- run
++ run
+
+= inherits it:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- variables(gitIndexFile = t"/tmp/index"):
++ variables(gitIndexFile = t"/tmp/index"):
+
+-   Out.println(Environment.gitIndexFile[Text])
++   Out.println(Environment.gitIndexFile[Text])
+
+=   Out.println(Environment.gitIndexFile[Text])
+- ```
++ ```
+
+- ### System properties
++ ### Propiedades del sistema
+
+- The two sources are alike in carrying textual pairs of keys and values into a JVM. They differ
+- in where they come from, and in how they are named:
++ Las dos fuentes se parecen en que llevan a una JVM pares textuales de claves y valores. Difieren
++ en su procedencia y en cómo se nombran:
+
+= in where they come from, and in how they are named:
+=
+- ```tabular
++ ```tabular
+
+- column  Source
+- column  Comes from
+- column  Named in
+- column  For example
+- column  When missing
+- row  environment variables  the shell that started the process  upper case  `PATH`, `XDG_CONFIG_HOME`  `Environment.Error`
+- row  system properties  `-D` arguments to `java` itself  dotted lower- or camel-case  `default.log.directory`  `Property.Error`
++ column  Fuente
++ column  Procede de
++ column  Se nombra en
++ column  Por ejemplo
++ column  Si falta
++ row  variables de entorno  la shell que inició el proceso  mayúsculas  `PATH`, `XDG_CONFIG_HOME`  `Environment.Error`
++ row  propiedades del sistema  argumentos `-D` del propio `java`  minúsculas con puntos o camel case  `default.log.directory`  `Property.Error`
+
+= row  system properties  `-D` arguments to `java` itself  dotted lower- or camel-case  `default.log.directory`  `Property.Error`
+- ```
++ ```
+
+- Both arrive as text, in a format which only the reading program knows. That is the argument
+- for [decoding](decoding.md) them into structured types where they are read, and not passing
+- strings inward.
++ Ambas llegan como texto, en un formato que solo conoce el programa que las lee. Ese es el
++ argumento para [decodificarlas](decoding.md) en tipos estructurados allí donde se leen, en lugar
++ de pasar cadenas hacia dentro.
+
+- A system property is read through `System.properties`. Its dotted name is written as a path
+- of members, which ends in an application. Each property is decoded to its natural type:
++ Una propiedad del sistema se lee mediante `System.properties`. Su nombre con puntos se escribe
++ como una ruta de miembros que termina en una aplicación. Cada propiedad se decodifica a su tipo
++ natural:
+
+= of members, which ends in an application. Each property is decoded to its natural type:
+=
+- ```scala fuel
++ ```scala fuel
+
+= of members, which ends in an application. Each property is decoded to its natural type:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= of members, which ends in an application. Each property is decoded to its natural type:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val user: Text = System.properties.user.name()
++ val user: Text = System.properties.user.name()
+
+- val os: Text = System.properties.os.name()
++ val os: Text = System.properties.os.name()
+
+- val separator: Char = System.properties.file.separator()
++ val separator: Char = System.properties.file.separator()
+
+= val separator: Char = System.properties.file.separator()
+- ```
++ ```
+
+- A property which is not defined raises a `Property.Error`, which is handled like any other
++ Una propiedad que no está definida lanza un `Property.Error`, que se trata como cualquier otro
+
+- error.
++ error.
+
+- ### The working directory
++ ### El directorio de trabajo
+
+- The directory which a program was launched in is a `WorkingDirectory` capability. It is
+- requested where it is needed, and is not read from a global. With
+- `workingDirectories.javaBaseWorkingDirectory` in scope, a method which resolves a relative
+- [path](paths.md) against the working directory declares that need in its signature.
++ El directorio en el que se lanzó un programa es una capacidad `WorkingDirectory`. Se solicita
++ donde se necesita, y no se lee de una variable global. Con
++ `workingDirectories.javaBaseWorkingDirectory` en el ámbito, un método que resuelve una
++ [ruta](paths.md) relativa respecto del directorio de trabajo declara esa necesidad en su
++ signatura.
+
+- `workingDirectory` gives the directory itself, and `temporaryDirectory` gives a temporary
+- one. Each is resolved to the type of path which is asked for.
++ `workingDirectory` da el propio directorio, y `temporaryDirectory` da uno temporal. Cada uno se
++ resuelve al tipo de ruta que se pide.
+
+- ### Standard directories
++ ### Directorios estándar
+
+- The
+- [XDG base directory specification](https://specifications.freedesktop.org/basedir-spec/latest/)
+- says where a program's data, configuration, cache and state belong. It honors the user's
+- environment where that is set, and falls back to the specification's defaults where it is
+- not. `Xdg` gives each of them, and the search paths for data and configuration:
++ La
++ [especificación de directorios base de XDG](https://specifications.freedesktop.org/basedir-spec/latest/)
++ indica dónde deben ir los datos, la configuración, la caché y el estado de un programa. Respeta
++ el entorno del usuario donde está definido, y recurre a los valores por defecto de la
++ especificación donde no lo está. `Xdg` da cada uno de ellos, y las rutas de búsqueda de datos y
++ configuración:
+
+= not. `Xdg` gives each of them, and the search paths for data and configuration:
+=
+- ```scala fuel
++ ```scala fuel
+
+= not. `Xdg` gives each of them, and the search paths for data and configuration:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= not. `Xdg` gives each of them, and the search paths for data and configuration:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLinux
+
+- val config = Xdg.configHome[Path on Linux]
++ val config = Xdg.configHome[Path on Linux]
+
+- val cache = Xdg.cacheHome[Path on Linux]
++ val cache = Xdg.cacheHome[Path on Linux]
+
+- val search = Xdg.dataDirs[Path on Linux]
++ val search = Xdg.dataDirs[Path on Linux]
+
+= val search = Xdg.dataDirs[Path on Linux]
+- ```
++ ```
+
+- `configHome` is `~/.config`, unless `XDG_CONFIG_HOME` says otherwise. Using these, instead of
+- a hard-coded `~/.myapp`, makes a program's files land where the user's tools for backup,
+- synchronization and cleaning expect them.
++ `configHome` es `~/.config`, salvo que `XDG_CONFIG_HOME` indique otra cosa. Usarlos, en lugar de
++ un `~/.myapp` fijo en el código, hace que los ficheros de un programa acaben donde los esperan
++ las herramientas de copia de seguridad, sincronización y limpieza del usuario.
+
+- The conventional layout of a Unix system is typed too. `Home` and `Base` are each a
+- `BaseLayout`: a tree of nested objects which name the directories under the user's home, and
+- under the root of the filesystem. Applying one, with the type of path as its type argument,
+- resolves it against the `Environment` and `System` in scope:
++ La disposición convencional de un sistema Unix también está tipada. `Home` y `Base` son cada uno
++ un `BaseLayout`: un árbol de objetos anidados que nombran los directorios bajo el directorio
++ personal del usuario y bajo la raíz del sistema de ficheros. Aplicar uno, con el tipo de ruta
++ como argumento de tipo, lo resuelve respecto del `Environment` y el `System` del ámbito:
+
+= resolves it against the `Environment` and `System` in scope:
+=
+- ```scala fuel
++ ```scala fuel
+
+= resolves it against the `Environment` and `System` in scope:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= resolves it against the `Environment` and `System` in scope:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val userConfig = Home.Config[Path on Linux]()
++ val userConfig = Home.Config[Path on Linux]()
+
+- val share = Home.Local.Share[Path on Linux]()
++ val share = Home.Local.Share[Path on Linux]()
+
+- val logs = Base.Var.Log[Path on Linux]()
++ val logs = Base.Var.Log[Path on Linux]()
+
+= val logs = Base.Var.Log[Path on Linux]()
+- ```
++ ```
+
+- These are `~/.config`, `~/.local/share` and `/var/log`. Each layout also knows whether it is
+- meant to be written to. `readOnly` is `true` for `/usr` and everything beneath it, among
+- others, so a program can check before it tries:
++ Son `~/.config`, `~/.local/share` y `/var/log`. Cada disposición sabe además si está pensada
++ para escribir en ella. `readOnly` es `true` para `/usr` y todo lo que hay debajo, entre otros,
++ de modo que un programa puede comprobarlo antes de intentarlo:
+
+= others, so a program can check before it tries:
+=
+- ```scala fuel
++ ```scala fuel
+
+= others, so a program can check before it tries:
+=
+= ```scala fuel
+- run
++ run
+
+= others, so a program can check before it tries:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Base.Usr.Bin.readOnly.inspect)
++ Out.println(Base.Usr.Bin.readOnly.inspect)
+
+- Out.println(Base.Etc.readOnly.inspect)
++ Out.println(Base.Etc.readOnly.inspect)
+
+= Out.println(Base.Etc.readOnly.inspect)
+- ```
++ ```
+
+- The layouts are listed in full, with their `readOnly` values, under
+- [standard directories](filesystem.md#standard-directories).
++ Las disposiciones se enumeran completas, con sus valores de `readOnly`, en
++ [directorios estándar](filesystem.md#standard-directories).
+
+- ### The machine
++ ### La máquina
+
+- `Architecture` names the processor which a program is running on. It is parsed from the
+- platform's own report into a typed value, such as `X86(64)`, `Arm(64)` or
+- `Ppc(64, littleEndian = true)`. Code which must choose a native library, or a path through the
+- code, by architecture therefore matches on a value, and not on a string whose spelling varies
+- between platforms.
++ `Architecture` nombra el procesador en el que se ejecuta un programa. Se analiza a partir del
++ informe de la propia plataforma y se convierte en un valor tipado, como `X86(64)`, `Arm(64)` o
++ `Ppc(64, littleEndian = true)`. Por tanto, el código que debe elegir una biblioteca nativa, o un
++ camino por el código, según la arquitectura hace coincidencia de patrones sobre un valor, y no
++ sobre una cadena cuya grafía varía entre plataformas.
+
+- `Os` does the same for the operating system. It is decoded from the many spellings which the
+- property `os.name` takes, by matching the start of it, in any case:
++ `Os` hace lo mismo con el sistema operativo. Se decodifica a partir de las muchas grafías que
++ adopta la propiedad `os.name`, comparando su comienzo, sin distinguir mayúsculas de minúsculas:
+
+= property `os.name` takes, by matching the start of it, in any case:
+=
+- ```tabular
++ ```tabular
+
+- column  Case
+- column  When `os.name` begins
+- column  For example
++ column  Caso
++ column  Cuando `os.name` empieza por
++ column  Por ejemplo
+
+- row  `Os.Linux`  `linux`  `Linux`
++ row  `Os.Linux`  `linux`  `Linux`
+
+- row  `Os.MacOs`  `mac` or `darwin`  `Mac OS X`
++ row  `Os.MacOs`  `mac` o `darwin`  `Mac OS X`
+
+- row  `Os.Windows`  `windows`  `Windows Server 2022`
++ row  `Os.Windows`  `windows`  `Windows Server 2022`
+
+- row  `Os.FreeBsd`  `freebsd`  `FreeBSD`
++ row  `Os.FreeBsd`  `freebsd`  `FreeBSD`
+
+- row  `Os.OpenBsd`  `openbsd`  `OpenBSD`
++ row  `Os.OpenBsd`  `openbsd`  `OpenBSD`
+
+- row  `Os.NetBsd`  `netbsd`  `NetBSD`
++ row  `Os.NetBsd`  `netbsd`  `NetBSD`
+
+- row  `Os.Solaris`  `sunos` or `solaris`  `SunOS`
++ row  `Os.Solaris`  `sunos` o `solaris`  `SunOS`
+
+- row  `Os.Aix`  `aix`  `AIX`
++ row  `Os.Aix`  `aix`  `AIX`
+
+- row  `Os.Other(name)`  anything else, kept as `name`
++ row  `Os.Other(name)`  cualquier otra cosa, conservada como `name`
+
+= row  `Os.Other(name)`  anything else, kept as `name`
+- ```
++ ```
+
+- Both are read from the `System` in scope, so a test can run the same code as though on another
+- platform, by handing it a fixed `System`. A program which names a release to download, say,
+- matches on the pair, and not on the raw text of a property:
++ Ambos se leen del `System` del ámbito, así que una prueba puede ejecutar el mismo código como si
++ estuviera en otra plataforma, entregándole un `System` fijo. Un programa que nombra una versión
++ para descargar, por ejemplo, hace coincidencia de patrones sobre el par, y no sobre el texto en
++ bruto de una propiedad:
+
+= matches on the pair, and not on the raw text of a property:
+=
+- ```scala
++ ```scala
+
+- val platform: Optional[Text] = (System.os, System.architecture) match
++ val platform: Optional[Text] = (System.os, System.architecture) match
+
+-   case (Os.Linux, Architecture.X86(_: 64))   => t"linux-x64"
++   case (Os.Linux, Architecture.X86(_: 64))   => t"linux-x64"
+
+-   case (Os.Linux, Architecture.Arm(_: 64))   => t"linux-arm64"
++   case (Os.Linux, Architecture.Arm(_: 64))   => t"linux-arm64"
+
+-   case (Os.MacOs, Architecture.Arm(_: 64))   => t"macos-arm64"
++   case (Os.MacOs, Architecture.Arm(_: 64))   => t"macos-arm64"
+
+-   case (Os.Windows, Architecture.X86(_: 64)) => t"windows-x64"
++   case (Os.Windows, Architecture.X86(_: 64)) => t"windows-x64"
+
+-   case _                                     => Unset
++   case _                                     => Unset
+
+=   case _                                     => Unset
+- ```
++ ```
+
+- The third facet of the platform is the virtual machine itself. `Vm` names it, and is where
+- the events which the VM raises are intercepted: its shutdown, an uncaught exception, a garbage
+- collection. [Concurrency](concurrency.md) describes `Vm.intercept`.
++ La tercera faceta de la plataforma es la propia máquina virtual. `Vm` la nombra, y es donde se
++ interceptan los eventos que lanza la VM: su apagado, una excepción no capturada, una recolección
++ de basura. [Concurrencia](concurrency.md) describe `Vm.intercept`.
+
+- `termcaps.environmentTermcap` reports what the [terminal](terminal.md) can do. It decides the
+- depth of color from `COLORTERM` where that is set, and from `tput` otherwise, which is how
+- styled output degrades correctly on a terminal which cannot show it.
++ `termcaps.environmentTermcap` informa de lo que puede hacer el [terminal](terminal.md). Decide
++ la profundidad de color a partir de `COLORTERM` donde está definida, y de `tput` en caso
++ contrario, que es como la salida con estilos se degrada correctamente en un terminal que no
++ puede mostrarla.
+
+- ### Related
++ ### Relacionado
+
+- - [Command-line interfaces](cli.md) reads a program's arguments in the same typed way.
+- - [Processes](processes.md) starts other programs, which inherit the environment in scope.
+- - [Filesystem](filesystem.md) reads and writes the files which these directories hold.
+- - [Classpath](classpath.md) reads the classpath from a system property, and [internationalization](internationalization.md) the locale from the environment.
++ - [Interfaces de línea de comandos](cli.md) lee los argumentos de un programa de la misma forma tipada.
++ - [Procesos](processes.md) inicia otros programas, que heredan el entorno del ámbito.
++ - [Sistema de ficheros](filesystem.md) lee y escribe los ficheros que contienen estos directorios.
++ - [Classpath](classpath.md) lee el classpath de una propiedad del sistema, e [internacionalización](internationalization.md) la configuración regional del entorno.

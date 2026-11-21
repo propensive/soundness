@@ -1,0 +1,790 @@
+orthant 1 language
+
+- ## Media Types
++ ## Tipos de medio
+
+- ### About
++ ### Descripción
+
+- A [media type](https://en.wikipedia.org/wiki/Media_type), such as `application/json` or
+- `text/html; charset=UTF-8`, names what a stream of bytes means. It is represented
+- structurally: its group, its subtype, its `+suffix`es and its parameters are each a typed
+- part, not a substring.
++ Un [tipo de medio](https://en.wikipedia.org/wiki/Media_type), como `application/json` o
++ `text/html; charset=UTF-8`, nombra lo que significa un flujo de bytes. Se representa
++ estructuralmente: su grupo, su subtipo, sus `+suffix` y sus parámetros son cada uno una parte
++ tipada, no una subcadena.
+
+- The `media"…"` [interpolator] checks a literal against the
+- [IANA registry](https://www.iana.org/assignments/media-types/media-types.xhtml) at
+- [compiletime]. A misspelled media type, of the kind which browsers silently mishandle, is a
+- compile error, with a suggestion of what was probably meant.
++ El [interpolador] `media"…"` comprueba un literal contra el
++ [registro de la IANA](https://www.iana.org/assignments/media-types/media-types.xhtml) en
++ [tiempo de compilación]. Un tipo de medio mal escrito, de los que los navegadores tratan mal en
++ silencio, es un error de compilación, con una sugerencia de lo que probablemente se quería
++ decir.
+
+- The `Media` [typeclass] lets any type declare its own media type. That is how HTTP responses,
+- served files and email attachments label themselves. Multipart bodies, the format of file
+- uploads, are parsed into their typed parts.
++ La [clase de tipos] `Media` permite que cualquier tipo declare su propio tipo de medio. Así es
++ como se etiquetan las respuestas HTTP, los ficheros servidos y los adjuntos de correo
++ electrónico. Los cuerpos multipart, el formato de las subidas de ficheros, se analizan en sus
++ partes tipadas.
+
+- ### On media types
++ ### Sobre los tipos de medio
+
+- Media types look like free text, and are not. The grammar distinguishes registered types from
+- vendor trees. Suffixes carry meaning: `svg+xml` *is* XML. Parameters such as `charset` change
+- how the bytes are interpreted.
++ Los tipos de medio parecen texto libre, y no lo son. La gramática distingue los tipos
++ registrados de los árboles de fabricante. Los sufijos tienen significado: `svg+xml` *es* XML.
++ Parámetros como `charset` cambian cómo se interpretan los bytes.
+
+- Media types are usually handled as strings, so a typo produces a type which looks plausible,
+- and which no consumer recognizes. Receivers tend to fall back instead of failing, so the
+- mistake shows up as subtly wrong behavior, far away.
++ Los tipos de medio suelen tratarse como cadenas, así que una errata produce un tipo que parece
++ plausible, y que ningún consumidor reconoce. Los receptores tienden a recurrir a una alternativa
++ en lugar de fallar, de modo que el error se manifiesta como un comportamiento sutilmente
++ incorrecto, muy lejos.
+
+- Here media types are parsed fully, a literal is validated against the registry itself, and the
+- value is typed. Checking a media type as the code compiles is
+- [safety by construction](../../philosophy/safety-by-construction.md), applied to a string which
+- is otherwise trusted.
++ Aquí los tipos de medio se analizan por completo, un literal se valida contra el propio
++ registro, y el valor tiene tipo. Comprobar un tipo de medio mientras se compila el código es
++ [seguridad por construcción](../../philosophy/safety-by-construction.md), aplicada a una cadena
++ en la que, de otro modo, se confía.
+
+- Everything comes from the `soundness` package. The samples throw any error as an exception,
+- and the last import lets them print their results:
++ Todo procede del paquete `soundness`. Los ejemplos lanzan cualquier error como excepción, y la
++ última importación les permite imprimir sus resultados:
+
+= and the last import lets them print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Writing a media type
++ ### Escritura de un tipo de medio
+
+- The `media"…"` interpolator checks its literal at compiletime. A registered type passes:
++ El interpolador `media"…"` comprueba su literal en tiempo de compilación. Un tipo registrado
++ pasa:
+
+= The `media"…"` interpolator checks its literal at compiletime. A registered type passes:
+=
+- ```scala
++ ```scala
+
+- val json = media"application/json"
++ val json = media"application/json"
+
+- val epub = media"application/epub+zip"
++ val epub = media"application/epub+zip"
+
+= val epub = media"application/epub+zip"
+- ```
++ ```
+
+- An unregistered type in the standard tree fails, and a registered name close to it is
+- suggested:
++ Un tipo no registrado del árbol estándar falla, y se sugiere un nombre registrado parecido:
+
+= suggested:
+=
+- ```scala fuel
++ ```scala fuel
+
+= suggested:
+=
+= ```scala fuel
+- compile
++ compile
+
+= suggested:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= suggested:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- media"application/jsom"
++ media"application/jsom"
+
+= media"application/jsom"
+- ```
++ ```
+
+- The other trees are accepted without being looked up in the registry, as the standard
+- prescribes:
++ Los demás árboles se aceptan sin buscarlos en el registro, como prescribe el estándar:
+
+= prescribes:
+=
+- ```tabular
++ ```tabular
+
+- column  Tree
+- column  Subtype written
+- column  As a `Media.Subtype`
+- column  Checked against the registry
+- row  standard  `json`  `Standard`  yes
+- row  vendor  `vnd.…`  `Vendor`  no
++ column  Árbol
++ column  Subtipo escrito
++ column  Como `Media.Subtype`
++ column  Comprobado contra el registro
++ row  estándar  `json`  `Standard`  sí
++ row  de fabricante  `vnd.…`  `Vendor`  no
+
+- row  personal  `prs.…`  `Personal`  no
++ row  personal  `prs.…`  `Personal`  no
+
+- row  experimental  `x-…`  `X`  no
++ row  experimental  `x-…`  `X`  no
+
+= row  experimental  `x-…`  `X`  no
+- ```
++ ```
+
+- ### Structure
++ ### Estructura
+
+- A parsed `MediaType` exposes its parts:
++ Un `MediaType` analizado expone sus partes:
+
+= A parsed `MediaType` exposes its parts:
+=
+- ```scala
++ ```scala
+
+- val mediaType = t"application/json; charset=UTF-8".as[MediaType]
++ val mediaType = t"application/json; charset=UTF-8".as[MediaType]
+
+= val mediaType = t"application/json; charset=UTF-8".as[MediaType]
+- ```
++ ```
+
+= val mediaType = t"application/json; charset=UTF-8".as[MediaType]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val mediaType = t"application/json; charset=UTF-8".as[MediaType]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val mediaType = t"application/json; charset=UTF-8".as[MediaType]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(mediaType.group.inspect)
++ Out.println(mediaType.group.inspect)
+
+- Out.println(mediaType.basic)
++ Out.println(mediaType.basic)
+
+- Out.println(mediaType.at(t"charset").inspect)
++ Out.println(mediaType.at(t"charset").inspect)
+
+= Out.println(mediaType.at(t"charset").inspect)
+- ```
++ ```
+
+- `basic` is the media type without its parameters. Parameters are added as named arguments:
++ `basic` es el tipo de medio sin sus parámetros. Los parámetros se añaden como argumentos con
++ nombre:
+
+= `basic` is the media type without its parameters. Parameters are added as named arguments:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `basic` is the media type without its parameters. Parameters are added as named arguments:
+=
+= ```scala fuel
+- run
++ run
+
+= `basic` is the media type without its parameters. Parameters are added as named arguments:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(media"text/html"(charset = t"UTF-8").show)
++ Out.println(media"text/html"(charset = t"UTF-8").show)
+
+= Out.println(media"text/html"(charset = t"UTF-8").show)
+- ```
++ ```
+
+- The four parts are those which [RFC 2046](https://www.iana.org/go/rfc2046) defines:
++ Las cuatro partes son las que define el [RFC 2046](https://www.iana.org/go/rfc2046):
+
+= The four parts are those which [RFC 2046](https://www.iana.org/go/rfc2046) defines:
+=
+- ```tabular
++ ```tabular
+
+- column  Part
+- column  Field
+- column  Is
+- row  group  `group`  one of eleven `Media.Group` values: `application`, `audio`, `image`, `message`, `multipart`, `text`, `video`, `font`, `example`, `model` and `haptics`
+- row  subtype  `subtype`  registered, vendor, personal or experimental
+- row  suffixes  `suffixes`  zero or more, such as `+xml`, `+json` and `+gzip`
+- row  parameters  `parameters`  key–value pairs, `charset` being much the most common
++ column  Parte
++ column  Campo
++ column  Es
++ row  grupo  `group`  uno de los once valores de `Media.Group`: `application`, `audio`, `image`, `message`, `multipart`, `text`, `video`, `font`, `example`, `model` y `haptics`
++ row  subtipo  `subtype`  registrado, de fabricante, personal o experimental
++ row  sufijos  `suffixes`  cero o más, como `+xml`, `+json` y `+gzip`
++ row  parámetros  `parameters`  pares clave–valor, de los que `charset` es con mucho el más común
+
+= row  parameters  `parameters`  key–value pairs, `charset` being much the most common
+- ```
++ ```
+
+- The group is called `group`, not `type`, only because `type` is a keyword in Scala. Which of
+- the four trees a subtype belongs to is part of the value, and is not a matter of reading its
+- prefix.
++ El grupo se llama `group`, y no `type`, solo porque `type` es una palabra clave en Scala. El
++ árbol al que pertenece un subtipo forma parte del valor, y no es cuestión de leer su prefijo.
+
+- Registration is checked against a copy of IANA's published list, carried on the classpath, so
+- the check needs no network and no service. A newer list, or a list specific to a site, which
+- is placed earlier on the classpath, supersedes it. The file is a list of media types, one on
+- each line, with suffixes but without parameters.
++ El registro se comprueba contra una copia de la lista publicada por la IANA, incluida en el
++ classpath, así que la comprobación no necesita red ni ningún servicio. Una lista más reciente, o
++ una lista propia de un sitio, colocada antes en el classpath, la sustituye. El fichero es una
++ lista de tipos de medio, uno por línea, con sufijos pero sin parámetros.
+
+- Text which is not a media type raises a `MediaType.Error`, which names the reason: a missing
+- slash, an invalid character, or an unknown suffix.
++ Un texto que no es un tipo de medio lanza un `MediaType.Error`, que nombra el motivo: una barra
++ que falta, un carácter no válido o un sufijo desconocido.
+
+= slash, an invalid character, or an unknown suffix.
+=
+- ```scala fuel
++ ```scala fuel
+
+= slash, an invalid character, or an unknown suffix.
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- errors show
++ errors show
+
+= run
+= errors show
+- ##
++ ##
+
+- t"application".as[MediaType]
++ t"application".as[MediaType]
+
+= t"application".as[MediaType]
+- ```
++ ```
+
+- ### Types that know their media type
++ ### Tipos que conocen su tipo de medio
+
+- The `Media` typeclass gives a type its media type, so a value can be served, or attached,
+- without anyone stating again what it is. Text is `text/plain`, and anything with a filename
+- guesses from its extension. `ascribe` pairs any source of bytes with an explicit media type,
+- where none is intrinsic. The result is a `Content`: bytes, together with their type.
++ La clase de tipos `Media` da a un tipo su tipo de medio, de modo que un valor puede servirse, o
++ adjuntarse, sin que nadie tenga que volver a decir lo que es. El texto es `text/plain`, y todo lo
++ que tiene nombre de fichero lo deduce de su extensión. `ascribe` empareja cualquier fuente de
++ bytes con un tipo de medio explícito, donde no hay ninguno intrínseco. El resultado es un
++ `Content`: bytes, junto con su tipo.
+
+= where none is intrinsic. The result is a `Content`: bytes, together with their type.
+=
+- ```scala
++ ```scala
+
+- val data = t"raw bytes".in[Data]
++ val data = t"raw bytes".in[Data]
+
+- val content = data.ascribe(media"application/octet-stream")
++ val content = data.ascribe(media"application/octet-stream")
+
+= val content = data.ascribe(media"application/octet-stream")
+- ```
++ ```
+
+- This typeclass is what lets an [HTTP server](http-server.md#responses) return a value, and
+- have the `Content-Type` header follow automatically. The [HTTP client](http-client.md#headers)
+- takes a media type as the value of its `accept` header, and [email](email.md#composing)
+- attachments carry one.
++ Esta clase de tipos es lo que permite que un [servidor HTTP](http-server.md#responses) devuelva
++ un valor y que la cabecera `Content-Type` lo acompañe automáticamente. El
++ [cliente HTTP](http-client.md#headers) recibe un tipo de medio como valor de su cabecera
++ `accept`, y los adjuntos de [correo electrónico](email.md#composing) llevan uno.
+
+- ### Detecting a media type
++ ### Detección de un tipo de medio
+
+- Content often arrives without a trustworthy label, and has to be recognised from its bytes. A
+- `Media["…"]` pattern does that for a stream — a Zephyrine `Cursor` — and binds a `Detection`:
++ El contenido suele llegar sin una etiqueta fiable, y hay que reconocerlo por sus bytes. Un
++ patrón `Media["…"]` hace eso para un flujo —un `Cursor` de Zephyrine— y liga una `Detection`:
+
+= `Media["…"]` pattern does that for a stream — a Zephyrine `Cursor` — and binds a `Detection`:
+=
+- ```scala
++ ```scala
+
+- import detectables.{gifDetectable, pngDetectable}
++ import detectables.{gifDetectable, pngDetectable}
+
+- val cursor = Cursor(hex"89504e470d0a1a0a0000000d49484452")
++ val cursor = Cursor(hex"89504e470d0a1a0a0000000d49484452")
+
+= val cursor = Cursor(hex"89504e470d0a1a0a0000000d49484452")
+=
+- cursor match
++ cursor match
+
+-   case Media["image/png"](png) => t"a PNG"
++   case Media["image/png"](png) => t"a PNG"
+
+-   case Media["image/gif"](gif) => t"a GIF"
++   case Media["image/gif"](gif) => t"a GIF"
+
+-   case _                       => t"something else"
++   case _                       => t"something else"
+
+=   case _                       => t"something else"
+- ```
++ ```
+
+- Each case reads as much of the stream as it needs and then returns the cursor to where it was
+- found, whether or not it matched: a later case, and the code which follows the match, see the
+- whole stream. A detector cannot break this promise, because it never holds the cursor. It reads
+- through a `Probe`, which can only go forwards, and the pattern rewinds the cursor when the
+- detector returns or throws.
++ Cada caso lee tanto del flujo como necesita y luego devuelve el cursor a donde lo encontró, haya
++ coincidido o no: un caso posterior, y el código que sigue al `match`, ven el flujo completo. Un
++ detector no puede romper esta promesa, porque nunca tiene el cursor. Lee mediante un `Probe`,
++ que solo puede avanzar, y el patrón rebobina el cursor cuando el detector termina o lanza una
++ excepción.
+
+- What a pattern can detect is decided by the `Detectable` instances in scope, each imported by
+- name from the `detectables` family, as the two above are. The media type is checked against the
+- registry like any other, and a pattern for which no detector has been imported is a compile
+- error:
++ Lo que un patrón puede detectar lo deciden las instancias de `Detectable` del ámbito, cada una
++ importada por nombre de la familia `detectables`, como las dos de arriba. El tipo de medio se
++ comprueba contra el registro como cualquier otro, y un patrón para el que no se ha importado
++ ningún detector es un error de compilación:
+
+= error:
+=
+- ```scala fuel
++ ```scala fuel
+
+= error:
+=
+= ```scala fuel
+- compile
++ compile
+
+= error:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= error:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+= ##
+- cursor match
++ cursor match
+
+-   case Media["image/jpeg"](jpeg) => t"a JPEG"
++   case Media["image/jpeg"](jpeg) => t"a JPEG"
+
+-   case _                         => t"something else"
++   case _                         => t"something else"
+
+=   case _                         => t"something else"
+- ```
++ ```
+
+- #### How certain a detection is
++ #### Qué grado de certeza tiene una detección
+
+- A few opening bytes rarely prove what a stream is, and a `Detection` says in its type how much
+- was established. `png` above is a `Detection of "image/png" under Likely to (Raster in Png)`:
+- content detected as `image/png`, with a certainty of `Likely`, which is read as a `Raster in Png`.
+- The certainty is one of three, fixed by what the detector examined:
++ Unos pocos bytes iniciales rara vez prueban qué es un flujo, y una `Detection` dice en su tipo
++ cuánto se ha establecido. `png`, arriba, es una
++ `Detection of "image/png" under Likely to (Raster in Png)`: contenido detectado como
++ `image/png`, con una certeza `Likely`, que se lee como un `Raster in Png`. La certeza es uno de
++ tres niveles, fijado por lo que examinó el detector:
+
+= The certainty is one of three, fixed by what the detector examined:
+=
+- ```tabular
++ ```tabular
+
+- column  Certainty
+- column  What was examined
+- column  Example
+- row  `Plausible`  something merely consistent with the format, which reserves no identifying structure or keeps it out of reach  a leading `{` for JSON; a leading `<` for XML
+- row  `Likely`  the structure which the format's specification designates as identifying, found where the specification puts it  the eight-byte PNG signature; the index at the end of a ZIP file
+- row  `Certain`  the whole of the content, validated  none is provided: it means reading the entire stream
++ column  Certeza
++ column  Qué se examinó
++ column  Ejemplo
++ row  `Plausible`  algo simplemente coherente con el formato, que no reserva ninguna estructura identificativa o la deja fuera de alcance  una `{` inicial para JSON; un `<` inicial para XML
++ row  `Likely`  la estructura que la especificación del formato designa como identificativa, encontrada donde la sitúa la especificación  la firma de ocho bytes de PNG; el índice al final de un fichero ZIP
++ row  `Certain`  la totalidad del contenido, validada  no se proporciona ninguno: implica leer el flujo entero
+
+= row  `Certain`  the whole of the content, validated  none is provided: it means reading the entire stream
+- ```
++ ```
+
+- A `Likely` match is wrong only by coincidence or forgery, and says nothing about the rest of the
+- content being well-formed. A `Plausible` match can be wrong by design: other formats legitimately
+- begin the same way, so the order of `Plausible` cases matters where the order of `Likely` ones
+- does not.
++ Una coincidencia `Likely` solo es errónea por casualidad o por falsificación, y no dice nada de
++ si el resto del contenido está bien formado. Una coincidencia `Plausible` puede ser errónea por
++ diseño: otros formatos empiezan legítimamente de la misma manera, así que el orden de los casos
++ `Plausible` importa, mientras que el de los `Likely` no.
+
+- Each level is a subtype of the one before it — `Certain <: Likely <: Plausible` — so a demand for
+- at least a certainty is a bound. A second type argument to the pattern makes that demand of the
+- detector, and a method makes it of a `Detection` it is given:
++ Cada nivel es un subtipo del anterior —`Certain <: Likely <: Plausible`— así que exigir al menos
++ una certeza es una cota. Un segundo argumento de tipo en el patrón plantea esa exigencia al
++ detector, y un método la plantea a una `Detection` que recibe:
+
+= detector, and a method makes it of a `Detection` it is given:
+=
+- ```scala
++ ```scala
+
+- def decode(detection: Detection of "image/png" under (? <: Likely)): Text = t"decoding"
++ def decode(detection: Detection of "image/png" under (? <: Likely)): Text = t"decoding"
+
+= def decode(detection: Detection of "image/png" under (? <: Likely)): Text = t"decoding"
+=
+- cursor match
++ cursor match
+
+-   case Media["image/png", Likely](png) => decode(png)
++   case Media["image/png", Likely](png) => decode(png)
+
+-   case _                               => t"something else"
++   case _                               => t"something else"
+
+=   case _                               => t"something else"
+- ```
++ ```
+
+- The JSON detector is only `Plausible`, so demanding more of it is rejected as the code compiles:
++ El detector de JSON solo es `Plausible`, así que exigirle más se rechaza mientras se compila el
++ código:
+
+= The JSON detector is only `Plausible`, so demanding more of it is rejected as the code compiles:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The JSON detector is only `Plausible`, so demanding more of it is rejected as the code compiles:
+=
+= ```scala fuel
+- compile
++ compile
+
+= The JSON detector is only `Plausible`, so demanding more of it is rejected as the code compiles:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= The JSON detector is only `Plausible`, so demanding more of it is rejected as the code compiles:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- import detectables.jsonDetectable
++ import detectables.jsonDetectable
+
+= import detectables.jsonDetectable
+=
+- cursor match
++ cursor match
+
+-   case Media["application/json", Likely](json) => t"JSON"
++   case Media["application/json", Likely](json) => t"JSON"
+
+-   case _                                       => t"something else"
++   case _                                       => t"something else"
+
+=   case _                                       => t"something else"
+- ```
++ ```
+
+- A detection is evidence, not a second handle on the stream: the cursor stays with the code that
+- matched it, and `png.read(cursor)` reads it as the type the detection names.
++ Una detección es evidencia, no un segundo descriptor del flujo: el cursor se queda con el código
++ que lo emparejó, y `png.read(cursor)` lo lee como el tipo que nombra la detección.
+
+- #### Formats a stream cannot identify
++ #### Formatos que un flujo no puede identificar
+
+- Some formats are identified by something a forward read cannot reach — a ZIP file by the index
+- at its end. The same patterns match content with random access, an `Expanse` or `Data` in memory,
+- and there a detector may look anywhere. A detector declares which access it needs, and one media
+- type may have both kinds, establishing different amounts. ZIP has: `zipDetectable` reads a stream,
+- and can only see whether it opens as most archives do, while `zipIndexDetectable` finds the index:
++ Algunos formatos se identifican por algo que una lectura hacia delante no puede alcanzar: un
++ fichero ZIP, por el índice que tiene al final. Los mismos patrones emparejan contenido con acceso
++ aleatorio, un `Expanse` o `Data` en memoria, y ahí un detector puede mirar en cualquier parte. Un
++ detector declara qué acceso necesita, y un mismo tipo de medio puede tener de ambas clases, que
++ establecen cantidades distintas. ZIP las tiene: `zipDetectable` lee un flujo, y solo puede ver
++ si empieza como lo hacen la mayoría de los archivos, mientras que `zipIndexDetectable` encuentra
++ el índice:
+
+= and can only see whether it opens as most archives do, while `zipIndexDetectable` finds the index:
+=
+- ```scala
++ ```scala
+
+- import detectables.{zipDetectable, zipIndexDetectable}
++ import detectables.{zipDetectable, zipIndexDetectable}
+
+- def identify(content: Data): Text = content match
++ def identify(content: Data): Text = content match
+
+-   case Media["application/zip", Likely](zip) => t"a ZIP archive"
++   case Media["application/zip", Likely](zip) => t"a ZIP archive"
+
+-   case _                                     => t"something else"
++   case _                                     => t"something else"
+
+=   case _                                     => t"something else"
+- ```
++ ```
+
+- A cursor can use only the first detector, so its `Media["application/zip"]` detection is
+- `Plausible`, and `Media["application/zip", Likely]` does not compile for it. `Data` and an
+- `Expanse` can use either, and the pattern takes whichever establishes more: there the same
+- detection is `Likely`, and an archive which follows a program, as a self-extracting one does, is
+- still found.
++ Un cursor solo puede usar el primer detector, así que su detección `Media["application/zip"]` es
++ `Plausible`, y `Media["application/zip", Likely]` no compila para él. `Data` y un `Expanse`
++ pueden usar cualquiera de los dos, y el patrón toma el que establezca más: ahí la misma detección
++ es `Likely`, y un archivo que va detrás de un programa, como uno autoextraíble, se sigue
++ encontrando.
+
+- #### Writing a detector
++ #### Escritura de un detector
+
+- A format which reserves a signature needs only its bytes, and the offset if it is not the start:
++ Un formato que reserva una firma solo necesita sus bytes, y el desplazamiento si no está al
++ principio:
+
+= A format which reserves a signature needs only its bytes, and the offset if it is not the start:
+=
+- ```scala
++ ```scala
+
+- given sqlite: ("application/vnd.sqlite3" is Detectable under Likely over Probe to Data) =
++ given sqlite: ("application/vnd.sqlite3" is Detectable under Likely over Probe to Data) =
+
+-   Detectable.signature(0x53, 0x51, 0x4c, 0x69, 0x74, 0x65)
++   Detectable.signature(0x53, 0x51, 0x4c, 0x69, 0x74, 0x65)
+
+=   Detectable.signature(0x53, 0x51, 0x4c, 0x69, 0x74, 0x65)
+- ```
++ ```
+
+- Anything else is a function of a `Probe`, for a stream, or of an `Expanse`:
++ Cualquier otra cosa es una función de un `Probe`, para un flujo, o de un `Expanse`:
+
+= Anything else is a function of a `Probe`, for a stream, or of an `Expanse`:
+=
+- ```scala
++ ```scala
+
+- given logfile: ("text/vnd.example" is Detectable under Plausible over Probe to Text) =
++ given logfile: ("text/vnd.example" is Detectable under Plausible over Probe to Text) =
+
+-   Detectable: probe =>
++   Detectable: probe =>
+
+-     probe.skipWhitespace()
++     probe.skipWhitespace()
+
+-     probe.next().lay(false)(_ == '['.toByte)
++     probe.next().lay(false)(_ == '['.toByte)
+
+- given trailed: ("application/vnd.example" is Detectable under Likely over Expanse to Data) =
++ given trailed: ("application/vnd.example" is Detectable under Likely over Expanse to Data) =
+
+-   Detectable.positional: expanse =>
++   Detectable.positional: expanse =>
+
+-     expanse.size >= 4 && expanse.read(expanse.size - 4, 4).utf8 == t"DONE"
++     expanse.size >= 4 && expanse.read(expanse.size - 4, 4).utf8 == t"DONE"
+
+=     expanse.size >= 4 && expanse.read(expanse.size - 4, 4).utf8 == t"DONE"
+- ```
++ ```
+
+- The type states the certainty, and the detector must earn it: `Likely` only for the structure the
+- format's specification designates as identifying, and `Certain` only for one which reads and
+- validates everything — which, on a stream, means holding all of it in memory until the detector
+- returns.
++ El tipo declara la certeza, y el detector debe ganársela: `Likely` solo para la estructura que
++ la especificación del formato designa como identificativa, y `Certain` solo para uno que lee y
++ valida todo, lo que, sobre un flujo, significa guardarlo entero en memoria hasta que el detector
++ termina.
+
+- ### Multipart
++ ### Multipart
+
+- `multipart/form-data` is the format of file uploads. It is parsed into a `Multipart` of typed
+- `Part`s. Each part has its disposition, its name, an optional filename, its headers, and a
+- stream for its body. It is parsed incrementally, so a large upload streams, and does not
+- accumulate:
++ `multipart/form-data` es el formato de las subidas de ficheros. Se analiza en un `Multipart` de
++ `Part` tipadas. Cada parte tiene su disposición, su nombre, un nombre de fichero opcional, sus
++ cabeceras y un flujo para su cuerpo. Se analiza de forma incremental, así que una subida grande
++ se transmite como flujo, y no se acumula:
+
+= accumulate:
+=
+- ```scala
++ ```scala
+
+- val body =
++ val body =
+
+-   t"--xyz\r\n" +
++   t"--xyz\r\n" +
+
+-   t"Content-Disposition: form-data; name=\"avatar\"; filename=\"me.png\"\r\n" +
++   t"Content-Disposition: form-data; name=\"avatar\"; filename=\"me.png\"\r\n" +
+
+-   t"\r\n" +
++   t"\r\n" +
+
+-   t"pixels\r\n" +
++   t"pixels\r\n" +
+
+-   t"--xyz--\r\n"
++   t"--xyz--\r\n"
+
+- val upload = Multipart.parse(Chain(body.in[Data]))
++ val upload = Multipart.parse(Chain(body.in[Data]))
+
+= val upload = Multipart.parse(Chain(body.in[Data]))
+- ```
++ ```
+
+= val upload = Multipart.parse(Chain(body.in[Data]))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val upload = Multipart.parse(Chain(body.in[Data]))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val upload = Multipart.parse(Chain(body.in[Data]))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(upload.at(t"avatar").let(_.filename).inspect)
++ Out.println(upload.at(t"avatar").let(_.filename).inspect)
+
+= Out.println(upload.at(t"avatar").let(_.filename).inspect)
+- ```
++ ```
+
+- A part's body is lent from the input, without copying. It must be read, with
+- `part.read[Data]`, or with `part.body()` for the stream, before moving on to the next part.
+- After that, whatever remained of it has been skipped, and it reads as empty.
++ El cuerpo de una parte se presta a partir de la entrada, sin copiarlo. Debe leerse, con
++ `part.read[Data]`, o con `part.body()` para el flujo, antes de pasar a la parte siguiente.
++ Después, lo que quedara de él se ha saltado, y se lee como vacío.
+
+- ### Related
++ ### Relacionado
+
+- - [Audio](audio.md), [images](images.md), [interpolation](interpolation.md) and [OpenAPI](openapi.md) name their formats by media type.
++ - [Audio](audio.md), [imágenes](images.md), [interpolación](interpolation.md) y
++   [OpenAPI](openapi.md) nombran sus formatos por tipo de medio.

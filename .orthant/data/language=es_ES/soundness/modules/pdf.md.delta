@@ -1,0 +1,849 @@
+orthant 1 language
+
+- ## PDF
++ ## PDF
+
+- ### About
++ ### Descripción
+
+- A [PDF](https://en.wikipedia.org/wiki/PDF) document reads as a typed value: its pages and their
+- geometry, the text laid out on them, the fonts they use, its metadata, bookmarks, links and
+- attachments. A document is also edited. Content is replaced, pages are appended or removed, fonts
+- are embedded, and metadata and links are set. An edit appends to the file rather than rewriting
+- it, so the original bytes survive untouched.
++ Un documento [PDF](https://en.wikipedia.org/wiki/PDF) se lee como un valor tipado: sus páginas y su
++ geometría, el texto dispuesto en ellas, las fuentes que usan, sus metadatos, marcadores, enlaces y
++ adjuntos. Un documento también se edita. Se sustituye el contenido, se añaden o eliminan páginas,
++ se incrustan fuentes y se establecen metadatos y enlaces. Una edición se añade al final del fichero
++ en lugar de reescribirlo, de modo que los bytes originales permanecen intactos.
+
+- Everything is implemented directly against the format: the object syntax, the cross-reference
+- tables, the stream filters, the encryption. Nothing is delegated to an external PDF library.
++ Todo se implementa directamente sobre el formato: la sintaxis de objetos, las tablas de referencias
++ cruzadas, los filtros de flujo, el cifrado. Nada se delega en una biblioteca PDF externa.
+
+- ### On PDF
++ ### Sobre PDF
+
+- The outer layer of PDF is COS, a small object language of numbers, names, strings, arrays,
+- dictionaries and streams, addressed by indirect references and indexed by a cross-reference
+- table at the end of the file. Its inner layer is a content stream: a stack machine whose
+- operators place glyphs on a page. Neither layer is hard, and both are unforgiving. A
+- cross-reference offset may be wrong by one byte. A stream's declared length may disagree with
+- its content. An object may be present in an update and absent in the original.
++ La capa exterior de PDF es COS, un pequeño lenguaje de objetos formado por números, nombres,
++ cadenas, arrays, diccionarios y flujos, direccionados mediante referencias indirectas e indexados
++ por una tabla de referencias cruzadas al final del fichero. Su capa interior es un flujo de
++ contenido: una máquina de pila cuyos operadores colocan glifos en una página. Ninguna de las dos
++ capas es difícil, y ambas son implacables. Un desplazamiento de referencias cruzadas puede estar
++ equivocado en un byte. La longitud declarada de un flujo puede no coincidir con su contenido. Un
++ objeto puede estar presente en una actualización y ausente en el original.
+
+- Reading such a format well means never assuming the file is well-formed, and never holding more
+- of it than is needed. A document is *opened*, which maps the file and reads its cross-reference
+- table. Pages, metadata and text are read through that scope. The payload of a stream is pulled
+- lazily, decoded through its chain of filters, and is not materialized on arrival. Where a
+- document is damaged past the point at which its cross-reference table can be trusted, it is
+- recovered by scanning the file for objects directly. Reading a document lazily through a scope
+- which owns the file is the shape described under
+- [delimited scopes](../../philosophy/delimited-scopes.md).
++ Leer bien un formato así significa no suponer nunca que el fichero está bien formado, y no retener
++ nunca más de lo necesario. Un documento se *abre*, lo que proyecta el fichero en memoria y lee su
++ tabla de referencias cruzadas. Las páginas, los metadatos y el texto se leen a través de ese ámbito.
++ La carga útil de un flujo se extrae de forma perezosa, se decodifica a través de su cadena de
++ filtros y no se materializa al llegar. Cuando un documento está dañado hasta el punto de que ya no
++ se puede confiar en su tabla de referencias cruzadas, se recupera recorriendo el fichero en busca de
++ objetos directamente. Leer un documento de forma perezosa a través de un ámbito que posee el fichero
++ es la forma descrita en [ámbitos delimitados](../../philosophy/delimited-scopes.md).
+
+- Everything comes from the `soundness` package, with a [strategy] for errors, a text encoding for
+- the content which will be written, and the imports which let the samples print their results:
++ Todo procede del paquete `soundness`, con una [estrategia] para los errores, una codificación de
++ texto para el contenido que se escribirá y las importaciones que permiten a los ejemplos imprimir
++ sus resultados:
+
+= the content which will be written, and the imports which let the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import soundness.pdfCreatable
++ import soundness.pdfCreatable
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+- given decimalizer: Decimalizer = Decimalizer(3)
++ given decimalizer: Decimalizer = Decimalizer(3)
+
+= given decimalizer: Decimalizer = Decimalizer(3)
+- ```
++ ```
+
+- ### Creating a document
++ ### Crear un documento
+
+- A document is created at a path, and written within the scope of the block. A fresh document
+- has a catalog and an empty page tree, and `appendPage` adds a page with the media box it should
+- have. Boxes are [quantities](quantities.md) in points, not bare numbers, so an A4 page is 595
+- by 842 points:
++ Un documento se crea en una ruta y se escribe dentro del ámbito del bloque. Un documento nuevo
++ tiene un catálogo y un árbol de páginas vacío, y `appendPage` añade una página con la caja de medios
++ que deba tener. Las cajas son [magnitudes](quantities.md) en puntos, no números desnudos, así que
++ una página A4 mide 595 por 842 puntos:
+
+= by 842 points:
+=
+- ```scala
++ ```scala
+
+- val a4 = Pdf.Rect
++ val a4 = Pdf.Rect
+
+-   ( Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
++   ( Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+
+-     Quantity[Points[1]](595.0), Quantity[Points[1]](842.0) )
++     Quantity[Points[1]](595.0), Quantity[Points[1]](842.0) )
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLinux
+
+- import temporaryDirectories.javaBaseTemporaryDirectory
++ import temporaryDirectories.javaBaseTemporaryDirectory
+
+- val path = temporaryDirectory[Path on Linux] / "tutorial.pdf"
++ val path = temporaryDirectory[Path on Linux] / "tutorial.pdf"
+
+= val path = temporaryDirectory[Path on Linux] / "tutorial.pdf"
+- ```
++ ```
+
+= val path = temporaryDirectory[Path on Linux] / "tutorial.pdf"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val path = temporaryDirectory[Path on Linux] / "tutorial.pdf"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val path = temporaryDirectory[Path on Linux] / "tutorial.pdf"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- path.create[Pdf](CreateFlag.Replace): doc ?=>
++ path.create[Pdf](CreateFlag.Replace): doc ?=>
+
+-   doc.appendPage(a4)
++   doc.appendPage(a4)
+
+=   doc.appendPage(a4)
+- ```
++ ```
+
+- The file is written whole to a temporary sibling, and moved onto the target atomically, so a
+- failure part of the way through leaves nothing behind.
++ El fichero se escribe entero en un hermano temporal y se mueve sobre el destino de forma atómica,
++ de modo que un fallo a mitad de camino no deja nada atrás.
+
+- ### Opening a document
++ ### Abrir un documento
+
+- A document is opened from a path or from bytes, and read within the scope of the block. The
+- `pdf` accessor reaches the contextual document:
++ Un documento se abre desde una ruta o desde bytes, y se lee dentro del ámbito del bloque. El
++ accesor `pdf` alcanza el documento contextual:
+
+= `pdf` accessor reaches the contextual document:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `pdf` accessor reaches the contextual document:
+=
+= ```scala fuel
+- run
++ run
+
+= `pdf` accessor reaches the contextual document:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= `pdf` accessor reaches the contextual document:
+=
+= ```scala fuel
+= run
+= ##
+- PdfFile(path).open():
++ PdfFile(path).open():
+
+-   Out.println(pdf.version.major.show)
++   Out.println(pdf.version.major.show)
+
+-   Out.println(pdf.pageCount.show)
++   Out.println(pdf.pageCount.show)
+
+=   Out.println(pdf.pageCount.show)
+- ```
++ ```
+
+- Opening for writing takes the `Read & Write` mode, and gives the document as a handle whose
+- editing operations are reachable only with the `Write` grant:
++ Abrir para escritura requiere el modo `Read & Write`, y da el documento como un descriptor cuyas
++ operaciones de edición solo son accesibles con la concesión `Write`:
+
+= editing operations are reachable only with the `Write` grant:
+=
+- ```scala fuel
++ ```scala fuel
+
+= editing operations are reachable only with the `Write` grant:
+=
+= ```scala fuel
+- run
++ run
+
+= editing operations are reachable only with the `Write` grant:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= editing operations are reachable only with the `Write` grant:
+=
+= ```scala fuel
+= run
+= ##
+- PdfFile(path).open(Read & Write): doc ?=>
++ PdfFile(path).open(Read & Write): doc ?=>
+
+-   doc.setRotation(doc.page(Prim), Page.Rotation.Quarter)
++   doc.setRotation(doc.page(Prim), Page.Rotation.Quarter)
+
+=   doc.setRotation(doc.page(Prim), Page.Rotation.Quarter)
+- ```
++ ```
+
+- An encrypted document is opened by supplying its password, which is checked as the document is
+- opened, and not when a string is first decrypted. A password is a secret, so a
+- [`Cloak`](cryptography.md) must be in scope to say where it is stored:
++ Un documento cifrado se abre proporcionando su contraseña, que se comprueba al abrir el documento,
++ y no cuando se descifra la primera cadena. Una contraseña es un secreto, así que debe haber un
++ [`Cloak`](cryptography.md) en el ámbito que indique dónde se guarda:
+
+= [`Cloak`](cryptography.md) must be in scope to say where it is stored:
+=
+- ```scala fuel
++ ```scala fuel
+
+= [`Cloak`](cryptography.md) must be in scope to say where it is stored:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= [`Cloak`](cryptography.md) must be in scope to say where it is stored:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import cloaks.heapCloak
++ import cloaks.heapCloak
+
+- PdfFile(path).open(Password(t"open sesame")):
++ PdfFile(path).open(Password(t"open sesame")):
+
+-   pdf.info.title
++   pdf.info.title
+
+=   pdf.info.title
+- ```
++ ```
+
+- The standard security handler is supported through RC4 and AES-256. A public-key handler raises
+- a `Pdf.Error` which names the encryption it cannot use.
++ El manejador de seguridad estándar se admite mediante RC4 y AES-256. Un manejador de clave pública
++ lanza un `Pdf.Error` que nombra el cifrado que no puede usar.
+
+- ### Pages
++ ### Páginas
+
+- The page tree flattens into a sequence, indexed by [ordinal](numbers.md), so `Prim` is the first
+- page. The geometry of each page is resolved against the inheritance which the format allows, so
+- a media box declared on the root of the tree applies to every page beneath it:
++ El árbol de páginas se aplana en una secuencia, indexada por [ordinal](numbers.md), de modo que
++ `Prim` es la primera página. La geometría de cada página se resuelve según la herencia que permite
++ el formato, así que una caja de medios declarada en la raíz del árbol se aplica a todas las páginas
++ que cuelgan de ella:
+
+= a media box declared on the root of the tree applies to every page beneath it:
+=
+- ```tabular
++ ```tabular
+
+- column  Box
+- column  Inherited
+- column  Otherwise
+- row  `mediaBox`  yes  a `Pdf.Error`, since a page must have one
+- row  `cropBox`  yes  the media box
+- row  `bleedBox`, `trimBox`, `artBox`  no  the crop box
++ column  Caja
++ column  Heredada
++ column  Si no
++ row  `mediaBox`  sí  un `Pdf.Error`, ya que una página debe tener una
++ row  `cropBox`  sí  la caja de medios
++ row  `bleedBox`, `trimBox`, `artBox`  no  la caja de recorte
+
+= row  `bleedBox`, `trimBox`, `artBox`  no  the crop box
+- ```
++ ```
+
+= row  `bleedBox`, `trimBox`, `artBox`  no  the crop box
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= row  `bleedBox`, `trimBox`, `artBox`  no  the crop box
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= row  `bleedBox`, `trimBox`, `artBox`  no  the crop box
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= row  `bleedBox`, `trimBox`, `artBox`  no  the crop box
+= ```
+=
+= ```scala fuel
+= run
+= ##
+- PdfFile(path).open():
++ PdfFile(path).open():
+
+-   Out.println(pdf.page(Prim).mediaBox.width.show)
++   Out.println(pdf.page(Prim).mediaBox.width.show)
+
+-   Out.println(pdf.page(Prim).rotation.inspect)
++   Out.println(pdf.page(Prim).rotation.inspect)
+
+-   Out.println(pdf.page(Prim).width.show)
++   Out.println(pdf.page(Prim).width.show)
+
+=   Out.println(pdf.page(Prim).width.show)
+- ```
++ ```
+
+- The `width` and `height` of a page account for its rotation, which is why the page quarter-turned
+- above is now 842 points wide. A `/UserUnit` scales the boxes. The dimensions read are the ones
+- which the page presents.
++ La anchura (`width`) y la altura (`height`) de una página tienen en cuenta su rotación, por lo que
++ la página girada un cuarto de vuelta arriba mide ahora 842 puntos de ancho. Un `/UserUnit` escala
++ las cajas. Las dimensiones leídas son las que presenta la página.
+
+- ### Extracting text
++ ### Extraer texto
+
+- The `text` of a page runs its content stream, and reconstructs the reading order from the
+- positions of the glyphs:
++ El `text` de una página ejecuta su flujo de contenido y reconstruye el orden de lectura a partir de
++ las posiciones de los glifos:
+
+= positions of the glyphs:
+=
+- ```tabular
++ ```tabular
+
+- column  Between two shows of text
+- column  Becomes
+- row  a gap along a baseline  a space
+- row  a change of baseline  a newline
+- row  nothing: they are adjacent  nothing, so they run together
++ column  Entre dos muestras de texto
++ column  Se convierte en
++ row  un hueco a lo largo de una línea base  un espacio
++ row  un cambio de línea base  un salto de línea
++ row  nada: son adyacentes  nada, así que se juntan
+
+= row  nothing: they are adjacent  nothing, so they run together
+- ```
++ ```
+
+= row  nothing: they are adjacent  nothing, so they run together
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= row  nothing: they are adjacent  nothing, so they run together
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= row  nothing: they are adjacent  nothing, so they run together
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= row  nothing: they are adjacent  nothing, so they run together
+= ```
+=
+= ```scala fuel
+= run
+= ##
+- PdfFile(path).open():
++ PdfFile(path).open():
+
+= PdfFile(path).open():
+-   Out.println(pdf.page(Prim).text.inspect)
++   Out.println(pdf.page(Prim).text.inspect)
+
+= PdfFile(path).open():
+=   Out.println(pdf.page(Prim).text.inspect)
+- ```
++ ```
+
+- The page has no content yet, so its text is empty. Positioned runs are available too, for a
+- reader which needs coordinates rather than a paragraph.
++ La página aún no tiene contenido, así que su texto está vacío. También hay rachas posicionadas, para
++ un lector que necesite coordenadas en lugar de un párrafo.
+
+- ### Metadata, navigation and attachments
++ ### Metadatos, navegación y adjuntos
+
+- The document information dictionary reads as a `Pdf.Info`, with its dates parsed from PDF's `D:`
+- format, including its offset where one is given. A malformed date is reported as absent, not as
+- an error. Named destinations resolve through either the modern name tree or the old `/Dests`
+- dictionary, and bookmarks form a tree of `Bookmark` values:
++ El diccionario de información del documento se lee como un `Pdf.Info`, con sus fechas analizadas
++ desde el formato `D:` de PDF, incluido su desfase cuando se indica. Una fecha mal formada se
++ notifica como ausente, no como un error. Los destinos con nombre se resuelven a través del árbol de
++ nombres moderno o del antiguo diccionario `/Dests`, y los marcadores forman un árbol de valores
++ `Bookmark`:
+
+= dictionary, and bookmarks form a tree of `Bookmark` values:
+=
+- ```scala fuel
++ ```scala fuel
+
+= dictionary, and bookmarks form a tree of `Bookmark` values:
+=
+= ```scala fuel
+- run
++ run
+
+= dictionary, and bookmarks form a tree of `Bookmark` values:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= dictionary, and bookmarks form a tree of `Bookmark` values:
+=
+= ```scala fuel
+= run
+= ##
+- PdfFile(path).open():
++ PdfFile(path).open():
+
+= dictionary, and bookmarks form a tree of `Bookmark` values:
+=
+= ```scala fuel
+= run
+= ##
+= PdfFile(path).open():
+-   Out.println(pdf.info.title.inspect)
++   Out.println(pdf.info.title.inspect)
+
+-   Out.println(pdf.destinations.at(t"intro").inspect)
++   Out.println(pdf.destinations.at(t"intro").inspect)
+
+-   Out.println(pdf.bookmarks.inspect)
++   Out.println(pdf.bookmarks.inspect)
+
+-   Out.println(pdf.attachments.head.let(_.filename).inspect)
++   Out.println(pdf.attachments.head.let(_.filename).inspect)
+
+=   Out.println(pdf.attachments.head.let(_.filename).inspect)
+-   Out.println(pdf.page(Prim).annotations.inspect)
++   Out.println(pdf.page(Prim).annotations.inspect)
+
+=   Out.println(pdf.page(Prim).annotations.inspect)
+- ```
++ ```
+
+- Each is read from the open document:
++ Cada uno se lee del documento abierto:
+
+= Each is read from the open document:
+=
+- ```tabular
++ ```tabular
+
+- column  Accessor
+- column  Gives
+- row  `info`  the document information, as a `Pdf.Info`
+- row  `destinations`  the named destinations, as a `Map[Text, Pdf.Destination]`
+- row  `bookmarks`  the outline, as a tree of `Bookmark`s
+- row  `attachments`  the embedded files
+- row  `annotations`, on a page  the page's annotations, as a `List[Annotation]`
++ column  Accesor
++ column  Da
++ row  `info`  la información del documento, como un `Pdf.Info`
++ row  `destinations`  los destinos con nombre, como un `Map[Text, Pdf.Destination]`
++ row  `bookmarks`  el esquema del documento, como un árbol de `Bookmark`
++ row  `attachments`  los ficheros incrustados
++ row  `annotations`, en una página  las anotaciones de la página, como una `List[Annotation]`
+
+= row  `annotations`, on a page  the page's annotations, as a `List[Annotation]`
+- ```
++ ```
+
+- An annotation is a typed case, such as `Annotation.Link` with its rectangle and URI, or
+- `Annotation.Note` with its contents, and not a dictionary to be inspected by key.
++ Una anotación es un caso tipado, como `Annotation.Link` con su rectángulo y su URI, o
++ `Annotation.Note` con su contenido, y no un diccionario que inspeccionar por clave.
+
+- ### Editing
++ ### Edición
+
+- Editing operations run inside a write scope, and are committed as an incremental update. The
+- original bytes stay where they were, and the changed objects are appended with a fresh
+- cross-reference section. A reader which only understands the original file still sees a valid
+- document:
++ Las operaciones de edición se ejecutan dentro de un ámbito de escritura y se consolidan como una
++ actualización incremental. Los bytes originales se quedan donde estaban, y los objetos modificados
++ se añaden con una nueva sección de referencias cruzadas. Un lector que solo entienda el fichero
++ original sigue viendo un documento válido:
+
+= document:
+=
+- ```scala fuel
++ ```scala fuel
+
+= document:
+=
+= ```scala fuel
+- run
++ run
+
+= document:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= document:
+=
+= ```scala fuel
+= run
+= ##
+- PdfFile(path).open(Read & Write): doc ?=>
++ PdfFile(path).open(Read & Write): doc ?=>
+
+-   val operators = List
++   val operators = List
+
+-     ( Pdf.Operator.BeginText, Pdf.Operator.SetFont(t"F1", 12),
++     ( Pdf.Operator.BeginText, Pdf.Operator.SetFont(t"F1", 12),
+
+-       Pdf.Operator.Offset(72, 720), Pdf.Operator.ShowText(winAnsi(t"Written")),
++       Pdf.Operator.Offset(72, 720), Pdf.Operator.ShowText(winAnsi(t"Written")),
+
+-       Pdf.Operator.EndText )
++       Pdf.Operator.EndText )
+
+-   doc.setContents(doc.page(Prim), operators)
++   doc.setContents(doc.page(Prim), operators)
+
+-   doc.setInfo(Pdf.Info(t"A Title", t"An Author", Unset, Unset, Unset, Unset, Unset, Unset))
++   doc.setInfo(Pdf.Info(t"A Title", t"An Author", Unset, Unset, Unset, Unset, Unset, Unset))
+
+-   doc.addLink(doc.page(Prim), a4, uri = t"https://soundness.dev/")
++   doc.addLink(doc.page(Prim), a4, uri = t"https://soundness.dev/")
+
+=   doc.addLink(doc.page(Prim), a4, uri = t"https://soundness.dev/")
+- ```
++ ```
+
+- The document now has metadata and a link:
++ El documento tiene ahora metadatos y un enlace:
+
+= The document now has metadata and a link:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The document now has metadata and a link:
+=
+= ```scala fuel
+- run
++ run
+
+= The document now has metadata and a link:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= The document now has metadata and a link:
+=
+= ```scala fuel
+= run
+= ##
+- PdfFile(path).open():
++ PdfFile(path).open():
+
+= The document now has metadata and a link:
+=
+= ```scala fuel
+= run
+= ##
+= PdfFile(path).open():
+-   Out.println(pdf.info.title.inspect)
++   Out.println(pdf.info.title.inspect)
+
+-   Out.println(pdf.info.author.inspect)
++   Out.println(pdf.info.author.inspect)
+
+=   Out.println(pdf.info.author.inspect)
+-   Out.println(pdf.page(Prim).annotations.inspect)
++   Out.println(pdf.page(Prim).annotations.inspect)
+
+=   Out.println(pdf.page(Prim).annotations.inspect)
+-   Out.println(pdf.page(Prim).text.inspect)
++   Out.println(pdf.page(Prim).text.inspect)
+
+=   Out.println(pdf.page(Prim).annotations.inspect)
+=   Out.println(pdf.page(Prim).text.inspect)
+- ```
++ ```
+
+- The extracted text is still empty. The content names a font, `F1`, which the page does not yet
+- have as a resource, and which the next step adds.
++ El texto extraído sigue vacío. El contenido nombra una fuente, `F1`, que la página aún no tiene como
++ recurso, y que añade el paso siguiente.
+
+- These are the editing operations, besides the fonts described below:
++ Estas son las operaciones de edición, además de las de fuentes descritas más abajo:
+
+= These are the editing operations, besides the fonts described below:
+=
+- ```tabular
++ ```tabular
+
+- column  Operation
+- column  Does
+- row  `setContents`  replaces a page's content with a list of operators
+- row  `setRotation`  sets a page's rotation
+- row  `setBox`  sets one of a page's boxes, such as `MediaBox` or `CropBox`
+- row  `setPageEntry`  sets any entry of a page's dictionary
+- row  `addLink`  adds a link annotation, to a URI or a destination
+- row  `setAnnotations`  replaces a page's annotations wholesale
+- row  `setInfo`  replaces the document information
+- row  `setBookmarks`  replaces the bookmarks wholesale
+- row  `appendPage`  adds a new page at the end of the page tree
+- row  `removePage`  removes a page, though one nested below the first level is left in place
+- row  `allocate`  adds a new object, under the next free object number
+- row  `newStream`  makes a stream object, to be allocated or referenced
+- row  `set`  replaces an object by reference
+- row  `free`  deletes an object
++ column  Operación
++ column  Hace
++ row  `setContents`  sustituye el contenido de una página por una lista de operadores
++ row  `setRotation`  establece la rotación de una página
++ row  `setBox`  establece una de las cajas de una página, como `MediaBox` o `CropBox`
++ row  `setPageEntry`  establece cualquier entrada del diccionario de una página
++ row  `addLink`  añade una anotación de enlace, a un URI o a un destino
++ row  `setAnnotations`  sustituye por completo las anotaciones de una página
++ row  `setInfo`  sustituye la información del documento
++ row  `setBookmarks`  sustituye por completo los marcadores
++ row  `appendPage`  añade una página nueva al final del árbol de páginas
++ row  `removePage`  elimina una página, aunque una anidada por debajo del primer nivel se deja en su sitio
++ row  `allocate`  añade un objeto nuevo, con el siguiente número de objeto libre
++ row  `newStream`  crea un objeto de flujo, para asignarlo o referenciarlo
++ row  `set`  sustituye un objeto por referencia
++ row  `free`  elimina un objeto
+
+= row  `free`  deletes an object
+- ```
++ ```
+
+- A [TrueType font](fonts.md), which is any `Sfnt`, is embedded with `embedFont`. It writes the
+- program as a `FontFile2`, and builds the simple WinAnsi font dictionary around it. `addResource`
+- names the font on a page, so content can select it. Here the font is loaded from a classpath
+- resource:
++ Una [fuente TrueType](fonts.md), que es cualquier `Sfnt`, se incrusta con `embedFont`. Escribe el
++ programa como un `FontFile2` y construye a su alrededor el diccionario de fuente simple WinAnsi.
++ `addResource` nombra la fuente en una página, para que el contenido pueda seleccionarla. Aquí la
++ fuente se carga desde un recurso del classpath:
+
+= resource:
+=
+- ```scala fuel
++ ```scala fuel
+
+= resource:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= resource:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import classloaders.threadContextClassloader
++ import classloaders.threadContextClassloader
+
+=
+- PdfFile(path).open(Read & Write): doc ?=>
++ PdfFile(path).open(Read & Write): doc ?=>
+
+-   val font = doc.embedFont(Sfnt(Classpath / "fonts" / "text.ttf"), t"MyFont")
++   val font = doc.embedFont(Sfnt(Classpath / "fonts" / "text.ttf"), t"MyFont")
+
+-   doc.addResource(doc.page(Prim), t"Font", t"F1", font)
++   doc.addResource(doc.page(Prim), t"Font", t"F1", font)
+
+=   doc.addResource(doc.page(Prim), t"Font", t"F1", font)
+- ```
++ ```
+
+- ### Stream payloads
++ ### Cargas útiles de flujos
+
+- The payload of a PDF stream is read lazily, through whatever chain of filters the stream
+- declares, and through the PNG and TIFF predictors which often follow them. The image filters are
+- the end of the chain. Decoding stops before them, and the still-encoded image arrives instead:
++ La carga útil de un flujo PDF se lee de forma perezosa, a través de la cadena de filtros que declare
++ el flujo y de los predictores PNG y TIFF que a menudo los siguen. Los filtros de imagen son el final
++ de la cadena. La decodificación se detiene antes de ellos, y en su lugar llega la imagen aún
++ codificada:
+
+= the end of the chain. Decoding stops before them, and the still-encoded image arrives instead:
+=
+- ```tabular
++ ```tabular
+
+- column  Filter
+- column  Read as
+- row  `FlateDecode`, `LZWDecode`  the decompressed bytes
+- row  `ASCII85Decode`, `ASCIIHexDecode`  the decoded bytes
+- row  `RunLengthDecode`  the decoded bytes
+- row  `DCTDecode`, `JPXDecode`, `CCITTFaxDecode`, `JBIG2Decode`  the encoded image, undecoded
++ column  Filtro
++ column  Se lee como
++ row  `FlateDecode`, `LZWDecode`  los bytes descomprimidos
++ row  `ASCII85Decode`, `ASCIIHexDecode`  los bytes decodificados
++ row  `RunLengthDecode`  los bytes decodificados
++ row  `DCTDecode`, `JPXDecode`, `CCITTFaxDecode`, `JBIG2Decode`  la imagen codificada, sin decodificar
+
+= row  `DCTDecode`, `JPXDecode`, `CCITTFaxDecode`, `JBIG2Decode`  the encoded image, undecoded
+- ```
++ ```
+
+- The payload arrives as a [stream](streams.md) of bytes, so a large embedded file or image is
+- never held whole:
++ La carga útil llega como un [flujo](streams.md) de bytes, así que un fichero o una imagen incrustados
++ de gran tamaño nunca se retienen enteros:
+
+= never held whole:
+=
+- ```scala
++ ```scala
+
+= ```scala
+- PdfFile(path).open():
++ PdfFile(path).open():
+
+-   pdf(2, 0) match
++   pdf(2, 0) match
+
+-     case body: Cos.Body => pdf.spring(body).read[Data].length
++     case body: Cos.Body => pdf.spring(body).read[Data].length
+
+-     case _              => 0
++     case _              => 0
+
+=     case _              => 0
+- ```
++ ```
+
+- ### Recovering a damaged document
++ ### Recuperar un documento dañado
+
+- Where a cross-reference table is missing or wrong, as after a truncated download or a repair by
+- another tool, the table is rebuilt rather than trusted. The whole file is scanned for `N G obj`
+- markers, with the latest copy of each object winning, and the trailer is recovered from a
+- surviving `trailer` dictionary, or from the catalog itself. Individually shifted offsets are
+- corrected as objects resolve. A document which any conformant reader would open opens here too,
+- and is read exactly like any other.
++ Cuando falta una tabla de referencias cruzadas o es errónea, como tras una descarga truncada o una
++ reparación hecha por otra herramienta, la tabla se reconstruye en lugar de confiar en ella. Se
++ recorre el fichero entero en busca de marcadores `N G obj`, y gana la copia más reciente de cada
++ objeto; el tráiler se recupera de un diccionario `trailer` superviviente, o del propio catálogo.
++ Los desplazamientos corridos uno a uno se corrigen a medida que se resuelven los objetos.
++ Un documento que cualquier lector conforme abriría también se abre aquí, y se lee exactamente igual
++ que cualquier otro.
+
+- ### Related
++ ### Relacionado
+
+- - [Fonts](fonts.md) describes the `Sfnt` which is embedded in a document, and its subsetting.
+- - [Quantities](quantities.md) describes the points in which boxes are measured.
+- - [Filesystem](filesystem.md) describes the paths and the `create` and `open` scopes.
+- - [Cryptography](cryptography.md) describes the `Cloak` which holds a password.
+- - [Streams](streams.md) describes the lazy streams which payloads arrive as.
+- - [Compression](compression.md) describes the Flate and LZW which stream filters decode.
+- - [Hyphenation](hyphenation.md) breaks the words which a document sets.
++ - [Fuentes](fonts.md) describe el `Sfnt` que se incrusta en un documento, y su reducción a
++   subconjunto.
++ - [Magnitudes](quantities.md) describe los puntos en los que se miden las cajas.
++ - [Sistema de ficheros](filesystem.md) describe las rutas y los ámbitos `create` y `open`.
++ - [Criptografía](cryptography.md) describe el `Cloak` que guarda una contraseña.
++ - [Flujos](streams.md) describe los flujos perezosos en los que llegan las cargas útiles.
++ - [Compresión](compression.md) describe los Flate y LZW que decodifican los filtros de flujo.
++ - [Separación silábica](hyphenation.md) divide las palabras que compone un documento.

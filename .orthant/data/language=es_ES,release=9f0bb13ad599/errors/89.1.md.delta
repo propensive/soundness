@@ -1,0 +1,4 @@
+orthant 1 language
+
+- row  `↯/s.89.1.11`  `TruncatedTable`  A table of fixed layout, identified by `tag`, is shorter than that layout.  `[↯/s.89.1.11] the font could not be used because the table head is shorter than its layout`  The file is truncated or its table directory is wrong; obtain an intact copy of the font.
++ row  `↯/s.89.1.11`  `TruncatedTable`  Una tabla de disposición fija, identificada por `tag`, es más corta que esa disposición.  `[↯/s.89.1.11] the font could not be used because the table head is shorter than its layout`  El fichero está truncado o su directorio de tablas es incorrecto; obtén una copia intacta de la fuente.

@@ -1,0 +1,88 @@
+orthant 1 language
+
+- # `↯/s.93.2` — `Ar.Error`
++ # `↯/s.93.2` — `Ar.Error`
+
+- Raised when an `ar` archive (the container format of `*.deb` packages and `*.a` static
+- libraries) cannot be read or written.
++ Se lanza cuando un archivo `ar` (el formato contenedor de los paquetes `*.deb` y de las
++ bibliotecas estáticas `*.a`) no se puede leer ni escribir.
+
+- ## Cause
++ ## Causa
+
+- Bitumen parses `ar` members lazily from a byte stream, so a fault is reported when the
+- malformed structure is reached rather than when the archive is opened. The format carries no
+- checksum and no end-of-archive marker, so the two-byte header terminator and the recorded
+- member size are the only structural checks available.
++ Bitumen analiza los miembros de `ar` de forma perezosa a partir de un flujo de bytes, así que un
++ fallo se notifica cuando se alcanza la estructura mal formada y no cuando se abre el archivo. El
++ formato no lleva suma de verificación ni marcador de fin de archivo, de modo que el terminador de
++ cabecera de dos bytes y el tamaño registrado de cada miembro son las únicas comprobaciones
++ estructurales disponibles.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Código
++ column  Motivo
++ column  Mensaje
+
+- row  `↯/s.93.2.1`  `BadMagic`  the archive does not begin with the ar magic bytes (got <actual> bytes)
++ row  `↯/s.93.2.1`  `BadMagic`  the archive does not begin with the ar magic bytes (got <actual> bytes)
+
+- row  `↯/s.93.2.2`  `BadTerminator`  the header is not terminated by the two magic bytes (got <actual> bytes)
++ row  `↯/s.93.2.2`  `BadTerminator`  the header is not terminated by the two magic bytes (got <actual> bytes)
+
+- row  `↯/s.93.2.3`  `BadDecimal`  the <field> field did not contain a valid decimal value
++ row  `↯/s.93.2.3`  `BadDecimal`  the <field> field did not contain a valid decimal value
+
+- row  `↯/s.93.2.4`  `BadOctal`  the <field> field did not contain a valid octal value
++ row  `↯/s.93.2.4`  `BadOctal`  the <field> field did not contain a valid octal value
+
+- row  `↯/s.93.2.5`  `TruncatedStream`  the archive stream ended unexpectedly (needed <needed> bytes, got <got>)
++ row  `↯/s.93.2.5`  `TruncatedStream`  the archive stream ended unexpectedly (needed <needed> bytes, got <got>)
+
+- row  `↯/s.93.2.6`  `BadLongNameRef`  the long-name reference <reference> does not resolve in the archive's name table
++ row  `↯/s.93.2.6`  `BadLongNameRef`  the long-name reference <reference> does not resolve in the archive's name table
+
+- row  `↯/s.93.2.7`  `UnsupportedNameFormat`  the member name <name> uses the BSD length-prefixed form, which is not supported
++ row  `↯/s.93.2.7`  `UnsupportedNameFormat`  the member name <name> uses the BSD length-prefixed form, which is not supported
+
+- row  `↯/s.93.2.8`  `WriteUnsupported`  ar archives cannot yet be opened for writing
++ row  `↯/s.93.2.8`  `WriteUnsupported`  ar archives cannot yet be opened for writing
+
+- row  `↯/s.93.2.9`  `Unrepresentable`  the entry <name> is neither a regular file nor a directory, which ar cannot store
++ row  `↯/s.93.2.9`  `Unrepresentable`  the entry <name> is neither a regular file nor a directory, which ar cannot store
+
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- A truncated archive usually means an incomplete download or a stream that ended early; a bad
+- terminator means the reader has lost the header boundary, typically because an earlier member's
+- size field was corrupt. A long-name reference that does not resolve means a GNU archive whose
+- `//` name table is missing or precedes the wrong members. BSD-style `#1/<length>` names are not
+- produced by Debian or GNU tooling and are rejected rather than misread.
++ Un archivo truncado suele indicar una descarga incompleta o un flujo que terminó antes de tiempo;
++ un terminador incorrecto indica que el lector ha perdido la frontera de la cabecera, normalmente
++ porque el campo de tamaño de un miembro anterior estaba corrupto. Una referencia de nombre largo
++ que no se resuelve indica un archivo GNU cuya tabla de nombres `//` falta o precede a los miembros
++ equivocados. Los nombres `#1/<length>` de estilo BSD no los producen las herramientas de Debian ni
++ de GNU, y se rechazan en lugar de leerse mal.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/bitumen/src/core/bitumen.Ar.scala`
+- - `↯/s.93.1` (`Tar.Error`), the sibling TAR reader
++ - Fuente: `lib/bitumen/src/core/bitumen.Ar.scala`
++ - `↯/s.93.1` (`Tar.Error`), el lector TAR hermano

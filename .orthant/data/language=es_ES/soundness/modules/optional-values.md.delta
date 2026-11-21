@@ -1,0 +1,803 @@
+orthant 1 language
+
+- ## Optional Values
++ ## Valores opcionales
+
+- ### About
++ ### Descripción
+
+- A value that might be absent has the type `Optional`. An `Optional[Text]` is either a `Text`, or
+- the single value `Unset`, which stands for absence.
++ Un valor que podría estar ausente tiene el tipo `Optional`. Un `Optional[Text]` es o bien un
++ `Text`, o bien el valor único `Unset`, que representa la ausencia.
+
+- Unlike an `Option`, an `Optional` adds no wrapper. A present value is stored as itself, and is
+- written as itself, so the common case of a value that is there costs nothing and needs no
+- ceremony.
++ A diferencia de un `Option`, un `Optional` no añade ningún envoltorio. Un valor presente se
++ almacena como sí mismo y se escribe como sí mismo, así que el caso habitual, el de un valor que
++ está ahí, no cuesta nada ni exige ninguna ceremonia.
+
+- Optionality is also flat. `Optional[Optional[Int]]` is the same type as `Optional[Int]`, so the
+- ambiguous state which `Option` allows, a "present absence" such as `Some(None)`, cannot be
+- represented at all.
++ La opcionalidad es además plana. `Optional[Optional[Int]]` es el mismo tipo que `Optional[Int]`,
++ así que el estado ambiguo que permite `Option`, una «ausencia presente» como `Some(None)`, no se
++ puede representar en absoluto.
+
+- ### On absence
++ ### Sobre la ausencia
+
+- Three ways of saying "no value" are in common use:
++ Hay tres maneras habituales de decir «ningún valor»:
+
+= Three ways of saying "no value" are in common use:
+=
+- ```tabular
++ ```tabular
+
+- column  Absence as
+- column  Visible in the type
+- column  A present value is
+- column  Nests
+- row  `null`  no, so it fails only when dereferenced  itself  no
+- row  `Option`  yes  boxed in a `Some`  yes: `Option[Option[T]]` has two distinct empties
+- row  `Optional`  yes  itself  no
++ column  Ausencia como
++ column  Visible en el tipo
++ column  Un valor presente es
++ column  Se anida
++ row  `null`  no, así que solo falla al desreferenciarlo  él mismo  no
++ row  `Option`  sí  envuelto en un `Some`  sí: `Option[Option[T]]` tiene dos vacíos distintos
++ row  `Optional`  sí  él mismo  no
+
+= row  `Optional`  yes  itself  no
+- ```
++ ```
+
+- `null` is invisible to the compiler. `Option` is visible, but makes every present value pay for
+- a wrapper, and code which meets a nested `Option` must thread through both layers.
++ `null` es invisible para el compilador. `Option` es visible, pero hace que cada valor presente
++ pague por un envoltorio, y el código que encuentra un `Option` anidado debe atravesar las dos capas.
+
+- An `Optional` keeps the safety of `Option`: absence is in the type, and the compiler makes sure
+- it is handled. It behaves like the value itself when the value is present. It rests on Scala's
+- [union types](https://docs.scala-lang.org/scala3/reference/new-types/union-types.html):
+- `Optional[value]` is exactly the union `Unset | value`. A union needs no wrapper, and a union of
+- a type with itself is that same type, which is why optionality never nests.
+- [Optionality](../../philosophy/optionality.md) describes the principle. Everything comes from the
+- `soundness` package, and the second import lets the samples print their results:
++ Un `Optional` conserva la seguridad de `Option`: la ausencia está en el tipo, y el compilador se
++ asegura de que se trate. Se comporta como el propio valor cuando el valor está presente. Se apoya en
++ los [tipos unión](https://docs.scala-lang.org/scala3/reference/new-types/union-types.html) de
++ Scala: `Optional[value]` es exactamente la unión `Unset | value`. Una unión no necesita envoltorio,
++ y la unión de un tipo consigo mismo es ese mismo tipo, por lo que la opcionalidad nunca se anida.
++ [Opcionalidad](../../philosophy/optionality.md) describe el principio. Todo procede del paquete
++ `soundness`, y la segunda importación permite que los ejemplos impriman sus resultados:
+
+= `soundness` package, and the second import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Representing absence
++ ### Representar la ausencia
+
+- An optional value has the type `Optional[…]`. A present value is assigned exactly as a plain
+- value would be, and an absent one is `Unset`:
++ Un valor opcional tiene el tipo `Optional[…]`. Un valor presente se asigna exactamente como se
++ asignaría un valor simple, y uno ausente es `Unset`:
+
+= value would be, and an absent one is `Unset`:
+=
+- ```scala
++ ```scala
+
+- val name: Optional[Text] = t"Hamlet"
++ val name: Optional[Text] = t"Hamlet"
+
+- val nickname: Optional[Text] = Unset
++ val nickname: Optional[Text] = Unset
+
+= val nickname: Optional[Text] = Unset
+- ```
++ ```
+
+- An optional value cannot be used where a plain value is needed until the absent case has been
+- dealt with. The compiler insists on it:
++ Un valor opcional no se puede usar donde se necesita un valor simple hasta que se haya tratado el
++ caso ausente. El compilador insiste en ello:
+
+= dealt with. The compiler insists on it:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+= compile
+- errors show
++ errors show
+
+= compile
+= errors show
+- ##
++ ##
+
+- val greeting: Text = name
++ val greeting: Text = name
+
+= val greeting: Text = name
+- ```
++ ```
+
+- The operations which deal with it, each described below, are:
++ Las operaciones que lo tratan, cada una descrita más abajo, son:
+
+= The operations which deal with it, each described below, are:
+=
+- ```tabular
++ ```tabular
+
+- column  Operation
+- column  Gives
+- row  `or`  the value, or a fallback evaluated only when needed
+- row  `let`  a function's result for a present value, with `Unset` passed through
+- row  `lay`  a fallback for absence, or a function's result for presence, as a plain value
+- row  `present`, `absent`  which case a value is in
+- row  `mask`  `Unset` in place of a present value that satisfies a predicate
+- row  `assume`  the value, or an `Optional.Error` thrown
+- row  `presume`  the value, or the type's `Default`
+- row  `compact`  the present values of a collection
+- row  `unless`  `Unset` in place of any value that satisfies a predicate
+- row  `puncture`  `Unset` in place of one particular value
+- row  `only`  a partial function's result, or `Unset` where it is not defined
+- row  `option`  an `Option`
+- row  `optional`  an `Optional`, from an `Option`
+- row  `default[T]`  the `Default` value of the type `T`
++ column  Operación
++ column  Da
++ row  `or`  el valor, o una alternativa evaluada solo cuando hace falta
++ row  `let`  el resultado de una función para un valor presente, dejando pasar `Unset`
++ row  `lay`  una alternativa para la ausencia, o el resultado de una función para la presencia, como valor simple
++ row  `present`, `absent`  en qué caso está un valor
++ row  `mask`  `Unset` en lugar de un valor presente que cumple un predicado
++ row  `assume`  el valor, o un `Optional.Error` lanzado
++ row  `presume`  el valor, o el `Default` del tipo
++ row  `compact`  los valores presentes de una colección
++ row  `unless`  `Unset` en lugar de cualquier valor que cumple un predicado
++ row  `puncture`  `Unset` en lugar de un valor concreto
++ row  `only`  el resultado de una función parcial, o `Unset` donde no está definida
++ row  `option`  un `Option`
++ row  `optional`  un `Optional`, a partir de un `Option`
++ row  `default[T]`  el valor `Default` del tipo `T`
+
+= row  `default[T]`  the `Default` value of the type `T`
+- ```
++ ```
+
+- ### Supplying a fallback
++ ### Proporcionar una alternativa
+
+- `or` gives the value if it is present, and a fallback otherwise. The result is a plain value:
++ `or` da el valor si está presente, y una alternativa en caso contrario. El resultado es un valor
++ simple:
+
+= `or` gives the value if it is present, and a fallback otherwise. The result is a plain value:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `or` gives the value if it is present, and a fallback otherwise. The result is a plain value:
+=
+= ```scala fuel
+- run
++ run
+
+= `or` gives the value if it is present, and a fallback otherwise. The result is a plain value:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(name.or(t"anonymous"))
++ Out.println(name.or(t"anonymous"))
+
+- Out.println(nickname.or(t"anonymous"))
++ Out.println(nickname.or(t"anonymous"))
+
+= Out.println(nickname.or(t"anonymous"))
+- ```
++ ```
+
+- The fallback is evaluated only when it is needed, so it may be expensive, or may itself fail.
++ La alternativa solo se evalúa cuando hace falta, así que puede ser costosa, o incluso fallar.
+
+- ### Transforming
++ ### Transformar
+
+- `let` applies a function to a present value, and passes `Unset` through untouched:
++ `let` aplica una función a un valor presente, y deja pasar `Unset` sin tocarlo:
+
+= `let` applies a function to a present value, and passes `Unset` through untouched:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `let` applies a function to a present value, and passes `Unset` through untouched:
+=
+= ```scala fuel
+- run
++ run
+
+= `let` applies a function to a present value, and passes `Unset` through untouched:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(name.let(_.upper).inspect)
++ Out.println(name.let(_.upper).inspect)
+
+- Out.println(nickname.let(_.upper).inspect)
++ Out.println(nickname.let(_.upper).inspect)
+
+= Out.println(nickname.let(_.upper).inspect)
+- ```
++ ```
+
+- `inspect` displays a present optional value between corner brackets, and an absent one as `○`.
++ `inspect` muestra un valor opcional presente entre corchetes de esquina, y uno ausente como `○`.
+
+- Because optionality is flat, `let` does the work of both `map` and `flatMap` on an `Option`. A
+- function which itself returns an `Optional` does not add a layer, so calls to `let` chain
+- without nesting:
++ Como la opcionalidad es plana, `let` hace el trabajo tanto de `map` como de `flatMap` sobre un
++ `Option`. Una función que a su vez devuelve un `Optional` no añade una capa, así que las llamadas a
++ `let` se encadenan sin anidarse:
+
+= without nesting:
+=
+- ```scala
++ ```scala
+
+- def initial(text: Text): Optional[Char] = text.chars.head
++ def initial(text: Text): Optional[Char] = text.chars.head
+
+= def initial(text: Text): Optional[Char] = text.chars.head
+- ```
++ ```
+
+= def initial(text: Text): Optional[Char] = text.chars.head
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= def initial(text: Text): Optional[Char] = text.chars.head
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= def initial(text: Text): Optional[Char] = text.chars.head
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(name.let(initial).inspect)
++ Out.println(name.let(initial).inspect)
+
+- Out.println(nickname.let(initial).inspect)
++ Out.println(nickname.let(initial).inspect)
+
+= Out.println(nickname.let(initial).inspect)
+- ```
++ ```
+
+- `lay` handles both cases at once. It takes a fallback for absence and a function for presence,
+- so its result is a plain value, not an `Optional`:
++ `lay` trata ambos casos a la vez. Toma una alternativa para la ausencia y una función para la
++ presencia, así que su resultado es un valor simple, no un `Optional`:
+
+= so its result is a plain value, not an `Optional`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= so its result is a plain value, not an `Optional`:
+=
+= ```scala fuel
+- run
++ run
+
+= so its result is a plain value, not an `Optional`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(name.lay(0)(_.length).show)
++ Out.println(name.lay(0)(_.length).show)
+
+- Out.println(nickname.lay(0)(_.length).show)
++ Out.println(nickname.lay(0)(_.length).show)
+
+= Out.println(nickname.lay(0)(_.length).show)
+- ```
++ ```
+
+- ### Testing presence
++ ### Comprobar la presencia
+
+- `present` and `absent` say which case a value is in:
++ `present` y `absent` dicen en qué caso está un valor:
+
+= `present` and `absent` say which case a value is in:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `present` and `absent` say which case a value is in:
+=
+= ```scala fuel
+- run
++ run
+
+= `present` and `absent` say which case a value is in:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(name.present.inspect)
++ Out.println(name.present.inspect)
+
+- Out.println(nickname.absent.inspect)
++ Out.println(nickname.absent.inspect)
+
+= Out.println(nickname.absent.inspect)
+- ```
++ ```
+
+- `mask` discards a present value which satisfies a predicate, and leaves any other value as it
+- was:
++ `mask` descarta un valor presente que cumple un predicado, y deja cualquier otro valor como estaba:
+
+= was:
+=
+- ```scala fuel
++ ```scala fuel
+
+= was:
+=
+= ```scala fuel
+- run
++ run
+
+= was:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(name.mask(_.length > 64).inspect)
++ Out.println(name.mask(_.length > 64).inspect)
+
+- Out.println(name.mask(_.length < 64).inspect)
++ Out.println(name.mask(_.length < 64).inspect)
+
+= Out.println(name.mask(_.length < 64).inspect)
+- ```
++ ```
+
+- ### Requiring a value
++ ### Exigir un valor
+
+- Sometimes a value is known to be present, though its type cannot say so. `assume` asserts it,
+- and gives the plain value. The assertion is unchecked, so `assume` needs the capability to
+- throw, and throws an `Optional.Error` if it is wrong:
++ A veces se sabe que un valor está presente, aunque su tipo no pueda decirlo. `assume` lo afirma, y
++ da el valor simple. La afirmación no se comprueba, así que `assume` necesita la capacidad de lanzar
++ excepciones, y lanza un `Optional.Error` si es falsa:
+
+= throw, and throws an `Optional.Error` if it is wrong:
+=
+- ```scala
++ ```scala
+
+- import scala.unsafeExceptions.canThrowAny
++ import scala.unsafeExceptions.canThrowAny
+
+= import scala.unsafeExceptions.canThrowAny
+- ```
++ ```
+
+= import scala.unsafeExceptions.canThrowAny
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import scala.unsafeExceptions.canThrowAny
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import scala.unsafeExceptions.canThrowAny
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(name.assume)
++ Out.println(name.assume)
+
+= Out.println(name.assume)
+- ```
++ ```
+
+= Out.println(name.assume)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= Out.println(name.assume)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- errors show
++ errors show
+
+= run
+= errors show
+- ##
++ ##
+
+- nickname.assume
++ nickname.assume
+
+= nickname.assume
+- ```
++ ```
+
+- `presume` falls back to the type's default instead: an empty text, a zero, an empty list. It is
+- available for the types which [declare a default](#defaults):
++ `presume` recurre en cambio al valor por defecto del tipo: un texto vacío, un cero, una lista
++ vacía. Está disponible para los tipos que [declaran un valor por defecto](#defaults):
+
+= available for the types which [declare a default](#defaults):
+=
+- ```scala fuel
++ ```scala fuel
+
+= available for the types which [declare a default](#defaults):
+=
+= ```scala fuel
+- run
++ run
+
+= available for the types which [declare a default](#defaults):
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(nickname.presume.inspect)
++ Out.println(nickname.presume.inspect)
+
+= Out.println(nickname.presume.inspect)
+- ```
++ ```
+
+- ### Absence from collections
++ ### Ausencia en las colecciones
+
+- `compact` reduces a collection of optional values to the values which are present, in a
+- collection of the same kind:
++ `compact` reduce una colección de valores opcionales a los valores que están presentes, en una
++ colección de la misma clase:
+
+= collection of the same kind:
+=
+- ```scala fuel
++ ```scala fuel
+
+= collection of the same kind:
+=
+= ```scala fuel
+- run
++ run
+
+= collection of the same kind:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(List[Optional[Text]](t"a", Unset, t"c").compact.inspect)
++ Out.println(List[Optional[Text]](t"a", Unset, t"c").compact.inspect)
+
+= Out.println(List[Optional[Text]](t"a", Unset, t"c").compact.inspect)
+- ```
++ ```
+
+- Optional values also come *out* of [collections](collections.md#positions-and-access). Looking
+- up a key in a map, or the first element of a list, gives an `Optional`, since there may be
+- nothing there.
++ Los valores opcionales también *salen* de las [colecciones](collections.md#positions-and-access).
++ Buscar una clave en un mapa, o el primer elemento de una lista, da un `Optional`, ya que puede no
++ haber nada ahí.
+
+- ### Building an optional
++ ### Construir un opcional
+
+- A condition turns any value into an optional one. `unless` discards the value when a predicate
+- holds, `puncture` discards one particular value, and `only` keeps a value where a partial
+- function is defined:
++ Una condición convierte cualquier valor en uno opcional. `unless` descarta el valor cuando se
++ cumple un predicado, `puncture` descarta un valor concreto, y `only` conserva un valor donde está
++ definida una función parcial:
+
+= function is defined:
+=
+- ```scala
++ ```scala
+
+- val count = 0
++ val count = 0
+
+- val input = t""
++ val input = t""
+
+- val value = 7
++ val value = 7
+
+= val value = 7
+- ```
++ ```
+
+= val value = 7
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val value = 7
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val value = 7
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(count.unless(_ == 0).inspect)
++ Out.println(count.unless(_ == 0).inspect)
+
+- Out.println(input.puncture(t"").inspect)
++ Out.println(input.puncture(t"").inspect)
+
+- Out.println(value.only { case n if n > 0 => n*n }.inspect)
++ Out.println(value.only { case n if n > 0 => n*n }.inspect)
+
+= Out.println(value.only { case n if n > 0 => n*n }.inspect)
+- ```
++ ```
+
+- `safely` builds one from an operation that may fail: it gives the result, or `Unset` if the
+- operation raised an error. [Errors](errors.md#choosing-a-strategy) describes it.
++ `safely` construye uno a partir de una operación que puede fallar: da el resultado, o `Unset` si la
++ operación ha lanzado un error. [Errores](errors.md#choosing-a-strategy) lo describe.
+
+- ### Working with `Option`
++ ### Trabajar con `Option`
+
+- An `Option` is sometimes unavoidable, at the boundary with another library. The two convert in
+- both directions:
++ A veces un `Option` es inevitable, en la frontera con otra biblioteca. Ambos se convierten en los
++ dos sentidos:
+
+= both directions:
+=
+- ```scala fuel
++ ```scala fuel
+
+= both directions:
+=
+= ```scala fuel
+- run
++ run
+
+= both directions:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(name.option.inspect)
++ Out.println(name.option.inspect)
+
+- Out.println(Some(t"Hamlet").optional.inspect)
++ Out.println(Some(t"Hamlet").optional.inspect)
+
+= Out.println(Some(t"Hamlet").optional.inspect)
+- ```
++ ```
+
+- ### Optional fields in data
++ ### Campos opcionales en los datos
+
+- A case class field typed `Optional` is understood by the data formats. An absent field is left
+- out of the output, and a field missing from a document is read as `Unset`.
+- [JSON](json.md#optional-fields-and-defaults) shows this, along with the imports which make a
+- missing field an error instead; the other formats behave alike.
++ Los formatos de datos entienden un campo de case class de tipo `Optional`. Un campo ausente se
++ omite de la salida, y un campo que falta en un documento se lee como `Unset`.
++ [JSON](json.md#optional-fields-and-defaults) lo muestra, junto con las importaciones que convierten
++ en cambio un campo que falta en un error; los demás formatos se comportan igual.
+
+- ### What it costs
++ ### Lo que cuesta
+
+- An `Optional[Text]` *is* a `Text`. There is no wrapper, so a present value costs nothing to
+- hold, nothing to pass and nothing to read. `Option`, by contrast, allocates a `Some` for every
+- present value. In a data structure of a million records, that is a million objects which exist
+- only to say "yes, there is one".
++ Un `Optional[Text]` *es* un `Text`. No hay envoltorio, así que un valor presente no cuesta nada
++ retenerlo, nada pasarlo y nada leerlo. `Option`, en cambio, reserva un `Some` para cada valor
++ presente. En una estructura de datos de un millón de registros, eso es un millón de objetos que
++ solo existen para decir «sí, hay uno».
+
+- The operations are inlined too, and `or` is optimized at [compiletime]. A chain of fallbacks
+- collapses without building intermediate optionals, and a fallback which is a constant becomes a
+- constant. [Zero cost](../../philosophy/zero-cost.md) explains why this matters to the design.
++ Las operaciones también se expanden en línea, y `or` se optimiza en [tiempo de compilación]. Una
++ cadena de alternativas se colapsa sin construir opcionales intermedios, y una alternativa que es
++ una constante se convierte en una constante. [Coste cero](../../philosophy/zero-cost.md) explica
++ por qué esto importa para el diseño.
+
+- The price of the representation is that `Optional[Optional[T]]` cannot exist. Absence has one
+- representation, so it cannot nest. This is checked at compiletime: a type which could not be
+- made optional unambiguously is rejected where it is written.
++ El precio de la representación es que `Optional[Optional[T]]` no puede existir. La ausencia tiene
++ una sola representación, así que no se puede anidar. Esto se comprueba en tiempo de compilación:
++ un tipo que no podría hacerse opcional sin ambigüedad se rechaza donde se escribe.
+
+- ### Requiring an unambiguous type
++ ### Exigir un tipo sin ambigüedad
+
+- Three [typeclasses][typeclass] support that check, and are occasionally useful directly:
++ Tres [clases de tipos][clase de tipos] respaldan esa comprobación, y de vez en cuando son útiles
++ directamente:
+
+= Three [typeclasses][typeclass] support that check, and are occasionally useful directly:
+=
+- ```tabular
++ ```tabular
+
+- column  Typeclass
+- column  Witnesses
+- row  `Concrete`  that a type is a definite type, not an abstract one
+- row  `Distinct`  that a type is not a member of a given union
+- row  `Mandatable`  the type with its optionality stripped: the type a present value has
++ column  Clase de tipos
++ column  Atestigua
++ row  `Concrete`  que un tipo es un tipo definido, no uno abstracto
++ row  `Distinct`  que un tipo no es miembro de una unión dada
++ row  `Mandatable`  el tipo con su opcionalidad eliminada: el tipo que tiene un valor presente
+
+= row  `Mandatable`  the type with its optionality stripped: the type a present value has
+- ```
++ ```
+
+- `Concrete` matters because an abstract type might later be instantiated to something which is
+- already optional. `Distinct` is the check that keeps `Unset` out of the value type.
++ `Concrete` importa porque un tipo abstracto podría instanciarse más tarde con algo que ya es
++ opcional. `Distinct` es la comprobación que mantiene `Unset` fuera del tipo del valor.
+
+- A generic method which takes an `Optional[value]`, for an abstract `value`, therefore demands
+- evidence that `value` is concrete. The demand appears in the method's signature, an
+- [honest signature], and not as a failure at some distant call.
++ Por tanto, un método genérico que toma un `Optional[value]`, para un `value` abstracto, exige
++ evidencia de que `value` es concreto. La exigencia aparece en la signatura del método, una
++ [signatura honesta], y no como un fallo en alguna llamada lejana.
+
+- ### Defaults
++ ### Valores por defecto
+
+- `presume` and `default` draw on a `Default` instance, which supplies the value a type falls back
+- to. Instances exist for the types with an obvious zero: empty text, zero, an empty collection. A
+- type declares its own by defining one:
++ `presume` y `default` recurren a una instancia de `Default`, que proporciona el valor al que
++ recurre un tipo. Hay instancias para los tipos con un cero evidente: el texto vacío, el cero, una
++ colección vacía. Un tipo declara el suyo definiendo una:
+
+= type declares its own by defining one:
+=
+- ```scala
++ ```scala
+
+- case class Volume(level: Int)
++ case class Volume(level: Int)
+
+- given Default[Volume] = () => Volume(0)
++ given Default[Volume] = () => Volume(0)
+
+- val setting: Optional[Volume] = Unset
++ val setting: Optional[Volume] = Unset
+
+= val setting: Optional[Volume] = Unset
+- ```
++ ```
+
+= val setting: Optional[Volume] = Unset
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val setting: Optional[Volume] = Unset
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val setting: Optional[Volume] = Unset
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(setting.presume.inspect)
++ Out.println(setting.presume.inspect)
+
+= Out.println(setting.presume.inspect)
+- ```
++ ```
+
+- A `Default` is computed each time it is asked for, not stored, so a default which is expensive
+- to compute is computed only where it is used.
++ Un `Default` se calcula cada vez que se pide, no se almacena, así que un valor por defecto costoso
++ de calcular solo se calcula donde se usa.

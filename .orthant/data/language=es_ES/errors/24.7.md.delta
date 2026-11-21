@@ -1,0 +1,46 @@
+orthant 1 language
+
+- # `↯/s.24.7` — Unrecognised pattern type
++ # `↯/s.24.7` — Tipo de patrón no reconocido
+
+- Raised by Contingency's pattern-analysis macro when an extractor
+- pattern's structure does not match the recogniser.
++ Lo lanza la macro de análisis de patrones de Contingency cuando la estructura de un patrón
++ extractor no coincide con el reconocedor.
+
+- ## Cause
++ ## Causa
+
+- The macro decomposes patterns into the case-class fields it expects
+- to see. Some extractor shapes (custom `unapply`s, complex
+- projections) are not recognised.
++ La macro descompone los patrones en los campos de case class que espera ver. Algunas formas de
++ extractor (`unapply`s personalizados, proyecciones complejas) no se reconocen.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.24.7] this type of pattern is not recognized
++ [↯/s.24.7] this type of pattern is not recognized
+
+= [↯/s.24.7] this type of pattern is not recognized
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Use a simpler pattern, or destructure manually before invoking
+- Contingency's pattern-aware operations.
++ Usa un patrón más sencillo, o desestructura a mano antes de invocar las operaciones de
++ Contingency que tienen en cuenta los patrones.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/contingency/src/core/contingency.internal.scala`
++ - Fuente: `lib/contingency/src/core/contingency.internal.scala`

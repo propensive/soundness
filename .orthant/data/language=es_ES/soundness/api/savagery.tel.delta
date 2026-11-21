@@ -1,0 +1,1841 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base savagery
++ base savagery
+
+- import soundness
++ import soundness
+
+- info   SVG drawings as typed values: shapes, paths, transforms, gradients and text, rendered to and parsed from XML
++ info   dibujos SVG como valores tipados: formas, trazados, transformaciones, degradados y texto, representados en XML y analizados a partir de él
+
+- detail
++ detail
+
+-     _Savagery_ builds SVG from values rather than strings. An SVG document is XML full of
+-     little languages — the `d` attribute of a path is a coordinate program, `transform` a
+-     function pipeline, colours and lengths have syntaxes of their own — and a program that
+-     concatenates them must get every one right at once. Here a `Point` is a position and a
+-     `Delta` a displacement, distinct types with the vector arithmetic between them; a path is
+-     an `Svg.Outline` grown by named steps; a transform is a `Transform` value recorded on the
+-     figure, not applied to its coordinates; and each little language is rendered by the type
+-     that understands it, as `in[Xml]` or `encode`.
++     _Savagery_ construye SVG a partir de valores en lugar de cadenas. Un documento SVG es XML
++     lleno de pequeños lenguajes — el atributo `d` de un trazado es un programa de coordenadas,
++     `transform` una canalización de funciones, los colores y las longitudes tienen sintaxis
++     propias —, y un programa que los concatena tiene que acertar con todos a la vez. Aquí un
++     `Point` es una posición y un `Delta` un desplazamiento, tipos distintos con la aritmética
++     vectorial entre ellos; un trazado es un `Svg.Outline` que crece mediante pasos con nombre;
++     una transformación es un valor `Transform` registrado en la figura, no aplicado a sus
++     coordenadas; y cada pequeño lenguaje lo representa el tipo que lo entiende, como `in[Xml]`
++     o `encode`.
+
+=     that understands it, as `in[Xml]` or `encode`.
+=
+-     ```scala
++     ```scala
+
+=     that understands it, as `in[Xml]` or `encode`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     Svg.Rectangle((0, 0), 10, 5).in[Xml].show
++     Svg.Rectangle((0, 0), 10, 5).in[Xml].show
+
+-     // <rect x="0.0" y="0.0" width="10.0" height="5.0"/>
++     // <rect x="0.0" y="0.0" width="10.0" height="5.0"/>
+
+-     val plus = Svg.Outline().moveTo((0, 0)).lineTo((3, 4)).closed
++     val plus = Svg.Outline().moveTo((0, 0)).lineTo((3, 4)).closed
+
+-     val drawing = Svg(50, 50, figures = List(plus, Circle((25, 25), 10).translate(Delta(3, 4))))
++     val drawing = Svg(50, 50, figures = List(plus, Circle((25, 25), 10).translate(Delta(3, 4))))
+
+-     drawing.in[Xml].show.keep(4)                                       // t"<svg"
++     drawing.in[Xml].show.keep(4)                                       // t"<svg"
+
+-     Document(drawing, enc"UTF-8").show.keep(5)                         // t"<?xml"
++     Document(drawing, enc"UTF-8").show.keep(5)                         // t"<?xml"
+
+=     Document(drawing, enc"UTF-8").show.keep(5)                         // t"<?xml"
+-     ```
++     ```
+
+-     The figures are `Svg.Rectangle`, `Svg.Ellipse` (and `Circle`, which makes one), `Svg.Outline`,
+-     `Svg.Polyline`, `Svg.Lettering` and `Svg.Group`, all `Svg.Figure`s; every one may carry an `id` (an
+-     `Svg.Id`), a typed CSS `style` and a list of `transforms`. A `Svg.Lettering`'s `font` is a
+-     `Font in Web`, which exists only for a typeface with a provision in scope, so the `Svg`
+-     that carries the text also carries the `@font-face` that makes the typeface available.
+-     Definitions are `Svg.Def`s — a `Svg.LinearGradient` of `Stop`s — and an `Svg` assembles
+-     definitions and figures with a size, a `unit` and a `viewBox`.
++     Las figuras son `Svg.Rectangle`, `Svg.Ellipse` (y `Circle`, que crea una), `Svg.Outline`,
++     `Svg.Polyline`, `Svg.Lettering` y `Svg.Group`, todas ellas `Svg.Figure`; cada una puede
++     llevar un `id` (un `Svg.Id`), un `style` CSS tipado y una lista de `transforms`. La `font`
++     de un `Svg.Lettering` es una `Font in Web`, que solo existe para un tipo de letra con una
++     provisión en el ámbito, de modo que el `Svg` que lleva el texto lleva también el
++     `@font-face` que pone a disposición el tipo de letra. Las definiciones son `Svg.Def` — un
++     `Svg.LinearGradient` de `Stop` —, y un `Svg` reúne definiciones y figuras con un tamaño, una
++     `unit` y un `viewBox`.
+
+-     Parsing runs the other way: `text.read[Svg]` and `text.load[Svg]` (or `data.load[Svg]`)
+-     read SVG text back into typed figures, raising `Svg.Error` for a root that is not `<svg>`,
+-     malformed path data, a malformed colour, length or viewBox, or a width and height in
+-     different units. No `XmlSchema` is needed: the XML beneath is parsed against the free-form
+-     schema, since SVG's vocabulary is validated by the figure types. The `construables`
+-     package's `svgConstruable` is the given, imported by name, that lets an `Svg` be
+-     constructed from an `image/svg+xml` media type.
++     El análisis va en sentido contrario: `text.read[Svg]` y `text.load[Svg]` (o
++     `data.load[Svg]`) vuelven a leer texto SVG como figuras tipadas, y lanzan `Svg.Error` ante
++     una raíz que no es `<svg>`, datos de trazado mal formados, un color, una longitud o un
++     viewBox mal formados, o una anchura y una altura en unidades distintas. No hace falta ningún
++     `XmlSchema`: el XML subyacente se analiza contra el esquema libre, ya que los tipos de
++     figura validan el vocabulario de SVG. El `svgConstruable` del paquete `construables` es el
++     given, que se importa por nombre, que permite construir un `Svg` a partir de un tipo de
++     medio `image/svg+xml`.
+
+-     Coordinates are `Float`s, as SVG attributes write them, and a pair of numbers converts to
+-     a `Point` where one is expected. Angles are geodesy's `Angle`. The library is one source
+-     set, `savagery.core`, which depends on xylophone (XML), cataclysm (CSS and `Web` fonts),
+-     phoenicia, mosquito (whose `Affine` it re-exports), geodesy's angles, iridescence and
+-     cardinality. Everything but `Segment` is exported to the `soundness` umbrella, and the
+-     `construables` package merges with the umbrella's own.
++     Las coordenadas son `Float`, tal como las escriben los atributos SVG, y un par de números se
++     convierte en un `Point` donde se espera uno. Los ángulos son el `Angle` de geodesy. La
++     biblioteca es un único conjunto de fuentes, `savagery.core`, que depende de xylophone (XML),
++     cataclysm (CSS y fuentes `Web`), phoenicia, mosquito (cuyo `Affine` reexporta), los ángulos
++     de geodesy, iridescence y cardinality. Todo salvo `Segment` se exporta al paraguas
++     `soundness`, y el paquete `construables` se fusiona con el del propio paraguas.
+
+- refer savagery.Svg
++ refer savagery.Svg
+
+- refer savagery.Svg.Figure
++ refer savagery.Svg.Figure
+
+- refer savagery.Svg.Outline
++ refer savagery.Svg.Outline
+
+- refer savagery.Point
++ refer savagery.Point
+
+- refer savagery.Delta
++ refer savagery.Delta
+
+- refer savagery.Transform
++ refer savagery.Transform
+
+- entry .Svg   the `<svg>` document element: a size, definitions and figures, written to and read from XML
++ entry .Svg   el elemento de documento `<svg>`: un tamaño, definiciones y figuras, escritas en XML y leídas a partir de él
+
+= entry .Svg   the `<svg>` document element: a size, definitions and figures, written to and read from XML
+-   detail
++   detail
+
+-       `Svg(width, height, defs = Nil, figures = Nil, transforms = Nil, unit = Unset, viewBox =
++       `Svg(width, height, defs = Nil, figures = Nil, transforms = Nil, unit = Unset, viewBox =
+
+-       Unset)`. `#width` and `#height` are the viewport's size in `#unit`, or in user units
+-       when it is unset; `#viewBox` is the user-space rectangle the viewport shows, defaulting
+-       to the viewport's own size from the origin. Rendered as `svg.in[Xml]`, the element
+-       carries the `xmlns`, `viewBox`, `width` and `height` attributes, a `<defs>` holding a
+-       `<style>` of `@font-face` rules for every typeface its lettering names and then each
+-       definition, and the figures — wrapped in one `<g transform="…">` if the `Svg` itself
+-       has transforms.
++       Unset)`. `#width` y `#height` son el tamaño del viewport en `#unit`, o en unidades de
++       usuario cuando no está fijada; `#viewBox` es el rectángulo del espacio de usuario que
++       muestra el viewport, que por defecto es el propio tamaño del viewport desde el origen.
++       Representado como `svg.in[Xml]`, el elemento lleva los atributos `xmlns`, `viewBox`,
++       `width` y `height`, un `<defs>` que contiene un `<style>` de reglas `@font-face` para cada
++       tipo de letra que nombran sus rótulos y después cada definición, y las figuras, envueltas
++       en un único `<g transform="…">` si el propio `Svg` tiene transformaciones.
+
+=       has transforms.
+=
+-       ```scala
++       ```scala
+
+=       has transforms.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Svg(100, 100).in[Xml].show
++       Svg(100, 100).in[Xml].show
+
+-       // <svg xmlns="http://www.w3.org/2000/svg" viewBox="0.0 0.0 100.0 100.0" width="100.0" height="100.0"/>
++       // <svg xmlns="http://www.w3.org/2000/svg" viewBox="0.0 0.0 100.0 100.0" width="100.0" height="100.0"/>
+
+-       val fade = Svg.LinearGradient(Svg.Id(t"fade"), Stop(0.0, WebColors.Red), Stop(1.0, WebColors.Blue))
++       val fade = Svg.LinearGradient(Svg.Id(t"fade"), Stop(0.0, WebColors.Red), Stop(1.0, WebColors.Blue))
+
+-       Svg(100, 100, defs = List(fade), figures = List(Svg.Rectangle((0, 0), 50, 50))).in[Xml].show
++       Svg(100, 100, defs = List(fade), figures = List(Svg.Rectangle((0, 0), 50, 50))).in[Xml].show
+
+=       Svg(100, 100, defs = List(fade), figures = List(Svg.Rectangle((0, 0), 50, 50))).in[Xml].show
+-       ```
++       ```
+
+-       An `Svg` is `Documentary`, so `Document(svg, enc"UTF-8").show` is a standalone `.svg`
+-       file with its XML declaration; being XML underneath, it also embeds directly in an HTML
+-       page. Parsing is `text.read[Svg]` (the `.aggregable` given, which accepts and discards
+-       an XML declaration and any comment before the element), `text.load[Svg]` (a
+-       `Document[Svg]` keeping the declared encoding) or `data.load[Svg]` from bytes:
++       Un `Svg` es `Documentary`, así que `Document(svg, enc"UTF-8").show` es un fichero `.svg`
++       independiente con su declaración XML; al ser XML por debajo, también se incrusta
++       directamente en una página HTML. El análisis es `text.read[Svg]` (el given `.aggregable`,
++       que acepta y descarta una declaración XML y cualquier comentario antes del elemento),
++       `text.load[Svg]` (un `Document[Svg]` que conserva la codificación declarada) o
++       `data.load[Svg]` a partir de bytes:
+
+=       `Document[Svg]` keeping the declared encoding) or `data.load[Svg]` from bytes:
+=
+-       ```scala
++       ```scala
+
+=       `Document[Svg]` keeping the declared encoding) or `data.load[Svg]` from bytes:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val sized = t"""<svg width="48.5mm" height="20mm" viewBox="0 0 48.5 20"/>""".read[Svg]
++       val sized = t"""<svg width="48.5mm" height="20mm" viewBox="0 0 48.5 20"/>""".read[Svg]
+
+-       (sized.width, sized.unit, sized.viewBox)   // (48.5f, Svg.Units.Mm, Svg.ViewBox(0, 0, 48.5f, 20))
++       (sized.width, sized.unit, sized.viewBox)   // (48.5f, Svg.Units.Mm, Svg.ViewBox(0, 0, 48.5f, 20))
+
+-       val saved = t"""<svg width="50" height="50"><rect x="0" y="0" width="10" height="10"/></svg>""".read[Svg]
++       val saved = t"""<svg width="50" height="50"><rect x="0" y="0" width="10" height="10"/></svg>""".read[Svg]
+
+-       saved.figures   // List(Svg.Rectangle(Point(0, 0), 10, 10))
++       saved.figures   // List(Svg.Rectangle(Point(0, 0), 10, 10))
+
+=       saved.figures   // List(Svg.Rectangle(Point(0, 0), 10, 10))
+-       ```
++       ```
+
+-       A `<g>` parses as a `Group`, `<polyline>` and `<polygon>` as a `Polyline`, `<text>` as a
+-       `Lettering`, `<circle>` and `<ellipse>` as an `Ellipse`, `<path>` as an `Outline` and
+-       `<linearGradient>` in the `<defs>` as a `LinearGradient`; `id`, `transform` and `style`
+-       are read on every figure, and an unknown element (`<image>`, say) or attribute is
+-       skipped. A figure written and read back renders identically.
++       Un `<g>` se analiza como `Group`, `<polyline>` y `<polygon>` como `Polyline`, `<text>` como
++       `Lettering`, `<circle>` y `<ellipse>` como `Ellipse`, `<path>` como `Outline` y
++       `<linearGradient>` dentro de `<defs>` como `LinearGradient`; `id`, `transform` y `style` se
++       leen en cada figura, y un elemento desconocido (`<image>`, por ejemplo) o un atributo
++       desconocido se omiten. Una figura escrita y vuelta a leer se representa de forma idéntica.
+
+-   refer savagery.Svg.Figure
++   refer savagery.Svg.Figure
+
+-   refer savagery.Svg.Error
++   refer savagery.Svg.Error
+
+-   refer savagery.Svg.Parser
++   refer savagery.Svg.Parser
+
+-   refer savagery.construables
++   refer savagery.construables
+
+-   entry .encodable   the `<svg>` element with its definitions and figures, as `svg.in[Xml]`
+-   entry .aggregable   `text.read[Svg]`: parses SVG text, discarding any XML declaration before the element
+-       Needs `Tactic[Parse.Error]`, `Tactic[Xml.Error]` and `Tactic[Svg.Error]` in scope. The
+-       XML is parsed against `XmlSchema.Freeform`, so the caller gives no schema.
+-   entry .loadable   `text.load[Svg]`: a `Document[Svg]` whose metadata is the declared encoding
+-       Needs the same three tactics. The encoding defaults to UTF-8 when none is declared.
+-   entry .loadableData   `data.load[Svg]`: a `Document[Svg]` parsed from bytes
+-       Needs the three tactics and a `Buffering` in scope.
+-   entry .showable   a `Document[Svg]` as a standalone file: the XML declaration, then the element
+-       `Document(Svg(10, 10), enc"UTF-8").show` begins `<?xml version="1.0" encoding="UTF-8"?>`.
+-   entry .Error   raised when SVG text cannot be read as an `Svg`
++   entry .encodable   el elemento `<svg>` con sus definiciones y figuras, como `svg.in[Xml]`
++   entry .aggregable   `text.read[Svg]`: analiza texto SVG, descartando cualquier declaración XML antes del elemento
++       Necesita `Tactic[Parse.Error]`, `Tactic[Xml.Error]` y `Tactic[Svg.Error]` en el ámbito. El
++       XML se analiza contra `XmlSchema.Freeform`, así que el llamante no da ningún esquema.
++   entry .loadable   `text.load[Svg]`: un `Document[Svg]` cuyos metadatos son la codificación declarada
++       Necesita las mismas tres tácticas. La codificación es UTF-8 por defecto cuando no se
++       declara ninguna.
++   entry .loadableData   `data.load[Svg]`: un `Document[Svg]` analizado a partir de bytes
++       Necesita las tres tácticas y un `Buffering` en el ámbito.
++   entry .showable   un `Document[Svg]` como fichero independiente: la declaración XML y después el elemento
++       `Document(Svg(10, 10), enc"UTF-8").show` empieza por `<?xml version="1.0" encoding="UTF-8"?>`.
++   entry .Error   se lanza cuando un texto SVG no puede leerse como `Svg`
+
+=   entry .Error   raised when SVG text cannot be read as an `Svg`
+-     detail
++     detail
+
+-         Error `↯/s.130.1`: _the SVG could not be parsed because `reason`_, with the reason's own
+-         number as the sub-number. Raised by `read[Svg]` and `load[Svg]` through a
+-         `Tactic[Svg.Error]`; XML which is not well-formed raises `Xml.Error` first, from the
+-         parser beneath.
++         Error `↯/s.130.1`: _the SVG could not be parsed because `reason`_, con el número propio
++         del motivo como subnúmero. Lo lanzan `read[Svg]` y `load[Svg]` mediante una
++         `Tactic[Svg.Error]`; un XML que no está bien formado lanza antes `Xml.Error`, desde el
++         analizador subyacente.
+
+=         parser beneath.
+=
+-         ```scala
++         ```scala
+
+=         parser beneath.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         safely(t"""<html/>""".read[Svg])   // Unset: Svg.Error(NotAnSvg(t"html"))
++         safely(t"""<html/>""".read[Svg])   // Unset: Svg.Error(NotAnSvg(t"html"))
+
+=         safely(t"""<html/>""".read[Svg])   // Unset: Svg.Error(NotAnSvg(t"html"))
+-         ```
++         ```
+
+-     entry .Reason   why the SVG could not be read, each with a number
++     entry .Reason   por qué no se pudo leer el SVG, cada motivo con un número
+
+-         ```tabular
++         ```tabular
+
+-         column  Case
+-         column  Code
+-         column  Message
+-         column  Note
+-         row  `NotAnSvg(label)`  1  _the root element was `<label>` instead of `<svg>`_  also when there was no `<svg>` among a fragment's nodes
+-         row  `MalformedPathData(data)`  2  _the path data `data` could not be parsed_  a `d` attribute with an unknown command, or a non-number where a number was due
+-         row  `MalformedColor(color)`  3  _the color `color` could not be parsed_  a `stop-color` which is not `#rgb`, `#rrggbb`, `rgb(r, g, b)` or one of the named colours red, green, blue, black, white, yellow, cyan and magenta
+-         row  `MalformedLength(length)`  4  _the length `length` is not a number with a unit_  a root `width` or `height`; the unit is optional
++         column  Caso
++         column  Código
++         column  Mensaje
++         column  Nota
++         row  `NotAnSvg(label)`  1  _the root element was `<label>` instead of `<svg>`_  también cuando no había ningún `<svg>` entre los nodos de un fragmento
++         row  `MalformedPathData(data)`  2  _the path data `data` could not be parsed_  un atributo `d` con una orden desconocida, o algo que no es un número donde tocaba un número
++         row  `MalformedColor(color)`  3  _the color `color` could not be parsed_  un `stop-color` que no es `#rgb`, `#rrggbb`, `rgb(r, g, b)` ni uno de los colores con nombre red, green, blue, black, white, yellow, cyan y magenta
++         row  `MalformedLength(length)`  4  _the length `length` is not a number with a unit_  un `width` o un `height` de la raíz; la unidad es opcional
+
+-         row  `MismatchedUnits(width, height)`  5  _the width `width` and height `height` have different units_
++         row  `MismatchedUnits(width, height)`  5  _the width `width` and height `height` have different units_
+
+-         row  `MalformedViewBox(viewBox)`  6  _the viewBox `viewBox` is not four numbers_
++         row  `MalformedViewBox(viewBox)`  6  _the viewBox `viewBox` is not four numbers_
+
+=         row  `MalformedViewBox(viewBox)`  6  _the viewBox `viewBox` is not four numbers_
+-         ```
++         ```
+
+-     entry .communicable   renders each reason as a message
+-     entry #reason   the `Svg.Error.Reason`
+-   entry .Units   the unit an `<svg>` element's `width` and `height` carry: `Em`, `Ex`, `Px`, `In`, `Cm`, `Mm`, `Pt`, `Pc` or `Percent`
+-       Each case's `suffix` is the text written after the number: `mm`, `%`. An `Svg` with
+-       `unit = Unset` writes bare numbers, which SVG reads as user units. Named `Units` rather
+-       than `Unit`, which would shadow `scala.Unit`.
+-   entry .ViewBox   the `viewBox` attribute: the user-space rectangle the viewport shows
++     entry .communicable   representa cada motivo como un mensaje
++     entry #reason   el `Svg.Error.Reason`
++   entry .Units   la unidad que llevan el `width` y el `height` de un elemento `<svg>`: `Em`, `Ex`, `Px`, `In`, `Cm`, `Mm`, `Pt`, `Pc` o `Percent`
++       El `suffix` de cada caso es el texto que se escribe tras el número: `mm`, `%`. Un `Svg` con
++       `unit = Unset` escribe números sin más, que SVG lee como unidades de usuario. Se llama
++       `Units` y no `Unit`, que ocultaría `scala.Unit`.
++   entry .ViewBox   el atributo `viewBox`: el rectángulo del espacio de usuario que muestra el viewport
+
+=   entry .ViewBox   the `viewBox` attribute: the user-space rectangle the viewport shows
+-     detail
++     detail
+
+-         `ViewBox(x, y, width, height)`. An `Svg` with no viewBox writes one from the origin at
+-         its own size; one read from text is kept and written back as it was, so a drawing
+-         tool's `width="48.5mm" height="20mm" viewBox="0 0 48.5 20"` survives a round trip.
+-     entry .showable   the four numbers separated by spaces, as the attribute is written
+-     entry #x   the left edge, in user units
+-     entry #y   the top edge
+-     entry #width   the width shown
+-     entry #height   the height shown
+-   entry .Parser   the SVG reader beneath `read[Svg]`: finds the `<svg>` element and decodes it
++         `ViewBox(x, y, width, height)`. Un `Svg` sin viewBox escribe uno desde el origen con su
++         propio tamaño; uno leído de un texto se conserva y se vuelve a escribir tal como estaba,
++         de modo que el `width="48.5mm" height="20mm" viewBox="0 0 48.5 20"` de una herramienta de
++         dibujo sobrevive a un viaje de ida y vuelta.
++     entry .showable   los cuatro números separados por espacios, tal como se escribe el atributo
++     entry #x   el borde izquierdo, en unidades de usuario
++     entry #y   el borde superior
++     entry #width   la anchura mostrada
++     entry #height   la altura mostrada
++   entry .Parser   el lector de SVG que hay debajo de `read[Svg]`: encuentra el elemento `<svg>` y lo decodifica
+
+=   entry .Parser   the SVG reader beneath `read[Svg]`: finds the `<svg>` element and decodes it
+-     detail
++     detail
+
+-         Not usually called directly; `read[Svg]` and `load[Svg]` go through it. Its public
+-         methods take an already-parsed `Xml` value, which is useful when the SVG is one
+-         element of a larger document. Path data supports the `M`, `L`, `H`, `V`, `C`, `Q` and
+-         `Z` commands in both cases, with an implicit line after a move; `H` and `V` in either
+-         case become relative `Stroke.Draw`s, since there is no absolute horizontal-only or
+-         vertical-only stroke, which is lossy for the absolute forms. Transform lists recognise
+-         `translate`, `scale`, `rotate`, `skewX`, `skewY` and `matrix`, skipping unknown
+-         functions; an inline `style` is split into `name: value` declarations; a `points`
+-         attribute takes pairs separated by whitespace or commas.
+-     entry .labelOf   an element's label, or `<unknown>` for any other node
+-     entry .findSvg   the `<svg>` element among a list of nodes, or `Svg.Error(NotAnSvg)` if there is none
+-         Needs a `Tactic[Svg.Error]`.
+-     entry .rootElement   an `Xml` value's `<svg>` element: itself, or the one among a fragment's nodes
+-         Raises `Svg.Error(NotAnSvg(label))` for an element of any other label.
+-     entry .decodeSvg   an `<svg>` element as an `Svg`, with its definitions and figures decoded
+-         Raises `Svg.Error` for a malformed length, mismatched units, a malformed viewBox,
+-         malformed path data or a malformed gradient colour.
+-   entry .Id   an element identifier, as a type distinct from text
++         No suele llamarse directamente; `read[Svg]` y `load[Svg]` pasan por él. Sus métodos
++         públicos reciben un valor `Xml` ya analizado, lo cual es útil cuando el SVG es un
++         elemento de un documento mayor. Los datos de trazado admiten las órdenes `M`, `L`, `H`,
++         `V`, `C`, `Q` y `Z` en ambas cajas, con una línea implícita tras un movimiento; `H` y `V`,
++         en cualquier caja, se convierten en `Stroke.Draw` relativos, ya que no existe un trazo
++         absoluto solo horizontal o solo vertical, lo que supone una pérdida para las formas
++         absolutas. Las listas de transformaciones reconocen `translate`, `scale`, `rotate`,
++         `skewX`, `skewY` y `matrix`, y omiten las funciones desconocidas; un `style` en línea se
++         divide en declaraciones `name: value`; un atributo `points` recibe pares separados por
++         espacios en blanco o comas.
++     entry .labelOf   el rótulo de un elemento, o `<unknown>` para cualquier otro nodo
++     entry .findSvg   el elemento `<svg>` de entre una lista de nodos, o `Svg.Error(NotAnSvg)` si no hay ninguno
++         Necesita una `Tactic[Svg.Error]`.
++     entry .rootElement   el elemento `<svg>` de un valor `Xml`: él mismo, o el que hay entre los nodos de un fragmento
++         Lanza `Svg.Error(NotAnSvg(label))` para un elemento con cualquier otro rótulo.
++     entry .decodeSvg   un elemento `<svg>` como `Svg`, con sus definiciones y figuras decodificadas
++         Lanza `Svg.Error` ante una longitud mal formada, unidades que no coinciden, un viewBox mal
++         formado, datos de trazado mal formados o un color de degradado mal formado.
++   entry .Id   un identificador de elemento, como tipo distinto del texto
+
+=   entry .Id   an element identifier, as a type distinct from text
+-     detail
++     detail
+
+-         What a gradient reference, an animation target, a `<use>` element or a chart revision
+-         needs to name a figure or definition. An `Svg.Id` is `Text` underneath, but a distinct
+-         opaque type, so an identifier is never confused with the text it labels. It inspects
+-         as `Svg.Id(t"logo")`.
++         Lo que necesitan una referencia a un degradado, el objetivo de una animación, un elemento
++         `<use>` o la revisión de un gráfico para nombrar una figura o una definición. Un `Svg.Id`
++         es `Text` por debajo, pero un tipo opaco distinto, de modo que un identificador nunca se
++         confunde con el texto que rotula. Se inspecciona como `Svg.Id(t"logo")`.
+
+=         as `Svg.Id(t"logo")`.
+=
+-         ```scala
++         ```scala
+
+=         as `Svg.Id(t"logo")`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Svg.Outline(id = Svg.Id(t"plus")).moveTo((0, 0)).closed.in[Xml].show
++         Svg.Outline(id = Svg.Id(t"plus")).moveTo((0, 0)).closed.in[Xml].show
+
+-         // <path d="M 0.0 0.0 Z" id="plus"/>
++         // <path d="M 0.0 0.0 Z" id="plus"/>
+
+=         // <path d="M 0.0 0.0 Z" id="plus"/>
+-         ```
++         ```
+
+-     entry .apply   `Svg.Id(text)`: an identifier from its text
+-     entry .text   an identifier's text, as `id.text`
+-     entry .inspectable   renders an identifier as `Svg.Id(t"…")`, naming its type
+-   entry .Def   an entry of the `<defs>` element; `LinearGradient` is the only kind
++     entry .apply   `Svg.Id(text)`: un identificador a partir de su texto
++     entry .text   el texto de un identificador, como `id.text`
++     entry .inspectable   representa un identificador como `Svg.Id(t"…")`, nombrando su tipo
++   entry .Def   una entrada del elemento `<defs>`; `LinearGradient` es la única clase
+
+=   entry .Def   an entry of the `<defs>` element; `LinearGradient` is the only kind
+-     detail
++     detail
+
+-         A sealed trait: its subtypes are pinned to savagery's own source. A definition is
+-         referred to by its `Svg.Id` from a figure's style.
+-     entry .encodable   a definition's element, as `definition.in[Xml]`
+-   entry .LinearGradient   a `<linearGradient>` with an identifier and typed stops
++         Un trait sellado: sus subtipos están fijados al propio código fuente de savagery. A una
++         definición se hace referencia por su `Svg.Id` desde el estilo de una figura.
++     entry .encodable   el elemento de una definición, como `definition.in[Xml]`
++   entry .LinearGradient   un `<linearGradient>` con un identificador y paradas tipadas
+
+=   entry .LinearGradient   a `<linearGradient>` with an identifier and typed stops
+-     detail
++     detail
+
+-         `Svg.LinearGradient(id, stops*)`, where each `Stop` is an offset in `[0, 1]` and a
+-         colour of any `Chromatic` type. Parsed gradients have `Color in Srgb` stops.
++         `Svg.LinearGradient(id, stops*)`, donde cada `Stop` es un desplazamiento en `[0, 1]` y un
++         color de cualquier tipo `Chromatic`. Los degradados analizados tienen paradas
++         `Color in Srgb`.
+
+=         colour of any `Chromatic` type. Parsed gradients have `Color in Srgb` stops.
+=
+-         ```scala
++         ```scala
+
+=         colour of any `Chromatic` type. Parsed gradients have `Color in Srgb` stops.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Svg.LinearGradient(Svg.Id(t"grad2"), Stop(0.0, WebColors.Red), Stop(1.0, WebColors.Blue)).in[Xml].show
++         Svg.LinearGradient(Svg.Id(t"grad2"), Stop(0.0, WebColors.Red), Stop(1.0, WebColors.Blue)).in[Xml].show
+
+-         // <linearGradient id="grad2"><stop offset="0.0" stop-color="#ff0000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient>
++         // <linearGradient id="grad2"><stop offset="0.0" stop-color="#ff0000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient>
+
+=         // <linearGradient id="grad2"><stop offset="0.0" stop-color="#ff0000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient>
+-         ```
++         ```
+
+-     entry #id   the gradient's identifier, which a figure's `fill` refers to
+-     entry #stops   the colour stops, in order
+-   entry #width   the viewport's width, in `#unit` or user units
+-   entry #height   the viewport's height
+-   entry #defs   the definitions, written inside `<defs>` after any `@font-face` style
+-   entry #figures   the figures, in drawing order
+-   entry #transforms   transforms applied to the whole drawing: the figures are wrapped in a `<g>` carrying them
+-       Added with the `translate`, `rotate`, `scale`, `skew` and `transform` extensions, as on
+-       any `Transformable`.
+-   entry #unit   the unit `#width` and `#height` are in, or `Unset` for user units
+-   entry #viewBox   the user-space rectangle shown, or `Unset` for the viewport's size from the origin
+-   entry #Metadata   what a `Document[Svg]` carries besides the drawing: its `Encoding`
++     entry #id   el identificador del degradado, al que hace referencia el `fill` de una figura
++     entry #stops   las paradas de color, en orden
++   entry #width   la anchura del viewport, en `#unit` o en unidades de usuario
++   entry #height   la altura del viewport
++   entry #defs   las definiciones, escritas dentro de `<defs>` tras cualquier estilo `@font-face`
++   entry #figures   las figuras, en orden de dibujo
++   entry #transforms   transformaciones aplicadas a todo el dibujo: las figuras se envuelven en un `<g>` que las lleva
++       Se añaden con las extensiones `translate`, `rotate`, `scale`, `skew` y `transform`, como
++       en cualquier `Transformable`.
++   entry #unit   la unidad en que están `#width` y `#height`, o `Unset` para unidades de usuario
++   entry #viewBox   el rectángulo del espacio de usuario que se muestra, o `Unset` para el tamaño del viewport desde el origen
++   entry #Metadata   lo que lleva un `Document[Svg]` además del dibujo: su `Encoding`
+
+-   entry .Figure   the sealed root of every drawable element: rectangle, outline, ellipse, group, polyline, lettering
++   entry .Figure   la raíz sellada de todo elemento dibujable: rectángulo, contorno, elipse, grupo, polilínea, rotulación
+
+=   entry .Figure   the sealed root of every drawable element: rectangle, outline, ellipse, group, polyline, lettering
+-     detail
++     detail
+
+-         Every figure renders to its SVG element as `figure.in[Xml]` through the companion's
+-         `.encodable`, inspects with its case name and labelled fields, and may carry an `id`, an
+-         inline `style` and a list of `transforms`, which are written as the `id`, `style` and
+-         `transform` attributes, in that order, only when present. `Figure.fonts` collects the
+-         fonts a list of figures sets text in, so an `Svg` can carry their `@font-face` rules.
++         Toda figura se representa como su elemento SVG con `figure.in[Xml]` mediante el
++         `.encodable` del objeto compañero, se inspecciona con el nombre de su caso y sus campos
++         rotulados, y puede llevar un `id`, un `style` en línea y una lista de `transforms`, que se
++         escriben como los atributos `id`, `style` y `transform`, en ese orden, solo cuando están
++         presentes. `Figure.fonts` reúne las fuentes en las que una lista de figuras compone texto,
++         de modo que un `Svg` puede llevar sus reglas `@font-face`.
+
+=         fonts a list of figures sets text in, so an `Svg` can carry their `@font-face` rules.
+=
+-         ```scala
++         ```scala
+
+=         fonts a list of figures sets text in, so an `Svg` can carry their `@font-face` rules.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val figures: List[Svg.Figure] =
++         val figures: List[Svg.Figure] =
+
+-           List
++           List
+
+-             ( Svg.Rectangle((0, 0), 10, 10, style = Css.Style(fill = Srgb(1, 0, 0)), id = Svg.Id(t"box")),
++             ( Svg.Rectangle((0, 0), 10, 10, style = Css.Style(fill = Srgb(1, 0, 0)), id = Svg.Id(t"box")),
+
+-               Circle((5, 5), 3),
++               Circle((5, 5), 3),
+
+-               Svg.Lettering((1, 2), t"label", Svg.Lettering.Anchor.End, Svg.Lettering.Baseline.Middle) )
++               Svg.Lettering((1, 2), t"label", Svg.Lettering.Anchor.End, Svg.Lettering.Baseline.Middle) )
+
+-         figures.map(_.in[Xml].show)
++         figures.map(_.in[Xml].show)
+
+=         figures.map(_.in[Xml].show)
+-         ```
++         ```
+
+-         Transforms are added fluently with the `translate`, `rotate`, `scale`, `skew` and
+-         `transform` extensions on any `Transformable` figure, each returning a new figure with
+-         the transform appended; the geometry a figure was defined with is the geometry it keeps.
++         Las transformaciones se añaden de forma fluida con las extensiones `translate`, `rotate`,
++         `scale`, `skew` y `transform` sobre cualquier figura `Transformable`, cada una de las
++         cuales devuelve una figura nueva con la transformación añadida; la geometría con la que se
++         definió una figura es la geometría que conserva.
+
+-     refer savagery.Svg.Rectangle
++     refer savagery.Svg.Rectangle
+
+-     refer savagery.Svg.Outline
++     refer savagery.Svg.Outline
+
+-     refer savagery.Svg.Ellipse
++     refer savagery.Svg.Ellipse
+
+-     refer savagery.Svg.Group
++     refer savagery.Svg.Group
+
+-     refer savagery.Svg.Polyline
++     refer savagery.Svg.Polyline
+
+-     refer savagery.Svg.Lettering
++     refer savagery.Svg.Lettering
+
+-     refer savagery.Transformable
++     refer savagery.Transformable
+
+-     entry .encodable   a figure's SVG element, as `figure.in[Xml]`, for every subtype
+-         Bounded by `Figure`, so it applies to a `Rectangle` or an `Outline` as much as to a
+-         `Figure`.
+-     entry .inspectable   renders a figure as its case name with each field labelled, strokes and transforms legible
+-         `Rectangle(position:Point(x:0.0F ╱ y:0.0F) ╱ width:10.0F ╱ …)`: unlike the XML, the
+-         path operations are not compressed into one `d` attribute.
+-     entry .fonts   the fonts a list of figures sets text in, groups included
+-     entry #fonts   the fonts this figure sets text in: a `Lettering`'s font, a `Group`'s letterings' fonts, else none
+-   entry .Rectangle   a `<rect>`: a position, a width and a height
++     entry .encodable   el elemento SVG de una figura, como `figure.in[Xml]`, para cada subtipo
++         Acotado por `Figure`, de modo que se aplica tanto a un `Rectangle` o a un `Outline` como
++         a una `Figure`.
++     entry .inspectable   representa una figura como el nombre de su caso con cada campo rotulado, y los trazos y las transformaciones legibles
++         `Rectangle(position:Point(x:0.0F ╱ y:0.0F) ╱ width:10.0F ╱ …)`: a diferencia del XML, las
++         operaciones del trazado no se comprimen en un único atributo `d`.
++     entry .fonts   las fuentes en las que una lista de figuras compone texto, grupos incluidos
++     entry #fonts   las fuentes en las que esta figura compone texto: la fuente de un `Lettering`, las fuentes de las rotulaciones de un `Group`, o ninguna
++   entry .Rectangle   un `<rect>`: una posición, una anchura y una altura
+
+=   entry .Rectangle   a `<rect>`: a position, a width and a height
+-     detail
++     detail
+
+-         `Rectangle(position, width, height, transforms = Nil, style = Unset, id = Unset)`. The
+-         position is the top-left corner; a pair of numbers converts to the `Point`.
++         `Rectangle(position, width, height, transforms = Nil, style = Unset, id = Unset)`. La
++         posición es la esquina superior izquierda; un par de números se convierte en el `Point`.
+
+=         position is the top-left corner; a pair of numbers converts to the `Point`.
+=
+-         ```scala
++         ```scala
+
+=         position is the top-left corner; a pair of numbers converts to the `Point`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Svg.Rectangle((2, 3), 8, 4).in[Xml].show
++         Svg.Rectangle((2, 3), 8, 4).in[Xml].show
+
+-         // <rect x="2.0" y="3.0" width="8.0" height="4.0"/>
++         // <rect x="2.0" y="3.0" width="8.0" height="4.0"/>
+
+-         Svg.Rectangle((0, 0), 1, 1, style = Css.Style(fill = Srgb(1, 0, 0)), id = Svg.Id(t"box")).in[Xml].show
++         Svg.Rectangle((0, 0), 1, 1, style = Css.Style(fill = Srgb(1, 0, 0)), id = Svg.Id(t"box")).in[Xml].show
+
+-         // <rect x="0.0" y="0.0" width="1.0" height="1.0" id="box" style="fill: #ff0000"/>
++         // <rect x="0.0" y="0.0" width="1.0" height="1.0" id="box" style="fill: #ff0000"/>
+
+=         // <rect x="0.0" y="0.0" width="1.0" height="1.0" id="box" style="fill: #ff0000"/>
+-         ```
++         ```
+
+-         An extractor pattern names all six fields: `case Rectangle(position, width, height,
++         Un patrón extractor nombra los seis campos: `case Rectangle(position, width, height,
+
+-         transforms, style, id)`.
++         transforms, style, id)`.
+
+-     entry #position   the top-left corner
+-     entry #width   the width, in user units
+-     entry #height   the height
+-     entry #transforms   the transforms, written as the `transform` attribute in order
+-     entry #style   the inline CSS, or `Unset`
+-     entry #id   the identifier, or `Unset`
+-   entry .Outline   a `<path>`, built step by step: absolute steps suffixed `To`, relative ones without
++     entry #position   la esquina superior izquierda
++     entry #width   la anchura, en unidades de usuario
++     entry #height   la altura
++     entry #transforms   las transformaciones, escritas en orden como el atributo `transform`
++     entry #style   el CSS en línea, o `Unset`
++     entry #id   el identificador, o `Unset`
++   entry .Outline   un `<path>`, construido paso a paso: los pasos absolutos con el sufijo `To`, los relativos sin él
+
+=   entry .Outline   a `<path>`, built step by step: absolute steps suffixed `To`, relative ones without
+-     detail
++     detail
+
+-         `Outline(ops = Nil, style = Unset, id = Unset, transforms = Nil)`. The `#ops` are held
+-         **last first** — each step conses onto the list — and rendered in order as the `d`
+-         attribute. Steps are the cases of `Stroke`: a move, a line, a cubic or quadratic curve
+-         (with or without the first control point, for a smooth continuation), an arc and a
+-         close. The fluent methods add one each; `Stroke` values can also be given directly, as
+-         a pie chart does for its arcs.
++         `Outline(ops = Nil, style = Unset, id = Unset, transforms = Nil)`. Las `#ops` se guardan
++         **empezando por la última** — cada paso se añade por delante a la lista — y se
++         representan en orden como el atributo `d`. Los pasos son los casos de `Stroke`: un
++         movimiento, una línea, una curva cúbica o cuadrática (con o sin el primer punto de
++         control, para una continuación suave), un arco y un cierre. Los métodos fluidos añaden uno
++         cada uno; también pueden darse directamente valores `Stroke`, como hace un gráfico de
++         tarta con sus arcos.
+
+-         ```scala fuel
++         ```scala fuel
+
+=         ```scala fuel
+-         frame
++         frame
+
+-           label An empty path
++           label Un trazado vacío
+
+=           label An empty path
+-           code
++           code
+
+-               Svg.Outline().in[Xml].show
++               Svg.Outline().in[Xml].show
+
+-               // <path d=""/>
++               // <path d=""/>
+
+=               // <path d=""/>
+-         frame
++         frame
+
+-           label A move to the start
++           label Un movimiento hasta el inicio
+
+=           label A move to the start
+-           code
++           code
+
+-               Svg.Outline().moveTo((0, 0)).in[Xml].show
++               Svg.Outline().moveTo((0, 0)).in[Xml].show
+
+-               // <path d="M 0.0 0.0"/>
++               // <path d="M 0.0 0.0"/>
+
+=               // <path d="M 0.0 0.0"/>
+-         frame
++         frame
+
+-           label A line to another point
++           label Una línea hasta otro punto
+
+=           label A line to another point
+-           code
++           code
+
+-               Svg.Outline().moveTo((0, 0)).lineTo((3, 4)).in[Xml].show
++               Svg.Outline().moveTo((0, 0)).lineTo((3, 4)).in[Xml].show
+
+-               // <path d="M 0.0 0.0 L 3.0 4.0"/>
++               // <path d="M 0.0 0.0 L 3.0 4.0"/>
+
+=               // <path d="M 0.0 0.0 L 3.0 4.0"/>
+-         frame
++         frame
+
+-           label A cubic curve, with its two control points
++           label Una curva cúbica, con sus dos puntos de control
+
+=           label A cubic curve, with its two control points
+-           code
++           code
+
+-               Svg.Outline().moveTo((0, 0)).lineTo((3, 4)).curveTo((4, 5), (5, 5), (6, 4)).in[Xml].show
++               Svg.Outline().moveTo((0, 0)).lineTo((3, 4)).curveTo((4, 5), (5, 5), (6, 4)).in[Xml].show
+
+-               // <path d="M 0.0 0.0 L 3.0 4.0 C 4.0 5.0, 5.0 5.0, 6.0 4.0"/>
++               // <path d="M 0.0 0.0 L 3.0 4.0 C 4.0 5.0, 5.0 5.0, 6.0 4.0"/>
+
+=               // <path d="M 0.0 0.0 L 3.0 4.0 C 4.0 5.0, 5.0 5.0, 6.0 4.0"/>
+-         frame
++         frame
+
+-           label A relative step, as a Delta
++           label Un paso relativo, como Delta
+
+=           label A relative step, as a Delta
+-           code
++           code
+
+-               Svg.Outline().moveTo((0, 0)).lineTo((3, 4)).curveTo((4, 5), (5, 5), (6, 4)).line(Delta(0, -4)).in[Xml].show
++               Svg.Outline().moveTo((0, 0)).lineTo((3, 4)).curveTo((4, 5), (5, 5), (6, 4)).line(Delta(0, -4)).in[Xml].show
+
+-               // <path d="M 0.0 0.0 L 3.0 4.0 C 4.0 5.0, 5.0 5.0, 6.0 4.0 v -4.0"/>
++               // <path d="M 0.0 0.0 L 3.0 4.0 C 4.0 5.0, 5.0 5.0, 6.0 4.0 v -4.0"/>
+
+=               // <path d="M 0.0 0.0 L 3.0 4.0 C 4.0 5.0, 5.0 5.0, 6.0 4.0 v -4.0"/>
+-         frame
++         frame
+
+-           label Closed back to the start
++           label Cerrado de vuelta al inicio
+
+=           label Closed back to the start
+-           code
++           code
+
+-               Svg.Outline().moveTo((0, 0)).lineTo((3, 4)).curveTo((4, 5), (5, 5), (6, 4)).line(Delta(0, -4)).closed.in[Xml].show
++               Svg.Outline().moveTo((0, 0)).lineTo((3, 4)).curveTo((4, 5), (5, 5), (6, 4)).line(Delta(0, -4)).closed.in[Xml].show
+
+-               // <path d="M 0.0 0.0 L 3.0 4.0 C 4.0 5.0, 5.0 5.0, 6.0 4.0 v -4.0 Z"/>
++               // <path d="M 0.0 0.0 L 3.0 4.0 C 4.0 5.0, 5.0 5.0, 6.0 4.0 v -4.0 Z"/>
+
+-         ##
++         ##
+
+=         ##
+-         ```
++         ```
+
+-         A relative line along one axis is written as `h` or `v`. The directional steps
+-         `#lineUp`, `#lineDown`, `#lineLeft`, `#lineRight` and their `move…` twins take one
+-         length each, in SVG's axes, whose `y` grows downwards: `lineUp(v)` draws `Delta(0, -v)`
+-         (a `v` step) and `lineLeft(v)` draws `Delta(-v, 0)` (an `h` step).
++         Una línea relativa a lo largo de un eje se escribe como `h` o `v`. Los pasos
++         direccionales `#lineUp`, `#lineDown`, `#lineLeft`, `#lineRight` y sus gemelos `move…`
++         reciben una longitud cada uno, en los ejes de SVG, cuya `y` crece hacia abajo: `lineUp(v)`
++         dibuja `Delta(0, -v)` (un paso `v`) y `lineLeft(v)` dibuja `Delta(-v, 0)` (un paso `h`).
+
+-     refer savagery.Stroke
++     refer savagery.Stroke
+
+-     refer savagery.Point
++     refer savagery.Point
+
+-     refer savagery.Delta
++     refer savagery.Delta
+
+-     entry #ops   the path operations, most recent first
+-     entry #style   the inline CSS, or `Unset`
+-     entry #id   the identifier, or `Unset`
+-     entry #transforms   the transforms, written as the `transform` attribute
+-     entry #moveTo   `M`: a move to an absolute point
+-     entry #lineTo   `L`: a line to an absolute point
+-     entry #move   `m`: a move by a `Delta`
+-     entry #line   `l`, `h` or `v`: a line by a `Delta`, written as `h` or `v` when it is along one axis
+-     entry #curve   `c` or `s`: a relative cubic curve, with both control points or only the second
+-         `curve(ctrl1, ctrl2, point)` is a full cubic; `curve(ctrl2, point)` continues smoothly
+-         from the previous curve, the first control point reflected.
+-     entry #curveTo   `C` or `S`: an absolute cubic curve, with both control points or only the second
+-     entry #quadCurve   `q` or `t`: a relative quadratic curve, with its control point or continuing smoothly
+-     entry #quadCurveTo   `Q` or `T`: an absolute quadratic curve, with its control point or continuing smoothly
+-     entry #moveUp   a relative move written as `Move(Delta(0, -value))`
+-     entry #moveDown   a relative move written as `Move(Delta(0, value))`
+-     entry #moveLeft   a relative move written as `Move(Delta(-value, 0))`
+-     entry #moveRight   a relative move written as `Move(Delta(value, 0))`
+-     entry #lineUp   a relative line written as `Draw(Delta(0, -value))`, rendered `v -value`
+-     entry #lineDown   a relative line written as `Draw(Delta(0, value))`, rendered `v value`
+-     entry #lineLeft   a relative line written as `Draw(Delta(-value, 0))`, rendered `h -value`
+-     entry #lineRight   a relative line written as `Draw(Delta(value, 0))`, rendered `h value`
+-     entry #closed   `Z`: closes the current subpath back to its start
+-   entry .Ellipse   an `<ellipse>`, or a `<circle>` when its radii are equal
++     entry #ops   las operaciones del trazado, empezando por la más reciente
++     entry #style   el CSS en línea, o `Unset`
++     entry #id   el identificador, o `Unset`
++     entry #transforms   las transformaciones, escritas como el atributo `transform`
++     entry #moveTo   `M`: un movimiento a un punto absoluto
++     entry #lineTo   `L`: una línea hasta un punto absoluto
++     entry #move   `m`: un movimiento según un `Delta`
++     entry #line   `l`, `h` o `v`: una línea según un `Delta`, escrita como `h` o `v` cuando va a lo largo de un eje
++     entry #curve   `c` o `s`: una curva cúbica relativa, con ambos puntos de control o solo con el segundo
++         `curve(ctrl1, ctrl2, point)` es una cúbica completa; `curve(ctrl2, point)` continúa
++         suavemente a partir de la curva anterior, con el primer punto de control reflejado.
++     entry #curveTo   `C` o `S`: una curva cúbica absoluta, con ambos puntos de control o solo con el segundo
++     entry #quadCurve   `q` o `t`: una curva cuadrática relativa, con su punto de control o continuando suavemente
++     entry #quadCurveTo   `Q` o `T`: una curva cuadrática absoluta, con su punto de control o continuando suavemente
++     entry #moveUp   un movimiento relativo escrito como `Move(Delta(0, -value))`
++     entry #moveDown   un movimiento relativo escrito como `Move(Delta(0, value))`
++     entry #moveLeft   un movimiento relativo escrito como `Move(Delta(-value, 0))`
++     entry #moveRight   un movimiento relativo escrito como `Move(Delta(value, 0))`
++     entry #lineUp   una línea relativa escrita como `Draw(Delta(0, -value))`, representada como `v -value`
++     entry #lineDown   una línea relativa escrita como `Draw(Delta(0, value))`, representada como `v value`
++     entry #lineLeft   una línea relativa escrita como `Draw(Delta(-value, 0))`, representada como `h -value`
++     entry #lineRight   una línea relativa escrita como `Draw(Delta(value, 0))`, representada como `h value`
++     entry #closed   `Z`: cierra el subtrazado actual volviendo a su inicio
++   entry .Ellipse   un `<ellipse>`, o un `<circle>` cuando sus radios son iguales
+
+=   entry .Ellipse   an `<ellipse>`, or a `<circle>` when its radii are equal
+-     detail
++     detail
+
+-         `Ellipse(center, xRadius, yRadius, angle, transforms = Nil, style = Unset, id = Unset)`.
++         `Ellipse(center, xRadius, yRadius, angle, transforms = Nil, style = Unset, id = Unset)`.
+
+-         The `angle` is kept on the value but not yet written to the element: an ellipse renders
+-         with `cx`, `cy`, `rx` and `ry` (or `r`, as a `<circle>`, when `#circle` is true). `Circle`
+-         makes one with equal radii and a zero angle, and a parsed `<circle>` is an `Ellipse` too.
++         El `angle` se guarda en el valor pero aún no se escribe en el elemento: una elipse se
++         representa con `cx`, `cy`, `rx` y `ry` (o `r`, como `<circle>`, cuando `#circle` es
++         verdadero). `Circle` crea una con radios iguales y ángulo cero, y un `<circle>` analizado
++         también es una `Ellipse`.
+
+=         makes one with equal radii and a zero angle, and a parsed `<circle>` is an `Ellipse` too.
+=
+-         ```scala
++         ```scala
+
+=         makes one with equal radii and a zero angle, and a parsed `<circle>` is an `Ellipse` too.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Svg.Ellipse((1, 2), 3, 4, Angle(0)).in[Xml].show   // <ellipse cx="1.0" cy="2.0" rx="3.0" ry="4.0"/>
++         Svg.Ellipse((1, 2), 3, 4, Angle(0)).in[Xml].show   // <ellipse cx="1.0" cy="2.0" rx="3.0" ry="4.0"/>
+
+-         Svg.Ellipse((0, 0), 5, 5, Angle(0)).in[Xml].show   // <circle cx="0.0" cy="0.0" r="5.0"/>
++         Svg.Ellipse((0, 0), 5, 5, Angle(0)).in[Xml].show   // <circle cx="0.0" cy="0.0" r="5.0"/>
+
+=         Svg.Ellipse((0, 0), 5, 5, Angle(0)).in[Xml].show   // <circle cx="0.0" cy="0.0" r="5.0"/>
+-         ```
++         ```
+
+-     refer savagery.Circle
++     refer savagery.Circle
+
+-     entry #center   the centre
+-     entry #xRadius   the horizontal radius
+-     entry #yRadius   the vertical radius
+-     entry #angle   the rotation of the axes, an `Angle`; not written to the element
+-     entry #transforms   the transforms, written as the `transform` attribute
+-     entry #style   the inline CSS, or `Unset`
+-     entry #id   the identifier, or `Unset`
+-     entry #circle   whether the two radii are equal, so the element is a `<circle>`
+-   entry .Group   a `<g>`: figures that move, style and identify together
++     entry #center   el centro
++     entry #xRadius   el radio horizontal
++     entry #yRadius   el radio vertical
++     entry #angle   la rotación de los ejes, un `Angle`; no se escribe en el elemento
++     entry #transforms   las transformaciones, escritas como el atributo `transform`
++     entry #style   el CSS en línea, o `Unset`
++     entry #id   el identificador, o `Unset`
++     entry #circle   si los dos radios son iguales, de modo que el elemento es un `<circle>`
++   entry .Group   un `<g>`: figuras que se mueven, reciben estilo y se identifican juntas
+
+=   entry .Group   a `<g>`: figures that move, style and identify together
+-     detail
++     detail
+
+-         `Group(figures, id = Unset, style = Unset, transforms = Nil)`. A chart's axes, or one of
+-         its series, is a group, so the whole part can be found and replaced by its identifier
+-         when it changes. Its `fonts` are those of the letterings within, so an `Svg` carries
+-         one `@font-face` per typeface however deeply the text is nested.
++         `Group(figures, id = Unset, style = Unset, transforms = Nil)`. Los ejes de un gráfico, o
++         una de sus series, son un grupo, de modo que toda la parte puede encontrarse y sustituirse
++         por su identificador cuando cambia. Sus `fonts` son las de las rotulaciones que contiene,
++         de modo que un `Svg` lleva un `@font-face` por tipo de letra por muy anidado que esté el
++         texto.
+
+=         one `@font-face` per typeface however deeply the text is nested.
+=
+-         ```scala
++         ```scala
+
+=         one `@font-face` per typeface however deeply the text is nested.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Svg.Group(List(Svg.Rectangle((0, 0), 1, 1), Circle((0, 0), 1)), id = Svg.Id(t"pair")).in[Xml].show
++         Svg.Group(List(Svg.Rectangle((0, 0), 1, 1), Circle((0, 0), 1)), id = Svg.Id(t"pair")).in[Xml].show
+
+-         // <g id="pair"><rect x="0.0" y="0.0" width="1.0" height="1.0"/><circle cx="0.0" cy="0.0" r="1.0"/></g>
++         // <g id="pair"><rect x="0.0" y="0.0" width="1.0" height="1.0"/><circle cx="0.0" cy="0.0" r="1.0"/></g>
+
+-         Svg.Group(Nil).translate(Delta(1, 2)).in[Xml].show   // <g transform="translate(1.0,2.0)"/>
++         Svg.Group(Nil).translate(Delta(1, 2)).in[Xml].show   // <g transform="translate(1.0,2.0)"/>
+
+=         Svg.Group(Nil).translate(Delta(1, 2)).in[Xml].show   // <g transform="translate(1.0,2.0)"/>
+-         ```
++         ```
+
+-     entry #figures   the figures, in drawing order
+-     entry #id   the identifier, or `Unset`
+-     entry #style   the inline CSS, or `Unset`
+-     entry #transforms   the transforms, applied to every figure within
+-     entry #fonts   the fonts of every lettering within, recursively
+-   entry .Polyline   a `<polyline>` through absolute points, or a `<polygon>` when closed
++     entry #figures   las figuras, en orden de dibujo
++     entry #id   el identificador, o `Unset`
++     entry #style   el CSS en línea, o `Unset`
++     entry #transforms   las transformaciones, aplicadas a cada figura que contiene
++     entry #fonts   las fuentes de cada rotulación que contiene, recursivamente
++   entry .Polyline   un `<polyline>` que pasa por puntos absolutos, o un `<polygon>` cuando está cerrada
+
+=   entry .Polyline   a `<polyline>` through absolute points, or a `<polygon>` when closed
+-     detail
++     detail
+
+-         `Polyline(points, closed = false, id = Unset, style = Unset, transforms = Nil)`. The
+-         shape of a plotted line, the area under it, or a bar's outline, without a path
+-         operation per vertex: a plotted line and the filled area beneath it are the same figure
+-         with one flag different.
++         `Polyline(points, closed = false, id = Unset, style = Unset, transforms = Nil)`. La forma
++         de una línea trazada en un gráfico, del área bajo ella o del contorno de una barra, sin
++         una operación de trazado por vértice: una línea trazada y el área rellena bajo ella son
++         la misma figura con un indicador distinto.
+
+=         with one flag different.
+=
+-         ```scala
++         ```scala
+
+=         with one flag different.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Svg.Polyline(List(Point(0, 0), Point(10, 5), Point(20, 0))).in[Xml].show
++         Svg.Polyline(List(Point(0, 0), Point(10, 5), Point(20, 0))).in[Xml].show
+
+-         // <polyline points="0.0,0.0 10.0,5.0 20.0,0.0"/>
++         // <polyline points="0.0,0.0 10.0,5.0 20.0,0.0"/>
+
+-         Svg.Polyline(List(Point(0, 0), Point(10, 5), Point(20, 0)), closed = true).in[Xml].show
++         Svg.Polyline(List(Point(0, 0), Point(10, 5), Point(20, 0)), closed = true).in[Xml].show
+
+-         // <polygon points="0.0,0.0 10.0,5.0 20.0,0.0"/>
++         // <polygon points="0.0,0.0 10.0,5.0 20.0,0.0"/>
+
+=         // <polygon points="0.0,0.0 10.0,5.0 20.0,0.0"/>
+-         ```
++         ```
+
+-     entry #points   the vertices, in order
+-     entry #closed   whether the last point joins the first: a `<polygon>` rather than a `<polyline>`
+-     entry #id   the identifier, or `Unset`
+-     entry #style   the inline CSS, or `Unset`
+-     entry #transforms   the transforms, written as the `transform` attribute
+-   entry .Lettering   a `<text>`: a run of characters set at a position, anchored at its start, middle or end
++     entry #points   los vértices, en orden
++     entry #closed   si el último punto se une con el primero: un `<polygon>` en lugar de un `<polyline>`
++     entry #id   el identificador, o `Unset`
++     entry #style   el CSS en línea, o `Unset`
++     entry #transforms   las transformaciones, escritas como el atributo `transform`
++   entry .Lettering   un `<text>`: una secuencia de caracteres colocada en una posición, anclada por su inicio, su centro o su final
+
+=   entry .Lettering   a `<text>`: a run of characters set at a position, anchored at its start, middle or end
+-     detail
++     detail
+
+-         `Lettering(position, text, anchor = Anchor.Start, baseline = Unset, id = Unset, style =
++         `Lettering(position, text, anchor = Anchor.Start, baseline = Unset, id = Unset, style =
+
+-         Unset, font = Unset, transforms = Nil)`. Named for what it is in a drawing, since `Text`
+-         is the string type. The `#anchor` says whether the position is the start, middle or end
+-         of the run (`text-anchor`, omitted for `Start`), and the `#baseline` which line of the
+-         glyphs lies on the position (`dominant-baseline`, left to the renderer when unset). The
+-         text is escaped: `a < b` renders as `a &lt; b`.
++         Unset, font = Unset, transforms = Nil)`. Recibe el nombre de lo que es en un dibujo, ya
++         que `Text` es el tipo de cadena. El `#anchor` dice si la posición es el inicio, el centro
++         o el final de la secuencia (`text-anchor`, que se omite para `Start`), y la `#baseline`
++         qué línea de los glifos queda sobre la posición (`dominant-baseline`, que se deja al
++         motor de representación cuando no está fijada). El texto se escapa: `a < b` se representa
++         como `a &lt; b`.
+
+=         text is escaped: `a < b` renders as `a &lt; b`.
+=
+-         ```scala
++         ```scala
+
+=         text is escaped: `a < b` renders as `a &lt; b`.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         Svg.Lettering((1, 2), t"Hi", Svg.Lettering.Anchor.Middle, Svg.Lettering.Baseline.Hanging).in[Xml].show
++         Svg.Lettering((1, 2), t"Hi", Svg.Lettering.Anchor.Middle, Svg.Lettering.Baseline.Hanging).in[Xml].show
+
+-         // <text x="1.0" y="2.0" text-anchor="middle" dominant-baseline="hanging">Hi</text>
++         // <text x="1.0" y="2.0" text-anchor="middle" dominant-baseline="hanging">Hi</text>
+
+=         // <text x="1.0" y="2.0" text-anchor="middle" dominant-baseline="hanging">Hi</text>
+-         ```
++         ```
+
+-         The `#font` is a `Font in Web`: a face paired with a provision for its typeface, which
+-         exists only where such a provision is in scope, so a typeface without one cannot letter
+-         an SVG. The font's declarations (`font-family`, `font-weight`, …) join the inline
+-         style, and the `Svg` writes a `<style>` of `@font-face` rules for every typeface its
+-         lettering names into its definitions; a generic family such as `Web.sansSerifFont` adds
+-         none.
++         La `#font` es una `Font in Web`: un estilo tipográfico emparejado con una provisión para
++         su tipo de letra, que solo existe donde hay una provisión así en el ámbito, de modo que un
++         tipo de letra sin ella no puede rotular un SVG. Las declaraciones de la fuente
++         (`font-family`, `font-weight`, …) se suman al estilo en línea, y el `Svg` escribe en sus
++         definiciones un `<style>` de reglas `@font-face` para cada tipo de letra que nombran sus
++         rotulaciones; una familia genérica como `Web.sansSerifFont` no añade ninguna.
+
+=         none.
+=
+-         ```scala
++         ```scala
+
+=         none.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         given (Typeface of "Menlo") is Typesettable in Web = Web.local()
++         given (Typeface of "Menlo") is Typesettable in Web = Web.local()
+
+-         Svg.Lettering((0, 0), t"x", font = Font(Typeface["Menlo"].bold)).font.let(_.face.weight)   // Weight.Bold
++         Svg.Lettering((0, 0), t"x", font = Font(Typeface["Menlo"].bold)).font.let(_.face.weight)   // Weight.Bold
+
+-         Svg.Lettering((1, 2), t"Hi", font = Web.sansSerifFont).in[Xml].show
++         Svg.Lettering((1, 2), t"Hi", font = Web.sansSerifFont).in[Xml].show
+
+-         // <text x="1.0" y="2.0" style="font-family: sans-serif; font-weight: 400">Hi</text>
++         // <text x="1.0" y="2.0" style="font-family: sans-serif; font-weight: 400">Hi</text>
+
+=         // <text x="1.0" y="2.0" style="font-family: sans-serif; font-weight: 400">Hi</text>
+-         ```
++         ```
+
+-         `Font(face)` infers the medium from the `Optional[Font in Web]` field it is assigned to;
+-         elsewhere write `Web.font(face)`.
+-     entry .Anchor   where the text sits relative to its position: `Start`, `Middle` or `End`
++         `Font(face)` infiere el medio a partir del campo `Optional[Font in Web]` al que se asigna;
++         en otros sitios escribe `Web.font(face)`.
++     entry .Anchor   dónde queda el texto respecto a su posición: `Start`, `Middle` o `End`
+
+=     entry .Anchor   where the text sits relative to its position: `Start`, `Middle` or `End`
+-       detail
++       detail
+
+-           The `text-anchor` attribute, written only when it is not `Start`.
+-       entry #text   the attribute value: `start`, `middle` or `end`
+-     entry .Baseline   which line of the text lies on the position: `Alphabetic`, `Middle` or `Hanging`
++           El atributo `text-anchor`, que solo se escribe cuando no es `Start`.
++       entry #text   el valor del atributo: `start`, `middle` o `end`
++     entry .Baseline   qué línea del texto queda sobre la posición: `Alphabetic`, `Middle` o `Hanging`
+
+=     entry .Baseline   which line of the text lies on the position: `Alphabetic`, `Middle` or `Hanging`
+-       detail
++       detail
+
+-           The `dominant-baseline` attribute. An unset baseline leaves it to the renderer, which
+-           is the alphabetic baseline; `Hanging` hangs the text below the position, as a label
+-           under an axis wants.
+-       entry #text   the attribute value: `alphabetic`, `middle` or `hanging`
+-     entry #position   the anchor point
+-     entry #text   the characters, escaped when written
+-     entry #anchor   the `Lettering.Anchor`
+-     entry #baseline   the `Lettering.Baseline`, or `Unset`
+-     entry #id   the identifier, or `Unset`
+-     entry #style   the inline CSS, or `Unset`; the font's declarations are appended to it
+-     entry #font   the `Font in Web`, or `Unset` for the renderer's default
+-     entry #transforms   the transforms, written as the `transform` attribute
+-     entry #fonts   the font, as a one-element list, or none
++           El atributo `dominant-baseline`. Una línea base sin fijar se deja al motor de
++           representación, que usa la línea base alfabética; `Hanging` cuelga el texto por debajo
++           de la posición, como quiere un rótulo bajo un eje.
++       entry #text   el valor del atributo: `alphabetic`, `middle` o `hanging`
++     entry #position   el punto de anclaje
++     entry #text   los caracteres, escapados al escribirse
++     entry #anchor   el `Lettering.Anchor`
++     entry #baseline   la `Lettering.Baseline`, o `Unset`
++     entry #id   el identificador, o `Unset`
++     entry #style   el CSS en línea, o `Unset`; se le añaden las declaraciones de la fuente
++     entry #font   la `Font in Web`, o `Unset` para la predeterminada del motor de representación
++     entry #transforms   las transformaciones, escritas como el atributo `transform`
++     entry #fonts   la fuente, como lista de un elemento, o ninguna
+
+- entry .Circle   makes an `Ellipse` with equal radii: a `<circle>`
++ entry .Circle   crea una `Ellipse` con radios iguales: un `<circle>`
+
+= entry .Circle   makes an `Ellipse` with equal radii: a `<circle>`
+-   detail
++   detail
+
+-       `Circle(center, radius, transforms = Nil, style = Unset, id = Unset)` is an `Svg.Ellipse`
+-       with both radii the radius and a zero angle. There is no `Circle` type: a match over
+-       figures sees an `Svg.Ellipse` whose `circle` is true.
++       `Circle(center, radius, transforms = Nil, style = Unset, id = Unset)` es una
++       `Svg.Ellipse` con ambos radios iguales al radio y ángulo cero. No existe un tipo `Circle`:
++       una coincidencia de patrones sobre figuras ve una `Svg.Ellipse` cuyo `circle` es verdadero.
+
+=       figures sees an `Svg.Ellipse` whose `circle` is true.
+=
+-       ```scala
++       ```scala
+
+=       figures sees an `Svg.Ellipse` whose `circle` is true.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Circle((10, 20), 3).in[Xml].show                                        // <circle cx="10.0" cy="20.0" r="3.0"/>
++       Circle((10, 20), 3).in[Xml].show                                        // <circle cx="10.0" cy="20.0" r="3.0"/>
+
+-       Circle((0, 0), 1, style = Css.Style(stroke = Srgb(0, 0, 1))).in[Xml].show
++       Circle((0, 0), 1, style = Css.Style(stroke = Srgb(0, 0, 1))).in[Xml].show
+
+=       Circle((0, 0), 1, style = Css.Style(stroke = Srgb(0, 0, 1))).in[Xml].show
+-       ```
++       ```
+
+-   entry .apply   `Circle(center, radius, transforms, style, id)`: the ellipse of that radius
++   entry .apply   `Circle(center, radius, transforms, style, id)`: la elipse de ese radio
+
+- entry .Stroke   one operation of a path's data: a move, a line, a curve, an arc or a close
++ entry .Stroke   una operación de los datos de un trazado: un movimiento, una línea, una curva, un arco o un cierre
+
+= entry .Stroke   one operation of a path's data: a move, a line, a curve, an arc or a close
+-   detail
++   detail
+
+-       The cases pair an absolute form, suffixed `To` and taking `Point`s, with a relative one
+-       taking `Delta`s: `MoveTo(point)` / `Move(shift)`, `DrawTo(point)` / `Draw(shift)`,
+-       `CubicTo(ctrl1, ctrl2, point)` / `Cubic(ctrl1, ctrl2, shift)` (whose first control point
+-       is `Optional`: `Unset` continues smoothly from the previous curve, as `S` / `s`),
+-       `QuadraticTo(ctrl1, point)` / `Quadratic(ctrl1, shift)` (likewise `T` / `t` when the
+-       control point is unset), `ArcTo(rx, ry, angle, largeArc, sweep, point)` / `Arc(…, shift)`
+-       and `Close`. An `Svg.Outline` holds a list of them, most recent first, and its fluent
+-       methods make them; a pie chart's wedges are built from `MoveTo`, `DrawTo`, `ArcTo` and
+-       `Close` directly.
++       Los casos emparejan una forma absoluta, con el sufijo `To` y que recibe `Point`, con una
++       relativa que recibe `Delta`: `MoveTo(point)` / `Move(shift)`, `DrawTo(point)` /
++       `Draw(shift)`, `CubicTo(ctrl1, ctrl2, point)` / `Cubic(ctrl1, ctrl2, shift)` (cuyo primer
++       punto de control es `Optional`: `Unset` continúa suavemente a partir de la curva anterior,
++       como `S` / `s`), `QuadraticTo(ctrl1, point)` / `Quadratic(ctrl1, shift)` (igualmente `T` /
++       `t` cuando el punto de control no está fijado), `ArcTo(rx, ry, angle, largeArc, sweep,
++       point)` / `Arc(…, shift)` y `Close`. Un `Svg.Outline` contiene una lista de ellos,
++       empezando por el más reciente, y sus métodos fluidos los crean; las porciones de un
++       gráfico de tarta se construyen directamente a partir de `MoveTo`, `DrawTo`, `ArcTo` y
++       `Close`.
+
+=       `Close` directly.
+=
+-       ```scala
++       ```scala
+
+=       `Close` directly.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val wedge: List[Stroke] =
++       val wedge: List[Stroke] =
+
+-         List
++         List
+
+-           ( Stroke.Close,
++           ( Stroke.Close,
+
+-             Stroke.ArcTo(10, 10, Angle(0.0), false, Sweep.Clockwise, Point(10, 0)),
++             Stroke.ArcTo(10, 10, Angle(0.0), false, Sweep.Clockwise, Point(10, 0)),
+
+-             Stroke.DrawTo(Point(0, -10)),
++             Stroke.DrawTo(Point(0, -10)),
+
+-             Stroke.MoveTo(Point(0, 0)) )
++             Stroke.MoveTo(Point(0, 0)) )
+
+-       Svg.Outline(wedge).in[Xml].show
++       Svg.Outline(wedge).in[Xml].show
+
+-       // <path d="M 0.0 0.0 L 0.0 -10.0 A 10.0 10.0 0.0 0 1 10.0 0.0 Z"/>
++       // <path d="M 0.0 0.0 L 0.0 -10.0 A 10.0 10.0 0.0 0 1 10.0 0.0 Z"/>
+
+=       // <path d="M 0.0 0.0 L 0.0 -10.0 A 10.0 10.0 0.0 0 1 10.0 0.0 Z"/>
+-       ```
++       ```
+
+-   refer savagery.Svg.Outline
++   refer savagery.Svg.Outline
+
+-   refer savagery.Sweep
++   refer savagery.Sweep
+
+-   entry .inspectable   renders a stroke by its case name with its fields, `MoveTo(Point(x:0.0F ╱ y:0.0F))`
+-       Spelt out rather than derived, since the path-data form (`A 3.0 4.0 0.0 1 0 …`) drops
+-       the case names a reader is matching against the source.
+-   entry .encodable   a stroke as its path-data text, as `stroke.encode`
+-       `M x y`, `m dx dy`, `L x y`, `l dx dy` (or `h dx` / `v dy` when the shift is along one
+-       axis), `C c1, c2, p` / `S c2, p`, `Q c1, p` / `T p`, their lowercase relative forms,
+-       `A rx ry angle large sweep p` with the flags as `1` or `0`, and `Z`. The relative arc
+-       is written with `A` and its shift's components, as the source has it.
++   entry .inspectable   representa un trazo por el nombre de su caso con sus campos, `MoveTo(Point(x:0.0F ╱ y:0.0F))`
++       Escrito a mano en lugar de derivado, ya que la forma de datos de trazado
++       (`A 3.0 4.0 0.0 1 0 …`) pierde los nombres de los casos con los que un lector lo compara
++       en el código fuente.
++   entry .encodable   un trazo como su texto de datos de trazado, como `stroke.encode`
++       `M x y`, `m dx dy`, `L x y`, `l dx dy` (o `h dx` / `v dy` cuando el desplazamiento va a lo
++       largo de un eje), `C c1, c2, p` / `S c2, p`, `Q c1, p` / `T p`, sus formas relativas en
++       minúscula, `A rx ry angle large sweep p` con los indicadores como `1` o `0`, y `Z`. El arco
++       relativo se escribe con `A` y los componentes de su desplazamiento, tal como lo tiene el
++       código fuente.
+
+- entry .Sweep   an arc's direction: `Clockwise` or `Counterclockwise`
+-     The sweep flag of `Stroke.ArcTo` and `Stroke.Arc`: `Clockwise` is SVG's sweep flag `1`.
++ entry .Sweep   la dirección de un arco: `Clockwise` o `Counterclockwise`
++     El indicador de barrido de `Stroke.ArcTo` y `Stroke.Arc`: `Clockwise` es el indicador de
++     barrido `1` de SVG.
+
+- entry .Orientation   the axis a skew acts along: `Horizontal` (`skewX`) or `Vertical` (`skewY`)
+-     The second argument of `Transform.Skew` and of the `skew` extension, defaulting to
++ entry .Orientation   el eje a lo largo del cual actúa una inclinación: `Horizontal` (`skewX`) o `Vertical` (`skewY`)
++     El segundo argumento de `Transform.Skew` y de la extensión `skew`, que por defecto es
+
+-     `Horizontal`.
++     `Horizontal`.
+
+- entry .Transform   one entry of a `transform` attribute: translate, scale, rotate, skew or matrix
++ entry .Transform   una entrada de un atributo `transform`: traslación, escala, rotación, inclinación o matriz
+
+= entry .Transform   one entry of a `transform` attribute: translate, scale, rotate, skew or matrix
+-   detail
++   detail
+
+-       `Translate(vector: Delta)`, `Scale(x, y: Optional[Float])` (uniform when `y` is unset),
+-       `Rotate(angle: Angle)`, `Skew(angle, orientation = Horizontal)` and `Matrix(affine:
+-       Affine[Float])`. A figure's `transforms` list is written in order, space-separated, as
+-       its `transform` attribute, and SVG applies them in that order; the fluent extensions
+-       `translate`, `scale`, `rotate`, `skew` and `transform` append one each.
++       `Translate(vector: Delta)`, `Scale(x, y: Optional[Float])` (uniforme cuando `y` no está
++       fijado), `Rotate(angle: Angle)`, `Skew(angle, orientation = Horizontal)` y `Matrix(affine:
++       Affine[Float])`. La lista `transforms` de una figura se escribe en orden, separada por
++       espacios, como su atributo `transform`, y SVG las aplica en ese orden; las extensiones
++       fluidas `translate`, `scale`, `rotate`, `skew` y `transform` añaden una cada una.
+
+=       `translate`, `scale`, `rotate`, `skew` and `transform` append one each.
+=
+-       ```scala
++       ```scala
+
+=       `translate`, `scale`, `rotate`, `skew` and `transform` append one each.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       (Transform.Translate(Delta(10, 20)): Transform).encode            // t"translate(10.0,20.0)"
++       (Transform.Translate(Delta(10, 20)): Transform).encode            // t"translate(10.0,20.0)"
+
+-       (Transform.Scale(2.0f, Unset): Transform).encode                   // t"scale(2.0)"
++       (Transform.Scale(2.0f, Unset): Transform).encode                   // t"scale(2.0)"
+
+-       (Transform.Rotate(Angle.degrees(45)): Transform).encode            // t"rotate(45.0)"
++       (Transform.Rotate(Angle.degrees(45)): Transform).encode            // t"rotate(45.0)"
+
+-       (Transform.Skew(Angle.degrees(45), Orientation.Vertical): Transform).encode   // t"skewY(45.0)"
++       (Transform.Skew(Angle.degrees(45), Orientation.Vertical): Transform).encode   // t"skewY(45.0)"
+
+-       (Transform.Matrix(Affine(1.0f, 0.0f, 0.0f, 1.0f, 5.0f, 10.0f)): Transform).encode
++       (Transform.Matrix(Affine(1.0f, 0.0f, 0.0f, 1.0f, 5.0f, 10.0f)): Transform).encode
+
+-       // t"matrix(1.0,0.0,0.0,1.0,5.0,10.0)"
++       // t"matrix(1.0,0.0,0.0,1.0,5.0,10.0)"
+
+=       // t"matrix(1.0,0.0,0.0,1.0,5.0,10.0)"
+-       ```
++       ```
+
+-   refer savagery.Transformable
++   refer savagery.Transformable
+
+-   refer savagery.Affine
++   refer savagery.Affine
+
+-   entry .inspectable   renders a transform by its case name with its fields
+-       Written out case by case, because `Angle`'s instance is a top-level given in geodesy
+-       rather than a companion one.
+-   entry .encodable   a transform as its attribute text, as `transform.encode`
+-       `translate(dx,dy)`, `scale(x)` or `scale(x,y)`, `rotate(degrees)`, `skewX(degrees)` or
+-       `skewY(degrees)`, and `matrix(a,b,c,d,e,f)`.
++   entry .inspectable   representa una transformación por el nombre de su caso con sus campos
++       Escrito caso a caso, porque la instancia de `Angle` es un given de nivel superior en
++       geodesy y no uno del objeto compañero.
++   entry .encodable   una transformación como el texto de su atributo, como `transform.encode`
++       `translate(dx,dy)`, `scale(x)` o `scale(x,y)`, `rotate(degrees)`, `skewX(degrees)` o
++       `skewY(degrees)`, y `matrix(a,b,c,d,e,f)`.
+
+- entry .Transformable   a figure whose transform list can be read and replaced, so the fluent transforms apply to it
++ entry .Transformable   una figura cuya lista de transformaciones puede leerse y sustituirse, de modo que se le aplican las transformaciones fluidas
+
+= entry .Transformable   a figure whose transform list can be read and replaced, so the fluent transforms apply to it
+-   detail
++   detail
+
+-       `value is Transformable` gives `transforms(value)` and `withTransforms(value, list)`.
+-       The companion has instances for `Svg.Rectangle`, `Svg.Outline`, `Svg.Ellipse`, `Svg.Group`, `Svg.Polyline`,
+-       `Svg.Lettering` and `Svg` itself, which is what the `translate`, `scale`, `rotate`, `skew`
+-       and `transform` extensions require. `Transformable(get, put)` makes one for a type of
+-       your own from a pair of pure functions.
++       `value is Transformable` proporciona `transforms(value)` y `withTransforms(value, list)`.
++       El objeto compañero tiene instancias para `Svg.Rectangle`, `Svg.Outline`, `Svg.Ellipse`,
++       `Svg.Group`, `Svg.Polyline`, `Svg.Lettering` y el propio `Svg`, que es lo que requieren las
++       extensiones `translate`, `scale`, `rotate`, `skew` y `transform`.
++       `Transformable(get, put)` crea una para un tipo propio a partir de un par de funciones
++       puras.
+
+-   refer savagery.transform
++   refer savagery.transform
+
+-   entry .apply   `Transformable(get, put)`: an instance from a getter and a replacer of the transform list
+-       Both functions are pure (`->`): the instance retains them, and a capturing function
+-       would make the typeclass instance itself a capability.
+-   entry .rectangle   a `Rectangle`'s transforms
+-   entry .outline   an `Outline`'s transforms
+-   entry .ellipse   an `Ellipse`'s transforms
+-   entry .svg   an `Svg`'s transforms, which wrap its figures in a `<g>`
+-   entry .group   a `Group`'s transforms
+-   entry .polyline   a `Polyline`'s transforms
+-   entry .lettering   a `Lettering`'s transforms
+-   entry #transforms   the value's transform list
+-   entry #withTransforms   the value with its transform list replaced
++   entry .apply   `Transformable(get, put)`: una instancia a partir de un getter y de un sustituidor de la lista de transformaciones
++       Ambas funciones son puras (`->`): la instancia las retiene, y una función que capturase
++       haría de la propia instancia de la clase de tipos una capacidad.
++   entry .rectangle   las transformaciones de un `Rectangle`
++   entry .outline   las transformaciones de un `Outline`
++   entry .ellipse   las transformaciones de una `Ellipse`
++   entry .svg   las transformaciones de un `Svg`, que envuelven sus figuras en un `<g>`
++   entry .group   las transformaciones de un `Group`
++   entry .polyline   las transformaciones de una `Polyline`
++   entry .lettering   las transformaciones de un `Lettering`
++   entry #transforms   la lista de transformaciones del valor
++   entry #withTransforms   el valor con su lista de transformaciones sustituida
+
+- entry .transform   appends any `Transform` to a figure: `figure.transform(Transform.Rotate(angle))`
+-     An extension on any `Transformable` value, returning a new value with the transform
+-     appended after those it already has. The other four extensions are each a case of this.
+-     Under `import soundness.*`, this lexical `transform` outranks mosquito's `Affine#transform`
+-     extension on a constructed `Affine`; import that one by name
+-     (`import mosquito.Affine.transform`) where both are wanted.
++ entry .transform   añade cualquier `Transform` a una figura: `figure.transform(Transform.Rotate(angle))`
++     Una extensión sobre cualquier valor `Transformable`, que devuelve un valor nuevo con la
++     transformación añadida tras las que ya tiene. Cada una de las otras cuatro extensiones es un
++     caso de esta. Con `import soundness.*`, este `transform` léxico tiene prioridad sobre la
++     extensión `Affine#transform` de mosquito en un `Affine` construido; importa esa por nombre
++     (`import mosquito.Affine.transform`) donde se quieran ambas.
+
+- entry .translate   appends a translation by a `Delta`: `figure.translate(Delta(3, 4))`
++ entry .translate   añade una traslación según un `Delta`: `figure.translate(Delta(3, 4))`
+
+= entry .translate   appends a translation by a `Delta`: `figure.translate(Delta(3, 4))`
+-     ```scala
++     ```scala
+
+= entry .translate   appends a translation by a `Delta`: `figure.translate(Delta(3, 4))`
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     Svg.Rectangle((0, 0), 10, 5).translate(Delta(3, 4)).in[Xml].show
++     Svg.Rectangle((0, 0), 10, 5).translate(Delta(3, 4)).in[Xml].show
+
+-     // <rect x="0.0" y="0.0" width="10.0" height="5.0" transform="translate(3.0,4.0)"/>
++     // <rect x="0.0" y="0.0" width="10.0" height="5.0" transform="translate(3.0,4.0)"/>
+
+-     Svg.Rectangle((0, 0), 10, 5).translate(+(3, 4))   // the same, with a tuple as the delta
++     Svg.Rectangle((0, 0), 10, 5).translate(+(3, 4))   // the same, with a tuple as the delta
+
+=     Svg.Rectangle((0, 0), 10, 5).translate(+(3, 4))   // the same, with a tuple as the delta
+-     ```
++     ```
+
+- entry .scale   appends a scale, uniform or by two factors: `figure.scale(2.0f)` or `figure.scale(2.0f, 3.0f)`
++ entry .scale   añade una escala, uniforme o según dos factores: `figure.scale(2.0f)` o `figure.scale(2.0f, 3.0f)`
+
+- entry .rotate   appends a rotation by an `Angle` about the origin: `figure.rotate(Angle.degrees(90))`
++ entry .rotate   añade una rotación según un `Angle` alrededor del origen: `figure.rotate(Angle.degrees(90))`
+
+= entry .rotate   appends a rotation by an `Angle` about the origin: `figure.rotate(Angle.degrees(90))`
+-     ```scala
++     ```scala
+
+= entry .rotate   appends a rotation by an `Angle` about the origin: `figure.rotate(Angle.degrees(90))`
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     Svg.Rectangle((0, 0), 1, 1).translate(Delta(5, 0)).rotate(Angle.degrees(45)).in[Xml].show
++     Svg.Rectangle((0, 0), 1, 1).translate(Delta(5, 0)).rotate(Angle.degrees(45)).in[Xml].show
+
+-     // <rect x="0.0" y="0.0" width="1.0" height="1.0" transform="translate(5.0,0.0) rotate(45.0)"/>
++     // <rect x="0.0" y="0.0" width="1.0" height="1.0" transform="translate(5.0,0.0) rotate(45.0)"/>
+
+=     // <rect x="0.0" y="0.0" width="1.0" height="1.0" transform="translate(5.0,0.0) rotate(45.0)"/>
+-     ```
++     ```
+
+-     Transforms compose in the order they are applied: here the rectangle is translated, then
+-     the result rotated about the origin.
++     Las transformaciones se componen en el orden en que se aplican: aquí el rectángulo se
++     traslada y después el resultado se rota alrededor del origen.
+
+- entry .skew   appends a skew by an `Angle`, horizontally by default: `figure.skew(angle, Orientation.Vertical)`
++ entry .skew   añade una inclinación según un `Angle`, horizontal por defecto: `figure.skew(angle, Orientation.Vertical)`
+
+- entry .Point   a position: an `x` and a `y`, as `Float`s
++ entry .Point   una posición: una `x` y una `y`, como `Float`
+
+= entry .Point   a position: an `x` and a `y`, as `Float`s
+-   detail
++   detail
+
+-       `Point(x, y)`, held as a mosquito `Vector[Float, 2]`. A `Point` and a `Delta` are
+-       different types for different things: a point plus a delta is a point, a point minus a
+-       point is a delta, and two points do not add. A pair of numbers of any numeric type
+-       converts to a `Point` where one is expected, so `Svg.Rectangle((0, 0), 10, 5)` and
+-       `Svg.Outline().moveTo((3, 4))` need no constructor.
++       `Point(x, y)`, guardado como un `Vector[Float, 2]` de mosquito. Un `Point` y un `Delta` son
++       tipos distintos para cosas distintas: un punto más un delta es un punto, un punto menos un
++       punto es un delta, y dos puntos no se suman. Un par de números de cualquier tipo numérico
++       se convierte en un `Point` donde se espera uno, de modo que `Svg.Rectangle((0, 0), 10, 5)`
++       y `Svg.Outline().moveTo((3, 4))` no necesitan constructor.
+
+=       `Svg.Outline().moveTo((3, 4))` need no constructor.
+=
+-       ```scala
++       ```scala
+
+=       `Svg.Outline().moveTo((3, 4))` need no constructor.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Point(1, 2) + Delta(3, 4)      // Point(4, 6)
++       Point(1, 2) + Delta(3, 4)      // Point(4, 6)
+
+-       Point(5, 7) - Point(2, 3)      // Delta(3, 4)
++       Point(5, 7) - Point(2, 3)      // Delta(3, 4)
+
+-       Point(5, 7) - Delta(2, 3)      // Point(3, 4)
++       Point(5, 7) - Delta(2, 3)      // Point(3, 4)
+
+-       Point(3, 4).show               // t"3.0 4.0", the path-data form
++       Point(3, 4).show               // t"3.0 4.0", the path-data form
+
+-       Point(3, 4).inspect            // t"Point(x:3.0F ╱ y:4.0F)"
++       Point(3, 4).inspect            // t"Point(x:3.0F ╱ y:4.0F)"
+
+=       Point(3, 4).inspect            // t"Point(x:3.0F ╱ y:4.0F)"
+-       ```
++       ```
+
+-   refer savagery.Delta
++   refer savagery.Delta
+
+-   entry .apply   `Point(x, y)` from two `Float`s
+-   entry .showable   the SVG path-data form: the two numbers separated by a space
+-   entry .inspectable   `Point(x:3.0F ╱ y:4.0F)`, so a point is never mistaken for a `Delta`
+-   entry .fromTuple   a pair of any numeric types as a `Point`, wherever a `Point` is expected
+-   entry .addable   `point + delta`: the point displaced
+-   entry .subtractableByDelta   `point - delta`: the point displaced back
+-   entry .subtractableByPoint   `point - point`: the `Delta` from the second to the first
+-   entry #vector   the underlying `Vector[Float, 2]`
+-   entry #x   the horizontal coordinate
+-   entry #y   the vertical coordinate, increasing downward as in SVG
++   entry .apply   `Point(x, y)` a partir de dos `Float`
++   entry .showable   la forma de datos de trazado de SVG: los dos números separados por un espacio
++   entry .inspectable   `Point(x:3.0F ╱ y:4.0F)`, de modo que un punto nunca se confunde con un `Delta`
++   entry .fromTuple   un par de cualesquiera tipos numéricos como `Point`, allí donde se espera un `Point`
++   entry .addable   `point + delta`: el punto desplazado
++   entry .subtractableByDelta   `point - delta`: el punto desplazado en sentido contrario
++   entry .subtractableByPoint   `point - point`: el `Delta` del segundo al primero
++   entry #vector   el `Vector[Float, 2]` subyacente
++   entry #x   la coordenada horizontal
++   entry #y   la coordenada vertical, que crece hacia abajo como en SVG
+
+- entry .Delta   a displacement: a `dx` and a `dy`, as `Float`s
++ entry .Delta   un desplazamiento: un `dx` y un `dy`, como `Float`
+
+= entry .Delta   a displacement: a `dx` and a `dy`, as `Float`s
+-   detail
++   detail
+
+-       `Delta(dx, dy)`, held as a mosquito `Vector[Float, 2]`. Deltas add, subtract, negate and
+-       scale by an `Int`, `Float` or `Double` on either side, and displace a `Point`. The named
+-       directions `Up`, `Down`, `Left` and `Right` are unit deltas, so displacement arithmetic
+-       reads plainly; a tuple becomes a delta with a unary `+` or `-`.
++       `Delta(dx, dy)`, guardado como un `Vector[Float, 2]` de mosquito. Los deltas se suman, se
++       restan, se niegan y se escalan por un `Int`, un `Float` o un `Double` por cualquiera de los
++       dos lados, y desplazan un `Point`. Las direcciones con nombre `Up`, `Down`, `Left` y
++       `Right` son deltas unitarios, de modo que la aritmética de desplazamientos se lee con
++       claridad; una tupla se convierte en un delta con un `+` o un `-` unario.
+
+=       reads plainly; a tuple becomes a delta with a unary `+` or `-`.
+=
+-       ```scala
++       ```scala
+
+=       reads plainly; a tuple becomes a delta with a unary `+` or `-`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val step: Delta = 7*Delta.Up + 3*Delta.Right   // Delta(3.0, -7.0): SVG's y-axis points down
++       val step: Delta = 7*Delta.Up + 3*Delta.Right   // Delta(3.0, -7.0): SVG's y-axis points down
+
+-       -Delta(3, 4)                       // Delta(-3.0, -4.0)
++       -Delta(3, 4)                       // Delta(-3.0, -4.0)
+
+-       Delta(1, 2) + Delta(3, 4)          // Delta(4.0, 6.0)
++       Delta(1, 2) + Delta(3, 4)          // Delta(4.0, 6.0)
+
+-       Delta(1, -2).inspect               // t"Delta(dx:1.0F ╱ dy:-2.0F)"
++       Delta(1, -2).inspect               // t"Delta(dx:1.0F ╱ dy:-2.0F)"
+
+=       Delta(1, -2).inspect               // t"Delta(dx:1.0F ╱ dy:-2.0F)"
+-       ```
++       ```
+
+-   refer savagery.Point
++   refer savagery.Point
+
+-   refer savagery.Delta.Up
++   refer savagery.Delta.Up
+
+-   entry .apply   `Delta(dx, dy)` from two `Float`s
+-   entry .showable   the two components separated by a space, as path data writes a relative step
+-   entry .inspectable   `Delta(dx:1.0F ╱ dy:-2.0F)`, labelled to distinguish it from a `Point`
++   entry .apply   `Delta(dx, dy)` a partir de dos `Float`
++   entry .showable   los dos componentes separados por un espacio, tal como los datos de trazado escriben un paso relativo
++   entry .inspectable   `Delta(dx:1.0F ╱ dy:-2.0F)`, rotulado para distinguirlo de un `Point`
+
+-   entry .addable   `delta + delta`
++   entry .addable   `delta + delta`
+
+-   entry .subtractable   `delta - delta`
++   entry .subtractable   `delta - delta`
+
+-   entry .negatable   `-delta`
++   entry .negatable   `-delta`
+
+-   entry .multiplicableFloat   `float * delta`
++   entry .multiplicableFloat   `float * delta`
+
+-   entry .multiplicableDouble   `double * delta`, rounded to `Float`
++   entry .multiplicableDouble   `double * delta`, redondeado a `Float`
+
+-   entry .multiplicableInt   `int * delta`
++   entry .multiplicableInt   `int * delta`
+
+-   entry .multiplicableByFloat   `delta * float`
++   entry .multiplicableByFloat   `delta * float`
+
+-   entry .multiplicableByDouble   `delta * double`, rounded to `Float`
++   entry .multiplicableByDouble   `delta * double`, redondeado a `Float`
+
+-   entry .multiplicableByInt   `delta * int`
++   entry .multiplicableByInt   `delta * int`
+
+-   entry #vector   the underlying `Vector[Float, 2]`
+-   entry #dx   the horizontal component
+-   entry #dy   the vertical component, positive downward
++   entry #vector   el `Vector[Float, 2]` subyacente
++   entry #dx   el componente horizontal
++   entry #dy   el componente vertical, positivo hacia abajo
+
+-   entry .Up   the unit delta upward: `Delta(0, -1)`, since SVG's y-axis points down
+-       `7*Up` is `Delta(0, -7)`.
+-   entry .Down   the unit delta downward: `Delta(0, 1)`
+-   entry .Left   the unit delta leftward: `Delta(-1, 0)`
+-   entry .Right   the unit delta rightward: `Delta(1, 0)`
++   entry .Up   el delta unitario hacia arriba: `Delta(0, -1)`, ya que el eje y de SVG apunta hacia abajo
++       `7*Up` es `Delta(0, -7)`.
++   entry .Down   el delta unitario hacia abajo: `Delta(0, 1)`
++   entry .Left   el delta unitario hacia la izquierda: `Delta(-1, 0)`
++   entry .Right   el delta unitario hacia la derecha: `Delta(1, 0)`
+
+- entry .unary_+   a tuple of two numbers as a `Delta`: `+(3, 4)` is `Delta(3, 4)`
+-     An extension on any pair of numeric types, so a displacement can be written without the
+-     constructor: `rectangle.translate(+(3, 4))`.
++ entry .unary_+   una tupla de dos números como `Delta`: `+(3, 4)` es `Delta(3, 4)`
++     Una extensión sobre cualquier par de tipos numéricos, de modo que un desplazamiento puede
++     escribirse sin el constructor: `rectangle.translate(+(3, 4))`.
+
+- entry .negatableTuple   a tuple of two numbers negated as a `Delta`: `-(3, 4)` is `Delta(-3, -4)`
+-     The `Negatable` given which makes unary `-` on a pair the opposite displacement.
++ entry .negatableTuple   una tupla de dos números negada como `Delta`: `-(3, 4)` es `Delta(-3, -4)`
++     El given `Negatable` que hace del `-` unario sobre un par el desplazamiento opuesto.
+
+- entry .Stop   a colour stop of a gradient: an offset in `[0, 1]` and a colour of any `Chromatic` type
++ entry .Stop   una parada de color de un degradado: un desplazamiento en `[0, 1]` y un color de cualquier tipo `Chromatic`
+
+= entry .Stop   a colour stop of a gradient: an offset in `[0, 1]` and a colour of any `Chromatic` type
+-   detail
++   detail
+
+-       `Stop(offset, color)`, where the offset is a cardinality `0.0 ~ 1.0` — a bounded number,
+-       so an offset outside the range does not compile — and the colour any type with a
+-       `Chromatic` instance, such as a `WebColors` value or an `Srgb`. Rendered as `stop.in[Xml]`,
+-       the colour is six hexadecimal digits.
++       `Stop(offset, color)`, donde el desplazamiento es un `0.0 ~ 1.0` de cardinality — un número
++       acotado, de modo que un desplazamiento fuera del rango no compila — y el color cualquier
++       tipo con una instancia de `Chromatic`, como un valor de `WebColors` o un `Srgb`.
++       Representado como `stop.in[Xml]`, el color son seis dígitos hexadecimales.
+
+=       the colour is six hexadecimal digits.
+=
+-       ```scala
++       ```scala
+
+=       the colour is six hexadecimal digits.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Stop(0.25, WebColors.White).in[Xml].show   // <stop offset="0.25" stop-color="#ffffff"/>
++       Stop(0.25, WebColors.White).in[Xml].show   // <stop offset="0.25" stop-color="#ffffff"/>
+
+=       Stop(0.25, WebColors.White).in[Xml].show   // <stop offset="0.25" stop-color="#ffffff"/>
+-       ```
++       ```
+
+-   refer savagery.Svg.LinearGradient
++   refer savagery.Svg.LinearGradient
+
+-   entry .encodable   a `<stop>` element with its colour as `#rrggbb`, as `stop.in[Xml]`
+-       Bounded as `stop <: Stop[color]` rather than over a bare parameter, so it is more
+-       specific than xylophone's catch-all XML encoder.
+-   entry #offset   where along the gradient the stop lies, from `0.0` to `1.0`
+-   entry #color   the colour
+-   entry #chromatic   the colour type's `Chromatic` instance, captured at construction
++   entry .encodable   un elemento `<stop>` con su color como `#rrggbb`, como `stop.in[Xml]`
++       Acotado como `stop <: Stop[color]` en lugar de sobre un parámetro sin más, de modo que es
++       más específico que el codificador XML comodín de xylophone.
++   entry #offset   en qué punto del degradado está la parada, de `0.0` a `1.0`
++   entry #color   el color
++   entry #chromatic   la instancia de `Chromatic` del tipo de color, capturada al construirla
+
+- entry .Segment   a raw path-data command: a symbol and its numeric or boolean parameters, as text
++ entry .Segment   una orden en bruto de datos de trazado: un símbolo y sus parámetros numéricos o booleanos, como texto
+
+= entry .Segment   a raw path-data command: a symbol and its numeric or boolean parameters, as text
+-   detail
++   detail
+
+-       `Segment(symbol, parameters*)` renders as the symbol, a space, and the parameters
+-       separated by spaces, with a boolean as `1` or `0`. A low-level helper not exported to
+-       the `soundness` umbrella; `Stroke` is the typed form.
+-   entry #symbol   the command letter
+-   entry #parameters   the numbers and flags
+-   entry #text   the command as path-data text
++       `Segment(symbol, parameters*)` se representa como el símbolo, un espacio y los parámetros
++       separados por espacios, con un booleano como `1` o `0`. Una utilidad de bajo nivel que no
++       se exporta al paraguas `soundness`; `Stroke` es la forma tipada.
++   entry #symbol   la letra de la orden
++   entry #parameters   los números y los indicadores
++   entry #text   la orden como texto de datos de trazado
+
+- entry .Affine   mosquito's two-dimensional affine matrix, re-exported for `Transform.Matrix`
+-     `Affine(a, b, c, d, e, f)` holds the six live entries of a 2D affine transformation in
+-     the order SVG's `matrix(a, b, c, d, e, f)` takes them; savagery uses it at `Float`.
+-     `Affine.identity[Float]` is the neutral matrix, and mosquito's `transform(x, y)` and
+-     `andThen(next)` extensions apply and compose matrices. Under `import soundness.*` those
+-     two names are outranked by savagery's `transform` and functions' `andThen` on a
+-     constructed `Affine`, so import them by name: `import mosquito.Affine.{andThen,
++ entry .Affine   la matriz afín bidimensional de mosquito, reexportada para `Transform.Matrix`
++     `Affine(a, b, c, d, e, f)` contiene las seis entradas activas de una transformación afín 2D
++     en el orden en que las recibe el `matrix(a, b, c, d, e, f)` de SVG; savagery la usa con
++     `Float`. `Affine.identity[Float]` es la matriz neutra, y las extensiones `transform(x, y)` y
++     `andThen(next)` de mosquito aplican y componen matrices. Con `import soundness.*`, esos dos
++     nombres quedan por debajo del `transform` de savagery y del `andThen` de las funciones en un
++     `Affine` construido, así que impórtalos por nombre: `import mosquito.Affine.{andThen,
+
+-     transform}`.
++     transform}`.
+
+=     transform}`.
+=
+-     ```scala
++     ```scala
+
+=     transform}`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import mosquito.Affine.{andThen, transform}
++     import mosquito.Affine.{andThen, transform}
+
+-     val translate = Affine(1.0f, 0.0f, 0.0f, 1.0f, 10.0f, 0.0f)
++     val translate = Affine(1.0f, 0.0f, 0.0f, 1.0f, 10.0f, 0.0f)
+
+-     val scale = Affine(2.0f, 0.0f, 0.0f, 2.0f, 0.0f, 0.0f)
++     val scale = Affine(2.0f, 0.0f, 0.0f, 2.0f, 0.0f, 0.0f)
+
+-     translate.andThen(scale).transform(1.0f, 1.0f)   // (22.0f, 2.0f)
++     translate.andThen(scale).transform(1.0f, 1.0f)   // (22.0f, 2.0f)
+
+=     translate.andThen(scale).transform(1.0f, 1.0f)   // (22.0f, 2.0f)
+-     ```
++     ```
+
+- entry .construables   the given, imported by name, which lets an `Svg` be constructed from its media type
++ entry .construables   el given, que se importa por nombre, que permite construir un `Svg` a partir de su tipo de medio
+
+= entry .construables   the given, imported by name, which lets an `Svg` be constructed from its media type
+-   detail
++   detail
+
+=   detail
+-       ```scala
++       ```scala
+
+=   detail
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import construables.svgConstruable
++       import construables.svgConstruable
+
+=       import construables.svgConstruable
+-       ```
++       ```
+
+-   entry .svgConstruable   `"image/svg+xml" is Construable to Svg`
++   entry .svgConstruable   `"image/svg+xml" is Construable to Svg`
+
+-       Names `Svg` as the type an `image/svg+xml` body constructs, for the code paths — an
+-       HTTP response, a file by media type — which choose a type by media type. `import
+-       savagery.*` does not bring it in.
++       Nombra `Svg` como el tipo que construye un cuerpo `image/svg+xml`, para los caminos de
++       código — una respuesta HTTP, un fichero por tipo de medio — que eligen un tipo por tipo de
++       medio. `import savagery.*` no lo incorpora.

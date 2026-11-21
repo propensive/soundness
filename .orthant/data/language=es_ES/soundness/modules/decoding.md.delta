@@ -1,0 +1,1156 @@
+orthant 1 language
+
+- ## Decoding
++ ## Decodificación
+
+- ### About
++ ### Descripción
+
+- A running program receives much of its data as loose, untyped text: command-line arguments,
+- environment variables, configuration files, the groups captured by a regular expression, a line
+- typed at a prompt. Decoding turns that text into typed values, such as an `Int`, a `Uuid` or an
+- email address.
++ Un programa en ejecución recibe buena parte de sus datos como texto suelto y sin tipo: argumentos
++ de línea de comandos, variables de entorno, ficheros de configuración, los grupos capturados por
++ una expresión regular, una línea tecleada en un prompt. La decodificación convierte ese texto en
++ valores tipados, como un `Int`, un `Uuid` o una dirección de correo electrónico.
+
+- Every such conversion shares one fact: it might not succeed. The types say so. A conversion
+- never returns a plausible value for input it could not read, which is what
+- [total transitions](../../philosophy/total-transitions.md) demands.
++ Todas estas conversiones comparten un hecho: pueden no tener éxito. Los tipos lo dicen. Una
++ conversión nunca devuelve un valor verosímil para una entrada que no ha podido leer, que es lo que
++ exigen las [transiciones totales](../../philosophy/total-transitions.md).
+
+- ### On conversion
++ ### Sobre la conversión
+
+- A conversion from one representation to another can fail in more than one way, and the
+- differences matter:
++ Una conversión de una representación a otra puede fallar de más de una manera, y las diferencias
++ importan:
+
+- - Reading an integer from arbitrary text can fail, because the text might not be a number.
+- - Narrowing a `Long` to an `Int` can fail, because the value might not fit.
+- - Widening a `Byte` to an `Int` can never fail.
++ - Leer un entero de un texto arbitrario puede fallar, porque el texto podría no ser un número.
++ - Estrechar un `Long` a un `Int` puede fallar, porque el valor podría no caber.
++ - Ampliar un `Byte` a un `Int` nunca puede fallar.
+
+- Treating these alike, by returning `null`, throwing from a getter or quietly truncating, is
+- where bugs begin. Here each has its own [typeclass], so the way a conversion can fail is visible
+- in the code which calls it:
++ Tratarlas igual, devolviendo `null`, lanzando una excepción desde un getter o truncando en
++ silencio, es donde empiezan los errores. Aquí cada una tiene su propia [clase de tipos], de modo
++ que la manera en que puede fallar una conversión es visible en el código que la invoca:
+
+= in the code which calls it:
+=
+- ```tabular
++ ```tabular
+
+- column  Typeclass
+- column  Written
+- column  When the conversion fails
+- row  `Decodable`  `Int is Decodable in Text`  raises a typed error
+- row  `Extractable`  `Text is Extractable to Int`  yields `Unset`
+- row  `Irrefutable`  `Byte is Irrefutable to Int`  cannot fail
+- row  `Identifiable`  `Identifiable[Column]`  cannot fail; it maps a name both ways
++ column  Clase de tipos
++ column  Se escribe
++ column  Cuando la conversión falla
++ row  `Decodable`  `Int is Decodable in Text`  lanza un error tipado
++ row  `Extractable`  `Text is Extractable to Int`  da `Unset`
++ row  `Irrefutable`  `Byte is Irrefutable to Int`  no puede fallar
++ row  `Identifiable`  `Identifiable[Column]`  no puede fallar; transforma un nombre en ambos sentidos
+
+= row  `Identifiable`  `Identifiable[Column]`  cannot fail; it maps a name both ways
+- ```
++ ```
+
+- The names read as English, and state the direction of the conversion. A value which
+- `is Decodable in Text` is read *out of* text. Text which `is Extractable to Int` is read
+- *toward* an integer. An `Extractable` gives no result, instead of raising an error, which is
+- exactly what pattern matching wants.
++ Los nombres se leen como inglés y expresan el sentido de la conversión. Un valor que
++ `is Decodable in Text` se lee *a partir de* texto. Un texto que `is Extractable to Int` se lee
++ *hacia* un entero. Un `Extractable` no da ningún resultado, en lugar de lanzar un error, que es
++ exactamente lo que quiere la coincidencia de patrones.
+
+- The everyday surface is small: the `as` method and the `As` extractor. The sections below begin
+- there, and then turn to the typeclasses underneath and to writing instances for new types.
++ La superficie cotidiana es pequeña: el método `as` y el extractor `As`. Las secciones siguientes
++ empiezan por ahí, y después pasan a las clases de tipos subyacentes y a escribir instancias para
++ tipos nuevos.
+
+- Everything comes from the `soundness` package. Decoding can fail, so it needs a [strategy] in
+- scope, and `throwUnsafely` throws an exception when a decode fails. The last import lets the
+- samples print their results:
++ Todo procede del paquete `soundness`. La decodificación puede fallar, así que necesita una
++ [estrategia] en el ámbito, y `throwUnsafely` lanza una excepción cuando una decodificación falla.
++ La última importación permite que los ejemplos impriman sus resultados:
+
+= samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Decoding a value
++ ### Decodificar un valor
+
+- The `as` method reads a typed value out of text. The target type is named, and a `Decodable`
+- instance for it does the work:
++ El método `as` lee un valor tipado a partir de un texto. Se nombra el tipo de destino, y una
++ instancia de `Decodable` para él hace el trabajo:
+
+= instance for it does the work:
+=
+- ```scala fuel
++ ```scala fuel
+
+= instance for it does the work:
+=
+= ```scala fuel
+- run
++ run
+
+= instance for it does the work:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"123".as[Int].show)
++ Out.println(t"123".as[Int].show)
+
+= Out.println(t"123".as[Int].show)
+- ```
++ ```
+
+- Text which is not a number raises a `Number.Error`:
++ Un texto que no es un número lanza un `Number.Error`:
+
+= Text which is not a number raises a `Number.Error`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Text which is not a number raises a `Number.Error`:
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- errors show
++ errors show
+
+= run
+= errors show
+- ##
++ ##
+
+- t"hello".as[Int]
++ t"hello".as[Int]
+
+= t"hello".as[Int]
+- ```
++ ```
+
+- A `Number.Error` has a reason. Text which is not a number at all is *unparseable*, while a
+- number outside the target type's range is *out of range*. Decoding to a `Byte` shows both:
++ Un `Number.Error` tiene un motivo. Un texto que no es un número en absoluto es *unparseable*
++ (imposible de analizar), mientras que un número fuera del rango del tipo de destino está *out of
++ range* (fuera de rango). Decodificar a un `Byte` muestra ambos casos:
+
+= number outside the target type's range is *out of range*. Decoding to a `Byte` shows both:
+=
+- ```scala fuel
++ ```scala fuel
+
+= number outside the target type's range is *out of range*. Decoding to a `Byte` shows both:
+=
+= ```scala fuel
+- run
++ run
+
+= number outside the target type's range is *out of range*. Decoding to a `Byte` shows both:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(capture[Number.Error](t"300".as[Byte]).reason.inspect)
++ Out.println(capture[Number.Error](t"300".as[Byte]).reason.inspect)
+
+- Out.println(capture[Number.Error](t"abc".as[Byte]).reason.inspect)
++ Out.println(capture[Number.Error](t"abc".as[Byte]).reason.inspect)
+
+= Out.println(capture[Number.Error](t"abc".as[Byte]).reason.inspect)
+- ```
++ ```
+
+- The strategy which handles a failed decode is chosen by the caller, not fixed by the decoder.
+- [`safely`](errors.md#choosing-a-strategy) turns a failure into `Unset`, so falling back to a
+- default is one more method call:
++ La estrategia que gestiona una decodificación fallida la elige quien llama, no la fija el
++ decodificador. [`safely`](errors.md#choosing-a-strategy) convierte un fallo en `Unset`, así que
++ recurrir a un valor por defecto es una llamada a método más:
+
+= default is one more method call:
+=
+- ```scala fuel
++ ```scala fuel
+
+= default is one more method call:
+=
+= ```scala fuel
+- run
++ run
+
+= default is one more method call:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(safely(t"hello".as[Int]).or(0).show)
++ Out.println(safely(t"hello".as[Int]).or(0).show)
+
+= Out.println(safely(t"hello".as[Int]).or(0).show)
+- ```
++ ```
+
+- A type with no `Decodable` instance cannot be asked for, and the compiler says so:
++ No se puede pedir un tipo sin instancia de `Decodable`, y el compilador lo dice:
+
+= A type with no `Decodable` instance cannot be asked for, and the compiler says so:
+=
+- ```scala
++ ```scala
+
+- class Widget()
++ class Widget()
+
+= class Widget()
+- ```
++ ```
+
+= class Widget()
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+= compile
+- errors show
++ errors show
+
+= compile
+= errors show
+- ##
++ ##
+
+- t"sprocket".as[Widget]
++ t"sprocket".as[Widget]
+
+= t"sprocket".as[Widget]
+- ```
++ ```
+
+- Instances are built in for the primitive number types, for `Char`, and for types defined
+- elsewhere in Soundness, such as `Uuid` and `Fqcn`. Other parts of Soundness add their own, which
+- is why the same `as` reads a [date](time.md), a
+- [hostname or a URL](network-addresses.md#parsing-at-runtime):
++ Hay instancias integradas para los tipos numéricos primitivos, para `Char` y para tipos definidos
++ en otras partes de Soundness, como `Uuid` y `Fqcn`. Otras partes de Soundness añaden las suyas,
++ y por eso el mismo `as` lee una [fecha](time.md), un
++ [nombre de host o una URL](network-addresses.md#parsing-at-runtime):
+
+= [hostname or a URL](network-addresses.md#parsing-at-runtime):
+=
+- ```scala
++ ```scala
+
+- val date = t"2024-01-15".as[Date]
++ val date = t"2024-01-15".as[Date]
+
+- val host = t"example.com".as[Hostname]
++ val host = t"example.com".as[Hostname]
+
+= val host = t"example.com".as[Hostname]
+- ```
++ ```
+
+- #### Booleans
++ #### Booleanos
+
+- A `Boolean` decodes from `true` or `false`, in any case, with or without space around it.
+- Anything else raises a `Truth.Error`. The other spellings a tool might accept are each a `Truth`
+- in the package `truths`:
++ Un `Boolean` se decodifica a partir de `true` o `false`, en cualquier caja, con o sin espacios
++ alrededor. Cualquier otra cosa lanza un `Truth.Error`. Las demás grafías que una herramienta podría
++ aceptar son cada una un `Truth` del paquete `truths`:
+
+= in the package `truths`:
+=
+- ```tabular
++ ```tabular
+
+- column  Given
++ column  Given
+
+- column  True
+- column  False
++ column  Verdadero
++ column  Falso
+
+- row  `yesNoTruth`  `yes`  `no`
++ row  `yesNoTruth`  `yes`  `no`
+
+- row  `onOffTruth`  `on`  `off`
++ row  `onOffTruth`  `on`  `off`
+
+- row  `oneZeroTruth`  `1`  `0`
++ row  `oneZeroTruth`  `1`  `0`
+
+= row  `oneZeroTruth`  `1`  `0`
+- ```
++ ```
+
+- Every `Truth` in scope is accepted beside the default. Importing one adds spellings, and takes
+- none away:
++ Se acepta cada `Truth` que haya en el ámbito además del valor por defecto. Importar uno añade
++ grafías y no quita ninguna:
+
+= none away:
+=
+- ```scala
++ ```scala
+
+- import truths.yesNoTruth
++ import truths.yesNoTruth
+
+= import truths.yesNoTruth
+- ```
++ ```
+
+= import truths.yesNoTruth
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import truths.yesNoTruth
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import truths.yesNoTruth
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"yes".as[Boolean].inspect)
++ Out.println(t"yes".as[Boolean].inspect)
+
+- Out.println(t"True".as[Boolean].inspect)
++ Out.println(t"True".as[Boolean].inspect)
+
+= Out.println(t"True".as[Boolean].inspect)
+- ```
++ ```
+
+- ### Policies for optional fields
++ ### Políticas para campos opcionales
+
+- Every data format which decodes an `Optional` field answers the same three questions, and by
+- default answers them the same way. That covers [JSON](json.md#optional-fields-and-defaults),
+- [CBOR](cbor.md), [YAML](yaml.md), [XML](xml.md), [TEL](tel.md) and
+- [delimited text](csv.md). Taking JSON as the example:
++ Todo formato de datos que decodifica un campo `Optional` responde a las mismas tres preguntas y,
++ por defecto, las responde de la misma manera. Eso abarca [JSON](json.md#optional-fields-and-defaults),
++ [CBOR](cbor.md), [YAML](yaml.md), [XML](xml.md), [TEL](tel.md) y el
++ [texto delimitado](csv.md). Tomando JSON como ejemplo:
+
+= [delimited text](csv.md). Taking JSON as the example:
+=
+- ```tabular
++ ```tabular
+
+- column  A field which is
+- column  Reads as
+- column  Unless
+- row  omitted from the document  `Unset`  `strictJsonAbsence` makes it an error
+- row  an explicit null  `Unset`  `strictJsonNulls` hands it to the inner decoder
+- row  present but rejected by the inner decoder  an error  `lenientJsonFaults` reads it as `Unset`
++ column  Un campo que está
++ column  Se lee como
++ column  Salvo que
++ row  omitido en el documento  `Unset`  `strictJsonAbsence` lo convierte en un error
++ row  presente como null explícito  `Unset`  `strictJsonNulls` lo entrega al decodificador interno
++ row  presente pero rechazado por el decodificador interno  un error  `lenientJsonFaults` lo lee como `Unset`
+
+= row  present but rejected by the inner decoder  an error  `lenientJsonFaults` reads it as `Unset`
+- ```
++ ```
+
+- Each answer is a policy, indexed by the format, with a default in its companion:
++ Cada respuesta es una política, indexada por el formato, con un valor por defecto en su objeto
++ compañero:
+
+= Each answer is a policy, indexed by the format, with a default in its companion:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Each answer is a policy, indexed by the format, with a default in its companion:
+=
+= ```scala fuel
+- run
++ run
+
+= Each answer is a policy, indexed by the format, with a default in its companion:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(summon[Decodable.Absence in Text].strict.inspect)
++ Out.println(summon[Decodable.Absence in Text].strict.inspect)
+
+- Out.println(summon[Decodable.Nullity in Text].strict.inspect)
++ Out.println(summon[Decodable.Nullity in Text].strict.inspect)
+
+- Out.println(summon[Decodable.Fault in Text].strict.inspect)
++ Out.println(summon[Decodable.Fault in Text].strict.inspect)
+
+= Out.println(summon[Decodable.Fault in Text].strict.inspect)
+- ```
++ ```
+
+- A format's `optionalityOptions` package offers the other answer to each question, named for the
+- format. One answer can therefore be changed without touching the others, and JSON can be strict
+- where, in the same scope, CSV stays lenient. These are the givens which change a default. A
+- format with no null has no policy for nulls:
++ El paquete `optionalityOptions` de un formato ofrece la otra respuesta a cada pregunta, con un
++ nombre que incluye el formato. Por tanto, se puede cambiar una respuesta sin tocar las demás, y
++ JSON puede ser estricto mientras, en el mismo ámbito, CSV sigue siendo permisivo. Estos son los
++ givens que cambian un valor por defecto. Un formato sin null no tiene política para los nulls:
+
+= format with no null has no policy for nulls:
+=
+- ```tabular
++ ```tabular
+
+- column  Format
+- column  Omitted is an error
+- column  Null goes to the decoder
+- column  Rejected is `Unset`
++ column  Formato
++ column  Omitido es un error
++ column  Null va al decodificador
++ column  Rechazado es `Unset`
+
+- row  JSON  `strictJsonAbsence`  `strictJsonNulls`  `lenientJsonFaults`
++ row  JSON  `strictJsonAbsence`  `strictJsonNulls`  `lenientJsonFaults`
+
+- row  YAML  `strictYamlAbsence`  `strictYamlNulls`  `lenientYamlFaults`
++ row  YAML  `strictYamlAbsence`  `strictYamlNulls`  `lenientYamlFaults`
+
+- row  CBOR  `strictCborAbsence`  `strictCborNulls`  `lenientCborFaults`
++ row  CBOR  `strictCborAbsence`  `strictCborNulls`  `lenientCborFaults`
+
+- row  TEL
++ row  TEL
+
+-   cell  `strictTelAbsence`
++   cell  `strictTelAbsence`
+
+=   cell  `strictTelAbsence`
+-   cell
++   cell
+
+-   cell  `lenientTelFaults`
++   cell  `lenientTelFaults`
+
+- row  XML
++ row  XML
+
+-   cell  `strictXmlAbsence`
++   cell  `strictXmlAbsence`
+
+=   cell  `strictXmlAbsence`
+-   cell
++   cell
+
+-   cell  `lenientXmlFaults`
++   cell  `lenientXmlFaults`
+
+- row  Delimited text
++ row  Texto delimitado
+
+-   cell  `strictDsvAbsence`
++   cell  `strictDsvAbsence`
+
+=   cell  `strictDsvAbsence`
+-   cell
++   cell
+
+-   cell  `lenientDsvFaults`
++   cell  `lenientDsvFaults`
+
+=   cell  `lenientDsvFaults`
+- ```
++ ```
+
+- Each package also names the default answers, `lenientJsonAbsence`, `strictJsonFaults` and so on,
+- for a scope which must restore one.
++ Cada paquete nombra también las respuestas por defecto, `lenientJsonAbsence`, `strictJsonFaults`
++ y demás, para un ámbito que deba restaurar una de ellas.
+
+- A lenient *fault* decodes the value under the ambient tactic's
+- [`tolerate`](errors.md#tolerating-a-failure), so it records nothing even where errors are being
+- accumulated. `Option` fields follow the same policies, and give `None`. The tutorial for each
+- format shows the policies in use.
++ Un *fallo* permisivo decodifica el valor bajo el
++ [`tolerate`](errors.md#tolerating-a-failure) de la táctica ambiental, de modo que no registra nada
++ ni siquiera donde se están acumulando errores. Los campos `Option` siguen las mismas políticas y
++ dan `None`. El tutorial de cada formato muestra las políticas en uso.
+
+- ### Extracting in patterns
++ ### Extraer en patrones
+
+- Pattern matching needs a conversion which declines to match, instead of raising an error. That
+- is the `As` extractor. `As[Int]` succeeds when the value being matched yields an `Int`, and
+- falls through to the next case when it does not:
++ La coincidencia de patrones necesita una conversión que renuncie a coincidir, en lugar de lanzar un
++ error. Eso es el extractor `As`. `As[Int]` tiene éxito cuando el valor examinado da un `Int`, y
++ pasa al caso siguiente cuando no:
+
+= falls through to the next case when it does not:
+=
+- ```scala
++ ```scala
+
+- def number(text: Text): Int = text match
++ def number(text: Text): Int = text match
+
+-   case As[Int](number) => number
++   case As[Int](number) => number
+
+-   case _               => 0
++   case _               => 0
+
+=   case _               => 0
+- ```
++ ```
+
+=   case _               => 0
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   case _               => 0
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   case _               => 0
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(number(t"123").show)
++ Out.println(number(t"123").show)
+
+- Out.println(number(t"abc").show)
++ Out.println(number(t"abc").show)
+
+= Out.println(number(t"abc").show)
+- ```
++ ```
+
+- `As` is an ordinary [extractor](https://docs.scala-lang.org/tour/extractor-objects.html), so it
+- composes with every pattern Scala offers. It binds the groups of a
+- [regular expression](patterns.md), turning captured text into typed values in one step:
++ `As` es un [extractor](https://docs.scala-lang.org/tour/extractor-objects.html) corriente, así que
++ se compone con cualquier patrón que ofrezca Scala. Liga los grupos de una
++ [expresión regular](patterns.md) y convierte el texto capturado en valores tipados en un solo paso:
+
+= [regular expression](patterns.md), turning captured text into typed values in one step:
+=
+- ```scala
++ ```scala
+
+- val time = t"12:13:14" match
++ val time = t"12:13:14" match
+
+-   case r"${As[Int](hours)}(\d+):${As[Int](minutes)}(\d+):${As[Int](seconds)}(\d+)" =>
++   case r"${As[Int](hours)}(\d+):${As[Int](minutes)}(\d+):${As[Int](seconds)}(\d+)" =>
+
+-     List(hours, minutes, seconds)
++     List(hours, minutes, seconds)
+
+-   case _ =>
++   case _ =>
+
+-     List(0, 0, 0)
++     List(0, 0, 0)
+
+=     List(0, 0, 0)
+- ```
++ ```
+
+- It nests inside larger patterns just as freely. This match takes a list apart and decodes each
+- element at once:
++ Se anida igual de libremente dentro de patrones más grandes. Esta coincidencia descompone una
++ lista y decodifica cada elemento a la vez:
+
+= element at once:
+=
+- ```scala
++ ```scala
+
+- val triple = List(t"12", t"13", t"14") match
++ val triple = List(t"12", t"13", t"14") match
+
+-   case As[Int](first) :: As[Int](second) :: As[Int](third) :: Nil => (first, second, third)
++   case As[Int](first) :: As[Int](second) :: As[Int](third) :: Nil => (first, second, third)
+
+-   case _                                                          => (0, 0, 0)
++   case _                                                          => (0, 0, 0)
+
+=   case _                                                          => (0, 0, 0)
+- ```
++ ```
+
+=   case _                                                          => (0, 0, 0)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   case _                                                          => (0, 0, 0)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   case _                                                          => (0, 0, 0)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(time.inspect)
++ Out.println(time.inspect)
+
+- Out.println(triple.inspect)
++ Out.println(triple.inspect)
+
+= Out.println(triple.inspect)
+- ```
++ ```
+
+- The extractor works for any type with a suitable instance, not only numbers. An email address
+- is extracted when it is well-formed, and declined otherwise, so a single match both validates
+- and converts:
++ El extractor funciona para cualquier tipo con una instancia adecuada, no solo para números. Una
++ dirección de correo electrónico se extrae cuando está bien formada, y se rechaza en caso
++ contrario, de modo que una sola coincidencia valida y convierte a la vez:
+
+= and converts:
+=
+- ```scala
++ ```scala
+
+- def recipient(text: Text): EmailAddress = text match
++ def recipient(text: Text): EmailAddress = text match
+
+-   case As[EmailAddress](email) => email
++   case As[EmailAddress](email) => email
+
+-   case _                       => email"nobody@example.com"
++   case _                       => email"nobody@example.com"
+
+=   case _                       => email"nobody@example.com"
+- ```
++ ```
+
+=   case _                       => email"nobody@example.com"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   case _                       => email"nobody@example.com"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   case _                       => email"nobody@example.com"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(recipient(t"hamlet@example.com").show)
++ Out.println(recipient(t"hamlet@example.com").show)
+
+- Out.println(recipient(t"hamlet.example.com").show)
++ Out.println(recipient(t"hamlet.example.com").show)
+
+= Out.println(recipient(t"hamlet.example.com").show)
+- ```
++ ```
+
+- ### Narrowing and widening
++ ### Estrechamiento y ampliación
+
+- Numbers convert between widths, and the direction decides whether the conversion can fail.
+- Widening always succeeds: every `Byte` is an `Int`. Narrowing succeeds only when the value fits,
+- so it belongs to `As`, which simply declines when it does not:
++ Los números se convierten entre anchuras, y el sentido decide si la conversión puede fallar. La
++ ampliación siempre tiene éxito: todo `Byte` es un `Int`. El estrechamiento solo tiene éxito cuando
++ el valor cabe, así que corresponde a `As`, que simplemente renuncia cuando no cabe:
+
+= so it belongs to `As`, which simply declines when it does not:
+=
+- ```scala
++ ```scala
+
+- def narrow(value: Int): Byte = value match
++ def narrow(value: Int): Byte = value match
+
+-   case As[Byte](byte) => byte
++   case As[Byte](byte) => byte
+
+-   case _              => -1
++   case _              => -1
+
+=   case _              => -1
+- ```
++ ```
+
+=   case _              => -1
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   case _              => -1
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   case _              => -1
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(narrow(100).show)
++ Out.println(narrow(100).show)
+
+- Out.println(narrow(300).show)
++ Out.println(narrow(300).show)
+
+= Out.println(narrow(300).show)
+- ```
++ ```
+
+- An [enumeration] is extracted by the name of its cases. There is no instance to write, since
+- the cases are read from the type:
++ Una [enumeración] se extrae por el nombre de sus casos. No hay que escribir ninguna instancia,
++ porque los casos se leen del tipo:
+
+= the cases are read from the type:
+=
+- ```scala
++ ```scala
+
+- enum Direction:
++ enum Direction:
+
+-   case North, South, East, West
++   case North, South, East, West
+
+- def direction(text: Text): Optional[Direction] = text match
++ def direction(text: Text): Optional[Direction] = text match
+
+-   case As[Direction](direction) => direction
++   case As[Direction](direction) => direction
+
+-   case _                        => Unset
++   case _                        => Unset
+
+=   case _                        => Unset
+- ```
++ ```
+
+=   case _                        => Unset
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   case _                        => Unset
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   case _                        => Unset
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(direction(t"North").inspect)
++ Out.println(direction(t"North").inspect)
+
+- Out.println(direction(t"Up").inspect)
++ Out.println(direction(t"Up").inspect)
+
+= Out.println(direction(t"Up").inspect)
+- ```
++ ```
+
+- ### Requiring a value
++ ### Exigir un valor
+
+- Some types accept an empty input and some do not, and a form or a configuration often needs to
+- know which before it asks for a value. A type is *required* when an empty input cannot produce
+- one. That follows from the type's decoder, so no separate declaration is needed. The decoder is
+- simply run against the empty text, and whether it succeeds is the answer:
++ Algunos tipos aceptan una entrada vacía y otros no, y un formulario o una configuración a menudo
++ necesita saber cuál es el caso antes de pedir un valor. Un tipo es *obligatorio* cuando una entrada
++ vacía no puede producir un valor suyo. Eso se deduce del decodificador del tipo, así que no hace
++ falta ninguna declaración aparte. El decodificador simplemente se ejecuta con el texto vacío, y si
++ tiene éxito, esa es la respuesta:
+
+= simply run against the empty text, and whether it succeeds is the answer:
+=
+- ```scala fuel
++ ```scala fuel
+
+= simply run against the empty text, and whether it succeeds is the answer:
+=
+= ```scala fuel
+- run
++ run
+
+= simply run against the empty text, and whether it succeeds is the answer:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(safely(t"".as[Int]).present.inspect)
++ Out.println(safely(t"".as[Int]).present.inspect)
+
+- Out.println(safely(t"".as[Text]).present.inspect)
++ Out.println(safely(t"".as[Text]).present.inspect)
+
+= Out.println(safely(t"".as[Text]).present.inspect)
+- ```
++ ```
+
+- An `Int` is required, since the empty text is not a number. A `Text` is not, since the empty
+- text is a `Text`. A [form](forms.md) marks its mandatory fields this way, without a second
+- declaration which could disagree with the decoder.
++ Un `Int` es obligatorio, porque el texto vacío no es un número. Un `Text` no lo es, porque el texto
++ vacío es un `Text`. Un [formulario](forms.md) marca así sus campos obligatorios, sin una segunda
++ declaración que pudiera contradecir al decodificador.
+
+- ### Enumerations by name and position
++ ### Enumeraciones por nombre y por posición
+
+- An enumeration's cases are known to the compiler, so its `Enumerable` instance is
+- [derived][derivation] from the type, not written. The instance gives the enumeration's cases in
+- the order they were declared, and looks a case up by name or by [ordinal](numbers.md#ordinals).
+- Each lookup gives an `Optional`, since neither a name nor a position is guaranteed to correspond
+- to a case:
++ El compilador conoce los casos de una enumeración, así que su instancia de `Enumerable` se
++ [deriva][derivación] del tipo, no se escribe. La instancia da los casos de la enumeración en el
++ orden en que se declararon, y busca un caso por nombre o por [ordinal](numbers.md#ordinals). Cada
++ búsqueda da un `Optional`, ya que ni un nombre ni una posición garantizan corresponder a un caso:
+
+= to a case:
+=
+- ```scala
++ ```scala
+
+- val enumerable = summon[Direction is Enumerable]
++ val enumerable = summon[Direction is Enumerable]
+
+= val enumerable = summon[Direction is Enumerable]
+- ```
++ ```
+
+= val enumerable = summon[Direction is Enumerable]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val enumerable = summon[Direction is Enumerable]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val enumerable = summon[Direction is Enumerable]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(enumerable.values.inspect)
++ Out.println(enumerable.values.inspect)
+
+- Out.println(enumerable.value(t"North").inspect)
++ Out.println(enumerable.value(t"North").inspect)
+
+- Out.println(enumerable.value(t"Up").inspect)
++ Out.println(enumerable.value(t"Up").inspect)
+
+- Out.println(enumerable.value(Prim).inspect)
++ Out.println(enumerable.value(Prim).inspect)
+
+- Out.println(enumerable.name(Direction.South))
++ Out.println(enumerable.name(Direction.South))
+
+- Out.println(enumerable.index(Direction.East).show)
++ Out.println(enumerable.index(Direction.East).show)
+
+= Out.println(enumerable.index(Direction.East).show)
+- ```
++ ```
+
+- This is the machinery beneath `As[Direction]`, beneath [bit flags](flags.md), and beneath the
+- handling of enumerations in every format's derived codecs, so all of them agree about what a
+- case is called.
++ Esta es la maquinaria que hay debajo de `As[Direction]`, de los [indicadores de bits](flags.md) y
++ del tratamiento de las enumeraciones en los códecs derivados de cada formato, de modo que todos
++ coinciden en cómo se llama un caso.
+
+- ### Round-tripping an identifier
++ ### Ida y vuelta de un identificador
+
+- Some conversions are not to a Scala type at all, but from one textual form to another: a
+- database column named `first_name` and a field named `firstName`, or a header written
+- `Content-Type` and read as `contentType`. An `Identifiable` states both directions of such a
+- mapping, as a pair of functions on text:
++ Algunas conversiones no son hacia un tipo de Scala en absoluto, sino de una forma textual a otra:
++ una columna de base de datos llamada `first_name` y un campo llamado `firstName`, o una cabecera
++ escrita `Content-Type` y leída como `contentType`. Un `Identifiable` expresa los dos sentidos de
++ una correspondencia así, como un par de funciones sobre texto:
+
+= mapping, as a pair of functions on text:
+=
+- ```scala
++ ```scala
+
+- case class Column()
++ case class Column()
+
+- val snakeCase = Identifiable[Column](_.uncamel.snake, _.cut(t"_").camel)
++ val snakeCase = Identifiable[Column](_.uncamel.snake, _.cut(t"_").camel)
+
+= val snakeCase = Identifiable[Column](_.uncamel.snake, _.cut(t"_").camel)
+- ```
++ ```
+
+- The two functions convert a name into the convention and back, using the
+- [case conventions](text.md#case-conventions) of text.
++ Las dos funciones convierten un nombre a la convención y de vuelta, usando las
++ [convenciones de caja](text.md#case-conventions) del texto.
+
+- `Identifiable` is a `Typeclass.Pure`, so the compiler knows that the conversion captures
+- nothing. It may be shared freely, and applied wherever the naming convention is needed, without
+- being passed along as an argument.
++ `Identifiable` es un `Typeclass.Pure`, así que el compilador sabe que la conversión no captura
++ nada. Puede compartirse libremente y aplicarse allí donde se necesite la convención de nombres, sin
++ pasarla como argumento.
+
+- ### Defining your own
++ ### Definir los tuyos
+
+- The four typeclasses are where decoding is extended. Writing an instance means writing the one
+- conversion function. The `as` method, the `As` extractor and the rest follow from it.
++ Las cuatro clases de tipos son el punto donde se extiende la decodificación. Escribir una instancia
++ significa escribir la única función de conversión. El método `as`, el extractor `As` y lo demás se
++ deducen de ella.
+
+- A `Decodable` instance maps each form of input it recognizes to a value. This one reads a
+- compass heading from a word:
++ Una instancia de `Decodable` asocia cada forma de entrada que reconoce a un valor. Esta lee un
++ rumbo de brújula a partir de una palabra:
+
+= compass heading from a word:
+=
+- ```scala
++ ```scala
+
+- enum Heading:
++ enum Heading:
+
+-   case N, S, E, W
++   case N, S, E, W
+
+- object Heading:
++ object Heading:
+
+-   given (Heading is Decodable in Text) =
++   given (Heading is Decodable in Text) =
+
+-     case t"north" => N
++     case t"north" => N
+
+-     case t"south" => S
++     case t"south" => S
+
+-     case t"east"  => E
++     case t"east"  => E
+
+-     case t"west"  => W
++     case t"west"  => W
+
+=     case t"west"  => W
+- ```
++ ```
+
+=     case t"west"  => W
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=     case t"west"  => W
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=     case t"west"  => W
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"north".as[Heading].inspect)
++ Out.println(t"north".as[Heading].inspect)
+
+= Out.println(t"north".as[Heading].inspect)
+- ```
++ ```
+
+- An `Extractable` instance gives an `Optional` result, which is `Unset` for the inputs it
+- declines. It can be built on an existing instance. This bounded type borrows the extractor for
+- `Int`, and keeps only the values in its range:
++ Una instancia de `Extractable` da un resultado `Optional`, que es `Unset` para las entradas que
++ rechaza. Puede construirse sobre una instancia existente. Este tipo acotado toma prestado el
++ extractor de `Int` y conserva solo los valores dentro de su rango:
+
+= `Int`, and keeps only the values in its range:
+=
+- ```scala
++ ```scala
+
+- case class Percent(value: Int)
++ case class Percent(value: Int)
+
+- given (Text is Extractable to Int) => Text is Extractable to Percent =
++ given (Text is Extractable to Int) => Text is Extractable to Percent =
+
+-   case As[Int](number) if number >= 0 && number <= 100 => Percent(number)
++   case As[Int](number) if number >= 0 && number <= 100 => Percent(number)
+
+-   case _                                               => Unset
++   case _                                               => Unset
+
+=   case _                                               => Unset
+- ```
++ ```
+
+- The conversions built into Soundness follow these same shapes. A type defined this way is
+- decoded with `as`, matched with `As`, and composed into the patterns of every other type, with
+- no further wiring. The conversion is named once, and its fallibility lives in its type.
++ Las conversiones integradas en Soundness siguen estas mismas formas. Un tipo definido así se
++ decodifica con `as`, se compara con `As` y se compone en los patrones de cualquier otro tipo, sin
++ más conexiones. La conversión se nombra una vez, y su falibilidad vive en su tipo.
+
+- ### Related
++ ### Relacionado
+
+- - [JSON](json.md#case-classes-and-enumerations) and the other formats decode a whole document
+-   into a case class, using a `Decodable` instance for each text field.
+- - [Command-line parameters](cli.md) and [environment variables](environment.md) are decoded
+-   with `as`.
+- - [Patterns](patterns.md) captures the groups which `As` converts.
+- - [Errors](errors.md) covers the strategies which decide what a failed decode does.
+- - [Internationalization](internationalization.md), [interpolation](interpolation.md), [paths](paths.md), [sockets](sockets.md), [UUIDs](uuid.md) and [versioning](versioning.md) decode their values from text.
++ - [JSON](json.md#case-classes-and-enumerations) y los demás formatos decodifican un documento
++   entero en una case class, usando una instancia de `Decodable` para cada campo de texto.
++ - Los [parámetros de línea de comandos](cli.md) y las [variables de entorno](environment.md) se
++   decodifican con `as`.
++ - [Patrones](patterns.md) captura los grupos que `As` convierte.
++ - [Errores](errors.md) trata las estrategias que deciden qué hace una decodificación fallida.
++ - [Internacionalización](internationalization.md), [interpolación](interpolation.md), [rutas](paths.md), [sockets](sockets.md), [UUID](uuid.md) y [versionado](versioning.md) decodifican sus valores a partir de texto.

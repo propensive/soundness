@@ -1,0 +1,46 @@
+orthant 1 language
+
+- # `↯/s.68.6` — Companion object has wrong type
++ # `↯/s.68.6` — El objeto compañero tiene un tipo incorrecto
+
+- Raised at compile time by Nomenclature's macro when the companion
+- object referenced does not have the type the macro expects.
++ Lo lanza en tiempo de compilación la macro de Nomenclature cuando el objeto compañero al que se
++ hace referencia no tiene el tipo que la macro espera.
+
+- ## Cause
++ ## Causa
+
+- The macro inspects the companion module to read its rule set. A
+- companion of an unexpected type cannot be processed.
++ La macro examina el módulo compañero para leer su conjunto de reglas. Un objeto compañero de un
++ tipo inesperado no se puede procesar.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.68.6] The companion object did not have the expected type.
++ [↯/s.68.6] The companion object did not have the expected type.
+
+= [↯/s.68.6] The companion object did not have the expected type.
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- This typically indicates a project-internal misconfiguration;
+- verify the system type's companion follows Nomenclature's
+- conventions.
++ Normalmente indica un error de configuración interno del proyecto; comprueba que el objeto
++ compañero del tipo del sistema sigue las convenciones de Nomenclature.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/nomenclature/src/core/nomenclature.protointernal.scala`
++ - Código fuente: `lib/nomenclature/src/core/nomenclature.protointernal.scala`

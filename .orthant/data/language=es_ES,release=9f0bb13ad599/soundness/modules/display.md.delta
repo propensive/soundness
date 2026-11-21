@@ -1,0 +1,23 @@
+orthant 1 language
+
+- column  Tried
+- column  Rendering
+- row  1  the type's own `Inspectable` instance
+- row  2  its `Encodable in Text` instance, between `⸤` and `⸥`
+- row  3  its `Showable` instance, between `⸢` and `⸣`
+- row  4  for an `Optional`, the value it holds, between `｢` and `｣`, or `○` if it is unset
+- row  5  a structural rendering derived from its shape
+- row  6  a last-resort rendering, its `toString` between `“` and `”`
++ column  Intento
++ column  Representación
++ row  1  la propia instancia de `Inspectable` del tipo
++ row  2  su instancia de `Encodable in Text`, entre `⸤` y `⸥`
++ row  3  su instancia de `Showable`, entre `⸢` y `⸣`
++ row  4  para un `Optional`, el valor que contiene, entre `｢` y `｣`, o `○` si no está definido
++ row  5  una representación estructural derivada de su forma
++ row  6  una representación de último recurso, su `toString` entre `“` y `”`
+
+- The brackets mark a rendering which was borrowed from another typeclass, or from `toString`, and
+- is not the type's own.
++ Los corchetes marcan una representación que se ha tomado prestada de otra clase de tipos, o de
++ `toString`, y que no es la propia del tipo.

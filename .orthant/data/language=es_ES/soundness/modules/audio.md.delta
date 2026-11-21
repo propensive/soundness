@@ -1,0 +1,648 @@
+orthant 1 language
+
+- ## Audio
++ ## Audio
+
+- ### About
++ ### Descripción
+
+- Audio is read and written as typed values, recorded from the inputs of the machine, and played
+- through its outputs. Reading a [WAV](https://en.wikipedia.org/wiki/WAV),
+- [AIFF](https://en.wikipedia.org/wiki/Audio_Interchange_File_Format), AIFC or AU file gives an
+- `Audio` value: an [immutable] block of
+- [PCM](https://en.wikipedia.org/wiki/Pulse-code_modulation) samples which knows its sample rate,
+- its number of channels, its bit depth, and every sample it holds.
++ El audio se lee y se escribe como valores tipados, se graba desde las entradas de la máquina y se
++ reproduce por sus salidas. Leer un fichero [WAV](https://en.wikipedia.org/wiki/WAV),
++ [AIFF](https://en.wikipedia.org/wiki/Audio_Interchange_File_Format), AIFC o AU da un valor
++ `Audio`: un bloque [inmutable] de muestras
++ [PCM](https://en.wikipedia.org/wiki/Pulse-code_modulation) que conoce su frecuencia de muestreo,
++ su número de canales, su profundidad de bits y cada una de las muestras que contiene.
+
+- The format of the audio lives in its type. An `Audio in Wave` is distinct from an
+- `Audio in Aiff`, and converting between them, or between an audio value and its encoded bytes,
+- is one method. Recording and playback stream audio in chunks, with the channel layout, which is
+- mono, stereo or surround, carried in the type as well.
++ El formato del audio vive en su tipo. Un `Audio in Wave` es distinto de un `Audio in Aiff`, y
++ convertir entre ellos, o entre un valor de audio y sus bytes codificados, es un solo método. La
++ grabación y la reproducción transmiten el audio en fragmentos, con la disposición de canales, que
++ es mono, estéreo o envolvente, también en el tipo.
+
+- ### On audio
++ ### Sobre el audio
+
+- Uncompressed audio is simple underneath: a grid of numbers, one for each sample of each channel,
+- played back at a fixed rate. The file formats differ mostly in their headers, and not in their
+- substance. Java's sound library exposes all of this through mutable objects and untyped formats,
+- where a wrong channel count or bit depth appears as noise rather than as an error.
++ Por debajo, el audio sin comprimir es sencillo: una cuadrícula de números, uno por cada muestra de
++ cada canal, reproducida a una frecuencia fija. Los formatos de fichero difieren sobre todo en sus
++ cabeceras, y no en su sustancia. La biblioteca de sonido de Java expone todo esto mediante objetos
++ mutables y formatos sin tipo, donde un número de canales o una profundidad de bits equivocados
++ aparecen como ruido y no como un error.
+
+- Here the same capability is presented as immutable, typed values. The format is part of the
+- type. The sample rate is a real [quantity](quantities.md) in hertz, not a bare number. Reading,
+- converting and writing are the same polymorphic operations used everywhere else. Since the
+- format is in the type, an unsupported conversion is a compile error, and such
+- [impossible states](../../philosophy/impossible-states.md) cannot be represented.
++ Aquí la misma capacidad se presenta como valores inmutables y tipados. El formato forma parte del
++ tipo. La frecuencia de muestreo es una auténtica [magnitud](quantities.md) en hercios, no un
++ número desnudo. Leer, convertir y escribir son las mismas operaciones polimórficas que se usan en
++ todas partes. Como el formato está en el tipo, una conversión no admitida es un error de
++ compilación, y esos [estados imposibles](../../philosophy/impossible-states.md) no pueden
++ representarse.
+
+- Everything comes from the `soundness` package. The second import chooses a
+- [strategy](errors.md#choosing-a-strategy) for errors, and the third lets the samples print their
+- results. The `Decimalizer` fixes how many significant figures a [quantity](quantities.md) is
+- printed with:
++ Todo procede del paquete `soundness`. La segunda importación elige una
++ [estrategia](errors.md#choosing-a-strategy) para los errores, y la tercera permite que los
++ ejemplos impriman sus resultados. El `Decimalizer` fija con cuántas cifras significativas se
++ imprime una [magnitud](quantities.md):
+
+= printed with:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+- given decimalizer: Decimalizer = Decimalizer(4)
++ given decimalizer: Decimalizer = Decimalizer(4)
+
+= given decimalizer: Decimalizer = Decimalizer(4)
+- ```
++ ```
+
+- ### Reading audio
++ ### Leer audio
+
+- Any source of bytes reads as audio when the expected format is named, as one of these types:
++ Cualquier fuente de bytes se lee como audio cuando se nombra el formato esperado, como uno de
++ estos tipos:
+
+= Any source of bytes reads as audio when the expected format is named, as one of these types:
+=
+- ```tabular
++ ```tabular
+
+- column  Format
+- column  Type
+- column  Media type
++ column  Formato
++ column  Tipo
++ column  Tipo de medio
+
+- row  WAV  `Wave`  `audio/x-wav`
++ row  WAV  `Wave`  `audio/x-wav`
+
+- row  AIFF  `Aiff`  `audio/x-aiff`
++ row  AIFF  `Aiff`  `audio/x-aiff`
+
+- row  AIFC  `Aifc`  `audio/x-aifc`
++ row  AIFC  `Aifc`  `audio/x-aifc`
+
+- row  AU  `Au`  `audio/basic`
++ row  AU  `Au`  `audio/basic`
+
+- row  SND  `Snd`  `audio/basic`
++ row  SND  `Snd`  `audio/basic`
+
+= row  SND  `Snd`  `audio/basic`
+- ```
++ ```
+
+- These bytes are a complete WAV file, with one channel, 16-bit signed samples at 8 kHz, and four
+- frames holding the values 100, 200, 300 and 400. It is small enough to write down:
++ Estos bytes son un fichero WAV completo, con un canal, muestras de 16 bits con signo a 8 kHz y
++ cuatro tramas que contienen los valores 100, 200, 300 y 400. Es lo bastante pequeño como para
++ escribirlo:
+
+= frames holding the values 100, 200, 300 and 400. It is small enough to write down:
+=
+- ```scala
++ ```scala
+
+- val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
++ val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
+
+-                 617461080000006400c8002c019001"""
++                 617461080000006400c8002c019001"""
+
+- val audio = wav.read[Audio in Wave]
++ val audio = wav.read[Audio in Wave]
+
+= val audio = wav.read[Audio in Wave]
+- ```
++ ```
+
+- The value knows its shape:
++ El valor conoce su forma:
+
+= The value knows its shape:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The value knows its shape:
+=
+= ```scala fuel
+- run
++ run
+
+= The value knows its shape:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(audio.channels.show)
++ Out.println(audio.channels.show)
+
+- Out.println(audio.frames.show)
++ Out.println(audio.frames.show)
+
+- Out.println(audio.bitsPerSample.show)
++ Out.println(audio.bitsPerSample.show)
+
+- Out.println(audio.sampleRate.show)
++ Out.println(audio.sampleRate.show)
+
+- Out.println(audio.duration.show)
++ Out.println(audio.duration.show)
+
+= Out.println(audio.duration.show)
+- ```
++ ```
+
+- The sample rate is printed in inverse seconds, which is hertz, and the duration in seconds.
++ La frecuencia de muestreo se imprime en segundos inversos, que son hercios, y la duración en
++ segundos.
+
+- Reading can fail, since the bytes may not hold audio in the named format. It therefore draws on
+- the error strategy in scope, and raises an `Audio.Error` which names the format expected:
++ La lectura puede fallar, pues los bytes pueden no contener audio en el formato nombrado. Por eso
++ recurre a la estrategia de errores del ámbito, y lanza un `Audio.Error` que nombra el formato
++ esperado:
+
+= the error strategy in scope, and raises an `Audio.Error` which names the format expected:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the error strategy in scope, and raises an `Audio.Error` which names the format expected:
+=
+= ```scala fuel
+- run
++ run
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- wav.read[Audio in Aiff]
++ wav.read[Audio in Aiff]
+
+= wav.read[Audio in Aiff]
+- ```
++ ```
+
+- Applying an audio value to a channel and a frame gives that one sample:
++ Aplicar un valor de audio a un canal y una trama da esa única muestra:
+
+= Applying an audio value to a channel and a frame gives that one sample:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Applying an audio value to a channel and a frame gives that one sample:
+=
+= ```scala fuel
+- run
++ run
+
+= Applying an audio value to a channel and a frame gives that one sample:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(audio(0, 0).show)
++ Out.println(audio(0, 0).show)
+
+- Out.println(audio(0, 2).show)
++ Out.println(audio(0, 2).show)
+
+= Out.println(audio(0, 2).show)
+- ```
++ ```
+
+- Audio which is not already PCM is converted to 16-bit signed PCM as it is read, so every `Audio`
+- value has the same simple internal form, however it was stored. A file on disk reads the same
+- way through its handle, for the duration of a scope, as any [file](filesystem.md) does:
++ El audio que no es ya PCM se convierte a PCM de 16 bits con signo al leerse, de modo que todo
++ valor `Audio` tiene la misma forma interna sencilla, se haya almacenado como se haya almacenado.
++ Un fichero en disco se lee del mismo modo a través de su descriptor, durante un ámbito, como
++ cualquier [fichero](filesystem.md):
+
+= way through its handle, for the duration of a scope, as any [file](filesystem.md) does:
+=
+- ```scala
++ ```scala
+
+- import filesystemBackends.javaBaseFilesystem
++ import filesystemBackends.javaBaseFilesystem
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLinux
+
+- import temporaryDirectories.javaBaseTemporaryDirectory
++ import temporaryDirectories.javaBaseTemporaryDirectory
+
+- val audioDirectory = temporaryDirectory[Path on Linux] / "audio" / Uuid().show
++ val audioDirectory = temporaryDirectory[Path on Linux] / "audio" / Uuid().show
+
+- val wavPath = audioDirectory / "tone.wav"
++ val wavPath = audioDirectory / "tone.wav"
+
+= val wavPath = audioDirectory / "tone.wav"
+- ```
++ ```
+
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- wavPath.create[File](CreateFlag.Parents): handle ?=>
++ wavPath.create[File](CreateFlag.Parents): handle ?=>
+
+-   handle.write(wav)
++   handle.write(wav)
+
+- Out.println(wavPath.open[File]()(file.read[Audio in Wave]).frames.show)
++ Out.println(wavPath.open[File]()(file.read[Audio in Wave]).frames.show)
+
+= Out.println(wavPath.open[File]()(file.read[Audio in Wave]).frames.show)
+- ```
++ ```
+
+- ### Converting and writing
++ ### Convertir y escribir
+
+- `to` re-expresses an audio value in another format, and reading it as `Data` produces the
+- encoded bytes. The audio survives the round trip:
++ `to` vuelve a expresar un valor de audio en otro formato, y leerlo como `Data` produce los bytes
++ codificados. El audio sobrevive a la ida y vuelta:
+
+= encoded bytes. The audio survives the round trip:
+=
+- ```scala fuel
++ ```scala fuel
+
+= encoded bytes. The audio survives the round trip:
+=
+= ```scala fuel
+- run
++ run
+
+= encoded bytes. The audio survives the round trip:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val aiff: Data = audio.to[Aiff].read[Data]
++ val aiff: Data = audio.to[Aiff].read[Data]
+
+- Out.println(aiff.read[Audio in Aiff].frames.show)
++ Out.println(aiff.read[Audio in Aiff].frames.show)
+
+- Out.println(aiff.read[Audio in Aiff](0, 2).show)
++ Out.println(aiff.read[Audio in Aiff](0, 2).show)
+
+= Out.println(aiff.read[Audio in Aiff](0, 2).show)
+- ```
++ ```
+
+- Reading an `Audio` *as* bytes and reading bytes *as* an `Audio` are the same `read` operation,
+- in each direction. Writing a file is therefore reading its audio as `Data` and sending that to
+- the destination. Or the audio value itself is handed to the handle, since an `Audio` streams as
+- its encoded bytes:
++ Leer un `Audio` *como* bytes y leer bytes *como* un `Audio` son la misma operación `read`, en cada
++ sentido. Escribir un fichero es, por tanto, leer su audio como `Data` y enviarlo al destino. O
++ bien se entrega al descriptor el propio valor de audio, pues un `Audio` se transmite como sus
++ bytes codificados:
+
+= its encoded bytes:
+=
+- ```scala fuel
++ ```scala fuel
+
+= its encoded bytes:
+=
+= ```scala fuel
+- run
++ run
+
+= its encoded bytes:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val aiffPath = audioDirectory / "tone.aiff"
++ val aiffPath = audioDirectory / "tone.aiff"
+
+- aiffPath.create[File](CreateFlag.Parents): handle ?=>
++ aiffPath.create[File](CreateFlag.Parents): handle ?=>
+
+-   handle.write(audio.to[Aiff])
++   handle.write(audio.to[Aiff])
+
+- Out.println(aiffPath.open[File]()(file.read[Audio in Aiff]).frames.show)
++ Out.println(aiffPath.open[File]()(file.read[Audio in Aiff]).frames.show)
+
+= Out.println(aiffPath.open[File]()(file.read[Audio in Aiff]).frames.show)
+- ```
++ ```
+
+- ### Channel layouts
++ ### Disposiciones de canales
+
+- A channel layout can be recorded in the type beside the format, written with `across`:
++ Se puede registrar una disposición de canales en el tipo junto al formato, escrita con `across`:
+
+= A channel layout can be recorded in the type beside the format, written with `across`:
+=
+- ```tabular
++ ```tabular
+
+- column  Layout
+- column  Channels
++ column  Disposición
++ column  Canales
+
+- row  `Monaural`  1
++ row  `Monaural`  1
+
+- row  `Stereo`  2
++ row  `Stereo`  2
+
+- row  `Surround[n]`  `n`, in a surround configuration
++ row  `Surround[n]`  `n`, en una configuración envolvente
+
+= row  `Surround[n]`  `n`, in a surround configuration
+- ```
++ ```
+
+- The layout is a [typeclass], so its channel count is known statically:
++ La disposición es una [clase de tipos], así que su número de canales se conoce estáticamente:
+
+= The layout is a [typeclass], so its channel count is known statically:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The layout is a [typeclass], so its channel count is known statically:
+=
+= ```scala fuel
+- run
++ run
+
+= The layout is a [typeclass], so its channel count is known statically:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(summon[Stereo is ChannelLayout].channels.show)
++ Out.println(summon[Stereo is ChannelLayout].channels.show)
+
+- Out.println(summon[Surround[6] is ChannelLayout].channels.show)
++ Out.println(summon[Surround[6] is ChannelLayout].channels.show)
+
+= Out.println(summon[Surround[6] is ChannelLayout].channels.show)
+- ```
++ ```
+
+- ### Recording
++ ### Grabación
+
+- The rest of this page needs audio devices, so its samples are compiled but not run.
++ El resto de esta página necesita dispositivos de audio, así que sus ejemplos se compilan pero no
++ se ejecutan.
+
+- An input device is an `Audio.Feed`. The feeds of the machine are listed with `Audio.Feed.list`,
+- each with a `name`, a `vendor`, a `description`, and the `configurations` it offers. A feed
+- records at a chosen sample rate, bit depth and layout, and produces a `Recording` whose `stream`
+- yields audio in chunks until it is stopped. A machine may have no feeds at all, so the first one
+- is an [optional] value:
++ Un dispositivo de entrada es un `Audio.Feed`. Los dispositivos de entrada de la máquina se
++ enumeran con `Audio.Feed.list`, cada uno con un `name`, un `vendor`, una `description` y las
++ `configurations` que ofrece. Un dispositivo de entrada graba con una frecuencia de muestreo, una
++ profundidad de bits y una disposición elegidas, y produce una `Recording` cuyo `stream` va dando
++ audio en fragmentos hasta que se detiene. Una máquina puede no tener ningún dispositivo de
++ entrada, así que el primero es un valor [opcional]:
+
+= is an [optional] value:
+=
+- ```scala
++ ```scala
+
+= is an [optional] value:
+=
+= ```scala
+- Audio.Feed.list.head.let: feed =>
++ Audio.Feed.list.head.let: feed =>
+
+-   if feed.supports[Stereo](44100.0*Hertz, 16) then
++   if feed.supports[Stereo](44100.0*Hertz, 16) then
+
+-     val recording = feed.record[Stereo](44100.0*Hertz, bits = 16)
++     val recording = feed.record[Stereo](44100.0*Hertz, bits = 16)
+
+-     val firstChunk: Optional[Audio across Stereo] = recording.stream.head
++     val firstChunk: Optional[Audio across Stereo] = recording.stream.head
+
+-     recording.stop()
++     recording.stop()
+
+=     recording.stop()
+- ```
++ ```
+
+- `supports` asks whether a feed can honor a configuration before recording begins. Recording from
+- a feed which is unavailable or misconfigured raises an `Audio.Feed.Error`. On macOS the JVM must
+- have been granted permission to use the microphone, or no feeds are available.
++ `supports` pregunta si un dispositivo de entrada puede respetar una configuración antes de que
++ empiece la grabación. Grabar desde un dispositivo de entrada que no está disponible o está mal
++ configurado lanza un `Audio.Feed.Error`. En macOS, la JVM debe tener permiso para usar el
++ micrófono, o no habrá dispositivos de entrada disponibles.
+
+- ### Playback
++ ### Reproducción
+
+- An output device is an `Audio.Outlet`, listed with `Audio.Outlet.list`. Playing an audio value
+- returns a `Playback`, which runs in the background. `await` blocks until it finishes, and `stop`
+- ends it early:
++ Un dispositivo de salida es un `Audio.Outlet`, y se enumeran con `Audio.Outlet.list`. Reproducir
++ un valor de audio devuelve un `Playback`, que se ejecuta en segundo plano. `await` bloquea hasta
++ que termina, y `stop` lo acaba antes de tiempo:
+
+= ends it early:
+=
+- ```scala
++ ```scala
+
+= ```scala
+- Audio.Outlet.list.head.let: outlet =>
++ Audio.Outlet.list.head.let: outlet =>
+
+-   val playback = outlet.play(audio)
++   val playback = outlet.play(audio)
+
+-   playback.await()
++   playback.await()
+
+=   playback.await()
+- ```
++ ```
+
+- Playing to an outlet which is unavailable, or which cannot accept the configuration of the
+- audio, raises an `Audio.Outlet.Error`.
++ Reproducir en un dispositivo de salida que no está disponible, o que no puede aceptar la
++ configuración del audio, lanza un `Audio.Outlet.Error`.
+
+- ### Scoped lines
++ ### Líneas con ámbito
+
+- `record` and `play` suit open-ended use, where the device is held for as long as the program
+- wants it. Where the device should be held for exactly one block, a line is *opened* instead, as
+- [a file is](filesystem.md). The line lasts precisely as long as the scope. The layout and the
+- configuration are given as the form and its flags, which are `PcmFlag.Rate`, `PcmFlag.Bits` and
+- `PcmFlag.Chunk`:
++ `record` y `play` sirven para un uso sin límite definido, en el que el dispositivo se retiene
++ mientras el programa lo quiera. Cuando el dispositivo debe retenerse durante exactamente un
++ bloque, se *abre* en su lugar una línea, como se hace con [un fichero](filesystem.md). La línea
++ dura exactamente lo que dura el ámbito. La disposición y la configuración se dan como la forma y
++ sus indicadores, que son `PcmFlag.Rate`, `PcmFlag.Bits` y `PcmFlag.Chunk`:
+
+= `PcmFlag.Chunk`:
+=
+- ```scala
++ ```scala
+
+= `PcmFlag.Chunk`:
+=
+= ```scala
+- Audio.Feed.list.head.let: feed =>
++ Audio.Feed.list.head.let: feed =>
+
+-   feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000), PcmFlag.Chunk(1024)): input ?=>
++   feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000), PcmFlag.Chunk(1024)): input ?=>
+
+-     input.stream.head
++     input.stream.head
+
+=
+- Audio.Outlet.list.head.let: outlet =>
++ Audio.Outlet.list.head.let: outlet =>
+
+-   outlet.open[Pcm](Write): out ?=>
++   outlet.open[Pcm](Write): out ?=>
+
+-     out.play(audio)
++     out.play(audio)
+
+=     out.play(audio)
+- ```
++ ```
+
+- Playing needs the `Write` grant, so a line opened for capture cannot be played to, and the
+- compiler says so, not the audio driver.
++ Reproducir necesita la concesión `Write`, de modo que en una línea abierta para captura no se
++ puede reproducir, y quien lo dice es el compilador, no el controlador de audio.
+
+- The two kinds of device side by side:
++ Las dos clases de dispositivo, una junto a otra:
+
+= The two kinds of device side by side:
+=
+- ```tabular
++ ```tabular
+
+- column  Aspect
++ column  Aspecto
+
+- column  `Audio.Feed`
++ column  `Audio.Feed`
+
+- column  `Audio.Outlet`
++ column  `Audio.Outlet`
+
+- row  Direction  input  output
+- row  Listed with  `Audio.Feed.list`  `Audio.Outlet.list`
+- row  Open-ended use  `record`, giving a `Recording`  `play`, giving a `Playback`
+- row  Scoped line  `open[Pcm](Read, …)`  `open[Pcm](Write, …)`
++ row  Sentido  entrada  salida
++ row  Se enumeran con  `Audio.Feed.list`  `Audio.Outlet.list`
++ row  Uso sin límite definido  `record`, que da una `Recording`  `play`, que da un `Playback`
++ row  Línea con ámbito  `open[Pcm](Read, …)`  `open[Pcm](Write, …)`
+
+- row  Error  `Audio.Feed.Error`  `Audio.Outlet.Error`
++ row  Error  `Audio.Feed.Error`  `Audio.Outlet.Error`
+
+= row  Error  `Audio.Feed.Error`  `Audio.Outlet.Error`
+- ```
++ ```
+
+- ### Related
++ ### Relacionado
+
+- - [Quantities](quantities.md) describes the hertz and seconds in which a sample rate and a
+-   duration are measured.
+- - [Filesystem](filesystem.md) describes the handles which audio files are read and written
+-   through.
+- - [Binary data](binary-data.md) describes `hex"…"` and the `Data` which encoded audio is.
+- - [Streams](streams.md) describes `read`, which works in both directions here.
+- - [Media types](media-types.md) names the formats.
+- - [Images](images.md) carry their format in their type in the same way.
++ - [Magnitudes](quantities.md) describe los hercios y los segundos en los que se miden una
++   frecuencia de muestreo y una duración.
++ - [Sistema de ficheros](filesystem.md) describe los descriptores a través de los cuales se leen y se
++   escriben los ficheros de audio.
++ - [Datos binarios](binary-data.md) describe `hex"…"` y el `Data` que es el audio codificado.
++ - [Flujos](streams.md) describe `read`, que aquí funciona en ambos sentidos.
++ - [Tipos de medio](media-types.md) nombra los formatos.
++ - Las [imágenes](images.md) llevan su formato en su tipo de la misma manera.

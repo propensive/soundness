@@ -1,0 +1,77 @@
+orthant 1 language
+
+- entry .toss   a fair coin-toss: `true` or `false`, evenly
+-     `toss()` draws from the `Random` in scope, by the same rule as `arbitrary[Boolean]()`
+-     (the sign of a `Long`), so a toss is reproducible from a `Seed`.
++ entry .toss   un lanzamiento de moneda equilibrado: `true` o `false`, por igual
++     `toss()` extrae del `Random` en el ámbito, con la misma regla que `arbitrary[Boolean]()`
++     (el signo de un `Long`), así que un lanzamiento es reproducible a partir de un `Seed`.
+
+-   entry .global   a `Random` over one shared, unseeded generator, for use with no scope
+-       Each call wraps the same process-wide generator, made lazily by
+-       `randomization.unseededRandomization`, so draws from it are never reproducible. `random`
+-       uses it.
+-   entry .apply   a new `Random` from the `Randomization` in scope, seeded with the given `Seed`
+-       `Random(seed)` initializes a generator from the contextual `Randomization`, which is
+-       resolved with `seed` in scope: under `seededRandomization` the generator starts from
+-       `seed`, as it does in `Seed#stochastic`, and an unseeded randomization ignores it.
+-   entry .Size   how many elements a random collection has, as a contextual value
++   entry .global   un `Random` sobre un único generador compartido y sin semilla, para usarlo sin ámbito
++       Cada llamada envuelve el mismo generador de todo el proceso, que crea de forma perezosa
++       `randomization.unseededRandomization`, así que lo que se extrae de él nunca es
++       reproducible. `random` lo usa.
++   entry .apply   un `Random` nuevo a partir de la `Randomization` en el ámbito, con el `Seed` dado como semilla
++       `Random(seed)` inicializa un generador a partir de la `Randomization` contextual, que se
++       resuelve con `seed` en el ámbito: con `seededRandomization`, el generador parte de
++       `seed`, como en `Seed#stochastic`, y una aleatorización sin semilla lo ignora.
++   entry .Size   cuántos elementos tiene una colección aleatoria, como valor contextual
+
+-   entry #randomize   draws a value from a `Random`
+-   entry #apply   draws a value from the contextual `Random`: `summon[Int is Randomizable]()`
+-   entry #map   an instance for another type, transforming each drawn value
+-       `randomizable.map(lambda)` draws through this instance and applies the lambda; the
+-       result captures both.
+-   entry .long   draws a uniformly random `Long`
+-   entry .byte   draws a `Byte`, the low eight bits of a random `Long`
+-   entry .short   draws a `Short`, the low sixteen bits of a random `Long`
+-   entry .int   draws an `Int`, the low thirty-two bits of a random `Long`
+-   entry .char   draws a `Char`, the low sixteen bits of a random `Long`
+-       Any UTF-16 code unit, including unpaired surrogates and control characters.
+-   entry .seed   draws a `Seed` of sixty-four bits, from a random `Long`
+-   entry .boolean   draws a `Boolean`: `true` when a random `Long` is negative
+-   entry .list   draws a `List` whose size comes from the `Random.Size` in scope
+-   entry .set   draws a `Set` of up to the `Random.Size` in scope, duplicates collapsing
+-   entry .frozenArray   draws a frozen `Array[element]^{}` sized by the `Random.Size` in scope
+-       Needs a `ClassTag` for the element type as well as a `Random.Size`.
+-   entry .double   draws a `Double` through the `Distribution` in scope
+-       There is no default distribution: a `Double` cannot be drawn until the code says what
+-       kind of `Double` it means, which prevents treating a uniform draw as if it were normal.
+-       Import one from `randomDistributions` or declare a `Gaussian`, `PolarGaussian`,
+-       `UniformDistribution` or `Gamma` as a given.
+-   entry .conjunction   the derived instance of a product: each field drawn in turn from the same `Random`
+-   entry .disjunction   the derived instance of a sum: a variant chosen uniformly, then drawn from the same `Random`
++   entry #randomize   extrae un valor de un `Random`
++   entry #apply   extrae un valor del `Random` contextual: `summon[Int is Randomizable]()`
++   entry #map   una instancia para otro tipo, que transforma cada valor extraído
++       `randomizable.map(lambda)` extrae mediante esta instancia y aplica la lambda; el
++       resultado captura ambas.
++   entry .long   extrae un `Long` uniformemente aleatorio
++   entry .byte   extrae un `Byte`, los ocho bits bajos de un `Long` aleatorio
++   entry .short   extrae un `Short`, los dieciséis bits bajos de un `Long` aleatorio
++   entry .int   extrae un `Int`, los treinta y dos bits bajos de un `Long` aleatorio
++   entry .char   extrae un `Char`, los dieciséis bits bajos de un `Long` aleatorio
++       Cualquier unidad de código UTF-16, incluidos los sustitutos desemparejados y los
++       caracteres de control.
++   entry .seed   extrae un `Seed` de sesenta y cuatro bits, a partir de un `Long` aleatorio
++   entry .boolean   extrae un `Boolean`: `true` cuando un `Long` aleatorio es negativo
++   entry .list   extrae una `List` cuyo tamaño procede del `Random.Size` en el ámbito
++   entry .set   extrae un `Set` de hasta el `Random.Size` en el ámbito, con los duplicados fundidos
++   entry .frozenArray   extrae un `Array[element]^{}` congelado, con el tamaño del `Random.Size` en el ámbito
++       Necesita un `ClassTag` para el tipo de los elementos además de un `Random.Size`.
++   entry .double   extrae un `Double` mediante la `Distribution` en el ámbito
++       No hay distribución por defecto: no puede extraerse un `Double` hasta que el código diga
++       qué clase de `Double` quiere decir, lo que impide tratar una extracción uniforme como si
++       fuera normal. Importa una de `randomDistributions` o declara como given una `Gaussian`,
++       una `PolarGaussian`, una `UniformDistribution` o una `Gamma`.
++   entry .conjunction   la instancia derivada de un producto: cada campo extraído por turno del mismo `Random`
++   entry .disjunction   la instancia derivada de una suma: una variante elegida de manera uniforme, y luego extraída del mismo `Random`

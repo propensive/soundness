@@ -1,0 +1,193 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base vexillology
++ base vexillology
+
+- import soundness
++ import soundness
+
+- info   sets of an enumeration's cases packed into the bits of one `Long`, tested and set by case
++ info   conjuntos de casos de una enumeración empaquetados en los bits de un `Long`, consultados y fijados por caso
+
+- detail
++ detail
+
+-     _Vexillology_ gives bit flags a typed surface. `Flags[Color]` is a set of on-or-off
+-     flags over the cases of the enumeration `Color`, held in the bits of a single `Long`,
+-     each case owning the bit of its ordinal. A flag is tested and set by naming the case
+-     rather than by a magic bit number, so a bit which means something else, or nothing,
+-     cannot be reached; and the value stays one machine word — free to copy, cheap to store,
+-     natural in a binary format — where a `Set[Color]` would allocate.
++     _Vexillology_ da una superficie tipada a los indicadores de bits. `Flags[Color]` es un
++     conjunto de indicadores de activado o desactivado sobre los casos de la enumeración `Color`,
++     guardado en los bits de un único `Long`, en el que cada caso posee el bit de su ordinal. Un
++     indicador se consulta y se fija nombrando el caso, no mediante un número de bit mágico, de modo
++     que no se puede llegar a un bit que signifique otra cosa, o nada; y el valor sigue ocupando una
++     palabra de máquina —gratis de copiar, barato de almacenar, natural en un formato binario—
++     allí donde un `Set[Color]` reservaría memoria.
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     enum Color:
++     enum Color:
+
+-       case Red, Orange, Yellow, Green, Blue, Indigo, Violet
++       case Red, Orange, Yellow, Green, Blue, Indigo, Violet
+
+-     import Color.*
++     import Color.*
+
+-     var flags = Flags[Color]()
++     var flags = Flags[Color]()
+
+-     flags = flags(Orange) = true
++     flags = flags(Orange) = true
+
+-     flags = flags(Green) = true
++     flags = flags(Green) = true
+
+-     flags(Orange)   // true
++     flags(Orange)   // true
+
+-     flags(Red)      // false
++     flags(Red)      // false
+
+-     flags.set       // Set(Orange, Green)
++     flags.set       // Set(Orange, Green)
+
+-     ```
++     ```
+
+-     A `Flags` value is immutable: each assignment makes a new one, so the variable is
+-     reassigned with the update syntax, `flags = flags(Orange) = true`. The operations need
+-     the enumeration to be `Enumerable`, which every Scala 3 `enum` of singleton cases is.
++     Un valor `Flags` es inmutable: cada asignación crea uno nuevo, así que la variable se reasigna
++     con la sintaxis de actualización, `flags = flags(Orange) = true`. Las operaciones necesitan que
++     la enumeración sea `Enumerable`, como lo es todo `enum` de Scala 3 con casos singleton.
+
+-     The library has a single source set, `vexillology.core`, and everything is exported to
+-     the `soundness` umbrella.
++     La biblioteca tiene un único conjunto de fuentes, `vexillology.core`, y todo se exporta al
++     paraguas `soundness`.
+
+- refer vexillology.Flags
++ refer vexillology.Flags
+
+- entry .Flags   a set of an enumeration's cases, packed as bits into one `Long`
++ entry .Flags   un conjunto de casos de una enumeración, empaquetados como bits en un `Long`
+
+= entry .Flags   a set of an enumeration's cases, packed as bits into one `Long`
+-   detail
++   detail
+
+-       `Flags[Enumeration]` is the opaque type `vexillology.internal.Flags`, exported here: a
+-       `Long` in which bit *n* is set when the enumeration's case of ordinal *n* is in the
+-       set. `Flags[Color]()` is the empty set, and three extension methods, in implicit scope
+-       without any import, use it:
++       `Flags[Enumeration]` es el tipo opaco `vexillology.internal.Flags`, exportado aquí: un
++       `Long` en el que el bit *n* está activo cuando el caso de ordinal *n* de la enumeración
++       pertenece al conjunto. `Flags[Color]()` es el conjunto vacío, y tres métodos de extensión,
++       presentes en el ámbito implícito sin ninguna importación, lo usan:
+
+-       - `flags(case)` tests whether a case is set;
+-       - `flags(case) = enabled` (that is, `flags.update(case, enabled)`) makes a new value
+-         with the case set or cleared;
+-       - `flags.set` reads the flags out as an ordinary `Set` of the cases.
++       - `flags(case)` comprueba si un caso está activo;
++       - `flags(case) = enabled` (es decir, `flags.update(case, enabled)`) crea un valor nuevo con
++         el caso activado o desactivado;
++       - `flags.set` lee los indicadores como un `Set` corriente de los casos.
+
+-       ```scala
++       ```scala
+
+-       import soundness.*
++       import soundness.*
+
+-       enum Permission:
++       enum Permission:
+
+-         case Read, Write, Execute
++         case Read, Write, Execute
+
+-       val none = Flags[Permission]()
++       val none = Flags[Permission]()
+
+-       val readable = none(Permission.Read) = true
++       val readable = none(Permission.Read) = true
+
+-       val both = readable(Permission.Write) = true
++       val both = readable(Permission.Write) = true
+
+-       both(Permission.Write)   // true
++       both(Permission.Write)   // true
+
+-       both.set.size            // 2
++       both.set.size            // 2
+
+-       ```
++       ```
+
+-       A `Long` has 64 bits, so an enumeration of up to 64 cases fits. Beyond that, a case's
+-       bit position wraps around and it shares a bit with a lower case: there is no check.
+-       Each method takes a case of a singleton type, so an enum case with parameters cannot
+-       be a flag.
++       Un `Long` tiene 64 bits, así que cabe una enumeración de hasta 64 casos. Más allá, la
++       posición de bit de un caso da la vuelta y comparte un bit con un caso inferior: no hay
++       ninguna comprobación. Cada método toma un caso de un tipo singleton, así que un caso de enum
++       con parámetros no puede ser un indicador.
+
+-   refer vexillology.internal
++   refer vexillology.internal
+
+- entry .internal   the home of the opaque `Flags` type and its operations
++ entry .internal   el hogar del tipo opaco `Flags` y sus operaciones
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object exists to hold the opaque type `Flags` and the
+-       extension methods on it, which are in implicit scope wherever a `Flags` is, since they
+-       share its enclosing object. `Flags` is exported from here to the `vexillology`
+-       package, whose page has the full account.
+-   entry .Flags   a set of an enumeration's cases packed into a `Long`; see `vexillology.Flags`
++       No es para uso directo: el objeto existe para contener el tipo opaco `Flags` y los métodos
++       de extensión sobre él, que están en el ámbito implícito allí donde haya un `Flags`, puesto
++       que comparten su objeto contenedor. `Flags` se exporta desde aquí al paquete `vexillology`,
++       cuya página tiene la explicación completa.
++   entry .Flags   un conjunto de casos de una enumeración empaquetado en un `Long`; véase `vexillology.Flags`
+
+-     detail
++     detail
+
+-         The opaque type over `Long`. Its page under the `vexillology` package has the full
+-         account.
+-     entry .apply   the empty set of flags over an enumeration, with no bit set, `Flags[Color]()`
+-   entry .apply   whether a case is set in some flags, `flags(case)`
+-       Needs the enumeration to be `Enumerable`, to find the case's ordinal.
+-   entry .update   a copy of some flags with a case set or cleared, `flags(case) = enabled`
+-       Returns the new `Flags` rather than changing the receiver, so a variable holding the
+-       flags is reassigned: `flags = flags(Orange) = true`.
+-   entry .set   the cases set in some flags, as a `Set` of the enumeration
+-       Visits only the set bits, lowest first.
++         El tipo opaco sobre `Long`. Su página en el paquete `vexillology` tiene la explicación
++         completa.
++     entry .apply   el conjunto vacío de indicadores sobre una enumeración, sin ningún bit activo, `Flags[Color]()`
++   entry .apply   si un caso está activo en unos indicadores, `flags(case)`
++       Necesita que la enumeración sea `Enumerable`, para hallar el ordinal del caso.
++   entry .update   una copia de unos indicadores con un caso activado o desactivado, `flags(case) = enabled`
++       Devuelve el `Flags` nuevo en lugar de modificar el receptor, así que una variable que
++       contenga los indicadores se reasigna: `flags = flags(Orange) = true`.
++   entry .set   los casos activos en unos indicadores, como un `Set` de la enumeración
++       Recorre solo los bits activos, empezando por el más bajo.

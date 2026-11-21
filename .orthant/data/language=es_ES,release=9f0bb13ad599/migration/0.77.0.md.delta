@@ -1,0 +1,1410 @@
+orthant 1 language
+
+- # Changes since 0.76.0
++ # Cambios desde 0.76.0
+
+- This file is read by an LLM agent to upgrade code that consumes Soundness libraries from
+- 0.76.0 to the next release. Each entry states precisely what changed; see `AGENTS.md` for the
+- format. Entries are grouped by module, most-recently-added last within a module.
++ Este fichero lo lee un agente LLM para actualizar el código que consume bibliotecas de Soundness de
++ 0.76.0 a la siguiente versión. Cada entrada indica con precisión qué ha cambiado; véase `AGENTS.md`
++ para el formato. Las entradas se agrupan por módulo, con las añadidas más recientemente al final
++ dentro de cada módulo.
+
+- ## abacist
++ ## abacist
+
+- - With a `UnitsNames` given in scope, a `Quanta` value's `Showable` pairs each component with the
+-   name at its own unit's position; it previously took names from the end of the list, so a value
+-   with a zero in any unit but the smallest was mislabelled (`(Quanta(5, 0): Height).show` gave `5"`,
+-   now `5'`). (#2520)
+- - A `Quanta` value whose components are all zero shows as `0` followed by its smallest unit's name
+-   (`0oz`; with `UnitsNames`, the last name); it previously showed as empty text, or threw
+-   `NoSuchElementException` with `UnitsNames` in scope. (#2520)
++ - Con un given `UnitsNames` en el ámbito, el `Showable` de un valor `Quanta` empareja cada
++   componente con el nombre que ocupa la posición de su propia unidad; antes tomaba los nombres
++   desde el final de la lista, de modo que un valor con un cero en cualquier unidad salvo la más
++   pequeña se rotulaba mal (`(Quanta(5, 0): Height).show` daba `5"`, ahora `5'`). (#2520)
++ - Un valor `Quanta` cuyos componentes son todos cero se muestra como `0` seguido del nombre de su
++   unidad más pequeña (`0oz`; con `UnitsNames`, el último nombre); antes se mostraba como texto
++   vacío, o lanzaba `NoSuchElementException` con `UnitsNames` en el ámbito. (#2520)
+
+- ## abscission
++ ## abscission
+
+- - `abscission.Shrink#apply(classpath: LocalClasspath, entryPoints: List[Fqcn], out: Path on Linux)`
++ - `abscission.Shrink#apply(classpath: LocalClasspath, entryPoints: List[Fqcn], out: Path on Linux)`
+
+-   is now `apply[plane <: galilei.Platform: Filesystem](classpath: LocalClasspath, entryPoints:
+-   List[Fqcn], out: Path on plane)`. A `Path on Linux` argument still compiles; an argument with no
+-   platform (`% / "out"`, or `temporaryDirectory / name` with no expected type) must be given one,
+-   such as `.on[Local]`. (#2527)
+- - The `out` parameter of `abscission.Shrink#run` in both edges of `abscission_linker.scala` (the
+-   `Tool.run` implementations) is `Path on Local`, was `Path on Linux`, following
++   es ahora `apply[plane <: galilei.Platform: Filesystem](classpath: LocalClasspath, entryPoints:
++   List[Fqcn], out: Path on plane)`. Un argumento `Path on Linux` sigue compilando; a un argumento
++   sin plataforma (`% / "out"`, o `temporaryDirectory / name` sin tipo esperado) hay que darle una,
++   como `.on[Local]`. (#2527)
++ - El parámetro `out` de `abscission.Shrink#run` en las dos aristas de `abscission_linker.scala`
++   (las implementaciones de `Tool.run`) es `Path on Local`, antes `Path on Linux`, siguiendo a
+
+-   `anthology.Toolchain.Tool#run`. (#2527)
++   `anthology.Toolchain.Tool#run`. (#2527)
+
+- ## acyclicity
++ ## acyclicity
+
+- - `acyclicity.Layering[node]`'s constructor parameters are retyped: `layers` from
+-   `scala.collection.immutable.List[List[Layering.Vertex[node]]]` to
+-   `proscenium.Sequence[proscenium.Sequence[Layering.Vertex[node]]]`, and `links` from
+-   `scala.collection.immutable.List[List[(Int, Int)]]` to
+-   `proscenium.Sequence[proscenium.List[(Int, Int)]]`. Contents and order are unchanged.
+-   `layering.layers(i)` and `layering.links(i)` with an `Int` no longer compile; read with an
+-   `Ordinal` (`layering.layers.at(i.z)`), which answers an `Optional`. A `List.from(…)` or
+-   `.to(List)` applied to either to reach a Soundness collection is no longer needed. (#2522)
+- - `acyclicity.Layering#rank` and `#position` are `proscenium.Map[node, Int]`; they were
+-   `scala.collection.immutable.Map[node, Int]`. `layering.rank(node)` and
+-   `layering.position(node)` no longer compile; `layering.rank.at(node)` answers
+-   `Optional[Int]`, `Unset` for a node which is not in the graph, where the stdlib `apply` threw
+-   `NoSuchElementException`. (#2522)
++ - Los parámetros del constructor de `acyclicity.Layering[node]` cambian de tipo: `layers` pasa de
++   `scala.collection.immutable.List[List[Layering.Vertex[node]]]` a
++   `proscenium.Sequence[proscenium.Sequence[Layering.Vertex[node]]]`, y `links` de
++   `scala.collection.immutable.List[List[(Int, Int)]]` a
++   `proscenium.Sequence[proscenium.List[(Int, Int)]]`. El contenido y el orden no cambian.
++   `layering.layers(i)` y `layering.links(i)` con un `Int` ya no compilan; se lee con un `Ordinal`
++   (`layering.layers.at(i.z)`), que responde un `Optional`. Ya no hace falta un `List.from(…)` o un
++   `.to(List)` aplicado a cualquiera de los dos para llegar a una colección de Soundness. (#2522)
++ - `acyclicity.Layering#rank` y `#position` son `proscenium.Map[node, Int]`; antes eran
++   `scala.collection.immutable.Map[node, Int]`. `layering.rank(node)` y `layering.position(node)`
++   ya no compilan; `layering.rank.at(node)` responde `Optional[Int]`, `Unset` para un nodo que no
++   está en el grafo, donde el `apply` de la biblioteca estándar lanzaba `NoSuchElementException`.
++   (#2522)
+
+- ## anamnesis
++ ## anamnesis
+
+- - `anamnesis.Database#store`, `#assign` and `#unassign` hold the database's lock for the whole of
+-   their read-modify-write, so concurrent calls no longer lose updates or give one value two
+-   references. Signatures unchanged. (#2520)
++ - `anamnesis.Database#store`, `#assign` y `#unassign` mantienen el cerrojo de la base de datos
++   durante toda su lectura-modificación-escritura, así que las llamadas concurrentes ya no pierden
++   actualizaciones ni dan dos referencias a un mismo valor. Las signaturas no cambian. (#2520)
+
+- ## anthology
++ ## anthology
+
+- - `anthology.Compiler.Notice` gained a sixth parameter, `code: Optional[fulminate.Bolt] = Unset`,
+-   after `markup`: the bolt code Proscala gives an error or a warning under `-Zbolt-codes`
+-   (`anthology.scalacOptions.boltCodes`), and `Unset` otherwise. Construction is unaffected; a
+-   positional pattern needs the added wildcard: `case Compiler.Notice(importance, file, message,
+-   span, markup)` becomes `case Compiler.Notice(importance, file, message, span, markup, _)`.
+-   (#2512)
+- - `anthology.Kotlinc#apply` writes its sources to a scratch directory (galilei's `Scratch`, beneath
+-   `java.io.tmpdir`) on the asynchronous task that compiles them, and deletes it there when the
+-   compilation ends; it previously wrote them synchronously, before returning. A failure to make
+-   or write the directory is now reported as `Compiler.Result.Crash` on the returned
+-   `Compiler.Process` rather than thrown from `apply`, and `Compiler.Event.Running` is logged from
+-   the compiling task rather than before `apply` returns. (#2524)
+- - Every host path in anthology's API is `Path on galilei.Local`, was `Path on galilei.Linux`: the
+-   `out` parameter of `Toolchain.Tool#run` and of every implementation of it (the apk, dex, link,
+-   linker, nir, oci, java, kotlin and scala edges); the `out` parameter and the result of
+-   `Toolchain#produce`; `Deliverable.Emission(out, classpath)`, `Deliverable.Product(file)`, the
+-   results of `Deliverable#emission` and `Deliverable#product`; `Compilation(out, classpath)`;
+-   `NirPlugin(jar)`; `Wasi.World(directory, world)`; and the parameter of `dexOptions.platform(jar)`.
+-   A value typed `Path on Linux` is converted with `.on[Local]`; `temporaryDirectory[Path on Linux]`,
+-   `workingDirectory[Path on Linux]`, `text.as[Path on Linux]` and `import
+-   pathInterfaces.pathOnLinux` become their `Local` counterparts. Operations on a `Path on Local`
+-   (`encode`, `/`, `existent`, reading and writing) need a given `ambience.System`, such as
+-   `systems.javaBaseSystem`, where a `Path on Linux` needed none. (#2527)
++ - `anthology.Compiler.Notice` gana un sexto parámetro, `code: Optional[fulminate.Bolt] = Unset`,
++   tras `markup`: el código bolt que Proscala da a un error o a una advertencia con `-Zbolt-codes`
++   (`anthology.scalacOptions.boltCodes`), y `Unset` en otro caso. La construcción no se ve afectada;
++   un patrón posicional necesita el comodín añadido: `case Compiler.Notice(importance, file,
++   message, span, markup)` pasa a ser `case Compiler.Notice(importance, file, message, span, markup,
++   _)`. (#2512)
++ - `anthology.Kotlinc#apply` escribe sus ficheros fuente en un directorio temporal (el `Scratch` de
++   galilei, bajo `java.io.tmpdir`) en la tarea asíncrona que los compila, y lo borra allí cuando
++   termina la compilación; antes los escribía de forma síncrona, antes de volver. Un fallo al crear
++   o escribir el directorio se notifica ahora como `Compiler.Result.Crash` en el
++   `Compiler.Process` devuelto en lugar de lanzarse desde `apply`, y `Compiler.Event.Running` se
++   registra desde la tarea que compila en lugar de antes de que `apply` vuelva. (#2524)
++ - Toda ruta del anfitrión en la API de anthology es `Path on galilei.Local`, antes
++   `Path on galilei.Linux`: el parámetro `out` de `Toolchain.Tool#run` y de cada una de sus
++   implementaciones (las aristas apk, dex, link, linker, nir, oci, java, kotlin y scala); el
++   parámetro `out` y el resultado de `Toolchain#produce`; `Deliverable.Emission(out, classpath)`,
++   `Deliverable.Product(file)`, los resultados de `Deliverable#emission` y `Deliverable#product`;
++   `Compilation(out, classpath)`; `NirPlugin(jar)`; `Wasi.World(directory, world)`; y el parámetro
++   de `dexOptions.platform(jar)`. Un valor de tipo `Path on Linux` se convierte con `.on[Local]`;
++   `temporaryDirectory[Path on Linux]`, `workingDirectory[Path on Linux]`,
++   `text.as[Path on Linux]` e `import pathInterfaces.pathOnLinux` pasan a sus equivalentes `Local`.
++   Las operaciones sobre un `Path on Local` (`encode`, `/`, `existent`, la lectura y la escritura)
++   necesitan un given `ambience.System`, como `systems.javaBaseSystem`, donde un `Path on Linux` no
++   necesitaba ninguno. (#2527)
+
+- - `anthology.Bundler.assemble(classpath: LocalClasspath, jarfile: Path on Linux, main:
++ - `anthology.Bundler.assemble(classpath: LocalClasspath, jarfile: Path on Linux, main:
+
+-   Optional[Fqcn]): Path on Linux` is now `assemble[plane <: galilei.Platform: Filesystem](classpath:
+-   LocalClasspath, jarfile: Path on plane, main: Optional[Fqcn]): Path on plane`. A `jarfile`
+-   argument with no platform must be given one. (#2527)
++   Optional[Fqcn]): Path on Linux` es ahora `assemble[plane <: galilei.Platform:
++   Filesystem](classpath: LocalClasspath, jarfile: Path on plane, main: Optional[Fqcn]): Path on
++   plane`. A un argumento `jarfile` sin plataforma hay que darle una. (#2527)
+
+- ## bitumen
++ ## bitumen
+
+- - `bitumen.Tarfile#extractTo[plane <: Posix: Filesystem](root: Path on plane)` is now bounded `plane
+-   <: galilei.Platform`, so that it accepts a `Path on Local` or a `Path on Windows`. No change is
+-   needed at existing call sites. (#2527)
++ - `bitumen.Tarfile#extractTo[plane <: Posix: Filesystem](root: Path on plane)` tiene ahora la cota
++   `plane <: galilei.Platform`, de modo que acepta un `Path on Local` o un `Path on Windows`. No hace
++   falta ningún cambio en las llamadas existentes. (#2527)
+
+- ## burdock
++ ## burdock
+
+- - `burdock.Repackager.repackage(inputJar: Path on Linux, outputJar: Path on Linux, resolve, cached,
++ - `burdock.Repackager.repackage(inputJar: Path on Linux, outputJar: Path on Linux, resolve, cached,
+
+-   bootstrapClass, progress)` is now `repackage[plane <: galilei.Platform: Filesystem](inputJar: Path
+-   on plane, outputJar: Path on plane, …)` with the other parameters unchanged. Both paths must be on
+-   the same platform; an argument with no platform must be given one. (#2527)
+- - `burdock.repackage`'s jar cache is `<user.home>/.cache/soundness/jars` decoded as a `Path on
+-   Local` and descended by element; it was the text `$home/.cache/soundness/jars` decoded as a `Path
+-   on Linux`, which failed for a drive-rooted home directory. (#2527)
++   bootstrapClass, progress)` es ahora `repackage[plane <: galilei.Platform: Filesystem](inputJar:
++   Path on plane, outputJar: Path on plane, …)` con los demás parámetros sin cambios. Las dos rutas
++   deben estar en la misma plataforma; a un argumento sin plataforma hay que darle una. (#2527)
++ - La caché de jars de `burdock.repackage` es `<user.home>/.cache/soundness/jars` decodificado como
++   un `Path on Local` y descendido elemento a elemento; antes era el texto
++   `$home/.cache/soundness/jars` decodificado como un `Path on Linux`, que fallaba con un directorio
++   personal con raíz en una unidad. (#2527)
+
+- ## caduceus
++ ## caduceus
+
+- - `caduceus.couriers.resendCourier` sends the envelope's reply-to addresses as the JSON field
+-   `reply_to`, which Resend reads; it previously sent `replyTo`, which Resend ignored. (#2520)
++ - `caduceus.couriers.resendCourier` envía las direcciones de respuesta del sobre como el campo JSON
++   `reply_to`, que Resend lee; antes enviaba `replyTo`, que Resend ignoraba. (#2520)
+
+- ## capricious
++ ## capricious
+
+- - `capricious.toss()` draws from the contextual `Random` (`true` when `random.long() < 0L`); it
+-   previously drew from `scala.math.random` and was not reproducible under a `Seed`. (#2520)
+- - `capricious.Random.apply(seed: Seed)(using Randomization): Random` is now `inline def apply(seed:
+-   Seed): Random`: the `Randomization` is resolved inside, with `seed` as the `Seed` in scope, so
+-   under `randomization.seededRandomization` the generator starts from `seed` (it was previously
+-   never read). A call passing a `Randomization` explicitly must instead have it in scope. (#2520)
+- - Derived `Randomizable` instances (`Randomizable.derived`, `conjunction`, `disjunction`) draw every
+-   field and variant from the `Random` passed to `randomize`. They previously built a new generator
+-   from the `Randomization` (and `Seed`) in scope where the instance was derived, so under
+-   `seededRandomization` every derived value restarted from that seed; deriving no longer needs a
+-   `Randomization` in scope. (#2520)
++ - `capricious.toss()` extrae del `Random` contextual (`true` cuando `random.long() < 0L`); antes
++   extraía de `scala.math.random` y no era reproducible con un `Seed`. (#2520)
++ - `capricious.Random.apply(seed: Seed)(using Randomization): Random` es ahora `inline def
++   apply(seed: Seed): Random`: la `Randomization` se resuelve dentro, con `seed` como el `Seed` del
++   ámbito, de modo que con `randomization.seededRandomization` el generador parte de `seed` (antes
++   nunca se leía). Una llamada que pase una `Randomization` explícitamente debe tenerla, en cambio,
++   en el ámbito. (#2520)
++ - Las instancias `Randomizable` derivadas (`Randomizable.derived`, `conjunction`, `disjunction`)
++   extraen cada campo y cada variante del `Random` pasado a `randomize`. Antes construían un
++   generador nuevo a partir de la `Randomization` (y el `Seed`) del ámbito donde se derivaba la
++   instancia, de modo que con `seededRandomization` cada valor derivado volvía a empezar desde esa
++   semilla; derivar ya no necesita una `Randomization` en el ámbito. (#2520)
+
+- ## charisma
++ ## charisma
+
+- - `Reaction.Stoichiometric` shows as `=` and `Reaction.Resonance` as `↔`; each previously showed as
+-   the other's glyph. (#2520)
+- - `charisma.PeriodicTable.element` elides one `n` where `enn` precedes `nil` in a systematic name:
+-   element 190 is `Unennilium` (previously `Unennnilium`), and likewise 290, 390, 490, 590, 690, 790,
+-   890, 900–909 and 990. (#2520)
++ - `Reaction.Stoichiometric` se muestra como `=` y `Reaction.Resonance` como `↔`; antes cada una se
++   mostraba con el glifo de la otra. (#2520)
++ - `charisma.PeriodicTable.element` elide una `n` donde `enn` precede a `nil` en un nombre
++   sistemático: el elemento 190 es `Unennilium` (antes `Unennnilium`), e igualmente 290, 390, 490,
++   590, 690, 790, 890, 900–909 y 990. (#2520)
+
+- ## coaxial
++ ## coaxial
+
+- - The DNS extension methods `coaxial.query` on an `Endpoint[Udp.Port]` (both overloads, in
+-   `coaxial.dns`) are renamed `ask`: `resolver.query(dns"example.com")` becomes
+-   `resolver.ask(dns"example.com")`, and `resolver.query(message)` becomes `resolver.ask(message)`.
+-   The name collided with telekinesis's `query` in `soundness`; delete any `import coaxial.query`
+-   written to work around that. (#2520)
+- - The givens `Multicast.subscribable`, `Multicast.bindable` and `Multicast.showable` are now for any
+-   `multicast <: Multicast`, so `Multicast(ip"224.0.0.251", udp"mdns").subscribe(…)` compiles without
+-   ascribing the value as `Multicast` (a literal port refines the type). Existing code is unaffected;
+-   a type ascription added to work around this may be removed. A call which names the given with an
+-   explicit `Self`, such as `summon[Multicast is Subscribable]`, still resolves. (#2520)
++ - Los métodos de extensión DNS `coaxial.query` sobre un `Endpoint[Udp.Port]` (las dos
++   sobrecargas, en `coaxial.dns`) se renombran a `ask`: `resolver.query(dns"example.com")` pasa a
++   ser `resolver.ask(dns"example.com")`, y `resolver.query(message)` pasa a ser
++   `resolver.ask(message)`. El nombre chocaba con el `query` de telekinesis en `soundness`; elimina
++   cualquier `import coaxial.query` escrito para sortearlo. (#2520)
++ - Los givens `Multicast.subscribable`, `Multicast.bindable` y `Multicast.showable` son ahora para
++   cualquier `multicast <: Multicast`, así que `Multicast(ip"224.0.0.251", udp"mdns").subscribe(…)`
++   compila sin adscribir el valor como `Multicast` (un puerto literal refina el tipo). El código
++   existente no se ve afectado; se puede quitar una adscripción de tipo añadida para sortear esto.
++   Una llamada que nombra el given con un `Self` explícito, como `summon[Multicast is
++   Subscribable]`, sigue resolviéndose. (#2520)
+
+- ## cosmopolite
++ ## cosmopolite
+
+- - `cosmopolite.Locale.decodable` lower-cases its input and ignores everything from the first `-` or
+-   `_`, so `t"FR"`, `t"fr-CA"` and `t"fr_CA"` decode as `Locale(fr)` (likewise `pl`, `de`, `es`);
+-   these previously decoded as `Locale(en)`. Unrecognised codes still decode as `Locale(en)`. (#2520)
++ - `cosmopolite.Locale.decodable` pasa su entrada a minúsculas e ignora todo desde el primer `-` o
++   `_`, de modo que `t"FR"`, `t"fr-CA"` y `t"fr_CA"` se decodifican como `Locale(fr)` (igual con
++   `pl`, `de`, `es`); antes se decodificaban como `Locale(en)`. Los códigos no reconocidos siguen
++   decodificándose como `Locale(en)`. (#2520)
+
+- ## degustation
++ ## degustation
+
+- - `degustation.Inspection.atomize(tastyFiles: List[Text], classpath: List[Text])` takes `(using
+-   backend: FilesystemBackend on Local)`, was `FilesystemBackend on Linux`, and decodes each text as
+-   a `Path on Local`. A caller which names the backend's platform must name `Local`;
+-   `filesystemBackends.javaBaseFilesystem` serves both. A TASTy file's classpath-relative path is
+-   computed from the path's elements and is `/`-separated on every host; it was computed by searching
+-   the encoded text for `/`. (#2527)
++ - `degustation.Inspection.atomize(tastyFiles: List[Text], classpath: List[Text])` toma `(using
++   backend: FilesystemBackend on Local)`, antes `FilesystemBackend on Linux`, y decodifica cada
++   texto como un `Path on Local`. Quien llame y nombre la plataforma del backend debe nombrar
++   `Local`; `filesystemBackends.javaBaseFilesystem` sirve para ambas. La ruta de un fichero TASTy
++   relativa al classpath se calcula a partir de los elementos de la ruta y está separada por `/` en
++   todos los anfitriones; antes se calculaba buscando `/` en el texto codificado. (#2527)
+
+- ## dendrology
++ ## dendrology
+
+- - `dendrology.LayeredDagDiagram[node]`'s constructor parameter `rows` is
+-   `proscenium.List[(proscenium.List[DagDiagram.Tile], proscenium.Map[Int, node])]`; it was the
+-   same shape in `scala.collection.immutable.List` and `Map`. `LayeredDagDiagram#tiles` returns
+-   `proscenium.List[proscenium.List[DagDiagram.Tile]]` and `#nodesAt` returns
+-   `proscenium.List[proscenium.Map[Int, node]]`, each previously the stdlib equivalent. Contents
+-   and order are unchanged. (#2522)
+- - `dendrology.LaneDagDiagram.Style#serialize(tiles, glyphs, widths, label)` takes `glyphs` as
+-   `proscenium.Map[Int, line]`; it was `scala.collection.immutable.Map[Int, line]`. An
+-   implementation of `Style` must retype the parameter, and a direct caller must pass a
+-   `proscenium.Map`. `LaneDagDiagram.TextualStyle#serialize` changes with it. (#2522)
++ - El parámetro de constructor `rows` de `dendrology.LayeredDagDiagram[node]` es
++   `proscenium.List[(proscenium.List[DagDiagram.Tile], proscenium.Map[Int, node])]`; antes tenía la
++   misma forma en `scala.collection.immutable.List` y `Map`. `LayeredDagDiagram#tiles` devuelve
++   `proscenium.List[proscenium.List[DagDiagram.Tile]]` y `#nodesAt` devuelve
++   `proscenium.List[proscenium.Map[Int, node]]`, cada uno antes su equivalente de la biblioteca
++   estándar. El contenido y el orden no cambian. (#2522)
++ - `dendrology.LaneDagDiagram.Style#serialize(tiles, glyphs, widths, label)` toma `glyphs` como
++   `proscenium.Map[Int, line]`; antes era `scala.collection.immutable.Map[Int, line]`. Una
++   implementación de `Style` debe cambiar el tipo del parámetro, y quien llame directamente debe
++   pasar un `proscenium.Map`. `LaneDagDiagram.TextualStyle#serialize` cambia con él. (#2522)
+
+- ## distillate
++ ## distillate
+
+- - `distillate.Irrefutable.intDoule` renamed to `distillate.Irrefutable.intDouble`. (#2520)
+- - `distillate.Decodable.int` and `distillate.Decodable.long` raise `Number.Error` with
+-   `Number.Error.Reason.OutOfRange` for text matching `[+-]?[0-9]+` which does not fit the type; they
+-   previously raised it with `Reason.Unparseable`. `Decodable.byte` and `Decodable.short` likewise
+-   give `OutOfRange` for such text beyond the range of an `Int`, where they gave `Unparseable`. (#2520)
++ - `distillate.Irrefutable.intDoule` se renombra a `distillate.Irrefutable.intDouble`. (#2520)
++ - `distillate.Decodable.int` y `distillate.Decodable.long` lanzan `Number.Error` con
++   `Number.Error.Reason.OutOfRange` para un texto que coincide con `[+-]?[0-9]+` y no cabe en el
++   tipo; antes lo lanzaban con `Reason.Unparseable`. `Decodable.byte` y `Decodable.short` dan
++   igualmente `OutOfRange` para un texto así fuera del rango de un `Int`, donde daban
++   `Unparseable`. (#2520)
+
+- ## diuretic
++ ## diuretic
+
+- - `diuretic.JavaLongDuration` fixes `type Domain = Durations`, so
+-   `anticipation.durationInterfaces.javaLongDuration` now satisfies `Long is Abstractable across
++ - `diuretic.JavaLongDuration` fija `type Domain = Durations`, de modo que
++   `anticipation.durationInterfaces.javaLongDuration` satisface ahora `Long is Abstractable across
+
+-   Durations to Long`. (#2520)
++   Durations to Long`. (#2520)
+
+- ## enigmatic
++ ## enigmatic
+
+- - `enigmatic.HmacCipher` moved from the component `enigmatic.cose` to `enigmatic.core`; its
+-   package and name are unchanged, and it is exported from the same `soundness` umbrella. A build
+-   that depended on `enigmatic.cose` only for `HmacCipher` may depend on `enigmatic.core`. (#2530)
+- - `enigmatic.HmacCipher[algorithm]#genKey()`, and so
+-   `SymmetricKey.generate[HmacCipher[algorithm]]()`, returns a key as long as the hash's output
+-   (32 bytes for `Sha2[256]`, 48 for `Sha2[384]`, 64 for `Sha2[512]`); it previously returned 32
+-   bytes for every hash. `HmacCipher#Size` and `#keySize` are the hash's width in bits; they
+-   were the literal `256`. (#2530)
+- - `enigmatic.SymmetricKey#verify` checks the signature against the key; it previously checked
+-   against a key of zero bytes, and so returned `false` for every MAC the key itself had made.
+-   Signature unchanged. (#2530)
+- - `enigmatic.AesGcm[bits]`'s bound is `128 | 192 | 256`; it was `128 | 256`. (#2530)
+- - `enigmatic.Crypto.Error.Reason` has a new case, `BadWrap` (number 7); an exhaustive match on
+-   it needs the case. (#2530)
+- - `enigmatic.Cose.Verifier` has a new abstract member, `algId: Long`, and its givens
+-   `Cose.Verifier.asymmetric` and `Cose.Verifier.symmetric` take a further context parameter,
+-   `cipher is Cose.Algorithm`. A cipher with no `Cose.Algorithm` given no longer has a
++ - `enigmatic.HmacCipher` se traslada del componente `enigmatic.cose` a `enigmatic.core`; su paquete
++   y su nombre no cambian, y se exporta desde el mismo paraguas `soundness`. Una compilación que
++   dependía de `enigmatic.cose` solo por `HmacCipher` puede depender de `enigmatic.core`. (#2530)
++ - `enigmatic.HmacCipher[algorithm]#genKey()`, y por tanto
++   `SymmetricKey.generate[HmacCipher[algorithm]]()`, devuelve una clave tan larga como la salida del
++   hash (32 bytes para `Sha2[256]`, 48 para `Sha2[384]`, 64 para `Sha2[512]`); antes devolvía 32
++   bytes para cualquier hash. `HmacCipher#Size` y `#keySize` son la anchura del hash en bits; antes
++   eran el literal `256`. (#2530)
++ - `enigmatic.SymmetricKey#verify` comprueba la firma con la clave; antes la comprobaba con una clave
++   de cero bytes, y por eso devolvía `false` para todo MAC que la propia clave hubiera hecho.
++   La signatura no cambia. (#2530)
++ - La cota de `enigmatic.AesGcm[bits]` es `128 | 192 | 256`; antes era `128 | 256`. (#2530)
++ - `enigmatic.Crypto.Error.Reason` tiene un caso nuevo, `BadWrap` (número 7); una coincidencia
++   exhaustiva sobre él necesita el caso. (#2530)
++ - `enigmatic.Cose.Verifier` tiene un miembro abstracto nuevo, `algId: Long`, y sus givens
++   `Cose.Verifier.asymmetric` y `Cose.Verifier.symmetric` toman un parámetro de contexto más,
++   `cipher is Cose.Algorithm`. Un cifrado sin given `Cose.Algorithm` ya no tiene
+
+-   `Cose.Verifier`. (#2530)
++   `Cose.Verifier`. (#2530)
+
+- - `enigmatic.Cose#verifyWith`, and so `authenticate[Cose]`, raises
+-   `Cose.Error(Cose.Error.Reason.AlgorithmMismatch(expected, actual))` when the message's protected
+-   header names an `alg` other than that of the key's cipher; it previously ignored the header.
++ - `enigmatic.Cose#verifyWith`, y por tanto `authenticate[Cose]`, lanza
++   `Cose.Error(Cose.Error.Reason.AlgorithmMismatch(expected, actual))` cuando la cabecera protegida
++   del mensaje nombra un `alg` distinto del del cifrado de la clave; antes ignoraba la cabecera.
+
+-   (#2530)
++   (#2530)
+
+- - `enigmatic.Cose.Algorithm` has three new members with default implementations: `scheme`,
+-   `wire` and `native`. `Cose.Authenticator.asymmetric` signs with `scheme` where it is set and
+-   writes the signature through `wire`, so a COSE_Sign1 made with an `Ecdsa` key carries the
+-   fixed-width `r ‖ s` signature RFC 9053 §2.1 specifies. No `Ecdsa` key could make one before,
+-   there being no `Cose.Algorithm` for it. (#2530)
++ - `enigmatic.Cose.Algorithm` tiene tres miembros nuevos con implementaciones por defecto: `scheme`,
++   `wire` y `native`. `Cose.Authenticator.asymmetric` firma con `scheme` donde está definido y
++   escribe la firma a través de `wire`, de modo que un COSE_Sign1 hecho con una clave `Ecdsa` lleva
++   la firma `r ‖ s` de anchura fija que especifica la RFC 9053 §2.1. Antes ninguna clave `Ecdsa`
++   podía hacer uno, al no haber `Cose.Algorithm` para ella. (#2530)
+
+- ## escapade
++ ## escapade
+
+- - `escapade.escapes.foreground.BrightWhite` resets with `[39m` (the foreground default) instead of
+-   `[49m`. (#2520)
+- - An `Escape` constructed without a `reset` no longer inserts a bare `\e` where its bracketed span
+-   closes; nothing is inserted there. (#2520)
++ - `escapade.escapes.foreground.BrightWhite` se restablece con `[39m` (el valor por defecto del
++   primer plano) en lugar de `[49m`. (#2520)
++ - Un `Escape` construido sin `reset` ya no inserta un `\e` suelto donde se cierra su tramo
++   delimitado; ahí no se inserta nada. (#2520)
+
+- ## ethereal
++ ## ethereal
+
+- - `ethereal.Installer.candidateTargets()` returns `List[Path on Local]`, was `List[Path on Linux]`,
+-   and `ethereal.Installer.install(force: Boolean, target: Optional[Path on Linux])` takes `target:
+-   Optional[Path on Local]`. (#2527)
+- - `ethereal.Upgrade`'s data directory (used by `stage`, `pending`, `outcome` and `acknowledge`) is
+-   resolved as a `Path on Local`; it was a `Path on Linux`, so on Windows, where it is beneath
+-   `%LOCALAPPDATA%`, it could not be resolved and each of those operations failed or reported
+-   nothing. (#2527)
++ - `ethereal.Installer.candidateTargets()` devuelve `List[Path on Local]`, antes
++   `List[Path on Linux]`, y `ethereal.Installer.install(force: Boolean, target: Optional[Path on
++   Linux])` toma `target: Optional[Path on Local]`. (#2527)
++ - El directorio de datos de `ethereal.Upgrade` (que usan `stage`, `pending`, `outcome` y
++   `acknowledge`) se resuelve como un `Path on Local`; antes era un `Path on Linux`, así que en
++   Windows, donde está bajo `%LOCALAPPDATA%`, no podía resolverse y cada una de esas operaciones
++   fallaba o no informaba de nada. (#2527)
+
+- ## eucalyptus
++ ## eucalyptus
+
+- - `eucalyptus.dateFormat` is a `java.time.format.DateTimeFormatter` (pattern `yyyy-MMM-dd
+-   HH:mm:ss.SSS`, the system default zone); it was a `java.text.SimpleDateFormat`. A call
+-   `dateFormat.format(millis: Long)` becomes
++ - `eucalyptus.dateFormat` es un `java.time.format.DateTimeFormatter` (patrón `yyyy-MMM-dd
++   HH:mm:ss.SSS`, la zona por defecto del sistema); antes era un `java.text.SimpleDateFormat`. Una
++   llamada `dateFormat.format(millis: Long)` pasa a ser
+
+-   `dateFormat.format(java.time.Instant.ofEpochMilli(millis))`. (#2520)
++   `dateFormat.format(java.time.Instant.ofEpochMilli(millis))`. (#2520)
+
+- - Records formatted by `eucalyptus.logFormats.ansiTimestampedLogFormat` and
+-   `eucalyptus.logFormats.googleCloudPlatformLogFormat` end with `\n`, as those of
+-   `timestampedLogFormat` and `untimestampedLogFormat` do; they previously had no line ending. (#2520)
+- - `eucalyptus.Logger.apply` keeps one spool and writer daemon for each pair of call site
+-   (`Codepoint`) and `destination` (compared with `==`); it previously kept one for each call site,
+-   so loggers made at one source position for different destinations all wrote to the first. (#2520)
++ - Los registros formateados por `eucalyptus.logFormats.ansiTimestampedLogFormat` y
++   `eucalyptus.logFormats.googleCloudPlatformLogFormat` terminan con `\n`, como los de
++   `timestampedLogFormat` y `untimestampedLogFormat`; antes no tenían fin de línea. (#2520)
++ - `eucalyptus.Logger.apply` mantiene una cola y un demonio escritor por cada par de punto de llamada
++   (`Codepoint`) y `destination` (comparado con `==`); antes mantenía uno por punto de llamada, así
++   que los loggers creados en una misma posición del código fuente para destinos distintos
++   escribían todos en el primero. (#2520)
+
+- ## exoskeleton
++ ## exoskeleton
+
+- - `exoskeleton.Enclave.Launcher#sandbox` takes a further context parameter,
+-   `Tactic[galilei.Io.Error]`, after `Tactic[Path.Error]`: the scratch home it runs the tool under is
+-   a galilei `Scratch` directory beneath `java.io.tmpdir`, made with the process's mask (previously
+-   mode `0700`), and deleted when the block ends, after the daemon is killed. (#2524)
+- - `exoskeleton.Enclave.Tool` gains a fourth field, `runtime: Optional[Path on Linux] = Unset`,
+-   and `Enclave.scratch` and `Enclave.environment` an optional `runtime` parameter: given one, the
+-   tool and the shells its tests start are run with `XDG_RUNTIME_DIR` naming it. `sandbox` gives
+-   every tool a runtime directory of its own, a `Scratch` directory beneath `/tmp`, so that its
+-   daemon's socket path stays within the 104 bytes macOS allows, however long the temporary
+-   directory, and no tool meets a daemon of the real user's. A `Tool` constructed with three
+-   arguments still compiles; a pattern `Tool(path, pid, home)` needs a fourth binder.
++ - `exoskeleton.Enclave.Launcher#sandbox` toma un parámetro de contexto más,
++   `Tactic[galilei.Io.Error]`, tras `Tactic[Path.Error]`: el directorio personal temporal bajo el
++   que ejecuta la herramienta es un directorio `Scratch` de galilei bajo `java.io.tmpdir`, creado
++   con la máscara del proceso (antes con el modo `0700`), y borrado cuando termina el bloque, después
++   de matar al demonio. (#2524)
++ - `exoskeleton.Enclave.Tool` gana un cuarto campo, `runtime: Optional[Path on Linux] = Unset`, y
++   `Enclave.scratch` y `Enclave.environment` un parámetro opcional `runtime`: si se da uno, la
++   herramienta y las shells que inician sus pruebas se ejecutan con `XDG_RUNTIME_DIR` apuntando a
++   él. `sandbox` da a cada herramienta un directorio de ejecución propio, un directorio `Scratch`
++   bajo `/tmp`, para que la ruta del socket de su demonio quede dentro de los 104 bytes que permite
++   macOS, por largo que sea el directorio temporal, y ninguna herramienta se encuentre con un demonio
++   del usuario real. Un `Tool` construido con tres argumentos sigue compilando; un patrón
++   `Tool(path, pid, home)` necesita un cuarto ligador.
+
+=   arguments still compiles; a pattern `Tool(path, pid, home)` needs a fourth binder.
+-   (#2524)
++   (#2524)
+
+- - `exoskeleton.Completions`' PowerShell installation decodes the profile path PowerShell reports as
+-   a `Path on Local`; it was decoded as a `Path on Linux`, so a drive-rooted profile was always
+-   reported as `Installation.InstallResult.NoWritableLocation(Shell.Powershell)`. The other shells'
+-   directories, `Completions.install` and `Manpages` remain on `Linux`. (#2527)
+- - Every path in `exoskeleton.Enclave`'s API is `Path on galilei.Local`, was `Path on galilei.Linux`,
+-   following `superlunary.Rig#stage`: `Enclave.Error(tool)`; `Enclave.Tool(path, pid, home,
+-   runtime)`; the `home` and `runtime` parameters of `Enclave.scratch` and `Enclave.environment`; the
+-   parameter and both results of `Enclave.keygen(prefix)`; `Enclave.Launcher(path)`; the `seed` and
+-   `out` parameters and the result of `Enclave.Launcher#sign`; the `releaseKey` and `recoveryKey`
+-   fields of `Enclave`; `Enclave#Target`; the parameter and result of `Enclave#stage(out)`; and the
+-   `Stage[output, Text, Path on Local]` parameter of `Enclave#invoke`. (#2527)
++ - La instalación de PowerShell de `exoskeleton.Completions` decodifica la ruta del perfil que
++   indica PowerShell como un `Path on Local`; antes se decodificaba como un `Path on Linux`, de modo
++   que un perfil con raíz en una unidad siempre se notificaba como
++   `Installation.InstallResult.NoWritableLocation(Shell.Powershell)`. Los directorios de las demás
++   shells, `Completions.install` y `Manpages` siguen en `Linux`. (#2527)
++ - Toda ruta de la API de `exoskeleton.Enclave` es `Path on galilei.Local`, antes
++   `Path on galilei.Linux`, siguiendo a `superlunary.Rig#stage`: `Enclave.Error(tool)`;
++   `Enclave.Tool(path, pid, home, runtime)`; los parámetros `home` y `runtime` de `Enclave.scratch`
++   y `Enclave.environment`; el parámetro y los dos resultados de `Enclave.keygen(prefix)`;
++   `Enclave.Launcher(path)`; los parámetros `seed` y `out` y el resultado de
++   `Enclave.Launcher#sign`; los campos `releaseKey` y `recoveryKey` de `Enclave`; `Enclave#Target`;
++   el parámetro y el resultado de `Enclave#stage(out)`; y el parámetro `Stage[output, Text, Path on
++   Local]` de `Enclave#invoke`. (#2527)
+
+- ## galilei
++ ## galilei
+
+- - A `Scratch` directory's deletion at the end of its scope passes over an entry which has
+-   already gone, rather than failing with `Io.Error`: a process still finishing its work in the
+-   directory as the scope ended may delete a file between its listing and its deletion.
++ - El borrado de un directorio `Scratch` al final de su ámbito pasa por alto una entrada que ya ha
++   desaparecido, en lugar de fallar con `Io.Error`: un proceso que aún esté terminando su trabajo en
++   el directorio cuando termina el ámbito puede borrar un fichero entre su listado y su borrado.
+
+=   directory as the scope ended may delete a file between its listing and its deletion.
+-   (#2524)
++   (#2524)
+
+- - The extension `published[record]` on a `Path on plane` renamed to `observe[record]`, and the
+-   capability it lends, `galilei.Published[record]`, renamed to `galilei.Observer[record]`
+-   (likewise `soundness.Published` to `soundness.Observer`, and the exported `published` to
+-   `observe`). Signatures and behaviour are unchanged: `file.published[Ratel] { reader => … }`
+-   becomes `file.observe[Ratel] { reader => … }`. The source file is
+-   `galilei.Observer.scala`; `Edition` and `Owner` are unchanged. (#2518)
+- - `galilei.FilesystemBackend` gained an abstract member, `holding(path: Path on Plane,
++ - La extensión `published[record]` sobre un `Path on plane` se renombra a `observe[record]`, y la
++   capacidad que presta, `galilei.Published[record]`, se renombra a `galilei.Observer[record]`
++   (igualmente `soundness.Published` a `soundness.Observer`, y el `published` exportado a
++   `observe`). Las signaturas y el comportamiento no cambian: `file.published[Ratel] { reader => … }`
++   pasa a ser `file.observe[Ratel] { reader => … }`. El fichero fuente es
++   `galilei.Observer.scala`; `Edition` y `Owner` no cambian. (#2518)
++ - `galilei.FilesystemBackend` gana un miembro abstracto, `holding(path: Path on Plane,
+
+-   reserve: Long, mode: Optional[Int])(using Tactic[Io.Error]): FilesystemBackend.Hold^`,
++   reserve: Long, mode: Optional[Int])(using Tactic[Io.Error]): FilesystemBackend.Hold^`,
+
+-   which an implementation of the trait must define; one with no writable memory mapping
+-   aborts with `Io.Error(path, Operation.Open, Reason.Unsupported)`, as the WASI backend does.
++   que debe definir toda implementación del trait; una sin proyección en memoria escribible
++   aborta con `Io.Error(path, Operation.Open, Reason.Unsupported)`, como hace el backend WASI.
+
+-   (#2518, #2523)
++   (#2518, #2523)
+
+- - The searchpath extension `galilei.search` on a `Path on <plane <: Searchpath>` is renamed
+-   `discover`: `path.search()` becomes `path.discover()`. The name collided with gossamer's `search`
+-   in `soundness`; delete any `import galilei.search` written to work around that. `locations`,
+-   `listing` and `destination` are unchanged. (#2520)
+- - `create[Directory]`, `create[File]`, `create[Fifo]`, `create[Sock]` and `create[Ram]` now honour a
+-   `CreateParents` policy in scope at the call: with `import
+-   filesystemOptions.createParents`, `path.create[Directory]()` creates missing ancestor
+-   directories, as `CreateFlag.Parents` does, where it previously raised `Io.Error` with
+-   `Reason.Nonexistent`. No policy is required, and `CreateFlag.Parents` still works. Code which
+-   relied on `create` failing under a missing parent while that import was in scope must import
+-   `filesystemOptions.requireParents` in that scope instead. The classes
+-   `Creation.DirectoryCreatable`, `FileCreatable`, `FifoCreatable`, `Ram.RamCreatable` and
+-   `SocketCreation.SocketCreatable` take the policy as a first parameter clause, and their givens are
+-   `inline`; code which only calls `create` is unaffected. (#2520)
+- - The filesystem option `filesystemOptions.createNonexistentParents` is renamed
+-   `filesystemOptions.createParents`, and its policy trait `galilei.CreateNonexistentParents` is
+-   renamed `galilei.CreateParents`: replace `import filesystemOptions.createNonexistentParents` with
+-   `import filesystemOptions.createParents`, and `CreateNonexistentParents on plane` with
+-   `CreateParents on plane`. `filesystemOptions.requireParents` is unchanged. Behaviour is unchanged.
+-   (#2520)
+- - A given `galilei.Local.submissible: [root] => root is Submissible on Local` makes `Path#on[Local]`
+-   (and the implicit conversion to an expected `Path on Local`) compile for a path with any root
+-   type: `(% / "etc").on[Local]`, `(Drive('C') / "x").on[Local]`, `p"/etc/hosts".on[Local]`, and a
+-   `Path on Linux`, `Path on MacOs`, `Path on Posix` or `Path on Windows` value. Each previously
+-   failed to compile with `cannot reduce summonFrom`. The root's text is checked when the conversion
+-   runs: one which is neither `/` nor a drive root (`C:\`) throws
+-   `Path.Error(Path.Error.Reason.InvalidRoot)`. Each element is still checked against `Local.Rules`
+-   (`Windows.Rules & MacOs.Rules`). (#2527)
+- - Decoding text as a `Path on Local` raises `Path.Error(Path.Error.Reason.InvalidRoot)` for text of
+-   fewer than three characters which does not begin with `/`; it previously threw
++ - La extensión de ruta de búsqueda `galilei.search` sobre un `Path on <plane <: Searchpath>` se
++   renombra a `discover`: `path.search()` pasa a ser `path.discover()`. El nombre chocaba con el
++   `search` de gossamer en `soundness`; elimina cualquier `import galilei.search` escrito para
++   sortearlo. `locations`, `listing` y `destination` no cambian. (#2520)
++ - `create[Directory]`, `create[File]`, `create[Fifo]`, `create[Sock]` y `create[Ram]` respetan
++   ahora una política `CreateParents` presente en el ámbito de la llamada: con `import
++   filesystemOptions.createParents`, `path.create[Directory]()` crea los directorios antecesores que
++   falten, como hace `CreateFlag.Parents`, donde antes lanzaba `Io.Error` con `Reason.Nonexistent`.
++   No se requiere ninguna política, y `CreateFlag.Parents` sigue funcionando. El código que contaba
++   con que `create` fallara ante un padre inexistente mientras esa importación estaba en el ámbito
++   debe importar en su lugar `filesystemOptions.requireParents` en ese ámbito. Las clases
++   `Creation.DirectoryCreatable`, `FileCreatable`, `FifoCreatable`, `Ram.RamCreatable` y
++   `SocketCreation.SocketCreatable` toman la política como primera lista de parámetros, y sus givens
++   son `inline`; el código que solo llama a `create` no se ve afectado. (#2520)
++ - La opción de sistema de ficheros `filesystemOptions.createNonexistentParents` se renombra a
++   `filesystemOptions.createParents`, y su trait de política `galilei.CreateNonexistentParents` se
++   renombra a `galilei.CreateParents`: sustituye `import filesystemOptions.createNonexistentParents`
++   por `import filesystemOptions.createParents`, y `CreateNonexistentParents on plane` por
++   `CreateParents on plane`. `filesystemOptions.requireParents` no cambia. El comportamiento no
++   cambia. (#2520)
++ - Un given `galilei.Local.submissible: [root] => root is Submissible on Local` hace que
++   `Path#on[Local]` (y la conversión implícita a un `Path on Local` esperado) compile para una ruta
++   con cualquier tipo de raíz: `(% / "etc").on[Local]`, `(Drive('C') / "x").on[Local]`,
++   `p"/etc/hosts".on[Local]`, y un valor `Path on Linux`, `Path on MacOs`, `Path on Posix` o
++   `Path on Windows`. Antes cada uno de ellos no compilaba, con `cannot reduce summonFrom`. El texto
++   de la raíz se comprueba cuando se ejecuta la conversión: uno que no sea ni `/` ni una raíz de
++   unidad (`C:\`) lanza `Path.Error(Path.Error.Reason.InvalidRoot)`. Cada elemento se sigue
++   comprobando contra `Local.Rules` (`Windows.Rules & MacOs.Rules`). (#2527)
++ - Decodificar texto como un `Path on Local` lanza `Path.Error(Path.Error.Reason.InvalidRoot)` para
++   un texto de menos de tres caracteres que no empiece por `/`; antes lanzaba
+
+-   `StringIndexOutOfBoundsException`. (#2527)
++   `StringIndexOutOfBoundsException`. (#2527)
+
+- - `path.executable` (and `galilei.FilesystemAttribute.Executable[plane]`) is available for a `Path
+-   on plane` with `plane <: Platform`, was `plane <: Posix`, so a `Path on Local` or `Path on
+-   Windows` has it. Where the host has no executable bit, setting it has no effect. `hardLinks()`
+-   remains bounded by `Posix`. (#2527)
++ - `path.executable` (y `galilei.FilesystemAttribute.Executable[plane]`) está disponible para un
++   `Path on plane` con `plane <: Platform`, antes `plane <: Posix`, de modo que un `Path on Local` o
++   un `Path on Windows` lo tiene. Donde el anfitrión no tiene bit de ejecución, activarlo no tiene
++   efecto. `hardLinks()` sigue acotado por `Posix`. (#2527)
+
+- ## gastronomy
++ ## gastronomy
+
+- - `gastronomy.Sha384` and `gastronomy.Sha512` removed, with their `gastronomy.Multicodec.sha384` and
+-   `gastronomy.Multicodec.sha512` givens; use `Sha2[384]` and `Sha2[512]` (and `Multicodec.sha2_384`,
+-   `Multicodec.sha2_512`, which have the same codes). Neither removed type had a `Hash` instance.
+-   (#2520)
++ - Se eliminan `gastronomy.Sha384` y `gastronomy.Sha512`, con sus givens
++   `gastronomy.Multicodec.sha384` y `gastronomy.Multicodec.sha512`; usa `Sha2[384]` y `Sha2[512]`
++   (y `Multicodec.sha2_384`, `Multicodec.sha2_512`, que tienen los mismos códigos). Ninguno de los
++   tipos eliminados tenía instancia `Hash`. (#2520)
+
+- ## gossamer
++ ## gossamer
+
+- - `gossamer.justify` works: `text.justify(width)` returns the words of `text` spread across `width`
+-   columns, the spare space shared among the gaps as evenly as it divides (`t"a b c d".justify(12)`
+-   is `t"a  b   c   d"`); it previously returned only the first word. A text already wider than
+-   `width` is returned with single spaces, and a single word unchanged. Signature unchanged. (#2520)
++ - `gossamer.justify` funciona: `text.justify(width)` devuelve las palabras de `text` repartidas en
++   `width` columnas, con el espacio sobrante distribuido entre los huecos tan equitativamente como
++   se pueda dividir (`t"a b c d".justify(12)` es `t"a  b   c   d"`); antes devolvía solo la primera
++   palabra. Un texto que ya es más ancho que `width` se devuelve con espacios simples, y una sola
++   palabra sin cambios. La signatura no cambia. (#2520)
+
+- ## hallucination
++ ## hallucination
+
+- - The empty `hallucination-ansi` artifact (component `hallucination.ansi`, which had no sources) is
+-   no longer published; remove any dependency on it. Nothing was exported from it. (#2520)
++ - El artefacto vacío `hallucination-ansi` (el componente `hallucination.ansi`, que no tenía ficheros
++   fuente) ya no se publica; elimina cualquier dependencia de él. No exportaba nada. (#2520)
+
+- ## hellenism
++ ## hellenism
+
+- - `hellenism.Classpath.Entry.classify(path)`, `LocalClasspath#+` for a path, and
+-   `LocalClasspath.running(classloader)` decode each path as a `Path on Local`, the first two using
+-   the JVM's own `ambience.System`; they decoded it as a `Path on Linux`, which rejected a
+-   drive-rooted entry. Signatures are unchanged. (#2527)
++ - `hellenism.Classpath.Entry.classify(path)`, `LocalClasspath#+` para una ruta, y
++   `LocalClasspath.running(classloader)` decodifican cada ruta como un `Path on Local`, los dos
++   primeros con el propio `ambience.System` de la JVM; antes la decodificaban como un
++   `Path on Linux`, que rechazaba una entrada con raíz en una unidad. Las signaturas no cambian.
++   (#2527)
+
+- ## hieroglyph
++ ## hieroglyph
+
+- - New policy `hieroglyph.EncodingSanitizer`, deciding what a `Codepage` does with a character its
+-   encoding cannot represent. The default (the given `EncodingSanitizer.substitute`, found with no
+-   import) writes the encoding's substitute, as before. `import
+-   encodingSanitizers.strictEncodingSanitizer` makes `Codepage#encoded`, and everything which encodes
+-   through a `codepages` given (`in[Data]`, `write`, …), raise `Codepage.Error(char, encoding)`
+-   instead, and needs a `Tactic[Codepage.Error]`. No change is needed to keep the old behaviour.
+-   (#2520)
+- - The `codepages` givens (`utf8Codepage`, `utf16Codepage`, `utf16LeCodepage`, `utf16BeCodepage`,
+-   `asciiCodepage`, `iso88591Codepage`) each take a `(using EncodingSanitizer)`; `import
+-   codepages.utf8Codepage` and `codepages.utf8Codepage.encoded(…)` are unaffected. `Codepage` has a
+-   second constructor parameter, `sanitizer: EncodingSanitizer`, defaulted, and a new method
+-   `sanitized(sanitizer)`. (#2520)
+- - `charsets.iso88591Charset` takes the `TextSanitizer` in scope, like the other `charsets` givens;
+-   it previously fixed `textSanitizers.skipSanitizer` and needed none. Code which imports it must
+-   also have a sanitizer in scope: add `import textSanitizers.skipSanitizer` to keep the old
+-   behaviour. Every byte is valid ISO-8859-1, so the choice of sanitizer does not change what is
+-   decoded. (#2520)
++ - Nueva política `hieroglyph.EncodingSanitizer`, que decide qué hace un `Codepage` con un carácter
++   que su codificación no puede representar. La de por defecto (el given
++   `EncodingSanitizer.substitute`, que se encuentra sin importación) escribe el sustituto de la
++   codificación, como antes. `import encodingSanitizers.strictEncodingSanitizer` hace que
++   `Codepage#encoded`, y todo lo que codifica a través de un given `codepages` (`in[Data]`, `write`,
++   …), lance en su lugar `Codepage.Error(char, encoding)`, y necesita una `Tactic[Codepage.Error]`.
++   No hace falta ningún cambio para conservar el comportamiento anterior. (#2520)
++ - Los givens `codepages` (`utf8Codepage`, `utf16Codepage`, `utf16LeCodepage`, `utf16BeCodepage`,
++   `asciiCodepage`, `iso88591Codepage`) toman cada uno un `(using EncodingSanitizer)`; `import
++   codepages.utf8Codepage` y `codepages.utf8Codepage.encoded(…)` no se ven afectados. `Codepage`
++   tiene un segundo parámetro de constructor, `sanitizer: EncodingSanitizer`, con valor por defecto,
++   y un método nuevo `sanitized(sanitizer)`. (#2520)
++ - `charsets.iso88591Charset` toma el `TextSanitizer` del ámbito, como los demás givens `charsets`;
++   antes fijaba `textSanitizers.skipSanitizer` y no necesitaba ninguno. El código que lo importa
++   debe tener también un saneador en el ámbito: añade `import textSanitizers.skipSanitizer` para
++   conservar el comportamiento anterior. Todo byte es ISO-8859-1 válido, así que la elección del
++   saneador no cambia lo que se decodifica. (#2520)
+
+- ## honeycomb
++ ## honeycomb
+
+- - `honeycomb.Whatwg#Area.Default`, `Area.Rect`, `Area.Circle` and `Area.Poly` are `Tag.Void of
+-   "area"` and serialize as `<area shape="…">`; they were `Tag.Void of "input"` and serialized as
+-   `<input shape="…">`. (#2520)
+- - `honeycomb.Whatwg#Legend` is a `Tag.Container of "legend"` and serializes as `<legend>`; it had
+-   the label and topic `"label"`, so it serialized as `<label>` and was rejected by `Fieldset`. (#2520)
+- - `honeycomb.Whatwg#Iframe` is `Tag.container["iframe", "", Whatwg]()`, not a `Tag.Void`: it
+-   serializes with an end tag (`<iframe …></iframe>`), and the parser expects `</iframe>`. (#2520)
+- - `honeycomb.Whatwg.usemap` is the attribute `usemap` (type `"usemap" is Attribute on "img" |
+-   "input" | "object" of HashName`); it was registered as `usemaptype`. (#2520)
+- - `honeycomb.Whatwg.headingreset` is the attribute `headingreset` (type `"headingreset" is Attribute
+-   of Presence`); it was registered as a second `headingoffset`. (#2520)
+- - `honeycomb.Whatwg.acceptCharset` is the attribute `accept-charset` (type `"accept-charset" is
+-   Attribute on "form" of Utf8`), as `honeycomb.Html4Transitional.acceptCharset` is; it was
+-   registered as `acceptCharset`. (#2520)
+- - `honeycomb.Whatwg#Meta` fixes `type Topic = "meta"`, `type Transport = ""` and `type Form =
+-   Whatwg`, as `Area`, `Input`, `Link` and `Track` do. (#2520)
++ - `honeycomb.Whatwg#Area.Default`, `Area.Rect`, `Area.Circle` y `Area.Poly` son `Tag.Void of
++   "area"` y se serializan como `<area shape="…">`; antes eran `Tag.Void of "input"` y se
++   serializaban como `<input shape="…">`. (#2520)
++ - `honeycomb.Whatwg#Legend` es un `Tag.Container of "legend"` y se serializa como `<legend>`; tenía
++   el rótulo y el tema `"label"`, así que se serializaba como `<label>` y `Fieldset` lo rechazaba.
++   (#2520)
++ - `honeycomb.Whatwg#Iframe` es `Tag.container["iframe", "", Whatwg]()`, no un `Tag.Void`: se
++   serializa con etiqueta de cierre (`<iframe …></iframe>`), y el analizador espera `</iframe>`.
++   (#2520)
++ - `honeycomb.Whatwg.usemap` es el atributo `usemap` (tipo `"usemap" is Attribute on "img" |
++   "input" | "object" of HashName`); antes estaba registrado como `usemaptype`. (#2520)
++ - `honeycomb.Whatwg.headingreset` es el atributo `headingreset` (tipo `"headingreset" is Attribute
++   of Presence`); antes estaba registrado como un segundo `headingoffset`. (#2520)
++ - `honeycomb.Whatwg.acceptCharset` es el atributo `accept-charset` (tipo `"accept-charset" is
++   Attribute on "form" of Utf8`), como lo es `honeycomb.Html4Transitional.acceptCharset`; antes
++   estaba registrado como `acceptCharset`. (#2520)
++ - `honeycomb.Whatwg#Meta` fija `type Topic = "meta"`, `type Transport = ""` y `type Form =
++   Whatwg`, como hacen `Area`, `Input`, `Link` y `Track`. (#2520)
+
+- ## hyperbole
++ ## hyperbole
+
+- - `hyperbole.tastySymbolTeletypeable` draws a set flag on `TastyPalette#flagOn`; it previously used
+-   `flagOff` for both set and unset flags. (#2520)
++ - `hyperbole.tastySymbolTeletypeable` dibuja un indicador activado con `TastyPalette#flagOn`; antes
++   usaba `flagOff` tanto para los indicadores activados como para los desactivados. (#2520)
+
+- ## hypotenuse
++ ## hypotenuse
+
+- - `binary` on `B8`, `B16`, `B32` and `B64` now terminates and returns the bitmap's own bits, most
+-   significant first, zero-padded to the type's width (8, 16, 32 or 64 characters); it previously
+-   never returned. (#2520)
+- - `U8#hex` returns hexadecimal (`U8` 255 gives `t"ff"`); it previously returned the octal form,
+-   identical to `U8#octal`. (#2520)
+- - A `U8` literal above 255 is a compile error (`↯/s.27.9`); values from 256 to 65535 were previously
+-   accepted and truncated to their low eight bits. (#2520)
+- - `Byte#int` returns `Int` and `Byte#short` returns `Short` (the extensions in `hypotenuse`); both
+-   previously returned `Long`. (#2520)
+- - `B8#ones`, `B8#zeros`, `B8#leadingZeros`, `B16#ones`, `B16#zeros` and `B16#leadingZeros` count
+-   only the type's own bits; with the top bit set they previously counted the sign extension (`B8`
+-   `0x80` gave 25 ones and -17 zeros). `B64#zeros` counts all 64 bits, where it counted only the low
+-   32. (#2520)
+- - `<=` and `>=` on `U16` compare unsigned, as `<` and `>` already did; values of 32768 or more
+-   previously compared as negative. (#2520)
+- - `F32.apply(sign: Boolean, exponent: B16, mantissa: B32)` builds IEEE 754 binary32: sign at bit 31,
+-   the low 8 bits of `exponent` at bits 23-30, and the low 23 bits of `mantissa`. Previously `sign =
+-   true` gave `-0.0f` whatever the other arguments, and the exponent was placed at bit 22 with a
+-   22-bit mantissa. `F64.apply(sign: Boolean, exponent: B16, mantissa: B64)` uses the low 11 bits of
+-   `exponent`, where it used the low 8. (#2520)
++ - `binary` sobre `B8`, `B16`, `B32` y `B64` termina ahora y devuelve los bits del propio mapa de
++   bits, el más significativo primero, rellenado con ceros hasta la anchura del tipo (8, 16, 32 o 64
++   caracteres); antes nunca volvía. (#2520)
++ - `U8#hex` devuelve hexadecimal (`U8` 255 da `t"ff"`); antes devolvía la forma octal, idéntica a
++   `U8#octal`. (#2520)
++ - Un literal `U8` mayor que 255 es un error de compilación (`↯/s.27.9`); antes se aceptaban los
++   valores de 256 a 65535 y se truncaban a sus ocho bits bajos. (#2520)
++ - `Byte#int` devuelve `Int` y `Byte#short` devuelve `Short` (las extensiones de `hypotenuse`);
++   antes ambos devolvían `Long`. (#2520)
++ - `B8#ones`, `B8#zeros`, `B8#leadingZeros`, `B16#ones`, `B16#zeros` y `B16#leadingZeros` cuentan
++   solo los bits propios del tipo; con el bit superior activado, antes contaban la extensión de
++   signo (`B8` `0x80` daba 25 unos y -17 ceros). `B64#zeros` cuenta los 64 bits, donde contaba solo
++   los 32 bajos. (#2520)
++ - `<=` y `>=` sobre `U16` comparan sin signo, como ya hacían `<` y `>`; antes los valores de 32768 o
++   más se comparaban como negativos. (#2520)
++ - `F32.apply(sign: Boolean, exponent: B16, mantissa: B32)` construye un binary32 de IEEE 754: el
++   signo en el bit 31, los 8 bits bajos de `exponent` en los bits 23-30, y los 23 bits bajos de
++   `mantissa`. Antes `sign = true` daba `-0.0f` fueran cuales fueran los demás argumentos, y el
++   exponente se colocaba en el bit 22 con una mantisa de 22 bits. `F64.apply(sign: Boolean,
++   exponent: B16, mantissa: B64)` usa los 11 bits bajos de `exponent`, donde usaba los 8 bajos.
++   (#2520)
+
+- ## imperial
++ ## imperial
+
+- - `Home.Config`, `Home.Cache`, `Home.Local.Share`, `Home.Local.State` and `Home.Local.Bin` now
+-   follow the XDG Base Directory variables (`XDG_CONFIG_HOME`, `XDG_CACHE_HOME`, `XDG_DATA_HOME`,
+-   `XDG_STATE_HOME`, `XDG_BIN_HOME`): when the variable is set to an absolute path, the layout
+-   resolves to that path instead of its fixed place under `$HOME`. A relative or empty value is
+-   ignored. Code which needs the fixed location regardless of the environment should build it from
+-   `Home`, as `Home[Path on Linux]() / ".config"`. `BaseLayout` gained a third parameter, `variable:
+-   Optional[Text] = Unset`, and a method `relocation`. (#2520)
++ - `Home.Config`, `Home.Cache`, `Home.Local.Share`, `Home.Local.State` y `Home.Local.Bin` siguen
++   ahora las variables de XDG Base Directory (`XDG_CONFIG_HOME`, `XDG_CACHE_HOME`, `XDG_DATA_HOME`,
++   `XDG_STATE_HOME`, `XDG_BIN_HOME`): cuando la variable tiene como valor una ruta absoluta, la
++   disposición se resuelve a esa ruta en lugar de a su lugar fijo bajo `$HOME`. Un valor relativo o
++   vacío se ignora. El código que necesite la ubicación fija sea cual sea el entorno debe
++   construirla a partir de `Home`, como `Home[Path on Linux]() / ".config"`. `BaseLayout` gana un
++   tercer parámetro, `variable: Optional[Text] = Unset`, y un método `relocation`. (#2520)
+
+- ## iridescence
++ ## iridescence
+
+- - `iridescence.Palette#selectDynamic` panics with `field <name> is not defined for this palette` for
+-   a name the palette lacks; a `java.lang.NoSuchMethodException` previously escaped. (#2520)
++ - `iridescence.Palette#selectDynamic` entra en pánico con `field <name> is not defined for this
++   palette` para un nombre que la paleta no tiene; antes se escapaba una
++   `java.lang.NoSuchMethodException`. (#2520)
+
+- ## mandible
++ ## mandible
+
+- - `mandible.Classfile` is parsed when it is made, and malformed bytes raise `Classfile.Error`
+-   instead of throwing the JDK's `IllegalArgumentException` at first use. `Classfile(name)`,
+-   `Classfile[type]` and the `Aggregable` given behind `read[Classfile]` therefore need a
+-   `Tactic[Classfile.Error]` in scope: wrap a call in `safely(…)` to keep an `Optional` result, or
+-   add `raises Classfile.Error` to the enclosing signature. The public constructor `new
+-   Classfile(data)` is replaced by the factory `Classfile(data)`, which raises the same error. (#2520)
+- - `Bytecode.Opcode.Dup.transform` on an empty stack returns the stack unchanged, like the other
+-   `Dup*` and `Swap` cases; it previously threw `NoSuchElementException`. (#2520)
+- - The unreachable macro implementation `mandible.internal.disassemble` and the object
+-   `mandible.internal` are removed, along with error `↯/s.88.1`, which only it raised. The public
+-   `mandible.disassemble` is unchanged. (#2520)
+- - `Classfile#Method#bytecode` is `Optional[Bytecode] raises Classfile.Error`: a malformed code
+-   attribute raises `Classfile.Error` instead of throwing a JDK exception, so a call needs a
+-   `Tactic[Classfile.Error]` in scope (wrap it in `safely(…)`, or add `raises Classfile.Error` to the
+-   enclosing signature). A method with no code (abstract or native) gives `Unset`; it previously
+-   threw `NoSuchElementException`. (#2520)
++ - `mandible.Classfile` se analiza al crearse, y los bytes mal formados lanzan `Classfile.Error` en
++   lugar de lanzar la `IllegalArgumentException` del JDK en el primer uso. `Classfile(name)`,
++   `Classfile[type]` y el given `Aggregable` que hay detrás de `read[Classfile]` necesitan por tanto
++   una `Tactic[Classfile.Error]` en el ámbito: envuelve una llamada en `safely(…)` para conservar un
++   resultado `Optional`, o añade `raises Classfile.Error` a la signatura que la contiene. El
++   constructor público `new Classfile(data)` se sustituye por la factoría `Classfile(data)`, que
++   lanza el mismo error. (#2520)
++ - `Bytecode.Opcode.Dup.transform` sobre una pila vacía devuelve la pila sin cambios, como los demás
++   casos `Dup*` y `Swap`; antes lanzaba `NoSuchElementException`. (#2520)
++ - Se eliminan la implementación de macro inalcanzable `mandible.internal.disassemble` y el objeto
++   `mandible.internal`, junto con el error `↯/s.88.1`, que solo ella lanzaba. El
++   `mandible.disassemble` público no cambia. (#2520)
++ - `Classfile#Method#bytecode` es `Optional[Bytecode] raises Classfile.Error`: un atributo de
++   código mal formado lanza `Classfile.Error` en lugar de lanzar una excepción del JDK, así que una
++   llamada necesita una `Tactic[Classfile.Error]` en el ámbito (envuélvela en `safely(…)`, o añade
++   `raises Classfile.Error` a la signatura que la contiene). Un método sin código (abstracto o
++   nativo) da `Unset`; antes lanzaba `NoSuchElementException`. (#2520)
+
+- ## metamorphose
++ ## metamorphose
+
+- - A `metamorphose.Permutation` now acts on the front of a sequence, not the end: it rearranges its
+-   first `extent` positions and fixes every later one, so `Permutation(Sequence(0, 2, 1))` equals
+-   `Permutation(Sequence(0, 2, 1, 3, 4))` (it previously equalled `Permutation(Sequence(1, 0))`), and
+-   applying a permutation to a longer list rearranges the leading elements and leaves the trailing
+-   ones (it previously left the leading ones). `permutation(n)` is now correct for a permutation
+-   whose first index stays in place. THE NUMBERING HAS CHANGED: the `Factoradic` number of a
+-   permutation, and so `Permutation(Factoradic(n))`, `permutation.factoradic`,
+-   `Permutation.bySize(n)`'s order and the `Encodable in Data` bytes, differ from 0.76.0 for most
+-   permutations (`Permutation(Sequence(1, 4, 2, 3, 0))` was `Factoradic(45)` and is
+-   `Factoradic(104)`); the identity is still 0 and a full reversal is unchanged. Stored numbers or
+-   encoded bytes from an earlier version must be regenerated from their index sequences. (#2520)
+- - `Permutation#lehmer` is removed. Use `inversions` (the inversion table, one entry per position,
+-   least significant digit first) or `extent` (how many leading positions the permutation rearranges,
+-   which replaces `lehmer.size`). `expansion` now stops at the last index which moves, so it omits
+-   trailing fixed indices where it used to omit leading ones.
+-   `Permutation.Error.Reason.TooShort(length, min)` reports `extent` as its minimum. (#2520)
++ - Una `metamorphose.Permutation` actúa ahora sobre el principio de una secuencia, no sobre el
++   final: reordena sus primeras `extent` posiciones y deja fijas todas las siguientes, de modo que
++   `Permutation(Sequence(0, 2, 1))` es igual a `Permutation(Sequence(0, 2, 1, 3, 4))` (antes era
++   igual a `Permutation(Sequence(1, 0))`), y aplicar una permutación a una lista más larga reordena
++   los elementos iniciales y deja los finales (antes dejaba los iniciales). `permutation(n)` es
++   ahora correcto para una permutación cuyo primer índice se queda en su sitio. LA NUMERACIÓN HA
++   CAMBIADO: el número `Factoradic` de una permutación, y por tanto `Permutation(Factoradic(n))`,
++   `permutation.factoradic`, el orden de `Permutation.bySize(n)` y los bytes de `Encodable in Data`,
++   difieren de 0.76.0 para la mayoría de las permutaciones (`Permutation(Sequence(1, 4, 2, 3, 0))`
++   era `Factoradic(45)` y es `Factoradic(104)`); la identidad sigue siendo 0 y una inversión
++   completa no cambia. Los números almacenados o los bytes codificados con una versión anterior
++   deben regenerarse a partir de sus secuencias de índices. (#2520)
++ - Se elimina `Permutation#lehmer`. Usa `inversions` (la tabla de inversiones, una entrada por
++   posición, el dígito menos significativo primero) o `extent` (cuántas posiciones iniciales
++   reordena la permutación, que sustituye a `lehmer.size`). `expansion` se detiene ahora en el
++   último índice que se mueve, así que omite los índices fijos finales donde antes omitía los
++   iniciales.
++   `Permutation.Error.Reason.TooShort(length, min)` indica `extent` como su mínimo. (#2520)
+
+- ## monotonous
++ ## monotonous
+
+- - `monotonous.Alphabet` can only be made from a string literal, and is checked at compile time.
+-   Replace `Alphabet(t"0123456789ABCDEF", false)` with `Alphabet("0123456789ABCDEF", false)` (a plain
+-   `"…"` literal, not `t"…"`); where no expected type gives the encoding, write `Alphabet[Hex]("…",
+-   false)`. The literal must have exactly `2^bits` characters for the encoding (2, 4, 8, 16, 32 or
+-   64), plus one padding character when `padding` is `true`, with no character repeated and all of
+-   them ASCII; otherwise the call does not compile. The constructor `new Alphabet(…)` and `copy` are
+-   private, so an alphabet can no longer be built from text computed at runtime. The third argument,
+-   `tolerance`, is unchanged. (#2520)
+- - `Alphabet` has a new field `bits: Int`, and `Serialization.Bits[scheme]` gives the same width as a
+-   type (`Serialization.Bits[Base64]` is `6`). A pattern `case Alphabet(chars, padding, tolerance)`
+-   needs a fourth wildcard. (#2520)
++ - Un `monotonous.Alphabet` solo puede crearse a partir de un literal de cadena, y se comprueba en
++   tiempo de compilación. Sustituye `Alphabet(t"0123456789ABCDEF", false)` por
++   `Alphabet("0123456789ABCDEF", false)` (un literal `"…"` simple, no `t"…"`); donde ningún tipo
++   esperado dé la codificación, escribe `Alphabet[Hex]("…", false)`. El literal debe tener
++   exactamente `2^bits` caracteres para la codificación (2, 4, 8, 16, 32 o 64), más un carácter de
++   relleno cuando `padding` es `true`, sin ningún carácter repetido y todos ASCII; si no, la llamada
++   no compila. El constructor `new Alphabet(…)` y `copy` son privados, así que ya no se puede
++   construir un alfabeto a partir de un texto calculado en tiempo de ejecución. El tercer argumento,
++   `tolerance`, no cambia. (#2520)
++ - `Alphabet` tiene un campo nuevo `bits: Int`, y `Serialization.Bits[scheme]` da la misma anchura
++   como tipo (`Serialization.Bits[Base64]` es `6`). Un patrón `case Alphabet(chars, padding,
++   tolerance)` necesita un cuarto comodín. (#2520)
+
+- ## octogenarian
++ ## octogenarian
+
+- - `octogenarian.SshUrl#text` renders git's scp-like form, `user@hostname:path`, or `hostname:path`
+-   with no user; it previously rendered `user:@hostnamepath` (and `@hostnamepath` with no user).
+-   (#2520)
+- - The message of `octogenarian.Commandline.Event.Exec(event)` is `git: <event>`; it was `the git
++ - `octogenarian.SshUrl#text` representa la forma de git parecida a scp, `user@hostname:path`, o
++   `hostname:path` sin usuario; antes representaba `user:@hostnamepath` (y `@hostnamepath` sin
++   usuario). (#2520)
++ - El mensaje de `octogenarian.Commandline.Event.Exec(event)` es `git: <event>`; antes era `the git
+
+-   operation did not execute: <event>`. (#2520)
++   operation did not execute: <event>`. (#2520)
+
+- - `octogenarian.SshKeygen.Verifier#verify` and `octogenarian.Gpg.Verifier#verify` write the
+-   signature to a galilei `Scratch.File` (mode `0600`, beneath `java.io.tmpdir`), deleted when
+-   verification ends; a failure to make or write it is raised as
+-   `Git.Error(Git.Error.Reason.SigningFailed(_))`, where it was previously an uncaught
+-   `java.io.IOException`. (#2524)
+- - Every host path in octogenarian's API is `Path on galilei.Local`, was `Path on galilei.Linux`:
+-   every `gitDir`, `commonDir`, `worktree`, `target` and `path` parameter and every path result of
+-   the methods of `Git.Backend` (and so of `Commandline` and `Native`); `Git.Backend.Location(gitDir,
+-   commonDir, worktree)`; `Git.Backend.WorktreeEntry#path`; `Git.Config.Source.Effective(gitDir)`,
+-   `Source.File(path)` and `Source.Repository(gitDir, scope)`; `Git.Repo.Handle#gitDir`, `#commonDir`
+-   and `#worktree`; `Git.Worktree.Entry#path`; the results of `addWorktree`, `moveWorktree` and
+-   `pruneWorktrees`; `SshKeygen.Signer(key)` and `SshKeygen.Verifier(allowedSigners)`; and the given
+-   `searchpathGitCommand`, now `(Path on Local) is Instantiable across Paths from Text`.
+-   `Git.Worktree.Handle`'s `type Under` is `Local`, so `worktree.Plane`-typed results
+-   (`Git.PathStatus[worktree.Plane]`) are on `Local`. The `Openable` instances for `Git.Repo`,
+-   `Git.Worktree` and `Git.Config` are for `path <: Path on Local`, were for `path <: Path on Linux`:
+-   a `Path on Linux` opened as any of them is converted with `.on[Local]`. `Git.init`, `Git.clone`,
+-   `Git.cloneCommit`, `addWorktree` and `moveWorktree`, which take any `Abstractable across Paths to
+-   Text`, are unchanged. (#2527)
+- - The native backend resolves a path named by one of git's own files (`commondir`, a `.git` file's
+-   `gitdir:`, `objects/info/alternates`, `include.path`, a ref or index path) by descending a `Path
+-   on Local` an element at a time, splitting the text on `/`; it joined text with `/` and decoded the
+-   result as a `Path on Linux`. Such text is taken as absolute when it decodes as a `Path on Local`
+-   (it begins with `/` or a drive root), was when it began with `/`; a remote URL is treated as a
+-   local path under the same test. Behaviour on a host whose separator is `/` is unchanged. (#2527)
++ - `octogenarian.SshKeygen.Verifier#verify` y `octogenarian.Gpg.Verifier#verify` escriben la firma en
++   un `Scratch.File` de galilei (modo `0600`, bajo `java.io.tmpdir`), que se borra cuando termina la
++   verificación; un fallo al crearlo o escribirlo se lanza como
++   `Git.Error(Git.Error.Reason.SigningFailed(_))`, donde antes era una `java.io.IOException` no
++   capturada. (#2524)
++ - Toda ruta del anfitrión en la API de octogenarian es `Path on galilei.Local`, antes
++   `Path on galilei.Linux`: todo parámetro `gitDir`, `commonDir`, `worktree`, `target` y `path` y
++   todo resultado de ruta de los métodos de `Git.Backend` (y por tanto de `Commandline` y
++   `Native`); `Git.Backend.Location(gitDir, commonDir, worktree)`; `Git.Backend.WorktreeEntry#path`;
++   `Git.Config.Source.Effective(gitDir)`, `Source.File(path)` y `Source.Repository(gitDir, scope)`;
++   `Git.Repo.Handle#gitDir`, `#commonDir` y `#worktree`; `Git.Worktree.Entry#path`; los resultados
++   de `addWorktree`, `moveWorktree` y `pruneWorktrees`; `SshKeygen.Signer(key)` y
++   `SshKeygen.Verifier(allowedSigners)`; y el given `searchpathGitCommand`, ahora `(Path on Local)
++   is Instantiable across Paths from Text`. El `type Under` de `Git.Worktree.Handle` es `Local`, así
++   que los resultados de tipo `worktree.Plane` (`Git.PathStatus[worktree.Plane]`) están en `Local`.
++   Las instancias `Openable` de `Git.Repo`, `Git.Worktree` y `Git.Config` son para `path <: Path on
++   Local`, antes para `path <: Path on Linux`: un `Path on Linux` abierto como cualquiera de ellos se
++   convierte con `.on[Local]`. `Git.init`, `Git.clone`, `Git.cloneCommit`, `addWorktree` y
++   `moveWorktree`, que toman cualquier `Abstractable across Paths to Text`, no cambian. (#2527)
++ - El backend nativo resuelve una ruta nombrada por uno de los propios ficheros de git
++   (`commondir`, el `gitdir:` de un fichero `.git`, `objects/info/alternates`, `include.path`, una
++   ruta de referencia o de índice) descendiendo un `Path on Local` elemento a elemento, partiendo el
++   texto por `/`; antes unía el texto con `/` y decodificaba el resultado como un `Path on Linux`.
++   Ese texto se toma como absoluto cuando se decodifica como un `Path on Local` (empieza por `/` o
++   por una raíz de unidad), antes cuando empezaba por `/`; una URL remota se trata como ruta local
++   con la misma prueba. El comportamiento en un anfitrión cuyo separador es `/` no cambia. (#2527)
+
+- ## orthodoxy
++ ## orthodoxy
+
+- - `orthodoxy.Authorization` has a fifth constructor parameter,
+-   `identityToken: Optional[Text] = Unset`, after `refresh`: the `id_token` member of the token
+-   response, unverified. Constructor calls are unaffected; a pattern
+-   `Authorization(key, scopes, expiry, refresh)` needs a fifth position. (#2530)
+- - `orthodoxy.OAuth.Error.Reason` has a new case, `Identity(detail: Text)` (number 8); an
+-   exhaustive match on it needs the case. (#2530)
++ - `orthodoxy.Authorization` tiene un quinto parámetro de constructor,
++   `identityToken: Optional[Text] = Unset`, tras `refresh`: el miembro `id_token` de la respuesta de
++   token, sin verificar. Las llamadas al constructor no se ven afectadas; un patrón
++   `Authorization(key, scopes, expiry, refresh)` necesita una quinta posición. (#2530)
++ - `orthodoxy.OAuth.Error.Reason` tiene un caso nuevo, `Identity(detail: Text)` (número 8); una
++   coincidencia exhaustiva sobre él necesita el caso. (#2530)
+
+- ## phoenicia
++ ## phoenicia
+
+- - The font coverage type `phoenicia.Coverage` is nested as `phoenicia.Font.Coverage`, and is no
+-   longer exported into `soundness` under its bare name, where it collided with probably's test
+-   `Coverage`. Replace `Coverage`, `Coverage.Entry`, `Coverage.Unknown`, `Coverage.Entries`,
+-   `Coverage.of`, `Coverage.combine` and `Coverage(…)` with the same names prefixed by `Font.`
+-   (`Font.Coverage.of(file)`); with `import soundness.*`, a bare `Coverage` now always means
+-   `probably.Coverage`. Members and behaviour are unchanged. (#2520)
++ - El tipo de cobertura de fuentes `phoenicia.Coverage` pasa a estar anidado como
++   `phoenicia.Font.Coverage`, y ya no se exporta a `soundness` con su nombre simple, donde chocaba
++   con el `Coverage` de pruebas de probably. Sustituye `Coverage`, `Coverage.Entry`,
++   `Coverage.Unknown`, `Coverage.Entries`, `Coverage.of`, `Coverage.combine` y `Coverage(…)` por los
++   mismos nombres con el prefijo `Font.` (`Font.Coverage.of(file)`); con `import soundness.*`, un
++   `Coverage` simple significa ahora siempre `probably.Coverage`. Los miembros y el comportamiento
++   no cambian. (#2520)
+
+- - New case `phoenicia.Font.Error.Reason.TruncatedTable(tag: Sfnt.Table.Tag)`, numbered 11:
+-   `Sfnt#head` and `Sfnt#hhea` raise a `Font.Error` with it when the table is shorter than its fixed
+-   layout; they previously threw `ArrayIndexOutOfBoundsException`. An exhaustive match on
+-   `Font.Error.Reason` needs the added case. (#2521)
+- - `phoenicia.Sfnt#HeadTable` and `#HheaTable` are `zephyrine.Structural`; they were
+-   `polaris.Debufferable`. Their fields are unchanged. (#2521)
++ - Nuevo caso `phoenicia.Font.Error.Reason.TruncatedTable(tag: Sfnt.Table.Tag)`, con el número 11:
++   `Sfnt#head` y `Sfnt#hhea` lanzan un `Font.Error` con él cuando la tabla es más corta que su
++   disposición fija; antes lanzaban `ArrayIndexOutOfBoundsException`. Una coincidencia exhaustiva
++   sobre `Font.Error.Reason` necesita el caso añadido. (#2521)
++ - `phoenicia.Sfnt#HeadTable` y `#HheaTable` son `zephyrine.Structural`; antes eran
++   `polaris.Debufferable`. Sus campos no cambian. (#2521)
+
+- ## plutocrat
++ ## plutocrat
+
+- - `plutocrat.currencies.Cop` has the symbol `$` (its type is `"COP" is Currency of "Colombian Peso"
+-   in "$" over 100`); it was `$$`. (#2520)
+- - `plutocrat.Money.underlying` is `Underlying[Money in currency, Long]`; it was declared with `Int`.
+-   (#2520)
++ - `plutocrat.currencies.Cop` tiene el símbolo `$` (su tipo es `"COP" is Currency of "Colombian
++   Peso" in "$" over 100`); antes era `$$`. (#2520)
++ - `plutocrat.Money.underlying` es `Underlying[Money in currency, Long]`; estaba declarado con
++   `Int`. (#2520)
+
+- ## polaris
++ ## polaris
+
+- - The library is removed, and with it `polaris.Debufferable`, `Bufferable`, `Unpackable`, `Sextant`,
+-   `sextant`, `unpack`, `unpackFrom` and `byteWidth`, and their `soundness` exports. Its replacement
+-   is `zephyrine.Structural` (component `zephyrine.layout`), also exported from `soundness`. To
+-   migrate:
+-   - Replace `given T is Debufferable = Debufferable.derived` (and any reliance on its automatic
+-     derivation) with `given T is Structural = Structural.derived`, with a byte order imported in
+-     the scope of the declaration: `import byteOrders.bigEndianByteOrder` reproduces polaris, which
+-     was always big-endian. A record field which is itself a case class now needs its own explicit
+-     `Structural` given.
+-   - Replace `data.unpackFrom[T](offset)` with `data.unpack[T](offset)`. It `raises
+-     Structural.Error` when the record does not fit, where polaris threw
+-     `ArrayIndexOutOfBoundsException`, so the call site needs a `Tactic[Structural.Error]`.
+-   - Replace `data.unpackFrom[Array[T]^{}](offset)(count)` and `unpack[Array[T]^{}](count)` with
++ - Se elimina la biblioteca, y con ella `polaris.Debufferable`, `Bufferable`, `Unpackable`,
++   `Sextant`, `sextant`, `unpack`, `unpackFrom` y `byteWidth`, y sus exportaciones en `soundness`. La
++   sustituye `zephyrine.Structural` (componente `zephyrine.layout`), exportado también desde
++   `soundness`. Para migrar:
++   - Sustituye `given T is Debufferable = Debufferable.derived` (y cualquier dependencia de su
++     derivación automática) por `given T is Structural = Structural.derived`, con un orden de bytes
++     importado en el ámbito de la declaración: `import byteOrders.bigEndianByteOrder` reproduce
++     polaris, que siempre era big-endian. Un campo de registro que sea a su vez una case class
++     necesita ahora su propio given `Structural` explícito.
++   - Sustituye `data.unpackFrom[T](offset)` por `data.unpack[T](offset)`. Este `raises
++     Structural.Error` cuando el registro no cabe, donde polaris lanzaba
++     `ArrayIndexOutOfBoundsException`, así que el punto de llamada necesita una
++     `Tactic[Structural.Error]`.
++   - Sustituye `data.unpackFrom[Array[T]^{}](offset)(count)` y `unpack[Array[T]^{}](count)` por
+
+-     `data.unpack[T](offset, count)`.
++     `data.unpack[T](offset, count)`.
+
+-   - Replace `byteWidth[T]` with `Structural.width[T]` for a record type `T`. The sized integers
+-     (`U16`, `Int`, …) no longer have instances of their own: they are fields of a record, or are
+-     loaded directly with `data.u16be(offset)` and its siblings.
+-   - There is no read cursor: replace a `data.sextant { … }` block of successive `unpack[T]` calls
+-     with one record type holding those fields, or with `data.unpack[T](offset)` calls at explicit
+-     offsets (`Structural.width[T]` gives each step).
+-   - Replace a hand-written `Debufferable(width)((bytes, offset) => value)` with a `new Structural`
+-     defining `type Self`, `width`, `load(data: Data, offset: Int): Self` and `store(value: Self,
+-     target: Array[Byte]^, offset: Int): Unit`.
+-   - `Bufferable` had no instances and could not be used; writing is `value.pack: Data`. (#2521)
++   - Sustituye `byteWidth[T]` por `Structural.width[T]` para un tipo de registro `T`. Los enteros con
++     tamaño (`U16`, `Int`, …) ya no tienen instancias propias: son campos de un registro, o se cargan
++     directamente con `data.u16be(offset)` y sus análogos.
++   - No hay cursor de lectura: sustituye un bloque `data.sextant { … }` de llamadas sucesivas a
++     `unpack[T]` por un tipo de registro que contenga esos campos, o por llamadas a
++     `data.unpack[T](offset)` en desplazamientos explícitos (`Structural.width[T]` da cada paso).
++   - Sustituye un `Debufferable(width)((bytes, offset) => value)` escrito a mano por un
++     `new Structural` que defina `type Self`, `width`, `load(data: Data, offset: Int): Self` y
++     `store(value: Self, target: Array[Byte]^, offset: Int): Unit`.
++   - `Bufferable` no tenía instancias y no podía usarse; la escritura es `value.pack: Data`. (#2521)
+
+- ## prescience
++ ## prescience
+
+- - The staged summon (tier B) deletes the directory its snippet is compiled into once the instance
+-   is loaded, and its `report.info` message no longer ends `; classes in <directory>`.
++ - La convocatoria por etapas (nivel B) borra el directorio en el que se compila su fragmento de
++   código una vez cargada la instancia, y su mensaje `report.info` ya no termina con
++   `; classes in <directory>`.
+
+=   is loaded, and its `report.info` message no longer ends `; classes in <directory>`.
+-   (#2524)
++   (#2524)
+
+- ## probably
++ ## probably
+
+- - `probably.Coverage.probes(unit: Int, size: Int)` now returns `Array[Long]` instead of
+-   `Array[Boolean]`: a count for each probe, which instrumented code increments, where it stored
+-   `true`. Classes instrumented by an earlier `probably.Instrumenter` must be recompiled; its
+-   cache key covers the instrumenter, so `Instrumenter.plan` does so itself. (#2515)
+- - `probably.Coverage.drain()` now returns `java.util.Map[String, Array[Array[Long]]]` instead of
+-   `java.util.Map[String, Array[Array[Boolean]]]`: how many times each probe was reached, `0` for
+-   one never reached; a test run more than once has the sum of its runs' counts where it had the
+-   union. (#2515)
+- - `probably.Coverage.enter(test: String)` now returns `probably.Coverage.Tally | Null` instead
+-   of `probably.Coverage.Collector | Null`, and `probably.Coverage.exit` takes
++ - `probably.Coverage.probes(unit: Int, size: Int)` devuelve ahora `Array[Long]` en lugar de
++   `Array[Boolean]`: un recuento por sonda, que el código instrumentado incrementa, donde antes
++   almacenaba `true`. Las clases instrumentadas por un `probably.Instrumenter` anterior deben
++   recompilarse; su clave de caché abarca el instrumentador, así que `Instrumenter.plan` lo hace por
++   sí mismo. (#2515)
++ - `probably.Coverage.drain()` devuelve ahora `java.util.Map[String, Array[Array[Long]]]` en lugar de
++   `java.util.Map[String, Array[Array[Boolean]]]`: cuántas veces se alcanzó cada sonda, `0` para una
++   que nunca se alcanzó; una prueba ejecutada más de una vez tiene la suma de los recuentos de sus
++   ejecuciones donde tenía la unión. (#2515)
++ - `probably.Coverage.enter(test: String)` devuelve ahora `probably.Coverage.Tally | Null` en lugar
++   de `probably.Coverage.Collector | Null`, y `probably.Coverage.exit` toma
+
+-   `probably.Coverage.Tally | Null`. (#2515)
++   `probably.Coverage.Tally | Null`. (#2515)
+
+- - `probably.Instrumenter.Reached#probes` is now `List[(Int, Int, Long)]` instead of
+-   `List[(Int, Int)]`: each reached probe's unit index, probe index, and the number of times it
+-   was reached (at least 1). (#2515)
++ - `probably.Instrumenter.Reached#probes` es ahora `List[(Int, Int, Long)]` en lugar de
++   `List[(Int, Int)]`: el índice de unidad de cada sonda alcanzada, su índice de sonda, y el número
++   de veces que se alcanzó (al menos 1). (#2515)
+
+- ## punctuation
++ ## punctuation
+
+- - The empty `punctuation-html` artifact (component `punctuation.html`, which had no sources) is no
+-   longer published; remove any dependency on it, or depend on `punctuation-core`. Nothing was
+-   exported from it. (#2520)
++ - El artefacto vacío `punctuation-html` (el componente `punctuation.html`, que no tenía ficheros
++   fuente) ya no se publica; elimina cualquier dependencia de él, o depende de `punctuation-core`.
++   No exportaba nada. (#2520)
+
+- ## quantitative
++ ## quantitative
+
+- - The values of `quantitative.Dyne`, `Erg`, `Maxwell`, `Gauss`, `Stokes`, `Phot` and `Lambert`, and
+-   of `quantitative.constants.MagneticConstant`, are one tenth of what they were: 10⁻⁵ N, 10⁻⁷ J,
+-   10⁻⁸ Wb, 10⁻⁴ T, 10⁻⁴ m²·s⁻¹, 10⁴ lx, 10⁴/π cd·m⁻² and 4π×10⁻⁷ N·A⁻² respectively. (#2520)
+- - `quantitative.constants.BoltzmannConstant` is 1.380649×10⁻²³ J·K⁻¹; it was 1.380649×10⁻¹³. (#2520)
+- - `quantitative.constants.GravitationalConstant` has the dimension N·m²·kg⁻²
+-   (`6.67430e-11*Newton*Metre*Metre/(Kilo(Gram)*Kilo(Gram))`); its type was previously that of
+-   N·kg⁻². (#2520)
+- - `quantitative.Poise` is `MetricUnit(0.1*Pascal*Second)`, a dynamic viscosity; it was `0.1*Pascal`,
+-   a pressure. `quantitative.Kayser` is `MetricUnit(Quantity[Measure](100)/Metre)`, a wavenumber; it
+-   was `100/Second`, a frequency. Both change type. (#2520)
+- - `quantitative.Days.designation` is a `Designation[Days[1]]` (it was a `Designation[Hours[1]]`), so
+-   a quantity in days renders with the symbol `d`. (#2520)
+- - `quantitative.Amount.TempratureGradient` renamed to `TemperatureGradient`. (#2520)
++ - Los valores de `quantitative.Dyne`, `Erg`, `Maxwell`, `Gauss`, `Stokes`, `Phot` y `Lambert`, y
++   de `quantitative.constants.MagneticConstant`, son la décima parte de lo que eran: 10⁻⁵ N,
++   10⁻⁷ J, 10⁻⁸ Wb, 10⁻⁴ T, 10⁻⁴ m²·s⁻¹, 10⁴ lx, 10⁴/π cd·m⁻² y 4π×10⁻⁷ N·A⁻² respectivamente.
++   (#2520)
++ - `quantitative.constants.BoltzmannConstant` es 1.380649×10⁻²³ J·K⁻¹; antes era 1.380649×10⁻¹³.
++   (#2520)
++ - `quantitative.constants.GravitationalConstant` tiene la dimensión N·m²·kg⁻²
++   (`6.67430e-11*Newton*Metre*Metre/(Kilo(Gram)*Kilo(Gram))`); antes su tipo era el de N·kg⁻².
++   (#2520)
++ - `quantitative.Poise` es `MetricUnit(0.1*Pascal*Second)`, una viscosidad dinámica; antes era
++   `0.1*Pascal`, una presión. `quantitative.Kayser` es `MetricUnit(Quantity[Measure](100)/Metre)`,
++   un número de onda; antes era `100/Second`, una frecuencia. Ambos cambian de tipo. (#2520)
++ - `quantitative.Days.designation` es una `Designation[Days[1]]` (antes era una
++   `Designation[Hours[1]]`), de modo que una magnitud en días se representa con el símbolo `d`.
++   (#2520)
++ - `quantitative.Amount.TempratureGradient` se renombra a `TemperatureGradient`. (#2520)
+
+- ## sedentary
++ ## sedentary
+
+- - `sedentary.NetworkDevice#undeploy` and `sedentary.NetworkDevice.Session#undeploy` remove
+-   `<uuid>.jar` from the remote home directory, the file `deploy` copied there; they previously ran
+-   `rm` on the local path of the JAR. (#2520)
+- - The staged-jar paths of sedentary's rigs are `Path on galilei.Local`, were `Path on
+-   galilei.Linux`: `type Target` and the parameter and result of `stage(out)` in `Bench`, `Stress`
+-   and `Profile`; the `Stage[output, Text, Path on Local]` parameter of their `invoke`; and the
+-   `path` parameter of `BenchmarkDevice#deploy`, `#invoke` and `#undeploy`, and of their
+-   implementations in `NetworkDevice`, `NetworkDevice.Session` and `LocalhostDevice`. (#2527)
++ - `sedentary.NetworkDevice#undeploy` y `sedentary.NetworkDevice.Session#undeploy` eliminan
++   `<uuid>.jar` del directorio personal remoto, el fichero que `deploy` copió allí; antes ejecutaban
++   `rm` sobre la ruta local del JAR. (#2520)
++ - Las rutas de jars preparados de los montajes de sedentary son `Path on galilei.Local`, antes
++   `Path on galilei.Linux`: `type Target` y el parámetro y el resultado de `stage(out)` en `Bench`,
++   `Stress` y `Profile`; el parámetro `Stage[output, Text, Path on Local]` de su `invoke`; y el
++   parámetro `path` de `BenchmarkDevice#deploy`, `#invoke` y `#undeploy`, y de sus implementaciones
++   en `NetworkDevice`, `NetworkDevice.Session` y `LocalhostDevice`. (#2527)
+
+- ## stratiform
++ ## stratiform
+
+- - The bytes of a RaTEL image changed, to those of the RaTEL specification as tel#52 left it,
+-   under the same version byte: a 200-byte header whose directory entries are `(offset,
+-   length, capacity)`; an 8-byte header on every row (`u32` parent, `u16` link, `u16` flags)
+-   before its presence bitmap; a repeatable struct member stored as a `u32` ref to a child list
+-   in place of `(start, count)`; arrays, ref arrays and select lists stored as `(capacity,
+-   count, elements)`, an empty one as the ref `0xFFFFFFFF`; 32-byte table and index directory
+-   entries; each index a B+tree of 4096-byte pages; and a digests section of two digests (the
+-   body, then the header) in place of six. An image written by 0.76.0 is not read: it is
+-   refused with whichever of `BadDirectory`, `ReservedSet` or `InvalidState` its header first
+-   meets. There is no conversion: write such an image again from its document. The signatures
+-   of `Ratel.encode`, `tel.ratel(schema)` and `value.ratel` are unchanged, and what they write
+-   is a sealed image (header flag bit 2), always with the value hash. (#2518)
+- - `stratiform.Ratel.Error.Reason` follows the specification's `↯/t.5` codes, which gained
+-   three. Renamed: `SectionsOverlap` to `ExtentsOverlap` (6; now also a table's rows or an
+-   index's pages overlapping anything), `IndexUnsorted` to `BadTree` (24; now any breach of the
+-   B+tree's invariants). Added: `InvalidState` (28), `Dirty` (29), `BadRowHeader` (30).
+-   Renumbered, so that the variant in the bolt code of a `Ratel.Error` with one of these
+-   reasons changes: `NestingLimitExceeded` 28 to 31, `Unencodable` 29 to 32, `Oversized` 30 to
+-   33, `Unindexed` 31 to 34, `Unknown` 32 to 35, `Inapplicable` 33 to 36, `Absent` 34 to 37,
+-   `Unwritable` 35 to 38, `Mismatched` 36 to 39. `BadRecordIndex` (15) is now also raised for a
+-   record index which names a free row, and `DigestMismatch` (7) for a digests section which is
+-   not the last 64 bytes of the file. (#2518)
+- - `stratiform.Ratel.Reader` gained `state: Ratel.State` (`Sealed` or `Unsealed`). A reader
+-   refuses a file whose header has the dirty flag (`Reason.Dirty`). `Reader#verify()`
+-   additionally checks each row's header against the slot which reaches it, that every live
+-   row is reached, each index as a B+tree, and, of a sealed image, that it is compact. (#2518)
+- - `stratiform.Tels.tels[value]` no longer leaves a scalar which declares an encoding within
+-   the field which holds it. A field whose type has a `Tel.Encoded[name]` instance was
+-   declared with `Tels.Scalar(Array.empty, name)`; it is now declared with
+-   `Tels.Reference(typeName)`, and the schema's `scalars` holds `Tels.ScalarDefinition(typeName,
+-   Array.empty, Unset, name)`, where `typeName` is the encoding's name with each run of ASCII
+-   letters and digits capitalised and everything else dropped (`decimal-varint` gives
+-   `DecimalVarint`), with `Scalar` appended if a record, select or scalar of the schema already
+-   has that name. Such a schema can now be rendered (`Tels.Renderer.element` raised
+-   `InlineScalar` for it), so it has a signature, and `value.ratel` with no schema argument
+-   works for the type. Code which matches the field's `fieldType` against `Tels.Scalar` to read
+-   its encoding must resolve the reference through `schema.scalars`. A schema with any scalar
+-   definition, key or index is additionally checked as `Tels.Validation.validate` checks a
+-   composed schema, so `Tels.tels` may raise those `Tel.Error` reasons for it. The schema of a
+-   type with no encoded scalar is unchanged. (#2518)
+- - `stratiform.Ratel` gained an abstract type member, `Topic`, and the extension `value.ratel`
+-   which takes no schema returns `Ratel of value` (`Ratel { type Topic = value }`) where it
+-   returned `Ratel`. A `Ratel of T` is a `Ratel`, so code which takes the result as a `Ratel`
+-   is unaffected; a `val` whose type was inferred from it is now the refined type. `Ratel(data)`,
+-   `Ratel.encode` and `tel.ratel(schema)` still give a plain `Ratel`. (#2518)
+- - The givens `stratiform.Ratel.encodable` and `stratiform.Ratel.viewable` are generic in the
+-   image's type: `[ratel <: Ratel] => ratel is Encodable in Data` and `[ratel <: Ratel] =>
+-   ratel is Viewable`, where each was an instance for `Ratel` alone. A use which names either
+-   given and ascribes it as `Ratel is Encodable in Data` or `Ratel is Viewable` still compiles;
+-   one which passes it where a non-generic value is expected needs `Ratel.encodable[Ratel]`.
++ - Los bytes de una imagen RaTEL cambian, a los de la especificación de RaTEL tal como la dejó
++   tel#52, con el mismo byte de versión: una cabecera de 200 bytes cuyas entradas de directorio son
++   `(offset, length, capacity)`; una cabecera de 8 bytes en cada fila (`u32` padre, `u16` enlace,
++   `u16` indicadores) antes de su mapa de bits de presencia; un miembro de estructura repetible
++   almacenado como una referencia `u32` a una lista hija en lugar de `(start, count)`; arrays,
++   arrays de referencias y listas de selección almacenados como `(capacity, count, elements)`, uno
++   vacío como la referencia `0xFFFFFFFF`; entradas de directorio de tablas y de índices de 32 bytes;
++   cada índice, un árbol B+ de páginas de 4096 bytes; y una sección de resúmenes con dos resúmenes
++   (el cuerpo y luego la cabecera) en lugar de seis. Una imagen escrita por 0.76.0 no se lee: se
++   rechaza con el primero de `BadDirectory`, `ReservedSet` o `InvalidState` con que se encuentre su
++   cabecera. No hay conversión: vuelve a escribir esa imagen a partir de su documento. Las
++   signaturas de `Ratel.encode`, `tel.ratel(schema)` y `value.ratel` no cambian, y lo que escriben
++   es una imagen sellada (bit 2 de los indicadores de la cabecera), siempre con el hash de valor.
+
+-   (#2518)
++   (#2518)
+
+- - Opening as `Ratel` (or `Ratel of T`) with a mode which includes `aperture.Write` no longer
+-   always aborts with `Ratel.Error.Reason.Unwritable`. Where the target can lend its bytes for
+-   changing -- a `Path` on a backend which maps files for writing, or a `zephyrine.Holding` --
+-   the image is opened for changing in place (RaTEL §10): an exclusive lock is taken on a
+-   file, a sealed image is unsealed (header flag bits 0 to 2 and the value hash cleared, the
+-   digests section emptied), the dirty flag is set for the length of the block and cleared
+-   when it ends, and the reader given to the block accepts `Rows#insert`, `Rows#move`,
+-   `Row#set` (also written as an assignment, `row.lines = value`, whose name is the keyword in
+-   camel case), `Row#unset`, `Row#delete` and `Row#replace`. A target which cannot (a `Ratel`
+-   value, a read-only `Terrain`) still aborts with `Unwritable`, as do those operations
+-   through a reader which was not opened for writing. Code which relied on `Write` being
+-   refused for a path must not pass it. (#2518)
++ - `stratiform.Ratel.Error.Reason` sigue los códigos `↯/t.5` de la especificación, que ganan tres.
++   Renombrados: `SectionsOverlap` a `ExtentsOverlap` (6; ahora también cuando las filas de una
++   tabla o las páginas de un índice se solapan con cualquier cosa), `IndexUnsorted` a `BadTree` (24;
++   ahora cualquier violación de los invariantes del árbol B+). Añadidos: `InvalidState` (28),
++   `Dirty` (29), `BadRowHeader` (30). Renumerados, de modo que cambia la variante en el código bolt
++   de un `Ratel.Error` con uno de estos motivos: `NestingLimitExceeded` de 28 a 31, `Unencodable`
++   de 29 a 32, `Oversized` de 30 a 33, `Unindexed` de 31 a 34, `Unknown` de 32 a 35, `Inapplicable`
++   de 33 a 36, `Absent` de 34 a 37, `Unwritable` de 35 a 38, `Mismatched` de 36 a 39.
++   `BadRecordIndex` (15) se lanza ahora también para un índice de registro que nombra una fila
++   libre, y `DigestMismatch` (7) para una sección de resúmenes que no sea los últimos 64 bytes del
++   fichero. (#2518)
++ - `stratiform.Ratel.Reader` gana `state: Ratel.State` (`Sealed` o `Unsealed`). Un lector rechaza un
++   fichero cuya cabecera tenga el indicador de sucio (`Reason.Dirty`). `Reader#verify()` comprueba
++   además la cabecera de cada fila contra la ranura que llega a ella, que toda fila viva sea
++   alcanzada, cada índice como árbol B+, y, en una imagen sellada, que sea compacta. (#2518)
++ - `stratiform.Tels.tels[value]` ya no deja un escalar que declara una codificación dentro del campo
++   que lo contiene. Un campo cuyo tipo tiene una instancia `Tel.Encoded[name]` se declaraba con
++   `Tels.Scalar(Array.empty, name)`; ahora se declara con `Tels.Reference(typeName)`, y los `scalars`
++   del esquema contienen `Tels.ScalarDefinition(typeName, Array.empty, Unset, name)`, donde
++   `typeName` es el nombre de la codificación con cada racha de letras y dígitos ASCII en mayúscula
++   inicial y todo lo demás eliminado (`decimal-varint` da `DecimalVarint`), con `Scalar` añadido al
++   final si un registro, una selección o un escalar del esquema ya tiene ese nombre. Un esquema así
++   puede ahora representarse (`Tels.Renderer.element` lanzaba `InlineScalar` para él), de modo que
++   tiene signatura, y `value.ratel` sin argumento de esquema funciona para el tipo. El código que
++   compara el `fieldType` del campo con `Tels.Scalar` para leer su codificación debe resolver la
++   referencia a través de `schema.scalars`. Un esquema con cualquier definición de escalar, clave o
++   índice se comprueba además como `Tels.Validation.validate` comprueba un esquema compuesto, así
++   que `Tels.tels` puede lanzar esos motivos de `Tel.Error` para él. El esquema de un tipo sin
++   escalar codificado no cambia. (#2518)
++ - `stratiform.Ratel` gana un miembro de tipo abstracto, `Topic`, y la extensión `value.ratel` que no
++   toma esquema devuelve `Ratel of value` (`Ratel { type Topic = value }`) donde devolvía `Ratel`.
++   Un `Ratel of T` es un `Ratel`, así que el código que toma el resultado como un `Ratel` no se ve
++   afectado; un `val` cuyo tipo se infería de él tiene ahora el tipo refinado. `Ratel(data)`,
++   `Ratel.encode` y `tel.ratel(schema)` siguen dando un `Ratel` simple. (#2518)
++ - Los givens `stratiform.Ratel.encodable` y `stratiform.Ratel.viewable` son genéricos en el tipo de
++   la imagen: `[ratel <: Ratel] => ratel is Encodable in Data` y `[ratel <: Ratel] => ratel is
++   Viewable`, donde cada uno era una instancia solo para `Ratel`. Un uso que nombra cualquiera de los
++   dos givens y lo adscribe como `Ratel is Encodable in Data` o `Ratel is Viewable` sigue
++   compilando; uno que lo pasa donde se espera un valor no genérico necesita
++   `Ratel.encodable[Ratel]`. (#2518)
++ - Abrir como `Ratel` (o `Ratel of T`) con un modo que incluya `aperture.Write` ya no aborta siempre
++   con `Ratel.Error.Reason.Unwritable`. Donde el destino puede prestar sus bytes para modificarlos
++   -- un `Path` en un backend que proyecta ficheros para escritura, o un `zephyrine.Holding` --, la
++   imagen se abre para modificarla en su sitio (RaTEL §10): se toma un bloqueo exclusivo sobre un
++   fichero, una imagen sellada se desella (se borran los bits 0 a 2 de los indicadores de la
++   cabecera y el hash de valor, y se vacía la sección de resúmenes), el indicador de sucio se activa
++   mientras dura el bloque y se borra cuando termina, y el lector que se da al bloque acepta
++   `Rows#insert`, `Rows#move`, `Row#set` (escrito también como asignación, `row.lines = value`, cuyo
++   nombre es la palabra clave en camel case), `Row#unset`, `Row#delete` y `Row#replace`. Un destino
++   que no puede (un valor `Ratel`, un `Terrain` de solo lectura) sigue abortando con `Unwritable`,
++   igual que esas operaciones a través de un lector que no se abrió para escritura. El código que
++   contaba con que `Write` se rechazara para una ruta no debe pasarlo. (#2518)
+
+- ## superlunary
++ ## superlunary
+
+- - `superlunary.Rig#classpath(out)` and `Rig#stage(path)`, and their implementations `Jvm#stage(out)`
+-   and `Isolation#stage(out)`, take a `Path on galilei.Local`, was `Path on galilei.Linux`. A rig
+-   which overrides `stage` or declares `type Target = Path on Linux` must name `Local`. (#2527)
++ - `superlunary.Rig#classpath(out)` y `Rig#stage(path)`, y sus implementaciones `Jvm#stage(out)` e
++   `Isolation#stage(out)`, toman un `Path on galilei.Local`, antes `Path on galilei.Linux`. Un
++   montaje que sobrescriba `stage` o declare `type Target = Path on Linux` debe nombrar `Local`.
++   (#2527)
+
+- ## turbulence
++ ## turbulence
+
+- - The variadic `Out.println(lines*)` and `Err.println(lines*)` take `(using Stdio^)`, like `print`,
+-   `write` and the zero-argument `println`; they previously took an untracked `Stdio`, so a tracked
+-   `Stdio^` in scope could not be passed to them. No change is needed at existing call sites. (#2520)
++ - Los `Out.println(lines*)` y `Err.println(lines*)` variádicos toman `(using Stdio^)`, como
++   `print`, `write` y el `println` sin argumentos; antes tomaban un `Stdio` no rastreado, de modo que
++   no se les podía pasar un `Stdio^` rastreado presente en el ámbito. No hace falta ningún cambio en
++   las llamadas existentes. (#2520)
+
+- ## zephyrine
++ ## zephyrine
+
+- - New constructor `zephyrine.Spring.apply`: `Spring[Data](expression)` makes a `Spring` which
+-   evaluates `expression` for a fresh stream at each `apply()`, replacing the anonymous class `new
+-   Spring[Data]: def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+-   expression`. The anonymous-class form still compiles; no change is required. Give the type
+-   argument explicitly where the compiler otherwise reports a capture mismatch on the element type.
+-   (#2520)
+- - New component `zephyrine.layout` (depends on `hypotenuse.core`): `zephyrine.Structural`, the
+-   typeclass of a type with a fixed layout in bytes, with `Structural.derived` for a case class of
+-   sized integers (`B8`…`B64`, `U8`…`U64`, `S8`…`S64`, `Byte`, `Short`, `Int`, `Long`) and of
+-   other `Structural` types; `Structural.width[T]`; `Structural.Error(offset, width, size)`;
+-   `zephyrine.ByteOrder` and the givens `byteOrders.bigEndianByteOrder` and
+-   `byteOrders.littleEndianByteOrder`, one of which must be imported where a layout is derived;
+-   `data.unpack[T](offset: Int)`, `data.unpack[T](offset: Int, count: Int)` and
+-   `expanse.unpack[T](offset: Long)`, each raising `Structural.Error`; and `value.pack: Data`. All
+-   are exported from `soundness`. It replaces polaris; see that section. (#2521)
++ - Nuevo constructor `zephyrine.Spring.apply`: `Spring[Data](expression)` crea un `Spring` que
++   evalúa `expression` para obtener un flujo nuevo en cada `apply()`, y sustituye a la clase anónima
++   `new Spring[Data]: def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
++   expression`. La forma de clase anónima sigue compilando; no se requiere ningún cambio. Da el
++   argumento de tipo explícitamente donde, si no, el compilador informa de una discrepancia de
++   capturas en el tipo de los elementos. (#2520)
++ - Nuevo componente `zephyrine.layout` (depende de `hypotenuse.core`): `zephyrine.Structural`, la
++   clase de tipos de un tipo con una disposición fija en bytes, con `Structural.derived` para una
++   case class de enteros con tamaño (`B8`…`B64`, `U8`…`U64`, `S8`…`S64`, `Byte`, `Short`, `Int`,
++   `Long`) y de otros tipos `Structural`; `Structural.width[T]`;
++   `Structural.Error(offset, width, size)`; `zephyrine.ByteOrder` y los givens
++   `byteOrders.bigEndianByteOrder` y `byteOrders.littleEndianByteOrder`, uno de los cuales debe
++   importarse donde se deriva una disposición; `data.unpack[T](offset: Int)`,
++   `data.unpack[T](offset: Int, count: Int)` y `expanse.unpack[T](offset: Long)`, cada uno de los
++   cuales lanza `Structural.Error`; y `value.pack: Data`. Todos se exportan desde `soundness`.
++   Sustituye a polaris; véase esa sección. (#2521)

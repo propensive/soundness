@@ -1,0 +1,106 @@
+orthant 1 language
+
+- # `↯/s.110.1` — `Pdf.Error`
++ # `↯/s.110.1` — `Pdf.Error`
+
+- Raised when a PDF document cannot be read.
++ Se lanza cuando no puede leerse un documento PDF.
+
+- ## Cause
++ ## Causa
+
+- Facsimile parses PDF's COS object layer directly. This error covers a malformed object, a
+- cross-reference table that cannot be trusted, an unsupported encryption handler, and a
+- password that does not open the document.
++ Facsimile analiza directamente la capa de objetos COS del PDF. Este error abarca un objeto mal
++ formado, una tabla de referencias cruzadas en la que no se puede confiar, un manejador de cifrado
++ no admitido y una contraseña que no abre el documento.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Código
++ column  Motivo
++ column  Mensaje
+
+- row  `↯/s.110.1.1`  `NotPdf`  the file does not begin with a PDF header
++ row  `↯/s.110.1.1`  `NotPdf`  the file does not begin with a PDF header
+
+- row  `↯/s.110.1.2`  `Truncated`  the PDF file ended unexpectedly
++ row  `↯/s.110.1.2`  `Truncated`  the PDF file ended unexpectedly
+
+- row  `↯/s.110.1.3`  `MissingStartxref`  no startxref keyword could be found at the end of the file
++ row  `↯/s.110.1.3`  `MissingStartxref`  no startxref keyword could be found at the end of the file
+
+- row  `↯/s.110.1.4`  `MalformedXref`  the cross-reference section at offset <offset> could not be interpreted
++ row  `↯/s.110.1.4`  `MalformedXref`  the cross-reference section at offset <offset> could not be interpreted
+
+- row  `↯/s.110.1.5`  `Unparseable`  <expected> was expected at offset <offset>
++ row  `↯/s.110.1.5`  `Unparseable`  <expected> was expected at offset <offset>
+
+- row  `↯/s.110.1.6`  `MissingObject`  the object <objectNumber> <generation> was missing or invalid
++ row  `↯/s.110.1.6`  `MissingObject`  the object <objectNumber> <generation> was missing or invalid
+
+- row  `↯/s.110.1.7`  `CircularReference`  resolving the object <objectNumber> returned to itself
++ row  `↯/s.110.1.7`  `CircularReference`  resolving the object <objectNumber> returned to itself
+
+- row  `↯/s.110.1.8`  `MissingEntry`  the required dictionary entry <key> was absent
++ row  `↯/s.110.1.8`  `MissingEntry`  the required dictionary entry <key> was absent
+
+- row  `↯/s.110.1.9`  `TypeMismatch`  the dictionary entry <key> was not <expected>
++ row  `↯/s.110.1.9`  `TypeMismatch`  the dictionary entry <key> was not <expected>
+
+- row  `↯/s.110.1.10`  `UnknownFilter`  the stream filter <name> is not recognized
++ row  `↯/s.110.1.10`  `UnknownFilter`  the stream filter <name> is not recognized
+
+- row  `↯/s.110.1.11`  `CorruptStream`  a stream could not be decoded with the <filter> filter
++ row  `↯/s.110.1.11`  `CorruptStream`  a stream could not be decoded with the <filter> filter
+
+- row  `↯/s.110.1.12`  `MalformedOperator`  the content operator <operator> had malformed operands
++ row  `↯/s.110.1.12`  `MalformedOperator`  the content operator <operator> had malformed operands
+
+- row  `↯/s.110.1.13`  `UnsupportedEncryption`  the encryption scheme (version <version>) is not supported
++ row  `↯/s.110.1.13`  `UnsupportedEncryption`  the encryption scheme (version <version>) is not supported
+
+- row  `↯/s.110.1.14`  `BadPassword`  the password was incorrect
++ row  `↯/s.110.1.14`  `BadPassword`  the password was incorrect
+
+- row  `↯/s.110.1.15`  `CircularPageTree`  the page tree contains a cycle
++ row  `↯/s.110.1.15`  `CircularPageTree`  the page tree contains a cycle
+
+- row  `↯/s.110.1.16`  `Io`  an I/O operation failed: <detail>
++ row  `↯/s.110.1.16`  `Io`  an I/O operation failed: <detail>
+
+- row  `↯/s.110.1.17`  `WriteUnsupported`  this document cannot be written (only an unencrypted, on-disk file with a valid
++ row  `↯/s.110.1.17`  `WriteUnsupported`  this document cannot be written (only an unencrypted, on-disk file with a valid
+
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Where the cross-reference table is at fault, the reader rebuilds it by scanning for object
+- headers, so a document any conformant reader would open should open here too; a fault
+- reported anyway means the file is damaged beyond that recovery. A wrong password is
+- reported at the point the document is opened, not when a string is first decrypted.
++ Cuando la culpa es de la tabla de referencias cruzadas, el lector la reconstruye buscando las
++ cabeceras de los objetos, de modo que un documento que abriría cualquier lector conforme debería
++ abrirse también aquí; un fallo del que se informe aun así significa que el fichero está dañado más
++ allá de esa recuperación. Una contraseña errónea se notifica en el momento en que se abre el
++ documento, no cuando se descifra por primera vez una cadena.
+
+- > This error previously used the code `SN-728`, which collided with an obligatory macro error.
++ > Este error usaba antes el código `SN-728`, que colisionaba con un error de macro de obligatory.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/facsimile/src/core/facsimile.Pdf.scala`
++ - Fuente: `lib/facsimile/src/core/facsimile.Pdf.scala`

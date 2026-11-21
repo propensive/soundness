@@ -1,0 +1,224 @@
+orthant 1 language
+
+- # Structured Concurrency
++ # Concurrencia estructurada
+
+- Concurrency in Soundness is structured: tasks are spawned within a scope that owns
+- them, and that scope does not complete until its tasks have. A failure in one task
+- propagates to its siblings and its parent rather than vanishing unnoticed, and
+- cancelling a scope cancels everything beneath it. Concurrent lifetimes nest like the
+- blocks of ordinary code, so parallel work has the same clear beginning and end as
+- sequential work, and no task outlives the scope that launched it.
++ La concurrencia en Soundness es estructurada: las tareas se generan dentro de un ámbito que las
++ posee, y ese ámbito no termina hasta que no han terminado sus tareas. Un fallo en una tarea se
++ propaga a sus hermanas y a su madre en lugar de desaparecer sin que nadie lo note, y cancelar un
++ ámbito cancela todo lo que hay por debajo. Las vidas concurrentes se anidan como los bloques del
++ código corriente, así que el trabajo en paralelo tiene el mismo principio y fin claros que el
++ trabajo secuencial, y ninguna tarea sobrevive al ámbito que la lanzó.
+
+- ## The scope owns the task
++ ## El ámbito posee la tarea
+
+- `supervise` opens a scope; `async` spawns within it. The scope does not return until its
+- children have settled, whether or not anything awaited them:
++ `supervise` abre un ámbito; `async` genera tareas dentro de él. El ámbito no retorna hasta que sus
++ hijas han concluido, tanto si algo las esperó como si no:
+
+= children have settled, whether or not anything awaited them:
+=
+- ```scala fuel
++ ```scala fuel
+
+= children have settled, whether or not anything awaited them:
+=
+= ```scala fuel
+- parse
++ parse
+
+= parse
+- ##
++ ##
+
+- supervise:
++ supervise:
+
+-   val first = async(fetch(urlA))
++   val first = async(fetch(urlA))
+
+-   val second = async(fetch(urlB))
++   val second = async(fetch(urlB))
+
+-   (first.await(), second.await())
++   (first.await(), second.await())
+
+=   (first.await(), second.await())
+- ```
++ ```
+
+- The unstructured equivalent — starting two threads and hoping — differs in what happens
+- when something goes wrong, which is the only case worth designing for.
++ El equivalente no estructurado —lanzar dos hilos y esperar que todo vaya bien— difiere en lo que
++ ocurre cuando algo sale mal, que es el único caso para el que vale la pena diseñar.
+
+- ## What the structure buys
++ ## Lo que aporta la estructura
+
+- **A failure has somewhere to go.** A thread that throws has nowhere to report to, so its
+- exception is printed, or swallowed, or delivered to a handler that has no idea what was
+- being attempted. A task's failure propagates to the scope that owns it, which cancels
+- that scope's other children — because work undertaken on behalf of a computation that
+- has already failed is work nobody wants finished.
++ **Un fallo tiene adónde ir.** Un hilo que lanza una excepción no tiene a quién informar, así que
++ su excepción se imprime, o se pierde, o se entrega a un manejador que no tiene ni idea de qué se
++ estaba intentando. El fallo de una tarea se propaga al ámbito que la posee, que cancela las demás
++ hijas de ese ámbito, porque el trabajo emprendido en nombre de un cálculo que ya ha fallado es un
++ trabajo que nadie quiere ver terminado.
+
+- **Cancellation reaches the whole subtree.** Cancelling a scope cancels its children,
+- which cancel theirs. There is no set of thread references to maintain and no possibility
+- of missing one, because the ownership tree already exists.
++ **La cancelación llega a todo el subárbol.** Cancelar un ámbito cancela sus hijas, que cancelan las
++ suyas. No hay ningún conjunto de referencias a hilos que mantener ni posibilidad de olvidarse de
++ una, porque el árbol de propiedad ya existe.
+
+- **Nothing outlives its reason for existing.** A task cannot outlive the scope that
+- launched it, so "is that background work still running?" has a structural answer rather
+- than an empirical one.
++ **Nada sobrevive a su razón de existir.** Una tarea no puede sobrevivir al ámbito que la lanzó, así
++ que «¿sigue ejecutándose ese trabajo en segundo plano?» tiene una respuesta estructural en lugar de
++ una empírica.
+
+- ## What happens at the boundary
++ ## Qué ocurre en el límite
+
+- A scope must decide what to do about a child still running when the parent's body
+- finishes, and that decision is explicit rather than assumed. The *probate* names it:
++ Un ámbito debe decidir qué hacer con una hija que sigue ejecutándose cuando termina el cuerpo de la
++ madre, y esa decisión es explícita en lugar de supuesta. La *testamentaría* le da nombre:
+
+- ```tabular
++ ```tabular
+
+- column  Import
+- column  A child still running when the body finishes
+- row  `probates.awaitProbate`  is waited for
+- row  `probates.cancelProbate`  is cancelled
+- row  `probates.panicProbate`  is a panic
+- row  `probates.failProbate`  raises an `Async.Error`
++ column  Importación
++ column  Una hija que sigue ejecutándose cuando termina el cuerpo
++ row  `probates.awaitProbate`  se espera
++ row  `probates.cancelProbate`  se cancela
++ row  `probates.panicProbate`  provoca un pánico
++ row  `probates.failProbate`  lanza un `Async.Error`
+
+= row  `probates.failProbate`  raises an `Async.Error`
+- ```
++ ```
+
+- Each is defensible somewhere and none is safe to guess at, which is why there is no
+- default.
++ Cada una es defendible en algún sitio y no es seguro adivinar ninguna, y por eso no hay valor por
++ defecto.
+
+- A `daemon` is the deliberate exception: fire-and-forget work that the scope does not wait
+- for and cancels when it ends. It still cannot outlive its scope — it is unstructured only
+- in that nothing awaits its result.
++ Un `daemon` es la excepción deliberada: trabajo de disparar y olvidar que el ámbito no espera y que
++ cancela cuando termina. Aun así no puede sobrevivir a su ámbito; solo es no estructurado en el
++ sentido de que nada espera su resultado.
+
+- ## Suspension is visible
++ ## La suspensión es visible
+
+- Waiting is an effect, and it appears in the types like any other. Awaiting a task or a
+- promise, sleeping, and yielding all demand a `Monitor` capability, so a method that can
+- block says so in its signature:
++ Esperar es un efecto, y aparece en los tipos como cualquier otro. Esperar una tarea o una promesa,
++ dormir y ceder el paso exigen todos una capacidad `Monitor`, así que un método que puede bloquearse
++ lo dice en su signatura:
+
+= block says so in its signature:
+=
+- ```scala fuel
++ ```scala fuel
+
+= block says so in its signature:
+=
+= ```scala fuel
+- parse
++ parse
+
+- substitute ???  ...
++ substitute ???  ...
+
+= substitute ???  ...
+- ##
++ ##
+
+- def fetchAll(urls: List[HttpUrl])(using Monitor): List[Text] = ???
++ def fetchAll(urls: List[HttpUrl])(using Monitor): List[Text] = ???
+
+= def fetchAll(urls: List[HttpUrl])(using Monitor): List[Text] = ???
+- ```
++ ```
+
+- This is the same discipline that [honest signatures](honest-signatures.md) apply to
+- failure. A caller can see, from the type alone, whether a method might park the thread it
+- is called on.
++ Es la misma disciplina que las [signaturas honestas](honest-signatures.md) aplican al fallo. Quien
++ llama puede ver, solo por el tipo, si un método podría aparcar el hilo en el que se le llama.
+
+- Underneath, the unit of execution is a `Strand` rather than a thread, with the four
+- operations suspension needs: interrupt, join, park and unpark. Because a supervisor
+- supplies strands and a supervisor is a value, a scheduler that is not built on threads —
+- an event loop over WebAssembly's waitable sets — plugs in without changing any code that
+- spawns or awaits.
++ Por debajo, la unidad de ejecución es una `Strand` en lugar de un hilo, con las cuatro operaciones
++ que necesita la suspensión: interrumpir, unirse, aparcar y desaparcar. Como un supervisor
++ proporciona las hebras y un supervisor es un valor, un planificador que no se construye sobre
++ hilos —un bucle de eventos sobre los conjuntos esperables de WebAssembly— se conecta sin cambiar
++ nada del código que genera o espera tareas.
+
+- ## A daemon's errors do not travel backward
++ ## Los errores de un demonio no viajan hacia atrás
+
+- One subtlety follows from taking ownership seriously. A daemon's body cannot capture an
+- error handler from the code that spawned it, because by the time the daemon fails, that
+- code has moved on — delivering the error there would mean resuming a computation that
+- has already finished. A failing daemon therefore escalates as a `Fault`, which a program
+- intercepts where it handles the unexpected.
++ De tomarse en serio la propiedad se deriva una sutileza. El cuerpo de un demonio no puede capturar
++ un manejador de errores del código que lo generó, porque para cuando el demonio falla, ese código
++ ya ha seguido adelante: entregarle el error significaría reanudar un cálculo que ya ha terminado.
++ Por eso un demonio que falla escala como un `Fault`, que un programa intercepta allí donde trata lo
++ inesperado.
+
+- This is the kind of case that unstructured concurrency leaves undefined and that
+- structure forces into the open: the question "where does this error go?" always has an
+- answer, even when the answer is "not where you might have assumed".
++ Este es el tipo de caso que la concurrencia no estructurada deja sin definir y que la estructura
++ obliga a sacar a la luz: la pregunta «¿adónde va este error?» siempre tiene respuesta, aunque la
++ respuesta sea «no adonde podrías haber supuesto».
+
+- ## What it costs
++ ## Lo que cuesta
+
+- Structure constrains what can be expressed. Work that genuinely must outlive its
+- initiating scope — a background service started during a request, say — cannot simply be
+- spawned and forgotten; it must be owned by a scope that lives long enough, which means
+- arranging one. That is more work than starting a thread, and it is more work for a
+- reason: an unowned thread is exactly the thing whose lifetime nobody can subsequently
+- reason about.
++ La estructura restringe lo que puede expresarse. El trabajo que realmente debe sobrevivir al ámbito
++ que lo inició —por ejemplo, un servicio en segundo plano iniciado durante una petición— no puede
++ simplemente generarse y olvidarse; debe poseerlo un ámbito que viva lo suficiente, lo que significa
++ disponer uno. Eso es más trabajo que lanzar un hilo, y es más trabajo por una razón: un hilo sin
++ dueño es exactamente aquello sobre cuya vida nadie puede razonar después.
+
+- See [delimited scopes](delimited-scopes.md) for the general shape this is an instance of,
+- and [capture checking](capture-checking.md) for how escape is made impossible rather than
+- merely discouraged.
++ Véase [ámbitos delimitados](delimited-scopes.md) para la forma general de la que esto es una
++ instancia, y [comprobación de capturas](capture-checking.md) para cómo se hace imposible la fuga en
++ lugar de simplemente desaconsejarla.

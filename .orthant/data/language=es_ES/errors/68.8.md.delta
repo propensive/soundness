@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.68.8` — Name is not valid in any namespace in scope
++ # `↯/s.68.8` — El nombre no es válido en ningún espacio de nombres del ámbito
+
+- Raised at compiletime when a name literal satisfies none of the namespaces available.
++ Se lanza en tiempo de compilación cuando un literal de nombre no satisface ninguno de los
++ espacios de nombres disponibles.
+
+- ## Cause
++ ## Causa
+
+- An `n"…"` literal is resolved against the namespaces in scope. This error means no namespace
+- in scope admits it.
++ Un literal `n"…"` se resuelve con respecto a los espacios de nombres del ámbito. Este error
++ significa que ningún espacio de nombres del ámbito lo admite.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.68.8] the name my/name is not a valid identifier in any namespace in scope
++ [↯/s.68.8] the name my/name is not a valid identifier in any namespace in scope
+
+= [↯/s.68.8] the name my/name is not a valid identifier in any namespace in scope
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Correct the name, or bring the intended namespace into scope so that its rules apply.
++ Corrige el nombre, o introduce en el ámbito el espacio de nombres previsto para que se apliquen
++ sus reglas.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/nomenclature/src/core/nomenclature.protointernal.scala`
++ - Fuente: `lib/nomenclature/src/core/nomenclature.protointernal.scala`

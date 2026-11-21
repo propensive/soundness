@@ -1,0 +1,232 @@
+orthant 1 language
+
+- # Small APIs
++ # API pequeñas
+
+- Soundness keeps its APIs small by giving one operation one name. A single polymorphic
+- method — `read`, `as`, `show` — serves every type that supports it, instead of a
+- family of near-duplicates that differ only in what they apply to. There is one obvious
+- way to do a thing, so there is less to learn, less to remember, and less chance of
+- reaching for the wrong variant. The breadth of what an API can do comes from the range
+- of types it ranges over, not from the number of methods it offers.
++ Soundness mantiene sus API pequeñas dando a cada operación un solo nombre. Un único método
++ polimórfico —`read`, `as`, `show`— sirve a todos los tipos que lo admiten, en lugar de una familia
++ de casi duplicados que solo difieren en aquello a lo que se aplican. Hay una manera obvia de hacer
++ cada cosa, así que hay menos que aprender, menos que recordar y menos riesgo de recurrir a la
++ variante equivocada. La amplitud de lo que puede hacer una API procede de la gama de tipos que
++ abarca, no del número de métodos que ofrece.
+
+- ## One verb, many types
++ ## Un verbo, muchos tipos
+
+- `read` parses a source into the type asked for. There is no `readJson`, no `parseXml`,
+- no `fromCsv` — the type argument says what is wanted, and an instance for that type does
+- the work:
++ `read` analiza una fuente y la convierte en el tipo pedido. No hay `readJson`, ni `parseXml`, ni
++ `fromCsv`: el argumento de tipo dice lo que se quiere, y una instancia para ese tipo hace el
++ trabajo:
+
+= the work:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the work:
+=
+= ```scala fuel
+- parse
++ parse
+
+= the work:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- source.read[Json]
++ source.read[Json]
+
+- source.read[Xml]
++ source.read[Xml]
+
+- source.read[Markdown of Layout]
++ source.read[Markdown of Layout]
+
+- source.read[Raster in Png]
++ source.read[Raster in Png]
+
+- source.read[Person in Dsv]
++ source.read[Person in Dsv]
+
+= source.read[Person in Dsv]
+- ```
++ ```
+
+- Adding a format adds instances, not methods. The vocabulary a reader must learn does not
+- grow when the library does.
++ Añadir un formato añade instancias, no métodos. El vocabulario que debe aprender el lector no crece
++ cuando crece la biblioteca.
+
+- The same holds throughout. Each verb is one method, whose meaning for a given type comes
+- from one typeclass:
++ Lo mismo vale en todas partes. Cada verbo es un método, cuyo significado para un tipo dado procede
++ de una clase de tipos:
+
+- ```tabular
++ ```tabular
+
+- column  Verb
+- column  Does
+- column  Typeclass
+- row  `read`  reads a source as a value  `Readable`
+- row  `as`  decodes  `Decodable`
+- row  `show`  renders for a person  `Showable`
+- row  `inspect`  renders for a programmer  `Inspectable`
+- row  `in`  encodes into a format  `Encodable`
+- row  `stream`  exposes a value as a stream  `Streamable`
+- row  `digest`  hashes  `Digestible`
+- row  `serialize`  renders bytes in a base encoding  `Serializable`
++ column  Verbo
++ column  Hace
++ column  Clase de tipos
++ row  `read`  lee una fuente como un valor  `Readable`
++ row  `as`  decodifica  `Decodable`
++ row  `show`  representa para una persona  `Showable`
++ row  `inspect`  representa para un programador  `Inspectable`
++ row  `in`  codifica en un formato  `Encodable`
++ row  `stream`  expone un valor como un flujo  `Streamable`
++ row  `digest`  calcula un hash  `Digestible`
++ row  `serialize`  representa bytes en una codificación de base  `Serializable`
+
+= row  `serialize`  renders bytes in a base encoding  `Serializable`
+- ```
++ ```
+
+- So decoding, encoding, hashing and serializing read alike, whatever the type:
++ Así, decodificar, codificar, calcular hashes y serializar se leen igual, sea cual sea el tipo:
+
+= So decoding, encoding, hashing and serializing read alike, whatever the type:
+=
+- ```scala fuel
++ ```scala fuel
+
+= So decoding, encoding, hashing and serializing read alike, whatever the type:
+=
+= ```scala fuel
+- parse
++ parse
+
+= So decoding, encoding, hashing and serializing read alike, whatever the type:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- t"2024-01-15".as[Date]
++ t"2024-01-15".as[Date]
+
+- t"example.com".as[Hostname]
++ t"example.com".as[Hostname]
+
+- person.in[Json]
++ person.in[Json]
+
+- person.in[Cbor]
++ person.in[Cbor]
+
+- payload.digest[Sha2[256]].serialize[Hex]
++ payload.digest[Sha2[256]].serialize[Hex]
+
+= payload.digest[Sha2[256]].serialize[Hex]
+- ```
++ ```
+
+- ## What makes it possible
++ ## Qué lo hace posible
+
+- Three things, and none of them is naming discipline alone.
++ Tres cosas, y ninguna de ellas es solo disciplina en los nombres.
+
+- **Typeclasses supply the meaning.** `read` is one method whose behaviour comes from a
+- `Readable` instance; `as` from a `Decodable`; `show` from a `Showable`. The method is a
+- name for a *relationship*, not for an implementation.
++ **Las clases de tipos aportan el significado.** `read` es un método cuyo comportamiento procede de
++ una instancia de `Readable`; `as`, de una de `Decodable`; `show`, de una de `Showable`. El método es
++ el nombre de una *relación*, no de una implementación.
+
+- **The type argument carries the intent** that a longer name would otherwise carry.
+- `read[Json]` says as much as `readJson` in the same number of characters, and composes:
+- `read[Person in Json]` has no reasonable name at all in the other scheme.
++ **El argumento de tipo transmite la intención** que, de otro modo, transmitiría un nombre más largo.
++ `read[Json]` dice tanto como `readJson` con el mismo número de caracteres, y se compone:
++ `read[Person in Json]` no tiene ningún nombre razonable en el otro esquema.
+
+- **Uniqueness of names makes the umbrella import safe.** Because there is one `Path` and
+- one `Error` in the whole of `soundness`, a single `import soundness.*` never forces a
+- choice between two things called the same — which is what allows one verb to be
+- genuinely one verb rather than several shadowing each other. See
+- [naming](naming.md).
++ **La unicidad de los nombres hace segura la importación del paraguas.** Como hay un solo `Path` y un
++ solo `Error` en todo `soundness`, un único `import soundness.*` nunca obliga a elegir entre dos cosas
++ con el mismo nombre, y eso es lo que permite que un verbo sea de verdad un solo verbo y no varios
++ que se ocultan entre sí. Véase [nombres](naming.md).
+
+- ## The counter-pressure
++ ## La presión contraria
+
+- A small API is not an API with few capabilities, and the principle is not "add no
+- methods". It is a constraint on *how* capability is added: by widening the range of
+- types an existing operation covers, before adding an operation.
++ Una API pequeña no es una API con pocas capacidades, y el principio no es «no añadir métodos». Es
++ una restricción sobre *cómo* se añade capacidad: ampliando la gama de tipos que cubre una operación
++ existente antes de añadir una operación.
+
+- Two forces push the other way, and both are legitimate in their place.
++ Dos fuerzas empujan en sentido contrario, y ambas son legítimas en su lugar.
+
+- The first is when an operation genuinely differs. `read` and `load` are two verbs for
+- [XML](../en/modules/xml.md), because reading yields the content and loading yields the
+- document with its header — a real distinction, not a variant. Collapsing them would
+- force a flag argument, which is a worse way to say the same thing.
++ La primera se da cuando una operación es de verdad distinta. `read` y `load` son dos verbos para
++ [XML](../en/modules/xml.md), porque leer produce el contenido y cargar produce el documento con su
++ cabecera: una distinción real, no una variante. Fusionarlos obligaría a usar un argumento indicador,
++ que es una manera peor de decir lo mismo.
+
+- The second is when a domain has its own vocabulary that a general verb would obscure. A
+- `Tarfile` has `gzip`, not `in[Gzip]`, because "a gzipped tarball" is the thing the domain
+- names. Insisting on the general verb everywhere makes an API uniform and unreadable,
+- which trades one kind of learning cost for another.
++ La segunda se da cuando un dominio tiene su propio vocabulario, que un verbo general ocultaría. Un
++ `Tarfile` tiene `gzip`, no `in[Gzip]`, porque «un tarball comprimido con gzip» es lo que nombra el
++ dominio. Insistir en el verbo general en todas partes hace una API uniforme e ilegible, lo que
++ cambia un tipo de coste de aprendizaje por otro.
+
+- ## What it costs
++ ## Lo que cuesta
+
+- Polymorphic methods put weight on inference and on error messages. When
+- `source.read[Person in Json]` fails because an instance is missing, the compiler's
+- default complaint is about an implicit search, not about a missing codec — which is
+- further from the problem than "no method `readPerson`" would have been.
++ Los métodos polimórficos cargan peso sobre la inferencia y sobre los mensajes de error. Cuando
++ `source.read[Person in Json]` falla porque falta una instancia, la queja por defecto del compilador
++ trata de una búsqueda implícita, no de un códec que falta, lo que está más lejos del problema de lo
++ que habría estado «no existe el método `readPerson`».
+
+- That cost is paid down rather than denied: importing `explainMissingContext` turns the
+- bare implicit error into a diagnosis that names the import which would satisfy it. The
+- trade — a slightly worse failure mode for a much smaller vocabulary — is only worth
+- making if the failure mode is repaired, so it is.
++ Ese coste se amortiza en lugar de negarse: importar `explainMissingContext` convierte el error
++ implícito desnudo en un diagnóstico que nombra la importación que lo satisfaría. El intercambio
++ —un modo de fallo algo peor a cambio de un vocabulario mucho menor— solo merece la pena si se
++ repara el modo de fallo, y por eso se repara.
+
+- See [elegant prose](elegant-prose.md) for why the vocabulary being learnable by analogy
+- is the real prize, and [composability](composability.md) for what the uniformity buys.
++ Véase [prosa elegante](elegant-prose.md) para saber por qué el verdadero premio es que el
++ vocabulario pueda aprenderse por analogía, y [componibilidad](composability.md) para lo que compra
++ la uniformidad.

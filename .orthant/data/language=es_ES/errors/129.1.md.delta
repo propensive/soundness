@@ -1,0 +1,51 @@
+orthant 1 language
+
+- # `↯/s.129.1` — `Mathml.Error`
++ # `↯/s.129.1` — `Mathml.Error`
+
+- Raised when MathML content cannot be read as the typed elements Archimedes models.
++ Se lanza cuando no puede leerse un contenido MathML como los elementos con tipo que modela Archimedes.
+
+- ## Cause
++ ## Causa
+
+- Archimedes represents MathML as typed elements, so an element or attribute outside the
+- subset it models cannot be constructed or parsed.
++ Archimedes representa MathML como elementos con tipo, así que un elemento o atributo fuera del
++ subconjunto que modela no puede construirse ni analizarse.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Código
++ column  Motivo
++ column  Mensaje
+
+- row  `↯/s.129.1.1`  `NotMathml`  `[↯/s.129.1.1] the root element was <<label>> instead of <math>`
++ row  `↯/s.129.1.1`  `NotMathml`  `[↯/s.129.1.1] the root element was <<label>> instead of <math>`
+
+- row  `↯/s.129.1.2`  `UnknownElement`  `[↯/s.129.1.2] the element <<label>> is not a known MathML element`
++ row  `↯/s.129.1.2`  `UnknownElement`  `[↯/s.129.1.2] the element <<label>> is not a known MathML element`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Check the element against the MathML specification and against what Archimedes models.
+- Presentation MathML is covered more fully than content MathML.
++ Comprueba el elemento frente a la especificación de MathML y frente a lo que modela Archimedes. El
++ MathML de presentación está cubierto más a fondo que el MathML de contenido.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/archimedes/src/core/archimedes.Mathml.scala`
++ - Código fuente: `lib/archimedes/src/core/archimedes.Mathml.scala`

@@ -1,0 +1,66 @@
+orthant 1 language
+
+- # `↯/s.137.1` — `Link.Error`
++ # `↯/s.137.1` — `Link.Error`
+
+- Raised when linking a compilation into an artifact fails.
++ Se lanza cuando falla el enlazado de una compilación en un artefacto.
+
+- ## Cause
++ ## Causa
+
+- Linking turns a compilation's output into an executable JAR, a JavaScript bundle, a native
+- binary or an Android package. This error covers the linker terminating abnormally, and the
+- entry-point requirements each artifact imposes.
++ El enlazado convierte la salida de una compilación en un JAR ejecutable, un bundle de JavaScript,
++ un binario nativo o un paquete de Android. Este error abarca la terminación anómala del enlazador
++ y los requisitos de punto de entrada que impone cada artefacto.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.137.1.1` — `Failed`
++ ### `↯/s.137.1.1` — `Failed`
+
+- **Example.** `[↯/s.137.1.1] the linker terminated abnormally`
++ **Ejemplo.** `[↯/s.137.1.1] the linker terminated abnormally`
+
+- ### `↯/s.137.1.3` — `NoEntryPoint`
++ ### `↯/s.137.1.3` — `NoEntryPoint`
+
+- **Example.** `[↯/s.137.1.3] the artifact requires exactly one entry point`
++ **Ejemplo.** `[↯/s.137.1.3] the artifact requires exactly one entry point`
+
+- ### `↯/s.137.1.4` — `ManyEntryPoints`
++ ### `↯/s.137.1.4` — `ManyEntryPoints`
+
+- **Example.** `[↯/s.137.1.4] an executable JAR permits at most one entry point`
++ **Ejemplo.** `[↯/s.137.1.4] an executable JAR permits at most one entry point`
+
+- ### `↯/s.137.1.11` — `CompilationFailed`
++ ### `↯/s.137.1.11` — `CompilationFailed`
+
+- **Example.** `[↯/s.137.1.11] compilation failed with 2 errors`
++ **Ejemplo.** `[↯/s.137.1.11] compilation failed with 2 errors`
+
+- The reason carries every diagnostic the compiler reported, as `notices`.
++ El motivo lleva, como `notices`, todos los diagnósticos que informó el compilador.
+
+- ## Resolution
++ ## Solución
+
+- An executable JAR permits at most one entry point and a native executable requires exactly
+- one; the reason says which rule was broken. A linker that terminated abnormally carries its
+- stack trace.
++ Un JAR ejecutable admite como mucho un punto de entrada y un ejecutable nativo requiere
++ exactamente uno; el motivo indica qué regla se ha incumplido. Un enlazador que terminó de forma
++ anómala lleva su traza de pila.
+
+- > This error previously used the code `↯/s.137.3`, which collided with `CompilerError`.
++ > Este error usaba antes el código `↯/s.137.3`, que colisionaba con `CompilerError`.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/anthology/src/core/anthology.Link.scala`
++ - Fuente: `lib/anthology/src/core/anthology.Link.scala`

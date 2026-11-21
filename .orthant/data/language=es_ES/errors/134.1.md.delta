@@ -1,0 +1,57 @@
+orthant 1 language
+
+- # `↯/s.134.1` — `Yaml.Error`
++ # `↯/s.134.1` — `Yaml.Error`
+
+- Raised when a YAML document cannot be parsed, or cannot be read as the type asked for.
++ Se lanza cuando un documento YAML no se puede analizar, o no se puede leer como el tipo pedido.
+
+- ## Cause
++ ## Causa
+
+- Ypsiloid reports both parse failures and conversion failures through this error. A parse
+- failure means the text is not well-formed YAML; a conversion failure means the document is
+- valid but does not have the shape the target type requires.
++ Ypsiloid notifica mediante este error tanto los fallos de análisis como los de conversión. Un
++ fallo de análisis significa que el texto no es YAML bien formado; un fallo de conversión significa
++ que el documento es válido pero no tiene la forma que exige el tipo de destino.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Código
++ column  Motivo
++ column  Mensaje
+
+- row  `↯/s.134.1.1`  `NotType`  `[↯/s.134.1.1] the YAML value had type <found> instead of <expected>`
++ row  `↯/s.134.1.1`  `NotType`  `[↯/s.134.1.1] the YAML value had type <found> instead of <expected>`
+
+- row  `↯/s.134.1.2`  `Absent`  `[↯/s.134.1.2] the YAML value was not present`
++ row  `↯/s.134.1.2`  `Absent`  `[↯/s.134.1.2] the YAML value was not present`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- For a parse failure, check the document against the YAML specification — indentation and
+- block-scalar indicators are the usual culprits. For a conversion failure, compare the
+- document's shape with the type's fields; under an accruing strategy every mismatch is
+- reported at once, each with a path to the offending node.
++ Ante un fallo de análisis, comprueba el documento frente a la especificación de YAML: la sangría y
++ los indicadores de escalares de bloque son los culpables habituales. Ante un fallo de conversión,
++ compara la forma del documento con los campos del tipo; con una estrategia acumulativa, todas las
++ discrepancias se notifican a la vez, cada una con una ruta hasta el nodo problemático.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/ypsiloid/src/core/ypsiloid.Yaml.scala`
++ - Fuente: `lib/ypsiloid/src/core/ypsiloid.Yaml.scala`
