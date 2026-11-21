@@ -1,0 +1,12 @@
+orthant 1 language
+
+- Thirty-six currencies are defined, each as a value which constructs amounts. An amount is
+- written with either its symbol or its ISO code, as a style in scope decides.
++ Sechsunddreißig Währungen sind definiert, jede als Wert, der Beträge konstruiert. Ein Betrag
++ wird entweder mit seinem Symbol oder seinem ISO-Code geschrieben, wie es ein Stil im
++ Geltungsbereich festlegt.
+
+- Tax is rounded to the nearest minor unit, with a half rounded up. Twenty per cent of £2.94 is
+- £0.588, which is charged as £0.59:
++ Steuer wird auf die nächste Untereinheit gerundet, wobei eine Hälfte aufgerundet wird.
++ Zwanzig Prozent von 2,94 £ sind 0,588 £, die als 0,59 £ berechnet werden:

@@ -1,0 +1,19 @@
+orthant 1 language
+
+-       `jacinta.optics`. These are what make `json.lens(…)` work: the panopticon lens for a
+-       named field, and the optics which reach into arrays. They live in a package rather than
+-       `Json`'s companion so that a missing import is a compile error rather than a silent
+-       change of behaviour; `import optics.given` brings them all (or `import soundness.optics.given`,
+-       where every library's optics merge); a wildcard import does not import givens. A lens assignment also needs dynamic access enabled
+-       and, to assign a plain value, `conversions.encodableToJson`.
++       `jacinta.optics`. Diese lassen `json.lens(…)` funktionieren: die Panopticon-Lens für ein
++       benanntes Feld und die Optiken, die in Arrays greifen. Sie liegen in einem Paket statt im
++       Begleitobjekt von `Json`, damit ein fehlender Import ein Kompilierfehler ist statt einer
++       stillen Verhaltensänderung; `import optics.given` bringt sie alle mit (oder
++       `import soundness.optics.given`, wo die Optiken aller Bibliotheken zusammenfließen); ein
++       Wildcard-Import importiert keine Givens. Eine
++       Lens-Zuweisung braucht außerdem aktivierten dynamischen Zugriff und, um einen einfachen
++       Wert zuzuweisen, `conversions.encodableToJson`.
+
+-       import optics.given
++       import optics.given

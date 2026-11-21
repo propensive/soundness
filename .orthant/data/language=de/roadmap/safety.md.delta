@@ -1,0 +1,794 @@
+orthant 1 language
+
+- # Capabilities and Effects
++ # Capabilities und Effekte
+
+- Honest signatures are only as honest as their enforcement. Capture checking makes a signature's
+- promises about effects verifiable; separation checking makes mutation safe by construction; the
+- `raises` mechanism makes failure visible in types. All three are already the default — 435 of
+- the build's 447 modules compile with separation checking — but defaults are not the same as
+- guarantees. Every `caps.unsafe` call is a place where the checker was overruled by hand, and
+- each one is a standing IOU against the safety claim.
++ Ehrliche Signaturen sind nur so ehrlich wie ihre Durchsetzung. Capture-Checking macht die
++ Versprechen einer Signatur über Effekte überprüfbar; Separation-Checking macht Mutation von
++ vornherein sicher; der `raises`-Mechanismus macht Fehlschläge in Typen sichtbar. Alle drei sind
++ bereits die Vorgabe — 435 der 447 Module des Builds kompilieren mit Separation-Checking —, aber
++ Vorgaben sind nicht dasselbe wie Garantien. Jeder Aufruf von `caps.unsafe` ist eine Stelle, an der
++ der Checker von Hand überstimmt wurde, und jeder ist ein offener Schuldschein gegen den
++ Sicherheitsanspruch.
+
+- The escape hatches are therefore this track's central measure. Some are genuine debt with a
+- known retirement recipe; others are blocked on defects or gaps in the capture checker itself —
+- and those are ours to fix, because Soundness is built with the Proscala compiler by design. The
+- compiler is modifiable whenever capability or effect checking demands it; the `rep/` directory
+- holds a minimal reproduction of each blocker class, and `rep/STATUS.md` says which are fixed,
+- which are open, and which have been reported upstream. The one constraint is compatibility
+- outward: whatever Proscala does, the artifacts Soundness publishes must remain readable by the
+- mainline Scala compiler. The track ends when the grep for `caps.unsafe` returns nothing, and
+- that readability guarantee is enforced rather than assumed.
++ Die Notausgänge sind daher das zentrale Maß dieser Spur. Manche sind echte Schulden mit einem
++ bekannten Rezept zu ihrer Abschaffung; andere sind durch Defekte oder Lücken im Capture-Checker
++ selbst blockiert — und diese zu beheben, ist unsere Sache, weil Soundness bewusst mit dem
++ Proscala-Compiler gebaut wird. Der Compiler ist veränderbar, wann immer Capability- oder
++ Effektprüfung es verlangen; das Verzeichnis `rep/` enthält eine minimale Reproduktion jeder
++ Blockerklasse, und `rep/STATUS.md` sagt, welche behoben, welche offen und welche upstream gemeldet
++ sind. Die einzige Einschränkung ist die Kompatibilität nach außen: Was immer Proscala tut, die
++ Artefakte, die Soundness veröffentlicht, müssen für den Mainline-Scala-Compiler lesbar bleiben.
++ Die Spur endet, wenn das Grep nach `caps.unsafe` nichts mehr liefert und diese Lesbarkeitsgarantie
++ durchgesetzt statt angenommen wird.
+
+- Measured on 2026-10-07 over `lib/`, there are 1485 visible hatches, and roughly as many again
+- hidden behind the named wrappers:
++ Gemessen am 2026-10-07 über `lib/` gibt es 1485 sichtbare Notausgänge und noch einmal etwa so viele
++ hinter den benannten Wrappern versteckte:
+
+= hidden behind the named wrappers:
+=
+- ```tabular
++ ```tabular
+
+- column  Hatch
+- column  Kind
+- column  Count
+- row  `untrackedCaptures`  visible  505
+- row  `unsafeAssumePure`  visible  511
+- row  `unsafeAssumeSeparate`  visible  419
+- row  `unsafeErasedValue`  visible  50
+- row  `Array.unsafeFrozen`  wrapper  283
+- row  `Array.unsafeJvm`  wrapper  205
+- row  `Array.frozen`  wrapper  151
+- row  `unsafeMutable`/`unsafeImmutable`  wrapper  ~40
+- row  `!!`  wrapper  30
++ column  Notausgang
++ column  Art
++ column  Anzahl
++ row  `untrackedCaptures`  sichtbar  505
++ row  `unsafeAssumePure`  sichtbar  511
++ row  `unsafeAssumeSeparate`  sichtbar  419
++ row  `unsafeErasedValue`  sichtbar  50
++ row  `Array.unsafeFrozen`  Wrapper  283
++ row  `Array.unsafeJvm`  Wrapper  205
++ row  `Array.frozen`  Wrapper  151
++ row  `unsafeMutable`/`unsafeImmutable`  Wrapper  ~40
++ row  `!!`  Wrapper  30
+
+= row  `!!`  wrapper  30
+- ```
++ ```
+
+- The residue is not one problem but nine, and they are not equally hard. By root cause, the
+- clusters are:
++ Der Rest ist nicht ein Problem, sondern neun, und sie sind nicht gleich schwer. Nach Grundursache
++ sind die Cluster:
+
+= clusters are:
+=
+- ```tabular
++ ```tabular
+
+- column  Cluster
++ column  Cluster
+
+- column  Count
+- column  Retired by
+- row  `@untrackedCaptures` on `var`/`val` fields (437 vars; ~270 of them primitive, `Optional` or immutable-collection typed)  505  `safety-1`'s recipe, module by module
+- row  test-harness `unsafeAssumeSeparate` (tmux drivers, `await`, `recur`)  236  one loan-shaped helper per harness (`safety-9`)
+- row  derivation anchors `unsafeAssumePure(Json.…Derivation.derived)` in the JSON-RPC bindings  103  the field-purity rule, once tactics are shared (`safety-8`)
+- row  sealed codec givens whose SAM closes over a tactic  ~125  the honest `^{tactic}` given form, unblocked by `safety-8`
+- row  exclusive-tactic overlap `unsafeAssumeSeparate(json.as[…])` and the three seals in contingency itself  ~60  `safety-8`
+- row  self/callback/handle launders (`unsafeAssumePure(this)`, RPC proxies, stored callbacks)  ~60  per-site design
+- row  by-name element-codec thunks laundered to `() -> …`  ~46  nameable by-name captures (`safety-10`)
+- row  `unsafeErasedValue` for erased evidence  50  mechanical, if `compiletime.erasedValue` suffices
+- row  staging, quotes and macros (the quote wall)  ~27  compiler-side
++ column  Anzahl
++ column  Abgeschafft durch
++ row  `@untrackedCaptures` auf `var`/`val`-Feldern (437 vars; ~270 davon mit primitivem, `Optional`- oder unveränderlichem Collection-Typ)  505  das Rezept von `safety-1`, Modul für Modul
++ row  `unsafeAssumeSeparate` in Test-Harnesses (tmux-Treiber, `await`, `recur`)  236  ein leihförmiger Helfer pro Harness (`safety-9`)
++ row  Ableitungsanker `unsafeAssumePure(Json.…Derivation.derived)` in den JSON-RPC-Bindings  103  die Feldreinheitsregel, sobald Taktiken geteilt sind (`safety-8`)
++ row  versiegelte Codec-Givens, deren SAM eine Taktik einschließt  ~125  die ehrliche Given-Form `^{tactic}`, freigegeben durch `safety-8`
++ row  Überlappung exklusiver Taktiken `unsafeAssumeSeparate(json.as[…])` und die drei Siegel in contingency selbst  ~60  `safety-8`
++ row  Weißwaschungen von self/Callback/Handle (`unsafeAssumePure(this)`, RPC-Proxys, gespeicherte Callbacks)  ~60  Design pro Stelle
++ row  By-name-Thunks für Element-Codecs, zu `() -> …` weißgewaschen  ~46  benennbare By-name-Erfassungen (`safety-10`)
++ row  `unsafeErasedValue` für gelöschten Nachweis  50  mechanisch, wenn `compiletime.erasedValue` genügt
++ row  Staging, Quotes und Makros (die Quote-Mauer)  ~27  compilerseitig
+
+= row  staging, quotes and macros (the quote wall)  ~27  compiler-side
+- ```
++ ```
+
+- The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
++ Die Punkte der Spur, mit ihren Horizonten und harten Abhängigkeiten; [`status.tel`](status.tel) verzeichnet, wo jeder steht:
+
+= The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+=
+- ```tabular
++ ```tabular
+
+- column  Item
+- column  Title
+- column  Horizon
+- column  Needs
+- row  safety-1  retire `untrackedCaptures`  near
+- row  safety-2  every remaining hatch names its reason  near
+- row  safety-3  `rep/` runs on the pinned toolchain  near
+- row  safety-4  zero escape hatches  mid → long  safety-8, safety-10
+- row  safety-5  the fork is an asset, not a trap  long
+- row  safety-6  separation checking without exemption  long
+- row  safety-7  measure the whole escape surface, not one grep at a time  near
+- row  safety-8  tactics are shared capabilities  near  safety-3
+- row  safety-9  test harnesses do not seal  near → mid
+- row  safety-10  by-name parameters can be named in capture sets  mid  safety-3
+- row  safety-11  the 3.10 stream is evaluated for what it fixes  near → mid  safety-3
+- row  safety-12  a capabilities standard  near
++ column  Punkt
++ column  Titel
++ column  Horizont
++ column  Benötigt
++ row  safety-1  `untrackedCaptures` abschaffen  nah
++ row  safety-2  jeder verbleibende Notausgang nennt seinen Grund  nah
++ row  safety-3  `rep/` läuft auf der festgelegten Toolchain  nah
++ row  safety-4  null Notausgänge  mittel → fern  safety-8, safety-10
++ row  safety-5  der Fork ist ein Gewinn, keine Falle  fern
++ row  safety-6  Separation-Checking ohne Ausnahme  fern
++ row  safety-7  die ganze Notausgangsfläche messen, nicht ein Grep nach dem anderen  nah
++ row  safety-8  Taktiken sind geteilte Capabilities  nah  safety-3
++ row  safety-9  Test-Harnesses versiegeln nicht  nah → mittel
++ row  safety-10  By-name-Parameter können in Capture-Sets benannt werden  mittel  safety-3
++ row  safety-11  die 3.10-Linie wird daraufhin bewertet, was sie behebt  nah → mittel  safety-3
++ row  safety-12  ein Standard für Capabilities  nah
+
+= row  safety-12  a capabilities standard  near
+- ```
++ ```
+
+- ## safety-1: retire `untrackedCaptures`
++ ## safety-1: `untrackedCaptures` abschaffen
+
+- Horizon: near
+- Baseline: 385 occurrences (measured 2026-10-21; 484 on 2026-10-08; 507 on 2026-10-07; 468 on 2026-09-25; 288 on 2026-08-01)
++ Horizont: nah
++ Ausgangswert: 385 Vorkommen (gemessen 2026-10-21; 484 am 2026-10-08; 507 am 2026-10-07; 468 am 2026-09-25; 288 am 2026-08-01)
+
+- The retirement recipe is documented and mechanical: the annotated class becomes `caps.Mutable`,
+- mutating methods become `update def`, consumers hold `X^`, and mutual back-references are
+- flattened. 437 of the annotations are on `var`s, and about 270 of those are primitives,
+- `Optional`s or immutable collections in classes that are not yet `Mutable` — pure data behind a
+- missing classifier. The first modules are the ones already partly migrated (xylophone's `Xml`
+- parser, sibylline's `Llm`, stratiform's `Tel`, zephyrine's core), then the others by size. The
+- 88 `AnyRef | Null` fields are different: each is a capability handle smuggled past the checker,
+- and each is a design case, not a sweep. The first sweep (stripping every primitive-typed
+- annotation and letting the compiler object) found only 2 of 140 removable: the rest guard
+- `var`s in classes that are not `Stateful`, or locals captured by closures, and making a class
+- `Stateful` brings the read-only and `update def` discipline to it and its callers — so the
+- recipe is one class per change. The first, `profanity.Board` with its six surfaces (and
+- `Terminal`, whose size the surfaces read), removed 22 annotations and three separation seals
+- for one tagged purity seal (`Stdio.print` is read-only by interface); `rep/DECISIONS.md`
+- records the recipe as it actually went, including the two rules that shaped it: a read-only
+- method may not use a captured impure thunk, and a factory must return a fresh `X^` or every
+- holder becomes a read-only alias.
++ Das Rezept zur Abschaffung ist dokumentiert und mechanisch: Die annotierte Klasse wird zu
++ `caps.Mutable`, mutierende Methoden werden zu `update def`, Verwender halten `X^`, und gegenseitige
++ Rückverweise werden abgeflacht. 437 der Annotationen stehen auf `var`s, und etwa 270 davon sind
++ Primitive, `Optional`s oder unveränderliche Collections in Klassen, die noch nicht `Mutable` sind —
++ reine Daten hinter einem fehlenden Klassifikator. Die ersten Module sind die bereits teilweise
++ migrierten (der `Xml`-Parser von xylophone, `Llm` von sibylline, `Tel` von stratiform, der Kern von
++ zephyrine), dann die übrigen nach Größe. Die 88 `AnyRef | Null`-Felder sind anders: Jedes ist ein
++ Capability-Handle, das am Checker vorbeigeschmuggelt wird, und jedes ist ein Designfall, keine
++ Überarbeitung in einem Durchgang. Die erste Überarbeitung (jede Annotation mit primitivem Typ
++ entfernen und den Compiler widersprechen lassen) fand nur 2 von 140 entfernbar: Der Rest schützt
++ `var`s in Klassen, die nicht `Stateful` sind, oder lokale Variablen, die von Closures erfasst
++ werden, und eine Klasse `Stateful` zu machen, bringt die Disziplin aus Nur-Lesen und `update def`
++ zu ihr und ihren Aufrufern — daher ist das Rezept eine Klasse pro Änderung. Die erste,
++ `profanity.Board` mit ihren sechs Flächen (und `Terminal`, dessen Größe die Flächen lesen),
++ entfernte 22 Annotationen und drei Separationssiegel zugunsten eines getaggten Reinheitssiegels
++ (`Stdio.print` ist per Schnittstelle nur lesend); `rep/DECISIONS.md` verzeichnet das Rezept, wie es
++ tatsächlich verlief, einschließlich der beiden Regeln, die es geprägt haben: Eine nur lesende
++ Methode darf keinen erfassten unreinen Thunk verwenden, und eine Fabrik muss ein frisches `X^`
++ zurückgeben, sonst wird jeder Halter zu einem nur lesenden Alias.
+
+= holder becomes a read-only alias.
+=
+- Done when:
++ Erledigt, wenn:
+
+-     git grep -o untrackedCaptures -- lib | wc -l    # 0
++     git grep -o untrackedCaptures -- lib | wc -l    # 0
+
+- ## safety-2: every remaining hatch names its reason
++ ## safety-2: jeder verbleibende Notausgang nennt seinen Grund
+
+- Done: #2306 (2026-10-21)
+- Baseline was 419 `unsafeAssumeSeparate`, 511 `unsafeAssumePure`, 50 `unsafeErasedValue` (measured 2026-10-07; 416, 502 and 50 on 2026-09-25; 323, 273 and 45 on 2026-08-01); 37 of them cited `rep/` at all, 2 by case. On 2026-10-21 the hatches number 218, 289, 35 and 381 `untrackedCaptures`, every one tagged; `etc/check-escape-count.py --tags` reads the residue per tag, and its ratchet holds `untagged` at zero.
++ Erledigt: #2306 (2026-10-21)
++ Der Ausgangswert war 419 `unsafeAssumeSeparate`, 511 `unsafeAssumePure`, 50 `unsafeErasedValue` (gemessen 2026-10-07; 416, 502 und 50 am 2026-09-25; 323, 273 und 45 am 2026-08-01); 37 davon verwiesen überhaupt auf `rep/`, 2 auf einen konkreten Fall. Am 2026-10-21 zählen die Notausgänge 218, 289, 35 und 381 `untrackedCaptures`, jeder einzelne getaggt; `etc/check-escape-count.py --tags` liest den Rest pro Tag, und seine Ratsche hält `untagged` bei null.
+
+- Each occurrence is either fixable now or blocked on something named. The triage makes the
+- distinction explicit with a closed vocabulary of reason tags, defined in the capabilities
+- standard (`safety-12`) and each mapped to a `rep/` case or a section of the standard —
+- `[tactic-overlap]`, `[field-purity]`, `[by-name-capture]`, `[quote-wall]`, `[curried-cft]`,
+- `[js-expandsams]`, `[iarray-opacity]`, `[fresh-in-lambda]`, `[registry-lifetime]`,
+- `[test-harness]` and so on. A hatch carries its tag in an adjacent comment; the census
+- (`safety-7`) counts the residue per tag, which is what decides the fork queue, and fails on an
+- untagged site once the untagged count has been ratcheted to zero.
++ Jedes Vorkommen ist entweder jetzt behebbar oder durch etwas Benanntes blockiert. Die Triage macht
++ die Unterscheidung explizit, mit einem geschlossenen Vokabular von Grund-Tags, das im
++ Capabilities-Standard (`safety-12`) definiert ist und von dem jedes Tag auf einen `rep/`-Fall oder
++ einen Abschnitt des Standards abgebildet ist — `[tactic-overlap]`, `[field-purity]`,
++ `[by-name-capture]`, `[quote-wall]`, `[curried-cft]`, `[js-expandsams]`, `[iarray-opacity]`,
++ `[fresh-in-lambda]`, `[registry-lifetime]`, `[test-harness]` und so weiter. Ein Notausgang trägt
++ sein Tag in einem benachbarten Kommentar; der Zensus (`safety-7`) zählt den Rest pro Tag, was über
++ die Warteschlange des Forks entscheidet, und schlägt bei einer ungetaggten Stelle fehl, sobald die
++ Zahl der ungetaggten per Ratsche auf null gebracht ist.
+
+- Done when: every remaining `caps.unsafe` occurrence in `lib/` carries a reason tag, verified by
+- the census script reporting zero untagged occurrences — `python3 etc/check-escape-count.py --tags`.
++ Erledigt, wenn: jedes verbleibende Vorkommen von `caps.unsafe` in `lib/` ein Grund-Tag trägt,
++ nachgewiesen dadurch, dass das Zensus-Skript null ungetaggte
++ Vorkommen meldet — `python3 etc/check-escape-count.py --tags`.
+
+- ## safety-3: `rep/` runs on the pinned toolchain
++ ## safety-3: `rep/` läuft auf der festgelegten Toolchain
+
+= ## safety-3: `rep/` runs on the pinned toolchain
+=
+- Horizon: near
++ Horizont: nah
+
+- The queue is only a queue if its entries can be run. Until 2026-10-07 `rep/compile.sh` fetched
+- a stock 3.8.4 compiler and the probe scripts named locally-built worktrees, so no case had been
+- re-run under the fork release the build actually uses — and the fork's opt-in repairs (`-Z…`)
+- were never passed, so a fixed case could still show red. `rep/toolchain.sh` now runs `dotc`
+- from the cached release with the `-Z` flags read from `build.mill`; every case and the probe
+- suite re-run under it, and `rep/STATUS.md` records the verdicts. The `capturing-raises` class
+- this item used to name was fixed at source on 2026-07-06 (ambient tactics as `caps.Unscoped`)
+- and compiles; the dominant classes now are the exclusive-tactic overlap (`safety-8`) and the
+- by-name capture gap (`safety-10`).
++ Die Warteschlange ist nur dann eine Warteschlange, wenn ihre Einträge ausführbar sind. Bis zum
++ 2026-10-07 holte `rep/compile.sh` einen unveränderten 3.8.4-Compiler, und die Sondierungsskripte
++ nannten lokal gebaute Worktrees, sodass kein Fall unter dem Fork-Release erneut ausgeführt worden
++ war, das der Build tatsächlich verwendet — und die optionalen Reparaturen des Forks (`-Z…`) wurden
++ nie übergeben, sodass ein behobener Fall weiterhin rot erscheinen konnte. `rep/toolchain.sh` führt
++ `dotc` nun aus dem zwischengespeicherten Release aus, mit den aus `build.mill` gelesenen
++ `-Z`-Flags; jeder Fall und die Sondierungssuite laufen darunter erneut, und `rep/STATUS.md`
++ verzeichnet die Urteile. Die Klasse `capturing-raises`, die dieser Punkt früher nannte, wurde am
++ 2026-07-06 an der Quelle behoben (ambiente Taktiken als `caps.Unscoped`) und kompiliert; die
++ vorherrschenden Klassen sind nun die Überlappung exklusiver Taktiken (`safety-8`) und die Lücke
++ bei By-name-Erfassungen (`safety-10`).
+
+- Done when: `rep/STATUS.md` records a verdict for every case under the pinned release, and the
+- probe suite and every calibrated case run green-as-expected from a clean checkout.
++ Erledigt, wenn: `rep/STATUS.md` für jeden Fall unter dem festgelegten Release ein Urteil
++ verzeichnet und die Sondierungssuite und jeder kalibrierte Fall aus einem sauberen Checkout
++ erwartungsgemäß grün laufen.
+
+- ## safety-4: zero escape hatches
++ ## safety-4: null Notausgänge
+
+- Horizon: mid → long
+- Needs: safety-8, safety-10
+- Baseline: 928 occurrences in total (measured 2026-10-21; 1485 on 2026-10-07; 1436 on 2026-09-25; 929 on 2026-08-01)
++ Horizont: mittel → fern
++ Benötigt: safety-8, safety-10
++ Ausgangswert: insgesamt 928 Vorkommen (gemessen 2026-10-21; 1485 am 2026-10-07; 1436 am 2026-09-25; 929 am 2026-08-01)
+
+- With the blockers fixed, the residue burns down to nothing. The grep is the signal.
++ Sind die Blocker behoben, schmilzt der Rest auf nichts zusammen. Das Grep ist das Signal.
+
+= With the blockers fixed, the residue burns down to nothing. The grep is the signal.
+=
+- Done when:
++ Erledigt, wenn:
+
+-     git grep -oE 'unsafeAssumeSeparate|untrackedCaptures|unsafeAssumePure|unsafeErasedValue' -- lib | wc -l    # 0
++     git grep -oE 'unsafeAssumeSeparate|untrackedCaptures|unsafeAssumePure|unsafeErasedValue' -- lib | wc -l    # 0
+
+- ## safety-5: the fork is an asset, not a trap
++ ## safety-5: der Fork ist ein Gewinn, keine Falle
+
+= ## safety-5: the fork is an asset, not a trap
+=
+- Horizon: long
++ Horizont: fern
+
+- Building with Proscala is a design decision, not debt: the freedom to fix the capture checker
+- is what makes zero escape hatches reachable at all. What keeps that freedom safe is downstream
+- readability — every published artifact remains consumable from a project built with the
+- mainline Scala compiler — and a rebase onto each upstream release whose cost is known rather
+- than feared.
++ Mit Proscala zu bauen, ist eine Designentscheidung, keine Schuld: Die Freiheit, den Capture-Checker
++ zu reparieren, ist das, was null Notausgänge überhaupt erreichbar macht. Was diese Freiheit sicher
++ hält, ist die Lesbarkeit stromabwärts — jedes veröffentlichte Artefakt bleibt aus einem Projekt
++ heraus nutzbar, das mit dem Mainline-Scala-Compiler gebaut wird — und ein Rebase auf jedes
++ Upstream-Release, dessen Kosten bekannt sind statt gefürchtet.
+
+- Soundness's published artifacts reference one fork-only library symbol — `scala.Spreadable`
+- (proscenium's `multiSpreads` givens); `scala.caps.SharedUnscoped`, which the ambient tactics
+- carried from `safety-8` until #2328 made them pure, is no longer referenced — shipped in the
+- fork's supplementary `proscala-library` jar. A mainline
+- consumer therefore needs that jar on its classpath; the readability test below must say so or
+- make it unnecessary.
++ Die veröffentlichten Artefakte von Soundness verweisen auf ein einziges Bibliothekssymbol, das es
++ nur im Fork gibt — `scala.Spreadable` (die `multiSpreads`-Givens von proscenium);
++ `scala.caps.SharedUnscoped`, das die ambienten Taktiken seit `safety-8` trugen, bis #2328 sie rein
++ machte, wird nicht mehr referenziert —, ausgeliefert im ergänzenden `proscala-library`-Jar des
++ Forks. Ein Mainline-Verwender braucht daher dieses Jar auf seinem Klassenpfad; der unten genannte
++ Lesbarkeitstest muss das sagen oder es überflüssig machen.
+
+- Done when: a CI test consumes published Soundness artifacts from a mainline-Scala project, and
+- `rep/` documents the rebase procedure and the measured cost of the two most recent rebases.
++ Erledigt, wenn: ein CI-Test veröffentlichte Soundness-Artefakte aus einem Mainline-Scala-Projekt
++ heraus nutzt und `rep/` das Rebase-Verfahren und die gemessenen Kosten der beiden jüngsten Rebases
++ dokumentiert.
+
+- ## safety-6: separation checking without exemption
++ ## safety-6: Separation-Checking ohne Ausnahme
+
+- Horizon: long
+- Baseline: 12 of 447 modules opt down from `settings.sep` — 11 to plain options, 1 to
+- `settings.cc` — each with a reason comment in `build.mill` (measured 2026-10-21; 81 of 464 on
+- 2026-10-07; 87 of 424 on 2026-09-25)
++ Horizont: fern
++ Ausgangswert: 12 von 447 Modulen stufen sich von `settings.sep` herab — 11 auf einfache Optionen, 1 auf
++ `settings.cc` —, jedes mit einem begründenden Kommentar in `build.mill` (gemessen 2026-10-21; 81 von 464 am
++ 2026-10-07; 87 von 424 am 2026-09-25)
+
+- Separation checking is now the default: since #2202 `Component`, `Tests` and `Benchmarks` all
+- compile with `settings.sep` unless they override `checking`, so a module is unchecked only by
+- declaration, never by omission. The twelve that remain each name their blocker — a suite object
+- holding exclusive payload arrays as fields (the rival-library benchmarks), the WASI backends
+- re-checked under a suppressed origin, orthodoxy's `NoPadding` tests — and the end-state has none.
+- Each is flipped by the single-shot probe (`rep/probe-suite.sh`, `rep/probe-core.sh`) once its
+- `rep/` case is green.
++ Separation-Checking ist jetzt die Vorgabe: Seit #2202 kompilieren `Component`, `Tests` und
++ `Benchmarks` alle mit `settings.sep`, sofern sie `checking` nicht überschreiben, sodass ein Modul
++ nur durch Deklaration ungeprüft ist, nie durch Auslassung. Die zwölf verbleibenden nennen jeweils
++ ihren Blocker — ein Suite-Objekt, das exklusive Nutzdaten-Arrays als Felder hält (die Benchmarks
++ gegen konkurrierende Bibliotheken), die WASI-Backends, die unter einem unterdrückten Ursprung neu
++ geprüft werden, die `NoPadding`-Tests von orthodoxy —, und im Endzustand gibt es keine. Jedes wird
++ durch die Einzelschuss-Sondierung (`rep/probe-suite.sh`, `rep/probe-core.sh`) umgestellt, sobald
++ sein `rep/`-Fall grün ist.
+
+- Done when: no component in `build.mill` compiles with anything weaker than `settings.sep`.
++ Erledigt, wenn: keine Komponente in `build.mill` mit etwas Schwächerem als `settings.sep`
++ kompiliert.
+
+- ## safety-7: measure the whole escape surface, not one grep at a time
++ ## safety-7: die ganze Notausgangsfläche messen, nicht ein Grep nach dem anderen
+
+= ## safety-7: measure the whole escape surface, not one grep at a time
+=
+- Horizon: near
++ Horizont: nah
+
+- The escape hatches this track burns down were counted by hand, from baselines that went stale
+- between measurements: `safety-4`'s 929 was measured in August 2026 and had drifted past 1400
+- before anyone recompiled the grep. Two ratchets covered a slice of the surface properly, per
+- file and enforced — `etc/check-while-count.py` for `while`, `readUnchecked` and `charAt`, and
+- `etc/check-stdlib-count.sh` for the `xs.stdlib` bridge, as one aggregate number over core sources
+- only — and the rest was unmeasured.
++ Die Notausgänge, die diese Spur abbaut, wurden von Hand gezählt, nach Ausgangswerten, die zwischen
++ den Messungen veralteten: Die 929 von `safety-4` wurden im August 2026 gemessen und waren auf über
++ 1400 gestiegen, bevor jemand das Grep neu ausführte. Zwei Ratschen deckten einen Ausschnitt der
++ Fläche ordentlich ab, pro Datei und durchgesetzt — `etc/check-while-count.py` für `while`,
++ `readUnchecked` und `charAt` sowie `etc/check-stdlib-count.sh` für die `xs.stdlib`-Brücke, als eine
++ Gesamtzahl nur über Kernquellen —, und der Rest war ungemessen.
+
+- The flare plugin (pinned in `etc/tools`, configured by `.pyrocosm/flare/config.tel`, enabled
+- on every checked component by the `-P:flare:` options in `flareToolchain`) provides the
+- census: every rule in the configuration counted over the sources — the declared escapes
+- (`unsafely`, the `caps.unsafe` family, every `unsafe`-prefixed name, every method gated by the
+- token), the compiler-trust bypasses (`asInstanceOf`, `.nn`, `@unchecked`, `???`, catch-all
+- clauses), the partial reads, and the imperative constructs the streaming kernel is meant to
+- confine. `make unsafety` runs `flare metrics --dry-run` and prints it; `flare metrics` records
+- it in git notes, commit by commit, so the trend lives in git rather than in a roadmap
+- paragraph. One rule already gates: `S1.1`, a method taking `(using Unsafe)` must be named
+- `unsafe…`, fails the build; its converse `S1.2` is advisory, with the eight definitions that
+- break it listed in `doc/standards/naming.md`.
++ Das flare-Plugin (festgelegt in `etc/tools`, konfiguriert durch `.pyrocosm/flare/config.tel`, auf
++ jeder geprüften Komponente aktiviert durch die `-P:flare:`-Optionen in `flareToolchain`) liefert
++ den Zensus: jede Regel der Konfiguration, über die Quellen gezählt — die deklarierten Notausgänge
++ (`unsafely`, die `caps.unsafe`-Familie, jeder Name mit dem Präfix `unsafe`, jede durch das Token
++ gesperrte Methode), die Umgehungen des Compilervertrauens (`asInstanceOf`, `.nn`, `@unchecked`,
++ `???`, Catch-all-Klauseln), die partiellen Lesezugriffe und die imperativen Konstrukte, die der
++ Streaming-Kern eingrenzen soll. `make unsafety` führt `flare metrics --dry-run` aus und gibt ihn
++ aus; `flare metrics` verzeichnet ihn in Git-Notes, Commit für Commit, sodass der Trend in Git lebt
++ statt in einem Absatz der Roadmap. Eine Regel sperrt bereits: `S1.1`, eine Methode, die
++ `(using Unsafe)` nimmt, muss `unsafe…` heißen, lässt den Build scheitern; ihre Umkehrung `S1.2` ist
++ beratend, und die acht Definitionen, die sie verletzen, sind in `doc/standards/naming.md`
++ aufgeführt.
+
+- The gate exists: `etc/check-escape-count.py`, run by `make build` (and `make check-escapes`),
+- keeps a per-file baseline in `etc/escape-baseline.tsv` of the four `caps.unsafe` hatches, the
+- array wrappers that hide a capture (`Array.unsafeFrozen`, `Array.unsafeJvm`, `Array.frozen`,
+- the `!!` erased-evidence operator), the casts that move a capability past the checker, and the
+- hatches that carry no reason tag — with the same `--update`/`--totals` semantics as
+- `check-while-count.py`, plus `--tags` for the residue per reason tag (`safety-2`), whose closed
+- vocabulary lives in the script. It was seeded on 2026-10-09 and re-seeded on 2026-10-21:
++ Die Sperre existiert: `etc/check-escape-count.py`, ausgeführt von `make build` (und
++ `make check-escapes`), führt in `etc/escape-baseline.tsv` einen Ausgangswert pro Datei für die vier
++ `caps.unsafe`-Notausgänge, die Array-Wrapper, die eine Erfassung verbergen (`Array.unsafeFrozen`,
++ `Array.unsafeJvm`, `Array.frozen`, der Operator `!!` für gelöschten Nachweis), die Casts, die eine
++ Capability am Checker vorbeibewegen, und die Notausgänge ohne Grund-Tag — mit derselben Semantik
++ von `--update`/`--totals` wie `check-while-count.py`, dazu `--tags` für den Rest pro Grund-Tag
++ (`safety-2`), dessen geschlossenes Vokabular im Skript lebt. Sie wurde am 2026-10-09 initialisiert
++ und am 2026-10-21 neu initialisiert:
+
+= vocabulary lives in the script. It was seeded on 2026-10-09 and re-seeded on 2026-10-21:
+=
+- ```tabular
++ ```tabular
+
+= vocabulary lives in the script. It was seeded on 2026-10-09 and re-seeded on 2026-10-21:
+=
+= ```tabular
+- column  Column
++ column  Spalte
+
+- column  2026-10-09
++ column  2026-10-09
+
+- column  2026-10-21
++ column  2026-10-21
+
+- row  `assumePure`  366  280
++ row  `assumePure`  366  280
+
+- row  `assumeSeparate`  261  218
++ row  `assumeSeparate`  261  218
+
+- row  `untracked`  397  381
++ row  `untracked`  397  381
+
+- row  `erasedValue`  50  35
++ row  `erasedValue`  50  35
+
+= row  `erasedValue`  50  35
+- row
++ row
+
+-   cell  `unsafeFrozen`
++   cell  `unsafeFrozen`
+
+=   cell  `unsafeFrozen`
+-   cell
++   cell
+
+-   cell  333
++   cell  333
+
+=   cell  333
+- row
++ row
+
+-   cell  `unsafeJvm`
++   cell  `unsafeJvm`
+
+=   cell  `unsafeJvm`
+-   cell
++   cell
+
+-   cell  336
++   cell  336
+
+=   cell  336
+- row
++ row
+
+-   cell  `erasedEvidence`
++   cell  `erasedEvidence`
+
+=   cell  `erasedEvidence`
+-   cell
++   cell
+
+-   cell  84
++   cell  84
+
+=   cell  84
+- row
++ row
+
+-   cell  `anyRefCast`
++   cell  `anyRefCast`
+
+=   cell  `anyRefCast`
+-   cell
++   cell
+
+-   cell  362
++   cell  362
+
+=   cell  362
+- row
++ row
+
+-   cell  `captureCast`
++   cell  `captureCast`
+
+=   cell  `captureCast`
+-   cell
++   cell
+
+-   cell  383
++   cell  383
+
+- row  `untagged`  1068  0
++ row  `untagged`  1068  0
+
+= row  `untagged`  1068  0
+- ```
++ ```
+
+- The `xs.stdlib` ratchet was folded in on 2026-10-26: the bridge is counted per file over core
+- and test sources alike (the old script excluded tests, where 1000 of the uses were, and missed
+- the `. stdlib` continuation form), benchmarks excepted. Three shape columns read the residue
+- as a queue, and a fourth counts `core-3`'s imports; `--stdlib` lists the residue by what
+- follows the bridge. The columns, with the counts they were seeded at:
++ Die `xs.stdlib`-Ratsche wurde am 2026-10-26 eingegliedert: Die Brücke wird pro Datei über Kern- und
++ Testquellen gleichermaßen gezählt (das alte Skript schloss Tests aus, in denen 1000 der Verwendungen
++ lagen, und übersah die Fortsetzungsform `. stdlib`), Benchmarks ausgenommen. Drei Gestaltspalten
++ lesen den Rest als Warteschlange, und eine vierte zählt die Imports von `core-3`; `--stdlib` listet
++ den Rest danach auf, was auf die Brücke folgt. Die Spalten, mit den Zahlen, mit denen sie
++ initialisiert wurden:
+
+= follows the bridge. The columns, with the counts they were seeded at:
+=
+- ```tabular
++ ```tabular
+
+- column  Column
+- column  Counts
+- column  Seed
+- row  `stdlib`  every use of the bridge  1859
+- row  `stdlibGate`  the dysasymptotic gate bypasses: `xs.stdlib.head`, `.stdlib(i)`, the size reads  464
+- row  `stdlibRound`  the round trips: `xs.stdlib.toList`, `Array.from(xs.stdlib)`  310
+- row  `stdlibIterator`  iterators taken through the bridge  62
+- row  `collectionImport`  direct `scala.collection` imports  340
++ column  Spalte
++ column  Zählt
++ column  Startwert
++ row  `stdlib`  jede Verwendung der Brücke  1859
++ row  `stdlibGate`  die Umgehungen dysasymptotischer Sperren: `xs.stdlib.head`, `.stdlib(i)`, die Größenabfragen  464
++ row  `stdlibRound`  die Hin- und Rückwege: `xs.stdlib.toList`, `Array.from(xs.stdlib)`  310
++ row  `stdlibIterator`  über die Brücke bezogene Iteratoren  62
++ row  `collectionImport`  direkte Imports von `scala.collection`  340
+
+= row  `collectionImport`  direct `scala.collection` imports  340
+- ```
++ ```
+
+- What remains is folding the `while` ratchet in.
++ Was bleibt, ist, die `while`-Ratsche einzugliedern.
+
+- Done when: the census is recorded on every release, `safety-1`, `safety-2` and `safety-4` read
+- their baselines from it rather than from a hand-run grep, and the per-file gate has replaced
+- `etc/check-while-count.py`.
++ Erledigt, wenn: der Zensus bei jedem Release verzeichnet wird, `safety-1`, `safety-2` und
++ `safety-4` ihre Ausgangswerte aus ihm statt aus einem von Hand ausgeführten Grep lesen und die
++ Sperre pro Datei `etc/check-while-count.py` ersetzt hat.
+
+- ## safety-8: tactics are shared capabilities
++ ## safety-8: Taktiken sind geteilte Capabilities
+
+- Done: #2195 (2026-10-07); the grep's last hit, a comment in `Emit.scala` describing the old seals, was reworded in #2306
+- Needs: safety-3
+- Baseline: ~60 exclusive-tactic overlap seals in `lib/*/src/core`, 3 of them in contingency; 103 derivation anchors and ~125 sealed codec givens downstream (measured 2026-10-07)
++ Erledigt: #2195 (2026-10-07); der letzte Treffer des Greps, ein Kommentar in `Emit.scala`, der die alten Siegel beschrieb, wurde in #2306 umformuliert
++ Benötigt: safety-3
++ Ausgangswert: ~60 Siegel wegen Überlappung exklusiver Taktiken in `lib/*/src/core`, 3 davon in contingency; 103 Ableitungsanker und ~125 versiegelte Codec-Givens stromabwärts (gemessen 2026-10-07)
+
+- `contingency.Emit` — and so `Tactic`, the capability behind `raises` — is a
+- `caps.ExclusiveCapability`, chosen in July as "the conservative classification". It is the
+- single largest root cause in the residue. A codec summoned for `Json#as` captures the ambient
+- tactic, and `as` takes the same tactic as a using-parameter: two uses of one *exclusive*
+- capability in one call, which separation checking rejects (`rep/sepcheck-probes/p15`). Every
+- `unsafeAssumeSeparate(json.as[…])` is that error, and the derivation anchors in the JSON-RPC
+- bindings abandoned the honest tactic-parameterised form for the same reason inside the
+- derivation.
++ `contingency.Emit` — und damit `Tactic`, die Capability hinter `raises` — ist eine
++ `caps.ExclusiveCapability`, im Juli gewählt als „die konservative Klassifikation“. Sie ist die
++ größte einzelne Grundursache im Rest. Ein für `Json#as` herbeigerufener Codec erfasst die ambiente
++ Taktik, und `as` nimmt dieselbe Taktik als Using-Parameter: zwei Verwendungen einer *exklusiven*
++ Capability in einem Aufruf, was Separation-Checking zurückweist (`rep/sepcheck-probes/p15`). Jedes
++ `unsafeAssumeSeparate(json.as[…])` ist dieser Fehler, und die Ableitungsanker in den
++ JSON-RPC-Bindings gaben die ehrliche, mit der Taktik parametrisierte Form aus demselben Grund
++ innerhalb der Ableitung auf.
+
+- A tactic is shared by nature — many codecs legitimately alias one — and raising an error is a
+- non-consuming effect. `caps.SharedCapability` keeps every `raises`/`emits` capture tracked and
+- only exempts aliases of one tactic from the overlap check; a tactic that mutates (accrual,
+- `Foci`) must then be internally sequential, the position already taken for `Monitor` and the
+- parasite queues. The ambient strategies drop `caps.Unscoped` (unrelated classifiers cannot
+- combine, `p16`); on the pinned release the minimal `raises` shape no longer needs it
+- (`rep/shared-unscoped`, GREEN). The flip is probe-gated: contingency first, with the
+- Soundness-backed `capturing-raises` case as the gate; if the full shape hits a level wall, the
+- fork adds a classifier that is shared and level-exempt before the flip proceeds. Then jacinta
+- (`as` drops its unused tactic parameter), the consumer sweep (sibylline, tarantula, orthodoxy,
+- breviloquence, ethereal, the `abort`-thunk seals), and the anchors.
++ Eine Taktik ist von Natur aus geteilt — viele Codecs aliasieren legitimerweise eine einzige —, und
++ einen Fehler auszulösen, ist ein nicht verbrauchender Effekt. `caps.SharedCapability` hält jede
++ `raises`/`emits`-Erfassung verfolgt und nimmt nur Aliase einer Taktik von der Überlappungsprüfung
++ aus; eine Taktik, die mutiert (Sammlung, `Foci`), muss dann intern sequenziell sein, die Position,
++ die bereits für `Monitor` und die parasite-Warteschlangen eingenommen wurde. Die ambienten
++ Strategien verlieren `caps.Unscoped` (unverwandte Klassifikatoren lassen sich nicht kombinieren,
++ `p16`); auf dem festgelegten Release braucht die minimale `raises`-Gestalt es nicht mehr
++ (`rep/shared-unscoped`, GREEN). Die Umstellung ist durch Sondierungen abgesichert: contingency
++ zuerst, mit dem von Soundness gestützten Fall `capturing-raises` als Sperre; stößt die volle
++ Gestalt an eine Ebenenmauer, fügt der Fork einen Klassifikator hinzu, der geteilt und von Ebenen
++ ausgenommen ist, bevor die Umstellung weitergeht. Dann jacinta (`as` verliert seinen ungenutzten
++ Taktikparameter), die Überarbeitung der Verwender (sibylline, tarantula, orthodoxy, breviloquence,
++ ethereal, die Siegel der `abort`-Thunks) und die Anker.
+
+- Status: `Emit` is shared and the strategies are plain `Tactic`s; the overlap seals in nine
+- modules are gone (`unsafeAssumeSeparate` 419 → 350). The level wall survived in one shape —
+- `strategies.throwUnsafely` summoned inside a derivation's field thunk (`rep/sepcheck-probes/p17`,
+- the same on 3.10) — user-facing, so the fork grew `caps.SharedUnscoped` (proscala
+- `sharedunscoped`) for the ambient strategies, and `rootclassify` for the `normalizeLocalCaps`
+- crash the shared tactics exposed in every `Sessional` loan; both shipped in 3.9.1-dev-p18.
+- (#2328 later retired `SharedUnscoped` from Soundness: the ambient strategies are *pure* values,
+- as upstream's `canThrowAny` is, and `Emit` is `caps.Control`; see `rep/DECISIONS.md`.) A
+- shared *global* strategy value was tried instead and rejected: a package may not export a
+- capability, an `object strategies` forces `uses soundness.strategies` onto every user object,
+- and a capability-class instance cannot be typed pure (`rep/DECISIONS.md`). The derivation
+- anchors (now `[field-purity]`) remain.
++ Stand: `Emit` ist geteilt, und die Strategien sind einfache `Tactic`s; die Überlappungssiegel in
++ neun Modulen sind verschwunden (`unsafeAssumeSeparate` 419 → 350). Die Ebenenmauer überlebte in
++ einer Gestalt — `strategies.throwUnsafely`, herbeigerufen innerhalb des Feld-Thunks einer
++ Ableitung (`rep/sepcheck-probes/p17`, unter 3.10 ebenso) —, die Benutzer betrifft, daher bekam der
++ Fork `caps.SharedUnscoped` (proscala `sharedunscoped`) für die ambienten Strategien und
++ `rootclassify` für den Absturz in `normalizeLocalCaps`, den die geteilten Taktiken in jeder
++ `Sessional`-Leihgabe offenlegten; beide wurden in 3.9.1-dev-p18 ausgeliefert. (#2328 entfernte
++ `SharedUnscoped` später aus Soundness: Die ambienten Strategien sind *reine* Werte, wie
++ `canThrowAny` upstream, und `Emit` ist `caps.Control`; siehe `rep/DECISIONS.md`.) Ein geteilter
++ *globaler* Strategiewert wurde stattdessen versucht und verworfen: Ein Paket darf keine Capability
++ exportieren, ein `object strategies` zwingt `uses soundness.strategies` auf jedes Benutzerobjekt,
++ und eine Instanz einer Capability-Klasse lässt sich nicht als rein typisieren
++ (`rep/DECISIONS.md`). Die Ableitungsanker (jetzt `[field-purity]`) bleiben.
+
+- Done when: `Emit extends caps.SharedCapability`; `git grep -c 'unsafeAssumeSeparate' -- lib/contingency` is 0; no `[tactic-overlap]` tag remains.
++ Erledigt, wenn: `Emit extends caps.SharedCapability`; `git grep -c 'unsafeAssumeSeparate' -- lib/contingency` ist 0; kein Tag `[tactic-overlap]` bleibt.
+
+- ## safety-9: test harnesses do not seal
++ ## safety-9: Test-Harnesses versiegeln nicht
+
+- Done: #2224 (2026-10-09), after #2212 and #2217
+- Baseline was 236 `unsafeAssumeSeparate` in `lib/*/src/test` (measured 2026-10-07): exoskeleton 63, zephyrine 50, facsimile 38, galilei 29, turbulence 19
++ Erledigt: #2224 (2026-10-09), nach #2212 und #2217
++ Der Ausgangswert war 236 `unsafeAssumeSeparate` in `lib/*/src/test` (gemessen 2026-10-07): exoskeleton 63, zephyrine 50, facsimile 38, galilei 29, turbulence 19
+
+- More than half of all `unsafeAssumeSeparate` sites are in test suites, almost none commented,
+- in a handful of shapes: the tmux completion drivers (`Bash.tmux()(Tmux.completions(…))`),
+- `async(…).await()`, `recur()`, and `gather.data`. Tests are capture-checked like libraries, so
+- this is real residue, and it is the most mechanical batch: one loan-shaped helper per harness
+- (the coaxial seam — a start/stop trait and a `transparent inline` loan — proven in syndesis), a
+- `Task#await` that does not alias the `Monitor` with the handle, after a probe per shape
+- characterises what the checker objects to.
++ Mehr als die Hälfte aller `unsafeAssumeSeparate`-Stellen liegen in Testsuiten, fast keine davon
++ kommentiert, in einer Handvoll Gestalten: die tmux-Treiber für Vervollständigungen
++ (`Bash.tmux()(Tmux.completions(…))`), `async(…).await()`, `recur()` und `gather.data`. Tests werden
++ wie Bibliotheken dem Capture-Checking unterzogen, daher ist dies echter Rest, und es ist die
++ mechanischste Charge: ein leihförmiger Helfer pro Harness (die coaxial-Nahtstelle — ein
++ Start/Stopp-Trait und eine `transparent inline`-Leihgabe —, erprobt in syndesis), ein
++ `Task#await`, das den `Monitor` nicht mit dem Handle aliasiert, nachdem eine Sondierung pro
++ Gestalt charakterisiert hat, woran der Checker Anstoß nimmt.
+
+- Done when: `git grep -c unsafeAssumeSeparate -- 'lib/*/src/test'` is 0.
++ Erledigt, wenn: `git grep -c unsafeAssumeSeparate -- 'lib/*/src/test'` 0 ist.
+
+- ## safety-10: by-name parameters can be named in capture sets
++ ## safety-10: By-name-Parameter können in Capture-Sets benannt werden
+
+- Horizon: mid
+- Needs: safety-3
+- Baseline: 61 hatches tagged `[by-name-capture]` (measured 2026-10-21; ~46 pure-thunk seals in jacinta, spectacular, gastronomy and turbulence on 2026-10-07)
++ Horizont: mittel
++ Benötigt: safety-3
++ Ausgangswert: 61 Notausgänge mit dem Tag `[by-name-capture]` (gemessen 2026-10-21; ~46 Siegel für reine Thunks in jacinta, spectacular, gastronomy und turbulence am 2026-10-07)
+
+- A by-name parameter (`inner: => (X is Codec)^`) is not a stable reference, so a given whose
+- instance retains it cannot declare `^{inner}` and is sealed to a pure `() -> …` thunk instead —
+- the Phase-6 form, truthfully commented but a seal all the same. The shape is load-bearing:
+- given resolution synthesises the thunk, and recursive derivation depends on its deferral, so no
+- source-side form preserves both. This is a compiler gap ("upstream candidate #5" in
+- `rep/DECISIONS.md`): a by-name parameter should be nameable as the capture set of its
+- synthesised thunk. A self-contained `rep/byname-capture` case first; the fork change second;
+- an upstream report with the case.
++ Ein By-name-Parameter (`inner: => (X is Codec)^`) ist keine stabile Referenz, daher kann ein Given,
++ dessen Instanz ihn behält, nicht `^{inner}` deklarieren und wird stattdessen zu einem reinen
++ `() -> …`-Thunk versiegelt — die Form aus Phase 6, wahrheitsgemäß kommentiert, aber trotzdem ein
++ Siegel. Die Gestalt ist tragend: Die Given-Auflösung synthetisiert den Thunk, und rekursive
++ Ableitung hängt von seinem Aufschub ab, daher bewahrt keine quellseitige Form beides. Dies ist eine
++ Compilerlücke („upstream candidate #5“ in `rep/DECISIONS.md`): Ein By-name-Parameter sollte als
++ Capture-Set seines synthetisierten Thunks benennbar sein. Zuerst ein eigenständiger Fall
++ `rep/byname-capture`; als Zweites die Änderung im Fork; ein Upstream-Bericht mit dem Fall.
+
+- Done when: `rep/byname-capture` compiles under the pinned release and no `[by-name-capture]` tag remains.
++ Erledigt, wenn: `rep/byname-capture` unter dem festgelegten Release kompiliert und kein Tag `[by-name-capture]` bleibt.
+
+- ## safety-11: the 3.10 stream is evaluated for what it fixes
++ ## safety-11: die 3.10-Linie wird daraufhin bewertet, was sie behebt
+
+- Horizon: near-mid
+- Needs: safety-3
++ Horizont: nah bis mittel
++ Benötigt: safety-3
+
+- The fork keeps a 3.10 row alongside 3.9, and upstream's capture checker has moved since the 3.9
+- branch point — 65 commits to `cc/` and `scala/caps` by August 2026: `consume` on overrides and
+- case classes and in method application, classifier `only`/`except` and classifiers in result
+- capabilities, LocalCap leak detection, boxed-status healing. Some of that may dissolve clusters
+- here without a fork change (the harness shapes, a finer tactic classification, the `?1` quote
+- leak in legerdemain's Query decoder); some of it touches exactly what Soundness relies on (the
+- `Unscoped` tightening; reach capabilities dropped). The evaluation is measured, not guessed: a
+- clean gate of the tree on the 3.10 release, the whole `rep/` corpus and probe suite on both
+- rows recorded as a second column of `rep/STATUS.md`, and one un-sealed sentinel per cluster
+- compiled on 3.10 only. The decision — switch the attested row, or backport the specific
+- commits onto 3.9 — follows from that table.
++ Der Fork führt eine 3.10-Zeile neben 3.9, und der Capture-Checker von upstream hat sich seit dem
++ Abzweigpunkt von 3.9 weiterbewegt — 65 Commits an `cc/` und `scala/caps` bis August 2026: `consume`
++ bei Overrides und Case-Klassen und in der Methodenanwendung, Klassifikatoren mit `only`/`except`
++ und Klassifikatoren in Ergebnis-Capabilities, Leckerkennung für LocalCap, Heilung des
++ Boxing-Status. Manches davon könnte hier Cluster ohne Änderung im Fork auflösen (die
++ Harness-Gestalten, eine feinere Klassifikation von Taktiken, das `?1`-Quote-Leck im Query-Decoder
++ von legerdemain); manches berührt genau das, worauf Soundness sich stützt (die Verschärfung von
++ `Unscoped`; weggefallene Reach-Capabilities). Die Bewertung wird gemessen, nicht geraten: eine
++ saubere Sperre des Baums auf dem 3.10-Release, das ganze `rep/`-Korpus und die Sondierungssuite auf
++ beiden Zeilen, verzeichnet als zweite Spalte von `rep/STATUS.md`, und ein entsiegelter Sentinel pro
++ Cluster, nur auf 3.10 kompiliert. Die Entscheidung — die attestierte Zeile wechseln oder die
++ betreffenden Commits auf 3.9 zurückportieren — folgt aus dieser Tabelle.
+
+- Done when: `rep/STATUS.md` carries a 3.10 column for every case and probe, and the roadmap
+- records the row decision.
++ Erledigt, wenn: `rep/STATUS.md` eine 3.10-Spalte für jeden Fall und jede Sondierung trägt und die
++ Roadmap die Entscheidung über die Zeile verzeichnet.
+
+- ## safety-12: a capabilities standard
++ ## safety-12: ein Standard für Capabilities
+
+= ## safety-12: a capabilities standard
+=
+- Horizon: near
++ Horizont: nah
+
+- The recipes that make capture and separation checking workable — when a type is Exclusive,
+- Shared, Unscoped, Mutable or Pure and the lattice traps between them; the honest-given playbook
+- (`(tactic: Tactic[E]) => ((X is TC)^{tactic})`, explicit capturing evidence instead of context
+- bounds); where a fresh result may and may not be minted; the `consume` and loan seams; what a
+- test may and may not do — exist only as entries in `rep/DECISIONS.md`, a 2400-line log. They
+- belong in `doc/standards/capabilities.md`, with the tag vocabulary `safety-2` relies on and the
+- one sanctioned hatch form for each tag, and a pointer from `doc/philosophy/capture-checking.md`.
++ Die Rezepte, die Capture- und Separation-Checking praktikabel machen — wann ein Typ Exclusive,
++ Shared, Unscoped, Mutable oder Pure ist und die Verbandsfallen zwischen ihnen; das Playbook für
++ ehrliche Givens (`(tactic: Tactic[E]) => ((X is TC)^{tactic})`, expliziter erfassender Nachweis
++ statt Kontextschranken); wo ein frisches Ergebnis erzeugt werden darf und wo nicht; die
++ `consume`- und Leih-Nahtstellen; was ein Test darf und was nicht — existieren nur als Einträge in
++ `rep/DECISIONS.md`, einem Protokoll von 2400 Zeilen. Sie gehören in
++ `doc/standards/capabilities.md`, mit dem Tag-Vokabular, auf das sich `safety-2` stützt, und der
++ einen sanktionierten Notausgangsform für jedes Tag, sowie einem Verweis aus
++ `doc/philosophy/capture-checking.md`.
+
+- Done when: `doc/standards/capabilities.md` exists, defines every tag the census recognises, and
+- `rep/DECISIONS.md`'s recipe sections link to it rather than restating.
++ Erledigt, wenn: `doc/standards/capabilities.md` existiert, jedes Tag definiert, das der Zensus
++ erkennt, und die Rezeptabschnitte von `rep/DECISIONS.md` darauf verlinken, statt es zu
++ wiederholen.

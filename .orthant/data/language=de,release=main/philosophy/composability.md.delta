@@ -1,0 +1,8 @@
+orthant 1 language
+
+- A [stream](/doc/soundness/modules/streams.md) pipeline is the clearest case. Each stage takes a
+- stream and yields a stream, so stages chain without adapters and in any order that makes
+- sense:
++ Eine [Stream](/doc/soundness/modules/streams.md)-Pipeline ist der deutlichste Fall. Jede Stufe nimmt einen
++ Stream und liefert einen Stream, sodass sich Stufen ohne Adapter verketten lassen, in jeder
++ Reihenfolge, die sinnvoll ist:

@@ -1,0 +1,22 @@
+orthant 1 language
+
+= to the group, to the one sender, or not at all:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+-   val group = Multicast(ip"224.0.0.251", udp"mdns")
++   val group = Multicast(ip"224.0.0.251", udp"mdns")
+
+- A nameserver is an `Endpoint` of a UDP port. `ask` sends a
+- [`Dns.Message`](network-addresses.md#dns-names-and-messages), and returns the reply which
+- answers it. Given a name and a type of record, which is `A` by default, it asks the common
+- question directly, and returns the records which answer it:
++ Ein Nameserver ist ein `Endpoint` eines UDP-Ports. `ask` sendet eine
++ [`Dns.Message`](network-addresses.md#dns-names-and-messages) und gibt die Antwort zurück, die sie
++ beantwortet. Mit einem Namen und einem Record-Typ, standardmäßig `A`, stellt es die gängige Frage
++ direkt und gibt die Records zurück, die sie beantworten:
+
+- val addresses = resolver.ask(dns"example.com").map(_.rdata)
++ val addresses = resolver.ask(dns"example.com").map(_.rdata)

@@ -1,0 +1,57 @@
+orthant 1 language
+
+- # `↯/s.88.3` — `ClassfileError`
++ # `↯/s.88.3` — `ClassfileError`
+
+- Raised when a JVM classfile cannot be read or its bytecode extracted.
++ Wird ausgelöst, wenn ein JVM-Classfile nicht gelesen oder sein Bytecode nicht extrahiert werden
++ kann.
+
+- ## Cause
++ ## Ursache
+
+- Mandible parses classfiles to expose methods and their instructions. This error covers a
+- classfile that is not present on the classpath and one whose structure cannot be parsed.
++ Mandible parst Classfiles, um Methoden und ihre Instruktionen offenzulegen. Dieser Fehler umfasst
++ ein Classfile, das nicht auf dem Klassenpfad vorhanden ist, und eines, dessen Struktur sich nicht
++ parsen lässt.
+
+- ## Variants
++ ## Varianten
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
+- column  Message
++ column  Grund
++ column  Meldung
+
+- row  `↯/s.88.3.1`  `ClassfileMissing`  `[↯/s.88.3.1] the generated classfile could not be opened`
++ row  `↯/s.88.3.1`  `ClassfileMissing`  `[↯/s.88.3.1] the generated classfile could not be opened`
+
+- row  `↯/s.88.3.2`  `ClassfileUnreadable`  `[↯/s.88.3.2] the generated classfile could not be read`
++ row  `↯/s.88.3.2`  `ClassfileUnreadable`  `[↯/s.88.3.2] the generated classfile could not be read`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Behebung
+
+- A missing classfile usually means the classpath passed to the reader differs from the one
+- the code was compiled against. A parse failure means the file is truncated, or uses a
+- classfile version beyond what the parser models.
++ Ein fehlendes Classfile bedeutet meist, dass sich der Klassenpfad, der dem Leser übergeben wird,
++ von dem unterscheidet, gegen den der Code kompiliert wurde. Ein Fehlschlag beim Parsen bedeutet,
++ dass die Datei abgeschnitten ist oder eine Classfile-Version verwendet, die über das hinausgeht,
++ was der Parser modelliert.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/mandible/src/core/mandible_core.scala`
++ - Quelle: `lib/mandible/src/core/mandible_core.scala`

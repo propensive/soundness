@@ -1,0 +1,15 @@
+orthant 1 language
+
+-       A *plane* is the space a value lives on: a filesystem for a path (`Path on Linux`,
+-       `Path on Classpath`), a classloader's search space, or the nodes a graph is drawn
+-       over. A typeclass or a value type extends `Planar` so that `on` can name the plane,
+-       and galilei's filesystem policies (`CreateParents`, `DeleteRecursively`)
+-       are `Planar` so that one policy is chosen per filesystem.
+-   entry #Plane   the space, such as a filesystem or a classpath, a value is located on
++       Eine *Ebene* ist der Raum, in dem ein Wert lebt: ein Dateisystem für einen Pfad (`Path
++       on Linux`, `Path on Classpath`), der Suchraum eines Classloaders oder die Knoten, über
++       denen ein Graph gezeichnet wird. Eine Typklasse oder ein Werttyp erweitert `Planar`,
++       damit `on` die Ebene benennen kann, und die Dateisystem-Richtlinien von galilei
++       (`CreateParents`, `DeleteRecursively`) sind `Planar`, damit je Dateisystem
++       eine Richtlinie gewählt wird.
++   entry #Plane   der Raum, etwa ein Dateisystem oder ein Klassenpfad, in dem sich ein Wert befindet

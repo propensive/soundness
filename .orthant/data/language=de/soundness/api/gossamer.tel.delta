@@ -1,0 +1,3428 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base gossamer
++ base gossamer
+
+- import soundness
++ import soundness
+
+- info   text as a typed value: `Text`, the `t"…"` interpolator, and a vocabulary of operations over any textual type
++ info   Text als typisierter Wert: `Text`, der Interpolator `t"…"` und ein Vokabular von Operationen über jedem textuellen Typ
+
+- detail
++ detail
+
+-     _Gossamer_ is the text library: the operations on `Text` — the opaque alias of the JVM's
+-     `String` which Soundness uses in place of `String` everywhere — and the typeclasses which
+-     make those same operations available on any other textual type, such as an ANSI-styled
+-     `Teletype`, an `Ascii` byte string or a `Writing` of grapheme clusters.
++     _Gossamer_ ist die Textbibliothek: die Operationen auf `Text` — dem opaken Alias des
++     JVM-`String`, den Soundness überall statt `String` verwendet — und die Typklassen, die
++     dieselben Operationen auf jedem anderen textuellen Typ verfügbar machen, etwa einem
++     ANSI-formatierten `Teletype`, einem `Ascii`-Bytestring oder einem `Writing` aus
++     Graphem-Clustern.
+
+-     A `Text` is written with the `t"…"` interpolator, which substitutes any value that is
+-     `Showable` and processes escapes while the code compiles, or with `txt"…"`, which also
+-     folds a paragraph written across several source lines into one. Its operations are plain
+-     verbs: `cut` divides at a delimiter and `join` reassembles; `keep`, `skip`, `snip`,
+-     `before`, `after`, `upto`, `from` and `segment` slice by count or by ordinal position;
+-     `lower`, `upper`, `capitalize`, `trim`, `pad`, `fit` and `sub` transform; `starts`, `ends`,
+-     `contains`, `offsetOf`, `tally`, `pinpoint` and `search` ask questions. Absence is an
+-     `Optional`, not `-1` or `null`; positions are `Ordinal`s (`Prim`, `Sec`, `Ter`, …), which
+-     cannot be confused with lengths; and a `cut` is proved to yield at least one piece.
++     Ein `Text` wird mit dem Interpolator `t"…"` geschrieben, der jeden `Showable`-Wert
++     einsetzt und Escapes verarbeitet, während der Code kompiliert, oder mit `txt"…"`, der
++     zusätzlich einen über mehrere Quelltextzeilen geschriebenen Absatz zu einem zusammenfaltet.
++     Seine Operationen sind schlichte Verben: `cut` teilt an einem Trennzeichen, und `join`
++     fügt wieder zusammen; `keep`, `skip`, `snip`, `before`, `after`, `upto`, `from` und
++     `segment` schneiden nach Anzahl oder nach Ordinalposition; `lower`, `upper`, `capitalize`,
++     `trim`, `pad`, `fit` und `sub` transformieren; `starts`, `ends`, `contains`, `offsetOf`,
++     `tally`, `pinpoint` und `search` stellen Fragen. Fehlen ist ein `Optional`, nicht `-1`
++     oder `null`; Positionen sind `Ordinal`s (`Prim`, `Sec`, `Ter`, …), die sich nicht mit
++     Längen verwechseln lassen; und für ein `cut` ist bewiesen, dass es mindestens ein Stück
++     liefert.
+
+=     cannot be confused with lengths; and a `cut` is proved to yield at least one piece.
+=
+-     ```scala
++     ```scala
+
+=     cannot be confused with lengths; and a `cut` is proved to yield at least one piece.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     cannot be confused with lengths; and a `cut` is proved to yield at least one piece.
+=
+=     ```scala
+=     import soundness.*
+-     import textMetrics.uniformMetric
++     import textMetrics.uniformMetric
+
+-     val name = t"Nick Bottom"
++     val name = t"Nick Bottom"
+
+-     name.words.map(_.keep(1)).join            // t"NB"
++     name.words.map(_.keep(1)).join            // t"NB"
+
+-     name.cut(t" ").head.upper                 // t"NICK"
++     name.cut(t" ").head.upper                 // t"NICK"
+
+-     name.offsetOf(t"Bott")                    // an Optional ordinal, present here
++     name.offsetOf(t"Bott")                    // an Optional ordinal, present here
+
+-     name.pad(15, Rtl, '.')                    // t"....Nick Bottom"
++     name.pad(15, Rtl, '.')                    // t"....Nick Bottom"
+
+-     t"one,two".cut(t",").join(t"(", t", ", t")")   // t"(one, two)"
++     t"one,two".cut(t",").join(t"(", t", ", t")")   // t"(one, two)"
+
+=     t"one,two".cut(t",").join(t"(", t", ", t")")   // t"(one, two)"
+-     ```
++     ```
+
+-     Most of the vocabulary is written once, over the `Textual` typeclass, so a type with a
+-     `Textual` instance — `Text`, `Ascii`, `Writing`, and escapade's `Teletype` — gets every
+-     operation without redefining any. `Textual` extends the general collection typeclasses
+-     (`Countable`, `Segmentable`), which is how the count-based and predicate-based `keep`,
+-     `skip` and `snip`, the ordinal-based `before`/`after`/`upto`/`from`, and `count`, `where`,
+-     `all` and `exists` from the collections library serve text too: those live in `rudiments`
+-     and `murmuration`, not here. The factories `reversibleTextual` and `traversableTextual`
+-     let a new textual type publish `reverse` and traversal in its own companion.
++     Der größte Teil des Vokabulars ist einmal geschrieben, über der Typklasse `Textual`,
++     sodass ein Typ mit einer `Textual`-Instanz — `Text`, `Ascii`, `Writing` und escapades
++     `Teletype` — jede Operation erhält, ohne eine neu zu definieren. `Textual` erweitert die
++     allgemeinen Collection-Typklassen (`Countable`, `Segmentable`); so dienen auch die
++     anzahl- und prädikatbasierten `keep`, `skip` und `snip`, die ordinalbasierten
++     `before`/`after`/`upto`/`from` sowie `count`, `where`, `all` und `exists` aus der
++     Collection-Bibliothek dem Text: Diese liegen in `rudiments` und `murmuration`, nicht hier.
++     Die Fabriken `reversibleTextual` und `traversableTextual` lassen einen neuen textuellen
++     Typ `reverse` und Traversierung in seinem eigenen Begleitobjekt veröffentlichen.
+
+-     Three things about text are policies, chosen by importing a given **by name** (because
+-     `import soundness.*` does not import givens):
++     Drei Dinge an Text sind Richtlinien, gewählt durch Import eines Givens **beim Namen** (denn
++     `import soundness.*` importiert keine Givens):
+
+-     - **Case sensitivity** (`caseSensitivity.caseSensitive`, `caseInsensitive` or
+-       `smartCase`), which every proximity measure consults.
+-     - **Collation** (`collations.unicodeCollation` or `codepointCollation`), without which
+-       text cannot be sorted or compared with `<`: with `collationComparable`, a `Collation`
+-       in scope makes `Text` `Comparable`.
+-     - **Proximity** (`proximities.levenshteinProximity`, `jaroProximity`, …), the measure
+-       behind `proximity`, `fuzzy` and the `Lexicon`.
++     - **Groß-/Kleinschreibung** (`caseSensitivity.caseSensitive`, `caseInsensitive` oder
++       `smartCase`), die jedes Ähnlichkeitsmaß berücksichtigt.
++     - **Kollation** (`collations.unicodeCollation` oder `codepointCollation`), ohne die Text
++       nicht sortiert oder mit `<` verglichen werden kann: Mit `collationComparable` macht eine
++       `Collation` im Geltungsbereich `Text` `Comparable`.
++     - **Ähnlichkeit** (`proximities.levenshteinProximity`, `jaroProximity`, …), das Maß hinter
++       `proximity`, `fuzzy` und dem `Lexicon`.
+
+-     `Decimalizer` renders a `Double` to a chosen number of significant figures or decimal
+-     places, and is what `show` on a `Double` consults; `decimalConverters.javaDecimalConverter`
+-     is the plain `toString` alternative.
++     `Decimalizer` stellt einen `Double` mit einer gewählten Zahl signifikanter Stellen oder
++     Nachkommastellen dar und ist das, was `show` auf einem `Double` berücksichtigt;
++     `decimalConverters.javaDecimalConverter` ist die schlichte `toString`-Alternative.
+
+-     The library has three components:
++     Die Bibliothek hat drei Komponenten:
+
+-     - `gossamer.core` — `Text`'s operations, `t"…"`, `txt"…"` and `a"…"`, `Textual`,
+-       `Builder` and `Text.build`, `Cuttable` and `Joinable`, `Writing` and `Grapheme`, `Ascii`,
+-       `Decimalizer`, `Numerous`, `CaseSensitivity`, `Collation`, `Proximity` and the choice
+-       packages `caseSensitivity`, `collations`, `proximities` and `decimalConverters`.
+-     - `gossamer.codec` — the `distillate`-facing half: `textDecodable`, which decodes bytes
+-       to `Text` through a `Charset`, and the `enumIdentification` package, which names enum
+-       cases in kebab, snake, camel or Pascal case. Split out so that a module which only
+-       needs text does not depend on `distillate`.
+-     - `gossamer.lexicon` — `Lexicon`, a BK-tree for similarity search over a vocabulary,
+-       and `Dictionary`, a dense trie for exact and prefix lookup.
++     - `gossamer.core` — die Operationen von `Text`, `t"…"`, `txt"…"` und `a"…"`, `Textual`,
++       `Builder` und `Text.build`, `Cuttable` und `Joinable`, `Writing` und `Grapheme`, `Ascii`,
++       `Decimalizer`, `Numerous`, `CaseSensitivity`, `Collation`, `Proximity` und die
++       Auswahlpakete `caseSensitivity`, `collations`, `proximities` und `decimalConverters`.
++     - `gossamer.codec` — die `distillate` zugewandte Hälfte: `textDecodable`, das Bytes über
++       ein `Charset` zu `Text` dekodiert, und das Paket `enumIdentification`, das Fälle von
++       Aufzählungen in Kebab, Snake, Camel oder Pascal Case benennt. Abgetrennt, damit ein
++       Modul, das nur Text braucht, nicht von `distillate` abhängt.
++     - `gossamer.lexicon` — `Lexicon`, ein BK-Baum für die Ähnlichkeitssuche über einem
++       Vokabular, und `Dictionary`, ein dichter Trie für exakte und Präfix-Suche.
+
+-     Everything is exported to the `soundness` umbrella, and the choice packages merge with
+-     the umbrella's own, so a user writes `import soundness.*` and then imports one given of
+-     each policy by name.
++     Alles wird in das Umbrella `soundness` exportiert, und die Auswahlpakete verschmelzen mit
++     denen des Umbrella, sodass man `import soundness.*` schreibt und dann je Richtlinie ein
++     Given beim Namen importiert.
+
+- refer anticipation.Text
++ refer anticipation.Text
+
+- refer gossamer.Textual
++ refer gossamer.Textual
+
+- refer gossamer.t
++ refer gossamer.t
+
+- refer gossamer.cut
++ refer gossamer.cut
+
+- refer gossamer.join
++ refer gossamer.join
+
+- refer gossamer.Collation
++ refer gossamer.Collation
+
+- refer gossamer.Proximity
++ refer gossamer.Proximity
+
+- refer gossamer.Decimalizer
++ refer gossamer.Decimalizer
+
+- entry .t   the `t"…"` interpolator: a `Text` from a literal, with `Showable` substitutions; and a `t"…"` pattern
++ entry .t   der Interpolator `t"…"`: ein `Text` aus einem Literal, mit `Showable`-Ersetzungen; und ein `t"…"`-Pattern
+
+= entry .t   the `t"…"` interpolator: a `Text` from a literal, with `Showable` substitutions; and a `t"…"` pattern
+-   detail
++   detail
+
+-       `t"Hello, $name!"` builds a `Text`. Each literal part is escape-processed while the
+-       code compiles (`\n`, `\t`, `→`, `\\`, `\$`; a bad escape is a compile error at the
+-       offending character), and each substitution is rendered through the `Showable` instance
+-       for its type — a value with no `Showable` is a compile error, _a value of `T` is not
+-       Showable_, rather than a silent `toString`. The result is `Text`, never `String`.
++       `t"Hello, $name!"` baut einen `Text`. Jeder literale Teil wird beim Kompilieren auf
++       Escapes verarbeitet (`\n`, `\t`, `→`, `\\`, `\$`; ein fehlerhaftes Escape ist ein
++       Kompilierfehler am betreffenden Zeichen), und jede Ersetzung wird über die
++       `Showable`-Instanz ihres Typs dargestellt — ein Wert ohne `Showable` ist ein
++       Kompilierfehler, _a value of `T` is not
++       Showable_, statt eines stillen `toString`. Das Ergebnis ist `Text`, nie `String`.
+
+=       Showable_, rather than a silent `toString`. The result is `Text`, never `String`.
+=
+-       ```scala
++       ```scala
+
+=       Showable_, rather than a silent `toString`. The result is `Text`, never `String`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val name = t"Hamlet"
++       val name = t"Hamlet"
+
+-       val count = 3
++       val count = 3
+
+-       t"Hello, $name! You have $count messages."   // t"Hello, Hamlet! You have 3 messages."
++       t"Hello, $name! You have $count messages."   // t"Hello, Hamlet! You have 3 messages."
+
+-       t"tab\there"                                  // a real tab between the words
++       t"tab\there"                                  // a real tab between the words
+
+=       t"tab\there"                                  // a real tab between the words
+-       ```
++       ```
+
+-       The same prefix is a pattern: `case t"quit" =>` matches a `Text` equal to the literal,
+-       through `SimpleTExtractor`. The pattern form takes no substitutions. `fuzzy` accepts
+-       `t"…"` patterns in its cases, too.
++       Dasselbe Präfix ist ein Pattern: `case t"quit" =>` passt auf einen `Text`, der dem Literal
++       gleicht, über `SimpleTExtractor`. Die Pattern-Form nimmt keine Ersetzungen. Auch `fuzzy`
++       akzeptiert `t"…"`-Patterns in seinen Fällen.
+
+=       `t"…"` patterns in its cases, too.
+=
+-       ```scala
++       ```scala
+
+=       `t"…"` patterns in its cases, too.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def respond(command: Text): Text = command match
++       def respond(command: Text): Text = command match
+
+-         case t"quit" => t"goodbye"
++         case t"quit" => t"goodbye"
+
+-         case other   => t"unknown command: $other"
++         case other   => t"unknown command: $other"
+
+=         case other   => t"unknown command: $other"
+-       ```
++       ```
+
+-       `txt"…"` is the variant for multi-line prose, and `a"…"` makes an `Ascii`.
++       `txt"…"` ist die Variante für mehrzeilige Prosa, und `a"…"` erzeugt ein `Ascii`.
+
+-   refer gossamer.txt
++   refer gossamer.txt
+
+-   refer gossamer.SimpleTExtractor
++   refer gossamer.SimpleTExtractor
+
+=   refer gossamer.SimpleTExtractor
+-   refer gossamer.fuzzy
++   refer gossamer.fuzzy
+
+- entry .txt   the `txt"…"` interpolator: a `Text` with wrapped source lines folded into one
+-     As `t"…"`, with the whitespace of a literal written across several source lines
+-     normalised: every run of whitespace (including a single newline and the indentation after
+-     it) becomes one space, and a blank line — two newlines — becomes a single `\n`, so a
+-     paragraph wrapped for the source's reader is unwrapped for the output's, and a blank line
+-     separates paragraphs.
++ entry .txt   der Interpolator `txt"…"`: ein `Text`, in dem umbrochene Quelltextzeilen zu einer zusammengefaltet werden
++     Wie `t"…"`, wobei der Leerraum eines über mehrere Quelltextzeilen geschriebenen Literals
++     normalisiert wird: Jede Folge von Leerraum (einschließlich eines einzelnen Zeilenumbruchs
++     und der Einrückung danach) wird zu einem Leerzeichen, und eine Leerzeile — zwei
++     Zeilenumbrüche — wird zu einem einzelnen `\n`; so wird ein für den Leser des Quelltexts
++     umbrochener Absatz für den Leser der Ausgabe entumbrochen, und eine Leerzeile trennt
++     Absätze.
+
+=     separates paragraphs.
+=
+-     ```scala
++     ```scala
+
+=     separates paragraphs.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     txt"""This message is written
++     txt"""This message is written
+
+-           across several lines."""      // t"This message is written across several lines."
++           across several lines."""      // t"This message is written across several lines."
+
+-     txt"""Hello
++     txt"""Hello
+
+-           world
++           world
+
+-           Bonjour
++           Bonjour
+
+-           le monde"""                   // t"Hello world\nBonjour le monde"
++           le monde"""                   // t"Hello world\nBonjour le monde"
+
+=           le monde"""                   // t"Hello world\nBonjour le monde"
+-     ```
++     ```
+
+-     Substitutions are rendered through `Showable`, as in `t"…"`, and are normalised with the
+-     rest of the text.
++     Ersetzungen werden wie in `t"…"` über `Showable` dargestellt und mit dem übrigen Text
++     normalisiert.
+
+- entry .a   the `a"…"` interpolator: an `Ascii` byte string, checked to be ASCII as the code compiles
+-     `a"hello"` is an `Ascii`, a frozen array of bytes holding the literal's characters, one byte
+-     each. A character outside ASCII is a compile error (number 824, _`é` is not a valid ASCII
+-     character_) reported at that character's own position in the source, not at the start of
+-     the literal. Substitutions are themselves `Ascii` values, concatenated in.
++ entry .a   der Interpolator `a"…"`: ein `Ascii`-Bytestring, beim Kompilieren als ASCII geprüft
++     `a"hello"` ist ein `Ascii`, ein eingefrorenes Byte-Array, das die Zeichen des Literals
++     enthält, ein Byte je Zeichen. Ein Zeichen außerhalb von ASCII ist ein Kompilierfehler
++     (Nummer 824, _`é` is not a valid ASCII
++     character_), gemeldet an der Position dieses Zeichens im Quelltext, nicht am Anfang des
++     Literals. Ersetzungen sind selbst `Ascii`-Werte und werden angehängt.
+
+=     the literal. Substitutions are themselves `Ascii` values, concatenated in.
+=
+-     ```scala
++     ```scala
+
+=     the literal. Substitutions are themselves `Ascii` values, concatenated in.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val name = a"world"
++     val name = a"world"
+
+-     a"hello $name".bytes.length   // 11
++     a"hello $name".bytes.length   // 11
+
+-     a"hello café"                 // does not compile
++     a"hello café"                 // does not compile
+
+=     a"hello café"                 // does not compile
+-     ```
++     ```
+
+- entry .SimpleTExtractor   the extractor behind a `t"…"` pattern: equality with the literal
++ entry .SimpleTExtractor   der Extraktor hinter einem `t"…"`-Pattern: Gleichheit mit dem Literal
+
+= entry .SimpleTExtractor   the extractor behind a `t"…"` pattern: equality with the literal
+-   detail
++   detail
+
+-       `case t"quit" =>` desugars to a `SimpleTExtractor(t"quit")` whose `#unapply` is equality
+-       with the scrutinee. It exists so that `t"…"` can be written in a pattern as well as an
+-       expression; there is rarely a reason to construct one directly.
+-   entry #text   the literal the pattern matches
+-   entry #unapply   whether the scrutinee equals `#text`
++       `case t"quit" =>` wird zu einem `SimpleTExtractor(t"quit")` entzuckert, dessen
++       `#unapply` die Gleichheit mit dem Prüfwert ist. Er existiert, damit `t"…"` sowohl in
++       einem Pattern als auch in einem Ausdruck geschrieben werden kann; es gibt selten einen
++       Grund, einen direkt zu konstruieren.
++   entry #text   das Literal, auf das das Pattern passt
++   entry #unapply   ob der Prüfwert gleich `#text` ist
+
+- entry .Textual   the typeclass which makes a type textual: `Text`, `Ascii`, `Writing`, `Teletype`
++ entry .Textual   die Typklasse, die einen Typ textuell macht: `Text`, `Ascii`, `Writing`, `Teletype`
+
+= entry .Textual   the typeclass which makes a type textual: `Text`, `Ascii`, `Writing`, `Teletype`
+-   detail
++   detail
+
+-       `textual is Textual` says that `textual` is a sequence of characters with a known length,
+-       which can be sliced, mapped, searched and concatenated, built up in a `Builder`, and
+-       rendered as plain `Text`. Every generic operation in gossamer — `cut`, `join`, `words`,
+-       `lower`, `trim`, `pad`, `capitalize`, `uncamel`, `pinpoint`, `chomp`, … — is an
+-       extension on a receiver with a `Textual` instance, so a new textual type gains the whole
+-       vocabulary by providing one instance in its companion.
++       `textual is Textual` sagt, dass `textual` eine Folge von Zeichen bekannter Länge ist, die
++       sich schneiden, abbilden, durchsuchen und verketten, in einem `Builder` aufbauen und als
++       bloßer `Text` darstellen lässt. Jede generische Operation in gossamer — `cut`, `join`,
++       `words`, `lower`, `trim`, `pad`, `capitalize`, `uncamel`, `pinpoint`, `chomp`, … — ist
++       eine Erweiterung auf einem Empfänger mit einer `Textual`-Instanz, sodass ein neuer
++       textueller Typ das ganze Vokabular erhält, indem er eine Instanz in seinem Begleitobjekt
++       bereitstellt.
+
+-       The `#Result` type member is the element type: `Char` for `Text`, `Byte` for `Ascii`,
+-       `Grapheme` for `Writing`. Operations which act on characters (`lower`, `upper`, `trim`,
+-       `capitalize`, `tr`, `pad`, `pinpoint`, …) require `Textual { type Result = Char }`;
+-       those which act on positions and substrings (`cut`, `words`, `starts`, `offsetOf`,
+-       `slices`, `chomp`, …) take any `Textual`. `#Show[value]` is the typeclass a value must
+-       satisfy to be appended to a builder of this type (`Showable` for `Text`; escapade's
+-       `Teletype` uses its own, so a styled value appends with its styling).
++       Der Typ-Member `#Result` ist der Elementtyp: `Char` für `Text`, `Byte` für `Ascii`,
++       `Grapheme` für `Writing`. Operationen, die auf Zeichen wirken (`lower`, `upper`, `trim`,
++       `capitalize`, `tr`, `pad`, `pinpoint`, …), verlangen `Textual { type Result = Char }`;
++       solche, die auf Positionen und Teilstrings wirken (`cut`, `words`, `starts`, `offsetOf`,
++       `slices`, `chomp`, …), nehmen jedes `Textual`. `#Show[value]` ist die Typklasse, die ein
++       Wert erfüllen muss, um an einen Builder dieses Typs angehängt zu werden (`Showable` für
++       `Text`; escapades `Teletype` verwendet eine eigene, sodass ein formatierter Wert mit
++       seiner Formatierung angehängt wird).
+
+-       `Textual` extends `Countable` and `Segmentable` (with `Segment = Self` and `Operand =
+-       Ordinal`), which is what lets the general collection operations — `keep`, `skip`,
++       `Textual` erweitert `Countable` und `Segmentable` (mit `Segment = Self` und `Operand =
++       Ordinal`); das lässt die allgemeinen Collection-Operationen — `keep`, `skip`,
+
+-       `snip`, `before`, `after`, `upto`, `from`, `segment`, `count`, `where`, `all`, `exists` —
++       `snip`, `before`, `after`, `upto`, `from`, `segment`, `count`, `where`, `all`, `exists` —
+
+-       serve textual values, and `Zeroic` and `Applicable`, so `textual.zero` is the empty
+-       value and `Textual[Teletype](text)` converts plain text in.
++       textuellen Werten dienen; außerdem `Zeroic` und `Applicable`, sodass `textual.zero` der
++       leere Wert ist und `Textual[Teletype](text)` bloßen Text umwandelt.
+
+=       value and `Textual[Teletype](text)` converts plain text in.
+=
+-       ```scala
++       ```scala
+
+=       value and `Textual[Teletype](text)` converts plain text in.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def initials[textual: Textual { type Result = Char }](name: textual): textual =
++       def initials[textual: Textual { type Result = Char }](name: textual): textual =
+
+-         name.words.map(_.keep(1).upper).join
++         name.words.map(_.keep(1).upper).join
+
+-       initials(t"nick bottom")   // t"NB"
++       initials(t"nick bottom")   // t"NB"
+
+=       initials(t"nick bottom")   // t"NB"
+-       ```
++       ```
+
+-       The instances for `Text` (`.text`) and, through their companions, for `Ascii` and
+-       `Writing`, are in implicit scope. A type whose `reverse` and traversal should go through
+-       its `Textual` instance publishes `reversibleTextual` and `traversableTextual` in its own
+-       companion, since a blanket given could not be found from `rudiments`.
++       Die Instanzen für `Text` (`.text`) und, über ihre Begleitobjekte, für `Ascii` und
++       `Writing` sind im impliziten Geltungsbereich. Ein Typ, dessen `reverse` und Traversierung
++       über seine `Textual`-Instanz gehen sollen, veröffentlicht `reversibleTextual` und
++       `traversableTextual` in seinem eigenen Begleitobjekt, denn ein pauschales Given könnte
++       von `rudiments` aus nicht gefunden werden.
+
+-   refer gossamer.reversibleTextual
++   refer gossamer.reversibleTextual
+
+-   refer gossamer.traversableTextual
++   refer gossamer.traversableTextual
+
+-   refer gossamer.Builder
++   refer gossamer.Builder
+
+=   refer gossamer.Builder
+-   refer gossamer.Writing
++   refer gossamer.Writing
+
+-   refer gossamer.Ascii
++   refer gossamer.Ascii
+
+-   entry .apply   `Textual[textual](text)`: converts a `Text` into any textual type
+-       The explicit form of `#apply`: `Textual[Teletype](t"plain")` wraps plain text as a styled
+-       value with no styling, and `Textual[Text](text)` is the identity.
+-   entry .text   the `Textual` instance for `Text` itself, with `Char` elements and `Showable` for `Show`
+-       Length, access, `indexOf`, `segment` and `map` go straight to the underlying `String`;
+-       the builder is a `TextBuilder`.
+-   entry .concatenable   `left + right` on any textual type, through `Textual#concat`
+-       The `Concatenable` given which gives every textual type `+`. It is a companion given of
+-       `Textual`, so it is found for any `textual: Textual`.
+-   entry #Result   the element type: `Char` for `Text`, `Byte` for `Ascii`, `Grapheme` for `Writing`
+-   entry #Show   the typeclass a value needs to be appended to a builder of this type
+-       `Show[value]` is `value is Showable` for `Text`, `Ascii` and `Writing`; a styled type
+-       may choose a richer one. `append` in a `Text.build` block requires it of anything which
+-       is neither a `Text` nor a `Char`.
+-   entry #Segment   the type a slice of this text has: the text's own type
+-   entry #Operand   the index type: `Ordinal`
+-   entry #show   renders a value as this textual type, through `#Show`
+-   entry #apply   converts a plain `Text` into this textual type
+-   entry #single   a one-element text from one `#Result`
+-   entry #fromChar   the `#Result` element corresponding to a `Char`
+-   entry #classTag   the `ClassTag` of the textual type, for allocating arrays of it
+-   entry #length   the number of elements: characters, bytes or graphemes
+-   entry #text   the plain `Text` of a value, with any styling dropped
+-   entry #map   a new text with a function applied to every element
+-   entry #empty   the empty value of this type
+-   entry #concat   two values joined into one
+-   entry #access   the element at an ordinal position; no check is made that it is in range
+-   entry #contains   whether an ordinal is a valid position in the text
+-   entry #indexOf   the position of a substring's first occurrence at or after `start`, or `Unset`
+-       The primitive behind `offsetOf`, `contains` and `tally`. The substring is always plain
+-       `Text`, whatever the textual type.
+-   entry #lastIndexOf   the position of a substring's last occurrence, or `Unset`
+-       By default a scan of repeated `#indexOf` calls; `Text`'s instance overrides it with the
+-       `String` primitive. An empty substring is `Unset`.
+-   entry #builder   a fresh `Builder` for this type, optionally sized
+-   entry #segment   the slice of a text over an `Interval` of ordinals, clamped to the text's bounds
+-       An interval reaching past the end is cut short, and one starting past the end is empty,
+-       rather than either failing.
+-   entry #zero   the empty value, as the `Zeroic` typeclass names it
++   entry .apply   `Textual[textual](text)`: wandelt einen `Text` in einen beliebigen textuellen Typ um
++       Die explizite Form von `#apply`: `Textual[Teletype](t"plain")` verpackt bloßen Text als
++       formatierten Wert ohne Formatierung, und `Textual[Text](text)` ist die Identität.
++   entry .text   die `Textual`-Instanz für `Text` selbst, mit `Char`-Elementen und `Showable` für `Show`
++       Länge, Zugriff, `indexOf`, `segment` und `map` gehen direkt an den zugrunde liegenden
++       `String`; der Builder ist ein `TextBuilder`.
++   entry .concatenable   `left + right` auf jedem textuellen Typ, über `Textual#concat`
++       Das `Concatenable`-Given, das jedem textuellen Typ `+` gibt. Es ist ein Given im
++       Begleitobjekt von `Textual` und wird daher für jedes `textual: Textual` gefunden.
++   entry #Result   der Elementtyp: `Char` für `Text`, `Byte` für `Ascii`, `Grapheme` für `Writing`
++   entry #Show   die Typklasse, die ein Wert braucht, um an einen Builder dieses Typs angehängt zu werden
++       `Show[value]` ist `value is Showable` für `Text`, `Ascii` und `Writing`; ein formatierter
++       Typ kann eine reichere wählen. `append` in einem `Text.build`-Block verlangt sie von
++       allem, was weder ein `Text` noch ein `Char` ist.
++   entry #Segment   der Typ eines Ausschnitts dieses Texts: der eigene Typ des Texts
++   entry #Operand   der Indextyp: `Ordinal`
++   entry #show   stellt einen Wert über `#Show` als diesen textuellen Typ dar
++   entry #apply   wandelt einen bloßen `Text` in diesen textuellen Typ um
++   entry #single   ein Text aus einem Element, aus einem `#Result`
++   entry #fromChar   das `#Result`-Element, das einem `Char` entspricht
++   entry #classTag   das `ClassTag` des textuellen Typs, zum Allozieren von Arrays davon
++   entry #length   die Anzahl der Elemente: Zeichen, Bytes oder Grapheme
++   entry #text   der bloße `Text` eines Werts, ohne jede Formatierung
++   entry #map   ein neuer Text, in dem eine Funktion auf jedes Element angewendet ist
++   entry #empty   der leere Wert dieses Typs
++   entry #concat   zwei Werte, zu einem verbunden
++   entry #access   das Element an einer Ordinalposition; ob sie im Bereich liegt, wird nicht geprüft
++   entry #contains   ob ein Ordinal eine gültige Position im Text ist
++   entry #indexOf   die Position des ersten Vorkommens eines Teilstrings an oder nach `start`, oder `Unset`
++       Das Primitiv hinter `offsetOf`, `contains` und `tally`. Der Teilstring ist immer bloßer
++       `Text`, gleich welcher textuelle Typ.
++   entry #lastIndexOf   die Position des letzten Vorkommens eines Teilstrings, oder `Unset`
++       Standardmäßig eine Suche durch wiederholte `#indexOf`-Aufrufe; die Instanz von `Text`
++       überschreibt sie mit dem `String`-Primitiv. Ein leerer Teilstring ist `Unset`.
++   entry #builder   ein frischer `Builder` für diesen Typ, optional mit Größe
++   entry #segment   der Ausschnitt eines Texts über ein `Interval` von Ordinalen, auf die Grenzen des Texts beschnitten
++       Ein Intervall, das über das Ende hinausreicht, wird gekürzt, und eines, das hinter dem
++       Ende beginnt, ist leer, statt dass eines davon scheitert.
++   entry #zero   der leere Wert, wie die Typklasse `Zeroic` ihn nennt
+
+- entry .Builder   a mutable accumulator which builds a textual value from appended pieces
++ entry .Builder   ein veränderlicher Akkumulator, der einen textuellen Wert aus angehängten Stücken baut
+
+= entry .Builder   a mutable accumulator which builds a textual value from appended pieces
+-   detail
++   detail
+
+-       `Builder[textual]` is the abstract class behind `TextBuilder`, `AsciiBuilder`,
+-       `WritingBuilder` and the builders of other textual types, each obtained from its
+-       `Textual#builder`. Pieces are added with `#append` (a value of the type, or a single
+-       `Char`), the result is read with `#apply`, and `#build` runs a block in which the
+-       package-level `append` and `appendln` write to it as a contextual value.
++       `Builder[textual]` ist die abstrakte Klasse hinter `TextBuilder`, `AsciiBuilder`,
++       `WritingBuilder` und den Buildern anderer textueller Typen, die jeweils über
++       `Textual#builder` erhalten werden. Stücke werden mit `#append` hinzugefügt (ein Wert des
++       Typs oder ein einzelnes `Char`), das Ergebnis wird mit `#apply` gelesen, und `#build`
++       führt einen Block aus, in dem die `append` und `appendln` auf Paketebene als Kontextwert
++       in ihn schreiben.
+
+=       package-level `append` and `appendln` write to it as a contextual value.
+=
+-       ```scala
++       ```scala
+
+=       package-level `append` and `appendln` write to it as a contextual value.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val builder = TextBuilder()
++       val builder = TextBuilder()
+
+-       builder.append(t"Hello").append(',').append(t" world")
++       builder.append(t"Hello").append(',').append(t" world")
+
+-       builder.length   // 12
++       builder.length   // 12
+
+-       builder()        // t"Hello, world"
++       builder()        // t"Hello, world"
+
+=       builder()        // t"Hello, world"
+-       ```
++       ```
+
+-       A builder is mutable state and is not safe to share between threads; for text, prefer
+-       `Text.build`, which scopes one to a block.
++       Ein Builder ist veränderlicher Zustand und darf nicht zwischen Threads geteilt werden;
++       für Text ist `Text.build` vorzuziehen, das einen auf einen Block beschränkt.
+
+-   refer gossamer.TextBuilder
++   refer gossamer.TextBuilder
+
+-   refer gossamer.append
++   refer gossamer.append
+
+-   refer gossamer.build
++   refer gossamer.build
+
+-   entry #append   adds a value of the textual type, or a single `Char`; returns the builder
+-   entry #build   runs a block with this builder as the contextual `builder`, then returns the result
+-       Inside the block, `append(value)`, `appendln(value)` and `builder` refer to this
+-       builder. The block cannot outlive the call, which is why the builder is handed in as a
+-       pure contextual value despite being mutable.
+-   entry #apply   the accumulated value
+-   entry #clear   discards everything appended so far; returns the builder
+-   entry #nil   whether nothing has been appended
+-   entry #length   the number of elements appended so far
++   entry #append   fügt einen Wert des textuellen Typs oder ein einzelnes `Char` hinzu; gibt den Builder zurück
++   entry #build   führt einen Block mit diesem Builder als kontextuellem `builder` aus und gibt dann das Ergebnis zurück
++       Innerhalb des Blocks beziehen sich `append(value)`, `appendln(value)` und `builder` auf
++       diesen Builder. Der Block kann den Aufruf nicht überdauern; deshalb wird der Builder als
++       reiner Kontextwert übergeben, obwohl er veränderlich ist.
++   entry #apply   der akkumulierte Wert
++   entry #clear   verwirft alles bisher Angehängte; gibt den Builder zurück
++   entry #nil   ob nichts angehängt wurde
++   entry #length   die Anzahl der bisher angehängten Elemente
+
+- entry .TextBuilder   the `Builder` for `Text`, over a `StringBuilder`
++ entry .TextBuilder   der `Builder` für `Text`, über einem `StringBuilder`
+
+= entry .TextBuilder   the `Builder` for `Text`, over a `StringBuilder`
+-   detail
++   detail
+
+-       `TextBuilder(size)` sizes the underlying buffer, as a hint, when the length is known.
+-       `Textual.text.builder` returns one, and `Text.build` scopes one to a block.
+-   entry #put   appends one character
+-   entry #length   the number of characters appended so far
++       `TextBuilder(size)` bemisst den zugrunde liegenden Puffer, als Hinweis, wenn die Länge
++       bekannt ist. `Textual.text.builder` gibt einen zurück, und `Text.build` beschränkt einen
++       auf einen Block.
++   entry #put   hängt ein Zeichen an
++   entry #length   die Anzahl der bisher angehängten Zeichen
+
+- entry .AsciiBuilder   the `Builder` for `Ascii`, accumulating bytes
++ entry .AsciiBuilder   der `Builder` für `Ascii`, der Bytes akkumuliert
+
+= entry .AsciiBuilder   the `Builder` for `Ascii`, accumulating bytes
+-   detail
++   detail
+
+-       Each appended `Char` is truncated to its low byte; an appended `Ascii` contributes its
+-       bytes. `Ascii`'s `Textual` instance uses it for every building operation.
+-   entry #put   appends one character as a byte
+-   entry #length   the number of bytes appended so far
++       Jedes angehängte `Char` wird auf sein niedriges Byte gekürzt; ein angehängtes `Ascii`
++       steuert seine Bytes bei. Die `Textual`-Instanz von `Ascii` verwendet ihn für jede
++       Bauoperation.
++   entry #put   hängt ein Zeichen als Byte an
++   entry #length   die Anzahl der bisher angehängten Bytes
+
+- entry .WritingBuilder   the `Builder` for `Writing`
++ entry .WritingBuilder   der `Builder` für `Writing`
+
+= entry .WritingBuilder   the `Builder` for `Writing`
+-   detail
++   detail
+
+-       Accumulates the text of each appended `Writing` and recomputes the grapheme boundaries
+-       of the whole when the result is read, so `#length` counts characters while building,
+-       not graphemes.
+-   entry #length   the number of characters appended so far
++       Akkumuliert den Text jedes angehängten `Writing` und berechnet die Graphemgrenzen des
++       Ganzen neu, wenn das Ergebnis gelesen wird; daher zählt `#length` beim Bauen Zeichen,
++       nicht Grapheme.
++   entry #length   die Anzahl der bisher angehängten Zeichen
+
+- entry .append   appends a value to the contextual `Builder`, inside a `build` block
+-     A package-level inline method for use inside `Text.build` or `Builder#build`, where a
+-     `Builder[textual]` is in scope as the contextual value `builder`. A `Text` is appended as
+-     is (converted to the builder's type), a `Char` as one element, and anything else through
+-     the builder's `Textual#Show` typeclass — `Showable`, for `Text` — so a value with no
+-     rendering is a compile error rather than a `toString`.
++ entry .append   hängt einen Wert an den kontextuellen `Builder` an, innerhalb eines `build`-Blocks
++     Eine Inline-Methode auf Paketebene zur Verwendung in `Text.build` oder `Builder#build`, wo
++     ein `Builder[textual]` als Kontextwert `builder` im Geltungsbereich ist. Ein `Text` wird
++     unverändert angehängt (in den Typ des Builders umgewandelt), ein `Char` als ein Element
++     und alles andere über die Typklasse `Textual#Show` des Builders — `Showable` für `Text` —,
++     sodass ein Wert ohne Darstellung ein Kompilierfehler ist statt eines `toString`.
+
+=     rendering is a compile error rather than a `toString`.
+=
+-     ```scala
++     ```scala
+
+=     rendering is a compile error rather than a `toString`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     Text.build:
++     Text.build:
+
+-       append(t"x = ")
++       append(t"x = ")
+
+-       append(42)
++       append(42)
+
+-       append('!')
++       append('!')
+
+-     // t"x = 42!"
++     // t"x = 42!"
+
+=     // t"x = 42!"
+-     ```
++     ```
+
+- entry .appendln   appends a value and then a newline to the contextual `Builder`
+-     As `append`, followed by `'\n'`.
++ entry .appendln   hängt einen Wert und dann einen Zeilenumbruch an den kontextuellen `Builder` an
++     Wie `append`, gefolgt von `'\n'`.
+
+- entry .builder   the contextual `Builder` inside a `build` block, as a value
+-     `builder[TextBuilder]` (or `builder[Builder[Text]]`) retrieves the builder a `Text.build`
+-     or `Builder#build` block is writing to, for the operations `append` does not cover, such
+-     as `clear()` or reading `length`.
++ entry .builder   der kontextuelle `Builder` innerhalb eines `build`-Blocks, als Wert
++     `builder[TextBuilder]` (oder `builder[Builder[Text]]`) holt den Builder, in den ein
++     `Text.build`- oder `Builder#build`-Block schreibt, für die Operationen, die `append` nicht
++     abdeckt, etwa `clear()` oder das Lesen von `length`.
+
+- entry .build   `Text.build` scopes a `TextBuilder` to a block; `Array.build` fills a fresh array
+-     Two extensions share the name. `Text.build { … }` runs the block with a new `TextBuilder`
+-     as its contextual builder — `append`, `appendln` and `builder` inside it refer to that
+-     builder — and returns the text built, so a text assembled from many pieces is written
+-     without a visible mutable value:
++ entry .build   `Text.build` beschränkt einen `TextBuilder` auf einen Block; `Array.build` füllt ein frisches Array
++     Zwei Erweiterungen teilen den Namen. `Text.build { … }` führt den Block mit einem neuen
++     `TextBuilder` als kontextuellem Builder aus — `append`, `appendln` und `builder` darin
++     beziehen sich auf diesen Builder — und gibt den gebauten Text zurück, sodass ein aus
++     vielen Stücken zusammengesetzter Text ohne sichtbaren veränderlichen Wert geschrieben
++     wird:
+
+=     without a visible mutable value:
+=
+-     ```scala
++     ```scala
+
+=     without a visible mutable value:
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val table: Text = Text.build:
++     val table: Text = Text.build:
+
+-       for row <- 1 to 3 do
++       for row <- 1 to 3 do
+
+-         append(t"row ")
++         append(t"row ")
+
+-         appendln(row)
++         appendln(row)
+
+=         appendln(row)
+-     ```
++     ```
+
+-     `Array.build[element](size) { array => … }` allocates a mutable JVM array of `size`
+-     elements, hands it to the lambda to fill, and returns it frozen as `Array[element]^{}`;
+-     `Pue.apply` and `Ascii`'s concatenation use it. The lambda's array must not escape.
++     `Array.build[element](size) { array => … }` alloziert ein veränderliches JVM-Array aus
++     `size` Elementen, übergibt es dem Lambda zum Füllen und gibt es eingefroren als
++     `Array[element]^{}` zurück; `Pue.apply` und die Verkettung von `Ascii` verwenden es. Das
++     Array des Lambdas darf nicht entkommen.
+
+- entry .fill   `Text.fill(length)(index => char)`: a text of a given length, one character per index
+-     The index is zero-based (`Int`), so `Text.fill(3)(_ => '-')` is `t"---"` and
+-     `Text.fill(3)(i => ('a' + i).toChar)` is `t"abc"`.
++ entry .fill   `Text.fill(length)(index => char)`: ein Text gegebener Länge, ein Zeichen je Index
++     Der Index beginnt bei null (`Int`), also ist `Text.fill(3)(_ => '-')` gleich `t"---"` und
++     `Text.fill(3)(i => ('a' + i).toChar)` gleich `t"abc"`.
+
+- entry .ascii   `Text.ascii(bytes)` and `bytes.ascii`: decodes a `Data` as US-ASCII text
+-     Both forms decode each byte as one ASCII character; a byte above 127 becomes the
+-     replacement character. For UTF-8, use `utf8`; for an arbitrary charset, decode with
+-     `data.as[Text]` under a `Charset` given (`textDecodable`).
++ entry .ascii   `Text.ascii(bytes)` und `bytes.ascii`: dekodiert ein `Data` als US-ASCII-Text
++     Beide Formen dekodieren jedes Byte als ein ASCII-Zeichen; ein Byte über 127 wird zum
++     Ersatzzeichen. Für UTF-8 verwenden Sie `utf8`; für einen beliebigen Zeichensatz
++     dekodieren Sie mit `data.as[Text]` unter einem `Charset`-Given (`textDecodable`).
+
+- entry .utf8   decodes a `Data` as UTF-8 text
+-     `bytes.utf8`: the inverse of `text.in[Data]` under `codepages.utf8Codepage`. Malformed
+-     sequences become the replacement character rather than failing.
++ entry .utf8   dekodiert ein `Data` als UTF-8-Text
++     `bytes.utf8`: die Umkehrung von `text.in[Data]` unter `codepages.utf8Codepage`.
++     Fehlerhafte Sequenzen werden zum Ersatzzeichen, statt zu scheitern.
+
+=     sequences become the replacement character rather than failing.
+=
+-     ```scala
++     ```scala
+
+=     sequences become the replacement character rather than failing.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import codepages.utf8Codepage
++     import codepages.utf8Codepage
+
+-     t"Adélaïde".in[Data].utf8   // t"Adélaïde"
++     t"Adélaïde".in[Data].utf8   // t"Adélaïde"
+
+=     t"Adélaïde".in[Data].utf8   // t"Adélaïde"
+-     ```
++     ```
+
+- entry .utf16   decodes a `Data` as UTF-16 text, honouring a byte-order mark
+-     `bytes.utf16`: without a mark, the bytes are read big-endian.
++ entry .utf16   dekodiert ein `Data` als UTF-16-Text und beachtet eine Byte-Order-Mark
++     `bytes.utf16`: Ohne Mark werden die Bytes als Big-Endian gelesen.
+
+- entry .pue   renders a `Data` as text in which every byte is one printable character
+-     `bytes.pue`: the _printable Unicode encoding_, a reversible rendering of bytes as text in
+-     which each byte is one character, chosen so that none is a control character — a byte
+-     which would be a control (its low seven bits at most 0x20, or 0x7f) is shifted up by
+-     0x100, and every other byte is the character of its own value. `Pue(text)` reverses it.
+-     The result is for display and for carrying bytes through text-only channels; it is not
+-     a standard encoding.
++ entry .pue   stellt ein `Data` als Text dar, in dem jedes Byte ein druckbares Zeichen ist
++     `bytes.pue`: die _druckbare Unicode-Kodierung_, eine umkehrbare Darstellung von Bytes als
++     Text, in der jedes Byte ein Zeichen ist, so gewählt, dass keines ein Steuerzeichen ist —
++     ein Byte, das ein Steuerzeichen wäre (seine unteren sieben Bits höchstens 0x20, oder
++     0x7f), wird um 0x100 nach oben verschoben, und jedes andere Byte ist das Zeichen seines
++     eigenen Werts. `Pue(text)` kehrt sie um. Das Ergebnis dient der Anzeige und dem Transport
++     von Bytes über reine Textkanäle; es ist keine Standardkodierung.
+
+- entry .Pue   decodes printable-Unicode-encoded text back to its bytes
++ entry .Pue   dekodiert druckbar-Unicode-kodierten Text zurück in seine Bytes
+
+= entry .Pue   decodes printable-Unicode-encoded text back to its bytes
+-   detail
++   detail
+
+-       `Pue(text)` is the inverse of `bytes.pue`: each character's low byte is one byte of the
+-       result, so a byte which `pue` shifted up by 0x100 to avoid a control character comes
+-       back down. Text which did not come from `pue` is reduced to its characters' low bytes
+-       without complaint.
+-   entry .apply   the bytes a printable-Unicode-encoded text encodes
++       `Pue(text)` ist die Umkehrung von `bytes.pue`: Das niedrige Byte jedes Zeichens ist ein
++       Byte des Ergebnisses, sodass ein Byte, das `pue` um 0x100 nach oben verschoben hat, um
++       ein Steuerzeichen zu vermeiden, wieder herunterkommt. Text, der nicht von `pue` stammt,
++       wird ohne Beanstandung auf die niedrigen Bytes seiner Zeichen reduziert.
++   entry .apply   die Bytes, die ein druckbar-Unicode-kodierter Text kodiert
+
+- entry .cut   divides a text at every occurrence of a delimiter, into a list proved to be non-empty
+-     `text.cut(delimiter)` splits at a `Text`, a `Char` or a `Regex` (an `r"…"` literal), for
+-     any textual type with a `Cuttable` instance for that delimiter. The result is
+-     `List[textual] { type Occupied = true }`: a cut always yields at least one piece — the
+-     text after the last delimiter, or the whole text when the delimiter never occurs — so
+-     `head` and `last` on it are total, and `case List(a, b) =>` binds the element type.
++ entry .cut   teilt einen Text an jedem Vorkommen eines Trennzeichens, in eine nachweislich nicht leere Liste
++     `text.cut(delimiter)` teilt an einem `Text`, einem `Char` oder einer `Regex` (einem
++     `r"…"`-Literal), für jeden textuellen Typ mit einer `Cuttable`-Instanz für dieses
++     Trennzeichen. Das Ergebnis ist `List[textual] { type Occupied = true }`: Ein Schnitt
++     liefert immer mindestens ein Stück — den Text nach dem letzten Trennzeichen oder den
++     ganzen Text, wenn das Trennzeichen nie vorkommt —, sodass `head` und `last` darauf total
++     sind und `case List(a, b) =>` den Elementtyp bindet.
+
+=     `head` and `last` on it are total, and `case List(a, b) =>` binds the element type.
+=
+-     ```scala
++     ```scala
+
+=     `head` and `last` on it are total, and `case List(a, b) =>` binds the element type.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     t"one,two,three".cut(t",")        // List(t"one", t"two", t"three")
++     t"one,two,three".cut(t",")        // List(t"one", t"two", t"three")
+
+-     t",one,two".cut(',')              // List(t"", t"one", t"two")
++     t",one,two".cut(',')              // List(t"", t"one", t"two")
+
+-     t"a1b22c".cut(r"[0-9]+")          // List(t"a", t"b", t"c")
++     t"a1b22c".cut(r"[0-9]+")          // List(t"a", t"b", t"c")
+
+-     t"k=v=w".cut(t"=", 2)             // List(t"k", t"v=w")
++     t"k=v=w".cut(t"=", 2)             // List(t"k", t"v=w")
+
+-     t"no commas".cut(t",").head       // t"no commas"
++     t"no commas".cut(t",").head       // t"no commas"
+
+=     t"no commas".cut(t",").head       // t"no commas"
+-     ```
++     ```
+
+-     A positive `limit` caps the number of pieces, the last taking the remainder; a limit of
+-     zero or less means unlimited. Trailing empty pieces are kept, as `String.split` keeps them
+-     with a positive limit, so `t"a,".cut(t",")` is `List(t"a", t"")`. `words`, `lines`,
+-     `unkebab` and `unsnake` are cuts at a space, a newline, `-` and `_`.
++     Ein positives `limit` begrenzt die Zahl der Stücke, wobei das letzte den Rest nimmt; ein
++     Limit von null oder weniger bedeutet unbegrenzt. Leere Stücke am Ende bleiben erhalten,
++     wie `String.split` sie bei positivem Limit behält, also ist `t"a,".cut(t",")` gleich
++     `List(t"a", t"")`. `words`, `lines`, `unkebab` und `unsnake` sind Schnitte an einem
++     Leerzeichen, einem Zeilenumbruch, `-` und `_`.
+
+- entry .Cuttable   the typeclass behind `cut`: how a textual type is divided at a kind of delimiter
++ entry .Cuttable   die Typklasse hinter `cut`: wie ein textueller Typ an einer Art von Trennzeichen geteilt wird
+
+= entry .Cuttable   the typeclass behind `cut`: how a textual type is divided at a kind of delimiter
+-   detail
++   detail
+
+-       `textual is Cuttable by delimiter` has one method, `#cut(text, delimiter, limit)`, and
+-       must return at least one piece. Instances exist for `Text` cut by `Text` (a scan for the
+-       literal delimiter, with no regular expression involved) and by `Regex`, for any
+-       `Textual` with a `Countable` instance cut by `Text` or by `Regex` (so styled text is cut
+-       through `segment` and keeps its styling), and for any type cuttable by `Text` cut by a
+-       `Char`. All are companion givens, in implicit scope.
+-   entry .textualText   any textual cut by a literal `Text`; and any `Text`-cuttable type cut by a `Char`
+-       Two givens share the name. The first serves any `Textual` with `Countable`, scanning
+-       with `Textual#indexOf` and slicing with `segment`; the second derives `Cuttable by Char`
+-       from a type's `Cuttable by Text` instance, so `cut(',')` works wherever `cut(t",")` does.
+-   entry .textualRegex   any textual cut at the matches of a `Regex`
+-       The pieces *between* matches, with the text after the last match as the final piece. A
+-       zero-width match at the cursor is not a cut, so the scan always advances. `Text` itself
+-       has the more direct `.textRegex`.
+-   entry .textText   `Text` cut by a literal `Text`, by a plain substring scan
+-       No regular expression is compiled, so a delimiter such as `.` or `|` needs no quoting,
+-       and the cut works under runtimes whose regex engine is unavailable.
+-   entry .textRegex   `Text` cut at the matches of a `Regex`, through `String.split`
+-       The `limit` is passed to `split` as given (after `cut` has replaced a non-positive limit
+-       with unlimited), so trailing empty pieces are kept.
+-   entry #cut   the pieces of a text divided at a delimiter, at most `limit` of them, never none
++       `textual is Cuttable by delimiter` hat eine Methode, `#cut(text, delimiter, limit)`, und
++       muss mindestens ein Stück zurückgeben. Instanzen gibt es für `Text`, geteilt durch `Text`
++       (eine Suche nach dem literalen Trennzeichen, ohne regulären Ausdruck) und durch `Regex`,
++       für jedes `Textual` mit einer `Countable`-Instanz, geteilt durch `Text` oder durch `Regex`
++       (sodass formatierter Text über `segment` geteilt wird und seine Formatierung behält), und
++       für jeden durch `Text` teilbaren Typ, geteilt durch ein `Char`. Alle sind Givens im
++       Begleitobjekt, im impliziten Geltungsbereich.
++   entry .textualText   jedes Textuelle, geteilt durch einen literalen `Text`; und jeder durch `Text` teilbare Typ, geteilt durch ein `Char`
++       Zwei Givens teilen den Namen. Das erste dient jedem `Textual` mit `Countable`, sucht mit
++       `Textual#indexOf` und schneidet mit `segment`; das zweite leitet `Cuttable by Char` aus
++       der `Cuttable by Text`-Instanz eines Typs ab, sodass `cut(',')` überall funktioniert, wo
++       `cut(t",")` funktioniert.
++   entry .textualRegex   jedes Textuelle, geteilt an den Treffern einer `Regex`
++       Die Stücke *zwischen* den Treffern, mit dem Text nach dem letzten Treffer als letztem
++       Stück. Ein Treffer der Breite null an der aktuellen Position ist kein Schnitt, sodass die
++       Suche immer fortschreitet. `Text` selbst hat das direktere `.textRegex`.
++   entry .textText   `Text`, geteilt durch einen literalen `Text`, durch eine schlichte Teilstringsuche
++       Es wird kein regulärer Ausdruck kompiliert, sodass ein Trennzeichen wie `.` oder `|`
++       nicht maskiert werden muss und der Schnitt auch unter Laufzeitumgebungen funktioniert,
++       deren Regex-Engine nicht verfügbar ist.
++   entry .textRegex   `Text`, geteilt an den Treffern einer `Regex`, über `String.split`
++       Das `limit` wird unverändert an `split` übergeben (nachdem `cut` ein nicht positives
++       Limit durch unbegrenzt ersetzt hat), sodass leere Stücke am Ende erhalten bleiben.
++   entry #cut   die Stücke eines an einem Trennzeichen geteilten Texts, höchstens `limit` davon, nie keines
+
+- entry .words   a text cut at every space
+-     `text.words` is `text.cut(t" ")`: consecutive spaces yield empty pieces, and no other
+-     whitespace is a boundary. The result is non-empty.
++ entry .words   ein an jedem Leerzeichen geteilter Text
++     `text.words` ist `text.cut(t" ")`: Aufeinanderfolgende Leerzeichen ergeben leere Stücke,
++     und kein anderer Leerraum ist eine Grenze. Das Ergebnis ist nicht leer.
+
+- entry .lines   a text cut at every newline
+-     `text.lines` is `text.cut(t"\n")`; a `\r` before the newline stays on its line.
++ entry .lines   ein an jedem Zeilenumbruch geteilter Text
++     `text.lines` ist `text.cut(t"\n")`; ein `\r` vor dem Zeilenumbruch bleibt in seiner Zeile.
+
+- entry .unkebab   the words of a kebab-case identifier: cut at every `-`
+-     `t"one-two-three".unkebab` is `List(t"one", t"two", t"three")`. The inverse of `kebab`.
++ entry .unkebab   die Wörter eines Bezeichners in Kebab Case: an jedem `-` geteilt
++     `t"one-two-three".unkebab` ist `List(t"one", t"two", t"three")`. Die Umkehrung von
++     `kebab`.
+
+- entry .unsnake   the words of a snake-case identifier: cut at every `_`
+-     `t"one_two_three".unsnake` is `List(t"one", t"two", t"three")`. The inverse of `snake`.
++ entry .unsnake   die Wörter eines Bezeichners in Snake Case: an jedem `_` geteilt
++     `t"one_two_three".unsnake` ist `List(t"one", t"two", t"three")`. Die Umkehrung von
++     `snake`.
+
+- entry .uncamel   the words of a camel-case or Pascal-case identifier, each lowercased
+-     Breaks before every uppercase letter after the first character, and lowercases each word:
+-     `t"oneTwoThree".uncamel` and `t"OneTwoThree".uncamel` are both `List(t"one", t"two",
+-     t"three")`. A run of capitals is one word per letter (`t"parseXML"` gives `parse`, `x`,
+-     `m`, `l`). `kebab`, `snake`, `dotted`, `spaced`, `camel` and `pascal` rejoin the words in
+-     another convention:
++ entry .uncamel   die Wörter eines Bezeichners in Camel Case oder Pascal Case, jedes kleingeschrieben
++     Bricht vor jedem Großbuchstaben nach dem ersten Zeichen um und schreibt jedes Wort klein:
++     `t"oneTwoThree".uncamel` und `t"OneTwoThree".uncamel` sind beide `List(t"one", t"two",
++     t"three")`. Eine Folge von Großbuchstaben ist ein Wort je Buchstabe (`t"parseXML"` ergibt
++     `parse`, `x`, `m`, `l`). `kebab`, `snake`, `dotted`, `spaced`, `camel` und `pascal` fügen
++     die Wörter in einer anderen Konvention wieder zusammen:
+
+=     another convention:
+=
+-     ```scala
++     ```scala
+
+=     another convention:
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     t"oneTwoThree".uncamel.kebab    // t"one-two-three"
++     t"oneTwoThree".uncamel.kebab    // t"one-two-three"
+
+-     t"oneTwoThree".uncamel.snake    // t"one_two_three"
++     t"oneTwoThree".uncamel.snake    // t"one_two_three"
+
+-     t"oneTwoThree".uncamel.dotted   // t"one.two.three"
++     t"oneTwoThree".uncamel.dotted   // t"one.two.three"
+
+-     t"one-two-three".unkebab.camel  // t"oneTwoThree"
++     t"one-two-three".unkebab.camel  // t"oneTwoThree"
+
+=     t"one-two-three".unkebab.camel  // t"oneTwoThree"
+-     ```
++     ```
+
+- entry .join   concatenates a collection of texts, with optional separators and brackets
+-     An extension on any `Traversable` collection — `List`, `Set`, `Chain`, `Sequence`, a
+-     frozen array, or a standard-library `Iterable` — whose elements are `Joinable`: texts of
+-     any textual type, `Message`s, or collections, which join by concatenation. The result
+-     type is the element type, so joining `List[Text]` gives `Text` and joining `List[Teletype]`
+-     gives `Teletype`, with the separators of that same type.
++ entry .join   verkettet eine Collection von Texten, mit optionalen Trennern und Klammern
++     Eine Erweiterung auf jeder `Traversable`-Collection — `List`, `Set`, `Chain`, `Sequence`,
++     einem eingefrorenen Array oder einem `Iterable` der Standardbibliothek —, deren Elemente
++     `Joinable` sind: Texte beliebigen textuellen Typs, `Message`s oder Collections, die sich
++     durch Verkettung verbinden. Der Ergebnistyp ist der Elementtyp, sodass das Verbinden von
++     `List[Text]` einen `Text` ergibt und das von `List[Teletype]` einen `Teletype`, mit
++     Trennern desselben Typs.
+
+=     gives `Teletype`, with the separators of that same type.
+=
+-     ```scala
++     ```scala
+
+=     gives `Teletype`, with the separators of that same type.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     List(t"one", t"two", t"three").join                      // t"onetwothree"
++     List(t"one", t"two", t"three").join                      // t"onetwothree"
+
+-     List(t"one", t"two", t"three").join(t", ")               // t"one, two, three"
++     List(t"one", t"two", t"three").join(t", ")               // t"one, two, three"
+
+-     List(t"one", t"two", t"three").join(t", ", t" and ")     // t"one, two and three"
++     List(t"one", t"two", t"three").join(t", ", t" and ")     // t"one, two and three"
+
+-     List(t"one", t"two").join(t"(", t", ", t")")             // t"(one, two)"
++     List(t"one", t"two").join(t"(", t", ", t")")             // t"(one, two)"
+
+-     List(t"a", t"b", t"c").join(t"[", t", ", t" and ", t"]") // t"[a, b and c]"
++     List(t"a", t"b", t"c").join(t"[", t", ", t" and ", t"]") // t"[a, b and c]"
+
+=     List(t"a", t"b", t"c").join(t"[", t", ", t" and ", t"]") // t"[a, b and c]"
+-     ```
++     ```
+
+-     The five forms are: no separator; a separator; left bracket, separator and right bracket;
+-     a separator and a distinct *penultimate* separator placed before the last element, for
+-     prose; and all four. Two elements with a penultimate separator give `t"a and b"`.
++     Die fünf Formen sind: kein Trenner; ein Trenner; linke Klammer, Trenner und rechte
++     Klammer; ein Trenner und ein eigener *vorletzter* Trenner vor dem letzten Element, für
++     Prosa; und alle vier. Zwei Elemente mit einem vorletzten Trenner ergeben `t"a and b"`.
+
+-     When the elements are not themselves joinable — `List(1, 2, 3)` — the separator is an
+-     *element*, interleaved into a rebuilt collection of the receiver's shape:
+-     `List(1, 2, 3).join(0)` is `List(1, 0, 2, 0, 3)`, and `List(List(1), List(2)).join(List(0))`
+-     is `List(1, 0, 2)`. `join` is the counterpart of `mkString`, but never calls `toString`:
+-     a collection whose elements have no joining does not compile. A `Set` joins in its
+-     iteration order, which the caller accepts by joining it.
++     Sind die Elemente selbst nicht verbindbar — `List(1, 2, 3)` —, ist der Trenner ein
++     *Element*, das in eine neu gebaute Collection von der Gestalt des Empfängers eingeflochten
++     wird: `List(1, 2, 3).join(0)` ist `List(1, 0, 2, 0, 3)`, und
++     `List(List(1), List(2)).join(List(0))`
++     ist `List(1, 0, 2)`. `join` ist das Gegenstück zu `mkString`, ruft aber nie `toString`
++     auf: Eine Collection, deren Elemente kein Verbinden haben, kompiliert nicht. Ein `Set`
++     verbindet sich in seiner Iterationsreihenfolge, die der Aufrufer akzeptiert, indem er es
++     verbindet.
+
+- entry .Joinable   the typeclass behind `join`: how a collection of values becomes one value
++ entry .Joinable   die Typklasse hinter `join`: wie eine Collection von Werten zu einem Wert wird
+
+= entry .Joinable   the typeclass behind `join`: how a collection of values becomes one value
+-   detail
++   detail
+
+-       `textual is Joinable` has one method, `#join(elements)`, which concatenates an
+-       `Iterable` of values into one. Instances in the companion cover every `Textual` type
+-       (through its builder, sized to the total length), `Message`, and the native collection
+-       shapes `List`, `Chain`, `Sequence` (by concatenation) and `Set` (by union). The
+-       receiver side of `join` is `Joinable.Source` (anything `Traversable`), and what the
+-       result is — a joined element, or a rebuilt collection with separators interleaved — is
+-       decided by `Joinable.Assembly`.
++       `textual is Joinable` hat eine Methode, `#join(elements)`, die ein `Iterable` von Werten
++       zu einem verkettet. Instanzen im Begleitobjekt decken jeden `Textual`-Typ ab (über seinen
++       Builder, bemessen auf die Gesamtlänge), `Message` und die nativen Collection-Gestalten
++       `List`, `Chain`, `Sequence` (durch Verkettung) und `Set` (durch Vereinigung). Die
++       Empfängerseite von `join` ist `Joinable.Source` (alles `Traversable`), und was das
++       Ergebnis ist — ein verbundenes Element oder eine neu gebaute Collection mit
++       eingeflochtenen Trennern —, entscheidet `Joinable.Assembly`.
+
+-   refer gossamer.join
++   refer gossamer.join
+
+-   entry .textual   any `Textual` type is `Joinable`, through its `Builder`
+-   entry .message   `Message`s join by concatenation
+-   entry .list   `List[element]`s join into one `List`, by concatenation
+-   entry .chain   `Chain[element]`s join into one `Chain`
+-   entry .sequence   `Sequence[element]`s join into one `Sequence`
+-   entry .set   `Set[element]`s join into one `Set`, by union
+-   entry .Source   the receiver side of `join`: a collection traversed to its elements
++   entry .textual   jeder `Textual`-Typ ist `Joinable`, über seinen `Builder`
++   entry .message   `Message`s verbinden sich durch Verkettung
++   entry .list   `List[element]`s verbinden sich durch Verkettung zu einer `List`
++   entry .chain   `Chain[element]`s verbinden sich zu einer `Chain`
++   entry .sequence   `Sequence[element]`s verbinden sich zu einer `Sequence`
++   entry .set   `Set[element]`s verbinden sich durch Vereinigung zu einem `Set`
++   entry .Source   die Empfängerseite von `join`: eine Collection, die bis zu ihren Elementen traversiert wird
+
+=   entry .Source   the receiver side of `join`: a collection traversed to its elements
+-     detail
++     detail
+
+-         `self is Joinable.Source by element` yields the elements of a receiver as an
+-         iterator. The one instance, `.traversable`, serves any `Traversable` receiver, which
+-         is every native shape and any standard `Iterable`. One typeclass rather than one
+-         `join` extension per receiver, since same-named extensions with different clause
+-         shapes would make every receiver ambiguous.
+-     entry .traversable   any `Traversable` receiver is a `Source` of its elements
+-     entry #traverse   the receiver's elements, in order, as an iterator
+-   entry .Assembly   how `join` assembles a receiver's elements, and the type of its separators
++         `self is Joinable.Source by element` liefert die Elemente eines Empfängers als
++         Iterator. Die einzige Instanz, `.traversable`, dient jedem `Traversable`-Empfänger,
++         also jeder nativen Gestalt und jedem Standard-`Iterable`. Eine Typklasse statt einer
++         `join`-Erweiterung je Empfänger, denn gleichnamige Erweiterungen mit unterschiedlich
++         gestalteten Klauseln machten jeden Empfänger mehrdeutig.
++     entry .traversable   jeder `Traversable`-Empfänger ist eine `Source` seiner Elemente
++     entry #traverse   die Elemente des Empfängers, der Reihe nach, als Iterator
++   entry .Assembly   wie `join` die Elemente eines Empfängers zusammensetzt, und der Typ seiner Trenner
+
+=   entry .Assembly   how `join` assembles a receiver's elements, and the type of its separators
+-     detail
++     detail
+
+-         `self is Joinable.Assembly by element to result` decides what `join` returns.
+-         `#Part` is the type of the separators and brackets, and `#assemble` turns the stream
+-         of parts into the result. Two instances are tried in priority order: `.joinable`,
+-         when the elements are themselves `Joinable` (text, messages, collections), in which
+-         case the result is one of them and the separators are of the same type; and the
+-         fallback `Fallback#interleaving`, when they are not, in which case the separators are
+-         elements and the result is a rebuilt collection of the receiver's shape, through
+-         `Reshapable`. The choice is made by given priority, since for a `List[Text]` both
+-         readings would apply and overloading cannot rank them.
+-     entry .joinable   elements which are `Joinable` join into one of them, with separators of that type
+-         `List(t"a", t"b").join(t",")` is `t"a,b"`. The element may be widened to a joinable
+-         supertype, so a list of a `Text` subtype joins as `Text`.
+-     entry .Fallback   the lower-priority assembly: separators interleaved as elements
++         `self is Joinable.Assembly by element to result` entscheidet, was `join` zurückgibt.
++         `#Part` ist der Typ der Trenner und Klammern, und `#assemble` macht aus dem Strom der
++         Teile das Ergebnis. Zwei Instanzen werden in Prioritätsreihenfolge versucht:
++         `.joinable`, wenn die Elemente selbst `Joinable` sind (Text, Nachrichten,
++         Collections), dann ist das Ergebnis eines von ihnen und die Trenner sind vom selben
++         Typ; und der Rückfall `Fallback#interleaving`, wenn sie es nicht sind, dann sind die
++         Trenner Elemente und das Ergebnis ist eine neu gebaute Collection von der Gestalt des
++         Empfängers, über `Reshapable`. Die Wahl trifft die Given-Priorität, denn für eine
++         `List[Text]` passten beide Lesarten, und Überladung kann sie nicht ordnen.
++     entry .joinable   Elemente, die `Joinable` sind, verbinden sich zu einem von ihnen, mit Trennern dieses Typs
++         `List(t"a", t"b").join(t",")` ist `t"a,b"`. Das Element darf auf einen verbindbaren
++         Obertyp erweitert werden, sodass eine Liste eines `Text`-Untertyps sich als `Text`
++         verbindet.
++     entry .Fallback   die Zusammensetzung niedrigerer Priorität: Trenner als Elemente eingeflochten
+
+=     entry .Fallback   the lower-priority assembly: separators interleaved as elements
+-       detail
++       detail
+
+-           The trait which `Joinable.Assembly`'s companion extends, so that `#interleaving` is
+-           found only when `.joinable` does not apply.
+-       entry #interleaving   elements which are not `Joinable` are rebuilt with the separators interleaved
+-           Needs `self is Reshapable by element to result`. `List(1, 2, 3).join(0)` is
++           Der Trait, den das Begleitobjekt von `Joinable.Assembly` erweitert, sodass
++           `#interleaving` nur gefunden wird, wenn `.joinable` nicht passt.
++       entry #interleaving   Elemente, die nicht `Joinable` sind, werden mit eingeflochtenen Trennern neu gebaut
++           Braucht `self is Reshapable by element to result`. `List(1, 2, 3).join(0)` ist
+
+-           `List(1, 0, 2, 0, 3)`.
++           `List(1, 0, 2, 0, 3)`.
+
+-     entry #Part   the type of a separator or bracket: the joined type, or the element type
+-     entry #assemble   builds the result from the stream of elements and separators
+-   entry #join   one value from an `Iterable` of them
++     entry #Part   der Typ eines Trenners oder einer Klammer: der verbundene Typ oder der Elementtyp
++     entry #assemble   baut das Ergebnis aus dem Strom der Elemente und Trenner
++   entry #join   ein Wert aus einem `Iterable` davon
+
+- entry .pascal   words joined in Pascal case: each capitalised, no separator
+-     An extension on any `Traversable` of a textual type with `Char` elements:
+-     `List(t"one", t"two").pascal` is `t"OneTwo"`. Each word is lowercased and then
+-     capitalised, so `List(t"ONE", t"two").pascal` is also `t"OneTwo"`.
++ entry .pascal   Wörter in Pascal Case verbunden: jedes großgeschrieben, ohne Trenner
++     Eine Erweiterung auf jedem `Traversable` eines textuellen Typs mit `Char`-Elementen:
++     `List(t"one", t"two").pascal` ist `t"OneTwo"`. Jedes Wort wird kleingeschrieben und dann
++     großgeschrieben, sodass auch `List(t"ONE", t"two").pascal` gleich `t"OneTwo"` ist.
+
+- entry .camel   words joined in camel case: Pascal case with the first letter lowered
+-     `List(t"one", t"two", t"three").camel` is `t"oneTwoThree"`. `uncamel` is its inverse.
++ entry .camel   Wörter in Camel Case verbunden: Pascal Case mit kleinem Anfangsbuchstaben
++     `List(t"one", t"two", t"three").camel` ist `t"oneTwoThree"`. `uncamel` ist die Umkehrung.
+
+- entry .snake   words joined with `_`
+-     `List(t"one", t"two").snake` is `t"one_two"`; the words are not recased. `unsnake` is its
+-     inverse.
++ entry .snake   Wörter mit `_` verbunden
++     `List(t"one", t"two").snake` ist `t"one_two"`; die Schreibung der Wörter wird nicht
++     geändert. `unsnake` ist die Umkehrung.
+
+- entry .kebab   words joined with `-`
+-     `List(t"one", t"two").kebab` is `t"one-two"`; the words are not recased. `unkebab` is its
+-     inverse.
++ entry .kebab   Wörter mit `-` verbunden
++     `List(t"one", t"two").kebab` ist `t"one-two"`; die Schreibung der Wörter wird nicht
++     geändert. `unkebab` ist die Umkehrung.
+
+- entry .dotted   words joined with `.`
+-     `List(t"one", t"two").dotted` is `t"one.two"`.
++ entry .dotted   Wörter mit `.` verbunden
++     `List(t"one", t"two").dotted` ist `t"one.two"`.
+
+- entry .spaced   words joined with a space
+-     `List(t"one", t"two").spaced` is `t"one two"`, the inverse of `words`.
++ entry .spaced   Wörter mit einem Leerzeichen verbunden
++     `List(t"one", t"two").spaced` ist `t"one two"`, die Umkehrung von `words`.
+
+- entry .length   the number of elements in a textual value: characters, bytes or graphemes
+-     `t"hello".length` is `5`; `Writing(t"👨‍👩‍👧").length` is `1`, one grapheme. An inline
+-     extension on any `Textual` type, through `Textual#length`.
++ entry .length   die Anzahl der Elemente in einem textuellen Wert: Zeichen, Bytes oder Grapheme
++     `t"hello".length` ist `5`; `Writing(t"👨‍👩‍👧").length` ist `1`, ein Graphem. Eine
++     Inline-Erweiterung auf jedem `Textual`-Typ, über `Textual#length`.
+
+- entry .plain   the plain `Text` of any textual value, with styling dropped
+-     `Textual#text` as an extension: `teletype.plain` is the styled text's characters alone,
+-     and `text.plain` is `text` itself. The width-measuring operations (`pad`, `fit`, `center`)
+-     measure the plain text.
++ entry .plain   der bloße `Text` eines beliebigen textuellen Werts, ohne Formatierung
++     `Textual#text` als Erweiterung: `teletype.plain` sind allein die Zeichen des formatierten
++     Texts, und `text.plain` ist `text` selbst. Die breitenmessenden Operationen (`pad`, `fit`,
++     `center`) messen den bloßen Text.
+
+- entry .init   a textual value without its last element
+-     `t"Hello".init` is `t"Hell"`, and the empty text's `init` is empty. The same as
+-     `skip(1, Rtl)`; `tail` is the general collection operation for the other end.
++ entry .init   ein textueller Wert ohne sein letztes Element
++     `t"Hello".init` ist `t"Hell"`, und `init` des leeren Texts ist leer. Dasselbe wie
++     `skip(1, Rtl)`; `tail` ist die allgemeine Collection-Operation für das andere Ende.
+
+- entry .chars   the characters of a textual value as a frozen `Array[Char]`
+-     `t"Hello".chars.to[List]` is `List('H', 'e', 'l', 'l', 'o')`. The array is of the plain
+-     text's characters, whatever the textual type. `text` on a frozen `Array[Char]` is the
+-     inverse.
++ entry .chars   die Zeichen eines textuellen Werts als eingefrorenes `Array[Char]`
++     `t"Hello".chars.to[List]` ist `List('H', 'e', 'l', 'l', 'o')`. Das Array enthält die
++     Zeichen des bloßen Texts, gleich welcher textuelle Typ. `text` auf einem eingefrorenen
++     `Array[Char]` ist die Umkehrung.
+
+- entry .text   a frozen `Array[Char]` as a `Text`; and the contents of a `StringBuilder` as a `Text`
+-     `chars.text` is the inverse of `chars`. On a `StringBuilder`, `builder.text` reads the
+-     accumulated text, as the companion of `add`.
++ entry .text   ein eingefrorenes `Array[Char]` als `Text`; und der Inhalt eines `StringBuilder` als `Text`
++     `chars.text` ist die Umkehrung von `chars`. Auf einem `StringBuilder` liest
++     `builder.text` den akkumulierten Text, als Gegenstück zu `add`.
+
+- entry .add   appends a `Text` or a `Char` to a `StringBuilder`
+-     For code which works with a raw `StringBuilder`: `builder.add(t"…")` and `builder.add('x')`
+-     append without a `String` conversion at the call site, and `builder.text` reads the
+-     result. `TextBuilder` and `Text.build` are the typed alternatives.
++ entry .add   hängt einen `Text` oder ein `Char` an einen `StringBuilder` an
++     Für Code, der mit einem rohen `StringBuilder` arbeitet: `builder.add(t"…")` und
++     `builder.add('x')` hängen ohne `String`-Umwandlung an der Aufrufstelle an, und
++     `builder.text` liest das Ergebnis. `TextBuilder` und `Text.build` sind die typisierten
++     Alternativen.
+
+- entry .slices   a textual value divided into pieces of a fixed size
+-     `t"abcdefg".slices(3)` is `List(t"abc", t"def", t"g")`: every piece but the last has
+-     exactly `size` elements, and the last has whatever remains. Works on any `Textual` type
+-     through `segment`, so a styled text's pieces keep their styling. The empty text gives one
+-     empty piece.
++ entry .slices   ein textueller Wert, in Stücke fester Größe geteilt
++     `t"abcdefg".slices(3)` ist `List(t"abc", t"def", t"g")`: Jedes Stück außer dem letzten hat
++     genau `size` Elemente, und das letzte hat, was übrig bleibt. Funktioniert über `segment`
++     auf jedem `Textual`-Typ, sodass die Stücke eines formatierten Texts ihre Formatierung
++     behalten. Der leere Text ergibt ein leeres Stück.
+
+- entry .punch   splits a textual value at an ordinal, dropping the element there
+-     `t"key=value".punch(Quart)` is `(t"key", t"value")`: everything before the ordinal, and
+-     everything after it, with the element at the ordinal itself removed. Compare `snip`,
+-     which splits between elements and keeps them all.
++ entry .punch   teilt einen textuellen Wert an einem Ordinal und lässt das Element dort weg
++     `t"key=value".punch(Quart)` ist `(t"key", t"value")`: alles vor dem Ordinal und alles
++     danach, wobei das Element am Ordinal selbst entfernt ist. Vergleichen Sie `snip`, das
++     zwischen Elementen teilt und alle behält.
+
+- entry .justify   widens a text to a width by distributing extra spaces among its inter-word gaps
+-     The intent is full justification: the difference between `width` and the text's length
+-     is shared out as additional spaces between the words, so a line fills its column. Only
+-     the plain character count is considered, not display width. The implementation is marked
+-     as needing attention in the source and should not be relied on yet.
++ entry .justify   verbreitert einen Text auf eine Breite, indem zusätzliche Leerzeichen auf die Wortzwischenräume verteilt werden
++     Gedacht ist Blocksatz: Die Differenz zwischen `width` und der Länge des Texts wird als
++     zusätzliche Leerzeichen zwischen den Wörtern verteilt, sodass eine Zeile ihre Spalte
++     füllt. Berücksichtigt wird nur die bloße Zeichenzahl, nicht die Anzeigebreite. Die
++     Implementierung ist im Quelltext als überarbeitungsbedürftig markiert, und man sollte
++     sich noch nicht auf sie verlassen.
+
+- entry .contains   whether a textual value contains a substring, or a character
+-     `t"hello world".contains(t"ello")` and `t"hello".contains('e')` are `true`; every text
+-     contains the empty text. The substring is plain `Text`, so a styled text is searched by
+-     its characters. For a position rather than a yes or no, use `offsetOf`.
++ entry .contains   ob ein textueller Wert einen Teilstring oder ein Zeichen enthält
++     `t"hello world".contains(t"ello")` und `t"hello".contains('e')` sind `true`; jeder Text
++     enthält den leeren Text. Der Teilstring ist bloßer `Text`, sodass ein formatierter Text
++     nach seinen Zeichen durchsucht wird. Für eine Position statt eines Ja oder Nein verwenden
++     Sie `offsetOf`.
+
+- entry .starts   whether a textual value begins with a prefix
+-     `t"hello".starts(t"he")` is `true`. Compared on the plain text; `chomp` removes the
+-     prefix if present.
++ entry .starts   ob ein textueller Wert mit einem Präfix beginnt
++     `t"hello".starts(t"he")` ist `true`. Verglichen wird der bloße Text; `chomp` entfernt das
++     Präfix, wenn es vorhanden ist.
+
+- entry .ends   whether a textual value ends with a suffix
+-     `t"hello".ends(t"lo")` is `true`. Compared on the plain text; `chomp(suffix, Rtl)`
+-     removes it if present.
++ entry .ends   ob ein textueller Wert mit einem Suffix endet
++     `t"hello".ends(t"lo")` ist `true`. Verglichen wird der bloße Text; `chomp(suffix, Rtl)`
++     entfernt es, wenn es vorhanden ist.
+
+- entry .chomp   removes a prefix (or, with `Rtl`, a suffix) from a textual value, if it is there
+-     `t"Sir Toby".chomp(t"Sir ")` is `t"Toby"`, and `t"file.txt".chomp(t".txt", Rtl)` is
+-     `t"file"`; a text without the affix is returned unchanged, so `chomp` is safe to apply
+-     without a `starts` or `ends` check first.
++ entry .chomp   entfernt ein Präfix (oder, mit `Rtl`, ein Suffix) von einem textuellen Wert, falls es da ist
++     `t"Sir Toby".chomp(t"Sir ")` ist `t"Toby"`, und `t"file.txt".chomp(t".txt", Rtl)` ist
++     `t"file"`; ein Text ohne das Affix wird unverändert zurückgegeben, sodass sich `chomp`
++     gefahrlos ohne vorherige Prüfung mit `starts` oder `ends` anwenden lässt.
+
+- entry .offsetOf   the position of a substring's first (or, with `Rtl`, last) occurrence, as an `Optional` ordinal
+-     `t"hello world".offsetOf(t"o")` is the ordinal `Quin`, and `offsetOf(t"o", Rtl)` the
+-     ordinal of the last `o`; a substring which does not occur is `Unset`, never a sentinel.
+-     The result is an `Ordinal`, so it feeds `before`, `after`, `upto`, `from`, `punch` and
+-     `segment` directly, which is how a text is taken apart around a delimiter:
++ entry .offsetOf   die Position des ersten (oder, mit `Rtl`, letzten) Vorkommens eines Teilstrings, als `Optional`-Ordinal
++     `t"hello world".offsetOf(t"o")` ist das Ordinal `Quin`, und `offsetOf(t"o", Rtl)` das
++     Ordinal des letzten `o`; ein Teilstring, der nicht vorkommt, ist `Unset`, nie ein
++     Sentinel. Das Ergebnis ist ein `Ordinal` und speist daher direkt `before`, `after`,
++     `upto`, `from`, `punch` und `segment`; so wird ein Text um ein Trennzeichen herum
++     zerlegt:
+
+=     `segment` directly, which is how a text is taken apart around a delimiter:
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     ```scala fuel
+-     frame
++     frame
+
+-       label Find the separator
++       label Das Trennzeichen finden
+
+=       label Find the separator
+-       code
++       code
+
+=       label Find the separator
+=       code
+-           import soundness.*
++           import soundness.*
+
+=       label Find the separator
+=       code
+=           import soundness.*
+=
+-           val header = t"Content-Type: text/html; charset=utf-8"
++           val header = t"Content-Type: text/html; charset=utf-8"
+
+-           val colon = header.offsetOf(t":")              // an Optional[Ordinal], present
++           val colon = header.offsetOf(t":")              // an Optional[Ordinal], present
+
+=           val colon = header.offsetOf(t":")              // an Optional[Ordinal], present
+-     frame
++     frame
+
+-       label Take the name before it
++       label Den Namen davor nehmen
+
+=       label Take the name before it
+-       code
++       code
+
+=       label Take the name before it
+=       code
+-           import soundness.*
++           import soundness.*
+
+=       label Take the name before it
+=       code
+=           import soundness.*
+=
+-           val header = t"Content-Type: text/html; charset=utf-8"
++           val header = t"Content-Type: text/html; charset=utf-8"
+
+-           val name = header.offsetOf(t":").let(header.before(_))    // t"Content-Type"
++           val name = header.offsetOf(t":").let(header.before(_))    // t"Content-Type"
+
+=           val name = header.offsetOf(t":").let(header.before(_))    // t"Content-Type"
+-     frame
++     frame
+
+-       label And the value after it, trimmed
++       label Und den Wert danach, getrimmt
+
+=       label And the value after it, trimmed
+-       code
++       code
+
+=       label And the value after it, trimmed
+=       code
+-           import soundness.*
++           import soundness.*
+
+=       label And the value after it, trimmed
+=       code
+=           import soundness.*
+=
+-           val header = t"Content-Type: text/html; charset=utf-8"
++           val header = t"Content-Type: text/html; charset=utf-8"
+
+=       label And the value after it, trimmed
+=       code
+=           import soundness.*
+=
+=           val header = t"Content-Type: text/html; charset=utf-8"
+-           val value = header.offsetOf(t":").let(header.after(_).trim)
++           val value = header.offsetOf(t":").let(header.after(_).trim)
+
+-           // t"text/html; charset=utf-8"
++           // t"text/html; charset=utf-8"
+
+=           // t"text/html; charset=utf-8"
+-     frame
++     frame
+
+-       label Then split the value at the first parameter
++       label Dann den Wert am ersten Parameter teilen
+
+=       label Then split the value at the first parameter
+-       code
++       code
+
+=       label Then split the value at the first parameter
+=       code
+-           import soundness.*
++           import soundness.*
+
+=       label Then split the value at the first parameter
+=       code
+=           import soundness.*
+=
+-           val header = t"Content-Type: text/html; charset=utf-8"
++           val header = t"Content-Type: text/html; charset=utf-8"
+
+=       label Then split the value at the first parameter
+=       code
+=           import soundness.*
+=
+=           val header = t"Content-Type: text/html; charset=utf-8"
+-           val value = header.offsetOf(t":").let(header.after(_).trim)
++           val value = header.offsetOf(t":").let(header.after(_).trim)
+
+-           val media = value.let { v => v.offsetOf(t";").lay(v)(v.before(_)) }   // t"text/html"
++           val media = value.let { v => v.offsetOf(t";").lay(v)(v.before(_)) }   // t"text/html"
+
+=           val media = value.let { v => v.offsetOf(t";").lay(v)(v.before(_)) }   // t"text/html"
+-     ##
++     ##
+
+=     ##
+-     ```
++     ```
+
+-     `offsetOf` finds a substring; `pinpoint` finds a character by predicate, and `search`
+-     finds the matches of a regular expression. `Textual#indexOf` is the primitive beneath
+-     it. An empty substring is found at `Prim` from the left and is `Unset` from the right.
++     `offsetOf` findet einen Teilstring; `pinpoint` findet ein Zeichen per Prädikat, und
++     `search` findet die Treffer eines regulären Ausdrucks. `Textual#indexOf` ist das Primitiv
++     darunter. Ein leerer Teilstring wird von links bei `Prim` gefunden und ist von rechts
++     `Unset`.
+
+- entry .tally   the number of non-overlapping occurrences of a substring
+-     `t"banana".tally(t"an")` is `2`, and `t"aaaa".tally(t"aa")` is `2`, since each
+-     occurrence is counted from the end of the one before. The empty substring tallies `0`.
+-     This is the substring form; `count(predicate)` on a text — `t"banana".count(_ == 'a')`
+-     — is the collections' operation, which is why the substring form has its own name.
++ entry .tally   die Anzahl nicht überlappender Vorkommen eines Teilstrings
++     `t"banana".tally(t"an")` ist `2`, und `t"aaaa".tally(t"aa")` ist `2`, denn jedes Vorkommen
++     wird ab dem Ende des vorigen gezählt. Der leere Teilstring ergibt `0`. Das ist die
++     Teilstring-Form; `count(predicate)` auf einem Text — `t"banana".count(_ == 'a')` — ist die
++     Operation der Collections; deshalb hat die Teilstring-Form einen eigenen Namen.
+
+- entry .search   the substrings of a textual value which a regular expression matches
+-     `t"a1b22c".search(r"[0-9]+")` is a `Chain` of `t"1"` and `t"22"`, each a slice of the
+-     receiver (so a styled text's matches keep their styling). With `overlap = true`, a match
+-     may begin inside the one before it. It needs a `Regex.Engine` in scope, which the `r"…"`
+-     literal's form supplies. For the pieces *between* matches, use `cut`.
++ entry .search   die Teilstrings eines textuellen Werts, auf die ein regulärer Ausdruck passt
++     `t"a1b22c".search(r"[0-9]+")` ist eine `Chain` aus `t"1"` und `t"22"`, jedes ein Ausschnitt
++     des Empfängers (sodass die Treffer eines formatierten Texts ihre Formatierung behalten).
++     Mit `overlap = true` darf ein Treffer innerhalb des vorigen beginnen. Es braucht eine
++     `Regex.Engine` im Geltungsbereich, die die Form des `r"…"`-Literals liefert. Für die
++     Stücke *zwischen* den Treffern verwenden Sie `cut`.
+
+- entry .extract   scans a textual value with a partial function of regex patterns, collecting every match
+-     `text.extract { case r"…" => value }` runs a partial function of `r"…"` patterns along
+-     the text, from `start` (`Prim` by default), yielding a `Chain` of the values the matching
+-     cases produce; the scan advances to the end of each match. The cases are decomposed while
+-     the code compiles so that each pattern is tried at every position, with a `Scanner` which
+-     records where its match began and ended; a lambda which cannot be decomposed falls back
+-     to re-running the whole partial function at each position. The result type is inferred
+-     from the cases.
++ entry .extract   durchsucht einen textuellen Wert mit einer partiellen Funktion aus Regex-Patterns und sammelt jeden Treffer
++     `text.extract { case r"…" => value }` führt eine partielle Funktion aus `r"…"`-Patterns
++     am Text entlang aus, ab `start` (standardmäßig `Prim`), und liefert eine `Chain` der Werte,
++     die die passenden Fälle erzeugen; die Suche rückt jeweils an das Ende des Treffers vor. Die
++     Fälle werden beim Kompilieren zerlegt, sodass jedes Pattern an jeder Position versucht
++     wird, mit einem `Scanner`, der festhält, wo sein Treffer begann und endete; ein Lambda,
++     das sich nicht zerlegen lässt, fällt darauf zurück, an jeder Position die ganze partielle
++     Funktion erneut auszuführen. Der Ergebnistyp wird aus den Fällen inferiert.
+
+=     from the cases.
+=
+-     ```scala
++     ```scala
+
+=     from the cases.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     t"x=1, y=22".extract:
++     t"x=1, y=22".extract:
+
+-       case r"$key([a-z])=$value([0-9]+)" => (key, value)
++       case r"$key([a-z])=$value([0-9]+)" => (key, value)
+
+=       case r"$key([a-z])=$value([0-9]+)" => (key, value)
+-     ```
++     ```
+
+- entry .lower   a textual value in lower case
+-     `t"Hello World".lower` is `t"hello world"`, mapping each character with `Char#toLower`.
+-     Requires `Char` elements, so it is available on `Text`, `Writing` is excluded, and a
+-     styled text keeps its styling.
++ entry .lower   ein textueller Wert in Kleinbuchstaben
++     `t"Hello World".lower` ist `t"hello world"` und bildet jedes Zeichen mit `Char#toLower` ab.
++     Verlangt `Char`-Elemente, ist also auf `Text` verfügbar, `Writing` ist ausgeschlossen, und
++     ein formatierter Text behält seine Formatierung.
+
+- entry .upper   a textual value in upper case
+-     `t"Hello World".upper` is `t"HELLO WORLD"`, mapping each character with `Char#toUpper`;
+-     a character with no single-character upper case (`ß`) is left alone.
++ entry .upper   ein textueller Wert in Großbuchstaben
++     `t"Hello World".upper` ist `t"HELLO WORLD"` und bildet jedes Zeichen mit `Char#toUpper` ab;
++     ein Zeichen ohne Großform aus einem einzigen Zeichen (`ß`) bleibt unverändert.
+
+- entry .capitalize   a textual value with its first character in upper case
+-     `t"hello".capitalize` is `t"Hello"` and `t"kingLear".capitalize` is `t"KingLear"`; the rest
+-     is unchanged. The empty text stays empty.
++ entry .capitalize   ein textueller Wert mit großgeschriebenem erstem Zeichen
++     `t"hello".capitalize` ist `t"Hello"` und `t"kingLear".capitalize` ist `t"KingLear"`; der
++     Rest bleibt unverändert. Der leere Text bleibt leer.
+
+- entry .uncapitalize   a textual value with its first character in lower case
+-     `t"Hello".uncapitalize` is `t"hello"`; `camel` is `pascal` followed by this.
++ entry .uncapitalize   ein textueller Wert mit kleingeschriebenem erstem Zeichen
++     `t"Hello".uncapitalize` ist `t"hello"`; `camel` ist `pascal`, gefolgt hiervon.
+
+- entry .trim   a textual value without its leading and trailing whitespace, or one side's with a `Bidi`
+-     `t"  Hello \n".trim` is `t"Hello"`, and `trim(Ltr)` or `trim(Rtl)` strips one side only.
+-     Whitespace is what `Char#isWhitespace` says: spaces, tabs, newlines and the other
+-     Unicode space separators. Text which is all whitespace trims to the empty text.
++ entry .trim   ein textueller Wert ohne führenden und abschließenden Leerraum, oder mit einem `Bidi` nur auf einer Seite
++     `t"  Hello \n".trim` ist `t"Hello"`, und `trim(Ltr)` oder `trim(Rtl)` entfernt nur eine
++     Seite. Leerraum ist, was `Char#isWhitespace` sagt: Leerzeichen, Tabulatoren,
++     Zeilenumbrüche und die anderen Unicode-Leerzeichentrenner. Text, der nur aus Leerraum
++     besteht, wird zum leeren Text getrimmt.
+
+- entry .blank   whether a textual value is empty or all whitespace
+-     `t"  \t".blank` and `t"".blank` are `true`; for emptiness alone, use the collections'
+-     `nil`.
++ entry .blank   ob ein textueller Wert leer ist oder nur aus Leerraum besteht
++     `t"  \t".blank` und `t"".blank` sind `true`; für bloße Leere verwenden Sie `nil` der
++     Collections.
+
+- entry .pinpoint   the ordinal of the first character satisfying a predicate, from a start, in either direction
+-     `t"oh, Hello World".pinpoint(_.isUpper)` is `Quin`, the position of `H`;
+-     `pinpoint(_.isUpper, Sen)` begins the search at the sixth character and finds `W`; and
+-     `pinpoint(!_.isWhitespace, bidi = Rtl)` scans from the end. The result is `Unset` when no
+-     character satisfies the predicate. It is the positional primitive beneath `trim`, `blank`
+-     and `uncamel`, and reaches each character by direct access rather than traversal. For a
+-     substring's position, use `offsetOf`; the collections' `where` is the predicate search
+-     without a start or direction.
++ entry .pinpoint   das Ordinal des ersten Zeichens, das ein Prädikat erfüllt, ab einem Start, in beide Richtungen
++     `t"oh, Hello World".pinpoint(_.isUpper)` ist `Quin`, die Position von `H`;
++     `pinpoint(_.isUpper, Sen)` beginnt die Suche beim sechsten Zeichen und findet `W`; und
++     `pinpoint(!_.isWhitespace, bidi = Rtl)` sucht vom Ende her. Das Ergebnis ist `Unset`, wenn
++     kein Zeichen das Prädikat erfüllt. Es ist das positionale Primitiv unter `trim`, `blank`
++     und `uncamel` und erreicht jedes Zeichen durch direkten Zugriff statt durch Traversierung.
++     Für die Position eines Teilstrings verwenden Sie `offsetOf`; `where` der Collections ist
++     die Prädikatsuche ohne Start oder Richtung.
+
+- entry .tr   maps every character; or replaces one character with another
+-     `t"ABC".tr(_.toLower)` is `t"abc"`, and `t"one,two".tr(',', ';')` is `t"one;two"`. A
+-     character-for-character transliteration which never changes the length; for a
+-     substring, use `sub`.
++ entry .tr   bildet jedes Zeichen ab; oder ersetzt ein Zeichen durch ein anderes
++     `t"ABC".tr(_.toLower)` ist `t"abc"`, und `t"one,two".tr(',', ';')` ist `t"one;two"`. Eine
++     Transliteration Zeichen für Zeichen, die die Länge nie ändert; für einen Teilstring
++     verwenden Sie `sub`.
+
+- entry .erase   a textual value with every occurrence of the given characters removed
+-     `t"a-b_c".erase('-', '_')` is `t"abc"`.
++ entry .erase   ein textueller Wert, aus dem jedes Vorkommen der angegebenen Zeichen entfernt ist
++     `t"a-b_c".erase('-', '_')` ist `t"abc"`.
+
+- entry .broken   inserts a break character wherever two adjacent characters satisfy a predicate
+-     `text.broken((left, right) => …)` tests each adjacent pair and inserts `break` — a
+-     zero-width space by default — between the two when the predicate holds, so a long
+-     identifier can be given soft break points for wrapping: `t"camelCaseName".broken((a, b)
+-     => a.isLower && b.isUpper)` marks each word boundary. A text of fewer than two
+-     characters is unchanged.
++ entry .broken   fügt ein Umbruchzeichen ein, wo immer zwei benachbarte Zeichen ein Prädikat erfüllen
++     `text.broken((left, right) => …)` prüft jedes benachbarte Paar und fügt `break` — standardmäßig
++     ein Leerzeichen der Breite null — zwischen beide ein, wenn das Prädikat gilt, sodass
++     ein langer Bezeichner weiche Umbruchstellen für den Zeilenumbruch erhalten kann:
++     `t"camelCaseName".broken((a, b)
++     => a.isLower && b.isUpper)` markiert jede Wortgrenze. Ein Text aus weniger als zwei
++     Zeichen bleibt unverändert.
+
+- entry .pad   extends a textual value with a character to a width, on the right or, with `Rtl`, the left
+-     `t"123".pad(5)` is `t"123  "` and `t"123".pad(5, Rtl, '0')` is `t"00123"`; text already
+-     at or past the width is unchanged, never truncated. The width is measured through the
+-     `Text is Measurable` given in scope (`textMetrics.uniformMetric` counts one column per
+-     character; `wideCharacterWidthMetric` counts two for CJK and emoji), so padding aligns
+-     columns of text as a terminal displays them.
++ entry .pad   verlängert einen textuellen Wert mit einem Zeichen auf eine Breite, rechts oder, mit `Rtl`, links
++     `t"123".pad(5)` ist `t"123  "` und `t"123".pad(5, Rtl, '0')` ist `t"00123"`; Text, der die
++     Breite schon erreicht oder überschreitet, bleibt unverändert, wird nie gekürzt. Die Breite
++     wird über das `Text is Measurable`-Given im Geltungsbereich gemessen
++     (`textMetrics.uniformMetric` zählt eine Spalte je Zeichen; `wideCharacterWidthMetric`
++     zählt zwei für CJK und Emoji), sodass das Auffüllen Textspalten so ausrichtet, wie ein
++     Terminal sie anzeigt.
+
+=     columns of text as a terminal displays them.
+=
+-     ```scala
++     ```scala
+
+=     columns of text as a terminal displays them.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     columns of text as a terminal displays them.
+=
+=     ```scala
+=     import soundness.*
+-     import textMetrics.uniformMetric
++     import textMetrics.uniformMetric
+
+-     t"123".pad(5, Rtl)   // t"  123"
++     t"123".pad(5, Rtl)   // t"  123"
+
+=     t"123".pad(5, Rtl)   // t"  123"
+-     ```
++     ```
+
+- entry .center   pads a textual value on both sides to a width
+-     `t"ab".center(6)` is `t"  ab  "`, with the odd column, when there is one, on the left.
+-     Measured through the `Text is Measurable` given in scope, as `pad` is.
++ entry .center   füllt einen textuellen Wert auf beiden Seiten auf eine Breite auf
++     `t"ab".center(6)` ist `t"  ab  "`, wobei die ungerade Spalte, falls es eine gibt, links
++     liegt. Gemessen über das `Text is Measurable`-Given im Geltungsbereich, wie bei `pad`.
+
+- entry .fit   forces a textual value to an exact width, padding or truncating as needed
+-     `t"123".fit(5)` is `t"123  "`, `t"12345".fit(3)` is `t"123"`, and with `Rtl` the padding
+-     goes on the left and the truncation keeps the right: `t"12345".fit(3, Rtl)` is `t"345"`
+-     and `t"123".fit(5, Rtl, '.')` is `t"..123"`. Measured through the `Text is Measurable`
+-     given in scope.
++ entry .fit   zwingt einen textuellen Wert auf eine exakte Breite, durch Auffüllen oder Kürzen nach Bedarf
++     `t"123".fit(5)` ist `t"123  "`, `t"12345".fit(3)` ist `t"123"`, und mit `Rtl` kommt die
++     Auffüllung nach links und die Kürzung behält die rechte Seite: `t"12345".fit(3, Rtl)` ist
++     `t"345"` und `t"123".fit(5, Rtl, '.')` ist `t"..123"`. Gemessen über das
++     `Text is Measurable`-Given im Geltungsbereich.
+
+- entry .ossify   replaces every space with a non-breaking space
+-     `t"a b".ossify` has U+00A0 between the letters, so a line-wrapping layout keeps the
+-     words together.
++ entry .ossify   ersetzt jedes Leerzeichen durch ein geschütztes Leerzeichen
++     `t"a b".ossify` hat U+00A0 zwischen den Buchstaben, sodass ein umbrechendes Layout die
++     Wörter zusammenhält.
+
+- entry .subscripts   a textual value with every character replaced by its subscript form
+-     `t"2".subscripts` is `t"₂"`; a character with no Unicode subscript becomes a space.
++ entry .subscripts   ein textueller Wert, in dem jedes Zeichen durch seine tiefgestellte Form ersetzt ist
++     `t"2".subscripts` ist `t"₂"`; ein Zeichen ohne tiefgestellte Unicode-Form wird zu einem
++     Leerzeichen.
+
+- entry .superscripts   a textual value with every character replaced by its superscript form
+-     `t"23".superscripts` is `t"²³"`; a character with no Unicode superscript becomes a space.
++ entry .superscripts   ein textueller Wert, in dem jedes Zeichen durch seine hochgestellte Form ersetzt ist
++     `t"23".superscripts` ist `t"²³"`; ein Zeichen ohne hochgestellte Unicode-Form wird zu
++     einem Leerzeichen.
+
+- entry .sub   replaces occurrences of a substring, or of a regular expression's matches, in a `Text`
+-     `t"naive".sub(t"i", t"ï")` is `t"naïve"`, and every occurrence is replaced unless a
+-     `count` is given: `t"aaa".sub(t"a", t"b", 2)` is `t"bba"`. A literal replacement is
+-     inserted verbatim — `\` and `$` in it are not escapes — so `t"a.b".sub(t".", t"\\.")`
+-     gives `a\.b`. With a `Regex` as the pattern, `$1` in the replacement refers to the
+-     first group: `t"ab".sub(r"(a)b", t"$$1c")` is `t"ac"`. Matches do not overlap:
+-     `t"fofofoo".sub(t"fofo", t"momo")` is `t"momofoo"`.
++ entry .sub   ersetzt Vorkommen eines Teilstrings oder die Treffer eines regulären Ausdrucks in einem `Text`
++     `t"naive".sub(t"i", t"ï")` ist `t"naïve"`, und jedes Vorkommen wird ersetzt, sofern nicht
++     ein `count` angegeben ist: `t"aaa".sub(t"a", t"b", 2)` ist `t"bba"`. Eine literale
++     Ersetzung wird wörtlich eingefügt — `\` und `$` darin sind keine Escapes —, sodass
++     `t"a.b".sub(t".", t"\\.")` `a\.b` ergibt. Mit einer `Regex` als Pattern bezieht sich `$1`
++     in der Ersetzung auf die erste Gruppe: `t"ab".sub(r"(a)b", t"$$1c")` ist `t"ac"`. Treffer
++     überlappen nicht: `t"fofofoo".sub(t"fofo", t"momo")` ist `t"momofoo"`.
+
+- entry .urlEncode   a `Text` percent-encoded as a URL query component, in UTF-8
+-     `t"hello world".urlEncode` is `t"hello+world"` and `t"é".urlEncode` is `t"%C3%A9"`: the
+-     form encoding, in which a space is `+`. `urlDecode` reverses it.
++ entry .urlEncode   ein `Text`, prozentkodiert als URL-Query-Bestandteil, in UTF-8
++     `t"hello world".urlEncode` ist `t"hello+world"` und `t"é".urlEncode` ist `t"%C3%A9"`: die
++     Formularkodierung, in der ein Leerzeichen `+` ist. `urlDecode` kehrt sie um.
+
+- entry .urlDecode   decodes a percent-encoded `Text`, with `+` as a space
+-     `t"%2B".urlDecode` is `t"+"` and `t"+".urlDecode` is `t" "`.
++ entry .urlDecode   dekodiert einen prozentkodierten `Text`, mit `+` als Leerzeichen
++     `t"%2B".urlDecode` ist `t"+"` und `t"+".urlDecode` ist `t" "`.
+
+- entry .punycode   an internationalised domain name in its ASCII (Punycode) form
+-     `t"www.äpfel.com".punycode` is `t"www.xn--pfel-koa.com"`, through `java.net.IDN`.
++ entry .punycode   ein internationalisierter Domainname in seiner ASCII-Form (Punycode)
++     `t"www.äpfel.com".punycode` ist `t"www.xn--pfel-koa.com"`, über `java.net.IDN`.
+
+- entry .sysData   the bytes of a `Text` in the system codepage, as a frozen array
+-     `t"hello".sysData` is the bytes `104, 101, 108, 108, 111`. For a chosen encoding, use
+-     `text.in[Data]` with a `codepages` given in scope.
++ entry .sysData   die Bytes eines `Text` in der Codepage des Systems, als eingefrorenes Array
++     `t"hello".sysData` sind die Bytes `104, 101, 108, 108, 111`. Für eine gewählte Kodierung
++     verwenden Sie `text.in[Data]` mit einem `codepages`-Given im Geltungsbereich.
+
+- entry .proximity   the distance between two `Text`s under the `Proximity` measure in scope
+-     `t"Hello world".proximity(t"Hello orld")` is `1` under `proximities.levenshteinProximity`
+-     (and `caseSensitivity.caseSensitive`): the result type is the measure's `Operand` — an
+-     `Int` for Levenshtein and prefix measures, a `Double` for Jaro, Jaro–Winkler and
+-     normalised Levenshtein. Both a `Proximity` and a `CaseSensitivity` must be imported by
+-     name.
++ entry .proximity   der Abstand zwischen zwei `Text`s unter dem `Proximity`-Maß im Geltungsbereich
++     `t"Hello world".proximity(t"Hello orld")` ist `1` unter
++     `proximities.levenshteinProximity` (und `caseSensitivity.caseSensitive`): Der
++     Ergebnistyp ist der `Operand` des Maßes – ein `Int` für Levenshtein- und Präfixmaße, ein
++     `Double` für Jaro, Jaro–Winkler und normalisiertes Levenshtein. Sowohl eine `Proximity`
++     als auch eine `CaseSensitivity` müssen per Name importiert werden.
+
+=     name.
+=
+-     ```scala
++     ```scala
+
+=     name.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import proximities.levenshteinProximity
++     import proximities.levenshteinProximity
+
+-     import caseSensitivity.caseSensitive
++     import caseSensitivity.caseSensitive
+
+-     t"kitten".proximity(t"sitting")   // 3
++     t"kitten".proximity(t"sitting")   // 3
+
+=     t"kitten".proximity(t"sitting")   // 3
+-     ```
++     ```
+
+- entry .fuzzy   matches a `Text` against literal cases by proximity rather than equality
+-     `text.fuzzy() { case t"hello" => … }` evaluates the case whose literal is nearest the
+-     text under the `Proximity by Double` measure in scope — `proximities.normalized
+-     LevenshteinProximity` or `jaroWinklerProximity` — with ties going to the earlier case. A
+-     `threshold` bounds the distance a case may be chosen at; a text further than it from
+-     every literal falls to the wildcard case, which must be last and may bind the text, and
+-     throws `MatchError` if there is none. Every non-wildcard case must be a `"…"` or `t"…"`
+-     literal, checked as the code compiles.
++ entry .fuzzy   gleicht einen `Text` nach Ähnlichkeit statt nach Gleichheit mit literalen Fällen ab
++     `text.fuzzy() { case t"hello" => … }` wertet den Fall aus, dessen Literal dem Text unter
++     dem `Proximity by Double`-Maß im Geltungsbereich am nächsten ist – `proximities.normalized
++     LevenshteinProximity` oder `jaroWinklerProximity` –, wobei bei Gleichstand der frühere
++     Fall gewinnt. Ein `threshold` begrenzt den Abstand, bei dem ein Fall noch gewählt werden
++     darf; ein Text, der weiter als dieser von jedem Literal entfernt ist, fällt in den
++     Wildcard-Fall, der der letzte sein muss und den Text binden darf, und wirft `MatchError`,
++     wenn es keinen gibt. Jeder Fall außer dem Wildcard-Fall muss ein `"…"`- oder
++     `t"…"`-Literal sein, was beim Kompilieren geprüft wird.
+
+=     literal, checked as the code compiles.
+=
+-     ```scala
++     ```scala
+
+=     literal, checked as the code compiles.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import proximities.normalizedLevenshteinProximity
++     import proximities.normalizedLevenshteinProximity
+
+-     import caseSensitivity.caseInsensitive
++     import caseSensitivity.caseInsensitive
+
+-     t"hlelo".fuzzy(0.5):
++     t"hlelo".fuzzy(0.5):
+
+-       case t"hello"   => t"english"
++       case t"hello"   => t"english"
+
+-       case t"bonjour" => t"french"
++       case t"bonjour" => t"french"
+
+-       case other      => t"unknown: $other"
++       case other      => t"unknown: $other"
+
+-     // t"english"
++     // t"english"
+
+=     // t"english"
+-     ```
++     ```
+
+- entry .Proximity   a measure of the distance between two `Text`s: the typeclass behind `proximity`, `fuzzy` and `Lexicon`
++ entry .Proximity   ein Maß für den Abstand zwischen zwei `Text`s: die Typklasse hinter `proximity`, `fuzzy` und `Lexicon`
+
+= entry .Proximity   a measure of the distance between two `Text`s: the typeclass behind `proximity`, `fuzzy` and `Lexicon`
+-   detail
++   detail
+
+-       `Proximity by operand` has one method, `#distance(left, right)`, whose result type is
+-       `#Operand`: an `Int` for a count of edits or matching characters, a `Double` for a
+-       normalised score. There is no default: a measure is imported by name from the
+-       `proximities` package, and every one of them consults the `CaseSensitivity` in scope
+-       to decide whether two characters are the same, so that is imported too.
++       `Proximity by operand` hat eine Methode, `#distance(left, right)`, deren Ergebnistyp
++       `#Operand` ist: ein `Int` für eine Anzahl von Bearbeitungen oder übereinstimmenden
++       Zeichen, ein `Double` für einen normalisierten Wert. Es gibt keine Vorgabe: Ein Maß wird
++       per Name aus dem Paket `proximities` importiert, und jedes davon zieht die
++       `CaseSensitivity` im Geltungsbereich heran, um zu entscheiden, ob zwei Zeichen gleich
++       sind, daher wird auch diese importiert.
+
+=       to decide whether two characters are the same, so that is imported too.
+=
+-       ```scala
++       ```scala
+
+=       to decide whether two characters are the same, so that is imported too.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       to decide whether two characters are the same, so that is imported too.
+=
+=       ```scala
+=       import soundness.*
+-       import proximities.levenshteinProximity
++       import proximities.levenshteinProximity
+
+-       import caseSensitivity.caseInsensitive
++       import caseSensitivity.caseInsensitive
+
+-       t"Hello".proximity(t"hello")   // 0
++       t"Hello".proximity(t"hello")   // 0
+
+=       t"Hello".proximity(t"hello")   // 0
+-       ```
++       ```
+
+-       `#Triangulable` is `true` for a measure which is a metric obeying the triangle
+-       inequality (Levenshtein), which is what a `Lexicon` needs to prune its search; the
+-       Jaro measures are similarities, not metrics, and `Lexicon(terms)` will not accept
+-       them.
++       `#Triangulable` ist `true` für ein Maß, das eine Metrik ist und die
++       Dreiecksungleichung erfüllt (Levenshtein), was ein `Lexicon` braucht, um seine Suche zu
++       beschneiden; die Jaro-Maße sind Ähnlichkeiten, keine Metriken, und `Lexicon(terms)`
++       nimmt sie nicht an.
+
+=       them.
+-   refer gossamer.proximities
++   refer gossamer.proximities
+
+-   refer gossamer.proximity
++   refer gossamer.proximity
+
+=   refer gossamer.proximity
+-   refer gossamer.fuzzy
++   refer gossamer.fuzzy
+
+=   refer gossamer.fuzzy
+-   refer gossamer.Lexicon
++   refer gossamer.Lexicon
+
+-   entry #Operand   the type a distance has: `Int` or `Double`
+-   entry #Triangulable   `true` when the measure is a metric obeying the triangle inequality
+-   entry #distance   the distance between two texts
++   entry #Operand   der Typ, den ein Abstand hat: `Int` oder `Double`
++   entry #Triangulable   `true`, wenn das Maß eine Metrik ist, die die Dreiecksungleichung erfüllt
++   entry #distance   der Abstand zwischen zwei Texten
+
+- entry .proximities   the string-similarity measures, each a `Proximity` given to import by name
++ entry .proximities   die Maße für String-Ähnlichkeit, jedes ein per Name zu importierendes `Proximity`-Given
+
+= entry .proximities   the string-similarity measures, each a `Proximity` given to import by name
+-   detail
++   detail
+
+-       Which notion of closeness `proximity`, `fuzzy` and `Lexicon` use is a choice, so
+-       `import soundness.*` brings none of these in; one is imported by name, along with a
+-       `CaseSensitivity`, which every measure needs to compare characters.
++       Welchen Begriff von Nähe `proximity`, `fuzzy` und `Lexicon` verwenden, ist eine Wahl,
++       daher bringt `import soundness.*` keines davon mit; eines wird per Name importiert,
++       zusammen mit einer `CaseSensitivity`, die jedes Maß zum Vergleichen von Zeichen braucht.
+
+=       `CaseSensitivity`, which every measure needs to compare characters.
+=
+-       ```scala
++       ```scala
+
+=       `CaseSensitivity`, which every measure needs to compare characters.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import proximities.jaroWinklerProximity
++       import proximities.jaroWinklerProximity
+
+=       import proximities.jaroWinklerProximity
+-       import caseSensitivity.caseSensitive
++       import caseSensitivity.caseSensitive
+
+-       t"martha".proximity(t"marhta")   // about 0.96
++       t"martha".proximity(t"marhta")   // about 0.96
+
+=       t"martha".proximity(t"marhta")   // about 0.96
+-       ```
++       ```
+
+-       Levenshtein and prefix distances are `Int`s, and zero means identical; the Jaro,
+-       Jaro–Winkler and normalised Levenshtein measures are `Double`s. Jaro and Jaro–Winkler
+-       are *similarities* (one means identical), where normalised Levenshtein is a *distance*
+-       (zero means identical); `fuzzy`, which picks the case with the smallest value, expects
+-       a distance.
+-   entry .levenshteinProximity   the Levenshtein edit distance: single-character insertions, deletions and substitutions
+-       `t"kitten".proximity(t"sitting")` is `3`. The distance between a text and the empty
+-       text is the text's length. A true metric (`Triangulable = true`), so it is what a
+-       `Lexicon` is built over. Computed in two rows of integers, so memory is linear in the
+-       shorter text.
+-   entry .normalizedLevenshteinProximity   the Levenshtein distance divided by the longer text's length, in `0.0` to `1.0`
+-       `0.0` for identical texts, `1.0` for texts with nothing in common, and `0.0` for two
+-       empty texts. The measure `fuzzy` is usually used with, since a threshold on it does not
+-       depend on the texts' lengths.
+-   entry .jaroProximity   the Jaro similarity: matching characters within a window, less transpositions
+-       `1.0` for identical texts, `0.0` for texts sharing no characters within half the
+-       longer length of each other. A similarity, not a distance.
+-   entry .jaroWinklerProximity   the Jaro similarity boosted for a common prefix of up to four characters
+-       Jaro, plus a tenth of the common-prefix length (capped at four) times what Jaro
+-       leaves short of `1.0`; it favours texts which begin alike, as misspellings often do.
+-   entry .prefixProximity   the length of the common prefix of two texts
+-       `t"interview".proximity(t"internal")` is `5`. A larger number means *more* alike; it
+-       is a building block of `jaroWinklerProximity` rather than a distance for `fuzzy`.
++       Levenshtein- und Präfixabstände sind `Int`s, und null bedeutet identisch; die Maße Jaro,
++       Jaro–Winkler und normalisiertes Levenshtein sind `Double`s. Jaro und Jaro–Winkler sind
++       *Ähnlichkeiten* (eins bedeutet identisch), normalisiertes Levenshtein dagegen ist ein
++       *Abstand* (null bedeutet identisch); `fuzzy`, das den Fall mit dem kleinsten Wert
++       wählt, erwartet einen Abstand.
++   entry .levenshteinProximity   der Levenshtein-Editierabstand: Einfügungen, Löschungen und Ersetzungen einzelner Zeichen
++       `t"kitten".proximity(t"sitting")` ist `3`. Der Abstand zwischen einem Text und dem
++       leeren Text ist die Länge des Textes. Eine echte Metrik (`Triangulable = true`), daher
++       wird ein `Lexicon` darüber gebaut. Berechnet in zwei Zeilen ganzer Zahlen, sodass der
++       Speicherbedarf linear in der kürzeren Länge ist.
++   entry .normalizedLevenshteinProximity   der Levenshtein-Abstand geteilt durch die Länge des längeren Textes, zwischen `0.0` und `1.0`
++       `0.0` für identische Texte, `1.0` für Texte ohne Gemeinsamkeiten und `0.0` für zwei
++       leere Texte. Das Maß, mit dem `fuzzy` üblicherweise verwendet wird, da ein
++       Schwellenwert darauf nicht von den Längen der Texte abhängt.
++   entry .jaroProximity   die Jaro-Ähnlichkeit: übereinstimmende Zeichen innerhalb eines Fensters, abzüglich Transpositionen
++       `1.0` für identische Texte, `0.0` für Texte, die keine Zeichen innerhalb der halben
++       größeren Länge voneinander teilen. Eine Ähnlichkeit, kein Abstand.
++   entry .jaroWinklerProximity   die Jaro-Ähnlichkeit, verstärkt für ein gemeinsames Präfix von bis zu vier Zeichen
++       Jaro, plus ein Zehntel der Länge des gemeinsamen Präfixes (höchstens vier) mal das, was
++       Jaro an `1.0` fehlen lässt; es bevorzugt Texte, die gleich beginnen, wie es
++       Tippfehler oft tun.
++   entry .prefixProximity   die Länge des gemeinsamen Präfixes zweier Texte
++       `t"interview".proximity(t"internal")` ist `5`. Eine größere Zahl bedeutet *ähnlicher*;
++       es ist ein Baustein von `jaroWinklerProximity`, kein Abstand für `fuzzy`.
+
+- entry .CaseSensitivity   whether two characters count as the same: a policy every proximity measure consults
++ entry .CaseSensitivity   ob zwei Zeichen als gleich gelten: eine Richtlinie, die jedes Ähnlichkeitsmaß heranzieht
+
+= entry .CaseSensitivity   whether two characters count as the same: a policy every proximity measure consults
+-   detail
++   detail
+
+-       A `CaseSensitivity` is a function from two `Char`s to whether they match. The three
+-       policies in the `caseSensitivity` package — `caseSensitive`, `caseInsensitive` and
+-       `smartCase` — are the usual choices, imported by name; a custom one is any lambda of
+-       the right shape.
++       Eine `CaseSensitivity` ist eine Funktion von zwei `Char`s darauf, ob sie
++       übereinstimmen. Die drei Richtlinien im Paket `caseSensitivity` – `caseSensitive`,
++       `caseInsensitive` und `smartCase` – sind die üblichen Wahlmöglichkeiten, per Name
++       importiert; eine eigene ist jedes Lambda der passenden Gestalt.
+
+-   refer gossamer.caseSensitivity
++   refer gossamer.caseSensitivity
+
+-   entry #compare   whether two characters match under this policy
++   entry #compare   ob zwei Zeichen unter dieser Richtlinie übereinstimmen
+
+- entry .caseSensitivity   the case-matching policies, each a `CaseSensitivity` given to import by name
++ entry .caseSensitivity   die Richtlinien zur Groß-/Kleinschreibung, jede ein per Name zu importierendes `CaseSensitivity`-Given
+
+= entry .caseSensitivity   the case-matching policies, each a `CaseSensitivity` given to import by name
+-   detail
++   detail
+
+-       `import soundness.*` brings none of these in. One is imported by name wherever a
+-       `Proximity` is used, since every measure asks it whether two characters are the same.
++       `import soundness.*` bringt keine davon mit. Eine wird überall dort per Name
++       importiert, wo eine `Proximity` verwendet wird, da jedes Maß sie fragt, ob zwei Zeichen
++       gleich sind.
+
+=       `Proximity` is used, since every measure asks it whether two characters are the same.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Case-sensitive
++       alternative Case-sensitive
+
+=       alternative Case-sensitive
+-         code
++         code
+
+=       alternative Case-sensitive
+=         code
+-             locally:
++             locally:
+
+=       alternative Case-sensitive
+=         code
+=             locally:
+-               import proximities.levenshteinProximity
++               import proximities.levenshteinProximity
+
+-               import caseSensitivity.caseSensitive
++               import caseSensitivity.caseSensitive
+
+-               t"Hello".proximity(t"hello")   // 1: `H` and `h` differ
++               t"Hello".proximity(t"hello")   // 1: `H` and `h` differ
+
+-       alternative Case-insensitive
++       alternative Case-insensitive
+
+=       alternative Case-insensitive
+-         code
++         code
+
+=       alternative Case-insensitive
+=         code
+-             locally:
++             locally:
+
+=       alternative Case-insensitive
+=         code
+=             locally:
+-               import proximities.levenshteinProximity
++               import proximities.levenshteinProximity
+
+-               import caseSensitivity.caseInsensitive
++               import caseSensitivity.caseInsensitive
+
+-               t"Hello".proximity(t"hello")   // 0: they are the same
++               t"Hello".proximity(t"hello")   // 0: they are the same
+
+-       alternative Smart case
++       alternative Smart case
+
+=       alternative Smart case
+-         code
++         code
+
+=       alternative Smart case
+=         code
+-             locally:
++             locally:
+
+=       alternative Smart case
+=         code
+=             locally:
+-               import proximities.levenshteinProximity
++               import proximities.levenshteinProximity
+
+-               import caseSensitivity.smartCase
++               import caseSensitivity.smartCase
+
+-               (t"hello".proximity(t"Hello"), t"Hello".proximity(t"hello"))   // (0, 1)
++               (t"hello".proximity(t"Hello"), t"Hello".proximity(t"hello"))   // (0, 1)
+
+=               (t"hello".proximity(t"Hello"), t"Hello".proximity(t"hello"))   // (0, 1)
+-       ##
++       ##
+
+=               (t"hello".proximity(t"Hello"), t"Hello".proximity(t"hello"))   // (0, 1)
+=       ##
+-       ```
++       ```
+
+-   entry .caseSensitive   characters match only when they are equal
+-   entry .caseInsensitive   characters match when their upper-case forms are equal
+-   entry .smartCase   a lowercase character on the left matches either case; any other character matches only itself
+-       The rule of search tools such as Vim's `smartcase`: a query typed in lowercase is
+-       case-insensitive, and a capital in the query must be matched exactly. The left operand
+-       is the query.
++   entry .caseSensitive   Zeichen stimmen nur überein, wenn sie gleich sind
++   entry .caseInsensitive   Zeichen stimmen überein, wenn ihre Großbuchstabenformen gleich sind
++   entry .smartCase   ein Kleinbuchstabe links passt auf beide Schreibweisen; jedes andere Zeichen passt nur auf sich selbst
++       Die Regel von Suchwerkzeugen wie Vims `smartcase`: Eine kleingeschriebene Abfrage
++       unterscheidet nicht nach Groß-/Kleinschreibung, und ein Großbuchstabe in der Abfrage
++       muss exakt getroffen werden. Der linke Operand ist die Abfrage.
+
+- entry .Collation   a total ordering of `Text`: what sorting and comparing text requires
++ entry .Collation   eine totale Ordnung auf `Text`: was das Sortieren und Vergleichen von Text erfordert
+
+= entry .Collation   a total ordering of `Text`: what sorting and comparing text requires
+-   detail
++   detail
+
+-       Text has no natural order — whether `café` sorts before `caff` depends on the language
+-       and the purpose — so Soundness has no ambient one: sorting a `List[Text]`, or writing
+-       `t"a" < t"b"`, needs a `Collation` in scope, and does not compile without one. A
+-       collation is imported by name from the `collations` package (`unicodeCollation` for
+-       dictionary order, `codepointCollation` for a fast, table-free order) or built from a
+-       hieroglyph `CollationTable` with `.apply`, and `collationComparable` turns it into the
+-       `Text is Comparable` the comparison operators and sorts look for.
++       Text hat keine natürliche Ordnung – ob `café` vor `caff` einsortiert wird, hängt von
++       der Sprache und vom Zweck ab –, daher hat Soundness keine ambiente: Eine `List[Text]`
++       zu sortieren oder `t"a" < t"b"` zu schreiben, braucht eine `Collation` im
++       Geltungsbereich und kompiliert ohne sie nicht. Eine Kollation wird per Name aus dem
++       Paket `collations` importiert (`unicodeCollation` für Wörterbuchordnung,
++       `codepointCollation` für eine schnelle, tabellenfreie Ordnung) oder mit `.apply` aus
++       einer `CollationTable` von hieroglyph gebaut, und `collationComparable` macht daraus
++       das `Text is Comparable`, nach dem die Vergleichsoperatoren und Sortierungen suchen.
+
+=       `Text is Comparable` the comparison operators and sorts look for.
+=
+-       ```scala
++       ```scala
+
+=       `Text is Comparable` the comparison operators and sorts look for.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import collations.unicodeCollation
++       import collations.unicodeCollation
+
+-       import sortingAlgorithms.timsort
++       import sortingAlgorithms.timsort
+
+-       List(t"caff", t"café", t"cafe").sort   // List(t"cafe", t"café", t"caff")
++       List(t"caff", t"café", t"cafe").sort   // List(t"cafe", t"café", t"caff")
+
+-       t"apple" < t"banana"                    // true
++       t"apple" < t"banana"                    // true
+
+=       t"apple" < t"banana"                    // true
+-       ```
++       ```
+
+-       `#compare` gives the `Comparison` of two texts, and `#key` a sort key: an array of
+-       integers which, compared element by element, orders as the collation does, for
+-       sorting many texts without repeating the comparison work.
++       `#compare` liefert die `Comparison` zweier Texte und `#key` einen Sortierschlüssel: ein
++       Array ganzer Zahlen, das, Element für Element verglichen, so ordnet wie die Kollation,
++       um viele Texte zu sortieren, ohne die Vergleichsarbeit zu wiederholen.
+
+-   refer gossamer.collations
++   refer gossamer.collations
+
+-   refer gossamer.collationComparable
++   refer gossamer.collationComparable
+
+-   entry .apply   a `Collation` over a hieroglyph `CollationTable`, such as a language's tailoring
+-   entry #compare   the `Comparison` (`Less`, `Same` or `More`) of two texts
+-   entry #key   a sort key for a text: integers which compare as the collation does
++   entry .apply   eine `Collation` über einer `CollationTable` von hieroglyph, etwa der Anpassung einer Sprache
++   entry #compare   die `Comparison` (`Less`, `Same` oder `More`) zweier Texte
++   entry #key   ein Sortierschlüssel für einen Text: ganze Zahlen, die sich so vergleichen wie die Kollation
+
+- entry .collationComparable   makes `Text` `Comparable` whenever a `Collation` is in scope
+-     The given which `<`, `>`, `least`, `sort` and every other comparison on `Text` resolve
+-     through. It needs a `Collation` in scope, so text becomes sortable exactly when a sort
+-     order has been chosen, and the error for an unsorted `List[Text]` names the missing
+-     `Comparable`. It is a top-level given with a library-qualified name, since neither
+-     `Comparable`'s nor `Text`'s companion can refer to gossamer, so it must be imported by
+-     name — `import soundness.collationComparable` — alongside the collation.
++ entry .collationComparable   macht `Text` `Comparable`, sobald eine `Collation` im Geltungsbereich ist
++     Das Given, über das `<`, `>`, `least`, `sort` und jeder andere Vergleich auf `Text`
++     aufgelöst wird. Es braucht eine `Collation` im Geltungsbereich, sodass Text genau dann
++     sortierbar wird, wenn eine Sortierreihenfolge gewählt wurde, und der Fehler für eine
++     unsortierte `List[Text]` nennt das fehlende `Comparable`. Es ist ein Given auf oberster
++     Ebene mit einem bibliotheksqualifizierten Namen, da weder das Begleitobjekt von
++     `Comparable` noch das von `Text` auf gossamer verweisen kann, daher muss es per Name
++     importiert werden – `import soundness.collationComparable` – zusammen mit der Kollation.
+
+=     name — `import soundness.collationComparable` — alongside the collation.
+=
+-     ```scala
++     ```scala
+
+=     name — `import soundness.collationComparable` — alongside the collation.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import soundness.collationComparable
++     import soundness.collationComparable
+
+-     import collations.codepointCollation
++     import collations.codepointCollation
+
+-     t"b" < t"a"   // false
++     t"b" < t"a"   // false
+
+=     t"b" < t"a"   // false
+-     ```
++     ```
+
+- entry .collations   the sort orders for text, each a `Collation` given to import by name
++ entry .collations   die Sortierreihenfolgen für Text, jede ein per Name zu importierendes `Collation`-Given
+
+= entry .collations   the sort orders for text, each a `Collation` given to import by name
+-   detail
++   detail
+
+-       `import soundness.*` brings none of these in; a sort order is chosen by importing one.
+-       The two orders differ on case, accents and characters outside the basic plane:
++       `import soundness.*` bringt keine davon mit; eine Sortierreihenfolge wird gewählt,
++       indem man eine importiert. Die beiden Ordnungen unterscheiden sich bei Groß- und
++       Kleinschreibung, Akzenten und Zeichen außerhalb der Basisebene:
+
+=       The two orders differ on case, accents and characters outside the basic plane:
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Unicode
++       alternative Unicode
+
+=       alternative Unicode
+-         code
++         code
+
+=       alternative Unicode
+=         code
+-             locally:
++             locally:
+
+-               import collations.unicodeCollation
++               import collations.unicodeCollation
+
+=               import collations.unicodeCollation
+-               import sortingAlgorithms.timsort
++               import sortingAlgorithms.timsort
+
+-               List(t"B", t"a", t"café", t"cafe").sort   // List(t"a", t"B", t"cafe", t"café")
++               List(t"B", t"a", t"café", t"cafe").sort   // List(t"a", t"B", t"cafe", t"café")
+
+-       alternative Codepoint
++       alternative Codepoint
+
+=       alternative Codepoint
+-         code
++         code
+
+=       alternative Codepoint
+=         code
+-             locally:
++             locally:
+
+-               import collations.codepointCollation
++               import collations.codepointCollation
+
+=               import collations.codepointCollation
+-               import sortingAlgorithms.timsort
++               import sortingAlgorithms.timsort
+
+-               List(t"B", t"a", t"café", t"cafe").sort   // List(t"B", t"a", t"cafe", t"café")
++               List(t"B", t"a", t"café", t"cafe").sort   // List(t"B", t"a", t"cafe", t"café")
+
+=               List(t"B", t"a", t"café", t"cafe").sort   // List(t"B", t"a", t"cafe", t"café")
+-       ##
++       ##
+
+=               List(t"B", t"a", t"café", t"cafe").sort   // List(t"B", t"a", t"cafe", t"café")
+=       ##
+-       ```
++       ```
+
+-       A locale-specific tailoring comes from cosmopolite, which derives a `Collation` from a
+-       contextual `Locale`, or from `Collation(table)` over a hieroglyph `CollationTable`.
+-   entry .unicodeCollation   dictionary order: the Unicode Collation Algorithm's root table, three levels, non-ignorable
+-       The order of the Default Unicode Collation Element Table (UTS #10): letters by their
+-       primary weight regardless of case or accent, then accents, then case, so `cafe` <
+-       `café` < `caff` and `a` < `B`. The sort key is the table's key for the text.
+-   entry .codepointCollation   raw code-point order: deterministic, table-free, for machine-facing sorting
+-       Orders by Unicode scalar value, so it is stable across versions of the collation data
+-       and costs nothing to load; suited to file listings and other output which must be
+-       reproducible rather than readable. Not `String`'s order, which compares UTF-16 code
+-       units and so puts supplementary characters (`𝓐`) before U+E000–U+FFFF; here they sort
+-       after the whole basic plane. Capitals sort before every lowercase letter.
++       Eine gebietsschemaspezifische Anpassung kommt von cosmopolite, das eine `Collation` aus
++       einem kontextuellen `Locale` ableitet, oder von `Collation(table)` über einer
++       `CollationTable` von hieroglyph.
++   entry .unicodeCollation   Wörterbuchordnung: die Wurzeltabelle des Unicode Collation Algorithm, drei Stufen, nicht ignorierbar
++       Die Ordnung der Default Unicode Collation Element Table (UTS #10): Buchstaben nach
++       ihrem Primärgewicht ungeachtet von Groß-/Kleinschreibung oder Akzent, dann Akzente,
++       dann Groß-/Kleinschreibung, sodass `cafe` < `café` < `caff` und `a` < `B`. Der
++       Sortierschlüssel ist der Schlüssel der Tabelle für den Text.
++   entry .codepointCollation   rohe Codepoint-Ordnung: deterministisch, tabellenfrei, für maschinennahes Sortieren
++       Ordnet nach Unicode-Skalarwert, sodass sie über Versionen der Kollationsdaten hinweg
++       stabil ist und nichts zu laden kostet; geeignet für Dateilisten und andere Ausgaben,
++       die reproduzierbar statt lesbar sein müssen. Nicht die Ordnung von `String`, die
++       UTF-16-Codeeinheiten vergleicht und daher ergänzende Zeichen (`𝓐`) vor U+E000–U+FFFF
++       stellt; hier werden sie nach der gesamten Basisebene einsortiert. Großbuchstaben
++       kommen vor jedem Kleinbuchstaben.
+
+- entry .Decimalizer   renders a `Double` as decimal text to a chosen precision, as the `DecimalConverter` `show` consults
++ entry .Decimalizer   stellt ein `Double` als Dezimaltext mit gewählter Genauigkeit dar, als der `DecimalConverter`, den `show` heranzieht
+
+= entry .Decimalizer   renders a `Double` as decimal text to a chosen precision, as the `DecimalConverter` `show` consults
+-   detail
++   detail
+
+-       A `Decimalizer` is a `DecimalConverter`, the typeclass `Double is Showable` (and so
+-       `t"$x"` for a `Double`) looks for, which states how many digits are worth showing:
+-       `Decimalizer(3)` is three significant figures, and `Decimalizer(decimalPlaces = 2)` two
+-       digits after the point. Values whose magnitude reaches `#exponentThreshold` powers of
+-       ten (three by default) are written in scientific notation with a superscript exponent.
++       Ein `Decimalizer` ist ein `DecimalConverter`, die Typklasse, nach der `Double is
++       Showable` (und damit `t"$x"` für ein `Double`) sucht, und gibt an, wie viele Ziffern
++       sich zu zeigen lohnen: `Decimalizer(3)` sind drei signifikante Stellen und
++       `Decimalizer(decimalPlaces = 2)` zwei Ziffern nach dem Dezimaltrennzeichen. Werte, deren Betrag
++       `#exponentThreshold` Zehnerpotenzen erreicht (standardmäßig drei), werden in
++       wissenschaftlicher Notation mit hochgestelltem Exponenten geschrieben.
+
+=       ten (three by default) are written in scientific notation with a superscript exponent.
+=
+-       ```scala
++       ```scala
+
+=       ten (three by default) are written in scientific notation with a superscript exponent.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Decimalizer(3).decimalize(-3.14159)                  // t"-3.14"
++       Decimalizer(3).decimalize(-3.14159)                  // t"-3.14"
+
+-       Decimalizer(5).decimalize(6.0221408e23)              // t"6.0221×10²³"
++       Decimalizer(5).decimalize(6.0221408e23)              // t"6.0221×10²³"
+
+-       Decimalizer(decimalPlaces = 1).decimalize(9.96)      // t"10.0"
++       Decimalizer(decimalPlaces = 1).decimalize(9.96)      // t"10.0"
+
+-       Decimalizer(2).decimalize(9.99)                      // t"10"
++       Decimalizer(2).decimalize(9.99)                      // t"10"
+
+-       Decimalizer(4).decimalize(999.96)                    // t"1.000×10³"
++       Decimalizer(4).decimalize(999.96)                    // t"1.000×10³"
+
+-       Decimalizer(7, exponentMultiple = 3).decimalize(6.0221408e23)   // t"602.2141×10²¹"
++       Decimalizer(7, exponentMultiple = 3).decimalize(6.0221408e23)   // t"602.2141×10²¹"
+
+=       Decimalizer(7, exponentMultiple = 3).decimalize(6.0221408e23)   // t"602.2141×10²¹"
+-       ```
++       ```
+
+-       A `given Decimalizer(3)` in scope then makes every `show` of a floating-point number
+-       render the same way, so changing a program's precision is one given rather than a
+-       search for format strings. Rounding carries correctly past the leading digit. The
+-       special values render as `#infinity` (`∞`, with `#minusSign` when negative) and `#nan`
+-       (`∉ℝ`). `decimalConverters.javaDecimalConverter` is the plain `Double#toString`
+-       alternative.
++       Ein `given Decimalizer(3)` im Geltungsbereich lässt dann jedes `show` einer
++       Gleitkommazahl gleich darstellen, sodass die Genauigkeit eines Programms zu ändern ein
++       einziges Given ist und keine Suche nach Formatstrings. Das Runden überträgt korrekt
++       über die führende Ziffer hinaus. Die Sonderwerte werden als `#infinity` (`∞`, mit
++       `#minusSign`, wenn negativ) und `#nan` (`∉ℝ`) dargestellt.
++       `decimalConverters.javaDecimalConverter` ist die schlichte Alternative mit
++       `Double#toString`.
+
+-   refer rudiments.DecimalConverter
++   refer rudiments.DecimalConverter
+
+-   refer gossamer.decimalConverters
++   refer gossamer.decimalConverters
+
+-   entry #significantFigures   the number of significant digits to show, or `Unset` to use `#decimalPlaces`
+-       The first parameter, so `Decimalizer(3)` sets it. When both it and `#decimalPlaces`
+-       are `Unset`, three significant figures are used.
+-   entry #decimalPlaces   the number of digits after the decimal point, used when `#significantFigures` is `Unset`
+-   entry #decimalPoint   the decimal point character, `.` by default
+-       `Decimalizer(7, decimalPoint = '·').decimalize(6.626070e-34)` is `t"6·626070×10¯³⁴"`.
+-   entry #minusSign   the character written before a negative number, `-` by default
+-   entry #plusSign   the character written before a positive number, or `Unset` (the default) for none
+-   entry #exponent   the text between the mantissa and the exponent, `×10` by default
+-   entry #exponentThreshold   the magnitude, in powers of ten, at which scientific notation begins; `3` by default
+-       `Unset` disables scientific notation altogether.
+-   entry #superscript   whether the exponent is written in superscript digits (`10²³`), the default, or plain (`10-34`)
+-       With superscript, a negative exponent uses the macron-like `¯` as its sign.
+-   entry #exponentMultiple   rounds the exponent down to a multiple, `3` for engineering notation; `1` by default
+-       With `exponentMultiple = 3`, `6.0221408e23` renders as `602.2141×10²¹`.
+-   entry #infinity   the text for an infinite value, `∞` by default
+-   entry #nan   the text for a value which is not a number, `∉ℝ` by default
+-   entry #decimalize   the text of a `Double` under this decimalizer's settings
+-   entry #exponentScale   the number of decimal digits in an exponent; a helper of `#decimalize`
++   entry #significantFigures   die Anzahl der anzuzeigenden signifikanten Stellen, oder `Unset`, um `#decimalPlaces` zu verwenden
++       Der erste Parameter, daher setzt `Decimalizer(3)` ihn. Wenn er und `#decimalPlaces`
++       beide `Unset` sind, werden drei signifikante Stellen verwendet.
++   entry #decimalPlaces   die Anzahl der Ziffern nach dem Dezimaltrennzeichen, verwendet, wenn `#significantFigures` `Unset` ist
++   entry #decimalPoint   das Dezimaltrennzeichen, standardmäßig `.`
++       `Decimalizer(7, decimalPoint = '·').decimalize(6.626070e-34)` ist `t"6·626070×10¯³⁴"`.
++   entry #minusSign   das Zeichen vor einer negativen Zahl, standardmäßig `-`
++   entry #plusSign   das Zeichen vor einer positiven Zahl, oder `Unset` (die Vorgabe) für keines
++   entry #exponent   der Text zwischen Mantisse und Exponent, standardmäßig `×10`
++   entry #exponentThreshold   der Betrag in Zehnerpotenzen, ab dem die wissenschaftliche Notation beginnt; standardmäßig `3`
++       `Unset` schaltet die wissenschaftliche Notation ganz ab.
++   entry #superscript   ob der Exponent in hochgestellten Ziffern (`10²³`) geschrieben wird, die Vorgabe, oder schlicht (`10-34`)
++       Bei hochgestellter Schreibweise verwendet ein negativer Exponent das makronartige `¯`
++       als Vorzeichen.
++   entry #exponentMultiple   rundet den Exponenten auf ein Vielfaches ab, `3` für technische Notation; standardmäßig `1`
++       Mit `exponentMultiple = 3` wird `6.0221408e23` als `602.2141×10²¹` dargestellt.
++   entry #infinity   der Text für einen unendlichen Wert, standardmäßig `∞`
++   entry #nan   der Text für einen Wert, der keine Zahl ist, standardmäßig `∉ℝ`
++   entry #decimalize   der Text eines `Double` unter den Einstellungen dieses Decimalizers
++   entry #exponentScale   die Anzahl der Dezimalziffern in einem Exponenten; ein Hilfsmittel von `#decimalize`
+
+- entry .decimalConverters   the `DecimalConverter` alternatives to a `Decimalizer`, to import by name
++ entry .decimalConverters   die `DecimalConverter`-Alternativen zu einem `Decimalizer`, per Name zu importieren
+
+= entry .decimalConverters   the `DecimalConverter` alternatives to a `Decimalizer`, to import by name
+-   detail
++   detail
+
+-       A `Double` is shown through the `DecimalConverter` in scope. A `Decimalizer` states a
+-       precision; this package holds the converter which does not.
+-   entry .javaDecimalConverter   renders a `Double` with `Double#toString`, exactly as Java would
+-       `3.14159` renders as `3.14159`, `1e21` as `1.0E21`, and `0.1 + 0.2` as
+-       `0.30000000000000004`: every digit the binary value has, with no rounding to a
+-       precision.
++       Ein `Double` wird über den `DecimalConverter` im Geltungsbereich gezeigt. Ein
++       `Decimalizer` gibt eine Genauigkeit an; dieses Paket enthält den Konverter, der das
++       nicht tut.
++   entry .javaDecimalConverter   stellt ein `Double` mit `Double#toString` dar, genau wie Java es täte
++       `3.14159` wird als `3.14159` dargestellt, `1e21` als `1.0E21` und `0.1 + 0.2` als
++       `0.30000000000000004`: jede Ziffer, die der Binärwert hat, ohne Rundung auf eine
++       Genauigkeit.
+
+- entry .Numerous   a word with its singular and plural endings, for counting things in prose
++ entry .Numerous   ein Wort mit seinen Singular- und Pluralendungen, um Dinge in Prosa zu zählen
+
+= entry .Numerous   a word with its singular and plural endings, for counting things in prose
+-   detail
++   detail
+
+-       `Numerous(t"item")(3)` is `t"items"` and `Numerous(t"item")(1)` is `t"item"`. The
+-       endings are `s` and nothing by default, and are given for irregular words:
+-       `Numerous(t"quer", t"ies", t"y")`. A collection may be passed in place of a count.
++       `Numerous(t"item")(3)` ist `t"items"` und `Numerous(t"item")(1)` ist `t"item"`. Die
++       Endungen sind standardmäßig `s` und nichts und werden für unregelmäßige Wörter
++       angegeben: `Numerous(t"quer", t"ies", t"y")`. Anstelle einer Anzahl kann eine
++       Collection übergeben werden.
+
+=       `Numerous(t"quer", t"ies", t"y")`. A collection may be passed in place of a count.
+=
+-       ```scala
++       ```scala
+
+=       `Numerous(t"quer", t"ies", t"y")`. A collection may be passed in place of a count.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val files = Numerous(t"file")
++       val files = Numerous(t"file")
+
+-       def report(n: Int): Text = t"$n ${files(n)} changed"
++       def report(n: Int): Text = t"$n ${files(n)} changed"
+
+-       report(1)   // t"1 file changed"
++       report(1)   // t"1 file changed"
+
+-       report(2)   // t"2 files changed"
++       report(2)   // t"2 files changed"
+
+=       report(2)   // t"2 files changed"
+-       ```
++       ```
+
+-   entry #word   the stem the endings are added to
+-   entry #pluralEnd   the ending for any count but one; `s` by default
+-   entry #singularEnd   the ending for a count of one; empty by default
+-   entry #apply   the word with the ending for a count, or for a collection's size
++   entry #word   der Stamm, an den die Endungen angehängt werden
++   entry #pluralEnd   die Endung für jede Anzahl außer eins; standardmäßig `s`
++   entry #singularEnd   die Endung für die Anzahl eins; standardmäßig leer
++   entry #apply   das Wort mit der Endung für eine Anzahl oder für die Größe einer Collection
+
+- entry .Range   the home of `Range.Error`, raised when an index is outside a text's bounds
++ entry .Range   die Heimat von `Range.Error`, ausgelöst, wenn ein Index außerhalb der Grenzen eines Textes liegt
+
+= entry .Range   the home of `Range.Error`, raised when an index is outside a text's bounds
+-   detail
++   detail
+
+-       Only the error lives here. The slicing operations themselves clamp rather than fail —
+-       `segment` cuts an oversized interval short — so the error is raised by the few
+-       operations which must reject an index, such as a line editor's cursor movement.
+-   entry .Error   Error `↯/s.42.1`: _the index `index` is outside the range `from`-`to`_
++       Nur der Fehler lebt hier. Die Slicing-Operationen selbst begrenzen, statt
++       fehlzuschlagen – `segment` kürzt ein zu großes Intervall –, daher wird der Fehler von
++       den wenigen Operationen ausgelöst, die einen Index zurückweisen müssen, etwa der
++       Cursorbewegung eines Zeileneditors.
++   entry .Error   Fehler `↯/s.42.1`: _the index `index` is outside the range `from`-`to`_
+
+=   entry .Error   Error `↯/s.42.1`: _the index `index` is outside the range `from`-`to`_
+-     detail
++     detail
+
+-         Raised when a position is outside a text's bounds by an operation which cannot
+-         clamp. It is a `fulminate.Error`, so it is raised through a `Tactic[Range.Error]`
+-         and can be handled with `safely` or `mend`.
+-     entry #index   the index which was asked for
+-     entry #from   the lowest valid index
+-     entry #to   the highest valid index
++         Ausgelöst, wenn eine Position außerhalb der Grenzen eines Textes liegt, von einer
++         Operation, die nicht begrenzen kann. Er ist ein `fulminate.Error`, wird also über eine
++         `Tactic[Range.Error]` ausgelöst und kann mit `safely` oder `mend` behandelt werden.
++     entry #index   der angefragte Index
++     entry #from   der niedrigste gültige Index
++     entry #to   der höchste gültige Index
+
+- entry .Bidi   the direction an operation works from: `Ltr` (the start) or `Rtl` (the end)
+-     `Bidi` is anticipation's enum, re-exported here with its cases so that `import
+-     gossamer.*` has the whole slicing vocabulary. `keep`, `skip`, `pad`, `fit`, `trim`,
+-     `chomp`, `offsetOf` and `pinpoint` each take a `Bidi`, `Ltr` by default, and `Rtl` makes
+-     them work from the end: `t"Hello".keep(2, Rtl)` is `t"lo"`.
++ entry .Bidi   die Richtung, von der aus eine Operation arbeitet: `Ltr` (der Anfang) oder `Rtl` (das Ende)
++     `Bidi` ist das Enum von anticipation, hier mit seinen Fällen re-exportiert, damit
++     `import gossamer.*` das gesamte Slicing-Vokabular hat. `keep`, `skip`, `pad`, `fit`,
++     `trim`, `chomp`, `offsetOf` und `pinpoint` nehmen jeweils ein `Bidi`, standardmäßig
++     `Ltr`, und `Rtl` lässt sie vom Ende her arbeiten: `t"Hello".keep(2, Rtl)` ist `t"lo"`.
+
+- entry .Ltr   left-to-right: from the start of the text, the default direction
+-     `Bidi.Ltr`, re-exported so it can be written bare: `t"123".pad(5, Ltr, '.')` is
+-     `t"123.."`.
++ entry .Ltr   von links nach rechts: vom Anfang des Textes, die Standardrichtung
++     `Bidi.Ltr`, re-exportiert, damit es ohne Präfix geschrieben werden kann:
++     `t"123".pad(5, Ltr, '.')` ist `t"123.."`.
+
+- entry .Rtl   right-to-left: from the end of the text
+-     `Bidi.Rtl`, re-exported so it can be written bare: `t"123".pad(5, Rtl, '.')` is
+-     `t"..123"`, and `t"Hello".skip(1, Rtl)` is `t"Hell"`.
++ entry .Rtl   von rechts nach links: vom Ende des Textes
++     `Bidi.Rtl`, re-exportiert, damit es ohne Präfix geschrieben werden kann:
++     `t"123".pad(5, Rtl, '.')` ist `t"..123"`, und `t"Hello".skip(1, Rtl)` ist `t"Hell"`.
+
+- entry .reversibleTextual   a `Reversible` instance for any textual type, for a companion to publish
+-     `reverse` is one extension for collections and text alike, driven by rudiments'
+-     `Reversible` typeclass; but a blanket given for every `Textual` type cannot be placed
+-     where implicit search would find it, since `Reversible`'s companion is in `rudiments`,
+-     below gossamer. So each textual type publishes the instance in its own companion:
++ entry .reversibleTextual   eine `Reversible`-Instanz für jeden textuellen Typ, zur Veröffentlichung durch ein Begleitobjekt
++     `reverse` ist eine einzige Erweiterung für Collections und Text gleichermaßen, getragen
++     von der Typklasse `Reversible` aus rudiments; aber ein pauschales Given für jeden
++     `Textual`-Typ lässt sich nicht dort platzieren, wo die implizite Suche es fände, da das
++     Begleitobjekt von `Reversible` in `rudiments` liegt, unterhalb von gossamer. Daher
++     veröffentlicht jeder textuelle Typ die Instanz in seinem eigenen Begleitobjekt:
+
+=     below gossamer. So each textual type publishes the instance in its own companion:
+=
+-     ```scala fuel
++     ```scala fuel
+
+-     substitute ???  ...
++     substitute ???  ...
+
+=     substitute ???  ...
+-     ##
++     ##
+
+=     ##
+-     import soundness.*
++     import soundness.*
+
+-     case class Styled(text: Text)
++     case class Styled(text: Text)
+
+-     object Styled:
++     object Styled:
+
+-       given textual: Styled is Textual = ???
++       given textual: Styled is Textual = ???
+
+-       given reversible: (Styled is Reversible { type Result = Styled }) = reversibleTextual
++       given reversible: (Styled is Reversible { type Result = Styled }) = reversibleTextual
+
+=       given reversible: (Styled is Reversible { type Result = Styled }) = reversibleTextual
+-     ```
++     ```
+
+-     The refinement must be parenthesised as shown, or the braces parse as the given's body.
+-     The reversal builds the result element by element through the type's `Builder`, so a
+-     styled text stays styled.
++     Die Verfeinerung muss wie gezeigt geklammert werden, sonst werden die geschweiften
++     Klammern als Rumpf des Givens geparst. Die Umkehrung baut das Ergebnis Element für
++     Element über den `Builder` des Typs auf, sodass ein formatierter Text formatiert bleibt.
+
+- entry .traversableTextual   a `Traversable` instance for any textual type, for a companion to publish
+-     The counterpart of `reversibleTextual` for traversal: a textual type whose companion
+-     declares `given traversable: (Styled is Traversable { type Operand = Char }) =
+-     traversableTextual` gains the predicate forms of `keep`, `skip`, `snip`, `count`,
+-     `where`, `all`, `exists` and the other `Traversable` operations from the collections
+-     library, with the rebuild going through `segment` so styling survives. The elements
+-     traversed are the type's `Textual#Result`.
++ entry .traversableTextual   eine `Traversable`-Instanz für jeden textuellen Typ, zur Veröffentlichung durch ein Begleitobjekt
++     Das Gegenstück zu `reversibleTextual` für die Traversierung: Ein textueller Typ, dessen
++     Begleitobjekt `given traversable: (Styled is Traversable { type Operand = Char }) =
++     traversableTextual` deklariert, erhält die Prädikatformen von `keep`, `skip`, `snip`,
++     `count`, `where`, `all`, `exists` und den anderen `Traversable`-Operationen aus der
++     Collections-Bibliothek, wobei der Neuaufbau über `segment` läuft, sodass die
++     Formatierung erhalten bleibt. Die traversierten Elemente sind das `Textual#Result` des
++     Typs.
+
+- entry .Writing   a text segmented into grapheme clusters: the characters a reader sees
++ entry .Writing   ein in Graphem-Cluster segmentierter Text: die Zeichen, die ein Leser sieht
+
+= entry .Writing   a text segmented into grapheme clusters: the characters a reader sees
+-   detail
++   detail
+
+-       A `Char` is not what a person calls a character: `é` may be one code point or two, a
+-       flag is a pair of regional indicators, and a family emoji is several code points
+-       joined. `Writing(text)` computes the text's grapheme-cluster `#boundaries` (Unicode
+-       UAX #29) once, and then presents it as a `Textual` whose elements are `Grapheme`s, so
+-       `length`, `keep`, `skip`, `segment`, `slices` and `reverse` count and cut by what is
+-       seen rather than by UTF-16 code units.
++       Ein `Char` ist nicht das, was ein Mensch ein Zeichen nennt: `é` kann ein Codepoint
++       oder zwei sein, eine Flagge ist ein Paar regionaler Indikatoren, und ein Familien-Emoji
++       besteht aus mehreren verbundenen Codepoints. `Writing(text)` berechnet die
++       Graphem-Cluster-Grenzen (`#boundaries`) des Textes (Unicode UAX #29)
++       einmal und präsentiert ihn dann als `Textual`, dessen Elemente `Grapheme`s sind, sodass
++       `length`, `keep`, `skip`, `segment`, `slices` und `reverse` nach dem Sichtbaren zählen
++       und schneiden statt nach UTF-16-Codeeinheiten.
+
+=       seen rather than by UTF-16 code units.
+=
+-       ```scala
++       ```scala
+
+=       seen rather than by UTF-16 code units.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Writing(t"abc").graphemeCount           // 3
++       Writing(t"abc").graphemeCount           // 3
+
+-       Writing(Text("👨‍👩‍👧")).graphemeCount     // 1
++       Writing(Text("👨‍👩‍👧")).graphemeCount     // 1
+
+-       Writing(Text("🇬🇧🇫🇷")).length           // 2
++       Writing(Text("🇬🇧🇫🇷")).length           // 2
+
+-       Writing(t"").boundaries.length          // 1: the single boundary at position 0
++       Writing(t"").boundaries.length          // 1: the single boundary at position 0
+
+-       Writing(t"héllo").keep(2).text          // t"hé", whatever `é` is made of
++       Writing(t"héllo").keep(2).text          // t"hé", whatever `é` is made of
+
+=       Writing(t"héllo").keep(2).text          // t"hé", whatever `é` is made of
+-       ```
++       ```
+
+-       Under a `Grapheme is Measurable` in scope (from a `textMetrics` given), `.measurable`
+-       gives a writing's display width as the sum of its graphemes' widths, which is more
+-       accurate than measuring the plain text per code point. A `Writing` shows as its text
+-       and inspects with its clusters separated by `·`.
++       Unter einem `Grapheme is Measurable` im Geltungsbereich (aus einem
++       `textMetrics`-Given) liefert `.measurable` die Anzeigebreite einer Writing als Summe der
++       Breiten ihrer Grapheme, was genauer ist, als den schlichten Text pro Codepoint zu
++       messen. Eine `Writing` wird als ihr Text gezeigt und mit durch `·` getrennten Clustern
++       inspiziert.
+
+-   refer gossamer.Grapheme
++   refer gossamer.Grapheme
+
+-   refer gossamer.Textual
++   refer gossamer.Textual
+
+-   entry .apply   a `Writing` of a text, with its grapheme boundaries computed
+-   entry .empty   the empty writing
+-   entry .showable   shows a writing as its plain text
+-   entry .inspectable   inspects a writing as `w"…"` with `·` between its graphemes
+-       `Writing(t"a\r\nb").inspect` is `w"a·\r\n·b"`: the segmentation is what distinguishes
+-       one writing from another, so it is what inspection shows.
+-   entry .concatenable   `left + right` on writings, with the boundaries recomputed
+-   entry .measurable   the display width of a writing: the sum of its graphemes' widths
+-       Needs a `Grapheme is Measurable` in scope, which `textMetrics.wideCharacterWidthMetric`
+-       provides through `Grapheme.measurable`. A combining accent adds nothing to its base,
+-       and a flag or a ZWJ sequence is one wide cell rather than the sum of its parts.
+-   entry .textual   the `Textual` instance for `Writing`, with `Grapheme` elements
+-       Length is the grapheme count, access and `segment` work in graphemes, and `indexOf`
+-       returns a position only when the substring begins on a grapheme boundary.
+-   entry .graphemes   the writing's graphemes, as an indexed sequence
+-   entry .graphemeCount   the number of grapheme clusters; the same as `length`
+-   entry #text   the underlying plain text
+-   entry #boundaries   the character offsets of the grapheme boundaries, from `0` to the text's length
+-       A frozen array with one more element than there are graphemes; grapheme `i` is the
+-       characters between `boundaries(i)` and `boundaries(i + 1)`.
++   entry .apply   eine `Writing` eines Textes, mit berechneten Graphemgrenzen
++   entry .empty   die leere Writing
++   entry .showable   zeigt eine Writing als ihren schlichten Text
++   entry .inspectable   inspiziert eine Writing als `w"…"` mit `·` zwischen ihren Graphemen
++       `Writing(t"a\r\nb").inspect` ist `w"a·\r\n·b"`: Die Segmentierung unterscheidet eine
++       Writing von einer anderen, daher zeigt die Inspektion sie.
++   entry .concatenable   `left + right` auf Writings, mit neu berechneten Grenzen
++   entry .measurable   die Anzeigebreite einer Writing: die Summe der Breiten ihrer Grapheme
++       Braucht ein `Grapheme is Measurable` im Geltungsbereich, das
++       `textMetrics.wideCharacterWidthMetric` über `Grapheme.measurable` bereitstellt. Ein
++       kombinierender Akzent fügt seiner Basis nichts hinzu, und eine Flagge oder eine
++       ZWJ-Sequenz ist eine breite Zelle statt der Summe ihrer Teile.
++   entry .textual   die `Textual`-Instanz für `Writing`, mit `Grapheme`-Elementen
++       Die Länge ist die Anzahl der Grapheme, Zugriff und `segment` arbeiten in Graphemen, und
++       `indexOf` gibt eine Position nur zurück, wenn der Teilstring an einer Graphemgrenze
++       beginnt.
++   entry .graphemes   die Grapheme der Writing, als indizierte Folge
++   entry .graphemeCount   die Anzahl der Graphem-Cluster; dasselbe wie `length`
++   entry #text   der zugrunde liegende schlichte Text
++   entry #boundaries   die Zeichen-Offsets der Graphemgrenzen, von `0` bis zur Länge des Textes
++       Ein eingefrorenes Array mit einem Element mehr, als es Grapheme gibt; Graphem `i` sind
++       die Zeichen zwischen `boundaries(i)` und `boundaries(i + 1)`.
+
+- entry .Grapheme   one grapheme cluster: a base character with its combining marks, or a joined sequence
++ entry .Grapheme   ein Graphem-Cluster: ein Basiszeichen mit seinen kombinierenden Zeichen oder eine verbundene Folge
+
+= entry .Grapheme   one grapheme cluster: a base character with its combining marks, or a joined sequence
+-   detail
++   detail
+
+-       The element type of `Writing`: an opaque type over `String` holding the code points of
+-       a single user-perceived character. `Grapheme("é")` wraps one; `#text` is it as `Text`
+-       and `#chars` its length in UTF-16 units. It inspects as `‹é›`, the cluster shown
+-       intact inside guillemets rather than escaped, since the structure is the point.
++       Der Elementtyp von `Writing`: ein opaker Typ über `String`, der die Codepoints eines
++       einzelnen vom Benutzer wahrgenommenen Zeichens hält. `Grapheme("é")` umhüllt eines;
++       `#text` ist es als `Text` und `#chars` seine Länge in UTF-16-Einheiten. Es wird als
++       `‹é›` inspiziert, der Cluster unversehrt in Guillemets gezeigt statt maskiert, da es
++       gerade um die Struktur geht.
+
+=       intact inside guillemets rather than escaped, since the structure is the point.
+=
+-       ```scala
++       ```scala
+
+=       intact inside guillemets rather than escaped, since the structure is the point.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import textMetrics.wideCharacterWidthMetric
++       import textMetrics.wideCharacterWidthMetric
+
+-       Grapheme("a").metrics    // 1
++       Grapheme("a").metrics    // 1
+
+-       Grapheme("é").metrics    // 1: a base plus a combining mark
++       Grapheme("é").metrics    // 1: a base plus a combining mark
+
+-       Grapheme("日").metrics   // 2
++       Grapheme("日").metrics   // 2
+
+=       Grapheme("日").metrics   // 2
+-       ```
++       ```
+
+-       Its companion's members — `apply`, the `showable`, `inspectable` and `measurable`
+-       givens, and the `text` and `chars` extensions — are declared in
+-       `internal.opaques.Grapheme`, from which the type is exported, and documented there.
++       Die Member seines Begleitobjekts – `apply`, die Givens `showable`, `inspectable` und
++       `measurable` sowie die Erweiterungen `text` und `chars` – sind in
++       `internal.opaques.Grapheme` deklariert, von wo der Typ exportiert wird, und dort
++       dokumentiert.
+
+=       `internal.opaques.Grapheme`, from which the type is exported, and documented there.
+-   refer gossamer.Writing
++   refer gossamer.Writing
+
+- entry .Ascii   a byte string of ASCII characters, made with `a"…"`
++ entry .Ascii   ein Byte-String aus ASCII-Zeichen, erzeugt mit `a"…"`
+
+= entry .Ascii   a byte string of ASCII characters, made with `a"…"`
+-   detail
++   detail
+
+-       An opaque type over a frozen `Array[Byte]`, one byte per character, with a `Textual`
+-       instance whose elements are `Byte`s, so the positional and substring operations
+-       (`cut`, `keep`, `starts`, `offsetOf`, `slices`, `+`, …) work on it directly and `plain`
+-       converts it to `Text`. The `a"…"` interpolator checks every character is ASCII as the
+-       code compiles; `Ascii(bytes)` wraps bytes already in hand, unchecked.
++       Ein opaker Typ über einem eingefrorenen `Array[Byte]`, ein Byte pro Zeichen, mit einer
++       `Textual`-Instanz, deren Elemente `Byte`s sind, sodass die Positions- und
++       Teilstring-Operationen (`cut`, `keep`, `starts`, `offsetOf`, `slices`, `+`, …) direkt
++       darauf arbeiten und `plain` es in `Text` umwandelt. Der Interpolator `a"…"` prüft beim
++       Kompilieren, dass jedes Zeichen ASCII ist; `Ascii(bytes)` umhüllt bereits vorhandene
++       Bytes, ungeprüft.
+
+=       code compiles; `Ascii(bytes)` wraps bytes already in hand, unchecked.
+=
+-       ```scala
++       ```scala
+
+=       code compiles; `Ascii(bytes)` wraps bytes already in hand, unchecked.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val greeting: Ascii = a"hello"
++       val greeting: Ascii = a"hello"
+
+-       greeting.bytes.length          // 5
++       greeting.bytes.length          // 5
+
+-       (greeting + a", world").plain  // t"hello, world"
++       (greeting + a", world").plain  // t"hello, world"
+
+-       greeting.inspect               // t"ascii\"hello\""
++       greeting.inspect               // t"ascii\"hello\""
+
+=       greeting.inspect               // t"ascii\"hello\""
+-       ```
++       ```
+
+-       Its companion's members — `apply`, the `showable`, `inspectable`, `concatenable` and
+-       `textual` givens, and the `bytes` extension — are declared in `internal.opaques.Ascii`,
+-       from which the type is exported, and documented there.
++       Die Member seines Begleitobjekts – `apply`, die Givens `showable`, `inspectable`,
++       `concatenable` und `textual` sowie die Erweiterung `bytes` – sind in
++       `internal.opaques.Ascii` deklariert, von wo der Typ exportiert wird, und dort
++       dokumentiert.
+
+-   refer gossamer.a
++   refer gossamer.a
+
+- entry .textDecodable   decodes a `Data` to `Text` through the `Charset` in scope, for `data.as[Text]`
+-     The `Decodable in Data` given for `Text`, in `gossamer.codec`: `bytes.as[Text]` reads
+-     the bytes in the `Charset` given in scope (`charsets.utf8Charset`, `asciiCharset`, …),
+-     and is the counterpart of `text.in[Data]` under a `codepages` given. A charset other
+-     than ISO-8859-1 also needs a `TextSanitizer` for malformed input (`strictSanitizer`
+-     raises `Charset.Error`). It is a top-level given and so must be imported by name:
++ entry .textDecodable   dekodiert ein `Data` über das `Charset` im Geltungsbereich zu `Text`, für `data.as[Text]`
++     Das `Decodable in Data`-Given für `Text`, in `gossamer.codec`: `bytes.as[Text]` liest die
++     Bytes im `Charset`, das im Geltungsbereich gegeben ist (`charsets.utf8Charset`,
++     `asciiCharset`, …), und ist das Gegenstück zu `text.in[Data]` unter einem
++     `codepages`-Given. Ein anderes Charset als ISO-8859-1 braucht außerdem einen
++     `TextSanitizer` für fehlerhafte Eingaben (`strictSanitizer` löst `Charset.Error` aus).
++     Es ist ein Given auf oberster Ebene und muss daher per Name importiert werden:
+
+-     `import soundness.textDecodable`.
++     `import soundness.textDecodable`.
+
+=     `import soundness.textDecodable`.
+=
+-     ```scala
++     ```scala
+
+=     `import soundness.textDecodable`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import soundness.textDecodable
++     import soundness.textDecodable
+
+-     import charsets.utf8Charset
++     import charsets.utf8Charset
+
+-     import textSanitizers.skipSanitizer
++     import textSanitizers.skipSanitizer
+
+-     val bytes: Data = Data(0x41, 0x42)
++     val bytes: Data = Data(0x41, 0x42)
+
+-     bytes.as[Text]   // t"AB"
++     bytes.as[Text]   // t"AB"
+
+=     bytes.as[Text]   // t"AB"
+-     ```
++     ```
+
+- entry .enumIdentification   how an enum's case names are written as text, each an `Identifiable` given to import by name
++ entry .enumIdentification   wie die Fallnamen eines Enums als Text geschrieben werden, jeder ein per Name zu importierendes `Identifiable`-Given
+
+= entry .enumIdentification   how an enum's case names are written as text, each an `Identifiable` given to import by name
+-   detail
++   detail
+
+-       A `Verbosity.Loud` case may appear in a command line, a configuration file or a JSON
+-       document as `loud`, `LOUD`, `Loud` or `loud-level`; which, is a choice, so the
+-       `Identifiable` givens for enums live here and one is imported by name. Each encodes a
+-       case's name into the convention and decodes text in that convention back to the
+-       Pascal-case name the enum declares.
++       Ein Fall `Verbosity.Loud` kann in einer Kommandozeile, einer Konfigurationsdatei oder
++       einem JSON-Dokument als `loud`, `LOUD`, `Loud` oder `loud-level` erscheinen; welche
++       Form, ist eine Wahl, daher liegen die `Identifiable`-Givens für Enums hier, und eines
++       wird per Name importiert. Jedes kodiert den Namen eines Falls in die Konvention und
++       dekodiert Text in dieser Konvention zurück in den Pascal-Case-Namen, den das Enum
++       deklariert.
+
+=       Pascal-case name the enum declares.
+=
+-       ```scala
++       ```scala
+
+=       Pascal-case name the enum declares.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import enumIdentification.kebabCaseIdentifiable
++       import enumIdentification.kebabCaseIdentifiable
+
+-       enum Verbosity:
++       enum Verbosity:
+
+-         case Quiet, Normal, VeryLoud
++         case Quiet, Normal, VeryLoud
+
+-       summon[Verbosity is Identifiable].encode(t"VeryLoud")   // t"very-loud"
++       summon[Verbosity is Identifiable].encode(t"VeryLoud")   // t"very-loud"
+
+-       summon[Verbosity is Identifiable].decode(t"very-loud")  // t"VeryLoud"
++       summon[Verbosity is Identifiable].decode(t"very-loud")  // t"VeryLoud"
+
+=       summon[Verbosity is Identifiable].decode(t"very-loud")  // t"VeryLoud"
+-       ```
++       ```
+
+-       A CLI flag typed `Flag[Verbosity]` then reads `--verbosity very-loud`, and a JSON or
+-       TEL codec writes the case as `very-loud`.
++       Eine als `Flag[Verbosity]` typisierte CLI-Option liest dann `--verbosity very-loud`,
++       und ein JSON- oder TEL-Codec schreibt den Fall als `very-loud`.
+
+-       `pascalCaseIdentifiable` is the identity, for an enum whose cases are written as
+-       declared. The givens are in `gossamer.codec`, since `Identifiable` is distillate's.
++       `pascalCaseIdentifiable` ist die Identität, für ein Enum, dessen Fälle wie deklariert
++       geschrieben werden. Die Givens liegen in `gossamer.codec`, da `Identifiable` zu
++       distillate gehört.
+
+-   entry .kebabCaseIdentifiable   `VeryLoud` ↔ `very-loud`
++   entry .kebabCaseIdentifiable   `VeryLoud` ↔ `very-loud`
+
+-   entry .snakeCaseIdentifiable   `VeryLoud` ↔ `very_loud`
++   entry .snakeCaseIdentifiable   `VeryLoud` ↔ `very_loud`
+
+-   entry .camelCaseIdentifiable   `VeryLoud` ↔ `veryLoud`
++   entry .camelCaseIdentifiable   `VeryLoud` ↔ `veryLoud`
+
+-       Decoding treats `_` as a word boundary, as the snake-case given does, before
+-       recapitalising.
+-   entry .pascalCaseIdentifiable   `VeryLoud` ↔ `VeryLoud`: the case name as declared
++       Die Dekodierung behandelt `_` als Wortgrenze, wie es das Snake-Case-Given tut, bevor
++       sie die Großschreibung wiederherstellt.
++   entry .pascalCaseIdentifiable   `VeryLoud` ↔ `VeryLoud`: der Fallname wie deklariert
+
+- entry .Lexicon   a BK-tree over a vocabulary: finds every term within a given distance of a query
++ entry .Lexicon   ein BK-Baum über einem Vokabular: findet jeden Begriff innerhalb eines gegebenen Abstands von einer Abfrage
+
+= entry .Lexicon   a BK-tree over a vocabulary: finds every term within a given distance of a query
+-   detail
++   detail
+
+-       Comparing a query against every word in a vocabulary is quadratic, and a spelling
+-       suggestion needs it to be fast. A `Lexicon` indexes terms in a
+-       Burkhard–Keller tree under the `Proximity by Int` in scope, and uses the triangle
+-       inequality — which the measure must obey, so its `Triangulable` must be `true`, as
+-       `levenshteinProximity`'s is — to prune most of the vocabulary without measuring it.
++       Eine Abfrage mit jedem Wort eines Vokabulars zu vergleichen, ist quadratisch, und ein
++       Rechtschreibvorschlag muss schnell sein. Ein `Lexicon` indiziert Begriffe in einem
++       Burkhard–Keller-Baum unter dem `Proximity by Int` im Geltungsbereich und nutzt die
++       Dreiecksungleichung – die das Maß erfüllen muss, sein `Triangulable` muss also `true`
++       sein, wie das von `levenshteinProximity` –, um den Großteil des Vokabulars zu
++       beschneiden, ohne es zu messen.
+
+=       `levenshteinProximity`'s is — to prune most of the vocabulary without measuring it.
+=
+-       ```scala
++       ```scala
+
+=       `levenshteinProximity`'s is — to prune most of the vocabulary without measuring it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `levenshteinProximity`'s is — to prune most of the vocabulary without measuring it.
+=
+=       ```scala
+=       import soundness.*
+-       import proximities.levenshteinProximity
++       import proximities.levenshteinProximity
+
+=       import proximities.levenshteinProximity
+-       import caseSensitivity.caseSensitive
++       import caseSensitivity.caseSensitive
+
+-       val lexicon = Lexicon(List(t"book", t"boot", t"cook", t"look", t"bake"))
++       val lexicon = Lexicon(List(t"book", t"boot", t"cook", t"look", t"bake"))
+
+-       lexicon.search(t"book", 0)   // Set(t"book"): exact matches only
++       lexicon.search(t"book", 0)   // Set(t"book"): exact matches only
+
+-       lexicon.search(t"booq", 1)   // Set(t"book", t"boot"): within one edit
++       lexicon.search(t"booq", 1)   // Set(t"book", t"boot"): within one edit
+
+=       lexicon.search(t"booq", 1)   // Set(t"book", t"boot"): within one edit
+-       ```
++       ```
+
+-       A lexicon may map each term to a value (`Lexicon(Map(t"colour" -> Colour.Blue))`),
+-       in which case a search returns the values. It is mutable: `#update` adds a term,
+-       `lexicon(t"term") = value`, and the structure is not safe to share between threads
+-       while being built.
++       Ein Lexikon kann jeden Begriff auf einen Wert abbilden
++       (`Lexicon(Map(t"colour" -> Colour.Blue))`); dann liefert eine Suche die Werte. Es ist
++       veränderlich: `#update` fügt einen Begriff hinzu, `lexicon(t"term") = value`, und die
++       Struktur darf während des Aufbaus nicht zwischen Threads geteilt werden.
+
+-   refer gossamer.Proximity
++   refer gossamer.Proximity
+
+=   refer gossamer.Proximity
+-   refer gossamer.proximities
++   refer gossamer.proximities
+
+-   entry .apply   a lexicon of a list of terms, of a map from terms to values, or an empty one
+-       `Lexicon(terms)` indexes each `Text` as both key and value; `Lexicon(map)` indexes
+-       the keys and returns the values from a search; and `Lexicon[element]()` is empty, to
+-       be filled with `#update`. The first two need a `Triangulable` measure; the empty form
+-       takes any `Proximity by Int`, and relies on the caller to have chosen a metric.
+-   entry .Node   one node of the tree: a term, its value, and children keyed by distance
++   entry .apply   ein Lexikon aus einer Liste von Begriffen, aus einer Map von Begriffen auf Werte, oder ein leeres
++       `Lexicon(terms)` indiziert jeden `Text` als Schlüssel und Wert zugleich; `Lexicon(map)`
++       indiziert die Schlüssel und liefert bei einer Suche die Werte; und `Lexicon[element]()`
++       ist leer, um mit `#update` gefüllt zu werden. Die ersten beiden brauchen ein
++       `Triangulable`-Maß; die leere Form nimmt jedes `Proximity by Int` und verlässt sich
++       darauf, dass der Aufrufer eine Metrik gewählt hat.
++   entry .Node   ein Knoten des Baums: ein Begriff, sein Wert und nach Abstand geschlüsselte Kinder
+
+=   entry .Node   one node of the tree: a term, its value, and children keyed by distance
+-     detail
++     detail
+
+-         The implementation of a non-empty lexicon. Each child subtree is keyed by its root's
+-         distance from this node's term, which is what lets a search skip every subtree whose
+-         key is further than the radius from the query's distance.
+-     entry #children   the child subtrees, keyed by their distance from this node's term
+-     entry #update   adds a term to the subtree at its distance, creating one if needed
+-     entry #search   the values within `radius` of the query, in this subtree
+-   entry #update   adds a term with a value: `lexicon(key) = value`
+-   entry #search   the values of every term within `radius` of the query
+-       Radius zero is an exact lookup; each wider radius admits more distant candidates,
+-       which is how a "did you mean" suggestion is produced from a large word list.
++         Die Implementierung eines nicht leeren Lexikons. Jeder Kindteilbaum ist nach dem
++         Abstand seiner Wurzel vom Begriff dieses Knotens geschlüsselt, was es einer Suche
++         erlaubt, jeden Teilbaum zu überspringen, dessen Schlüssel weiter als der Radius vom
++         Abstand der Abfrage entfernt ist.
++     entry #children   die Kindteilbäume, nach ihrem Abstand vom Begriff dieses Knotens geschlüsselt
++     entry #update   fügt einen Begriff dem Teilbaum bei seinem Abstand hinzu und erzeugt ihn bei Bedarf
++     entry #search   die Werte innerhalb von `radius` um die Abfrage, in diesem Teilbaum
++   entry #update   fügt einen Begriff mit einem Wert hinzu: `lexicon(key) = value`
++   entry #search   die Werte jedes Begriffs innerhalb von `radius` um die Abfrage
++       Radius null ist ein exakter Nachschlag; jeder größere Radius lässt entferntere
++       Kandidaten zu, und so entsteht aus einer großen Wortliste ein „Meinten Sie“-Vorschlag.
+
+- entry .Dictionary   a dense trie from `Text` keys to values, for exact and prefix lookup
++ entry .Dictionary   ein dichter Trie von `Text`-Schlüsseln auf Werte, für exaktes und Präfix-Nachschlagen
+
+= entry .Dictionary   a dense trie from `Text` keys to values, for exact and prefix lookup
+-   detail
++   detail
+
+-       A `Dictionary[value]` maps text to values through a trie laid out in flat arrays:
+-       each node owns a block of `alphabet.size` slots in `#children`, so a lookup costs one
+-       array read per character of the key, and no hashing of the whole key. It suits
+-       hyphenation tables, HTML attribute names, keyword sets and any other fixed vocabulary
+-       which is looked up constantly.
++       Ein `Dictionary[value]` bildet Text über einen in flachen Arrays angelegten Trie auf
++       Werte ab: Jeder Knoten besitzt einen Block von `alphabet.size` Slots in `#children`,
++       sodass ein Nachschlag einen Array-Lesezugriff pro Zeichen des Schlüssels kostet und
++       kein Hashen des ganzen Schlüssels. Er eignet sich für Silbentrennungstabellen,
++       HTML-Attributnamen, Schlüsselwortmengen und jedes andere feste Vokabular, in dem
++       ständig nachgeschlagen wird.
+
+=       which is looked up constantly.
+=
+-       ```scala
++       ```scala
+
+=       which is looked up constantly.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
++       val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
+
+-       dictionary(t"color")    // 0
++       dictionary(t"color")    // 0
+
+-       dictionary(t"colo")     // Unset
++       dictionary(t"colo")     // Unset
+
+-       dictionary.size         // 2
++       dictionary.size         // 2
+
+=       dictionary.size         // 2
+-       ```
++       ```
+
+-       The alphabet — the characters keys may contain, each given a slot — is derived from
+-       the keys by `.apply` and `.empty`, or given to `.withAlphabet` and `.aho`; a key with a
+-       character outside the alphabet is silently dropped. `.aho` additionally builds the
+-       failure links of an Aho–Corasick automaton, so one pass over an input finds every key
+-       which ends at each position, through `#step`, `#fail` and `#dictLink`.
++       Das Alphabet – die Zeichen, die Schlüssel enthalten dürfen, jedes mit einem Slot – wird
++       von `.apply` und `.empty` aus den Schlüsseln abgeleitet oder an `.withAlphabet` und
++       `.aho` übergeben; ein Schlüssel mit einem Zeichen außerhalb des Alphabets wird
++       stillschweigend verworfen. `.aho` baut zusätzlich die Failure-Links eines
++       Aho–Corasick-Automaten, sodass ein Durchlauf über eine Eingabe über `#step`, `#fail`
++       und `#dictLink` jeden Schlüssel findet, der an jeder Position endet.
+
+-       A dictionary is immutable once built, and its arrays are frozen, so it may be shared
+-       freely; `#add`, `#+` and `#++` rebuild a new one with a widened value type. The value
+-       type should be a reference type, since values are stored boxed in an `AnyRef` array.
++       Ein Dictionary ist nach dem Aufbau unveränderlich, und seine Arrays sind eingefroren,
++       daher darf es frei geteilt werden; `#add`, `#+` und `#++` bauen ein neues mit einem
++       erweiterten Werttyp. Der Werttyp sollte ein Referenztyp sein, da Werte geboxt in einem
++       `AnyRef`-Array gespeichert werden.
+
+=       type should be a reference type, since values are stored boxed in an `AnyRef` array.
+-   refer gossamer.Lexicon
++   refer gossamer.Lexicon
+
+-   entry .Alphabet   the characters a dictionary's keys may use, each mapped to a dense slot
++   entry .Alphabet   die Zeichen, die die Schlüssel eines Dictionarys verwenden dürfen, jedes auf einen dichten Slot abgebildet
+
+=   entry .Alphabet   the characters a dictionary's keys may use, each mapped to a dense slot
+-     detail
++     detail
+
+-         A fixed mapping from `Char` to a slot in `[0, size)`, with `-1` for a character
+-         outside it. `Alphabet.of(t"abc…")` numbers the characters of a string in order; the
+-         default builders derive one from the keys automatically, so most callers never make
+-         one. Only characters below 128 can be in an alphabet. An alphabet is pure and may be
+-         shared by every dictionary built over it.
+-     entry .of   an alphabet of the characters of a string, in that order; ASCII only
+-     entry .empty   the alphabet with no characters, used by the empty dictionary
+-     entry #slot   the slot of a character, or `-1` if it is not in the alphabet
+-     entry #char   the character at a slot
+-     entry #size   the number of characters, and so the width of each node's block of children
+-   entry .empty   the dictionary with no entries
+-       Its alphabet is empty; `+` and `++` rebuild it with an alphabet derived from the keys.
+-   entry .apply   a dictionary of `(key -> value)` pairs, with the alphabet derived from the keys
+-       The alphabet's slots follow the order the characters are first seen in, so it is
+-       stable for the same input.
+-   entry .withAlphabet   a dictionary of pairs over a given alphabet
+-       A key with a character outside the alphabet is dropped.
+-   entry .aho   a dictionary of pairs over an alphabet, with Aho–Corasick failure and dictionary-suffix links
+-       Fills `#depth`, `#fail` and `#dictLink`, which the plain builders leave empty, so that
+-       a walk over an input with `#step` can follow a failure link on a mismatch and report
+-       every key ending at the current position through `#dictLink`.
+-   entry #children   the child-node table: `children(node * alphabet.size + slot)` is the child, or `-1`
+-   entry #values   the value at each node, or `null` where no key ends; typed `AnyRef` because arrays are invariant
+-       Read a typed value with `#value(node)` instead.
+-   entry #depth   each node's depth, for an Aho–Corasick dictionary; empty otherwise
+-   entry #fail   each node's failure link, for an Aho–Corasick dictionary; empty otherwise
+-   entry #dictLink   each node's nearest ancestor on the failure chain which holds a value; empty unless built with `aho`
+-   entry #alphabet   the alphabet the keys are encoded in
+-   entry #root   the root node's id, `0`
+-   entry #step   the node reached from a node by one character, or `-1` if no key continues that way
+-       The primitive of every lookup: start at `#root` and step once per character.
+-   entry #value   the value at a node, or `null` where no key ends there
+-   entry #apply   the value for a key, or `Unset`; also a lookup of a slice of a character buffer
+-       `dictionary(t"key")` is the exact-key form. `dictionary(buffer, offset, length)` looks
+-       up the characters of a mutable `Array[Char]` slice without allocating a `Text`, for a
+-       parser which already holds a buffer.
+-   entry #size   the number of keys stored
+-   entry #iterator   the stored values, as an `Iterable`
+-   entry #entries   every `(key, value)` pair, in alphabet order
+-   entry #add   a new dictionary with one more entry, as `#+` with the key and value separate
+-   entry #+   a new dictionary with an entry added, rebuilt with an alphabet covering both
+-       `dictionary + (t"key" -> value)`. The value type widens to a common supertype.
+-   entry #++   a new dictionary with several entries added
++         Eine feste Abbildung von `Char` auf einen Slot in `[0, size)`, mit `-1` für ein
++         Zeichen außerhalb. `Alphabet.of(t"abc…")` nummeriert die Zeichen eines Strings der
++         Reihe nach; die Standard-Builder leiten eines automatisch aus den Schlüsseln ab, sodass
++         die meisten Aufrufer nie eines erzeugen. Nur Zeichen unter 128 können in einem Alphabet
++         sein. Ein Alphabet ist rein und darf von jedem darüber gebauten Dictionary geteilt
++         werden.
++     entry .of   ein Alphabet aus den Zeichen eines Strings, in dieser Reihenfolge; nur ASCII
++     entry .empty   das Alphabet ohne Zeichen, verwendet vom leeren Dictionary
++     entry #slot   der Slot eines Zeichens, oder `-1`, wenn es nicht im Alphabet ist
++     entry #char   das Zeichen an einem Slot
++     entry #size   die Anzahl der Zeichen und damit die Breite des Kinderblocks jedes Knotens
++   entry .empty   das Dictionary ohne Einträge
++       Sein Alphabet ist leer; `+` und `++` bauen es mit einem aus den Schlüsseln abgeleiteten
++       Alphabet neu.
++   entry .apply   ein Dictionary aus `(key -> value)`-Paaren, mit aus den Schlüsseln abgeleitetem Alphabet
++       Die Slots des Alphabets folgen der Reihenfolge, in der die Zeichen zuerst auftreten,
++       daher ist es für dieselbe Eingabe stabil.
++   entry .withAlphabet   ein Dictionary aus Paaren über einem gegebenen Alphabet
++       Ein Schlüssel mit einem Zeichen außerhalb des Alphabets wird verworfen.
++   entry .aho   ein Dictionary aus Paaren über einem Alphabet, mit Aho–Corasick-Failure- und Dictionary-Suffix-Links
++       Füllt `#depth`, `#fail` und `#dictLink`, die die schlichten Builder leer lassen, sodass
++       ein Durchlauf über eine Eingabe mit `#step` bei einer Nichtübereinstimmung einem
++       Failure-Link folgen und über `#dictLink` jeden Schlüssel melden kann, der an der
++       aktuellen Position endet.
++   entry #children   die Tabelle der Kindknoten: `children(node * alphabet.size + slot)` ist das Kind, oder `-1`
++   entry #values   der Wert an jedem Knoten, oder `null`, wo kein Schlüssel endet; als `AnyRef` typisiert, weil Arrays invariant sind
++       Lesen Sie einen typisierten Wert stattdessen mit `#value(node)`.
++   entry #depth   die Tiefe jedes Knotens, bei einem Aho–Corasick-Dictionary; sonst leer
++   entry #fail   der Failure-Link jedes Knotens, bei einem Aho–Corasick-Dictionary; sonst leer
++   entry #dictLink   der nächste Vorfahre jedes Knotens auf der Failure-Kette, der einen Wert hält; leer, sofern nicht mit `aho` gebaut
++   entry #alphabet   das Alphabet, in dem die Schlüssel kodiert sind
++   entry #root   die Id des Wurzelknotens, `0`
++   entry #step   der Knoten, der von einem Knoten aus mit einem Zeichen erreicht wird, oder `-1`, wenn kein Schlüssel so weitergeht
++       Das Primitiv jedes Nachschlagens: bei `#root` beginnen und pro Zeichen einen Schritt
++       gehen.
++   entry #value   der Wert an einem Knoten, oder `null`, wo dort kein Schlüssel endet
++   entry #apply   der Wert für einen Schlüssel, oder `Unset`; auch ein Nachschlag eines Ausschnitts eines Zeichenpuffers
++       `dictionary(t"key")` ist die Form mit exaktem Schlüssel. `dictionary(buffer, offset,
++       length)` schlägt die Zeichen eines Ausschnitts eines veränderlichen `Array[Char]` nach,
++       ohne einen `Text` zu allozieren, für einen Parser, der bereits einen Puffer hält.
++   entry #size   die Anzahl der gespeicherten Schlüssel
++   entry #iterator   die gespeicherten Werte, als `Iterable`
++   entry #entries   jedes `(key, value)`-Paar, in Alphabetreihenfolge
++   entry #add   ein neues Dictionary mit einem Eintrag mehr, wie `#+` mit getrenntem Schlüssel und Wert
++   entry #+   ein neues Dictionary mit einem hinzugefügten Eintrag, neu gebaut mit einem Alphabet, das beide abdeckt
++       `dictionary + (t"key" -> value)`. Der Werttyp erweitert sich zu einem gemeinsamen
++       Obertyp.
++   entry #++   ein neues Dictionary mit mehreren hinzugefügten Einträgen
+
+- entry .internal   the macro implementations behind `t"…"`, `txt"…"`, `a"…"`, `extract` and `fuzzy`, and the opaque types' home
++ entry .internal   die Makroimplementierungen hinter `t"…"`, `txt"…"`, `a"…"`, `extract` und `fuzzy` sowie die Heimat der opaken Typen
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object exists so that the macros have a stable home and so
+-       that `Ascii` and `Grapheme` can be opaque. Both are exported from `.opaques` to the
+-       `gossamer` package.
+-   entry .t   the macro behind `t"…"`: escape-processes the parts, renders substitutions through `Showable`
+-   entry .txt   the macro behind `txt"…"`: as `.t`, then folds whitespace runs and blank lines
+-   entry .ascii   the macro behind `a"…"`: checks each literal character is ASCII, reporting at its position
+-   entry .extractMacro   the macro behind `extract`: decomposes the cases and scans the text with a `Scanner`
+-   entry .fuzzyMacro   the macro behind `fuzzy`: collects the literal patterns and picks the nearest at runtime
+-   entry .opaques   the declarations of the opaque types `Ascii` and `Grapheme`
++       Nicht zur direkten Verwendung: Das Objekt existiert, damit die Makros eine stabile
++       Heimat haben und damit `Ascii` und `Grapheme` opak sein können. Beide werden aus
++       `.opaques` in das Paket `gossamer` exportiert.
++   entry .t   das Makro hinter `t"…"`: verarbeitet die Escapes der Teile, stellt Ersetzungen über `Showable` dar
++   entry .txt   das Makro hinter `txt"…"`: wie `.t`, faltet dann Leerraumfolgen und Leerzeilen
++   entry .ascii   das Makro hinter `a"…"`: prüft, dass jedes literale Zeichen ASCII ist, und meldet an seiner Position
++   entry .extractMacro   das Makro hinter `extract`: zerlegt die Fälle und durchsucht den Text mit einem `Scanner`
++   entry .fuzzyMacro   das Makro hinter `fuzzy`: sammelt die literalen Patterns und wählt zur Laufzeit das nächste
++   entry .opaques   die Deklarationen der opaken Typen `Ascii` und `Grapheme`
+
+=   entry .opaques   the declarations of the opaque types `Ascii` and `Grapheme`
+-     detail
++     detail
+
+-         The types' pages under the `gossamer` package have the full account; their
+-         companions' members are documented here, where they are declared.
+-     entry .Ascii   a byte string of ASCII characters; see `gossamer.Ascii`
++         Die Seiten der Typen unter dem Paket `gossamer` enthalten die vollständige
++         Darstellung; die Member ihrer Begleitobjekte sind hier dokumentiert, wo sie deklariert
++         sind.
++     entry .Ascii   ein Byte-String aus ASCII-Zeichen; siehe `gossamer.Ascii`
+
+=     entry .Ascii   a byte string of ASCII characters; see `gossamer.Ascii`
+-       detail
++       detail
+
+-           The companion of the opaque type `Ascii`, exported with it to the `gossamer` package.
+-       entry .apply   wraps a `Data` as `Ascii`, without checking its bytes
+-       entry .showable   shows an `Ascii` as the text its bytes encode
+-       entry .inspectable   inspects an `Ascii` as `ascii"…"`, with the characters escaped as a text literal's
+-       entry .concatenable   `left + right` on `Ascii` values
+-       entry .bytes   the underlying bytes, as `Data`
+-       entry .textual   the `Textual` instance for `Ascii`, with `Byte` elements
+-           `apply(text)` encodes text in the system codepage, `segment` and `concat` copy bytes,
+-           and the builder is an `AsciiBuilder`.
+-     entry .Grapheme   one grapheme cluster; see `gossamer.Grapheme`
++           Das Begleitobjekt des opaken Typs `Ascii`, mit ihm in das Paket `gossamer` exportiert.
++       entry .apply   umhüllt ein `Data` als `Ascii`, ohne seine Bytes zu prüfen
++       entry .showable   zeigt ein `Ascii` als den Text, den seine Bytes kodieren
++       entry .inspectable   inspiziert ein `Ascii` als `ascii"…"`, mit den Zeichen maskiert wie in einem Textliteral
++       entry .concatenable   `left + right` auf `Ascii`-Werten
++       entry .bytes   die zugrunde liegenden Bytes, als `Data`
++       entry .textual   die `Textual`-Instanz für `Ascii`, mit `Byte`-Elementen
++           `apply(text)` kodiert Text in der Codepage des Systems, `segment` und `concat`
++           kopieren Bytes, und der Builder ist ein `AsciiBuilder`.
++     entry .Grapheme   ein Graphem-Cluster; siehe `gossamer.Grapheme`
+
+=     entry .Grapheme   one grapheme cluster; see `gossamer.Grapheme`
+-       detail
++       detail
+
+-           The companion of the opaque type `Grapheme`, exported with it to the `gossamer` package.
+-       entry .apply   a grapheme from the string of its code points; no check is made that it is one cluster
+-       entry .showable   shows a grapheme as its text
+-       entry .inspectable   inspects a grapheme as `‹…›`, the cluster unescaped
+-       entry .measurable   the display width of a grapheme: the widest of its code points
+-           Needs a `Char is Measurable` in scope (a `textMetrics` given). The maximum rather than
+-           the sum, so a base with combining marks is as wide as its base, and a flag pair or a
+-           ZWJ family is one wide cell.
+-       entry .text   the grapheme's code points as a `Text`
+-       entry .chars   the number of UTF-16 code units in the grapheme
++           Das Begleitobjekt des opaken Typs `Grapheme`, mit ihm in das Paket `gossamer`
++           exportiert.
++       entry .apply   ein Graphem aus dem String seiner Codepoints; es wird nicht geprüft, ob es ein einzelner Cluster ist
++       entry .showable   zeigt ein Graphem als seinen Text
++       entry .inspectable   inspiziert ein Graphem als `‹…›`, den Cluster unmaskiert
++       entry .measurable   die Anzeigebreite eines Graphems: der breiteste seiner Codepoints
++           Braucht ein `Char is Measurable` im Geltungsbereich (ein `textMetrics`-Given). Das
++           Maximum statt der Summe, sodass eine Basis mit kombinierenden Zeichen so breit ist
++           wie ihre Basis, und ein Flaggenpaar oder eine ZWJ-Familie ist eine breite Zelle.
++       entry .text   die Codepoints des Graphems als `Text`
++       entry .chars   die Anzahl der UTF-16-Codeeinheiten im Graphem

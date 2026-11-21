@@ -1,0 +1,33 @@
+orthant 1 language
+
+- The keystone item: `doc/work/migration.md` defines the agent-executable
+- migration-instruction format — what changed, how to detect affected code, the exact rewrite,
+- and how to verify it — and CI enforces that breaking-labelled pull requests carry instructions
+- in that format. Several tracks terminate here: it is what `api-6` flows through and what
+- `tool-5` serves to agents.
++ Der Schlussstein-Punkt: `doc/work/migration.md` definiert das von Agenten ausführbare Format für
++ Migrationsanweisungen — was sich geändert hat, wie betroffener Code zu erkennen ist, die genaue
++ Umschreibung und wie sie zu überprüfen ist —, und die CI erzwingt, dass als inkompatibel
++ gekennzeichnete Pull Requests Anweisungen in diesem Format tragen. Mehrere Spuren enden hier: Durch
++ diesen Punkt fließt `api-6`, und ihn stellt `tool-5` Agenten bereit.
+
+- Done when: `doc/work/migration.md` defines the convention, the release refuses to run without
+- `doc/work/migration/<version>.md`, and a CI check fails any pull request that changes `lib/**/src`
+- without touching the unreleased migration notes. The first two hold: the convention is
+- written, `0.65.0.md` onwards exist, and the `migration` directive in `etc/release` refuses a tag
+- while the version's notes are missing or another version's are unreleased. The pull-request
+- check is what remains: `main.yml` verifies the attestation and nothing else. The convention is
+- not label-based: every material change records itself in the next release's
+- `doc/work/migration/<version>.md`, named after that release from the start.
++ Erledigt, wenn: `doc/work/migration.md` die Konvention definiert, das Release sich weigert, ohne
++ `doc/work/migration/<version>.md` zu laufen, und eine CI-Prüfung jeden Pull Request scheitern lässt, der
++ `lib/**/src` ändert, ohne die unveröffentlichten Migrationshinweise anzufassen. Die ersten beiden
++ gelten: Die Konvention ist geschrieben, `0.65.0.md` und folgende existieren, und die Direktive
++ `migration` in `etc/release` verweigert ein Tag, solange die Hinweise der Version fehlen oder die
++ einer anderen Version unveröffentlicht sind. Was bleibt, ist die Prüfung der Pull Requests:
++ `main.yml` überprüft die Bestätigung und sonst nichts. Die Konvention beruht nicht auf Labels: Jede
++ wesentliche Änderung hält sich selbst in `doc/work/migration/<version>.md` des nächsten Releases fest,
++ das von Anfang an nach diesem Release benannt ist.
+
+-     git grep -c reliquary -- build.mill etc doc/work/soundness/modules | wc -l   # 0
++     git grep -c reliquary -- build.mill etc doc/work/soundness/modules | wc -l   # 0

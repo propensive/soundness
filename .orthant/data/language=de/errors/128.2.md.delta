@@ -1,0 +1,191 @@
+orthant 1 language
+
+- # `↯/s.128.2` — `XPath.Error`
++ # `↯/s.128.2` — `XPath.Error`
+
+- Raised when an XPath expression that parsed cannot be evaluated.
++ Wird ausgelöst, wenn ein geparster XPath-Ausdruck nicht ausgewertet werden kann.
+
+- ## Cause
++ ## Ursache
+
+- Parsing an XPath establishes only that it is well-formed. Evaluation can
+- still fail: the expression may name a function that XPath 1.0 does not
+- define, apply one to the wrong number of arguments, reference an unbound
+- variable, or produce a value where a node-set was required.
++ Das Parsen eines XPath stellt nur fest, dass er wohlgeformt ist. Die Auswertung kann dennoch
++ fehlschlagen: Der Ausdruck kann eine Funktion nennen, die XPath 1.0 nicht definiert, eine
++ Funktion auf die falsche Anzahl von Argumenten anwenden, eine ungebundene Variable referenzieren
++ oder einen Wert liefern, wo eine Knotenmenge verlangt war.
+
+- This is deliberately distinct from `↯/s.60.2` (`Parse.Error` over the `XPath`
+- format), which reports an expression that is not well-formed at all.
++ Dies ist bewusst von `↯/s.60.2` (`Parse.Error` über dem Format `XPath`) getrennt, das einen
++ Ausdruck meldet, der überhaupt nicht wohlgeformt ist.
+
+- ## Variants
++ ## Varianten
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
+- column  Meaning
+- column  Message
+- column  Resolution
++ column  Grund
++ column  Bedeutung
++ column  Meldung
++ column  Behebung
+
+= column  Resolution
+- row
++ row
+
+-   cell  `↯/s.128.2.1`
++   cell  `↯/s.128.2.1`
+
+-   cell  `UnknownFunction`
++   cell  `UnknownFunction`
+
+=   cell  `UnknownFunction`
+-   cell
++   cell
+
+-   cell  `[↯/s.128.2.1] the XPath could not be evaluated because the function soliloquy is not an XPath 1.0 core function`
++   cell  `[↯/s.128.2.1] the XPath could not be evaluated because the function soliloquy is not an XPath 1.0 core function`
+
+-   cell  Use one of the core functions defined by XPath 1.0 §4.
++   cell  Verwenden Sie eine der Kernfunktionen, die XPath 1.0 §4 definiert.
+
+=   cell  Use one of the core functions defined by XPath 1.0 §4.
+- row
++ row
+
+-   cell  `↯/s.128.2.2`
++   cell  `↯/s.128.2.2`
+
+-   cell  `BadArity`
++   cell  `BadArity`
+
+-   cell  The function exists but was applied to the wrong number of arguments.
++   cell  Die Funktion existiert, wurde aber auf die falsche Anzahl von Argumenten angewendet.
+
+=   cell  The function exists but was applied to the wrong number of arguments.
+-   cell
++   cell
+
+=   cell  The function exists but was applied to the wrong number of arguments.
+=   cell
+-   cell
++   cell
+
+=   cell  The function exists but was applied to the wrong number of arguments.
+=   cell
+=   cell
+- row
++ row
+
+-   cell  `↯/s.128.2.3`
++   cell  `↯/s.128.2.3`
+
+-   cell  `UnboundVariable`
++   cell  `UnboundVariable`
+
+-   cell  A `$name` reference has no binding in the evaluation context.
++   cell  Eine `$name`-Referenz hat im Auswertungskontext keine Bindung.
+
+=   cell  A `$name` reference has no binding in the evaluation context.
+-   cell
++   cell
+
+=   cell  A `$name` reference has no binding in the evaluation context.
+=   cell
+-   cell
++   cell
+
+=   cell  A `$name` reference has no binding in the evaluation context.
+=   cell
+=   cell
+- row
++ row
+
+-   cell  `↯/s.128.2.4`
++   cell  `↯/s.128.2.4`
+
+-   cell  `NotNodeSet`
++   cell  `NotNodeSet`
+
+-   cell  The expression produced a string, number or boolean where a node-set was required — for example as the operand of a path step.
++   cell  Der Ausdruck lieferte einen String, eine Zahl oder einen Boolean, wo eine Knotenmenge verlangt war, etwa als Operand eines Pfadschritts.
+
+=   cell  The expression produced a string, number or boolean where a node-set was required — for example as the operand of a path step.
+-   cell
++   cell
+
+=   cell  The expression produced a string, number or boolean where a node-set was required — for example as the operand of a path step.
+=   cell
+-   cell
++   cell
+
+=   cell  The expression produced a string, number or boolean where a node-set was required — for example as the operand of a path step.
+=   cell
+=   cell
+- row
++ row
+
+-   cell  `↯/s.128.2.5`
++   cell  `↯/s.128.2.5`
+
+-   cell  `Unsupported`
++   cell  `Unsupported`
+
+-   cell  The expression uses a feature this implementation does not provide.
++   cell  Der Ausdruck verwendet ein Merkmal, das diese Implementierung nicht bietet.
+
+=   cell  The expression uses a feature this implementation does not provide.
+-   cell
++   cell
+
+=   cell  The expression uses a feature this implementation does not provide.
+=   cell
+-   cell
++   cell
+
+=   cell  The expression uses a feature this implementation does not provide.
+=   cell
+=   cell
+- row
++ row
+
+-   cell  `↯/s.128.2.6`
++   cell  `↯/s.128.2.6`
+
+-   cell  `Unresolved`
++   cell  `Unresolved`
+
+-   cell  An interpolated `xp"…"` substitution was never resolved.
++   cell  Eine interpolierte `xp"…"`-Einsetzung wurde nie aufgelöst.
+
+=   cell  An interpolated `xp"…"` substitution was never resolved.
+-   cell
++   cell
+
+=   cell  An interpolated `xp"…"` substitution was never resolved.
+=   cell
+-   cell
++   cell
+
+- ```
++ ```
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/xylophone/src/core/xylophone.XPath.scala`
+- - Related: `↯/s.60.2` (`Parse.Error`) for a malformed expression
++ - Quelle: `lib/xylophone/src/core/xylophone.XPath.scala`
++ - Verwandte Themen: `↯/s.60.2` (`Parse.Error`) für einen fehlerhaften Ausdruck

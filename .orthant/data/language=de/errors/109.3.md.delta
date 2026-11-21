@@ -1,0 +1,65 @@
+orthant 1 language
+
+- # `↯/s.109.3` — `Install.Error`
++ # `↯/s.109.3` — `Install.Error`
+
+- Raised when Exoskeleton cannot install a command-line application.
++ Wird ausgelöst, wenn Exoskeleton eine Kommandozeilenanwendung nicht installieren kann.
+
+- ## Cause
++ ## Ursache
+
+- Exoskeleton's installer writes shell-completion and launcher files
+- into the user's environment. This error reports a failure either at
+- the discovery stage (working out where to write) or at the I/O stage
+- (actually writing). The message is `the installation failed because
++ Der Installer von Exoskeleton schreibt Dateien für die Shell-Vervollständigung und den Launcher
++ in die Umgebung des Benutzers. Dieser Fehler meldet einen Fehlschlag entweder in der
++ Ermittlungsphase (beim Bestimmen, wohin geschrieben wird) oder in der E/A-Phase (beim
++ eigentlichen Schreiben). Die Meldung ist `the installation failed because
+
+- $reason`.
++ $reason`.
+
+- ## Variants
++ ## Varianten
+
+- ### `↯/s.109.3.1` — `Environment`
++ ### `↯/s.109.3.1` — `Environment`
+
+- The installer could not gather enough information about the
+- environment — for example a required environment variable or shell
+- configuration file is missing.
++ Der Installer konnte nicht genug Informationen über die Umgebung sammeln — zum Beispiel fehlt
++ eine benötigte Umgebungsvariable oder Shell-Konfigurationsdatei.
+
+- **Example.** `[↯/s.109.3.1] the installation failed because it was not possible to get enough information about the install environment`
++ **Beispiel.** `[↯/s.109.3.1] the installation failed because it was not possible to get enough information about the install environment`
+
+- **Resolution.** Run the installer in an environment where the
+- expected variables and config files are available; consult the
+- documentation for the supported environments.
++ **Behebung.** Führen Sie den Installer in einer Umgebung aus, in der die erwarteten Variablen und
++ Konfigurationsdateien vorhanden sind; die unterstützten Umgebungen stehen in der Dokumentation.
+
+- ### `↯/s.109.3.2` — `Io`
++ ### `↯/s.109.3.2` — `Io`
+
+- An I/O error occurred while writing one of the installation files.
++ Beim Schreiben einer der Installationsdateien trat ein E/A-Fehler auf.
+
+- **Example.** `[↯/s.109.3.2] the installation failed because an I/O error occurred when trying to write an installation file`
++ **Beispiel.** `[↯/s.109.3.2] the installation failed because an I/O error occurred when trying to write an installation file`
+
+- **Resolution.** Check filesystem permissions and free space at the
+- target locations.
++ **Behebung.** Prüfen Sie die Zugriffsrechte im Dateisystem und den freien Speicherplatz an den
++ Zielorten.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/exoskeleton/src/core/exoskeleton.Install.scala`
+- - `↯/s.109.1` — tmux launcher cannot be executed
++ - Quelle: `lib/exoskeleton/src/core/exoskeleton.Install.scala`
++ - `↯/s.109.1` — der tmux-Launcher kann nicht ausgeführt werden

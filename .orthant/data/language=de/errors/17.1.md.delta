@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.17.1` — Type has no `flatMap` method
++ # `↯/s.17.1` — Typ hat keine `flatMap`-Methode
+
+- Raised at compile time by Mercator's `monad` macro when the target
+- type has no `flatMap` method.
++ Wird zur Kompilierzeit vom Makro `monad` von Mercator ausgelöst, wenn der Zieltyp
++ keine `flatMap`-Methode hat.
+
+- ## Cause
++ ## Ursache
+
+- Mercator's `Monad` derivation requires a `flatMap` on the type.
++ Die `Monad`-Ableitung von Mercator setzt ein `flatMap` auf dem Typ voraus.
+
+- ## Example message
++ ## Beispielmeldung
+
+=
+- ```
++ ```
+
+- [↯/s.17.1] the type Play has no flatMap methods
++ [↯/s.17.1] the type Play has no flatMap methods
+
+= [↯/s.17.1] the type Play has no flatMap methods
+- ```
++ ```
+
+- ## Resolution
++ ## Behebung
+
+- Define a `flatMap` on the type, or supply a `Monad` instance
+- manually.
++ Definieren Sie ein `flatMap` auf dem Typ, oder stellen Sie eine `Monad`-Instanz
++ von Hand bereit.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/mercator/src/core/mercator.internal.scala`
++ - Quelle: `lib/mercator/src/core/mercator.internal.scala`

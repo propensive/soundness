@@ -1,0 +1,65 @@
+orthant 1 language
+
+- # `↯/s.100.7` — `MacAddress.Error`
++ # `↯/s.100.7` — `MacAddress.Error`
+
+- Raised when a value cannot be parsed as a valid MAC address.
++ Wird ausgelöst, wenn ein Wert nicht als gültige MAC-Adresse geparst werden kann.
+
+- ## Cause
++ ## Ursache
+
+- Urticose expects MAC addresses as six colon-separated hexadecimal
+- groups of two digits, e.g. `01:23:45:67:89:ab`. The message is `the
++ Urticose erwartet MAC-Adressen als sechs durch Doppelpunkte getrennte hexadezimale Gruppen aus
++ je zwei Ziffern, z. B. `01:23:45:67:89:ab`. Die Meldung lautet `the
+
+- MAC address is not valid because $reason`.
++ MAC address is not valid because $reason`.
+
+- ## Variants
++ ## Varianten
+
+- ### `↯/s.100.7.1` — `WrongGroupCount`
++ ### `↯/s.100.7.1` — `WrongGroupCount`
+
+- The address does not have six colon-separated groups.
++ Die Adresse hat nicht sechs durch Doppelpunkte getrennte Gruppen.
+
+- **Example.** `[↯/s.100.7.1] the MAC address is not valid because there should be six colon-separated groups, but there were 5`
++ **Beispiel.** `[↯/s.100.7.1] the MAC address is not valid because there should be six colon-separated groups, but there were 5`
+
+- **Resolution.** Use exactly six groups joined by `:`.
++ **Behebung.** Genau sechs Gruppen verwenden, verbunden durch `:`.
+
+- ### `↯/s.100.7.2` — `WrongGroupLength`
++ ### `↯/s.100.7.2` — `WrongGroupLength`
+
+- A group is not exactly two hex digits long.
++ Eine Gruppe ist nicht genau zwei Hex-Ziffern lang.
+
+- **Example.** `[↯/s.100.7.2] the MAC address is not valid because group 3 should be two hex digits, but its length is 3`
++ **Beispiel.** `[↯/s.100.7.2] the MAC address is not valid because group 3 should be two hex digits, but its length is 3`
+
+- **Resolution.** Pad single-digit groups with a leading zero, or trim
+- extra digits.
++ **Behebung.** Einstellige Gruppen mit einer führenden Null auffüllen oder überzählige Ziffern
++ entfernen.
+
+- ### `↯/s.100.7.3` — `NotHex`
++ ### `↯/s.100.7.3` — `NotHex`
+
+- A group contains characters that are not hex digits.
++ Eine Gruppe enthält Zeichen, die keine Hex-Ziffern sind.
+
+- **Example.** `[↯/s.100.7.3] the MAC address is not valid because group 4 should be a two-digit hex number, but it is xy`
++ **Beispiel.** `[↯/s.100.7.3] the MAC address is not valid because group 4 should be a two-digit hex number, but it is xy`
+
+- **Resolution.** Use only `0`-`9` and `a`-`f`/`A`-`F`.
++ **Behebung.** Nur `0`-`9` und `a`-`f`/`A`-`F` verwenden.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/urticose/src/core/urticose.internal.scala`
++ - Quelle: `lib/urticose/src/core/urticose.internal.scala`

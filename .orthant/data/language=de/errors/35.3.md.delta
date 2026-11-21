@@ -1,0 +1,46 @@
+orthant 1 language
+
+- # `↯/s.35.3` — Unicode character does not exist
++ # `↯/s.35.3` — Unicode-Zeichen existiert nicht
+
+- Raised at compile time by Hieroglyph's `char"…"` macro when the
+- named Unicode character cannot be resolved.
++ Wird zur Kompilierzeit vom Makro `char"…"` von Hieroglyph ausgelöst, wenn sich das
++ benannte Unicode-Zeichen nicht auflösen lässt.
+
+- ## Cause
++ ## Ursache
+
+- The macro looks up the character by Unicode name. If no character
+- of that name exists, this halt fires.
++ Das Makro schlägt das Zeichen anhand seines Unicode-Namens nach. Gibt es kein Zeichen
++ mit diesem Namen, greift dieser Abbruch.
+
+- ## Example message
++ ## Beispielmeldung
+
+=
+- ```
++ ```
+
+- [↯/s.35.3] the unicode character LATIN SMALL LETTER YORICK does not exist
++ [↯/s.35.3] the unicode character LATIN SMALL LETTER YORICK does not exist
+
+= [↯/s.35.3] the unicode character LATIN SMALL LETTER YORICK does not exist
+- ```
++ ```
+
+- ## Resolution
++ ## Behebung
+
+- Use a Unicode name that exists; a list is available in the Unicode
++ Verwenden Sie einen existierenden Unicode-Namen; eine Liste findet sich in der Unicode
+
+- Character Database.
++ Character Database.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/hieroglyph/src/core/hieroglyph.internal.scala`
++ - Quelle: `lib/hieroglyph/src/core/hieroglyph.internal.scala`

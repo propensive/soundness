@@ -1,0 +1,1035 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base monotonous
++ base monotonous
+
+- import soundness
++ import soundness
+
+- info   base encodings of bytes as text: Base64, Base32, hexadecimal, octal, quaternary and binary
++ info   Basiskodierungen von Bytes als Text: Base64, Base32, hexadezimal, oktal, quaternär und binär
+
+- detail
++ detail
+
+-     _Monotonous_ serializes bytes to text, and deserializes text back to bytes, in the
+-     binary-to-text encodings: Base64, Base32, hexadecimal (`Hex`), `Octal`, `Quaternary` and
+-     `Binary`. The encoding is named as a type, and the exact character set — the `Alphabet` —
+-     is a given chosen by importing it by name from the `alphabets` package, so the standard and
+-     URL-safe forms of Base64 are a one-line difference.
++     _Monotonous_ serialisiert Bytes zu Text und deserialisiert Text zurück zu Bytes, in den
++     Binär-zu-Text-Kodierungen Base64, Base32, hexadezimal (`Hex`), `Octal`, `Quaternary` und
++     `Binary`. Die Kodierung wird als Typ benannt, und der genaue Zeichensatz — das `Alphabet` —
++     ist ein Given, das gewählt wird, indem man es namentlich aus dem Paket `alphabets`
++     importiert; die Standard- und die URL-sichere Form von Base64 unterscheiden sich also um
++     eine Zeile.
+
+=     URL-safe forms of Base64 are a one-line difference.
+=
+-     ```scala
++     ```scala
+
+=     URL-safe forms of Base64 are a one-line difference.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     URL-safe forms of Base64 are a one-line difference.
+=
+=     ```scala
+=     import soundness.*
+-     import alphabets.base64Standard
++     import alphabets.base64Standard
+
+-     import codepages.utf8Codepage
++     import codepages.utf8Codepage
+
+=     import codepages.utf8Codepage
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     val bytes: Data = t"Hello".in[Data]
++     val bytes: Data = t"Hello".in[Data]
+
+-     val text: Text = bytes.serialize[Base64]   // t"SGVsbG8="
++     val text: Text = bytes.serialize[Base64]   // t"SGVsbG8="
+
+-     val back: Data = text.deserialize[Base64]
++     val back: Data = text.deserialize[Base64]
+
+=     val back: Data = text.deserialize[Base64]
+-     ```
++     ```
+
+-     This is *serialization*, not encoding in the sense of JSON or XML: bytes become text with
+-     no regard for what the bytes mean, which is why the operations are `serialize` and
+-     `deserialize`. `serialize` takes any value which is `Encodable in Data`; `deserialize`
+-     validates every character against the alphabet and raises a `Serialization.Error` for one
+-     it does not contain, so it needs a `Tactic[Serialization.Error]`.
++     Dies ist *Serialisierung*, keine Kodierung im Sinne von JSON oder XML: Bytes werden zu Text,
++     ohne Rücksicht darauf, was die Bytes bedeuten, weshalb die Operationen `serialize` und
++     `deserialize` heißen. `serialize` nimmt jeden Wert, der `Encodable in Data` ist;
++     `deserialize` prüft jedes Zeichen gegen das Alphabet und löst für eines, das darin nicht
++     enthalten ist, einen `Serialization.Error` aus, braucht also eine
++     `Tactic[Serialization.Error]`.
+
+-     No alphabet is in scope by default: the `alphabets` package's givens must be imported by
+-     name, since `import alphabets.*` does not import givens, and `import alphabets.given`
+-     brings in every alphabet of each encoding at once, which is ambiguous. A *strict* alphabet
+-     reads back only its own characters, while a *tolerant* one also accepts recognised
+-     equivalents (the other case of hexadecimal, say), so the strictness of a decode is chosen
+-     by the import.
++     Standardmäßig ist kein Alphabet im Geltungsbereich: Die Givens des Pakets `alphabets` müssen
++     namentlich importiert werden, da `import alphabets.*` keine Givens importiert und
++     `import alphabets.given` alle Alphabete jeder Kodierung auf einmal hereinholt, was
++     mehrdeutig ist. Ein *striktes* Alphabet liest nur seine eigenen Zeichen zurück, während ein
++     *tolerantes* auch anerkannte Entsprechungen akzeptiert (etwa die jeweils andere
++     Schreibweise bei Hexadezimal); wie strikt eine Dekodierung ist, wird also durch den Import
++     gewählt.
+
+-     An `Alphabet` is also a stream stage: a `Stream[Data]` serializes as it flows, and a
+-     `Stream[Text]` deserializes, with the same results as the whole-value forms whatever the
+-     chunking.
++     Ein `Alphabet` ist auch eine Stream-Stufe: Ein `Stream[Data]` wird beim Durchfließen
++     serialisiert und ein `Stream[Text]` deserialisiert, mit denselben Ergebnissen wie die Formen
++     für ganze Werte, unabhängig von der Aufteilung in Chunks.
+
+-     The library is the single source set `monotonous.core`, which compiles for the JVM,
+-     Scala.js and Scala Native. Everything is exported to the `soundness` umbrella, and its
+-     `alphabets` package merges with the umbrella's own.
++     Die Bibliothek ist das einzige Source-Set `monotonous.core`, das für die JVM, Scala.js und
++     Scala Native kompiliert. Alles wird in den `soundness`-Umbrella exportiert, und ihr Paket
++     `alphabets` verschmilzt mit dem des Umbrella.
+
+- refer monotonous.serialize
++ refer monotonous.serialize
+
+- refer monotonous.deserialize
++ refer monotonous.deserialize
+
+- refer monotonous.Alphabet
++ refer monotonous.Alphabet
+
+- refer monotonous.alphabets
++ refer monotonous.alphabets
+
+- entry .serialize   renders bytes, or a stream of bytes, as text in a base encoding
+-     `value.serialize[Base64]` takes any value which is `Encodable in Data` — `Data` itself, or
+-     any type with an instance — and renders its bytes with the `Serializable in Base64` given,
+-     which draws its characters from the `Alphabet[Base64]` in scope. The encoding is the type
+-     argument: `Base64`, `Base32`, `Hex`, `Octal`, `Quaternary` or `Binary`.
++ entry .serialize   stellt Bytes oder einen Stream von Bytes als Text in einer Basiskodierung dar
++     `value.serialize[Base64]` nimmt jeden Wert, der `Encodable in Data` ist — `Data` selbst
++     oder jeden Typ mit einer Instanz —, und stellt seine Bytes mit dem Given
++     `Serializable in Base64` dar, das seine Zeichen aus dem `Alphabet[Base64]` im
++     Geltungsbereich bezieht. Die Kodierung ist das Typargument: `Base64`, `Base32`, `Hex`,
++     `Octal`, `Quaternary` oder `Binary`.
+
+=     argument: `Base64`, `Base32`, `Hex`, `Octal`, `Quaternary` or `Binary`.
+=
+-     ```scala fuel
++     ```scala fuel
+
+-     alternative Base64
++     alternative Base64
+
+=     alternative Base64
+-       code
++       code
+
+=     alternative Base64
+=       code
+-           locally:
++           locally:
+
+-             import alphabets.base64Standard
++             import alphabets.base64Standard
+
+-             Data(-5, -1).serialize[Base64]   // t"+/8="
++             Data(-5, -1).serialize[Base64]   // t"+/8="
+
+-     alternative URL-safe Base64
++     alternative URL-safe Base64
+
+=     alternative URL-safe Base64
+-       code
++       code
+
+=     alternative URL-safe Base64
+=       code
+-           locally:
++           locally:
+
+-             import alphabets.base64Url
++             import alphabets.base64Url
+
+-             Data(-5, -1).serialize[Base64]   // t"-_8"
++             Data(-5, -1).serialize[Base64]   // t"-_8"
+
+-     alternative Hex
++     alternative Hex
+
+=     alternative Hex
+-       code
++       code
+
+=     alternative Hex
+=       code
+-           locally:
++           locally:
+
+=     alternative Hex
+=       code
+=           locally:
+-             import alphabets.hexLowerCase
++             import alphabets.hexLowerCase
+
+-             Data(-5, -1).serialize[Hex]      // t"fbff"
++             Data(-5, -1).serialize[Hex]      // t"fbff"
+
+-     alternative Binary
++     alternative Binary
+
+=     alternative Binary
+-       code
++       code
+
+=     alternative Binary
+=       code
+-           locally:
++           locally:
+
+-             import alphabets.binaryStandard
++             import alphabets.binaryStandard
+
+-             Data(-5, -1).serialize[Binary]   // t"1111101111111111"
++             Data(-5, -1).serialize[Binary]   // t"1111101111111111"
+
+=             Data(-5, -1).serialize[Binary]   // t"1111101111111111"
+-     ##
++     ##
+
+=             Data(-5, -1).serialize[Binary]   // t"1111101111111111"
+=     ##
+-     ```
++     ```
+
+-     The URL-safe Base64 alphabet writes `-` and `_` for `+` and `/`. An alphabet with padding
+-     pads the output to a whole group (four characters for Base64, eight for Base32), as the
+-     standard Base64 alphabet does with `=`; one without, such as the URL-safe one, stops at
+-     the last character that carries data.
++     Das URL-sichere Base64-Alphabet schreibt `-` und `_` statt `+` und `/`. Ein Alphabet mit
++     Auffüllung füllt die Ausgabe auf eine ganze Gruppe auf (vier Zeichen bei Base64, acht bei
++     Base32), wie es das Standard-Base64-Alphabet mit `=` tut; eines ohne, etwa das URL-sichere,
++     endet beim letzten Zeichen, das Daten trägt.
+
+-     The same name is an extension on a `Stream[Data] over Credit`, which serializes the stream
+-     as it flows into a `Stream[Text] over Credit`, using the `Alphabet` in scope as a stream
+-     stage and a `Buffering` (there is a standard one in its companion). Groups which straddle
+-     two chunks are carried across, so the streamed text equals the whole-value form.
++     Derselbe Name ist eine Erweiterung auf einem `Stream[Data] over Credit`, die den Stream
++     beim Durchfließen in einen `Stream[Text] over Credit` serialisiert, mit dem `Alphabet` im
++     Geltungsbereich als Stream-Stufe und einem `Buffering` (in seinem Begleitobjekt gibt es ein
++     Standard-`Buffering`). Gruppen, die zwei Chunks überspannen, werden übertragen, sodass der
++     gestreamte Text der Form für ganze Werte gleicht.
+
+- entry .deserialize   reads text, or a stream of text, back to bytes in a base encoding
+-     `text.deserialize[Base64]` reads `Text` back to `Data` with the `Deserializable in Base64`
+-     given, which draws on the `Alphabet[Base64]` in scope. Each character is checked against
+-     the alphabet, including its tolerated alternatives, and the first which is not in it is
+-     raised as a `Serialization.Error` with its position; trailing padding is ignored. It needs
+-     a `Tactic[Serialization.Error]`. A tolerant alphabet accepts either case, and a strict one
+-     only its own characters:
++ entry .deserialize   liest Text oder einen Stream von Text in einer Basiskodierung zurück zu Bytes
++     `text.deserialize[Base64]` liest `Text` mit dem Given `Deserializable in Base64` zurück zu
++     `Data`, das auf das `Alphabet[Base64]` im Geltungsbereich zurückgreift. Jedes Zeichen wird
++     gegen das Alphabet geprüft, einschließlich seiner tolerierten Alternativen, und das erste,
++     das nicht darin enthalten ist, wird als `Serialization.Error` mit seiner Position
++     ausgelöst; nachgestellte Auffüllung wird ignoriert. Es braucht eine
++     `Tactic[Serialization.Error]`. Ein tolerantes Alphabet akzeptiert beide Schreibweisen, ein
++     striktes nur seine eigenen Zeichen:
+
+=     only its own characters:
+=
+-     ```scala fuel
++     ```scala fuel
+
+-     alternative Tolerant
++     alternative Tolerant
+
+=     alternative Tolerant
+-       code
++       code
+
+=     alternative Tolerant
+=       code
+-           locally:
++           locally:
+
+=     alternative Tolerant
+=       code
+=           locally:
+-             import alphabets.hexLowerCase
++             import alphabets.hexLowerCase
+
+-             import strategies.throwUnsafely
++             import strategies.throwUnsafely
+
+-             t"FBFF".deserialize[Hex]   // the two bytes 0xfb, 0xff
++             t"FBFF".deserialize[Hex]   // the two bytes 0xfb, 0xff
+
+-     alternative Strict
++     alternative Strict
+
+=     alternative Strict
+-       code
++       code
+
+=     alternative Strict
+=       code
+-           locally:
++           locally:
+
+-             import alphabets.hexStrictLowerCase
++             import alphabets.hexStrictLowerCase
+
+-             capture[Serialization.Error](t"FBFF".deserialize[Hex])
++             capture[Serialization.Error](t"FBFF".deserialize[Hex])
+
+-             // Serialization.Error(0, 'F')
++             // Serialization.Error(0, 'F')
+
+=             // Serialization.Error(0, 'F')
+-     ##
++     ##
+
+=             // Serialization.Error(0, 'F')
+=     ##
+-     ```
++     ```
+
+-     The same name is an extension on a `Stream[Text] over Credit`, which deserializes as the
+-     text flows, into a `Stream[Data] over Credit`. It needs the `Alphabet` in scope, a
+-     `Buffering`, and a `Tactic[Serialization.Error]`; incomplete groups and padding split
+-     across chunks are carried over, so any chunking gives the bytes the whole-value form does.
++     Derselbe Name ist eine Erweiterung auf einem `Stream[Text] over Credit`, die beim
++     Durchfließen des Texts in einen `Stream[Data] over Credit` deserialisiert. Sie braucht das
++     `Alphabet` im Geltungsbereich, ein `Buffering` und eine `Tactic[Serialization.Error]`;
++     unvollständige Gruppen und über Chunks verteilte Auffüllung werden übertragen, sodass jede
++     Aufteilung in Chunks dieselben Bytes ergibt wie die Form für ganze Werte.
+
+=     across chunks are carried over, so any chunking gives the bytes the whole-value form does.
+=
+-     ```scala
++     ```scala
+
+=     across chunks are carried over, so any chunking gives the bytes the whole-value form does.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     across chunks are carried over, so any chunking gives the bytes the whole-value form does.
+=
+=     ```scala
+=     import soundness.*
+-     import alphabets.base64Standard
++     import alphabets.base64Standard
+
+=     import alphabets.base64Standard
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     val chunks: Stream[Text] over Credit = Stream(t"SGVsbG8=")
++     val chunks: Stream[Text] over Credit = Stream(t"SGVsbG8=")
+
+-     chunks.deserialize[Base64]
++     chunks.deserialize[Base64]
+
+=     chunks.deserialize[Base64]
+-     ```
++     ```
+
+- entry .Serialization   the supertype of the encodings, and the home of `Serialization.Error`
++ entry .Serialization   der Obertyp der Kodierungen und die Heimat von `Serialization.Error`
+
+= entry .Serialization   the supertype of the encodings, and the home of `Serialization.Error`
+-   detail
++   detail
+
+-       Each encoding is a sealed subtrait of `Serialization` — `Base64`, `Base32`, `Hex`,
+-       `Octal`, `Quaternary` and `Binary` — used only as a type argument, to `serialize[Base64]`
+-       or `Alphabet[Hex]`, and never instantiated.
++       Jede Kodierung ist ein versiegelter Sub-Trait von `Serialization` — `Base64`, `Base32`,
++       `Hex`, `Octal`, `Quaternary` und `Binary` —, der nur als Typargument verwendet wird, für
++       `serialize[Base64]` oder `Alphabet[Hex]`, und nie instanziiert wird.
+
+-   refer monotonous.Serialization.Error
++   refer monotonous.Serialization.Error
+
+-   entry .Error   raised when text to be deserialized holds a character not in the alphabet
++   entry .Error   ausgelöst, wenn zu deserialisierender Text ein Zeichen enthält, das nicht im Alphabet ist
+
+-     detail
++     detail
+
+-         Error `↯/s.61.1`: _the character `char` at `position` was not valid_. Raised by `deserialize`
+-         and by the streaming deserializer when a character is neither one of the alphabet's
+-         own nor one of its tolerated alternatives. A strict alphabet raises it for the other
+-         case of a letter, where a tolerant one would accept it.
++         Fehler `↯/s.61.1`: _the character `char` at `position` was not valid_. Ausgelöst von
++         `deserialize` und vom Stream-Deserialisierer, wenn ein Zeichen weder eines der eigenen
++         Zeichen des Alphabets noch eine seiner tolerierten Alternativen ist. Ein striktes
++         Alphabet löst ihn für die andere Schreibweise eines Buchstabens aus, wo ein tolerantes
++         sie akzeptieren würde.
+
+-         ```scala
++         ```scala
+
+-         import soundness.*
++         import soundness.*
+
+-         import alphabets.base32LowerCase
++         import alphabets.base32LowerCase
+
+-         capture[Serialization.Error](t"AAAQEA4?DQKAYB7H5737Q====".deserialize[Base32])
++         capture[Serialization.Error](t"AAAQEA4?DQKAYB7H5737Q====".deserialize[Base32])
+
+-         // Serialization.Error(7, '?')
++         // Serialization.Error(7, '?')
+
+-         ```
++         ```
+
+-     entry #position   the index, from zero, of the invalid character in the text
+-     entry #char       the invalid character
++     entry #position   der Index, ab null, des ungültigen Zeichens im Text
++     entry #char       das ungültige Zeichen
+
+- entry .Base64   the Base64 encoding: six bits per character, in groups of four for three bytes
+-     A type argument for `serialize`, `deserialize` and `Alphabet`, never instantiated. Its
+-     alphabets in the `alphabets` package are `base64Standard` (RFC 4648, padded),
++ entry .Base64   die Base64-Kodierung: sechs Bits je Zeichen, in Vierergruppen für drei Bytes
++     Ein Typargument für `serialize`, `deserialize` und `Alphabet`, nie instanziiert. Seine
++     Alphabete im Paket `alphabets` sind `base64Standard` (RFC 4648, mit Auffüllung),
+
+-     `base64Unpadded`, `base64Url`, `base64Xml`, `base64Imap`, `base64Yui`, `base64Radix64`,
++     `base64Unpadded`, `base64Url`, `base64Xml`, `base64Imap`, `base64Yui`, `base64Radix64`,
+
+-     `base64Bcrypt`, `base64Sasl` and `base64Uuencoding`.
++     `base64Bcrypt`, `base64Sasl` und `base64Uuencoding`.
+
+=     `base64Bcrypt`, `base64Sasl` and `base64Uuencoding`.
+=
+-     ```scala
++     ```scala
+
+=     `base64Bcrypt`, `base64Sasl` and `base64Uuencoding`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     `base64Bcrypt`, `base64Sasl` and `base64Uuencoding`.
+=
+=     ```scala
+=     import soundness.*
+-     import alphabets.base64Standard
++     import alphabets.base64Standard
+
+-     Data(0, 1, 2, 3).serialize[Base64]   // t"AAECAw=="
++     Data(0, 1, 2, 3).serialize[Base64]   // t"AAECAw=="
+
+=     Data(0, 1, 2, 3).serialize[Base64]   // t"AAECAw=="
+-     ```
++     ```
+
+- entry .Base32   the Base32 encoding: five bits per character, in groups of eight for five bytes
+-     A type argument for `serialize`, `deserialize` and `Alphabet`, never instantiated. Its
+-     alphabets in the `alphabets` package include RFC 4648's in strict and tolerant upper and
+-     lower case (`base32UpperCase`, `base32StrictUpperCase`, …), the extended-hex forms,
+-     z-base-32, Geohash, word-safe and Crockford's.
++ entry .Base32   die Base32-Kodierung: fünf Bits je Zeichen, in Achtergruppen für fünf Bytes
++     Ein Typargument für `serialize`, `deserialize` und `Alphabet`, nie instanziiert. Seine
++     Alphabete im Paket `alphabets` umfassen das aus RFC 4648 in strikter und toleranter Groß-
++     und Kleinschreibung (`base32UpperCase`, `base32StrictUpperCase`, …), die Extended-Hex-Formen,
++     z-base-32, Geohash, das wortsichere und das von Crockford.
+
+=     z-base-32, Geohash, word-safe and Crockford's.
+=
+-     ```scala
++     ```scala
+
+=     z-base-32, Geohash, word-safe and Crockford's.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import alphabets.base32UpperCase
++     import alphabets.base32UpperCase
+
+-     Data(0, 1, 2, 3).serialize[Base32]   // t"AAAQEAY="
++     Data(0, 1, 2, 3).serialize[Base32]   // t"AAAQEAY="
+
+=     Data(0, 1, 2, 3).serialize[Base32]   // t"AAAQEAY="
+-     ```
++     ```
+
+- entry .Hex   hexadecimal: four bits per character, two characters for each byte
++ entry .Hex   hexadezimal: vier Bits je Zeichen, zwei Zeichen für jedes Byte
+
+= entry .Hex   hexadecimal: four bits per character, two characters for each byte
+-   detail
++   detail
+
+-       A type argument for `serialize`, `deserialize` and `Alphabet`, never instantiated. Its
+-       alphabets in the `alphabets` package are `hexUpperCase` and `hexLowerCase`, which read
+-       either case, the strict `hexStrictUpperCase` and `hexStrictLowerCase`, and `hexBioctal`.
+-       Hexadecimal is never padded.
++       Ein Typargument für `serialize`, `deserialize` und `Alphabet`, nie instanziiert. Seine
++       Alphabete im Paket `alphabets` sind `hexUpperCase` und `hexLowerCase`, die beide
++       Schreibweisen lesen, die strikten `hexStrictUpperCase` und `hexStrictLowerCase` sowie
++       `hexBioctal`. Hexadezimal wird nie aufgefüllt.
+
+=       Hexadecimal is never padded.
+=
+-       ```scala
++       ```scala
+
+=       Hexadecimal is never padded.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import alphabets.hexUpperCase
++       import alphabets.hexUpperCase
+
+=
+-       Data(-5, -1).serialize[Hex]   // t"FBFF"
++       Data(-5, -1).serialize[Hex]   // t"FBFF"
+
+=
+=       Data(-5, -1).serialize[Hex]   // t"FBFF"
+-       ```
++       ```
+
+-       The `Hex` object is also an extractor for a hexadecimal number written as text (`.unapply`).
+-   entry .unapply   matches text which is a hexadecimal number, giving its value as an `Int`
+-       `case Hex(n)` matches text which `Integer.parseInt(text, 16)` reads — digits of either
+-       case, with an optional sign — and binds its value; any other text, or a number too
+-       large for an `Int`, does not match.
++       Das Objekt `Hex` ist auch ein Extraktor für eine als Text geschriebene Hexadezimalzahl
++       (`.unapply`).
++   entry .unapply   gleicht Text ab, der eine Hexadezimalzahl ist, und liefert ihren Wert als `Int`
++       `case Hex(n)` passt auf Text, den `Integer.parseInt(text, 16)` liest — Ziffern in beiden
++       Schreibweisen, mit optionalem Vorzeichen —, und bindet seinen Wert; jeder andere Text und
++       jede Zahl, die für einen `Int` zu groß ist, passt nicht.
+
+=       large for an `Int`, does not match.
+=
+-       ```scala
++       ```scala
+
+=       large for an `Int`, does not match.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       t"ff" match
++       t"ff" match
+
+-         case Hex(value) => value   // 255
++         case Hex(value) => value   // 255
+
+-         case _          => -1
++         case _          => -1
+
+=         case _          => -1
+-       ```
++       ```
+
+- entry .Octal   octal: three bits per character
+-     A type argument for `serialize`, `deserialize` and `Alphabet`, never instantiated. Its one
+-     alphabet is `alphabets.octalStandard`, the digits `0` to `7`, unpadded; since three bits
+-     do not divide a byte, the last character may hold fewer bits of data.
++ entry .Octal   oktal: drei Bits je Zeichen
++     Ein Typargument für `serialize`, `deserialize` und `Alphabet`, nie instanziiert. Sein
++     einziges Alphabet ist `alphabets.octalStandard`, die Ziffern `0` bis `7`, ohne Auffüllung;
++     da drei Bits ein Byte nicht teilen, kann das letzte Zeichen weniger Datenbits enthalten.
+
+- entry .Quaternary   base four: two bits per character, four characters for each byte
+-     A type argument for `serialize`, `deserialize` and `Alphabet`, never instantiated. Its
+-     alphabets are `alphabets.quaternaryStandard` (`0123`) and
++ entry .Quaternary   Basis vier: zwei Bits je Zeichen, vier Zeichen für jedes Byte
++     Ein Typargument für `serialize`, `deserialize` und `Alphabet`, nie instanziiert. Seine
++     Alphabete sind `alphabets.quaternaryStandard` (`0123`) und
+
+-     `alphabets.quaternaryDnaNucleotide` (`ATCG`).
++     `alphabets.quaternaryDnaNucleotide` (`ATCG`).
+
+=     `alphabets.quaternaryDnaNucleotide` (`ATCG`).
+=
+-     ```scala
++     ```scala
+
+=     `alphabets.quaternaryDnaNucleotide` (`ATCG`).
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import alphabets.quaternaryDnaNucleotide
++     import alphabets.quaternaryDnaNucleotide
+
+-     Data(27).serialize[Quaternary]   // t"ATCG"
++     Data(27).serialize[Quaternary]   // t"ATCG"
+
+=     Data(27).serialize[Quaternary]   // t"ATCG"
+-     ```
++     ```
+
+- entry .Binary   binary: one bit per character, eight characters for each byte
+-     A type argument for `serialize`, `deserialize` and `Alphabet`, never instantiated. Its
+-     one alphabet is `alphabets.binaryStandard`, the digits `0` and `1`.
++ entry .Binary   binär: ein Bit je Zeichen, acht Zeichen für jedes Byte
++     Ein Typargument für `serialize`, `deserialize` und `Alphabet`, nie instanziiert. Sein
++     einziges Alphabet ist `alphabets.binaryStandard`, die Ziffern `0` und `1`.
+
+- entry .Alphabet   the characters a base encoding uses, its padding, and the alternatives it tolerates
++ entry .Alphabet   die Zeichen einer Basiskodierung, ihre Auffüllung und die Alternativen, die sie toleriert
+
+= entry .Alphabet   the characters a base encoding uses, its padding, and the alternatives it tolerates
+-   detail
++   detail
+
+-       An `Alphabet[encoding]` holds the `#chars` of the encoding in order of value — two for
+-       `Binary`, sixteen for `Hex`, sixty-four for `Base64` — followed, if `#padding` is set,
+-       by the padding character. Its `#tolerance` maps further characters to values, which
+-       deserialization also accepts: this is what makes `hexLowerCase` read upper-case digits,
+-       and `base32Crockford` read `O` as `0` and `I` and `L` as `1`.
++       Ein `Alphabet[encoding]` enthält die `#chars` der Kodierung in der Reihenfolge ihres Werts
++       — zwei für `Binary`, sechzehn für `Hex`, vierundsechzig für `Base64` —, gefolgt vom
++       Auffüllzeichen, falls `#padding` gesetzt ist. Seine `#tolerance` ordnet weitere Zeichen
++       Werten zu, die die Deserialisierung ebenfalls akzeptiert: Dadurch liest `hexLowerCase`
++       Ziffern in Großbuchstaben und `base32Crockford` `O` als `0` sowie `I` und `L` als `1`.
+
+-       The standard alphabets are givens in the `alphabets` package, imported by name. A custom
+-       one is a local given:
++       Die Standardalphabete sind Givens im Paket `alphabets`, die namentlich importiert werden.
++       Ein eigenes ist ein lokales Given:
+
+=       one is a local given:
+=
+-       ```scala
++       ```scala
+
+=       one is a local given:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       given Alphabet[Hex] = Alphabet(t"0123456789ABCDEF", padding = false)
++       given Alphabet[Hex] = Alphabet(t"0123456789ABCDEF", padding = false)
+
+=       given Alphabet[Hex] = Alphabet(t"0123456789ABCDEF", padding = false)
+-       Data(-5, -1).serialize[Hex]   // t"FBFF"
++       Data(-5, -1).serialize[Hex]   // t"FBFF"
+
+=       given Alphabet[Hex] = Alphabet(t"0123456789ABCDEF", padding = false)
+=       Data(-5, -1).serialize[Hex]   // t"FBFF"
+-       ```
++       ```
+
+-       The text must have exactly `2^bits` characters for the encoding, plus one for padding
+-       when `padding` is `true`; nothing checks this, and a wrong length gives wrong output.
+-       An alphabet is pure (`caps.Pure`), so it may not capture a capability.
++       Der Text muss für die Kodierung genau `2^bits` Zeichen haben, plus eines für die
++       Auffüllung, wenn `padding` `true` ist; nichts prüft dies, und eine falsche Länge ergibt
++       eine falsche Ausgabe. Ein Alphabet ist rein (`caps.Pure`), darf also keine Capability
++       einfangen.
+
+-       An alphabet is also a stream stage, through the companion's `.serialization` and
+-       `.deserialization` givens: `stream.via(alphabet)` serializes a `Stream[Data]` or
+-       deserializes a `Stream[Text]`, chosen by the stream's element type. The `serialize` and
+-       `deserialize` extensions on streams are this, with the alphabet summoned.
++       Ein Alphabet ist über die Givens `.serialization` und `.deserialization` des
++       Begleitobjekts auch eine Stream-Stufe: `stream.via(alphabet)` serialisiert einen
++       `Stream[Data]` oder deserialisiert einen `Stream[Text]`, je nach Elementtyp des Streams.
++       Die Erweiterungen `serialize` und `deserialize` auf Streams sind genau dies, mit
++       herbeigerufenem Alphabet.
+
+=       `deserialize` extensions on streams are this, with the alphabet summoned.
+=
+-       ```scala
++       ```scala
+
+=       `deserialize` extensions on streams are this, with the alphabet summoned.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import alphabets.hexLowerCase
++       import alphabets.hexLowerCase
+
+-       Data(-5, -1).stream.via(summon[Alphabet[Hex]])
++       Data(-5, -1).stream.via(summon[Alphabet[Hex]])
+
+=       Data(-5, -1).stream.via(summon[Alphabet[Hex]])
+-       ```
++       ```
+
+-   refer monotonous.alphabets
++   refer monotonous.alphabets
+
+=   refer monotonous.alphabets
+-   refer monotonous.serialize
++   refer monotonous.serialize
+
+-   entry .serialization     streams bytes through an alphabet as a stage, giving text
+-       The `Ductile` given which lets `via(alphabet)` serialize a `Stream[Data] over Credit`
+-       into a `Stream[Text] over Credit`. Demand is translated by the exact arithmetic of the
+-       base, so a downstream request for 1024 hexadecimal characters asks upstream for 512
+-       bytes; padding, if the alphabet has it, is written when the stream ends.
+-   entry .deserialization   streams text through an alphabet as a stage, giving bytes
+-       The `Ductile` given which lets `via(alphabet)` deserialize a `Stream[Text] over Credit`
+-       into a `Stream[Data] over Credit`. It needs a `Tactic[Serialization.Error]`, raised for
+-       a character not in the alphabet, and the instance captures that tactic. Groups and
+-       padding split between chunks are carried across.
+-   entry #chars        the encoding's characters in order of value, then the padding character if any
+-   entry #padding      whether output is padded to a whole group with the last character of `#chars`
+-   entry #tolerance    further characters accepted when deserializing, mapped to the values they stand for
+-       Empty for a strict alphabet. For a tolerant one, usually the inverse of the strict
+-       alphabet of the other case, as `hexUpperCase`'s is `hexStrictLowerCase.inverse`.
+-   entry #apply        the character for a value, from zero
+-   entry #invert       the value of a character, or a `Serialization.Error` at the given position
+-       `alphabet.invert(position, char)` looks the character up in `#inversions`; one with no
+-       value raises `Serialization.Error(position, char)`, so it needs a
++   entry .serialization     leitet Bytes als Stufe durch ein Alphabet und liefert Text
++       Das `Ductile`-Given, mit dem `via(alphabet)` einen `Stream[Data] over Credit` in einen
++       `Stream[Text] over Credit` serialisiert. Der Bedarf wird mit der exakten Arithmetik der
++       Basis umgerechnet, sodass eine Anforderung von stromabwärts nach 1024 Hexadezimalzeichen
++       stromaufwärts 512 Bytes anfordert; Auffüllung wird, falls das Alphabet eine hat, am Ende
++       des Streams geschrieben.
++   entry .deserialization   leitet Text als Stufe durch ein Alphabet und liefert Bytes
++       Das `Ductile`-Given, mit dem `via(alphabet)` einen `Stream[Text] over Credit` in einen
++       `Stream[Data] over Credit` deserialisiert. Es braucht eine `Tactic[Serialization.Error]`,
++       die für ein Zeichen außerhalb des Alphabets ausgelöst wird, und die Instanz fängt diese
++       Taktik ein. Gruppen und Auffüllung, die auf mehrere Chunks verteilt sind, werden
++       übertragen.
++   entry #chars        die Zeichen der Kodierung in der Reihenfolge ihres Werts, dann gegebenenfalls das Auffüllzeichen
++   entry #padding      ob die Ausgabe mit dem letzten Zeichen von `#chars` auf eine ganze Gruppe aufgefüllt wird
++   entry #tolerance    weitere beim Deserialisieren akzeptierte Zeichen, den Werten zugeordnet, für die sie stehen
++       Leer bei einem strikten Alphabet. Bei einem toleranten meist die Umkehrung des strikten
++       Alphabets der anderen Schreibweise, so wie die von `hexUpperCase`
++       `hexStrictLowerCase.inverse` ist.
++   entry #apply        das Zeichen für einen Wert, ab null
++   entry #invert       der Wert eines Zeichens oder ein `Serialization.Error` an der angegebenen Position
++       `alphabet.invert(position, char)` schlägt das Zeichen in `#inversions` nach; eines ohne
++       Wert löst `Serialization.Error(position, char)` aus, es braucht also eine
+
+-       `Tactic[Serialization.Error]`.
++       `Tactic[Serialization.Error]`.
+
+-   entry #inverse      every character the alphabet accepts, mapped to its value
+-       The alphabet's own characters (with the padding character, if any, as the value after
+-       the last) and its `#tolerance`, as one `Map`.
+-   entry #inversions   `#inverse` as a dense table indexed by character code, with `-1` for no value
+-       Computed once, lazily, so that deserialization reads an array rather than a `Map` for
+-       each character.
++   entry #inverse      jedes Zeichen, das das Alphabet akzeptiert, seinem Wert zugeordnet
++       Die eigenen Zeichen des Alphabets (mit dem Auffüllzeichen, falls vorhanden, als Wert nach
++       dem letzten) und seine `#tolerance`, als eine `Map`.
++   entry #inversions   `#inverse` als dichte, nach Zeichencode indizierte Tabelle, mit `-1` für keinen Wert
++       Einmal und lazy berechnet, damit die Deserialisierung für jedes Zeichen ein Array statt
++       einer `Map` liest.
+
+- entry .Serializable   renders bytes as text in one encoding: the typeclass behind `serialize`
++ entry .Serializable   stellt Bytes als Text in einer Kodierung dar: die Typklasse hinter `serialize`
+
+= entry .Serializable   renders bytes as text in one encoding: the typeclass behind `serialize`
+-   detail
++   detail
+
+-       A `Serializable in Base64` turns `Data` into `Text` with `#encode`. It has no `Self`
+-       type, and is selected by its `#Form` alone. The companion has one given for each
+-       encoding, each built from the `Alphabet` of that encoding in scope, so an instance
+-       exists exactly when an alphabet has been imported. The kernels for Base64, Base32 and
+-       hexadecimal are specialised, and all write ASCII bytes directly, so a serialized `Text`
+-       is built without a character-by-character copy.
++       Ein `Serializable in Base64` macht mit `#encode` aus `Data` einen `Text`. Es hat keinen
++       `Self`-Typ und wird allein über seine `#Form` gewählt. Das Begleitobjekt hat ein Given für
++       jede Kodierung, jedes aus dem `Alphabet` dieser Kodierung im Geltungsbereich gebaut, also
++       existiert eine Instanz genau dann, wenn ein Alphabet importiert wurde. Die Kerne für
++       Base64, Base32 und Hexadezimal sind spezialisiert, und alle schreiben ASCII-Bytes direkt,
++       sodass ein serialisierter `Text` ohne zeichenweise Kopie entsteht.
+
+=       is built without a character-by-character copy.
+=
+-       ```scala
++       ```scala
+
+=       is built without a character-by-character copy.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       is built without a character-by-character copy.
+=
+=       ```scala
+=       import soundness.*
+-       import alphabets.base64Standard
++       import alphabets.base64Standard
+
+-       summon[Serializable in Base64].encode(Data(0, 1, 2, 3))   // t"AAECAw=="
++       summon[Serializable in Base64].encode(Data(0, 1, 2, 3))   // t"AAECAw=="
+
+=       summon[Serializable in Base64].encode(Data(0, 1, 2, 3))   // t"AAECAw=="
+-       ```
++       ```
+
+-       A `Serializable` is `Findable`, so a compile error for a missing one can propose the
+-       alphabet imports which would supply it.
++       Ein `Serializable` ist `Findable`, sodass ein Kompilierfehler wegen eines fehlenden die
++       Alphabet-Importe vorschlagen kann, die es liefern würden.
+
+=       alphabet imports which would supply it.
+-   refer monotonous.serialize
++   refer monotonous.serialize
+
+-   refer monotonous.Deserializable
++   refer monotonous.Deserializable
+
+-   entry .base         a `Serializable` for an encoding of the given bits per character, over the `Alphabet` in scope
+-       `Serializable.base[Base64](6)`, the constructor behind the companion's givens, which a
+-       new `Serialization` subtype could use with its own alphabet.
+-   entry .binary       serializes `Binary`, with the `Alphabet[Binary]` in scope
+-   entry .quaternary   serializes `Quaternary`, with the `Alphabet[Quaternary]` in scope
+-   entry .octal        serializes `Octal`, with the `Alphabet[Octal]` in scope
+-   entry .hex          serializes `Hex`, with the `Alphabet[Hex]` in scope
+-   entry .base32       serializes `Base32`, with the `Alphabet[Base32]` in scope
+-   entry .base64       serializes `Base64`, with the `Alphabet[Base64]` in scope
+-   entry #Form         the encoding this instance serializes to
+-   entry #encode       the bytes, rendered as text in the encoding
++   entry .base         ein `Serializable` für eine Kodierung mit der angegebenen Bitzahl je Zeichen, über dem `Alphabet` im Geltungsbereich
++       `Serializable.base[Base64](6)`, der Konstruktor hinter den Givens des Begleitobjekts, den
++       ein neuer Subtyp von `Serialization` mit seinem eigenen Alphabet verwenden könnte.
++   entry .binary       serialisiert `Binary`, mit dem `Alphabet[Binary]` im Geltungsbereich
++   entry .quaternary   serialisiert `Quaternary`, mit dem `Alphabet[Quaternary]` im Geltungsbereich
++   entry .octal        serialisiert `Octal`, mit dem `Alphabet[Octal]` im Geltungsbereich
++   entry .hex          serialisiert `Hex`, mit dem `Alphabet[Hex]` im Geltungsbereich
++   entry .base32       serialisiert `Base32`, mit dem `Alphabet[Base32]` im Geltungsbereich
++   entry .base64       serialisiert `Base64`, mit dem `Alphabet[Base64]` im Geltungsbereich
++   entry #Form         die Kodierung, in die diese Instanz serialisiert
++   entry #encode       die Bytes, als Text in der Kodierung dargestellt
+
+- entry .Deserializable   reads text back to bytes in one encoding: the typeclass behind `deserialize`
++ entry .Deserializable   liest Text in einer Kodierung zurück zu Bytes: die Typklasse hinter `deserialize`
+
+= entry .Deserializable   reads text back to bytes in one encoding: the typeclass behind `deserialize`
+-   detail
++   detail
+
+-       A `Deserializable in Base64` turns `Text` into `Data` with `#deserialize`, raising a
+-       `Serialization.Error` for a character not in the alphabet. It has no `Self` type, and is
+-       selected by its `#Form` alone. The companion has one given for each encoding, each built
+-       from the `Alphabet` of that encoding in scope. Error handling is per call, so the
+-       instances capture nothing.
++       Ein `Deserializable in Base64` macht mit `#deserialize` aus `Text` ein `Data` und löst für
++       ein Zeichen außerhalb des Alphabets einen `Serialization.Error` aus. Es hat keinen
++       `Self`-Typ und wird allein über seine `#Form` gewählt. Das Begleitobjekt hat ein Given für
++       jede Kodierung, jedes aus dem `Alphabet` dieser Kodierung im Geltungsbereich gebaut. Die
++       Fehlerbehandlung erfolgt pro Aufruf, also fangen die Instanzen nichts ein.
+
+=       instances capture nothing.
+=
+-       ```scala
++       ```scala
+
+=       instances capture nothing.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       instances capture nothing.
+=
+=       ```scala
+=       import soundness.*
+-       import alphabets.base64Standard
++       import alphabets.base64Standard
+
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       summon[Deserializable in Base64].deserialize(t"AAECAw==")
++       summon[Deserializable in Base64].deserialize(t"AAECAw==")
+
+=       summon[Deserializable in Base64].deserialize(t"AAECAw==")
+-       ```
++       ```
+
+-       A `Deserializable` is `Findable`, so a compile error for a missing one can propose the
+-       alphabet imports which would supply it.
++       Ein `Deserializable` ist `Findable`, sodass ein Kompilierfehler wegen eines fehlenden die
++       Alphabet-Importe vorschlagen kann, die es liefern würden.
+
+-   refer monotonous.deserialize
++   refer monotonous.deserialize
+
+-   refer monotonous.Serializable
++   refer monotonous.Serializable
+
+-   entry .base         a `Deserializable` for an encoding of the given bits per character, over the `Alphabet` in scope
+-   entry .base64       deserializes `Base64`, with the `Alphabet[Base64]` in scope
+-   entry .base32       deserializes `Base32`, with the `Alphabet[Base32]` in scope
+-   entry .hex          deserializes `Hex`, with the `Alphabet[Hex]` in scope
+-   entry .octal        deserializes `Octal`, with the `Alphabet[Octal]` in scope
+-   entry .quaternary   deserializes `Quaternary`, with the `Alphabet[Quaternary]` in scope
+-   entry .binary       deserializes `Binary`, with the `Alphabet[Binary]` in scope
+-   entry #Form         the encoding this instance deserializes from
+-   entry #deserialize   reads text in the encoding back to bytes, raising `Serialization.Error`
+-       `deserialize(text)` reads the whole text, needing a `Tactic[Serialization.Error]`. The
+-       four-parameter form, `deserialize(previous, current, index, last)`, decodes one chunk
+-       of a longer text, with the end of the previous chunk available for a group which
+-       straddles the two, and `last` set for the final chunk, whose trailing padding is
+-       dropped; it is the building block for incremental decoding.
++   entry .base         ein `Deserializable` für eine Kodierung mit der angegebenen Bitzahl je Zeichen, über dem `Alphabet` im Geltungsbereich
++   entry .base64       deserialisiert `Base64`, mit dem `Alphabet[Base64]` im Geltungsbereich
++   entry .base32       deserialisiert `Base32`, mit dem `Alphabet[Base32]` im Geltungsbereich
++   entry .hex          deserialisiert `Hex`, mit dem `Alphabet[Hex]` im Geltungsbereich
++   entry .octal        deserialisiert `Octal`, mit dem `Alphabet[Octal]` im Geltungsbereich
++   entry .quaternary   deserialisiert `Quaternary`, mit dem `Alphabet[Quaternary]` im Geltungsbereich
++   entry .binary       deserialisiert `Binary`, mit dem `Alphabet[Binary]` im Geltungsbereich
++   entry #Form         die Kodierung, aus der diese Instanz deserialisiert
++   entry #deserialize   liest Text in der Kodierung zurück zu Bytes und löst `Serialization.Error` aus
++       `deserialize(text)` liest den ganzen Text und braucht eine `Tactic[Serialization.Error]`.
++       Die Form mit vier Parametern, `deserialize(previous, current, index, last)`, dekodiert
++       einen Chunk eines längeren Texts, wobei das Ende des vorigen Chunks für eine Gruppe
++       verfügbar ist, die beide überspannt, und `last` für den letzten Chunk gesetzt ist, dessen
++       nachgestellte Auffüllung verworfen wird; sie ist der Baustein für inkrementelles
++       Dekodieren.
+
+- entry .alphabets   the standard alphabets of every encoding, each a given to import by name
++ entry .alphabets   die Standardalphabete jeder Kodierung, jedes ein Given, das namentlich importiert wird
+
+= entry .alphabets   the standard alphabets of every encoding, each a given to import by name
+-   detail
++   detail
+
+-       The alphabet in scope decides the exact characters of `serialize` and `deserialize`, and
+-       none is in scope by default: one is imported by name, since `import alphabets.*` does not
+-       import givens. Importing two alphabets of the same encoding is ambiguous.
++       Das Alphabet im Geltungsbereich bestimmt die genauen Zeichen von `serialize` und
++       `deserialize`, und standardmäßig ist keines im Geltungsbereich: Eines wird namentlich
++       importiert, da `import alphabets.*` keine Givens importiert. Zwei Alphabete derselben
++       Kodierung zu importieren ist mehrdeutig.
+
+=       import givens. Importing two alphabets of the same encoding is ambiguous.
+=
+-       ```scala
++       ```scala
+
+=       import givens. Importing two alphabets of the same encoding is ambiguous.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import alphabets.base64Url
++       import alphabets.base64Url
+
+=       import alphabets.base64Url
+-       ```
++       ```
+
+-       For most encodings there is a *strict* alphabet, which deserializes only its own
+-       characters, and a *tolerant* one, which also accepts the other case: `hexLowerCase`
+-       writes lower case and reads either, where `hexStrictLowerCase` reads only lower case.
+-       The tolerant ones are named without `Strict`, as they are the usual choice.
++       Für die meisten Kodierungen gibt es ein *striktes* Alphabet, das nur seine eigenen Zeichen
++       deserialisiert, und ein *tolerantes*, das auch die andere Schreibweise akzeptiert:
++       `hexLowerCase` schreibt Kleinbuchstaben und liest beide Schreibweisen, während
++       `hexStrictLowerCase` nur Kleinbuchstaben liest. Die toleranten heißen ohne `Strict`, da
++       sie die übliche Wahl sind.
+
+-   refer monotonous.Alphabet
++   refer monotonous.Alphabet
+
+-   entry .binaryStandard               binary: `0` and `1`
+-   entry .quaternaryStandard           base four: `0123`
+-   entry .quaternaryDnaNucleotide      base four as DNA nucleotides: `ATCG`
+-   entry .octalStandard                octal: the digits `0` to `7`, unpadded
+-   entry .hexStrictUpperCase           hexadecimal in upper case, reading upper case only
+-   entry .hexStrictLowerCase           hexadecimal in lower case, reading lower case only
+-   entry .hexUpperCase                 hexadecimal in upper case, reading either case
+-   entry .hexLowerCase                 hexadecimal in lower case, reading either case
+-   entry .hexBioctal                   "bioctal" hexadecimal, with the digits `01234567` and the letters `cjzwfsbv`
+-   entry .base32StrictUpperCase        RFC 4648 Base32 in upper case, padded, reading upper case only
+-   entry .base32StrictLowerCase        RFC 4648 Base32 in lower case, padded, reading lower case only
+-   entry .base32UpperCase              RFC 4648 Base32 in upper case, padded, reading either case
+-   entry .base32LowerCase              RFC 4648 Base32 in lower case, padded, reading either case
+-   entry .base32ExtendedHexUpperCase   RFC 4648 "base32hex" (`0`–`9`, `A`–`V`) in upper case, padded
+-       Writes upper case. Its tolerance is the lower-case standard Base32 alphabet's, not the
+-       lower-case extended-hex one.
+-   entry .base32ExtendedHexLowerCase   RFC 4648 "base32hex" (`0`–`9`, `a`–`v`) in lower case, padded
+-       Writes lower case. Its tolerance is the upper-case standard Base32 alphabet's, not the
+-       upper-case extended-hex one.
+-   entry .base32ZBase32                z-base-32, the human-oriented ordering, padded
+-   entry .base32ZBase32Unpadded        z-base-32, unpadded
+-   entry .base32Geohash                the Geohash alphabet, unpadded
+-   entry .base32WordSafe               the word-safe alphabet, which avoids spelling words, unpadded
+-   entry .base32Crockford              Crockford's Base32, unpadded, reading `O` as `0`, `I` and `L` as `1`, and either case
+-   entry .base64Standard               RFC 4648 Base64, with `+` and `/`, padded with `=`
+-   entry .base64Unpadded               RFC 4648 Base64, with `+` and `/`, unpadded
+-   entry .base64Url                    URL- and filename-safe Base64, with `-` and `_`, unpadded
+-   entry .base64Xml                    Base64 for XML names, with `+` and `-`, padded with `.`
+-   entry .base64Imap                   modified Base64 of IMAP mailbox names, with `+` and `,`, unpadded
+-   entry .base64Yui                    the YUI library's Base64, with `.` and `_`, unpadded
+-   entry .base64Radix64                OpenPGP's Radix-64, the standard alphabet, padded with `=`
+-   entry .base64Bcrypt                 bcrypt's Base64, with `.` and `/` first, unpadded
+-   entry .base64Sasl                   SASL's Base64, with `+` and `,`, unpadded
+-   entry .base64Uuencoding             the uuencoding characters, from `!` to `_`, unpadded
++   entry .binaryStandard               binär: `0` und `1`
++   entry .quaternaryStandard           Basis vier: `0123`
++   entry .quaternaryDnaNucleotide      Basis vier als DNA-Nukleotide: `ATCG`
++   entry .octalStandard                oktal: die Ziffern `0` bis `7`, ohne Auffüllung
++   entry .hexStrictUpperCase           hexadezimal in Großbuchstaben, liest nur Großbuchstaben
++   entry .hexStrictLowerCase           hexadezimal in Kleinbuchstaben, liest nur Kleinbuchstaben
++   entry .hexUpperCase                 hexadezimal in Großbuchstaben, liest beide Schreibweisen
++   entry .hexLowerCase                 hexadezimal in Kleinbuchstaben, liest beide Schreibweisen
++   entry .hexBioctal                   „bioktales“ Hexadezimal, mit den Ziffern `01234567` und den Buchstaben `cjzwfsbv`
++   entry .base32StrictUpperCase        Base32 nach RFC 4648 in Großbuchstaben, mit Auffüllung, liest nur Großbuchstaben
++   entry .base32StrictLowerCase        Base32 nach RFC 4648 in Kleinbuchstaben, mit Auffüllung, liest nur Kleinbuchstaben
++   entry .base32UpperCase              Base32 nach RFC 4648 in Großbuchstaben, mit Auffüllung, liest beide Schreibweisen
++   entry .base32LowerCase              Base32 nach RFC 4648 in Kleinbuchstaben, mit Auffüllung, liest beide Schreibweisen
++   entry .base32ExtendedHexUpperCase   „base32hex“ nach RFC 4648 (`0`–`9`, `A`–`V`) in Großbuchstaben, mit Auffüllung
++       Schreibt Großbuchstaben. Seine Toleranz ist die des Standard-Base32-Alphabets in
++       Kleinbuchstaben, nicht die des Extended-Hex-Alphabets in Kleinbuchstaben.
++   entry .base32ExtendedHexLowerCase   „base32hex“ nach RFC 4648 (`0`–`9`, `a`–`v`) in Kleinbuchstaben, mit Auffüllung
++       Schreibt Kleinbuchstaben. Seine Toleranz ist die des Standard-Base32-Alphabets in
++       Großbuchstaben, nicht die des Extended-Hex-Alphabets in Großbuchstaben.
++   entry .base32ZBase32                z-base-32, die für Menschen gedachte Anordnung, mit Auffüllung
++   entry .base32ZBase32Unpadded        z-base-32, ohne Auffüllung
++   entry .base32Geohash                das Geohash-Alphabet, ohne Auffüllung
++   entry .base32WordSafe               das wortsichere Alphabet, das das Buchstabieren von Wörtern vermeidet, ohne Auffüllung
++   entry .base32Crockford              Base32 von Crockford, ohne Auffüllung, liest `O` als `0`, `I` und `L` als `1` und beide Schreibweisen
++   entry .base64Standard               Base64 nach RFC 4648, mit `+` und `/`, mit `=` aufgefüllt
++   entry .base64Unpadded               Base64 nach RFC 4648, mit `+` und `/`, ohne Auffüllung
++   entry .base64Url                    URL- und dateinamensicheres Base64, mit `-` und `_`, ohne Auffüllung
++   entry .base64Xml                    Base64 für XML-Namen, mit `+` und `-`, mit `.` aufgefüllt
++   entry .base64Imap                   modifiziertes Base64 für IMAP-Postfachnamen, mit `+` und `,`, ohne Auffüllung
++   entry .base64Yui                    das Base64 der YUI-Bibliothek, mit `.` und `_`, ohne Auffüllung
++   entry .base64Radix64                Radix-64 von OpenPGP, das Standardalphabet, mit `=` aufgefüllt
++   entry .base64Bcrypt                 das Base64 von bcrypt, mit `.` und `/` zuerst, ohne Auffüllung
++   entry .base64Sasl                   das Base64 von SASL, mit `+` und `,`, ohne Auffüllung
++   entry .base64Uuencoding             die Zeichen des Uuencoding, von `!` bis `_`, ohne Auffüllung

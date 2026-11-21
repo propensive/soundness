@@ -1,0 +1,329 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base inimitable
++ base inimitable
+
+- import soundness
++ import soundness
+
+- info   UUIDs as well-formed values: generated, written as checked literals, parsed with typed errors
++ info   UUIDs als wohlgeformte Werte: erzeugt, als geprüfte Literale geschrieben, mit typisierten Fehlern geparst
+
+- detail
++ detail
+
+-     _Inimitable_ represents a [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier),
+-     a 128-bit identifier unique enough to assign without coordination, as a `Uuid` value which
+-     is known to be well-formed. A string can hold a malformed identifier until something
+-     parses it and fails; a `Uuid` cannot. A literal written with `uuid"…"` is checked as the
+-     code compiles, text parsed at runtime raises a typed `Uuid.Error`, and the identifier's
+-     two 64-bit halves and sixteen bytes are available directly.
++     _Inimitable_ stellt eine [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier),
++     einen 128-Bit-Bezeichner, der eindeutig genug ist, um ohne Koordination vergeben zu werden,
++     als `Uuid`-Wert dar, von dem bekannt ist, dass er wohlgeformt ist. Ein String kann einen
++     fehlerhaften Bezeichner enthalten, bis ihn etwas parst und scheitert; ein `Uuid` kann das
++     nicht. Ein mit `uuid"…"` geschriebenes Literal wird beim Kompilieren des Codes geprüft, zur
++     Laufzeit geparster Text löst einen typisierten `Uuid.Error` aus, und die zwei 64-Bit-Hälften
++     und sechzehn Bytes des Bezeichners stehen direkt zur Verfügung.
+
+=     two 64-bit halves and sixteen bytes are available directly.
+=
+-     ```scala
++     ```scala
+
+=     two 64-bit halves and sixteen bytes are available directly.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     val fresh: Uuid = Uuid()
++     val fresh: Uuid = Uuid()
+
+-     val known: Uuid = uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c"
++     val known: Uuid = uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c"
+
+-     val parsed: Uuid = Uuid.parse(t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c")
++     val parsed: Uuid = Uuid.parse(t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c")
+
+-     known.text      // t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c"
++     known.text      // t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c"
+
+-     known.in[Data]  // the sixteen bytes
++     known.in[Data]  // the sixteen bytes
+
+-     fresh ^ known   // the bitwise exclusive-or of the two
++     fresh ^ known   // the bitwise exclusive-or of the two
+
+=     fresh ^ known   // the bitwise exclusive-or of the two
+-     ```
++     ```
+
+-     A `Uuid` shows, encodes and decodes as its canonical hyphenated text through givens in
+-     its companion, so `as[Uuid]` reads one from text without any import. For a consumer which
+-     is generic over the `Uuids` domain (`[uuid: Instantiable across Uuids from Text]`), the
+-     instance making `Uuid` that domain's representative is
+-     `uuidInterfaces.soundnessUuid`, a given which must be imported by name, since `import
+-     uuidInterfaces.*` does not import givens; it is declared in the `anticipation` package.
++     Ein `Uuid` wird über givens in seinem Begleitobjekt als sein kanonischer Text mit Bindestrichen
++     angezeigt, kodiert und dekodiert, sodass `as[Uuid]` eines ohne jeden Import aus Text liest. Für
++     einen Verwender, der generisch über der Domäne `Uuids` ist
++     (`[uuid: Instantiable across Uuids from Text]`), ist die Instanz, die `Uuid` zum Repräsentanten
++     dieser Domäne macht, `uuidInterfaces.soundnessUuid`, ein given, das per Name importiert werden
++     muss, da `import
++     uuidInterfaces.*` keine givens importiert; es ist im Paket `anticipation` deklariert.
+
+-     The library has a single source set, `inimitable.core`, for every platform. Everything
+-     is exported to the `soundness` umbrella.
++     Die Bibliothek hat ein einziges Source-Set, `inimitable.core`, für jede Plattform. Alles wird
++     in das `soundness`-Umbrella exportiert.
+
+- refer inimitable.Uuid
++ refer inimitable.Uuid
+
+- refer inimitable.uuid
++ refer inimitable.uuid
+
+- entry .Uuid   a 128-bit universally unique identifier, as its two 64-bit halves
++ entry .Uuid   ein universell eindeutiger 128-Bit-Bezeichner, als seine zwei 64-Bit-Hälften
+
+= entry .Uuid   a 128-bit universally unique identifier, as its two 64-bit halves
+-   detail
++   detail
+
+-       A `Uuid` is a case class of its most and least significant 64 bits, `#msb` and
+-       `#lsb`. It is made fresh with `Uuid()`, which draws a random (version 4) identifier
+-       from `java.util.UUID.randomUUID`; written literally with `uuid"…"`; parsed from text
+-       with `.parse`, which raises `Uuid.Error`, or with `.extract`, which gives an
+-       `Optional`; or built directly from its two halves.
++       Ein `Uuid` ist eine Case-Klasse seiner höchst- und niedrigstwertigen 64 Bits, `#msb` und
++       `#lsb`. Es wird frisch mit `Uuid()` erzeugt, das einen zufälligen Bezeichner (Version 4)
++       aus `java.util.UUID.randomUUID` zieht; literal mit `uuid"…"` geschrieben; aus Text geparst
++       mit `.parse`, das `Uuid.Error` auslöst, oder mit `.extract`, das ein `Optional` liefert;
++       oder direkt aus seinen zwei Hälften gebaut.
+
+-       The companion is also an extractor, so a pattern matches text which is a valid UUID:
++       Das Begleitobjekt ist zudem ein Extraktor, sodass ein Pattern auf Text passt, der eine
++       gültige UUID ist:
+
+=       The companion is also an extractor, so a pattern matches text which is a valid UUID:
+=
+-       ```scala
++       ```scala
+
+=       The companion is also an extractor, so a pattern matches text which is a valid UUID:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       t"not-a-uuid" match
++       t"not-a-uuid" match
+
+-         case Uuid(id) => id
++         case Uuid(id) => id
+
+-         case _        => Uuid()
++         case _        => Uuid()
+
+=         case _        => Uuid()
+-       ```
++       ```
+
+-       A `Uuid` renders as its canonical lowercase hyphenated form through `#text`, `show`,
+-       `encode`, `inspect` and as a message; `uuid.in[Data]` gives its sixteen bytes, most
+-       significant half first, each half big-endian. `#^` and `#unary_~` treat it as the bit
+-       pattern it is, for deriving one identifier from others.
++       Ein `Uuid` wird über `#text`, `show`, `encode`, `inspect` und als Meldung in seiner
++       kanonischen kleingeschriebenen Form mit Bindestrichen dargestellt; `uuid.in[Data]` liefert
++       seine sechzehn Bytes, die höherwertige Hälfte zuerst, jede Hälfte Big-Endian. `#^` und
++       `#unary_~` behandeln es als das Bitmuster, das es ist, um einen Bezeichner aus anderen
++       abzuleiten.
+
+-   refer inimitable.uuid
++   refer inimitable.uuid
+
+-   refer inimitable.jvmInstanceId
++   refer inimitable.jvmInstanceId
+
+-   entry .apply   a fresh random UUID
+-       Draws a version 4 identifier from `java.util.UUID.randomUUID`. Each call gives a new
+-       one; `jvmInstanceId` is one drawn once per running program. The case-class
+-       constructor `Uuid(msb, lsb)` builds one from its two halves.
+-   entry .parse   reads a UUID from its text, raising `Uuid.Error` if the text is not one
+-       Accepts the forms `java.util.UUID.fromString` does: five groups of hexadecimal digits
+-       separated by hyphens. Needs a `Tactic[Uuid.Error]`.
++   entry .apply   eine frische zufällige UUID
++       Zieht einen Bezeichner der Version 4 aus `java.util.UUID.randomUUID`. Jeder Aufruf liefert
++       einen neuen; `jvmInstanceId` ist einer, der einmal pro laufendem Programm gezogen wird. Der
++       Konstruktor der Case-Klasse `Uuid(msb, lsb)` baut einen aus seinen zwei Hälften.
++   entry .parse   liest eine UUID aus ihrem Text und löst `Uuid.Error` aus, wenn der Text keine ist
++       Akzeptiert die Formen, die `java.util.UUID.fromString` akzeptiert: fünf Gruppen
++       hexadezimaler Ziffern, durch Bindestriche getrennt. Braucht eine `Tactic[Uuid.Error]`.
+
+=       separated by hyphens. Needs a `Tactic[Uuid.Error]`.
+=
+-       ```scala
++       ```scala
+
+=       separated by hyphens. Needs a `Tactic[Uuid.Error]`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       Uuid.parse(t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c").msb   // -6860364383762101208L
++       Uuid.parse(t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c").msb   // -6860364383762101208L
+
+=       Uuid.parse(t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c").msb   // -6860364383762101208L
+-       ```
++       ```
+
+-   entry .extract   reads a UUID from its text, or `Unset` if the text is not one
+-       As `.parse`, without a tactic: a malformed text gives `Unset`. This is also the
+-       method behind the companion's `unapply`, so `case Uuid(id) =>` matches valid text.
+-   entry .decodable   decodes a `Uuid` from text, raising `Uuid.Error` if it is malformed
+-       Needs a `Tactic[Uuid.Error]`, so `t"…".as[Uuid]` raises through the strategy in scope.
+-       It is in implicit scope, as are all the companion's givens.
+-   entry .showable   shows a UUID as its canonical hyphenated text
+-   entry .inspectable   inspects a UUID as its canonical hyphenated text, the same as `show`
+-       The canonical form already shows both halves in full and is unmistakable in shape, so
+-       the debug rendering adds nothing to it.
+-   entry .communicable   renders a UUID in a message as its canonical text
+-   entry .encodable   encodes a UUID as its canonical hyphenated text
+-   entry .encodableInData   encodes a UUID as its sixteen bytes, most significant half first
+-       Each 64-bit half is written big-endian. Reach it with `uuid.in[Data]`: a plain
+-       `uuid.encode` would be ambiguous with the `Text` encoding.
++   entry .extract   liest eine UUID aus ihrem Text, oder `Unset`, wenn der Text keine ist
++       Wie `.parse`, ohne Taktik: Ein fehlerhafter Text liefert `Unset`. Das ist auch die Methode
++       hinter dem `unapply` des Begleitobjekts, sodass `case Uuid(id) =>` auf gültigen Text passt.
++   entry .decodable   dekodiert ein `Uuid` aus Text und löst `Uuid.Error` aus, wenn er fehlerhaft ist
++       Braucht eine `Tactic[Uuid.Error]`, sodass `t"…".as[Uuid]` über die Strategie im
++       Geltungsbereich auslöst. Es liegt im impliziten Geltungsbereich, wie alle givens des
++       Begleitobjekts.
++   entry .showable   zeigt eine UUID als ihren kanonischen Text mit Bindestrichen an
++   entry .inspectable   untersucht eine UUID als ihren kanonischen Text mit Bindestrichen, genau wie `show`
++       Die kanonische Form zeigt bereits beide Hälften vollständig und ist in ihrer Gestalt
++       unverwechselbar, daher fügt die Debug-Darstellung ihr nichts hinzu.
++   entry .communicable   stellt eine UUID in einer Meldung als ihren kanonischen Text dar
++   entry .encodable   kodiert eine UUID als ihren kanonischen Text mit Bindestrichen
++   entry .encodableInData   kodiert eine UUID als ihre sechzehn Bytes, die höherwertige Hälfte zuerst
++       Jede 64-Bit-Hälfte wird Big-Endian geschrieben. Erreichbar mit `uuid.in[Data]`: Ein
++       einfaches `uuid.encode` wäre mit der `Text`-Kodierung mehrdeutig.
+
+=       `uuid.encode` would be ambiguous with the `Text` encoding.
+=
+-       ```scala
++       ```scala
+
+=       `uuid.encode` would be ambiguous with the `Text` encoding.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c".in[Data].length   // 16
++       uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c".in[Data].length   // 16
+
+=       uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c".in[Data].length   // 16
+-       ```
++       ```
+
+-   entry .Error   raised when text is not a valid UUID
++   entry .Error   ausgelöst, wenn Text keine gültige UUID ist
+
+-     detail
++     detail
+
+-         Error `↯/s.47.1`: _`badUuid` is not a valid UUID_. Raised by `Uuid.parse` and by decoding a
+-         `Uuid` from text. The `uuid"…"` interpolator reports the same message as a compile
+-         error.
+-     entry #badUuid   the text which failed to parse
+-   entry #msb   the most significant 64 bits
+-   entry #lsb   the least significant 64 bits
+-   entry #java   the UUID as a `java.util.UUID`, for an API which needs one
+-   entry #text   the canonical lowercase hyphenated form, such as `a0cb16f0-d41e-4c28-862f-bd6164bbcc8c`
+-   entry #unary_~   the bitwise inverse of the UUID, written `~uuid`
+-       Inverts all 128 bits; the result is generally not a valid version 4 identifier, which
+-       matters only to a consumer that inspects the version bits.
+-   entry #^   the bitwise exclusive-or of two UUIDs
+-       Combines both halves bit by bit. Since exclusive-or is its own inverse, `(a ^ b) ^ b
+-       == a`, which makes it a cheap way to derive a stable identifier from two others and to
+-       recover either from the result.
++         Fehler `↯/s.47.1`: _`badUuid` is not a valid UUID_. Ausgelöst von `Uuid.parse` und beim
++         Dekodieren eines `Uuid` aus Text. Der Interpolator `uuid"…"` meldet dieselbe Meldung als
++         Kompilierfehler.
++     entry #badUuid   der Text, der sich nicht parsen ließ
++   entry #msb   die höchstwertigen 64 Bits
++   entry #lsb   die niedrigstwertigen 64 Bits
++   entry #java   die UUID als `java.util.UUID`, für eine API, die eine braucht
++   entry #text   die kanonische kleingeschriebene Form mit Bindestrichen, etwa `a0cb16f0-d41e-4c28-862f-bd6164bbcc8c`
++   entry #unary_~   die bitweise Inversion der UUID, geschrieben `~uuid`
++       Invertiert alle 128 Bits; das Ergebnis ist im Allgemeinen kein gültiger Bezeichner der
++       Version 4, was nur für einen Verwender eine Rolle spielt, der die Versionsbits untersucht.
++   entry #^   das bitweise exklusive Oder zweier UUIDs
++       Verknüpft beide Hälften Bit für Bit. Da das exklusive Oder sein eigenes Inverses ist, gilt
++       `(a ^ b) ^ b
++       == a`, was es zu einem billigen Weg macht, einen stabilen Bezeichner aus zwei anderen
++       abzuleiten und jeden der beiden aus dem Ergebnis zurückzugewinnen.
+
+- entry .uuid   the `uuid"…"` interpolator: a UUID literal, checked as the code compiles
+-     A macro which parses the literal at compile time and expands to `Uuid(msb, lsb)` with
+-     the two halves as constants, so no parsing happens at runtime. A malformed literal is a
+-     compile error: _not-a-uuid is not a valid UUID_. The interpolator takes no substitutions.
++ entry .uuid   der Interpolator `uuid"…"`: ein UUID-Literal, beim Kompilieren des Codes geprüft
++     Ein Makro, das das Literal zur Kompilierzeit parst und zu `Uuid(msb, lsb)` mit den zwei
++     Hälften als Konstanten expandiert, sodass zur Laufzeit kein Parsen stattfindet. Ein
++     fehlerhaftes Literal ist ein Kompilierfehler: _not-a-uuid is not a valid UUID_. Der
++     Interpolator nimmt keine Einsetzungen.
+
+=     compile error: _not-a-uuid is not a valid UUID_. The interpolator takes no substitutions.
+=
+-     ```scala
++     ```scala
+
+=     compile error: _not-a-uuid is not a valid UUID_. The interpolator takes no substitutions.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c".lsb   // -8777588922722300788L
++     uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c".lsb   // -8777588922722300788L
+
+=     uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c".lsb   // -8777588922722300788L
+-     ```
++     ```
+
+- entry .jvmInstanceId   a UUID drawn once per running program, identifying this process
+-     A lazy value, generated with `Uuid()` the first time it is read and the same thereafter
+-     for the life of the program, so it distinguishes one running instance from another — in
+-     logs, or in a lock or a message which must name its owner.
++ entry .jvmInstanceId   eine UUID, einmal pro laufendem Programm gezogen, die diesen Prozess identifiziert
++     Ein Lazy-Wert, beim ersten Lesen mit `Uuid()` erzeugt und danach für die Lebensdauer des
++     Programms derselbe, sodass er eine laufende Instanz von einer anderen unterscheidet — in
++     Protokollen oder in einer Sperre oder einer Nachricht, die ihren Eigentümer nennen muss.
+
+- entry .internal   the macro behind the `uuid"…"` interpolator
++ entry .internal   das Makro hinter dem Interpolator `uuid"…"`
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use.
+-   entry .uuid   parses a `uuid"…"` literal at compile time
++       Nicht zur direkten Verwendung.
++   entry .uuid   parst ein `uuid"…"`-Literal zur Kompilierzeit

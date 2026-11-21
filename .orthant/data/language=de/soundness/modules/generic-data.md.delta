@@ -1,0 +1,263 @@
+orthant 1 language
+
+- ## Generic Data
++ ## Generische Daten
+
+- ### About
++ ### Überblick
+
+- A value sometimes has to leave the world where its class is known, and arrive intact: in
+- another classloader, in another process, or across a staging boundary. The `Pojo`
+- representation carries any Scala value using only the types which every JVM context shares.
+- Those are boxed primitives, strings, and arrays of objects.
++ Ein Wert muss manchmal die Welt verlassen, in der seine Klasse bekannt ist, und unversehrt
++ ankommen: in einem anderen Classloader, in einem anderen Prozess oder jenseits einer
++ Staging-Grenze. Die Darstellung `Pojo` trägt jeden Scala-Wert nur mit den Typen, die jeder
++ JVM-Kontext teilt. Das sind geboxte Primitive, Strings und Arrays von Objekten.
+
+- A case class or an enumeration converts to a `Pojo` and back with [derived][derivation] codecs,
+- so the value survives the crossing without its class traveling with it.
++ Eine Case-Klasse oder eine Aufzählung wird mit [abgeleiteten][Ableitung] Codecs in ein `Pojo` und
++ zurück umgewandelt, sodass der Wert den Übergang übersteht, ohne dass seine Klasse mitreist.
+
+- ### On classloader-neutral data
++ ### Über Classloader-neutrale Daten
+
+- A Scala object is welded to its class, and its class to the classloader which defined it. Hand
+- the object to code which was loaded elsewhere, such as an isolated plugin or a computation
+- staged on another machine, and the receiving side cannot cast it back. The "same" class from
+- another loader is a different class.
++ Ein Scala-Objekt ist an seine Klasse geschweißt und seine Klasse an den Classloader, der sie
++ definiert hat. Übergibt man das Objekt an Code, der anderswo geladen wurde, etwa an ein isoliertes
++ Plugin oder eine Berechnung, die auf einer anderen Maschine gestagt wurde, kann die empfangende
++ Seite es nicht zurückcasten. Die „gleiche“ Klasse aus einem anderen Loader ist eine andere Klasse.
+
+- Full serialization solves this with heavy machinery. Passing strings solves it by giving up
+- structure.
++ Vollständige Serialisierung löst das mit schwerer Maschinerie. Strings zu übergeben löst es, indem
++ man die Struktur aufgibt.
+
+- A `Pojo` keeps the structure and drops the class. A product becomes an array of its fields, a
+- variant becomes a labeled pair, and a primitive becomes its boxed self. All of these are types
+- defined by the JDK, and mean the same on both sides of any boundary. This is the transport
+- beneath [staged](staging.md) remote execution, and working on a generic representation in this
+- way is what [composability](../../philosophy/composability.md) between formats rests on.
++ Ein `Pojo` behält die Struktur und lässt die Klasse fallen. Ein Produkt wird zu einem Array seiner
++ Felder, eine Variante zu einem beschrifteten Paar und ein Primitiv zu seiner geboxten Form. All
++ dies sind vom JDK definierte Typen, die auf beiden Seiten jeder Grenze dasselbe bedeuten. Das ist
++ der Transport unter der [gestagten](staging.md) entfernten Ausführung, und auf diese Weise auf
++ einer generischen Darstellung zu arbeiten ist das, worauf
++ [Komponierbarkeit](../../philosophy/composability.md) zwischen Formaten beruht.
+
+- Everything comes from the `soundness` package. The samples throw any error as an exception, and
+- the last import lets them print their results:
++ Alles stammt aus dem Paket `soundness`. Die Beispiele werfen jeden Fehler als Exception, und der
++ letzte Import erlaubt ihnen, ihre Ergebnisse auszugeben:
+
+= the last import lets them print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Encoding and decoding
++ ### Kodieren und Dekodieren
+
+- `pojo` encodes a value. The result holds only arrays, strings and boxed primitives:
++ `pojo` kodiert einen Wert. Das Ergebnis enthält nur Arrays, Strings und geboxte Primitive:
+
+= `pojo` encodes a value. The result holds only arrays, strings and boxed primitives:
+=
+- ```scala
++ ```scala
+
+- case class Person(name: Text, age: Int)
++ case class Person(name: Text, age: Int)
+
+- case class Troupe(players: List[Person], size: Int)
++ case class Troupe(players: List[Person], size: Int)
+
+- val troupe = Troupe(List(Person(t"Quince", 40), Person(t"Bottom", 35)), 2)
++ val troupe = Troupe(List(Person(t"Quince", 40), Person(t"Bottom", 35)), 2)
+
+- val transportable = troupe.pojo
++ val transportable = troupe.pojo
+
+= val transportable = troupe.pojo
+- ```
++ ```
+
+- `as` decodes it. The receiving side must state the type it expects, and the data may not match
+- that type, so decoding can fail, and needs a [strategy]:
++ `as` dekodiert ihn. Die empfangende Seite muss den Typ angeben, den sie erwartet, und die Daten
++ passen möglicherweise nicht zu diesem Typ, sodass das Dekodieren fehlschlagen kann und eine
++ [Strategie] braucht:
+
+= that type, so decoding can fail, and needs a [strategy]:
+=
+- ```scala fuel
++ ```scala fuel
+
+= that type, so decoding can fail, and needs a [strategy]:
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- ##
++ ##
+
+- Out.println(transportable.as[Troupe].inspect)
++ Out.println(transportable.as[Troupe].inspect)
+
+= Out.println(transportable.as[Troupe].inspect)
+- ```
++ ```
+
+- Data which is not shaped like the expected type raises a `Pojo.Error`. A string, for
+- instance, is not a `Person`:
++ Daten, die nicht wie der erwartete Typ gestaltet sind, lösen einen `Pojo.Error` aus. Ein String
++ etwa ist keine `Person`:
+
+= instance, is not a `Person`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= instance, is not a `Person`:
+=
+= ```scala fuel
+- run
++ run
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- t"Bottom".pojo.as[Person]
++ t"Bottom".pojo.as[Person]
+
+= t"Bottom".pojo.as[Person]
+- ```
++ ```
+
+- Nested case classes, collections and enumerations all derive their conversions, so any value
+- which is shaped like data crosses without preparation.
++ Verschachtelte Case-Klassen, Collections und Aufzählungen leiten alle ihre Umwandlungen ab, sodass
++ jeder Wert, der wie Daten gestaltet ist, ohne Vorbereitung hinüberkommt.
+
+- ### The representation
++ ### Die Darstellung
+
+- The encoding is deliberately transparent:
++ Die Kodierung ist bewusst durchschaubar:
+
+- ```tabular
++ ```tabular
+
+- column  Scala value
+- column  Pojo form
+- row  `Text` or `String`  a `String`
+- row  `Int`, `Long`, `Float`, `Double`, `Char`, `Boolean` or `Byte`  its boxed `java.lang` form
+- row  a collection: `List`, `Set`, `Sequence` or other `Iterable`  an `Array[Object]` of its elements
+- row  a case class  an `Array[Object]` of its fields in declaration order
+- row  an enumeration case  an `Array[Object]` pair of its name and its payload
++ column  Scala-Wert
++ column  Pojo-Form
++ row  `Text` oder `String`  ein `String`
++ row  `Int`, `Long`, `Float`, `Double`, `Char`, `Boolean` oder `Byte`  seine geboxte `java.lang`-Form
++ row  eine Collection: `List`, `Set`, `Sequence` oder ein anderes `Iterable`  ein `Array[Object]` ihrer Elemente
++ row  eine Case-Klasse  ein `Array[Object]` ihrer Felder in der Reihenfolge der Deklaration
++ row  ein Fall einer Aufzählung  ein `Array[Object]`-Paar aus seinem Namen und seinen Nutzdaten
+
+= row  an enumeration case  an `Array[Object]` pair of its name and its payload
+- ```
++ ```
+
+- So `Person(t"Bottom", 35).pojo` is an array of the string `"Bottom"` and the boxed integer
+- `35`, and the `Green` case of an enumeration is an array of the string `"Green"` and an empty
+- array:
++ So ist `Person(t"Bottom", 35).pojo` ein Array aus dem String `"Bottom"` und der geboxten Ganzzahl
++ `35`, und der Fall `Green` einer Aufzählung ist ein Array aus dem String `"Green"` und einem leeren
++ Array:
+
+= array:
+=
+- ```scala
++ ```scala
+
+- enum Light:
++ enum Light:
+
+-   case Red, Amber, Green
++   case Red, Amber, Green
+
+- val person = Person(t"Bottom", 35).pojo
++ val person = Person(t"Bottom", 35).pojo
+
+- val light = (Light.Green: Light).pojo
++ val light = (Light.Green: Light).pojo
+
+= val light = (Light.Green: Light).pojo
+- ```
++ ```
+
+- Both sides derive the codec from the same type definition, so the encoding needs no schema on
+- the wire. It does mean that both sides must agree on that definition.
++ Beide Seiten leiten den Codec aus derselben Typdefinition ab, sodass die Kodierung bei der
++ Übertragung kein Schema braucht. Es bedeutet allerdings, dass sich beide Seiten auf diese
++ Definition einigen müssen.
+
+- `Pojo` is an [opaque type] over the JDK types it permits. A `Pojo` cannot be confused with an
+- arbitrary `Object`, and the only way to produce one is through an encoder.
++ `Pojo` ist ein [opaker Typ] über den JDK-Typen, die er zulässt. Ein `Pojo` kann nicht mit einem
++ beliebigen `Object` verwechselt werden, und der einzige Weg, eines zu erzeugen, führt über einen
++ Encoder.
+
+- ### Where it is used
++ ### Wo es verwendet wird
+
+- The obvious case is a boundary between classloaders. Code which is loaded in an isolated
+- loader, such as a plugin, a compiled fragment or a sandboxed extension, shares the JDK's
+- classes with its host, and nothing else. The JDK's classes are therefore exactly the vocabulary
+- the two can speak. [Classpath](classpath.md) describes classloaders.
++ Der offensichtliche Fall ist eine Grenze zwischen Classloadern. Code, der in einem isolierten
++ Loader geladen wird, etwa ein Plugin, ein kompiliertes Fragment oder eine abgeschottete
++ Erweiterung, teilt die Klassen des JDK mit seinem Host und sonst nichts. Die Klassen des JDK sind
++ daher genau das Vokabular, das die beiden sprechen können. [Klassenpfad](classpath.md) beschreibt
++ Classloader.
+
+- The same reasoning applies across a boundary between processes, which is what
+- [staged](staging.md) remote execution uses. The arguments to a staged computation are encoded
+- on one side, sent, and decoded on the far side against the type which the staged code expects.
++ Dieselbe Überlegung gilt über eine Grenze zwischen Prozessen hinweg, und das verwendet die
++ [gestagte](staging.md) entfernte Ausführung. Die Argumente einer gestagten Berechnung werden auf
++ einer Seite kodiert, gesendet und auf der fernen Seite gegen den Typ dekodiert, den der gestagte
++ Code erwartet.
+
+- Nothing about the representation is specific to either use. Any boundary which can carry boxed
+- primitives, strings and arrays of objects can carry a Scala value.
++ Nichts an der Darstellung ist spezifisch für eine der beiden Verwendungen. Jede Grenze, die
++ geboxte Primitive, Strings und Arrays von Objekten tragen kann, kann einen Scala-Wert tragen.
+
+- ### Related
++ ### Verwandte Themen
+
+- - [Derivation](derivation.md) explains the engine which generates the codecs.
++ - [Ableitung](derivation.md) erklärt die Maschinerie, die die Codecs erzeugt.

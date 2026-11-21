@@ -1,0 +1,70 @@
+orthant 1 language
+
+- # `↯/s.83.1` — `Dsv.Error`
++ # `↯/s.83.1` — `Dsv.Error`
+
+- Raised when Caesura cannot parse a row of delimiter-separated values.
++ Wird ausgelöst, wenn Caesura eine Zeile mit durch Trennzeichen getrennten Werten nicht parsen
++ kann.
+
+- ## Cause
++ ## Ursache
+
+- Caesura parses CSV/TSV/DSV against a `DsvFormat`. The parser raises
+- this error on malformed input. The message is `could not parse row
++ Caesura parst CSV/TSV/DSV anhand eines `DsvFormat`. Der Parser löst diesen Fehler bei
++ fehlerhafter Eingabe aus. Die Meldung lautet `could not parse row
+
+- data because $reason`.
++ data because $reason`.
+
+- ## Variants
++ ## Varianten
+
+- ### `↯/s.83.1.1` — `MisplacedQuote`
++ ### `↯/s.83.1.1` — `MisplacedQuote`
+
+- A quote character appeared after the start of a cell, where the
+- parser was not expecting one.
++ Ein Anführungszeichen erschien nach dem Beginn einer Zelle, wo der Parser keines erwartete.
+
+- **Example.** `[↯/s.83.1.1] could not parse row data because a quote was found after the start of a cell`
++ **Beispiel.** `[↯/s.83.1.1] could not parse row data because a quote was found after the start of a cell`
+
+- **Resolution.** Either escape the quote according to the format's
+- quoting rules, or quote the entire field.
++ **Behebung.** Entweder das Anführungszeichen nach den Quotierungsregeln des Formats maskieren
++ oder das gesamte Feld quotieren.
+
+- ### `↯/s.83.1.2` — `Absent`
++ ### `↯/s.83.1.2` — `Absent`
+
+- The row has no cell at the position the decoder expected.
++ Die Zeile hat an der Position, die der Decoder erwartete, keine Zelle.
+
+- **Example.** `[↯/s.83.1.2] could not decode the cell because the cell was absent`
++ **Beispiel.** `[↯/s.83.1.2] could not decode the cell because the cell was absent`
+
+- **Resolution.** Check that the row has as many columns as the target type has fields, remembering that a nested case class spans several columns. A trailing `Optional` field may legitimately be absent.
++ **Behebung.** Prüfen, ob die Zeile so viele Spalten hat, wie der Zieltyp Felder hat, und dabei
++ bedenken, dass eine verschachtelte Case-Klasse mehrere Spalten umfasst. Ein nachgestelltes
++ `Optional`-Feld darf zu Recht fehlen.
+
+- ### `↯/s.83.1.3` — `Unparseable`
++ ### `↯/s.83.1.3` — `Unparseable`
+
+- A cell's text could not be read as the type the field declares.
++ Der Text einer Zelle konnte nicht als der Typ gelesen werden, den das Feld deklariert.
+
+- **Example.** `[↯/s.83.1.3] could not decode the cell because the value abc could not be parsed as Int`
++ **Beispiel.** `[↯/s.83.1.3] could not decode the cell because the value abc could not be parsed as Int`
+
+- **Resolution.** Correct the data, or widen the field's type. Under an accruing strategy every bad cell in the file is reported at once.
++ **Behebung.** Die Daten korrigieren oder den Typ des Feldes erweitern. Unter einer
++ sammelnden Strategie wird jede fehlerhafte Zelle der Datei auf einmal gemeldet.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/caesura/src/core/caesura.Dsv.scala`
++ - Quelle: `lib/caesura/src/core/caesura.Dsv.scala`

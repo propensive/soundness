@@ -1,0 +1,49 @@
+orthant 1 language
+
+- # `↯/s.112.8` — `Rpc.Error`
++ # `↯/s.112.8` — `Rpc.Error`
+
+- Raised when an RPC call fails for a reason that cannot be
+- expressed by the JSON-RPC error type.
++ Wird ausgelöst, wenn ein RPC-Aufruf aus einem Grund fehlschlägt, der sich nicht
++ durch den JSON-RPC-Fehlertyp ausdrücken lässt.
+
+- ## Cause
++ ## Ursache
+
+- Obligatory's transport-level failures — a connection that could not be made, a response that
+- never arrived, a message that could not be framed — have no JSON-RPC error code to carry
+- them, since the JSON-RPC error object describes faults in a call that did complete. This
+- error covers the rest.
++ Die Fehlschläge von Obligatory auf Transportebene – eine Verbindung, die nicht hergestellt
++ werden konnte, eine Antwort, die nie eintraf, eine Nachricht, die nicht gerahmt werden konnte –
++ haben keinen JSON-RPC-Fehlercode, der sie tragen könnte, da das JSON-RPC-Fehlerobjekt Fehler in
++ einem Aufruf beschreibt, der abgeschlossen wurde. Dieser Fehler deckt den Rest ab.
+
+- ## Example message
++ ## Beispielmeldung
+
+=
+- ```
++ ```
+
+- [↯/s.112.8] the remote procedure call failed
++ [↯/s.112.8] the remote procedure call failed
+
+= [↯/s.112.8] the remote procedure call failed
+- ```
++ ```
+
+- ## Resolution
++ ## Behebung
+
+- Inspect the cause chain for transport- or protocol-level details.
++ Untersuchen Sie die Ursachenkette auf Einzelheiten der Transport- oder Protokollebene.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/obligatory/src/core/obligatory.Rpc.scala`
+- - `↯/s.112.7` — JSON-RPC-specific failure
++ - Quelle: `lib/obligatory/src/core/obligatory.Rpc.scala`
++ - `↯/s.112.7` — JSON-RPC-spezifischer Fehlschlag

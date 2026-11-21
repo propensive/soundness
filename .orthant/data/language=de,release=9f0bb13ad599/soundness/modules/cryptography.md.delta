@@ -1,0 +1,558 @@
+orthant 1 language
+
+- The padding which a plain RSA key encrypts with is that of PKCS#1 v1.5. It is provided for the
+- protocols which still use it, and should not be chosen for anything new. `RsaOaep` is the
+- modern padding. Its second type parameter is the hash it uses:
++ Die Auffüllung, mit der ein einfacher RSA-Schlüssel verschlüsselt, ist die von PKCS#1 v1.5. Sie
++ wird für die Protokolle bereitgestellt, die sie noch verwenden, und sollte für nichts Neues
++ gewählt werden. `RsaOaep` ist die moderne Auffüllung. Ihr zweiter Typparameter ist der Hash, den
++ sie verwendet:
+
+= modern padding. Its second type parameter is the hash it uses:
+=
+- ```scala
++ ```scala
+
+- val oaepKey = PrivateKey.generate[RsaOaep[2048, Sha2[256]]]()
++ val oaepKey = PrivateKey.generate[RsaOaep[2048, Sha2[256]]]()
+
+- val wrappedMessage = oaepKey.public.uncloak:
++ val wrappedMessage = oaepKey.public.uncloak:
+
+= val wrappedMessage = oaepKey.public.uncloak:
+-   t"secret".encrypt(InitializationVector.random)
++   t"secret".encrypt(InitializationVector.random)
+
+= val wrappedMessage = oaepKey.public.uncloak:
+=   t"secret".encrypt(InitializationVector.random)
+- ```
++ ```
+
+= val wrappedMessage = oaepKey.public.uncloak:
+=   t"secret".encrypt(InitializationVector.random)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val wrappedMessage = oaepKey.public.uncloak:
+=   t"secret".encrypt(InitializationVector.random)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val wrappedMessage = oaepKey.public.uncloak:
+=   t"secret".encrypt(InitializationVector.random)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(oaepKey.uncloak(wrappedMessage.decrypt.as[Text]))
++ Out.println(oaepKey.uncloak(wrappedMessage.decrypt.as[Text]))
+
+= Out.println(oaepKey.uncloak(wrappedMessage.decrypt.as[Text]))
+- ```
++ ```
+
+- An `Rsa` key and an `RsaOaep` key are the same document. The type is what selects the
+- padding, and keeps one key from being used under both.
++ Ein `Rsa`-Schlüssel und ein `RsaOaep`-Schlüssel sind dasselbe Dokument. Der Typ wählt die
++ Auffüllung und verhindert, dass ein Schlüssel unter beiden verwendet wird.
+
+- RSA has a second signature scheme as well. `RsaPss` signs with the randomized padding of
+- RSASSA-PSS, which is what TLS 1.3 and the `PS256` algorithm of [JOSE](jose.md) require:
++ RSA hat außerdem ein zweites Signaturverfahren. `RsaPss` signiert mit der randomisierten
++ Auffüllung von RSASSA-PSS, die TLS 1.3 und der Algorithmus `PS256` von [JOSE](jose.md)
++ verlangen:
+
+= RSASSA-PSS, which is what TLS 1.3 and the `PS256` algorithm of [JOSE](jose.md) require:
+=
+- ```scala
++ ```scala
+
+- val pssSigner = PrivateKey.generate[RsaPss[2048]]()
++ val pssSigner = PrivateKey.generate[RsaPss[2048]]()
+
+- val pssSignature = pssSigner.sign(document)
++ val pssSignature = pssSigner.sign(document)
+
+= val pssSignature = pssSigner.sign(document)
+- ```
++ ```
+
+= val pssSignature = pssSigner.sign(document)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val pssSignature = pssSigner.sign(document)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val pssSignature = pssSigner.sign(document)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(pssSigner.public.verify(document, pssSignature).inspect)
++ Out.println(pssSigner.public.verify(document, pssSignature).inspect)
+
+= Out.println(pssSigner.public.verify(document, pssSignature).inspect)
+- ```
++ ```
+
+- An ECDSA signature is a pair of integers, which a provider writes as DER. JOSE and COSE
+- write the same pair as two fixed-width numbers instead. `Ecdsa.concatenation` and
+- `Ecdsa.signature` convert between the two forms:
++ Eine ECDSA-Signatur ist ein Paar ganzer Zahlen, das ein Provider als DER schreibt. JOSE und
++ COSE schreiben dasselbe Paar stattdessen als zwei Zahlen fester Breite. `Ecdsa.concatenation`
++ und `Ecdsa.signature` wandeln zwischen den beiden Formen um:
+
+= `Ecdsa.signature` convert between the two forms:
+=
+- ```scala
++ ```scala
+
+- val fixedWidth: Optional[Data] = Ecdsa.concatenation(signature)
++ val fixedWidth: Optional[Data] = Ecdsa.concatenation(signature)
+
+= val fixedWidth: Optional[Data] = Ecdsa.concatenation(signature)
+- ```
++ ```
+
+= val fixedWidth: Optional[Data] = Ecdsa.concatenation(signature)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val fixedWidth: Optional[Data] = Ecdsa.concatenation(signature)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val fixedWidth: Optional[Data] = Ecdsa.concatenation(signature)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(fixedWidth.let(_.length).or(0).show)
++ Out.println(fixedWidth.let(_.length).or(0).show)
+
+= Out.println(fixedWidth.let(_.length).or(0).show)
+- ```
++ ```
+
+- ### Deriving and wrapping keys
++ ### Schlüssel ableiten und verpacken
+
+- The secret which a key agreement produces is not itself a key, and neither is a password. A
+- *key-derivation function* turns either into key material of the length a cipher needs.
+- `KeyDerivation` provides three, each over a hash which is named as a type:
++ Das Geheimnis, das eine Schlüsselvereinbarung erzeugt, ist selbst kein Schlüssel, und ein
++ Passwort ist es ebenso wenig. Eine *Schlüsselableitungsfunktion* macht aus beiden
++ Schlüsselmaterial der Länge, die eine Chiffre braucht. `KeyDerivation` bietet drei, jede über
++ einem Hash, der als Typ benannt wird:
+
+= `KeyDerivation` provides three, each over a hash which is named as a type:
+=
+- ```tabular
++ ```tabular
+
+- column  Function
++ column  Funktion
+
+- column  Standard
++ column  Standard
+
+- column  For
+- row  `hkdf`  RFC 5869  a key from an agreed secret, as TLS 1.3 and most modern protocols derive theirs
+- row  `concat`  NIST SP 800-56A  the same, as the `ECDH-ES` algorithms of [JOSE](jose.md) do it
+- row  `pbkdf2`  RFC 8018  a key from a password, deliberately slowly
++ column  Für
++ row  `hkdf`  RFC 5869  einen Schlüssel aus einem vereinbarten Geheimnis, so wie TLS 1.3 und die meisten modernen Protokolle ihre ableiten
++ row  `concat`  NIST SP 800-56A  dasselbe, so wie es die `ECDH-ES`-Algorithmen von [JOSE](jose.md) tun
++ row  `pbkdf2`  RFC 8018  einen Schlüssel aus einem Passwort, absichtlich langsam
+
+= row  `pbkdf2`  RFC 8018  a key from a password, deliberately slowly
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- val material: Data = t"an agreed secret".in[Data]
++ val material: Data = t"an agreed secret".in[Data]
+
+- val derived: Data = KeyDerivation.hkdf[Sha2[256]](material, Data(), t"session".in[Data], 32)
++ val derived: Data = KeyDerivation.hkdf[Sha2[256]](material, Data(), t"session".in[Data], 32)
+
+- val slow: Data = KeyDerivation.pbkdf2[Sha2[256]](t"hunter2".in[Data], t"salt".in[Data], 4096, 32)
++ val slow: Data = KeyDerivation.pbkdf2[Sha2[256]](t"hunter2".in[Data], t"salt".in[Data], 4096, 32)
+
+= val slow: Data = KeyDerivation.pbkdf2[Sha2[256]](t"hunter2".in[Data], t"salt".in[Data], 4096, 32)
+- ```
++ ```
+
+= val slow: Data = KeyDerivation.pbkdf2[Sha2[256]](t"hunter2".in[Data], t"salt".in[Data], 4096, 32)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val slow: Data = KeyDerivation.pbkdf2[Sha2[256]](t"hunter2".in[Data], t"salt".in[Data], 4096, 32)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val slow: Data = KeyDerivation.pbkdf2[Sha2[256]](t"hunter2".in[Data], t"salt".in[Data], 4096, 32)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(derived.length.show)
++ Out.println(derived.length.show)
+
+- Out.println(slow.serialize[Hex])
++ Out.println(slow.serialize[Hex])
+
+= Out.println(slow.serialize[Hex])
+- ```
++ ```
+
+- *Key wrapping* is encryption whose plaintext is another key. `AesKeyWrap` is the algorithm
+- of RFC 3394. It needs no nonce, and its integrity check is built in, so unwrapping with the
+- wrong key raises a `Crypto.Error`:
++ *Schlüsselverpackung* ist eine Verschlüsselung, deren Klartext ein anderer Schlüssel ist.
++ `AesKeyWrap` ist der Algorithmus aus RFC 3394. Er braucht keine Nonce, und seine
++ Integritätsprüfung ist eingebaut, sodass das Entpacken mit dem falschen Schlüssel einen
++ `Crypto.Error` auslöst:
+
+= wrong key raises a `Crypto.Error`:
+=
+- ```scala
++ ```scala
+
+- val wrappingKey = SymmetricKey.generate[AesKeyWrap[256]]()
++ val wrappingKey = SymmetricKey.generate[AesKeyWrap[256]]()
+
+- val wrapped: Data = wrappingKey.wrap(derived)
++ val wrapped: Data = wrappingKey.wrap(derived)
+
+= val wrapped: Data = wrappingKey.wrap(derived)
+- ```
++ ```
+
+= val wrapped: Data = wrappingKey.wrap(derived)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val wrapped: Data = wrappingKey.wrap(derived)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val wrapped: Data = wrappingKey.wrap(derived)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(wrapped.length.show)
++ Out.println(wrapped.length.show)
+
+- Out.println(wrappingKey.unwrap(wrapped).length.show)
++ Out.println(wrappingKey.unwrap(wrapped).length.show)
+
+= Out.println(wrappingKey.unwrap(wrapped).length.show)
+- ```
++ ```
+
+- `AesCbcHmac` is a second authenticated cipher, beside AES-GCM. It is AES in CBC mode with an
+- HMAC over the result, as JOSE's `A128CBC-HS256` defines it, and it seals and opens in the same
+- way. Its size is that of the whole key, half of which is for each part.
++ `AesCbcHmac` ist neben AES-GCM eine zweite authentifizierte Chiffre. Sie ist AES im CBC-Modus
++ mit einem HMAC über das Ergebnis, wie `A128CBC-HS256` von JOSE es definiert, und sie versiegelt
++ und öffnet auf dieselbe Weise. Ihre Größe ist die des ganzen Schlüssels, dessen eine Hälfte
++ jeweils für einen der beiden Teile bestimmt ist.
+
+- A certificate's fields are read back from it. Its key is read as a key of a named cipher,
+- which the certificate's own algorithm must agree with:
++ Die Felder eines Zertifikats werden aus ihm zurückgelesen. Sein Schlüssel wird als Schlüssel
++ einer benannten Chiffre gelesen, mit der der eigene Algorithmus des Zertifikats übereinstimmen
++ muss:
+
+= which the certificate's own algorithm must agree with:
+=
+- ```scala
++ ```scala
+
+- val named: Optional[Text] = certificate.subject.let(_.commonName)
++ val named: Optional[Text] = certificate.subject.let(_.commonName)
+
+- val certified: PublicKey[Rsa[2048]] = certificate.key[Rsa[2048]]
++ val certified: PublicKey[Rsa[2048]] = certificate.key[Rsa[2048]]
+
+= val certified: PublicKey[Rsa[2048]] = certificate.key[Rsa[2048]]
+- ```
++ ```
+
+= val certified: PublicKey[Rsa[2048]] = certificate.key[Rsa[2048]]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val certified: PublicKey[Rsa[2048]] = certificate.key[Rsa[2048]]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val certified: PublicKey[Rsa[2048]] = certificate.key[Rsa[2048]]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(named.or(t"nobody"))
++ Out.println(named.or(t"nobody"))
+
+- Out.println(certificate.authority.inspect)
++ Out.println(certificate.authority.inspect)
+
+= Out.println(certificate.authority.inspect)
+- ```
++ ```
+
+- `serial`, `issuer`, `notBefore`, `notAfter` and `extension` read the other fields, and
+- `authority` says whether a certificate is a certificate authority's.
++ `serial`, `issuer`, `notBefore`, `notAfter` und `extension` lesen die übrigen Felder, und
++ `authority` sagt, ob ein Zertifikat das einer Zertifizierungsstelle ist.
+
+- `Certificate.validate` checks a *chain* of certificates against a set of trusted roots. The
+- chain begins with the certificate which is being relied on, and each certificate is followed
+- by that of the authority which issued it. Every certificate must be within its validity
+- period, by the `Clock` in scope, and must be signed by the next. Every issuer must be an
+- authority, and the last certificate must be a trusted root, or be issued by one:
++ `Certificate.validate` prüft eine *Kette* von Zertifikaten gegen eine Menge vertrauenswürdiger
++ Wurzeln. Die Kette beginnt mit dem Zertifikat, auf das man sich verlässt, und auf jedes
++ Zertifikat folgt das der Stelle, die es ausgestellt hat. Jedes Zertifikat muss nach der `Clock`
++ im Geltungsbereich innerhalb seines Gültigkeitszeitraums liegen und vom nächsten signiert sein.
++ Jeder Aussteller muss eine Zertifizierungsstelle sein, und das letzte Zertifikat muss eine
++ vertrauenswürdige Wurzel sein oder von einer ausgestellt worden sein:
+
+= authority, and the last certificate must be a trusted root, or be issued by one:
+=
+- ```scala
++ ```scala
+
+- val authorityKey = PrivateKey.generate[Ecdsa[256]]()
++ val authorityKey = PrivateKey.generate[Ecdsa[256]]()
+
+- val authorityName = Distinguished(commonName = t"Example Root")
++ val authorityName = Distinguished(commonName = t"Example Root")
+
+- val trusted =
++ val trusted =
+
+-   Certificate.selfSigned(authorityName, authorityKey, validity, BigInt(1), authority = true)
++   Certificate.selfSigned(authorityName, authorityKey, validity, BigInt(1), authority = true)
+
+- val issued =
++ val issued =
+
+-   Certificate.issued(subject, tlsKey.public, authorityName, authorityKey, validity, BigInt(2))
++   Certificate.issued(subject, tlsKey.public, authorityName, authorityKey, validity, BigInt(2))
+
+=   Certificate.issued(subject, tlsKey.public, authorityName, authorityKey, validity, BigInt(2))
+- ```
++ ```
+
+=   Certificate.issued(subject, tlsKey.public, authorityName, authorityKey, validity, BigInt(2))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   Certificate.issued(subject, tlsKey.public, authorityName, authorityKey, validity, BigInt(2))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   Certificate.issued(subject, tlsKey.public, authorityName, authorityKey, validity, BigInt(2))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Certificate.validate(List(issued), List(trusted))
++ Certificate.validate(List(issued), List(trusted))
+
+- Out.println(issued.signedBy(trusted).inspect)
++ Out.println(issued.signedBy(trusted).inspect)
+
+= Out.println(issued.signedBy(trusted).inspect)
+- ```
++ ```
+
+- A chain which does not lead to a trusted root raises a `Certificate.Path.Error`. Revocation
+- and name constraints are not examined, so this suits a closed set of roots which were chosen
+- for one purpose, and not the roots of the public web.
++ Eine Kette, die nicht zu einer vertrauenswürdigen Wurzel führt, löst einen
++ `Certificate.Path.Error` aus. Widerruf und Namensbeschränkungen werden nicht untersucht; das
++ eignet sich daher für eine geschlossene Menge von Wurzeln, die für einen Zweck gewählt wurden,
++ und nicht für die Wurzeln des öffentlichen Webs.
+
+- ### COSE
++ ### COSE
+
+- [COSE](https://www.rfc-editor.org/rfc/rfc9052) is the counterpart of [JOSE](jose.md) for
+- CBOR. `Cose` signs a payload with a private key, or authenticates it with a symmetric key, and
+- `authenticate` checks the result. The key's type chooses the algorithm, and a message whose
+- header names another is refused:
++ [COSE](https://www.rfc-editor.org/rfc/rfc9052) ist das Gegenstück zu [JOSE](jose.md) für
++ CBOR. `Cose` signiert Nutzdaten mit einem privaten Schlüssel oder authentifiziert sie mit einem
++ symmetrischen Schlüssel, und `authenticate` prüft das Ergebnis. Der Typ des Schlüssels wählt
++ den Algorithmus, und eine Nachricht, deren Header einen anderen nennt, wird verweigert:
+
+= header names another is refused:
+=
+- ```scala
++ ```scala
+
+- val envelope: Data = Cose(document.in[Data], signer).in[Data]
++ val envelope: Data = Cose(document.in[Data], signer).in[Data]
+
+= val envelope: Data = Cose(document.in[Data], signer).in[Data]
+- ```
++ ```
+
+= val envelope: Data = Cose(document.in[Data], signer).in[Data]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val envelope: Data = Cose(document.in[Data], signer).in[Data]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val envelope: Data = Cose(document.in[Data], signer).in[Data]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(envelope.authenticate[Cose](signer.public).inspect)
++ Out.println(envelope.authenticate[Cose](signer.public).inspect)
+
+= Out.println(envelope.authenticate[Cose](signer.public).inspect)
+- ```
++ ```
+
+- A `Cose.Key` is a public key in COSE's own form, which is how a [WebAuthn](webauthn.md)
+- authenticator describes the key of a new credential. It records the algorithm the key is to
+- be used with, and reads back as a key of a named cipher:
++ Ein `Cose.Key` ist ein öffentlicher Schlüssel in der eigenen Form von COSE; so beschreibt ein
++ [WebAuthn](webauthn.md)-Authentifikator den Schlüssel eines neuen Credentials. Er hält den
++ Algorithmus fest, mit dem der Schlüssel zu verwenden ist, und wird als Schlüssel einer
++ benannten Chiffre zurückgelesen:
+
+= be used with, and reads back as a key of a named cipher:
+=
+- ```scala
++ ```scala
+
+- val coseKey: Cose.Key = Cose.Key(signer.public)
++ val coseKey: Cose.Key = Cose.Key(signer.public)
+
+- val restoredKey: PublicKey[Ecdsa[256]] = coseKey.key[Ecdsa[256]]
++ val restoredKey: PublicKey[Ecdsa[256]] = coseKey.key[Ecdsa[256]]
+
+= val restoredKey: PublicKey[Ecdsa[256]] = coseKey.key[Ecdsa[256]]
+- ```
++ ```
+
+= val restoredKey: PublicKey[Ecdsa[256]] = coseKey.key[Ecdsa[256]]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val restoredKey: PublicKey[Ecdsa[256]] = coseKey.key[Ecdsa[256]]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val restoredKey: PublicKey[Ecdsa[256]] = coseKey.key[Ecdsa[256]]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(coseKey.algorithm.show)
++ Out.println(coseKey.algorithm.show)
+
+= Out.println(coseKey.algorithm.show)
+- ```
++ ```
+
+- import pathInterfaces.pathOnLocal
+- import systems.javaBaseSystem
++ import pathInterfaces.pathOnLocal
++ import systems.javaBaseSystem
+
+- val storePath = temporaryDirectory[Path on Local] / "cryptography" / "store.p12"
++ val storePath = temporaryDirectory[Path on Local] / "cryptography" / "store.p12"
+
+- - [JOSE](jose.md) signs and encrypts tokens with them, and [WebAuthn](webauthn.md) verifies a
+-   user's key.
++ - [JOSE](jose.md) signiert und verschlüsselt damit Tokens, und [WebAuthn](webauthn.md) prüft
++   den Schlüssel eines Benutzers.

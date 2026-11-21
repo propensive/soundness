@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.88.2` — `ClassfileError`
++ # `↯/s.88.2` — `ClassfileError`
+
+- Raised when Mandible cannot read a Java classfile.
++ Wird ausgelöst, wenn Mandible ein Java-Classfile nicht lesen kann.
+
+- ## Cause
++ ## Ursache
+
+- The error is thrown when the classfile bytes do not parse — for
+- example because the file is truncated, has the wrong magic number,
+- or uses a constant-pool entry the parser does not understand.
++ Der Fehler wird geworfen, wenn sich die Bytes des Classfiles nicht parsen lassen — zum Beispiel,
++ weil die Datei abgeschnitten ist, die falsche magische Zahl hat oder einen Eintrag im Konstantenpool
++ verwendet, den der Parser nicht versteht.
+
+- ## Example message
++ ## Beispielmeldung
+
+=
+- ```
++ ```
+
+- [↯/s.88.2] there was an error reading the classfile
++ [↯/s.88.2] there was an error reading the classfile
+
+= [↯/s.88.2] there was an error reading the classfile
+- ```
++ ```
+
+- ## Resolution
++ ## Behebung
+
+- Verify the classfile was produced by a supported Java version and
+- has not been corrupted. More specific reasons may be added in future.
++ Vergewissern Sie sich, dass das Classfile von einer unterstützten Java-Version erzeugt wurde und
++ nicht beschädigt ist. Spezifischere Gründe könnten künftig hinzukommen.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/mandible/src/core/mandible_core.scala`
++ - Quelle: `lib/mandible/src/core/mandible_core.scala`

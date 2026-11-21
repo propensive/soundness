@@ -1,0 +1,46 @@
+orthant 1 language
+
+- # `↯/s.35.1` — `Codepage.Error`
++ # `↯/s.35.1` — `Codepage.Error`
+
+- Raised when Hieroglyph cannot encode a character with the chosen
+- encoding.
++ Wird ausgelöst, wenn Hieroglyph ein Zeichen mit der gewählten Kodierung nicht kodieren kann.
+
+- ## Cause
++ ## Ursache
+
+- Hieroglyph throws this error when encoding a character that the
+- target encoding cannot represent (e.g. a non-Latin character with
+- ISO-8859-1).
++ Hieroglyph wirft diesen Fehler, wenn ein Zeichen kodiert wird, das die Zielkodierung nicht
++ darstellen kann (z. B. ein nichtlateinisches Zeichen mit ISO-8859-1).
+
+- ## Example message
++ ## Beispielmeldung
+
+=
+- ```
++ ```
+
+- [↯/s.35.1] character ñ cannot be encoded with the encoding US-ASCII
++ [↯/s.35.1] character ñ cannot be encoded with the encoding US-ASCII
+
+= [↯/s.35.1] character ñ cannot be encoded with the encoding US-ASCII
+- ```
++ ```
+
+- ## Resolution
++ ## Behebung
+
+- Either choose an encoding that supports the character (UTF-8 is a
+- safe default) or pre-process the input to remove unrepresentable
+- characters.
++ Wählen Sie entweder eine Kodierung, die das Zeichen unterstützt (UTF-8 ist eine sichere
++ Vorgabe), oder bereiten Sie die Eingabe vor, um nicht darstellbare Zeichen zu entfernen.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/hieroglyph/src/core/hieroglyph.Codepage.scala`
++ - Quelle: `lib/hieroglyph/src/core/hieroglyph.Codepage.scala`

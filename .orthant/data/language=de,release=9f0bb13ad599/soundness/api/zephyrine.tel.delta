@@ -1,0 +1,279 @@
+orthant 1 language
+
+- entry .Terrain   an `Expanse` whose bytes are in memory, and are read where they lie: a mapped file, or bytes on the heap
++ entry .Terrain   ein `Expanse`, dessen Bytes im Speicher liegen und dort gelesen werden, wo sie liegen: eine abgebildete Datei oder Bytes auf dem Heap
+
+= entry .Terrain   an `Expanse` whose bytes are in memory, and are read where they lie: a mapped file, or bytes on the heap
+-   detail
++   detail
+
+-       Integers are loaded at any offset, little-endian, with no copy, and a `slice` is a
+-       narrower view of the same memory. A terrain belongs to a scope -- a file is mapped for
+-       the length of a block -- so it is lent as a tracked `Terrain^`, and nothing loads from
+-       memory which is no longer mapped. `Terrain(data)` is one over bytes which are already on
+-       the heap.
+-   entry #u8   the unsigned byte at an offset, as an `Int`
+-   entry #u16   the unsigned 16-bit integer at an offset, as an `Int`
+-   entry #u32   the unsigned 32-bit integer at an offset, as a `Long`
+-   entry #u64   the 64-bit integer at an offset, as a `Long`
+-   entry #i32   the 32 bits at an offset as a signed `Int`
+-   entry #slice   a view of part of the memory, sharing it and its lifetime
+-   entry #same   whether the bytes at an offset are those of some `Data`, compared in place
+-   entry #compare   the order of some bytes relative to some `Data`, compared in place, a proper prefix sorting first
++       Ganzzahlen werden an jedem Offset geladen, Little-Endian und ohne Kopie, und ein `slice`
++       ist eine schmalere Sicht auf denselben Speicher. Ein Terrain gehört zu einem
++       Geltungsbereich -- eine Datei wird für die Dauer eines Blocks abgebildet --, daher wird
++       es als verfolgtes `Terrain^` verliehen, und nichts lädt aus Speicher, der nicht mehr
++       abgebildet ist. `Terrain(data)` ist eines über Bytes, die bereits auf dem Heap liegen.
++   entry #u8   das vorzeichenlose Byte an einem Offset, als `Int`
++   entry #u16   die vorzeichenlose 16-Bit-Ganzzahl an einem Offset, als `Int`
++   entry #u32   die vorzeichenlose 32-Bit-Ganzzahl an einem Offset, als `Long`
++   entry #u64   die 64-Bit-Ganzzahl an einem Offset, als `Long`
++   entry #i32   die 32 Bit an einem Offset als vorzeichenbehafteter `Int`
++   entry #slice   eine Sicht auf einen Teil des Speichers, die ihn und seine Lebensdauer teilt
++   entry #same   ob die Bytes an einem Offset die von bestimmten `Data` sind, an Ort und Stelle verglichen
++   entry #compare   die Ordnung bestimmter Bytes relativ zu bestimmten `Data`, an Ort und Stelle verglichen, wobei ein echtes Präfix zuerst einsortiert wird
+
+- entry .Structural   the typeclass of a type with a fixed layout in bytes: a record of sized integers, read by `unpack` and written by `pack`
++ entry .Structural   die Typklasse eines Typs mit festem Layout in Bytes: ein Datensatz aus Ganzzahlen fester Größe, gelesen von `unpack` und geschrieben von `pack`
+
+= entry .Structural   the typeclass of a type with a fixed layout in bytes: a record of sized integers, read by `unpack` and written by `pack`
+-   detail
++   detail
+
+-       A case class whose fields are sized integers (`B32`, `U16`, `S64`, …, or the plain `Byte`,
+-       `Short`, `Int` and `Long`) *is* a binary layout: each field's type states its width and
+-       its interpretation, and `Structural.derived` composes them in declaration order, computing
+-       every offset where the layout is declared. The order of the bytes within a field belongs
+-       to the format, so one of the `byteOrders` givens must be in scope at the derivation, and
+-       is fixed there.
++       Eine Case-Klasse, deren Felder Ganzzahlen fester Größe sind (`B32`, `U16`, `S64`, … oder
++       die einfachen `Byte`, `Short`, `Int` und `Long`), *ist* ein binäres Layout: Der Typ jedes
++       Feldes gibt seine Breite und seine Deutung an, und `Structural.derived` setzt sie in
++       Deklarationsreihenfolge zusammen und berechnet jeden Offset dort, wo das Layout
++       deklariert wird. Die Reihenfolge der Bytes innerhalb eines Feldes gehört zum Format,
++       daher muss eines der `byteOrders`-givens bei der Ableitung im Geltungsbereich sein, und
++       sie wird dort festgelegt.
+
+=       is fixed there.
+=
+-       ```scala
++       ```scala
+
+=       is fixed there.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       import byteOrders.bigEndianByteOrder
++       import byteOrders.bigEndianByteOrder
+
+-       case class Header(magic: B32, version: U16, flags: B16, length: U32)
++       case class Header(magic: B32, version: U16, flags: B16, length: U32)
+
+-       object Header:
++       object Header:
+
+-         given Header is Structural = Structural.derived
++         given Header is Structural = Structural.derived
+
+-       val data = hex"cafebabe0001000000000010"
++       val data = hex"cafebabe0001000000000010"
+
+-       Structural.width[Header]               // 12
++       Structural.width[Header]               // 12
+
+-       data.unpack[Header](0).length          // 16
++       data.unpack[Header](0).length          // 16
+
+-       data.unpack[Header](0).pack            // the same twelve bytes
++       data.unpack[Header](0).pack            // the same twelve bytes
+
+=       data.unpack[Header](0).pack            // the same twelve bytes
+-       ```
++       ```
+
+-       Derivation expands to one load (and one store) per field at its offset, so reading a
+-       record is one bounds check and as many loads as there are fields. A field of any other
+-       type needs a `Structural` instance of its own: that is how records nest, each keeping the
+-       byte order it was declared with, and how a field is given a representation the sized
+-       integers do not offer.
++       Die Ableitung expandiert zu einem Ladevorgang (und einem Speichervorgang) pro Feld an
++       seinem Offset, sodass das Lesen eines Datensatzes eine Bereichsprüfung und so viele
++       Ladevorgänge kostet, wie es Felder gibt. Ein Feld eines anderen Typs braucht eine eigene
++       `Structural`-Instanz: So werden Datensätze verschachtelt, wobei jeder die Byte-Reihenfolge
++       behält, mit der er deklariert wurde, und so erhält ein Feld eine Darstellung, die die
++       Ganzzahlen fester Größe nicht bieten.
+
+-       It is in the component `zephyrine.layout`, which adds a dependency on hypotenuse for the
+-       sized integers, and compiles for every platform.
++       Sie liegt in der Komponente `zephyrine.layout`, die eine Abhängigkeit von hypotenuse für
++       die Ganzzahlen fester Größe hinzufügt und für jede Plattform kompiliert.
+
+-   refer zephyrine.unpack
++   refer zephyrine.unpack
+
+-   refer zephyrine.pack
++   refer zephyrine.pack
+
+-   refer zephyrine.ByteOrder
++   refer zephyrine.ByteOrder
+
+-   entry .derived   the layout of a case class, in the byte order in scope; it does not compile without one, or for a field with no fixed layout
+-   entry .width   the number of bytes a value of a type occupies, without a value in hand
+-   entry .Error   a record was asked for at an offset where its whole width is not there
+-       Carries the `offset`, the record's `width`, and the `size` of the data or expanse.
+-       `↯/s.60.3`.
+-   entry #width   the number of bytes the layout occupies
+-   entry #load   the value laid out at an offset, unchecked: `unpack` is the checked entry point
+-   entry #store   lays a value out in a byte array at an offset, unchecked: `pack` is the checked entry point
++   entry .derived   das Layout einer Case-Klasse in der Byte-Reihenfolge im Geltungsbereich; ohne eine solche kompiliert es nicht, ebenso wenig für ein Feld ohne festes Layout
++   entry .width   die Anzahl der Bytes, die ein Wert eines Typs belegt, ohne dass ein Wert vorliegt
++   entry .Error   ein Datensatz wurde an einem Offset angefordert, an dem nicht seine ganze Breite vorhanden ist
++       Trägt den `offset`, die `width` des Datensatzes und die `size` der Daten oder des
++       Expanse. `↯/s.60.3`.
++   entry #width   die Anzahl der Bytes, die das Layout belegt
++   entry #load   der an einem Offset abgelegte Wert, ungeprüft: `unpack` ist der geprüfte Einstiegspunkt
++   entry #store   legt einen Wert an einem Offset in einem Byte-Array ab, ungeprüft: `pack` ist der geprüfte Einstiegspunkt
+
+- entry .unpack   reads a record of fixed layout from `Data`, or from an `Expanse`, at an offset
+-     `data.unpack[T](offset)` checks once that the whole record is there, raising
+-     `Structural.Error` if it is not, and then loads it. `data.unpack[T](offset, count)` reads a
+-     repeated section of `count` records as an array. On an `Expanse`, such as a `Terrain` of
+-     mapped memory, the offset is a `Long`, and only the record's own bytes are read.
++ entry .unpack   liest einen Datensatz mit festem Layout aus `Data` oder aus einem `Expanse` an einem Offset
++     `data.unpack[T](offset)` prüft einmal, dass der ganze Datensatz vorhanden ist, löst
++     `Structural.Error` aus, wenn nicht, und lädt ihn dann. `data.unpack[T](offset, count)` liest
++     einen wiederholten Abschnitt von `count` Datensätzen als Array. Auf einem `Expanse`, etwa
++     einem `Terrain` aus abgebildetem Speicher, ist der Offset ein `Long`, und es werden nur die
++     eigenen Bytes des Datensatzes gelesen.
+
+- entry .pack   the bytes of a value of fixed layout: exactly as many as its layout is wide
++ entry .pack   die Bytes eines Wertes mit festem Layout: genau so viele, wie sein Layout breit ist
+
+- entry .ByteOrder   the order of the bytes of a multi-byte field: `BigEndian` or `LittleEndian`
+-     Consulted by `Structural.derived` where a layout is declared, through a given imported from
+-     `byteOrders`.
++ entry .ByteOrder   die Reihenfolge der Bytes eines mehrbytigen Feldes: `BigEndian` oder `LittleEndian`
++     Wird von `Structural.derived` dort herangezogen, wo ein Layout deklariert wird, über ein
++     given, das aus `byteOrders` importiert wird.
+
+- entry .byteOrders   the byte orders, each a given to import by name where a layout is derived
+-   entry .bigEndianByteOrder   most significant byte first, as network formats and font files are
+-   entry .littleEndianByteOrder   least significant byte first
++ entry .byteOrders   die Byte-Reihenfolgen, jede ein given, das dort namentlich importiert wird, wo ein Layout abgeleitet wird
++   entry .bigEndianByteOrder   höchstwertiges Byte zuerst, wie in Netzwerkformaten und Schriftdateien
++   entry .littleEndianByteOrder   niedrigstwertiges Byte zuerst
+
+- entry .layoutInternal   the macro behind `Structural.derived`, and the stores it expands to
++ entry .layoutInternal   das Makro hinter `Structural.derived` und die Speichervorgänge, zu denen es expandiert
+
+= entry .layoutInternal   the macro behind `Structural.derived`, and the stores it expands to
+-   hidden
++   hidden
+
+- entry .Holding   a `Terrain` which can be changed where it lies: stored to at an offset, and expanded
++ entry .Holding   ein `Terrain`, das dort geändert werden kann, wo es liegt: an einem Offset beschrieben und erweitert
+
+= entry .Holding   a `Terrain` which can be changed where it lies: stored to at an offset, and expanded
+-   detail
++   detail
+
+-       What a format which is kept and altered in place is altered through: a file mapped for
+-       writing by the one process which owns it (galilei's `hold`), or bytes on the heap
+-       (`Holding(size)`, `Holding(data)`). Every store is at an offset, and no address into its
+-       memory is handed out, since `expand` may move it; a `slice` reads through the holding it
+-       came from, and stays good across an expansion.
+-   entry #set8   stores a byte at an offset
+-   entry #set16   stores a 16-bit integer at an offset, little-endian
+-   entry #set32   stores a 32-bit integer at an offset, little-endian
+-   entry #set64   stores a 64-bit integer at an offset, little-endian
+-   entry #write   stores the bytes of some `Data` from an offset
+-   entry #zero   stores zero bytes over a range
+-   entry #move   copies a range to another offset, which it may overlap
+-   entry #expand   makes the holding at least a given size, the new bytes zero; it never shrinks
+-   entry #flush   makes what has been stored durable, where there is a file for it to be durable in
++       Das, worüber ein Format, das an Ort und Stelle gehalten und geändert wird, geändert wird:
++       eine Datei, die von dem einen Prozess, dem sie gehört, zum Schreiben abgebildet wird
++       (galileis `hold`), oder Bytes auf dem Heap (`Holding(size)`, `Holding(data)`). Jeder
++       Speichervorgang erfolgt an einem Offset, und keine Adresse in seinen Speicher wird
++       herausgegeben, da `expand` ihn verschieben kann; ein `slice` liest über das Holding, aus
++       dem es stammt, und bleibt über eine Erweiterung hinweg gültig.
++   entry #set8   speichert ein Byte an einem Offset
++   entry #set16   speichert eine 16-Bit-Ganzzahl an einem Offset, Little-Endian
++   entry #set32   speichert eine 32-Bit-Ganzzahl an einem Offset, Little-Endian
++   entry #set64   speichert eine 64-Bit-Ganzzahl an einem Offset, Little-Endian
++   entry #write   speichert die Bytes bestimmter `Data` ab einem Offset
++   entry #zero   speichert Null-Bytes über einen Bereich
++   entry #move   kopiert einen Bereich an einen anderen Offset, mit dem er sich überlappen darf
++   entry #expand   macht das Holding mindestens so groß wie angegeben, mit Null in den neuen Bytes; es schrumpft nie
++   entry #flush   macht das Gespeicherte dauerhaft, sofern es eine Datei gibt, in der es dauerhaft sein kann
+
+- entry .Viewable   the typeclass of a value whose bytes can be lent as a `Terrain` for the length of a block
++ entry .Viewable   die Typklasse eines Wertes, dessen Bytes für die Dauer eines Blocks als `Terrain` verliehen werden können
+
+= entry .Viewable   the typeclass of a value whose bytes can be lent as a `Terrain` for the length of a block
+-   detail
++   detail
+
+-       A path is `Viewable`, its file being mapped for the block; so are an image which is
+-       already on the heap, and a terrain which is already in hand. A format which is read in
+-       place is opened from any of them alike.
+-   entry #view   lends the value's bytes as a `Terrain`
+-   entry #hold   lends the value's bytes for changing, as a `Holding`, or answers `otherwise` if they cannot be changed
+-       A file is mapped for writing under an exclusive lock, and a holding in hand is lent as it
+-       is; bytes which are immutable, like anything which does not say otherwise, answer
+-       `otherwise`.
++       Ein Pfad ist `Viewable`, wobei seine Datei für den Block abgebildet wird; ebenso ein
++       Image, das bereits auf dem Heap liegt, und ein Terrain, das bereits vorliegt. Ein Format,
++       das an Ort und Stelle gelesen wird, wird aus jedem davon gleichermaßen geöffnet.
++   entry #view   verleiht die Bytes des Wertes als `Terrain`
++   entry #hold   verleiht die Bytes des Wertes zum Ändern, als `Holding`, oder antwortet mit `otherwise`, wenn sie nicht geändert werden können
++       Eine Datei wird unter einer exklusiven Sperre zum Schreiben abgebildet, und ein
++       vorliegendes Holding wird so verliehen, wie es ist; unveränderliche Bytes antworten, wie
++       alles, was nichts anderes angibt, mit `otherwise`.
+
+- entry .Surveyable   the typeclass of a form which is read in place from a view of its bytes: `Form is Surveyable by Flag to Handle`
++ entry .Surveyable   die Typklasse einer Form, die an Ort und Stelle aus einer Sicht auf ihre Bytes gelesen wird: `Form is Surveyable by Flag to Handle`
+
+= entry .Surveyable   the typeclass of a form which is read in place from a view of its bytes: `Form is Surveyable by Flag to Handle`
+-   detail
++   detail
+
+-       It is an instance for the form, and not for what lends the view, which is what lets a
+-       lender which is itself a capability -- an `Observer` of a published name -- open the
+-       view as a form.
+-   entry #survey   opens a view as the form, with flags, and provides the handle contextually for the length of a block
++       Sie ist eine Instanz für die Form und nicht für das, was die Sicht verleiht; das erlaubt
++       es einem Verleiher, der selbst eine Capability ist -- einem `Observer` eines
++       veröffentlichten Namens --, die Sicht als die Form zu öffnen.
++   entry #survey   öffnet eine Sicht als die Form, mit Flags, und stellt den Handle für die Dauer eines Blocks kontextuell bereit
+
+-       A `Stream` is read once; a `Spring[medium]` can be pulled any number of times, each
+-       `apply()` giving a new stream over the same content. It is a trait rather than a
+-       function type because a lambda may not mint a fresh scoped capability as its result,
+-       where a method's result is re-leveled at each call site; and since `apply` takes a
+-       `Tactic[Truncation.Error]` (the pull is where a source cut short is reported), a lambda
+-       does not convert to one. `Spring(expression)` makes a spring which evaluates the
+-       expression anew at each `apply()`; give the type argument, as `Spring[Data](…)`, where
+-       the expected type alone does not fix it. An anonymous class also works.
++       Ein `Stream` wird einmal gelesen; ein `Spring[medium]` lässt sich beliebig oft ziehen, wobei
++       jedes `apply()` einen neuen Stream über demselben Inhalt liefert. Er ist ein Trait statt eines
++       Funktionstyps, weil ein Lambda als Ergebnis keine frische, an einen Geltungsbereich gebundene
++       Capability prägen darf, während das Ergebnis einer Methode an jeder Aufrufstelle neu
++       eingestuft wird; und da `apply` eine `Tactic[Truncation.Error]` nimmt (der Pull ist die Stelle,
++       an der eine abgeschnittene Quelle gemeldet wird), lässt sich ein Lambda nicht in einen
++       solchen umwandeln. `Spring(expression)` erzeugt einen Spring, der den Ausdruck bei jedem
++       `apply()` neu auswertet; geben Sie das Typargument an, wie in `Spring[Data](…)`, wo der
++       erwartete Typ allein es nicht festlegt. Eine anonyme Klasse funktioniert ebenfalls.
+
+-       val spring: Spring[Data] = Spring[Data](payload.stream)
++       val spring: Spring[Data] = Spring[Data](payload.stream)
+
+-   entry .apply   `Spring(expression)`: a spring whose every pull evaluates the expression for a fresh stream
++   entry .apply   `Spring(expression)`: ein Spring, dessen jeder Pull den Ausdruck für einen frischen Stream auswertet

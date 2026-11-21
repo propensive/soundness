@@ -1,0 +1,63 @@
+orthant 1 language
+
+- # `↯/s.105.8` — `PublicKey.Error`
++ # `↯/s.105.8` — `PublicKey.Error`
+
+- Raised when a key document cannot be read as a public key of the cipher asked for.
++ Ausgelöst, wenn ein Schlüsseldokument nicht als öffentlicher Schlüssel der verlangten Chiffre
++ gelesen werden kann.
+
+- ## Cause
++ ## Ursache
+
+- A public key is read from an X.509 `SubjectPublicKeyInfo` or a PKCS#1 `RSAPublicKey`, bare or
+- in PEM armor, as a key of a named cipher, such as `PublicKey[Rsa[2048]]`. This error covers a
+- document that is not a public key, and one that holds a key of another algorithm or size.
++ Ein öffentlicher Schlüssel wird aus einem X.509-`SubjectPublicKeyInfo` oder einem PKCS#1-`RSAPublicKey`,
++ bloß oder in PEM-Hülle, als Schlüssel einer benannten Chiffre gelesen, etwa
++ `PublicKey[Rsa[2048]]`. Dieser Fehler umfasst ein Dokument, das kein öffentlicher Schlüssel ist,
++ und eines, das einen Schlüssel eines anderen Algorithmus oder einer anderen Größe enthält.
+
+- ## Variants
++ ## Varianten
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
+- column  Message
++ column  Grund
++ column  Meldung
+
+- row  `↯/s.105.8.1`  `Malformed`  the key document was malformed: <detail>
++ row  `↯/s.105.8.1`  `Malformed`  the key document was malformed: <detail>
+
+- row  `↯/s.105.8.2`  `Mismatch`  a <expected> key was expected but <found> was found
++ row  `↯/s.105.8.2`  `Mismatch`  a <expected> key was expected but <found> was found
+
+- row  `↯/s.105.8.3`  `Unsupported`  the key uses an unsupported <detail>
++ row  `↯/s.105.8.3`  `Unsupported`  the key uses an unsupported <detail>
+
+- ```
++ ```
+
+- ## Resolution
++ ## Behebung
+
+- A `Mismatch` names what the document holds: read the key as that cipher, or supply the key
+- that was intended. A key in OpenSSH's single-line form is not PEM; read it with
+- `OpenSsh.publicKey`.
++ Ein `Mismatch` nennt, was das Dokument enthält: Lesen Sie den Schlüssel als diese Chiffre, oder
++ geben Sie den Schlüssel an, der gemeint war. Ein Schlüssel in der einzeiligen Form von OpenSSH ist
++ kein PEM; lesen Sie ihn mit `OpenSsh.publicKey`.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/enigmatic/src/core/enigmatic.PublicKey.scala`
+- - `↯/s.105.7` — `PrivateKey.Error`, the same for a private key
++ - Quelle: `lib/enigmatic/src/core/enigmatic.PublicKey.scala`
++ - `↯/s.105.7` — `PrivateKey.Error`, dasselbe für einen privaten Schlüssel

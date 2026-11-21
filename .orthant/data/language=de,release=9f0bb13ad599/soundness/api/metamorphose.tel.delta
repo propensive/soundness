@@ -1,0 +1,131 @@
+orthant 1 language
+
+- info   permutations as reversible rearrangements, stored compactly as factorial-base inversion tables
++ info   Permutationen als umkehrbare Umordnungen, kompakt als Inversionstabellen zur Fakultätsbasis gespeichert
+
+-     Internally a permutation is its
+-     [inversion table](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics))
+-     written in the factorial number system, a `Factoradic`: one integer which uniquely
+-     identifies it, so permutations are compact to store and to enumerate, and
+-     `Permutation.bySize(n)` lists all `n!` of them in order. A permutation of *n* elements takes
+-     O(*n* log *n*) bits, the information-theoretic minimum. `Factorial` supplies the factorials
+-     the encoding is built on.
++     Intern ist eine Permutation ihre
++     [Inversionstabelle](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)),
++     geschrieben im Fakultätszahlensystem, ein `Factoradic`: eine ganze Zahl, die sie eindeutig
++     bezeichnet, sodass Permutationen kompakt zu speichern und aufzuzählen sind und
++     `Permutation.bySize(n)` alle `n!` von ihnen der Reihe nach auflistet. Eine Permutation von
++     *n* Elementen belegt O(*n* log *n*) Bits, das informationstheoretische Minimum.
++     `Factorial` liefert die Fakultäten, auf denen die Kodierung aufbaut.
+
+- entry .Permutation   a reversible rearrangement of a sequence, stored as its factoradic inversion table
++ entry .Permutation   eine umkehrbare Umordnung einer Folge, gespeichert als ihre faktoradische Inversionstabelle
+
+-       Permutation(Factoradic(104)) == Permutation(Sequence(1, 4, 2, 3, 0))   // true
++       Permutation(Factoradic(104)) == Permutation(Sequence(1, 4, 2, 3, 0))   // true
+
+-       shuffle.inversions   // List(0, 1, 0, 2, 4)
+-       shuffle.expansion    // List(3, 1, 4, 2, 0)
+-       shuffle.extent       // 5: the sixth index stays in place
++       shuffle.inversions   // List(0, 1, 0, 2, 4)
++       shuffle.expansion    // List(3, 1, 4, 2, 0)
++       shuffle.extent       // 5: the sixth index stays in place
+
+-       Applied to a list, it rearranges the elements (`#apply`); `#inverse` undoes it. A
+-       permutation does not record the length it was built from, only the leading positions it
+-       rearranges, its `#extent`: the identity of any size is `Permutation(Factoradic(0))`, and
+-       `Permutation(Sequence(0, 2, 1))` equals `Permutation(Sequence(0, 2, 1, 3, 4))`. It is a
+-       permutation of the natural numbers which moves finitely many of them. Applied to a
+-       longer list, it rearranges the first `#extent` elements and leaves the rest where they
+-       are.
++       Auf eine Liste angewendet, ordnet sie die Elemente um (`#apply`); `#inverse` macht das
++       rückgängig. Eine Permutation hält nicht die Länge fest, aus der sie gebaut wurde, sondern
++       nur die führenden Positionen, die sie umordnet, ihren `#extent`: Die Identität jeder Größe
++       ist `Permutation(Factoradic(0))`, und `Permutation(Sequence(0, 2, 1))` ist gleich
++       `Permutation(Sequence(0, 2, 1, 3, 4))`. Sie ist eine Permutation der natürlichen Zahlen,
++       die endlich viele von ihnen bewegt. Auf eine längere Liste angewendet, ordnet sie die
++       ersten `#extent` Elemente um und lässt den Rest, wo er ist.
+
+-         column  Message
+-         column  Note
+-         row  `BaseRange(value, base)`  1  _the value `value` is too large for its positional base `base`_  a digit given to `Factoradic(List(…))` is not below its position's base
+-         row  `DuplicateIndex(index, element)`  2  _the index `index` was duplicated at `element`_  `Permutation(Sequence(…))` met an index for the second time; `element` is the position at which it reappeared
+-         row  `InvalidIndex(last, max)`  3  _the index `last` appears, but every index should be in the range 0-`max`_  an index given to `Permutation(Sequence(…))` is negative or not below the sequence's length
+-         row  `TooShort(length, min)`  4  _the input, of size `length`, is too short for the permutation of size `min`_  `Permutation#apply` was given a list shorter than the permutation's extent
++         column  Meldung
++         column  Anmerkung
++         row  `BaseRange(value, base)`  1  _the value `value` is too large for its positional base `base`_  eine an `Factoradic(List(…))` übergebene Ziffer liegt nicht unter der Basis ihrer Position
++         row  `DuplicateIndex(index, element)`  2  _the index `index` was duplicated at `element`_  `Permutation(Sequence(…))` traf zum zweiten Mal auf einen Index; `element` ist die Position, an der er erneut auftrat
++         row  `InvalidIndex(last, max)`  3  _the index `last` appears, but every index should be in the range 0-`max`_  ein an `Permutation(Sequence(…))` übergebener Index ist negativ oder nicht kleiner als die Länge der Folge
++         row  `TooShort(length, min)`  4  _the input, of size `length`, is too short for the permutation of size `min`_  `Permutation#apply` erhielt eine Liste, die kürzer ist als der Extent der Permutation
+
+-           An enumeration of `BaseRange`, `DuplicateIndex`, `InvalidIndex` and `TooShort`, each
+-           with the values the message names; see `Permutation.Error` for when each is raised.
+-           Each case has a `#number`, 1 to 4, the error's secondary code.
+-       entry #number   the reason's secondary error code, 1 to 4
+-     entry .communicable   renders each `Permutation.Error.Reason` as a message
+-     entry #reason   why the permutation could not be made or applied
+-   entry #factoradic   the permutation's number, in the factorial number system
+-   entry #extent   how many leading positions the permutation rearranges: one more than the last position it moves
+-       Zero for the identity. Every position from `#extent` on is fixed.
+-   entry #inversions   the inversion table: for each position, how many earlier positions hold a greater index
+-       One entry for each of the first `#extent` positions, in order. The entry for position
+-       *i* is at most *i*, so it is a digit in base *i* + 1: these are the digits of
+-       `#factoradic`, least significant first. A position which stays in place after every
+-       moved one has no greater index before it, which is why trailing fixed positions add
+-       nothing to the number.
+-   entry #expansion   the reordered indexes: the permutation applied to `0` to `extent - 1`
+-       The indexes `.apply` was given, up to the last one which moves: for
+-       `Permutation(Sequence(3, 1, 4, 2, 0, 5))`, `List(3, 1, 4, 2, 0)`. It is as long as
+-       `#extent`, so it omits any trailing indexes the permutation leaves in place.
+-   entry #apply   rearranges a list, or gives the index one position takes its element from
+-       `permutation(list)` rearranges a list at least as long as `#extent`, raising
+-       `Permutation.Error` with `TooShort` otherwise; a longer list has its first `#extent`
+-       elements rearranged and keeps the rest in place.
++           Eine Aufzählung von `BaseRange`, `DuplicateIndex`, `InvalidIndex` und `TooShort`,
++           jeweils mit den Werten, die die Meldung nennt; wann jeder ausgelöst wird, steht bei
++           `Permutation.Error`. Jeder Fall hat eine `#number`, 1 bis 4, den sekundären Code des
++           Fehlers.
++       entry #number   der sekundäre Fehlercode des Grunds, 1 bis 4
++     entry .communicable   stellt jeden `Permutation.Error.Reason` als Meldung dar
++     entry #reason   warum die Permutation nicht erzeugt oder angewendet werden konnte
++   entry #factoradic   die Zahl der Permutation, im Fakultätszahlensystem
++   entry #extent   wie viele führende Positionen die Permutation umordnet: eins mehr als die letzte Position, die sie bewegt
++       Null für die Identität. Jede Position ab `#extent` ist fest.
++   entry #inversions   die Inversionstabelle: für jede Position, wie viele frühere Positionen einen größeren Index enthalten
++       Ein Eintrag für jede der ersten `#extent` Positionen, der Reihe nach. Der Eintrag für
++       Position *i* ist höchstens *i*, also eine Ziffer zur Basis *i* + 1: Dies sind die Ziffern
++       von `#factoradic`, die niedrigstwertige zuerst. Eine Position, die nach jeder bewegten an
++       ihrem Platz bleibt, hat keinen größeren Index vor sich; deshalb tragen nachgestellte feste
++       Positionen nichts zur Zahl bei.
++   entry #expansion   die umgeordneten Indizes: die Permutation, angewendet auf `0` bis `extent - 1`
++       Die Indizes, die `.apply` erhalten hat, bis zum letzten, der sich bewegt: für
++       `Permutation(Sequence(3, 1, 4, 2, 0, 5))` ist das `List(3, 1, 4, 2, 0)`. Sie ist so lang
++       wie `#extent` und lässt daher alle nachgestellten Indizes weg, die die Permutation an ihrem
++       Platz lässt.
++   entry #apply   ordnet eine Liste um oder liefert den Index, von dem eine Position ihr Element nimmt
++       `permutation(list)` ordnet eine Liste um, die mindestens so lang ist wie `#extent`, und
++       löst andernfalls `Permutation.Error` mit `TooShort` aus; bei einer längeren Liste werden
++       die ersten `#extent` Elemente umgeordnet, und der Rest bleibt an seinem Platz.
+
+- entry .Factoradic   a non-negative integer in the factorial number system, as an inversion table is written
++ entry .Factoradic   eine nichtnegative ganze Zahl im Fakultätszahlensystem, wie eine Inversionstabelle geschrieben wird
+
+-   entry .apply   a factoradic from its digits, most significant first, each checked below its base
+-       The last digit has base 1, so must be 0; the one before it base 2, and so on. A digit
+-       which is not below its base raises `Permutation.Error` with `BaseRange`, so it needs a
+-       `Tactic[Permutation.Error]`. The case-class constructor `Factoradic(number)` takes the
+-       `BigInt` directly.
+-   entry #number   the integer, as a `BigInt`
+-   entry #expand   the number's digits, most significant first, with no leading zeros
+-       `Factoradic(0).expand` is `Nil`; otherwise the list ends in the always-zero units digit.
+-       Reversed, this is a permutation's `#inversions`.
++   entry .apply   ein Factoradic aus seinen Ziffern, die höchstwertige zuerst, jede darauf geprüft, dass sie unter ihrer Basis liegt
++       Die letzte Ziffer hat die Basis 1 und muss daher 0 sein; die davor die Basis 2 und so
++       weiter. Eine Ziffer, die nicht unter ihrer Basis liegt, löst `Permutation.Error` mit
++       `BaseRange` aus; daher braucht es eine `Tactic[Permutation.Error]`. Der Konstruktor der
++       Case-Klasse, `Factoradic(number)`, nimmt den `BigInt` direkt.
++   entry #number   die ganze Zahl, als `BigInt`
++   entry #expand   die Ziffern der Zahl, die höchstwertige zuerst, ohne führende Nullen
++       `Factoradic(0).expand` ist `Nil`; andernfalls endet die Liste mit der stets nullwertigen
++       Einerziffer. In umgekehrter Reihenfolge sind dies die `#inversions` einer Permutation.

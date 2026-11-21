@@ -1,0 +1,59 @@
+orthant 1 language
+
+- # `↯/s.134.2` — `YamlPath.Error`
++ # `↯/s.134.2` — `YamlPath.Error`
+
+- Raised when a YAML path expression is malformed.
++ Wird ausgelöst, wenn ein YAML-Pfadausdruck fehlerhaft ist.
+
+- ## Cause
++ ## Ursache
+
+- A YAML path names a location within a document. Its syntax is checked when written as a
+- literal and when parsed at runtime, by the same parser.
++ Ein YAML-Pfad benennt eine Stelle innerhalb eines Dokuments. Seine Syntax wird geprüft, wenn er
++ als Literal geschrieben wird und wenn er zur Laufzeit geparst wird, und zwar vom selben Parser.
+
+- ## Variants
+- (`↯/s.134.2.1`, `UnknownDocument`, was retired when `YamlPath` lost its never-populated document URL
+- and `YamlPath.Registry`; the remaining numbers are unchanged.)
++ ## Varianten
++ (`↯/s.134.2.1`, `UnknownDocument`, wurde ausgemustert, als `YamlPath` seine nie belegte
++ Dokument-URL und `YamlPath.Registry` verlor; die übrigen Nummern sind unverändert.)
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
+- column  Message
++ column  Grund
++ column  Meldung
+
+- row  `↯/s.134.2.2`  `ExpectedHash`  `[↯/s.134.2.2] a YAML path must begin with '#'`
++ row  `↯/s.134.2.2`  `ExpectedHash`  `[↯/s.134.2.2] a YAML path must begin with '#'`
+
+- row  `↯/s.134.2.3`  `ExpectedSlash`  `[↯/s.134.2.3] a YAML path fragment must begin with '/'`
++ row  `↯/s.134.2.3`  `ExpectedSlash`  `[↯/s.134.2.3] a YAML path fragment must begin with '/'`
+
+- row  `↯/s.134.2.4`  `BadEscape`  `[↯/s.134.2.4] a '~' in a YAML path must be followed by '0' or '1'`
++ row  `↯/s.134.2.4`  `BadEscape`  `[↯/s.134.2.4] a '~' in a YAML path must be followed by '0' or '1'`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Behebung
+
+- The reason names the character or construct at fault. A path must begin at the root, and
+- each step must be a key or an index.
++ Der Grund benennt das fehlerhafte Zeichen oder Konstrukt. Ein Pfad muss an der Wurzel beginnen,
++ und jeder Schritt muss ein Schlüssel oder ein Index sein.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/ypsiloid/src/core/ypsiloid.YamlPath.scala`
++ - Quelle: `lib/ypsiloid/src/core/ypsiloid.YamlPath.scala`
