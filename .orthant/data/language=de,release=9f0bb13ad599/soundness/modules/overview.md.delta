@@ -1,0 +1,32 @@
+orthant 1 language
+
+- - [JSON](json.md) — parsing, typed access, building, schemas and validation
+- - [YAML](yaml.md) — parsing, tags, anchors and encoding
+- - [XML](xml.md) — nodes, namespaces, XPath and schemas
+- - [CBOR](cbor.md) — binary JSON-like encoding, with tags and diagnostic notation
+- - [CSV](csv.md) — rows, headers and formats, decoded to case classes
+- - [TEL](tel.md) — the indentation-based data language, its schemas and editing
+- - [Protocol Buffers](protobuf.md) — messages, fields and compatibility
+- - [Markdown](markdown.md) — parsing, rendering and writing back
+- - [Base Encoding](base-encoding.md) — Base64, hexadecimal and other alphabets
+- - [Binary Data](binary-data.md) — describing, reading and writing a binary layout
+- - [Compression](compression.md) — compressing values and streams
+- - [Archives](archives.md) — ZIP, tar and ar
+- - [Hashing](hashing.md) — digests, checksums and fast hashing
+- - [Cryptography](cryptography.md) — encryption, signing, keys and certificates
+- - [Media Types](media-types.md) — media types, and types that know theirs
++ - [JSON](json.md) — Parsen, typisierter Zugriff, Aufbau, Schemas und Validierung
++ - [YAML](yaml.md) — Parsen, Tags, Anker und Kodierung
++ - [XML](xml.md) — Knoten, Namensräume, XPath und Schemas
++ - [CBOR](cbor.md) — binäre, JSON-ähnliche Kodierung, mit Tags und Diagnosenotation
++ - [CSV](csv.md) — Zeilen, Kopfzeilen und Formate, zu Case-Klassen dekodiert
++ - [TEL](tel.md) — die einrückungsbasierte Datensprache, ihre Schemas und ihre Bearbeitung
++ - [Protocol Buffers](protobuf.md) — Nachrichten, Felder und Kompatibilität
++ - [Markdown](markdown.md) — Parsen, Darstellen und Zurückschreiben
++ - [Base-Kodierung](base-encoding.md) — Base64, Hexadezimal und andere Alphabete
++ - [Binärdaten](binary-data.md) — ein binäres Layout beschreiben, lesen und schreiben
++ - [Kompression](compression.md) — Werte und Streams komprimieren
++ - [Archive](archives.md) — ZIP, tar und ar
++ - [Hashing](hashing.md) — Hashwerte, Prüfsummen und schnelles Hashing
++ - [Kryptografie](cryptography.md) — Verschlüsselung, Signieren, Schlüssel und Zertifikate
++ - [Medientypen](media-types.md) — Medientypen und Typen, die ihren eigenen kennen

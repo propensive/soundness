@@ -1,0 +1,73 @@
+orthant 1 language
+
+- # `↯/s.89.1` — `Font.Error`
++ # `↯/s.89.1` — `Font.Error`
+
+- Raised when Phoenicia cannot read a font file, or when a face is requested from a provision
+- that cannot set it.
++ Wird ausgelöst, wenn Phoenicia eine Schriftdatei nicht lesen kann oder wenn ein Schriftschnitt
++ von einer Bereitstellung angefordert wird, die ihn nicht setzen kann.
+
+- ## Cause
++ ## Ursache
+
+- Phoenicia parses font files (typically TrueType/OpenType) and reports
+- this error when the file is missing required tables, uses an unknown
+- format, or fails the magic-number check. It also reports it when a `Font` is made from a
+- `Face` — a weight, slant, stretch, variation or feature — that the typeface's `Typesettable`
+- provision does not cover, so that the document does not go on to a synthesized or substituted
+- rendering. The message is `the font could not be used because $reason`.
++ Phoenicia parst Schriftdateien (typischerweise TrueType/OpenType) und meldet
++ diesen Fehler, wenn der Datei erforderliche Tabellen fehlen, sie ein unbekanntes
++ Format verwendet oder die Prüfung der magischen Zahl nicht besteht. Es meldet ihn auch, wenn ein
++ `Font` aus einem `Face` – einer Stärke, Neigung, Laufweite, Variation oder einem Merkmal –
++ erzeugt wird, den die `Typesettable`-Bereitstellung der Schriftart nicht abdeckt, sodass das
++ Dokument nicht zu einer synthetisierten oder ersetzten Darstellung übergeht. Die Meldung lautet
++ `the font could not be used because $reason`.
+
+- ## Variants
++ ## Varianten
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
+- column  Meaning
+- column  Message
+- column  Resolution
+- row  `↯/s.89.1.1`  `MissingTable`  A required table identified by `tag` was not found in the font file.  `[↯/s.89.1.1] the font could not be used because the table cmap was not found`  Use a font that contains the required tables; many font subsetting tools can strip mandatory tables.
+- row  `↯/s.89.1.2`  `UnknownFormat`  A table was located but its content does not match any version of the format Phoenicia knows how to read.  `[↯/s.89.1.2] the font could not be used because the table contains data in an unknown format`  Use a font that conforms to a supported version of the OpenType/TrueType specification.
+- row  `↯/s.89.1.3`  `MagicNumber`  The font's leading bytes did not match the expected magic number, indicating the file is not a font Phoenicia recognises.  `[↯/s.89.1.3] the font could not be used because the font did not contain expected check data`  Confirm the file is a TrueType or OpenType font and not corrupted; check that the file was opened in binary mode.
+- row  `↯/s.89.1.4`  `MissingEncoding`  The font declares no character-to-glyph mapping this reader can use.  `[↯/s.89.1.4] the font contains no usable character encoding`  Use a font with a Unicode `cmap` subtable. A font carrying only a legacy Macintosh or symbol encoding cannot map characters to glyphs.
+- row  `↯/s.89.1.5`  `UncoveredWeight`  The provision offers no face at the requested weight.  `[↯/s.89.1.5] the font could not be used because Inter is not provided at weight 700`  Embed a file at that weight (or a variable font whose `wght` axis spans it), declare the weight in a linked provision's coverage, or ask for a weight the provision has.
+- row  `↯/s.89.1.6`  `UncoveredSlant`  The provision has no italic (or no upright) face.  `[↯/s.89.1.6] the font could not be used because Inter is not provided in an italic face`  Add the italic file to the provision, or set the face upright.
+- row  `↯/s.89.1.7`  `UncoveredStretch`  The provision offers no face at the requested stretch.  `[↯/s.89.1.7] the font could not be used because Inter is not provided at a stretch of 75.0%`  Add a condensed or expanded file, or use the normal width.
+- row  `↯/s.89.1.8`  `UnknownAxis`  The face varies an axis the font does not have.  `[↯/s.89.1.8] the font could not be used because Inter has no variation axis opsz`  Check the font's `fvar` table for the axes it defines; `Sfnt.fvar` lists them.
+- row  `↯/s.89.1.9`  `AxisOutOfRange`  The face sets an axis to a value outside the range the font admits.  `[↯/s.89.1.9] the font could not be used because Inter does not admit 950.0 on its wght axis`  Keep the value within the axis's minimum and maximum.
+- row  `↯/s.89.1.10`  `MissingFeature`  The face enables a layout feature the font's `GSUB` and `GPOS` tables do not implement.  `[↯/s.89.1.10] the font could not be used because Inter does not implement the layout feature onum`  Use a font that implements the feature, or drop the setting; `Sfnt.features` lists what a file implements.
++ column  Grund
++ column  Bedeutung
++ column  Meldung
++ column  Behebung
++ row  `↯/s.89.1.1`  `MissingTable`  Eine erforderliche Tabelle, bezeichnet durch `tag`, wurde in der Schriftdatei nicht gefunden.  `[↯/s.89.1.1] the font could not be used because the table cmap was not found`  Verwenden Sie eine Schrift, die die erforderlichen Tabellen enthält; viele Werkzeuge zur Teilmengenbildung von Schriften können Pflichttabellen entfernen.
++ row  `↯/s.89.1.2`  `UnknownFormat`  Eine Tabelle wurde gefunden, aber ihr Inhalt entspricht keiner Version des Formats, die Phoenicia lesen kann.  `[↯/s.89.1.2] the font could not be used because the table contains data in an unknown format`  Verwenden Sie eine Schrift, die einer unterstützten Version der OpenType/TrueType-Spezifikation entspricht.
++ row  `↯/s.89.1.3`  `MagicNumber`  Die führenden Bytes der Schrift entsprachen nicht der erwarteten magischen Zahl, was darauf hinweist, dass die Datei keine Schrift ist, die Phoenicia erkennt.  `[↯/s.89.1.3] the font could not be used because the font did not contain expected check data`  Stellen Sie sicher, dass die Datei eine TrueType- oder OpenType-Schrift und nicht beschädigt ist; prüfen Sie, ob die Datei im Binärmodus geöffnet wurde.
++ row  `↯/s.89.1.4`  `MissingEncoding`  Die Schrift deklariert keine Zuordnung von Zeichen zu Glyphen, die dieser Leser verwenden kann.  `[↯/s.89.1.4] the font contains no usable character encoding`  Verwenden Sie eine Schrift mit einer Unicode-`cmap`-Untertabelle. Eine Schrift, die nur eine veraltete Macintosh- oder Symbolkodierung trägt, kann Zeichen nicht auf Glyphen abbilden.
++ row  `↯/s.89.1.5`  `UncoveredWeight`  Die Bereitstellung bietet keinen Schriftschnitt in der angeforderten Stärke.  `[↯/s.89.1.5] the font could not be used because Inter is not provided at weight 700`  Betten Sie eine Datei in dieser Stärke ein (oder eine variable Schrift, deren `wght`-Achse sie umfasst), deklarieren Sie die Stärke in der Abdeckung einer verlinkten Bereitstellung, oder fordern Sie eine Stärke an, die die Bereitstellung hat.
++ row  `↯/s.89.1.6`  `UncoveredSlant`  Die Bereitstellung hat keinen kursiven (oder keinen aufrechten) Schriftschnitt.  `[↯/s.89.1.6] the font could not be used because Inter is not provided in an italic face`  Fügen Sie der Bereitstellung die kursive Datei hinzu, oder setzen Sie den Schriftschnitt aufrecht.
++ row  `↯/s.89.1.7`  `UncoveredStretch`  Die Bereitstellung bietet keinen Schriftschnitt in der angeforderten Laufweite.  `[↯/s.89.1.7] the font could not be used because Inter is not provided at a stretch of 75.0%`  Fügen Sie eine schmale oder breite Datei hinzu, oder verwenden Sie die normale Breite.
++ row  `↯/s.89.1.8`  `UnknownAxis`  Der Schriftschnitt variiert eine Achse, die die Schrift nicht hat.  `[↯/s.89.1.8] the font could not be used because Inter has no variation axis opsz`  Prüfen Sie in der `fvar`-Tabelle der Schrift, welche Achsen sie definiert; `Sfnt.fvar` listet sie auf.
++ row  `↯/s.89.1.9`  `AxisOutOfRange`  Der Schriftschnitt setzt eine Achse auf einen Wert außerhalb des Bereichs, den die Schrift zulässt.  `[↯/s.89.1.9] the font could not be used because Inter does not admit 950.0 on its wght axis`  Halten Sie den Wert zwischen dem Minimum und dem Maximum der Achse.
++ row  `↯/s.89.1.10`  `MissingFeature`  Der Schriftschnitt aktiviert ein Layout-Merkmal, das die `GSUB`- und `GPOS`-Tabellen der Schrift nicht implementieren.  `[↯/s.89.1.10] the font could not be used because Inter does not implement the layout feature onum`  Verwenden Sie eine Schrift, die das Merkmal implementiert, oder lassen Sie die Einstellung weg; `Sfnt.features` listet auf, was eine Datei implementiert.
+
+- ```
++ ```
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/phoenicia/src/core/phoenicia.Font.scala`
++ - Quelle: `lib/phoenicia/src/core/phoenicia.Font.scala`

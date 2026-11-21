@@ -1,0 +1,29 @@
+orthant 1 language
+
+- Internally, a permutation is stored as its
+- [inversion table](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)) in
+- factorial-base form, which is a single integer that uniquely identifies it. That makes permutations compact to store and to
+- enumerate: `Permutation.bySize(n)` gives all `n!` of them, as a lazy
+- [chain](collections.md#lazy-chains). A permutation of *n* elements occupies
+- O(*n* log *n*) space, which is the least possible, since there are *n*! of them to tell apart.
++ Intern wird eine Permutation als ihre
++ [Inversionstafel](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)) in
++ Fakultätsbasis gespeichert, also als eine einzige Ganzzahl, die sie eindeutig bezeichnet. Das
++ macht Permutationen kompakt zu speichern und aufzuzählen: `Permutation.bySize(n)` liefert alle
++ `n!` davon, als lazy [Chain](collections.md#lazy-chains). Eine Permutation von *n* Elementen
++ belegt O(*n* log *n*) Speicher, das kleinstmögliche Maß, da *n*! von ihnen zu unterscheiden sind.
+
+- Out.println((Permutation(Factoradic(104)) == Permutation(Sequence(1, 4, 2, 3, 0))).inspect)
+- Out.println(shuffle.inversions.inspect)
++ Out.println((Permutation(Factoradic(104)) == Permutation(Sequence(1, 4, 2, 3, 0))).inspect)
++ Out.println(shuffle.inversions.inspect)
+
+- A permutation leaves alone every position after the last one it moves, so `shuffle`, whose
+- sixth index stays in place, is a permutation of five. Applying one to a longer sequence is
+- therefore not an error: it rearranges the leading positions it covers, and leaves the rest
+- where they were. A single index is mapped the same way, with `shuffle(3)`.
++ Eine Permutation lässt jede Position nach der letzten, die sie bewegt, unberührt, sodass
++ `shuffle`, dessen sechster Index an seinem Platz bleibt, eine Permutation von fünf ist. Sie auf
++ eine längere Folge anzuwenden ist daher kein Fehler: Sie ordnet die führenden Positionen um, die
++ sie abdeckt, und lässt den Rest, wo er war. Ein einzelner Index wird auf dieselbe Weise
++ abgebildet, mit `shuffle(3)`.

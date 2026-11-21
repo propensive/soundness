@@ -1,0 +1,492 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base prescience
++ base prescience
+
+- import soundness
++ import soundness
+
+- info   a proof of concept: typeclass instances that generate code at macro expansion, evaluated live by the deriving macro
++ info   ein Proof of Concept: Typklasseninstanzen, die bei der Makroexpansion Code erzeugen und vom ableitenden Makro live ausgewertet werden
+
+- detail
++ detail
+
+-     _Prescience_ demonstrates one technique: a typeclass, `Inlinable`, whose primary method is a
+-     code generator — it takes an `Expr` of its input and returns an `Expr` of the decoded value —
+-     so that a deriving macro can splice a hand-written instance's code directly into the code it
+-     generates, rather than a call to the instance at runtime. It is the mechanism behind the
+-     `Inlinable` typeclasses of the format libraries' staged readers and writers (`jacinta`,
+-     `breviloquence`, `locomotion`, `stratiform`'s BinTEL), proved here in isolation over a toy
+-     wire format.
++     _Prescience_ demonstriert eine Technik: eine Typklasse, `Inlinable`, deren Hauptmethode ein
++     Codegenerator ist — sie nimmt einen `Expr` ihrer Eingabe und liefert einen `Expr` des
++     dekodierten Werts —, sodass ein ableitendes Makro den Code einer handgeschriebenen Instanz
++     direkt in den Code einspleißen kann, den es erzeugt, statt eines Aufrufs der Instanz zur
++     Laufzeit. Es ist der Mechanismus hinter den `Inlinable`-Typklassen der gestagten Reader und
++     Writer der Formatbibliotheken (`jacinta`, `breviloquence`, `locomotion`, BinTEL von
++     `stratiform`), hier isoliert über einem Spielzeug-Übertragungsformat erprobt.
+
+-     The difficulty is that a macro holds only an `Expr` of an instance it summons, while it needs
+-     the live instance to call `read` on. The deriving macro, `Prescience.read`, obtains it in up
+-     to three tiers, per field:
++     Die Schwierigkeit besteht darin, dass ein Makro nur einen `Expr` einer Instanz hält, die es
++     herbeiruft, während es die lebende Instanz braucht, um `read` auf ihr aufzurufen. Das
++     ableitende Makro, `Prescience.read`, beschafft sie pro Feld in bis zu drei Stufen:
+
+-     - **Tier A**: an instance which is a reference to a precompiled static object, or a
+-       parameterless member of one, is loaded through the macro classloader and used directly,
+-       as the compiler's own splice interpreter loads a macro implementation.
+-     - **Tier B** (`Prescience.readStaging` only): an instance which implicit search can find
+-       from global scope (companions and package-level givens on the classpath), including a
+-       conditional given, is summoned inside a fresh in-macro `staging.Compiler` and run, at the
+-       cost of a full compiler run per instance, reported as an info diagnostic.
+-     - **Runtime**: anything else — a lexically scoped given, or one compiled in the same run as
+-       the use site — gets a spliced call to its `Inlinable#readRuntime` instead.
++     - **Stufe A**: Eine Instanz, die eine Referenz auf ein vorkompiliertes statisches Objekt
++       oder ein parameterloses Member eines solchen ist, wird über den Makro-Classloader geladen
++       und direkt verwendet, so wie der eigene Splice-Interpreter des Compilers eine
++       Makroimplementierung lädt.
++     - **Stufe B** (nur `Prescience.readStaging`): Eine Instanz, die die implizite Suche aus dem
++       globalen Geltungsbereich finden kann (Begleitobjekte und Givens auf Paketebene im
++       Klassenpfad), einschließlich eines bedingten Givens, wird in einem frischen
++       `staging.Compiler` innerhalb des Makros herbeigerufen und ausgeführt, zum Preis eines
++       vollständigen Compilerlaufs pro Instanz, der als Info-Diagnose gemeldet wird.
++     - **Laufzeit**: Alles andere — ein lexikalisch gültiges Given oder eines, das im selben Lauf
++       wie die Verwendungsstelle kompiliert wird — erhält stattdessen einen eingespleißten Aufruf
++       seiner `Inlinable#readRuntime`.
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     import prescience.*
++     import prescience.*
+
+-     import prescience.inlinables.{int, string, boolean}
++     import prescience.inlinables.{int, string, boolean}
+
+-     case class Order(id: Int, name: String, active: Boolean)
++     case class Order(id: Int, name: String, active: Boolean)
+
+-     Prescience.read[Order]("7,widget,true")   // Order(7, "widget", true)
++     Prescience.read[Order]("7,widget,true")   // Order(7, "widget", true)
+
+-     ```
++     ```
+
+-     An instance defined in the compilation run that expands the macro is never evaluated,
+-     in either tier: its classfile either does not exist yet or is stale from a previous
+-     incremental compile, so it always takes the runtime tier, and clean and incremental builds
+-     agree. The output is the same in every tier; only where the code was generated differs.
++     Eine Instanz, die im Kompilierungslauf definiert ist, der das Makro expandiert, wird in
++     keiner der beiden Stufen je ausgewertet: Ihr Classfile existiert entweder noch nicht oder
++     ist von einer früheren inkrementellen Kompilierung veraltet; sie nimmt also immer die
++     Laufzeitstufe, und saubere und inkrementelle Builds stimmen überein. Die Ausgabe ist in jeder
++     Stufe dieselbe; nur der Ort, an dem der Code erzeugt wurde, unterscheidet sich.
+
+-     The library has two source sets, both JVM-only, since the technique needs the macro
+-     classloader and the `scala3-compiler` and `scala3-staging` artifacts: `prescience.core`
+-     (`Inlinable`, `Prescience` and the macro) and `prescience.leaves` (sample instances,
+-     compiled one stage earlier than any use site, so that tier A can load them). Nothing is
+-     exported to the `soundness` umbrella: import `prescience.*`, and the sample givens by name
+-     from `prescience.inlinables`, since `import pkg.*` does not import givens.
++     Die Bibliothek hat zwei Source-Sets, beide nur für die JVM, da die Technik den
++     Makro-Classloader und die Artefakte `scala3-compiler` und `scala3-staging` braucht:
++     `prescience.core` (`Inlinable`, `Prescience` und das Makro) und `prescience.leaves`
++     (Beispielinstanzen, eine Stufe früher kompiliert als jede Verwendungsstelle, damit Stufe A
++     sie laden kann). Nichts wird in das `soundness`-Umbrella exportiert: Importieren Sie
++     `prescience.*` und die Beispiel-Givens namentlich aus `prescience.inlinables`, da
++     `import pkg.*` keine Givens importiert.
+
+- refer prescience.Inlinable
++ refer prescience.Inlinable
+
+- refer prescience.Prescience
++ refer prescience.Prescience
+
+- refer prescience.inlinables
++ refer prescience.inlinables
+
+- entry .Inlinable   a typeclass whose instances generate the code which reads their type, for a deriving macro to inline
++ entry .Inlinable   eine Typklasse, deren Instanzen den Code erzeugen, der ihren Typ liest, damit ein ableitendes Makro ihn inlinen kann
+
+= entry .Inlinable   a typeclass whose instances generate the code which reads their type, for a deriving macro to inline
+-   detail
++   detail
+
+-       `T is Inlinable` has two methods which must agree: `#read`, which is run at macro expansion
+-       and returns the *code* reading a `T` from a `String` expression, and `#readRuntime`, the
+-       same reading done at runtime, which the deriving macro calls when it cannot obtain the
+-       live instance at expansion time.
++       `T is Inlinable` hat zwei Methoden, die übereinstimmen müssen: `#read`, das bei der
++       Makroexpansion ausgeführt wird und den *Code* liefert, der ein `T` aus einem
++       `String`-Ausdruck liest, und `#readRuntime`, dasselbe Lesen zur Laufzeit, das das
++       ableitende Makro aufruft, wenn es die lebende Instanz zur Expansionszeit nicht beschaffen
++       kann.
+
+=       live instance at expansion time.
+=
+-       ```scala
++       ```scala
+
+=       live instance at expansion time.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       live instance at expansion time.
+=
+=       ```scala
+=       import soundness.*
+-       import prescience.*
++       import prescience.*
+
+-       import scala.quoted.*
++       import scala.quoted.*
+
+-       case class Rank(value: Int)
++       case class Rank(value: Int)
+
+-       object Rank:
++       object Rank:
+
+-         given inlinable: (Rank is Inlinable) = new Inlinable:
++         given inlinable: (Rank is Inlinable) = new Inlinable:
+
+-           type Self = Rank
++           type Self = Rank
+
+-           def read(input: Expr[String])(using Quotes): Expr[Rank] =
++           def read(input: Expr[String])(using Quotes): Expr[Rank] =
+
+-             '{Rank(java.lang.Integer.parseInt($input.trim.nn))}
++             '{Rank(java.lang.Integer.parseInt($input.trim.nn))}
+
+-           def readRuntime(input: String): Rank =
++           def readRuntime(input: String): Rank =
+
+-             Rank(java.lang.Integer.parseInt(input.trim.nn))
++             Rank(java.lang.Integer.parseInt(input.trim.nn))
+
+=             Rank(java.lang.Integer.parseInt(input.trim.nn))
+-       ```
++       ```
+
+-       Whether `#read` is used depends on where the instance is: a static object or a member of
+-       one, compiled earlier than the use site, is evaluated by `Prescience.read`; a conditional
+-       given in a companion only by `Prescience.readStaging`; anything compiled in the same run,
+-       or scoped lexically, only ever through `#readRuntime`.
++       Ob `#read` verwendet wird, hängt davon ab, wo die Instanz liegt: Ein statisches Objekt oder
++       ein Member eines solchen, früher kompiliert als die Verwendungsstelle, wird von
++       `Prescience.read` ausgewertet; ein bedingtes Given in einem Begleitobjekt nur von
++       `Prescience.readStaging`; alles, was im selben Lauf kompiliert wird oder lexikalisch
++       gültig ist, immer nur über `#readRuntime`.
+
+-   refer prescience.Prescience
++   refer prescience.Prescience
+
+-   entry #read   the code reading a value of this type from a `String` expression, generated at macro expansion
+-       Called by the deriving macro with an `Expr[String]` of the field's text and a `Quotes`; the
+-       returned `Expr[Self]` is spliced into the generated reader in place of any call.
+-   entry #readRuntime   reads a value of this type from text at runtime, when the instance cannot be evaluated at expansion
+-       Must give the same result as the code `#read` generates, since which of the two is used
+-       depends on where the instance is defined and how the program is being compiled.
++   entry #read   der Code, der einen Wert dieses Typs aus einem `String`-Ausdruck liest, erzeugt bei der Makroexpansion
++       Wird vom ableitenden Makro mit einem `Expr[String]` des Feldtexts und einem `Quotes`
++       aufgerufen; der gelieferte `Expr[Self]` wird anstelle eines Aufrufs in den erzeugten
++       Reader eingespleißt.
++   entry #readRuntime   liest einen Wert dieses Typs zur Laufzeit aus Text, wenn die Instanz bei der Expansion nicht ausgewertet werden kann
++       Muss dasselbe Ergebnis liefern wie der Code, den `#read` erzeugt, da es vom Ort der
++       Definition der Instanz und von der Art der Kompilierung des Programms abhängt, welche der
++       beiden verwendet wird.
+
+- entry .Prescience   the deriving macros: a case-class reader assembled from its fields' `Inlinable` instances
++ entry .Prescience   die ableitenden Makros: ein Case-Klassen-Reader, zusammengesetzt aus den `Inlinable`-Instanzen seiner Felder
+
+= entry .Prescience   the deriving macros: a case-class reader assembled from its fields' `Inlinable` instances
+-   detail
++   detail
+
+-       Each method derives, for a non-generic case class, a reader from a line of comma-separated
+-       fields (a toy format: the mechanism is the point): the input is split once, and each
+-       field's code comes from its type's `Inlinable` instance, inlined when the instance can be
+-       evaluated at expansion time and a call to `Inlinable#readRuntime` otherwise.
++       Jede Methode leitet für eine nicht generische Case-Klasse einen Reader aus einer Zeile
++       kommagetrennter Felder ab (ein Spielzeugformat: Es geht um den Mechanismus): Die Eingabe
++       wird einmal aufgeteilt, und der Code jedes Felds stammt aus der `Inlinable`-Instanz seines
++       Typs, geinlint, wenn die Instanz zur Expansionszeit ausgewertet werden kann, und
++       andernfalls als Aufruf von `Inlinable#readRuntime`.
+
+=       evaluated at expansion time and a call to `Inlinable#readRuntime` otherwise.
+=
+-       ```scala
++       ```scala
+
+=       evaluated at expansion time and a call to `Inlinable#readRuntime` otherwise.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       evaluated at expansion time and a call to `Inlinable#readRuntime` otherwise.
+=
+=       ```scala
+=       import soundness.*
+-       import prescience.*
++       import prescience.*
+
+-       import prescience.inlinables.int
++       import prescience.inlinables.int
+
+-       case class Point(x: Int, y: Int)
++       case class Point(x: Int, y: Int)
+
+-       Prescience.read[Point]("3,4")   // Point(3, 4)
++       Prescience.read[Point]("3,4")   // Point(3, 4)
+
+=       Prescience.read[Point]("3,4")   // Point(3, 4)
+-       ```
++       ```
+
+-       A type which is not a case class, a generic case class, or a field type with no
+-       `Inlinable` in scope, is a compile error.
++       Ein Typ, der keine Case-Klasse ist, eine generische Case-Klasse oder ein Feldtyp ohne
++       `Inlinable` im Geltungsbereich ist ein Kompilierfehler.
+
+-   refer prescience.Inlinable
++   refer prescience.Inlinable
+
+-   entry .read   reads a case class from comma-separated text, inlining every statically evaluable field instance
+-       Tier A only: an instance which resolves to a precompiled static object, or a
+-       parameterless member of one, contributes its `Inlinable#read` code; any other instance is
+-       called at runtime through `Inlinable#readRuntime`.
+-   entry .readStaging   as `Prescience.read`, also evaluating conditional and derived givens under an in-macro compiler
+-       For each field whose instance tier A cannot evaluate, runs the implicit search inside a
+-       fresh `scala.quoted.staging.Compiler` over the macro classpath (less the current output
+-       directory) and uses the instance it yields. This sees only givens reachable from global
+-       scope (companions and package-level givens on the classpath), not lexically scoped ones,
+-       works only for non-generic class types, and costs a full in-memory compiler run per
+-       instance, each reported as an info diagnostic with its duration. A field it cannot serve
+-       takes the runtime tier.
++   entry .read   liest eine Case-Klasse aus kommagetrenntem Text und inlint jede statisch auswertbare Feldinstanz
++       Nur Stufe A: Eine Instanz, die zu einem vorkompilierten statischen Objekt oder einem
++       parameterlosen Member eines solchen auflöst, steuert ihren `Inlinable#read`-Code bei; jede
++       andere Instanz wird zur Laufzeit über `Inlinable#readRuntime` aufgerufen.
++   entry .readStaging   wie `Prescience.read`, wertet aber auch bedingte und abgeleitete Givens unter einem Compiler im Makro aus
++       Führt für jedes Feld, dessen Instanz Stufe A nicht auswerten kann, die implizite Suche in
++       einem frischen `scala.quoted.staging.Compiler` über dem Makro-Klassenpfad (ohne das
++       aktuelle Ausgabeverzeichnis) aus und verwendet die Instanz, die sie liefert. Das sieht nur
++       Givens, die aus dem globalen Geltungsbereich erreichbar sind (Begleitobjekte und Givens
++       auf Paketebene im Klassenpfad), keine lexikalisch gültigen, funktioniert nur für nicht
++       generische Klassentypen und kostet pro Instanz einen vollständigen Compilerlauf im
++       Speicher, der jeweils als Info-Diagnose mit seiner Dauer gemeldet wird. Ein Feld, das es
++       nicht bedienen kann, nimmt die Laufzeitstufe.
+
+- entry .internal   the macro implementation behind `Prescience.read` and `Prescience.readStaging`
++ entry .internal   die Makroimplementierung hinter `Prescience.read` und `Prescience.readStaging`
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use. Its public `readStaged` is the macro `Prescience.read` and
+-       `Prescience.readStaging` splice, with a flag choosing whether tier B runs.
+-   entry .readStaged   the deriving macro: a reader for a case class, with or without the staging tier
+-       Not for direct use; called from the splices of `Prescience.read` and `Prescience.readStaging`.
++       Nicht zur direkten Verwendung. Sein öffentliches `readStaged` ist das Makro, das
++       `Prescience.read` und `Prescience.readStaging` einspleißen, mit einem Flag, das wählt, ob
++       Stufe B läuft.
++   entry .readStaged   das ableitende Makro: ein Reader für eine Case-Klasse, mit oder ohne die Staging-Stufe
++       Nicht zur direkten Verwendung; aufgerufen aus den Splices von `Prescience.read` und `Prescience.readStaging`.
+
+- entry .inlinables   sample `Inlinable` givens for `Int`, `String` and `Boolean`, as members of a static object
++ entry .inlinables   Beispiel-Givens für `Inlinable` zu `Int`, `String` und `Boolean`, als Member eines statischen Objekts
+
+= entry .inlinables   sample `Inlinable` givens for `Int`, `String` and `Boolean`, as members of a static object
+-   detail
++   detail
+
+-       Given aliases defined in `prescience.leaves`, so that they are compiled before any use site
+-       and tier A can evaluate them through the member-access path (load the object, invoke the
+-       parameterless accessor). Import them by name, since `import prescience.inlinables.*` does
+-       not import givens:
++       Given-Aliase, definiert in `prescience.leaves`, sodass sie vor jeder Verwendungsstelle
++       kompiliert werden und Stufe A sie über den Member-Zugriffspfad auswerten kann (das Objekt
++       laden, den parameterlosen Accessor aufrufen). Importieren Sie sie namentlich, da
++       `import prescience.inlinables.*` keine Givens importiert:
+
+=       not import givens:
+=
+-       ```scala
++       ```scala
+
+=       not import givens:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       not import givens:
+=
+=       ```scala
+=       import soundness.*
+-       import prescience.*
++       import prescience.*
+
+-       import prescience.inlinables.{int, string, boolean}
++       import prescience.inlinables.{int, string, boolean}
+
+-       case class Order(id: Int, name: String, active: Boolean)
++       case class Order(id: Int, name: String, active: Boolean)
+
+-       Prescience.read[Order]("7,widget,true")
++       Prescience.read[Order]("7,widget,true")
+
+=       Prescience.read[Order]("7,widget,true")
+-       ```
++       ```
+
+-       The instances' `Inlinable#readRuntime` methods throw an `AssertionError` by design, so a
+-       reader which silently fell back to the runtime tier fails loudly: they are demonstrations
+-       of tier A, not general-purpose instances.
++       Die `Inlinable#readRuntime`-Methoden der Instanzen werfen absichtlich einen
++       `AssertionError`, sodass ein Reader, der stillschweigend auf die Laufzeitstufe
++       zurückgefallen ist, laut scheitert: Sie sind Demonstrationen von Stufe A, keine
++       Instanzen für allgemeine Zwecke.
+
+-   refer prescience.IntInlinable
++   refer prescience.IntInlinable
+
+-   entry .int   `Int is Inlinable`, as `IntInlinable`
+-   entry .string   `String is Inlinable`, as `StringInlinable`
+-   entry .boolean   `Boolean is Inlinable`, as `BooleanInlinable`
++   entry .int   `Int is Inlinable`, als `IntInlinable`
++   entry .string   `String is Inlinable`, als `StringInlinable`
++   entry .boolean   `Boolean is Inlinable`, als `BooleanInlinable`
+
+- entry .IntInlinable   a static `Int is Inlinable` which parses the trimmed field text as an integer
++ entry .IntInlinable   ein statisches `Int is Inlinable`, das den getrimmten Feldtext als Ganzzahl parst
+
+= entry .IntInlinable   a static `Int is Inlinable` which parses the trimmed field text as an integer
+-   detail
++   detail
+
+-       The generated code is `Integer.parseInt` of the trimmed text. Its `#readRuntime` throws an
+-       `AssertionError`, since it exists to prove that tier A evaluated it at expansion time.
++       Der erzeugte Code ist `Integer.parseInt` des getrimmten Texts. Sein `#readRuntime` wirft
++       einen `AssertionError`, da es existiert, um zu beweisen, dass Stufe A es zur Expansionszeit
++       ausgewertet hat.
+
+-   entry .Self   `Int`
++   entry .Self   `Int`
+
+-   entry .read   the code which parses a trimmed `String` expression as an `Int`
+-   entry .readRuntime   always throws: this instance is meant only to be inlined
++   entry .read   der Code, der einen getrimmten `String`-Ausdruck als `Int` parst
++   entry .readRuntime   wirft immer: Diese Instanz ist nur zum Inlinen gedacht
+
+- entry .StringInlinable   a static `String is Inlinable` whose generated code is the field text itself
++ entry .StringInlinable   ein statisches `String is Inlinable`, dessen erzeugter Code der Feldtext selbst ist
+
+= entry .StringInlinable   a static `String is Inlinable` whose generated code is the field text itself
+-   detail
++   detail
+
+-       Its `#readRuntime` throws an `AssertionError`, since it exists to prove that tier A
+-       evaluated it at expansion time.
++       Sein `#readRuntime` wirft einen `AssertionError`, da es existiert, um zu beweisen, dass
++       Stufe A es zur Expansionszeit ausgewertet hat.
+
+-   entry .Self   `String`
++   entry .Self   `String`
+
+-   entry .read   the field's `String` expression, unchanged
+-   entry .readRuntime   always throws: this instance is meant only to be inlined
++   entry .read   der `String`-Ausdruck des Felds, unverändert
++   entry .readRuntime   wirft immer: Diese Instanz ist nur zum Inlinen gedacht
+
+- entry .BooleanInlinable   a static `Boolean is Inlinable` which parses the trimmed field text as a Boolean
++ entry .BooleanInlinable   ein statisches `Boolean is Inlinable`, das den getrimmten Feldtext als Boolean parst
+
+= entry .BooleanInlinable   a static `Boolean is Inlinable` which parses the trimmed field text as a Boolean
+-   detail
++   detail
+
+-       The generated code is `java.lang.Boolean.parseBoolean` of the trimmed text, so anything but
+-       `true` (in any case) is `false`. Its `#readRuntime` throws an `AssertionError`.
++       Der erzeugte Code ist `java.lang.Boolean.parseBoolean` des getrimmten Texts, sodass alles
++       außer `true` (in beliebiger Groß-/Kleinschreibung) `false` ist. Sein `#readRuntime` wirft
++       einen `AssertionError`.
+
+-   entry .Self   `Boolean`
++   entry .Self   `Boolean`
+
+-   entry .read   the code which parses a trimmed `String` expression as a `Boolean`
+-   entry .readRuntime   always throws: this instance is meant only to be inlined
++   entry .read   der Code, der einen getrimmten `String`-Ausdruck als `Boolean` parst
++   entry .readRuntime   wirft immer: Diese Instanz ist nur zum Inlinen gedacht
+
+- entry .Celsius   a sample type whose conditional companion given only the staging tier can evaluate
++ entry .Celsius   ein Beispieltyp, dessen bedingtes Given im Begleitobjekt nur die Staging-Stufe auswerten kann
+
+= entry .Celsius   a sample type whose conditional companion given only the staging tier can evaluate
+-   detail
++   detail
+
+-       `Celsius(degrees)` has a companion `Inlinable` given with a `DummyImplicit` parameter, so a
+-       summoned instance is an application rather than a static path, and tier A cannot load it;
+-       `Prescience.readStaging` resolves and runs it under the in-macro compiler, and inlines its
+-       code. Its `Inlinable#readRuntime` throws, so a successful read proves the staging tier did
+-       the work.
++       `Celsius(degrees)` hat im Begleitobjekt ein `Inlinable`-Given mit einem
++       `DummyImplicit`-Parameter, sodass eine herbeigerufene Instanz eine Applikation und kein
++       statischer Pfad ist und Stufe A sie nicht laden kann; `Prescience.readStaging` löst sie
++       unter dem Compiler im Makro auf, führt sie aus und inlint ihren Code. Ihr
++       `Inlinable#readRuntime` wirft, sodass ein erfolgreiches Lesen beweist, dass die
++       Staging-Stufe die Arbeit getan hat.
+
+=       the work.
+=
+-       ```scala
++       ```scala
+
+=       the work.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       the work.
+=
+=       ```scala
+=       import soundness.*
+-       import prescience.*
++       import prescience.*
+
+-       import prescience.inlinables.string
++       import prescience.inlinables.string
+
+-       case class Reading(celsius: Celsius, station: String)
++       case class Reading(celsius: Celsius, station: String)
+
+-       Prescience.readStaging[Reading]("21,Kew")   // Reading(Celsius(21), "Kew")
++       Prescience.readStaging[Reading]("21,Kew")   // Reading(Celsius(21), "Kew")
+
+=       Prescience.readStaging[Reading]("21,Kew")   // Reading(Celsius(21), "Kew")
+-       ```
++       ```
+
+-   entry .inlinable   the conditional `Celsius is Inlinable` given, evaluable only by `Prescience.readStaging`
+-   entry #degrees   the temperature, in whole degrees Celsius
++   entry .inlinable   das bedingte Given `Celsius is Inlinable`, nur von `Prescience.readStaging` auswertbar
++   entry #degrees   die Temperatur, in ganzen Grad Celsius

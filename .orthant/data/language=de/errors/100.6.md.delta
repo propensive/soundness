@@ -1,0 +1,52 @@
+orthant 1 language
+
+- # `↯/s.100.6` — `NetworkInterface.Error`
++ # `↯/s.100.6` — `NetworkInterface.Error`
+
+- Raised when a network interface cannot be enumerated or looked up.
++ Wird ausgelöst, wenn eine Netzwerkschnittstelle nicht aufgezählt oder nachgeschlagen werden kann.
+
+- ## Cause
++ ## Ursache
+
+- Interfaces are read from the operating system. This error covers a name matching no
+- interface, and a failure of the underlying enumeration.
++ Schnittstellen werden vom Betriebssystem gelesen. Dieser Fehler umfasst einen Namen, der zu keiner
++ Schnittstelle passt, und einen Fehlschlag der zugrunde liegenden Aufzählung.
+
+- ## Variants
++ ## Varianten
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
+- column  Message
++ column  Grund
++ column  Meldung
+
+- row  `↯/s.100.6.1`  `Enumeration`  `[↯/s.100.6.1] the network interfaces could not be enumerated because <message>`
++ row  `↯/s.100.6.1`  `Enumeration`  `[↯/s.100.6.1] the network interfaces could not be enumerated because <message>`
+
+- row  `↯/s.100.6.2`  `Inspection`  `[↯/s.100.6.2] the interface <name> could not be inspected because <message>`
++ row  `↯/s.100.6.2`  `Inspection`  `[↯/s.100.6.2] the interface <name> could not be inspected because <message>`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Behebung
+
+- Check the name against `NetworkInterface.all()`, which lists what is actually present.
+- Interface names are not portable between operating systems.
++ Prüfen Sie den Namen gegen `NetworkInterface.all()`, das auflistet, was tatsächlich vorhanden ist.
++ Schnittstellennamen sind zwischen Betriebssystemen nicht portabel.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/urticose/src/core/urticose.NetworkInterface.scala`
++ - Quelle: `lib/urticose/src/core/urticose.NetworkInterface.scala`

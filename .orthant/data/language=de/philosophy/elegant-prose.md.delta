@@ -1,0 +1,224 @@
+orthant 1 language
+
+- # Elegant Prose
++ # Elegante Prosa
+
+- Code in Soundness should read like elegant prose: someone who knows the domain ought to
+- be able to read a method aloud and understand what it does. This is the aim that the
+- other principles serve — [direct style](direct-style.md), careful [naming](naming.md),
+- [small APIs](small-apis.md), and [honest signatures](honest-signatures.md) all exist so
+- that the meaning of code rises to the surface and the machinery recedes. Clarity for
+- the reader is treated as a primary goal of design, not as a fortunate side effect of it.
++ Code in Soundness sollte sich wie elegante Prosa lesen: Wer die Domäne kennt, sollte eine Methode
++ laut vorlesen und verstehen können, was sie tut. Das ist das Ziel, dem die anderen Prinzipien
++ dienen — [direkter Stil](direct-style.md), sorgfältige [Benennung](naming.md),
++ [kleine APIs](small-apis.md) und [ehrliche Signaturen](honest-signatures.md) existieren alle,
++ damit die Bedeutung des Codes an die Oberfläche steigt und die Maschinerie zurücktritt. Klarheit
++ für den Leser wird als vorrangiges Ziel des Designs behandelt, nicht als glücklicher Nebeneffekt.
+
+- Prose is learnable by analogy, and so is a well-designed API. A reader who has seen
+- `text.read[Json]` should correctly guess that `text.read[Markdown]` parses Markdown,
+- that `bytes.read[Audio in Wave]` reads a WAV file, and that `stream.read[Csv]` would
+- read CSV — one verb, meaning the same thing across every format. The same analogy runs
+- through the whole vocabulary: whatever can be decoded is `text.as[T]`, whatever can
+- be shown is `value.show`, whatever streams is `source.stream[Data]`, every checked
+- literal is an interpolator (`url"…"`, `p"…"`, `json"…"`, `v"…"`), and every serialized
+- form round-trips through the same pair of operations. Learning one corner of Soundness
+- is learning the grammar of all of it.
++ Prosa lässt sich durch Analogie erlernen, und eine gut entworfene API ebenso. Ein Leser, der
++ `text.read[Json]` gesehen hat, sollte richtig vermuten, dass `text.read[Markdown]` Markdown parst,
++ dass `bytes.read[Audio in Wave]` eine WAV-Datei liest und dass `stream.read[Csv]` CSV lesen würde
++ — ein Verb, das in jedem Format dasselbe bedeutet. Dieselbe Analogie zieht sich durch das ganze
++ Vokabular: Was sich dekodieren lässt, ist `text.as[T]`, was sich anzeigen lässt, ist `value.show`,
++ was streamt, ist `source.stream[Data]`, jedes geprüfte Literal ist ein Interpolator (`url"…"`,
++ `p"…"`, `json"…"`, `v"…"`), und jede serialisierte Form übersteht den Hin- und Rückweg über
++ dasselbe Paar von Operationen. Eine Ecke von Soundness zu lernen heißt, die Grammatik des Ganzen
++ zu lernen.
+
+- The analogy is a design constraint, not an accident: a new module *must* spell its
+- parsing `read`, its rendering `show`, its literals as an interpolator — because the
+- moment it invents `parseFrom` or `stringify`, the reader's correct guesses start
+- failing, and the prose stops scanning.
++ Die Analogie ist eine Designvorgabe, kein Zufall: Ein neues Modul *muss* sein Parsen `read`
++ nennen, sein Darstellen `show`, seine Literale als Interpolator schreiben — denn in dem Moment, in
++ dem es `parseFrom` oder `stringify` erfindet, schlagen die richtigen Vermutungen des Lesers fehl,
++ und die Prosa gerät aus dem Takt.
+
+- ## The test
++ ## Der Test
+
+- The claim is checkable: read the code aloud and see whether it makes sense to someone who
+- knows the domain but not the library.
++ Die Behauptung ist überprüfbar: Lesen Sie den Code laut vor und sehen Sie, ob er für jemanden Sinn
++ ergibt, der die Domäne kennt, aber nicht die Bibliothek.
+
+= knows the domain but not the library.
+=
+- ```scala fuel
++ ```scala fuel
+
+= knows the domain but not the library.
+=
+= ```scala fuel
+- parse
++ parse
+
+= knows the domain but not the library.
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- supervise:
++ supervise:
+
+-   val server = SocketServer(8080).handle:
++   val server = SocketServer(8080).handle:
+
+-     request.target match
++     request.target match
+
+-       case t"/"       => Http.Response(Http.Ok)(homePage)
++       case t"/"       => Http.Response(Http.Ok)(homePage)
+
+-       case t"/status" => Http.Response(Http.Ok)(t"OK")
++       case t"/status" => Http.Response(Http.Ok)(t"OK")
+
+-       case _          => Http.Response(Http.NotFound)(t"No such page")
++       case _          => Http.Response(Http.NotFound)(t"No such page")
+
+=       case _          => Http.Response(Http.NotFound)(t"No such page")
+- ```
++ ```
+
+- "Supervise: the server is a socket server on port 8080 that handles — match the request's
+- target: for slash, an HTTP response, OK, the home page…". A reader who knows HTTP follows
+- that without knowing anything about Soundness.
++ „Supervise: the server is a socket server on port 8080 that handles — match the request's target:
++ for slash, an HTTP response, OK, the home page…“. Ein Leser, der HTTP kennt, folgt dem, ohne
++ irgendetwas über Soundness zu wissen.
+
+- The same test applied elsewhere:
++ Derselbe Test, anderswo angewandt:
+
+= The same test applied elsewhere:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The same test applied elsewhere:
+=
+= ```scala fuel
+- parse
++ parse
+
+= The same test applied elsewhere:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- worktree.merge(GitBranch(t"feature"), ff = FastForward.Never, message = t"Merge feature")
++ worktree.merge(GitBranch(t"feature"), ff = FastForward.Never, message = t"Merge feature")
+
+- path.open[Directory](Read & Exclusive): dir ?=>
++ path.open[Directory](Read & Exclusive): dir ?=>
+
+-   (dir/"greeting.txt").overwrite(t"Hello directory")
++   (dir/"greeting.txt").overwrite(t"Hello directory")
+
+- 5.25.pm on 2018-Aug-11
++ 5.25.pm on 2018-Aug-11
+
+- key.uncloak:
++ key.uncloak:
+
+-   t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
++   t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+
+=   t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
+- ```
++ ```
+
+- Each reads as a statement about the domain rather than as an instruction to a machine.
++ Jedes liest sich als Aussage über die Domäne statt als Anweisung an eine Maschine.
+
+- ## What the machinery costs to hide
++ ## Was es kostet, die Maschinerie zu verbergen
+
+- Prose that reads well is not prose with nothing behind it. Each line above rests on
+- several of the other principles at once, and the reader is meant to notice none of them:
++ Prosa, die sich gut liest, ist keine Prosa, hinter der nichts steht. Jede Zeile oben ruht auf
++ mehreren der anderen Prinzipien zugleich, und der Leser soll keines davon bemerken:
+
+- ```tabular
++ ```tabular
+
+- column  Expression
+- column  Rests on
+- column  The reader sees
+- row  `path.open[Directory](Read & Exclusive)`  a [scoped capability](delimited-scopes.md), a type-level grant set, and [capture checking](capture-checking.md) proving the handle does not escape  a directory being opened for exclusive reading
+- row  `t"2011-12-13".as[Date]`  a typeclass resolved by target type, a contextual error strategy, and a calendar  text becoming a date
+- row  `5.25.pm on 2018-Aug-11`  a compiletime-checked literal, an [infix](infix-types.md) constructor, and validation that rejects `13.00.am`  a time on a date
++ column  Ausdruck
++ column  Ruht auf
++ column  Der Leser sieht
++ row  `path.open[Directory](Read & Exclusive)`  einer [Capability mit Geltungsbereich](delimited-scopes.md), einer Menge von Berechtigungen auf Typebene und [Capture-Checking](capture-checking.md), das beweist, dass das Handle nicht entkommt  ein Verzeichnis, das zum exklusiven Lesen geöffnet wird
++ row  `t"2011-12-13".as[Date]`  einer nach dem Zieltyp aufgelösten Typklasse, einer kontextuellen Fehlerstrategie und einem Kalender  Text, der zu einem Datum wird
++ row  `5.25.pm on 2018-Aug-11`  einem zur Kompilierzeit geprüften Literal, einem [Infix](infix-types.md)-Konstruktor und einer Validierung, die `13.00.am` zurückweist  eine Uhrzeit an einem Datum
+
+= row  `5.25.pm on 2018-Aug-11`  a compiletime-checked literal, an [infix](infix-types.md) constructor, and validation that rejects `13.00.am`  a time on a date
+- ```
++ ```
+
+- That is the aim: machinery that recedes. When the machinery *has* to be visible — when a
+- capability must be named, or a type ascribed — it is because the reader genuinely needs
+- to know, not because the design leaked.
++ Das ist das Ziel: eine Maschinerie, die zurücktritt. Wenn die Maschinerie sichtbar sein *muss* —
++ wenn eine Capability benannt oder ein Typ zugeschrieben werden muss —, dann weil der Leser es
++ wirklich wissen muss, nicht weil das Design undicht war.
+
+- ## Where the prose breaks down
++ ## Wo die Prosa versagt
+
+- Being honest about this is more useful than the principle stated alone.
++ Darüber ehrlich zu sein ist nützlicher als das Prinzip allein.
+
+- **Type ascriptions intrude.** Where inference cannot reach, a type must be written, and a
+- long infix type in the middle of an expression stops the sentence dead.
++ **Typzuschreibungen drängen sich auf.** Wo die Inferenz nicht hinreicht, muss ein Typ geschrieben
++ werden, und ein langer Infix-Typ mitten in einem Ausdruck bringt den Satz zum Stehen.
+
+- **Error messages are not prose.** A missing given is reported as a failed implicit search,
+- in the compiler's vocabulary rather than the library's — which is why
+- `explainMissingContext` exists, and why it is a repair rather than a solution.
++ **Fehlermeldungen sind keine Prosa.** Ein fehlendes Given wird als fehlgeschlagene implizite Suche
++ gemeldet, im Vokabular des Compilers statt der Bibliothek — weshalb es `explainMissingContext`
++ gibt und weshalb es eine Reparatur und keine Lösung ist.
+
+- **Some domains have no good English.** A streaming pipeline reads well; the `Duct` and
+- `Intake` vocabulary underneath it does not, and could not, because the concepts have no
+- everyday names. The response is to keep such vocabulary below the surface where most
+- readers never meet it, not to pretend it reads as prose.
++ **Manche Domänen haben kein gutes Englisch.** Eine Streaming-Pipeline liest sich gut; das
++ Vokabular von `Duct` und `Intake` darunter nicht und könnte es auch nicht, weil die Konzepte keine
++ alltäglichen Namen haben. Die Antwort ist, solches Vokabular unter der Oberfläche zu halten, wo die
++ meisten Leser ihm nie begegnen, statt so zu tun, als lese es sich wie Prosa.
+
+- **Reading aloud is a test, not a proof.** Code can scan beautifully and be wrong, and the
+- principle is not a substitute for the checking the other principles provide. It makes
+- code that is correct *look* correct, and — more usefully — makes code that is wrong look
+- wrong to a reader who knows the domain.
++ **Lautes Vorlesen ist ein Test, kein Beweis.** Code kann wunderbar klingen und falsch sein, und
++ das Prinzip ist kein Ersatz für die Prüfungen, die die anderen Prinzipien bieten. Es lässt
++ korrekten Code korrekt *aussehen* und — nützlicher noch — lässt falschen Code für einen Leser, der
++ die Domäne kennt, falsch aussehen.
+
+- See [naming](naming.md) and [small APIs](small-apis.md) for the two disciplines that most
+- directly produce this, and [direct style](direct-style.md) for the shape that lets a
+- sentence stay a sentence.
++ Siehe [Benennung](naming.md) und [kleine APIs](small-apis.md) für die beiden Disziplinen, die dies
++ am unmittelbarsten hervorbringen, und [direkter Stil](direct-style.md) für die Gestalt, die einen
++ Satz einen Satz bleiben lässt.

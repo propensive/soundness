@@ -1,0 +1,59 @@
+orthant 1 language
+
+- # `↯/s.82.1` — `Outlet.Error`
++ # `↯/s.82.1` — `Outlet.Error`
+
+- Raised when audio cannot be played to an output device.
++ Wird ausgelöst, wenn Audio nicht auf einem Ausgabegerät abgespielt werden kann.
+
+- ## Cause
++ ## Ursache
+
+- An outlet is a physical or virtual audio output. This error covers a device that is not
+- available, one that is in use, and one that cannot accept the audio's sample rate, bit
+- depth or channel layout.
++ Ein Outlet ist eine physische oder virtuelle Audioausgabe. Dieser Fehler umfasst ein Gerät, das
++ nicht verfügbar ist, eines, das belegt ist, und eines, das die Abtastrate, die Bittiefe oder die
++ Kanalanordnung des Audios nicht annehmen kann.
+
+- ## Variants
++ ## Varianten
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
+- column  Message
++ column  Grund
++ column  Meldung
+
+- row  `↯/s.82.1.1`  `Unavailable`  `[↯/s.82.1.1] the audio line could not be opened`
++ row  `↯/s.82.1.1`  `Unavailable`  `[↯/s.82.1.1] the audio line could not be opened`
+
+- row  `↯/s.82.1.2`  `UnsupportedConfiguration`  `[↯/s.82.1.2] the requested configuration is not supported`
++ row  `↯/s.82.1.2`  `UnsupportedConfiguration`  `[↯/s.82.1.2] the requested configuration is not supported`
+
+- row  `↯/s.82.1.3`  `Closed`  `[↯/s.82.1.3] the playback has already been stopped`
++ row  `↯/s.82.1.3`  `Closed`  `[↯/s.82.1.3] the playback has already been stopped`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Behebung
+
+- Check the device is present and not exclusively held by another process. Where the
+- configuration is at fault, convert the audio to a format the device accepts, or query the
+- outlet before playing.
++ Prüfen Sie, ob das Gerät vorhanden ist und nicht exklusiv von einem anderen Prozess gehalten wird.
++ Liegt der Fehler an der Konfiguration, wandeln Sie das Audio in ein Format um, das das Gerät
++ annimmt, oder fragen Sie das Outlet vor dem Abspielen ab.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/cacophony/src/core/cacophony.Outlet.scala`
++ - Quelle: `lib/cacophony/src/core/cacophony.Outlet.scala`

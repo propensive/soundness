@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.73.7` — Time literal: minutes must be two digits
++ # `↯/s.73.7` — Zeitliteral: Die Minuten müssen zweistellig sein
+
+- Raised by Aviation's `validTime` macro when the literal does not
+- have exactly two minute digits after the decimal point.
++ Wird vom Makro `validTime` von Aviation ausgelöst, wenn das Literal nach dem Dezimalpunkt nicht
++ genau zwei Minutenziffern hat.
+
+- ## Cause
++ ## Ursache
+
+- The macro inspects the source text of the literal and requires the
+- form `<hour>.<mm>` where `<mm>` is two digits.
++ Das Makro untersucht den Quelltext des Literals und verlangt die Form `<hour>.<mm>`, wobei `<mm>`
++ zwei Ziffern sind.
+
+- ## Example message
++ ## Beispielmeldung
+
+=
+- ```
++ ```
+
+- [↯/s.73.7] the time should have exactly two minutes digits
++ [↯/s.73.7] the time should have exactly two minutes digits
+
+= [↯/s.73.7] the time should have exactly two minutes digits
+- ```
++ ```
+
+- ## Resolution
++ ## Behebung
+
+- Pad the minutes to two digits (e.g. write `9.05` rather than `9.5`).
++ Füllen Sie die Minuten auf zwei Ziffern auf (schreiben Sie z. B. `9.05` statt `9.5`).
+
+- ## See also
++ ## Siehe auch
+
+- - The other time literal errors: [Families](README.md#families)
+- - Source: `lib/aviation/src/core/aviation.internal.scala`
++ - Die anderen Fehler bei Zeitliteralen: [Familien](README.md#families)
++ - Quelle: `lib/aviation/src/core/aviation.internal.scala`

@@ -1,0 +1,90 @@
+orthant 1 language
+
+- # `↯/s.118.7` — `Tels.Resolution.Error`
++ # `↯/s.118.7` — `Tels.Resolution.Error`
+
+- Raised when a TEL document's schema identification does not resolve to a schema.
++ Wird ausgelöst, wenn die Schema-Identifikation eines TEL-Dokuments sich nicht zu einem Schema
++ auflösen lässt.
+
+- ## Cause
++ ## Ursache
+
+- Schema resolution (TEL §8.2) turns the pragma's identification — a LIRA reference, layer
+- selections, and/or a BASE-256 signature — into a composed schema, through the embedded,
+- built-in, store, library and LIRA steps. Its failures are runtime resolution errors, outside
+- the document's E1xx–E3xx taxonomy (the one exception is E124, out-of-order layer selections,
+- which is a `Tel.Error` raised during resolution because it needs the schema's declaration
+- order).
++ Die Schema-Auflösung (TEL §8.2) macht aus der Identifikation im Pragma (einer LIRA-Referenz,
++ Schicht-Auswahlen und/oder einer BASE-256-Signatur) ein zusammengesetztes Schema, über die
++ Schritte eingebettet, eingebaut, Speicher, Bibliothek und LIRA. Ihre Fehlschläge sind
++ Auflösungsfehler zur Laufzeit, außerhalb der Taxonomie E1xx–E3xx des Dokuments (die einzige
++ Ausnahme ist E124, Schicht-Auswahlen in falscher Reihenfolge, ein `Tel.Error`, der während der
++ Auflösung ausgelöst wird, weil er die Deklarationsreihenfolge des Schemas braucht).
+
+- ## Variants
++ ## Varianten
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
+- column  Message
++ column  Grund
++ column  Meldung
+
+- row  `↯/s.118.7.1`  `UnknownLayer`  the selected layer is not declared by the schema
++ row  `↯/s.118.7.1`  `UnknownLayer`  the selected layer is not declared by the schema
+
+- row  `↯/s.118.7.2`  `ComponentCount`  the signature has the wrong number of components
++ row  `↯/s.118.7.2`  `ComponentCount`  the signature has the wrong number of components
+
+- row  `↯/s.118.7.3`  `BaseMismatch`  the signature's base component does not match the schema's base hash
++ row  `↯/s.118.7.3`  `BaseMismatch`  the signature's base component does not match the schema's base hash
+
+- row  `↯/s.118.7.4`  `LayerMismatch`  the signature's component for a layer does not match its hash
++ row  `↯/s.118.7.4`  `LayerMismatch`  the signature's component for a layer does not match its hash
+
+- row  `↯/s.118.7.5`  `ReferenceDisagrees`  the reference's lineage does not serve the authoritative signature
++ row  `↯/s.118.7.5`  `ReferenceDisagrees`  the reference's lineage does not serve the authoritative signature
+
+- row  `↯/s.118.7.6`  `Unresolved`  the identifier was not resolved, naming the failing step
++ row  `↯/s.118.7.6`  `Unresolved`  the identifier was not resolved, naming the failing step
+
+- row  `↯/s.118.7.7`  `NotSchema`  the resolved body is not a valid schema document
++ row  `↯/s.118.7.7`  `NotSchema`  the resolved body is not a valid schema document
+
+- row  `↯/s.118.7.8`  `Unverified`  signature verification failed
++ row  `↯/s.118.7.8`  `Unverified`  signature verification failed
+
+- ```
++ ```
+
+- ## Resolution
++ ## Behebung
+
+- A signature is authoritative: when layer selections precede it, it must decompose into
+- exactly the base hash plus the selected layers' hashes, in order. A bare reference (no
+- selector, no signature) resolves only against local state, by design; make a document
+- portable by appending a signature or publishing the schema and using a `:version` or `:tag`
+- selector. A non-network resolver answers `Unresolved` at the LIRA step for anything absent
+- from local stores.
++ Eine Signatur ist maßgeblich: Gehen ihr Schicht-Auswahlen voraus, muss sie sich genau in den
++ Basis-Hash und die Hashes der ausgewählten Schichten zerlegen lassen, in dieser Reihenfolge. Eine
++ bloße Referenz (ohne Selektor, ohne Signatur) wird absichtlich nur gegen den lokalen Zustand
++ aufgelöst; ein Dokument wird portabel, indem man eine Signatur anhängt oder das Schema
++ veröffentlicht und einen `:version`- oder `:tag`-Selektor verwendet. Ein Resolver ohne Netzwerk
++ antwortet beim LIRA-Schritt mit `Unresolved` für alles, was in den lokalen Speichern fehlt.
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/stratiform/src/core/stratiform.Tels.scala` (`Tels.Resolution`), engine in
++ - Quelle: `lib/stratiform/src/core/stratiform.Tels.scala` (`Tels.Resolution`), die Engine in
+
+-   `lib/stratiform/src/core/stratiform.SchemaResolver.scala`
++   `lib/stratiform/src/core/stratiform.SchemaResolver.scala`

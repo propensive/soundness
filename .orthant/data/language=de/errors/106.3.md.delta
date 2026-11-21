@@ -1,0 +1,68 @@
+orthant 1 language
+
+- # `↯/s.106.3` — `Json.Provider.Error`
++ # `↯/s.106.3` — `Json.Provider.Error`
+
+- Raised when a JSON value does not satisfy the schema it is being
+- validated against.
++ Wird ausgelöst, wenn ein JSON-Wert dem Schema, gegen das er validiert
++ wird, nicht genügt.
+
+- ## Cause
++ ## Ursache
+
+- Jacinta's `Json.Provider` validates JSON values against a schema as a record's fields are read,
+- and reports each mismatch via this error, through the `Tactic` of the code reading the field, so
+- that a validating reader can collect them all. The message is `the
++ Der `Json.Provider` von Jacinta validiert JSON-Werte gegen ein Schema, während die Felder eines
++ Datensatzes gelesen werden, und meldet jede Abweichung über diesen Fehler, durch die `Tactic` des
++ Codes, der das Feld liest, sodass ein validierender Leser sie alle sammeln kann. Die Meldung lautet
++ `the
+
+- JSON was not valid according to the schema because $reason`.
++ JSON was not valid according to the schema because $reason`.
+
+- ## Variants
++ ## Varianten
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
+- column  Meaning
+- column  Message
+- column  Resolution
+- row  `↯/s.106.3.1`  `JsonType`  The value's type does not match what the schema requires.  `[↯/s.106.3.1] the JSON was not valid according to the schema because expected JSON type number, but found string`  Provide a value of the type the schema requires, or relax the schema if the type is genuinely flexible.
+- row  `↯/s.106.3.2`  `MissingValue`  A required value is absent from the JSON. The reason names the missing field where it is known.  `[↯/s.106.3.2] the JSON was not valid according to the schema because the value of locality was missing`  Add the missing field, or mark it optional in the schema.
+- row  `↯/s.106.3.3`  `IntOutOfRange`  An integer value falls outside the `minimum`/`maximum` allowed by the schema. Raised by the `"integer!"` provider type; an absent bound is `Unset` rather than a sentinel.  `[↯/s.106.3.3] the JSON was not valid according to the schema because the value was not between 1 and 99`  Constrain the value to the schema's permitted range.
+- row  `↯/s.106.3.4`  `PatternMismatch`  A string value does not match the regular expression in the schema's `pattern`.  `[↯/s.106.3.4] the JSON was not valid according to the schema because the value did not conform to the regular expression [a-z]+`  Adjust the value to match the schema's pattern, or loosen the pattern.
+- row  `↯/s.106.3.5`  `NumberOutOfRange`  A number falls outside the `minimum`/`maximum` (or exclusive bounds) the schema declares. Raised by the `"number!"` provider type.  `[↯/s.106.3.5] the JSON was not valid according to the schema because the number was not between -90.0 and 90.0`  Constrain the value to the schema's permitted range.
+- row  `↯/s.106.3.6`  `LengthOutOfRange`  A string's length falls outside the schema's `minLength`/`maxLength`. Raised by the `"string!"` provider type.  `[↯/s.106.3.6] the JSON was not valid according to the schema because the string's length was not between 1 and 214`  Shorten or lengthen the value to fit the schema.
+- row  `↯/s.106.3.7`  `NotPermitted`  A string is not one of the schema's `enum` values (or its `const`). Raised by the `"enum"` provider type.  `[↯/s.106.3.7] the JSON was not valid according to the schema because the value Polygon was not one of Point`  Use one of the listed values, or extend the schema's `enum`.
+- row  `↯/s.106.3.8`  `UnexpectedKind`  A value is of a JSON kind which none of the alternatives of its union (`anyOf`, `oneOf`, or a `type` naming several) accepts.  `[↯/s.106.3.8] the JSON was not valid according to the schema because the value was a JSON boolean, which is not one of string, number`  Give a value of one of the kinds the schema lists.
+- row  `↯/s.106.3.9`  `Unparsable`  A string's text is not valid for its `format`: a `json-pointer` or a `regex` which does not parse.  `[↯/s.106.3.9] the JSON was not valid according to the schema because the value a[ is not a valid regex`  Correct the value so that it parses in its format.
++ column  Grund
++ column  Bedeutung
++ column  Meldung
++ column  Behebung
++ row  `↯/s.106.3.1`  `JsonType`  Der Typ des Werts entspricht nicht dem, was das Schema verlangt.  `[↯/s.106.3.1] the JSON was not valid according to the schema because expected JSON type number, but found string`  Geben Sie einen Wert des Typs an, den das Schema verlangt, oder lockern Sie das Schema, wenn der Typ wirklich flexibel ist.
++ row  `↯/s.106.3.2`  `MissingValue`  Ein verlangter Wert fehlt im JSON. Der Grund nennt das fehlende Feld, wo es bekannt ist.  `[↯/s.106.3.2] the JSON was not valid according to the schema because the value of locality was missing`  Ergänzen Sie das fehlende Feld, oder markieren Sie es im Schema als optional.
++ row  `↯/s.106.3.3`  `IntOutOfRange`  Ein ganzzahliger Wert liegt außerhalb des vom Schema erlaubten `minimum`/`maximum`. Ausgelöst vom Provider-Typ `"integer!"`; eine fehlende Schranke ist `Unset` statt eines Sentinels.  `[↯/s.106.3.3] the JSON was not valid according to the schema because the value was not between 1 and 99`  Beschränken Sie den Wert auf den vom Schema erlaubten Bereich.
++ row  `↯/s.106.3.4`  `PatternMismatch`  Ein String-Wert passt nicht auf den regulären Ausdruck im `pattern` des Schemas.  `[↯/s.106.3.4] the JSON was not valid according to the schema because the value did not conform to the regular expression [a-z]+`  Passen Sie den Wert an das Pattern des Schemas an, oder lockern Sie das Pattern.
++ row  `↯/s.106.3.5`  `NumberOutOfRange`  Eine Zahl liegt außerhalb des `minimum`/`maximum` (oder der exklusiven Schranken), das das Schema deklariert. Ausgelöst vom Provider-Typ `"number!"`.  `[↯/s.106.3.5] the JSON was not valid according to the schema because the number was not between -90.0 and 90.0`  Beschränken Sie den Wert auf den vom Schema erlaubten Bereich.
++ row  `↯/s.106.3.6`  `LengthOutOfRange`  Die Länge eines Strings liegt außerhalb von `minLength`/`maxLength` des Schemas. Ausgelöst vom Provider-Typ `"string!"`.  `[↯/s.106.3.6] the JSON was not valid according to the schema because the string's length was not between 1 and 214`  Kürzen oder verlängern Sie den Wert, damit er zum Schema passt.
++ row  `↯/s.106.3.7`  `NotPermitted`  Ein String ist keiner der `enum`-Werte des Schemas (oder sein `const`). Ausgelöst vom Provider-Typ `"enum"`.  `[↯/s.106.3.7] the JSON was not valid according to the schema because the value Polygon was not one of Point`  Verwenden Sie einen der aufgeführten Werte, oder erweitern Sie das `enum` des Schemas.
++ row  `↯/s.106.3.8`  `UnexpectedKind`  Ein Wert ist von einer JSON-Art, die keine der Alternativen seiner Union (`anyOf`, `oneOf` oder ein `type`, das mehrere nennt) akzeptiert.  `[↯/s.106.3.8] the JSON was not valid according to the schema because the value was a JSON boolean, which is not one of string, number`  Geben Sie einen Wert einer der Arten an, die das Schema aufführt.
++ row  `↯/s.106.3.9`  `Unparsable`  Der Text eines Strings ist für sein `format` nicht gültig: ein `json-pointer` oder ein `regex`, der sich nicht parsen lässt.  `[↯/s.106.3.9] the JSON was not valid according to the schema because the value a[ is not a valid regex`  Korrigieren Sie den Wert, sodass er sich in seinem Format parsen lässt.
+
+- ```
++ ```
+
+- ## See also
++ ## Siehe auch
+
+- - Source: `lib/jacinta/src/core/jacinta.Json4.scala`
++ - Quelle: `lib/jacinta/src/core/jacinta.Json4.scala`

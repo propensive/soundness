@@ -1,0 +1,247 @@
+orthant 1 language
+
+- # The Standard-Library Drain
++ # Der Abbau der Standardbibliothek
+
+- Soundness promises that code cannot fail surprisingly at runtime. The Java and Scala standard
+- libraries make no such promise: their collections throw on empty heads and missing keys, their
+- I/O throws unchecked, their types equivocate about null. Every place a Soundness module reaches
+- past its own abstractions into the standard library is a place where that partiality leaks back
+- in — and a single leak undermines the claim everywhere, because a user cannot tell a sealed
+- surface from a porous one.
++ Soundness verspricht, dass Code zur Laufzeit nicht überraschend fehlschlagen kann. Die
++ Standardbibliotheken von Java und Scala geben kein solches Versprechen: Ihre Collections werfen bei
++ leeren Köpfen und fehlenden Schlüsseln, ihre Ein- und Ausgabe wirft ungeprüft, ihre Typen lassen
++ offen, ob sie null sein können. Jede Stelle, an der ein Soundness-Modul an seinen eigenen
++ Abstraktionen vorbei in die Standardbibliothek greift, ist eine Stelle, an der diese Partialität
++ wieder hereinsickert — und ein einziges Leck untergräbt den Anspruch überall, weil ein Benutzer
++ eine dichte Oberfläche nicht von einer durchlässigen unterscheiden kann.
+
+- The answer is already in place: proscenium is the opaque boundary. Its collections wrap the
+- standard library's data structures behind total APIs, its `Array` makes mutation
+- separation-checked, and the `-Yimports:java.lang,proscenium` prelude makes the curated surface
+- ambient while leaving everything else deliberately out of reach. What remains is the drain: the
+- migration shims in `proscenium.compat` existed precisely so that call sites could compile
+- unchanged on day one, and every one of them was an independently deletable forwarder. The
+- drain loop was deprecate → fix call sites → delete; the compat file is now gone. This track is complete when the standard library
+- is invisible — in signatures, in stack traces, in rendered values — everywhere but inside
+- proscenium itself.
++ Die Antwort ist bereits vorhanden: proscenium ist die opake Grenze. Seine Collections verbergen
++ die Datenstrukturen der Standardbibliothek hinter totalen APIs, sein `Array` unterwirft Mutation
++ dem Separation-Checking, und der Vorspann `-Yimports:java.lang,proscenium` macht die kuratierte
++ Oberfläche ambient, während er alles andere bewusst außer Reichweite lässt. Was bleibt, ist der
++ Abbau: Die Migrations-Shims in `proscenium.compat` existierten genau dafür, dass Aufrufstellen
++ am ersten Tag unverändert kompilieren konnten, und jeder davon war ein unabhängig löschbarer
++ Weiterleiter. Die Schleife des Abbaus war „als veraltet markieren → Aufrufstellen korrigieren →
++ löschen“; die Compat-Datei ist inzwischen verschwunden. Diese Spur ist abgeschlossen, wenn die Standardbibliothek
++ unsichtbar ist — in Signaturen, in Stacktraces, in dargestellten Werten — überall außer innerhalb
++ von proscenium selbst.
+
+- The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
++ Die Punkte der Spur, mit ihren Horizonten und harten Abhängigkeiten; [`status.tel`](status.tel) verzeichnet, wo jeder steht:
+
+- ```tabular
++ ```tabular
+
+- column  Item
+- column  Title
+- column  Horizon
+- column  Needs
+- row  core-1  sorted and ordered collections have Soundness equivalents  near
+- row  core-2  `proscenium.compat` is empty  near → mid  core-1
+- row  core-3  no direct `scala.collection` imports  near → mid  core-1
+- row  core-4  indexed access is total by construction  mid
+- row  core-5  nothing Java-shaped at debug time  mid → long
+- row  core-6  the totality audit  long
++ column  Punkt
++ column  Titel
++ column  Horizont
++ column  Benötigt
++ row  core-1  sortierte und geordnete Collections haben Soundness-Entsprechungen  nah
++ row  core-2  `proscenium.compat` ist leer  nah → mittel  core-1
++ row  core-3  keine direkten `scala.collection`-Importe  nah → mittel  core-1
++ row  core-4  indizierter Zugriff ist von vornherein total  mittel
++ row  core-5  nichts Java-Förmiges beim Debuggen  mittel → fern
++ row  core-6  die Totalitätsprüfung  fern
+
+- ```
++ ```
+
+- ## core-1: sorted and ordered collections have Soundness equivalents
++ ## core-1: sortierte und geordnete Collections haben Soundness-Entsprechungen
+
+- Horizon: near
+- Baseline: 31 files (measured 2026-10-21; 32 on 2026-09-25; 16 on 2026-08-01)
++ Horizont: nah
++ Ausgangswert: 31 Dateien (gemessen 2026-10-21; 32 am 2026-09-25; 16 am 2026-08-01)
+
+- Files using `TreeMap`, `TreeSet`, `TrieMap`, `SortedMap` or `SortedSet` have no opaque type to
+- drain to; the equivalents must exist before the drain can take them. The count doubled in
+- seven weeks because new modules — vivisection, praxinoscope, mandible, sedentary — were written
+- against the stdlib sorted types for want of an alternative, which is the case for the
+- equivalents existing first.
++ Dateien, die `TreeMap`, `TreeSet`, `TrieMap`, `SortedMap` oder `SortedSet` verwenden, haben
++ keinen opaken Typ, zu dem sie abgebaut werden könnten; die Entsprechungen müssen existieren, bevor
++ der Abbau sie erfassen kann. Die Zahl hat sich in sieben Wochen verdoppelt, weil neue Module —
++ vivisection, praxinoscope, mandible, sedentary — mangels Alternative gegen die sortierten Typen
++ der Stdlib geschrieben wurden, was dafür spricht, dass die Entsprechungen zuerst existieren.
+
+= equivalents existing first.
+=
+- Done when:
++ Erledigt, wenn:
+
+-     git grep -lE 'TreeMap|TreeSet|TrieMap|SortedMap|SortedSet' -- lib | grep -v '^lib/proscenium/' | wc -l    # 0
++     git grep -lE 'TreeMap|TreeSet|TrieMap|SortedMap|SortedSet' -- lib | grep -v '^lib/proscenium/' | wc -l    # 0
+
+- ## core-2: `proscenium.compat` is empty
++ ## core-2: `proscenium.compat` ist leer
+
+- Done: #1848 (2026-08-24)
+- Baseline was 475 importing files and a 551-line compat file (measured 2026-08-01). The file
+- and its ratchet (`etc/check-compat-ratchet.py`, `etc/compat-baseline.txt`) are deleted; the
+- compiler is now the guard. The final sites carried their proofs through the type system
+- (branded literals, `prim`/`unique`, branded scans) or, at the two places a proof cannot
+- follow the program — quote boundaries and index arithmetic — through `attested` and
+- `readUnchecked` with construction comments.
++ Erledigt: #1848 (2026-08-24)
++ Der Ausgangswert waren 475 importierende Dateien und eine Compat-Datei mit 551 Zeilen (gemessen
++ 2026-08-01). Die Datei und ihre Ratsche (`etc/check-compat-ratchet.py`,
++ `etc/compat-baseline.txt`) sind gelöscht; der Compiler ist nun der Wächter. Die letzten Stellen
++ trugen ihre Beweise durch das Typsystem (markierte Literale, `prim`/`unique`, markierte Scans)
++ oder, an den zwei Stellen, an denen ein Beweis dem Programm nicht folgen kann — Quote-Grenzen und
++ Indexarithmetik —, durch `attested` und `readUnchecked` mit Kommentaren zur Konstruktion.
+
+- ## core-3: no direct `scala.collection` imports
++ ## core-3: keine direkten `scala.collection`-Importe
+
+- Horizon: near → mid
+- Needs: core-1
+- Baseline: 239 files, of which 115 import `scala.collection.mutable` (measured 2026-10-21; 228 and 106 on 2026-09-25; 219 and 170 on 2026-08-01)
++ Horizont: nah → mittel
++ Benötigt: core-1
++ Ausgangswert: 239 Dateien, von denen 115 `scala.collection.mutable` importieren (gemessen 2026-10-21; 228 und 106 am 2026-09-25; 219 und 170 am 2026-08-01)
+
+- Importing `scala.collection` bypasses the prelude's curation entirely. The mutable imports are
+- the larger share, and their replacement is not immutability but *safe* mutability:
+- separation-checked structures in the style of `proscenium.Array`.
++ Ein Import von `scala.collection` umgeht die Kuratierung des Vorspanns vollständig. Die
++ veränderlichen Importe sind der größere Anteil, und ihr Ersatz ist nicht Unveränderlichkeit,
++ sondern *sichere* Veränderlichkeit: Strukturen mit Separation-Checking im Stil von
++ `proscenium.Array`.
+
+- Gauge: the `collectionImport` column of `etc/check-escape-count.py` (run by `make build`)
+- ratchets the import lines per file, core and test sources alike, so a drained file cannot
+- regrow one; `--totals` prints the count. The `xs.stdlib` bridge, the other way of reaching the
+- stdlib API from a native collection, is ratcheted and read by shape (`--stdlib`) by the same
+- script (`safety-7`).
++ Messgröße: Die Spalte `collectionImport` von `etc/check-escape-count.py` (ausgeführt von `make
++ build`) hält die Importzeilen pro Datei mit einer Ratsche fest, in Kern- und Testquellen
++ gleichermaßen, sodass einer abgebauten Datei keine nachwachsen kann; `--totals` gibt die Zahl
++ aus. Die Brücke `xs.stdlib`, der andere Weg, von einer nativen Collection aus die Stdlib-API zu
++ erreichen, wird vom selben Skript mit einer Ratsche festgehalten und nach Gestalt gelesen
++ (`--stdlib`) (`safety-7`).
+
+= script (`safety-7`).
+=
+- Done when:
++ Erledigt, wenn:
+
+-     git grep -l 'import scala.collection' -- lib | grep -v '^lib/proscenium/' | wc -l    # 0
++     git grep -l 'import scala.collection' -- lib | grep -v '^lib/proscenium/' | wc -l    # 0
+
+- ## core-4: indexed access is total by construction
++ ## core-4: indizierter Zugriff ist von vornherein total
+
+- Horizon: mid
+- Baseline: 1669 `while` loops, 993 `readUnchecked` and 514 `.charAt(` in `lib/*/src/core`
+- (comment- and string-stripped, measured 2026-10-21; 1606, 476 and 507 on 2026-09-25). The
+- `readUnchecked` count doubled when #2274 removed the stdlib `IArray` and every frozen-array
+- read went through the one accessor; it is a different population from the September figure,
+- not a regression of the same one
++ Horizont: mittel
++ Ausgangswert: 1669 `while`-Schleifen, 993 `readUnchecked` und 514 `.charAt(` in `lib/*/src/core`
++ (ohne Kommentare und Strings, gemessen 2026-10-21; 1606, 476 und 507 am 2026-09-25). Die Zahl der
++ `readUnchecked` hat sich verdoppelt, als #2274 das `IArray` der Stdlib entfernte und jeder Lesezugriff
++ auf ein eingefrorenes Array über den einen Accessor lief; es ist eine andere Population als die
++ Zahl vom September, kein Rückschritt derselben
+
+- The `var i = 0; while i < length` pattern is maximally efficient and maximally unsafe: the
+- index is just an `Int`, unconstrained by the collection it indexes. The design in
+- [#1666](https://github.com/propensive/soundness/issues/1666) makes indexing total by
+- construction: an index typed `Ordinal in collection.type` can only exist in range, so the
+- `inline` `apply` taking it is total at zero cost, while an unqualified `Ordinal` reaches only
+- the fallback `apply` returning `Optional`. Iteration then flows through inline combinators
+- that supply dependently-typed ordinals, compiling to the same bytecode as the loops they
+- replace.
++ Das Pattern `var i = 0; while i < length` ist maximal effizient und maximal unsicher: Der Index
++ ist bloß ein `Int`, nicht eingeschränkt durch die Collection, die er indiziert. Der Entwurf in
++ [#1666](https://github.com/propensive/soundness/issues/1666) macht Indizierung von vornherein
++ total: Ein Index vom Typ `Ordinal in collection.type` kann nur innerhalb des Bereichs existieren,
++ sodass das `inline`-`apply`, das ihn nimmt, ohne Kosten total ist, während eine unqualifizierte
++ `Ordinal` nur das Rückfall-`apply` erreicht, das `Optional` zurückgibt. Die Iteration läuft dann
++ über Inline-Kombinatoren, die abhängig typisierte Ordinalzahlen liefern und zum selben Bytecode
++ kompilieren wie die Schleifen, die sie ersetzen.
+
+- Done when: no collection in `lib/` exposes a partial indexed `apply`, and every `while` that
+- remains is one of the three shapes [`doc/standards/loops.md`](../standards/loops.md) sanctions,
+- carrying the comment that names its invariant. A literal zero is not the goal: index arithmetic
+- derived from the data, and the combinators' own internals, stay as loops.
++ Erledigt, wenn: keine Collection in `lib/` ein partielles indiziertes `apply` anbietet und jedes
++ verbleibende `while` eine der drei Formen ist, die
++ [`doc/standards/loops.md`](../standards/loops.md) zulässt, mit dem Kommentar, der seine Invariante
++ nennt. Eine buchstäbliche Null ist nicht das Ziel: Indexarithmetik, die aus den Daten abgeleitet
++ ist, und die Interna der Kombinatoren selbst bleiben Schleifen.
+
+- The drain is bounded by which receivers can carry a brand, not by how many loops there are. A
+- loop over a mutable `scala.Array`, a varargs `Seq` or a capability-carrying
+- `IndexedSeq` has no confined form at all, so the reachable corpus is smaller than the count
+- suggests. Interim gauge, ratcheted per file by `make build`:
++ Der Abbau ist dadurch begrenzt, welche Empfänger eine Marke tragen können, nicht dadurch, wie
++ viele Schleifen es gibt. Eine Schleife über ein veränderliches `scala.Array`, eine Varargs-`Seq`
++ oder eine Capability tragende `IndexedSeq` hat überhaupt keine beschränkte Form, daher ist der
++ erreichbare Bestand kleiner, als die Zahl vermuten lässt. Vorläufige Messgröße, pro Datei von
++ `make build` mit einer Ratsche festgehalten:
+
+-     python3 etc/check-while-count.py --totals
++     python3 etc/check-while-count.py --totals
+
+- ## core-5: nothing Java-shaped at debug time
++ ## core-5: nichts Java-Förmiges beim Debuggen
+
+- Horizon: mid → long
++ Horizont: mittel → fern
+
+- A stack trace, a rendered value or a reported type name never exposes a Java encoding:
+- digression renders traces in Soundness terms, and displayed values are the opaque types, not
+- their underlying representations. This is what makes debugging feel native rather than hosted.
+- digression already demangles names and, since #2063, renders each frame's location as one
+- contiguous, colon-aligned column; what is missing is the suite that asserts the absence of
+- encodings rather than the presence of particular renderings.
++ Ein Stacktrace, ein dargestellter Wert oder ein gemeldeter Typname legt nie eine Java-Kodierung
++ offen: digression stellt Traces in Soundness-Begriffen dar, und angezeigte Werte sind die opaken
++ Typen, nicht ihre zugrunde liegenden Darstellungen. Das lässt das Debuggen nativ wirken statt
++ gehostet. digression demangelt bereits Namen und stellt seit #2063 den Ort jedes Frames als eine
++ zusammenhängende, an Doppelpunkten ausgerichtete Spalte dar; was fehlt, ist die Testsuite, die die
++ Abwesenheit von Kodierungen zusichert statt der Anwesenheit bestimmter Darstellungen.
+
+- Done when: a test suite asserts the rendering of representative stack traces, values and type
+- names contains no Java encodings, and runs in the ordinary suite.
++ Erledigt, wenn: eine Testsuite zusichert, dass die Darstellung repräsentativer Stacktraces, Werte
++ und Typnamen keine Java-Kodierungen enthält, und in der gewöhnlichen Suite läuft.
+
+- ## core-6: the totality audit
++ ## core-6: die Totalitätsprüfung
+
+- Horizon: long
++ Horizont: fern
+
+- The claim "no partial APIs" becomes checked rather than asserted: an automated audit — in the
+- style of larceny, or at the bytecode level — verifies that no exported operation throws an
+- undeclared exception or returns null.
++ Der Anspruch „keine partiellen APIs“ wird geprüft statt behauptet: Eine automatisierte Prüfung —
++ im Stil von larceny oder auf Bytecode-Ebene — verifiziert, dass keine exportierte Operation eine
++ nicht deklarierte Exception wirft oder null zurückgibt.
+
+- Done when: the audit runs in CI and reports zero violations.
++ Erledigt, wenn: die Prüfung in der CI läuft und null Verstöße meldet.

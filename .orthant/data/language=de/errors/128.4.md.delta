@@ -1,0 +1,68 @@
+orthant 1 language
+
+- # `↯/s.128.4` — `Xml.Provider.Error`
++ # `↯/s.128.4` — `Xml.Provider.Error`
+
+- Raised when an XML value does not conform to the XML Schema an `Xml.Provider` reads it by.
++ Wird ausgelöst, wenn ein XML-Wert nicht dem XML-Schema entspricht, nach dem ein `Xml.Provider` ihn
++ liest.
+
+- ## Cause
++ ## Ursache
+
+- Xylophone's `Xml.Provider` checks a document against its schema as a record's fields are read,
+- and reports each mismatch through the `Tactic` of the code reading the field, so that a
+- validating reader can collect them all. The message is `the XML did not conform to its schema because
++ Der `Xml.Provider` von Xylophone prüft ein Dokument gegen sein Schema, während die Felder eines
++ Datensatzes gelesen werden, und meldet jede Abweichung über die `Tactic` des Codes, der das Feld
++ liest, sodass ein validierender Reader sie alle sammeln kann. Die Meldung ist `the XML did not conform to its schema because
+
+- $reason`.
++ $reason`.
+
+- ## Variants
++ ## Varianten
+
+- ```tabular
++ ```tabular
+
+- column  Code
++ column  Code
+
+- column  Reason
+- column  Meaning
+- column  Message
+- column  Resolution
+- row  `↯/s.128.4.1`  `OutOfRange`  A number falls outside the bounds of its type: a `minInclusive`, `maxInclusive`, `minExclusive` or `maxExclusive` facet, or the bounds a builtin such as `xs:positiveInteger` implies. An absent bound is `Unset`.  `[↯/s.128.4.1] the XML did not conform to its schema because the value 200 is outside the range 0 to 150`  Supply a value within the range, or relax the facet.
+- row  `↯/s.128.4.2`  `LengthOutOfRange`  A value's length violates a `length`, `minLength` or `maxLength` facet.  `[↯/s.128.4.2] the XML did not conform to its schema because the length of abcd is outside the range 3 to 3`  Supply a value of a permitted length.
+- row  `↯/s.128.4.3`  `PatternMismatch`  A value does not match a `pattern` facet.  `[↯/s.128.4.3] the XML did not conform to its schema because the value nope does not match the pattern \d{3}-[A-Z]{2}`  Supply a value matching the pattern.
+- row  `↯/s.128.4.4`  `NotPermitted`  A value is not among an `enumeration` facet's values.  `[↯/s.128.4.4] the XML did not conform to its schema because the value urgent is not one of low, normal, high`  Supply one of the permitted values.
+- row  `↯/s.128.4.5`  `TooManyDigits`  A decimal has more digits than a `totalDigits` or `fractionDigits` facet allows.  `[↯/s.128.4.5] the XML did not conform to its schema because the value 1.234 has more digits than the 5 total or 2 fraction digits permitted`  Round or truncate the value to the permitted digits.
+- row  `↯/s.128.4.6`  `Absent`  A required element or attribute — one with `minOccurs` of at least one, or `use="required"` — is missing, or the element it names is in the wrong namespace.  `[↯/s.128.4.6] the XML did not conform to its schema because the element or attribute city is required`  Add the element or attribute, in the namespace the schema expects.
+- row  `↯/s.128.4.7`  `Malformed`  A value's text cannot be read as its type — `xs:int` text which is not a number, say — or the element has no text to read.  `[↯/s.128.4.7] the XML did not conform to its schema because the text none is not a valid Double`  Give the element or attribute text of the type the schema declares.
++ column  Grund
++ column  Bedeutung
++ column  Meldung
++ column  Behebung
++ row  `↯/s.128.4.1`  `OutOfRange`  Eine Zahl liegt außerhalb der Grenzen ihres Typs: einer Facette `minInclusive`, `maxInclusive`, `minExclusive` oder `maxExclusive` oder der Grenzen, die ein eingebauter Typ wie `xs:positiveInteger` impliziert. Eine fehlende Grenze ist `Unset`.  `[↯/s.128.4.1] the XML did not conform to its schema because the value 200 is outside the range 0 to 150`  Geben Sie einen Wert innerhalb des Bereichs an, oder lockern Sie die Facette.
++ row  `↯/s.128.4.2`  `LengthOutOfRange`  Die Länge eines Werts verletzt eine Facette `length`, `minLength` oder `maxLength`.  `[↯/s.128.4.2] the XML did not conform to its schema because the length of abcd is outside the range 3 to 3`  Geben Sie einen Wert mit zulässiger Länge an.
++ row  `↯/s.128.4.3`  `PatternMismatch`  Ein Wert passt nicht zu einer Facette `pattern`.  `[↯/s.128.4.3] the XML did not conform to its schema because the value nope does not match the pattern \d{3}-[A-Z]{2}`  Geben Sie einen Wert an, der zum Pattern passt.
++ row  `↯/s.128.4.4`  `NotPermitted`  Ein Wert gehört nicht zu den Werten einer Facette `enumeration`.  `[↯/s.128.4.4] the XML did not conform to its schema because the value urgent is not one of low, normal, high`  Geben Sie einen der zulässigen Werte an.
++ row  `↯/s.128.4.5`  `TooManyDigits`  Eine Dezimalzahl hat mehr Ziffern, als eine Facette `totalDigits` oder `fractionDigits` erlaubt.  `[↯/s.128.4.5] the XML did not conform to its schema because the value 1.234 has more digits than the 5 total or 2 fraction digits permitted`  Runden oder kürzen Sie den Wert auf die zulässigen Ziffern.
++ row  `↯/s.128.4.6`  `Absent`  Ein erforderliches Element oder Attribut — eines mit `minOccurs` von mindestens eins oder mit `use="required"` — fehlt, oder das Element, das es benennt, liegt im falschen Namensraum.  `[↯/s.128.4.6] the XML did not conform to its schema because the element or attribute city is required`  Fügen Sie das Element oder Attribut im Namensraum hinzu, den das Schema erwartet.
++ row  `↯/s.128.4.7`  `Malformed`  Der Text eines Werts lässt sich nicht als sein Typ lesen — etwa `xs:int`-Text, der keine Zahl ist —, oder das Element hat keinen Text zum Lesen.  `[↯/s.128.4.7] the XML did not conform to its schema because the text none is not a valid Double`  Geben Sie dem Element oder Attribut Text des Typs, den das Schema deklariert.
+
+- ```
++ ```
+
+- ## See also
++ ## Siehe auch
+
+- - [`↯/s.128.3` — `Xsd.Error`](128.3.md)
++ - [`↯/s.128.3` — `Xsd.Error`](128.3.md)
+
+- - [`↯/s.106.3` — `Json.Provider.Error`](106.3.md)
++ - [`↯/s.106.3` — `Json.Provider.Error`](106.3.md)
+
+- - [`↯/s.118.10` — `Tel.Provider.Error`](118.10.md)
++ - [`↯/s.118.10` — `Tel.Provider.Error`](118.10.md)

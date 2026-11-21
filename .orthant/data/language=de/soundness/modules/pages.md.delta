@@ -1,0 +1,793 @@
+orthant 1 language
+
+- ## Web Pages
++ ## Webseiten
+
+- ### About
++ ### Überblick
+
+- A web page is assembled from reusable parts: a masthead, a hero banner, a breadcrumb trail, a
+- side panel, a footer. Each contributes its own markup, its own CSS rules and its own `<head>`
+- metadata. A page is a class which mixes in the parts it wants and supplies its central content.
+- Everything else, from the `<title>` to the stylesheet, is composed from what the parts
+- contribute. The result is a complete document, typed as [HTML](html.md), which renders to text,
+- streams, or serves directly as an HTTP response.
++ Eine Webseite wird aus wiederverwendbaren Teilen zusammengesetzt: einem Seitenkopf, einem
++ Hero-Banner, einer Breadcrumb-Navigation, einer Seitenleiste, einer Fußzeile. Jeder Teil steuert
++ sein eigenes Markup, seine eigenen CSS-Regeln und seine eigenen `<head>`-Metadaten bei. Eine Seite
++ ist eine Klasse, die die gewünschten Teile einmischt und ihren zentralen Inhalt liefert. Alles
++ andere, vom `<title>` bis zum Stylesheet, wird aus den Beiträgen der Teile zusammengesetzt. Das
++ Ergebnis ist ein vollständiges Dokument, typisiert als [HTML](html.md), das sich als Text
++ darstellen, streamen oder direkt als HTTP-Response bereitstellen lässt.
+
+- ### On composing pages
++ ### Über das Zusammensetzen von Seiten
+
+- Templating systems treat a page as a text file with holes in it, and reuse comes from including
+- one file in another. The structure of the page, which is what wraps what, lives in the files,
+- where it is invisible to the compiler and fragile under change. Adding a sidebar means editing
+- every template which should have one, and the CSS it needs is kept somewhere else again.
++ Templating-Systeme behandeln eine Seite als Textdatei mit Lücken, und Wiederverwendung entsteht,
++ indem eine Datei in eine andere eingebunden wird. Die Struktur der Seite, also was was umschließt,
++ steckt in den Dateien, wo sie für den Compiler unsichtbar und bei Änderungen fragil ist. Eine
++ Seitenleiste hinzuzufügen heißt, jedes Template zu bearbeiten, das eine haben soll, und das CSS,
++ das sie braucht, liegt wieder an einem anderen Ort.
+
+- A page here is a composition of *archetypes*: traits which each add one feature to a page. An
+- archetype may frame the content in a layout, put a region before or after it, add rules to the
+- stylesheet, or add elements to the head of the document. It does so by wrapping what the
+- archetypes before it produced. Mixing archetypes together nests them, so the order in which they
+- are listed is the order in which they frame each other, and independent features, such as a
+- left panel and a right panel, never collide.
++ Eine Seite ist hier eine Komposition von *Archetypen*: Traits, die einer Seite jeweils ein
++ Merkmal hinzufügen. Ein Archetyp kann den Inhalt in ein Layout einrahmen, einen Bereich davor
++ oder dahinter setzen, dem Stylesheet Regeln hinzufügen oder dem Kopf des Dokuments Elemente
++ hinzufügen. Er tut dies, indem er umschließt, was die Archetypen vor ihm erzeugt haben. Werden
++ Archetypen zusammengemischt, verschachteln sie sich, sodass die Reihenfolge, in der sie
++ aufgeführt sind, die Reihenfolge ist, in der sie einander einrahmen, und unabhängige Merkmale,
++ etwa eine linke und eine rechte Seitenleiste, kollidieren nie.
+
+- Because the page is a class, the compiler sees its structure. A page which omits its content
+- does not compile, and two archetypes which conflict, by each defining the same slot, are
+- reported where they are combined.
++ Da die Seite eine Klasse ist, sieht der Compiler ihre Struktur. Eine Seite, der ihr Inhalt fehlt,
++ kompiliert nicht, und zwei Archetypen, die in Konflikt stehen, weil jeder denselben Slot
++ definiert, werden dort gemeldet, wo sie kombiniert werden.
+
+- Everything comes from the `soundness` package, with the choices which the samples need in
+- scope, and the last import lets the samples print their results:
++ Alles stammt aus dem Paket `soundness`, mit den Auswahlen, die die Beispiele benötigen, im
++ Geltungsbereich; der letzte Import lässt die Beispiele ihre Ergebnisse ausgeben:
+
+= scope, and the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import htmlDoms.whatwg
++ import htmlDoms.whatwg
+
+- import htmlDoms.whatwg.*
++ import htmlDoms.whatwg.*
+
+- import attributives.textAttributive
++ import attributives.textAttributive
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import formatting.indentedCssFormatting
++ import formatting.indentedCssFormatting
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+- import probates.awaitProbate
++ import probates.awaitProbate
+
+- import threads.virtualThreads
++ import threads.virtualThreads
+
+- import webserverErrorPages.minimalErrorPage
++ import webserverErrorPages.minimalErrorPage
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Defining a page
++ ### Eine Seite definieren
+
+- Every page extends `Archetype`, and its one obligation is `content`, the central matter of the
+- page. Each feature mixed in beside it introduces a *slot*, such as `masthead`, `colophon`,
+- `hero` or `verso`, which is empty by default and filled by overriding it:
++ Jede Seite erweitert `Archetype`, und ihre einzige Pflicht ist `content`, der zentrale Inhalt der
++ Seite. Jedes daneben eingemischte Merkmal führt einen *Slot* ein, etwa `masthead`, `colophon`,
++ `hero` oder `verso`, der standardmäßig leer ist und durch Überschreiben gefüllt wird:
+
+= `hero` or `verso`, which is empty by default and filled by overriding it:
+=
+- ```scala
++ ```scala
+
+- class Welcome extends Archetype, Mainstay, Masthead, Colophon, Headline(t"Welcome"):
++ class Welcome extends Archetype, Mainstay, Masthead, Colophon, Headline(t"Welcome"):
+
+-   def content: Html of (? <: Flow) = P("Hello, world!")
++   def content: Html of (? <: Flow) = P("Hello, world!")
+
+=   def content: Html of (? <: Flow) = P("Hello, world!")
+-   override def masthead: Html of (? <: Flow) = Strong("Example Site")
++   override def masthead: Html of (? <: Flow) = Strong("Example Site")
+
+-   override def colophon: Html of (? <: Flow) = P("Copyright 2026")
++   override def colophon: Html of (? <: Flow) = P("Copyright 2026")
+
+=   override def colophon: Html of (? <: Flow) = P("Copyright 2026")
+- ```
++ ```
+
+=   override def colophon: Html of (? <: Flow) = P("Copyright 2026")
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   override def colophon: Html of (? <: Flow) = P("Copyright 2026")
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   override def colophon: Html of (? <: Flow) = P("Copyright 2026")
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Welcome().html.show)
++ Out.println(Welcome().html.show)
+
+= Out.println(Welcome().html.show)
+- ```
++ ```
+
+- A page which omits its content does not compile:
++ Eine Seite, der ihr Inhalt fehlt, kompiliert nicht:
+
+= A page which omits its content does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+- errors show
++ errors show
+
+= errors show
+- ##
++ ##
+
+- class Empty extends Archetype, Masthead
++ class Empty extends Archetype, Masthead
+
+= class Empty extends Archetype, Masthead
+- ```
++ ```
+
+- These are the features, and the slots they introduce:
++ Dies sind die Merkmale und die Slots, die sie einführen:
+
+= These are the features, and the slots they introduce:
+=
+- ```tabular
++ ```tabular
+
+- column  Feature
+- column  Adds
++ column  Merkmal
++ column  Fügt hinzu
+
+- column  Slot
++ column  Slot
+
+= column  Slot
+- row
++ row
+
+-   cell  `Headline(title)`
++   cell  `Headline(title)`
+
+-   cell  the document title, and an `<h1>` above the content
++   cell  den Dokumenttitel und ein `<h1>` über dem Inhalt
+
+=   cell  the document title, and an `<h1>` above the content
+-   cell
++   cell
+
+- row  `Masthead`  a `<header>` before the content  `masthead`
+- row  `Colophon`  a `<footer>` after the content  `colophon`
++ row  `Masthead`  einen `<header>` vor dem Inhalt  `masthead`
++ row  `Colophon`  einen `<footer>` nach dem Inhalt  `colophon`
+
+= row  `Colophon`  a `<footer>` after the content  `colophon`
+- row
++ row
+
+-   cell  `Mainstay`
++   cell  `Mainstay`
+
+-   cell  a `<main>` landmark around the content
++   cell  eine `<main>`-Landmark um den Inhalt
+
+=   cell  a `<main>` landmark around the content
+-   cell
++   cell
+
+=   cell
+- row
++ row
+
+-   cell  `Breadcrumbs(path*)`
++   cell  `Breadcrumbs(path*)`
+
+-   cell  a breadcrumb trail, as a `<nav>`
++   cell  eine Breadcrumb-Navigation, als `<nav>`
+
+=   cell  a breadcrumb trail, as a `<nav>`
+-   cell
++   cell
+
+- row  `TopMenu`  a `<nav>` bar of links, also available as `menu`  `menuItems`
+- row  `Hero(headline)`  a banner headed by its parameter  `hero`
+- row  `VersoPanel`  a side panel on the inline-start edge  `verso`
+- row  `RectoPanel`  a side panel on the inline-end edge  `recto`
+- row  `FoldableRectoPanel`  a recto panel that folds away  `recto`
++ row  `TopMenu`  eine `<nav>`-Leiste mit Links, auch als `menu` verfügbar  `menuItems`
++ row  `Hero(headline)`  ein Banner mit seinem Parameter als Überschrift  `hero`
++ row  `VersoPanel`  eine Seitenleiste am Inline-Start-Rand  `verso`
++ row  `RectoPanel`  eine Seitenleiste am Inline-End-Rand  `recto`
++ row  `FoldableRectoPanel`  eine Recto-Leiste, die sich einklappen lässt  `recto`
+
+= row  `FoldableRectoPanel`  a recto panel that folds away  `recto`
+- row
++ row
+
+-   cell  `Logo`
++   cell  `Logo`
+
+-   cell  a `logo` mark, worded by `logoText`, for other features to place
++   cell  ein `logo`-Zeichen, beschriftet durch `logoText`, das andere Merkmale platzieren
+
+=   cell  a `logo` mark, worded by `logoText`, for other features to place
+-   cell
++   cell
+
+=   cell
+- ```
++ ```
+
+- `html` is the whole document: a `<head>` which carries the title, the stylesheet and any
+- metadata, and a `<body>` which holds the framed content. The types of the slots are the same
+- types which govern every other HTML value, so a slot given something which does not belong
+- there is a compile error.
++ `html` ist das ganze Dokument: ein `<head>`, der den Titel, das Stylesheet und etwaige Metadaten
++ trägt, und ein `<body>`, der den eingerahmten Inhalt enthält. Die Typen der Slots sind dieselben
++ Typen, die jeden anderen HTML-Wert bestimmen, sodass ein Slot, dem etwas übergeben wird, das
++ nicht dorthin gehört, einen Kompilierfehler ergibt.
+
+- The writing direction is `direction`, which is `HDir.Ltr` unless overridden. Flipping it to
+- `HDir.Rtl` sets `dir` on the body, and nothing else. The layouts use only logical properties,
+- so the browser mirrors them, and the stylesheet is identical either way.
++ Die Schreibrichtung ist `direction`, die `HDir.Ltr` ist, sofern sie nicht überschrieben wird.
++ Wird sie auf `HDir.Rtl` umgestellt, wird `dir` am Body gesetzt, und sonst nichts. Die Layouts
++ verwenden nur logische Eigenschaften, sodass der Browser sie spiegelt, und das Stylesheet ist in
++ beiden Fällen identisch.
+
+- ### Framing order
++ ### Reihenfolge der Einrahmung
+
+- Each archetype wraps the frame built by the archetypes listed before it. Listing `Mainstay`
+- before `Masthead` puts the content inside `<main>`, and then the masthead outside it. Listing
+- them the other way round would put the masthead inside the landmark. The order of the mixins is
+- the order of nesting, read from the inside out:
++ Jeder Archetyp umschließt den Rahmen, den die vor ihm aufgeführten Archetypen gebaut haben. Wird
++ `Mainstay` vor `Masthead` aufgeführt, liegt der Inhalt in `<main>` und der Seitenkopf außerhalb
++ davon. Umgekehrt aufgeführt läge der Seitenkopf innerhalb der Landmark. Die Reihenfolge der
++ Mixins ist die Reihenfolge der Verschachtelung, von innen nach außen gelesen:
+
+= the order of nesting, read from the inside out:
+=
+- ```scala
++ ```scala
+
+- class Guide extends Archetype, Breadcrumbs(t"home", t"docs"), Mainstay, Masthead:
++ class Guide extends Archetype, Breadcrumbs(t"home", t"docs"), Mainstay, Masthead:
+
+-   def content: Html of (? <: Flow) = P("The guide")
++   def content: Html of (? <: Flow) = P("The guide")
+
+=   def content: Html of (? <: Flow) = P("The guide")
+-   override def masthead: Html of (? <: Flow) = Strong("Example Site")
++   override def masthead: Html of (? <: Flow) = Strong("Example Site")
+
+=   override def masthead: Html of (? <: Flow) = Strong("Example Site")
+-   override def stylesheetUrl: Optional[Text] = t"/site.css"
++   override def stylesheetUrl: Optional[Text] = t"/site.css"
+
+=   override def masthead: Html of (? <: Flow) = Strong("Example Site")
+=   override def stylesheetUrl: Optional[Text] = t"/site.css"
+- ```
++ ```
+
+- The page links its stylesheet instead of embedding it, as [described below](#stylesheets), so
+- the output is short enough to read:
++ Die Seite verlinkt ihr Stylesheet, statt es einzubetten, wie [unten beschrieben](#stylesheets),
++ sodass die Ausgabe kurz genug zum Lesen ist:
+
+= the output is short enough to read:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the output is short enough to read:
+=
+= ```scala fuel
+- run
++ run
+
+= the output is short enough to read:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Guide().html.show)
++ Out.println(Guide().html.show)
+
+= Out.println(Guide().html.show)
+- ```
++ ```
+
+- Features which do not nest, but sit beside each other, such as the side panels, are independent
+- of their order. `VersoPanel` places a panel on the inline-start edge, and `RectoPanel` on the
+- inline-end edge, and a page may mix in both in either order. Each exposes its own hooks for
+- configuration, such as a width or a gap, so a page adjusts a feature without touching its markup
+- or its CSS:
++ Merkmale, die sich nicht verschachteln, sondern nebeneinander stehen, etwa die Seitenleisten,
++ sind unabhängig von ihrer Reihenfolge. `VersoPanel` platziert eine Leiste am Inline-Start-Rand
++ und `RectoPanel` am Inline-End-Rand, und eine Seite kann beide in beliebiger Reihenfolge
++ einmischen. Jedes Merkmal stellt eigene Hooks zur Konfiguration bereit, etwa eine Breite oder
++ einen Abstand, sodass eine Seite ein Merkmal anpasst, ohne sein Markup oder sein CSS anzurühren:
+
+= or its CSS:
+=
+- ```scala
++ ```scala
+
+- class Manual extends Archetype, VersoPanel, TopMenu, Headline(t"Manual"):
++ class Manual extends Archetype, VersoPanel, TopMenu, Headline(t"Manual"):
+
+-   def content: Html of (? <: Flow) = P("Chapter one")
++   def content: Html of (? <: Flow) = P("Chapter one")
+
+-   override def menuItems: List[Html of (? <: Phrasing)] = List(Strong("Home"), Strong("About"))
++   override def menuItems: List[Html of (? <: Phrasing)] = List(Strong("Home"), Strong("About"))
+
+-   override def verso: Html of (? <: Flow) = menu
++   override def verso: Html of (? <: Flow) = menu
+
+-   override def versoWidth = 20.0*Rem
++   override def versoWidth = 20.0*Rem
+
+=   override def versoWidth = 20.0*Rem
+- ```
++ ```
+
+- `TopMenu` renders its items as a `<nav>`, and makes the result available as `menu`, which the
+- page here places in the side panel instead. A helper contributed by one feature can fill the
+- slot of another.
++ `TopMenu` stellt seine Einträge als `<nav>` dar und macht das Ergebnis als `menu` verfügbar, das
++ die Seite hier stattdessen in die Seitenleiste setzt. Ein Hilfsmittel, das ein Merkmal beisteuert,
++ kann den Slot eines anderen füllen.
+
+- ### Metadata
++ ### Metadaten
+
+- A feature which contributes to the `<head>` takes its value as a trait parameter, and adds
+- nothing to the body. `StandardMetadata` supplies what nearly every page wants, and the others
+- each add one more element:
++ Ein Merkmal, das zum `<head>` beiträgt, nimmt seinen Wert als Trait-Parameter entgegen und fügt
++ dem Body nichts hinzu. `StandardMetadata` liefert, was fast jede Seite braucht, und die übrigen
++ fügen jeweils ein weiteres Element hinzu:
+
+= each add one more element:
+=
+- ```tabular
++ ```tabular
+
+- column  Feature
+- column  Adds to the head
+- row  `StandardMetadata(description)`  a description and a responsive viewport
++ column  Merkmal
++ column  Fügt dem Kopf hinzu
++ row  `StandardMetadata(description)`  eine Beschreibung und einen responsiven Viewport
+
+- row  `Description(text)`  `<meta name="description">`
++ row  `Description(text)`  `<meta name="description">`
+
+- row  `Viewport`  `<meta name="viewport">`, from `viewport`
++ row  `Viewport`  `<meta name="viewport">`, aus `viewport`
+
+- row  `Author(name)`  `<meta name="author">`
++ row  `Author(name)`  `<meta name="author">`
+
+- row  `Keywords(keywords*)`  `<meta name="keywords">`, the keywords separated by commas
++ row  `Keywords(keywords*)`  `<meta name="keywords">`, die Schlüsselwörter durch Kommas getrennt
+
+- row  `Favicon(href)`  `<link rel="icon">`
++ row  `Favicon(href)`  `<link rel="icon">`
+
+- row  `Canonical(href)`  `<link rel="canonical">`
++ row  `Canonical(href)`  `<link rel="canonical">`
+
+- row  `ThemeColor(color)`  `<meta name="theme-color">`
++ row  `ThemeColor(color)`  `<meta name="theme-color">`
+
+= row  `ThemeColor(color)`  `<meta name="theme-color">`
+- ```
++ ```
+
+- `Hero` prepends a banner headed by its parameter, with any further material in the `hero` slot,
+- and the title of the document is `pageTitle`:
++ `Hero` stellt ein Banner voran, das seinen Parameter als Überschrift trägt, mit weiterem Material
++ im Slot `hero`, und der Titel des Dokuments ist `pageTitle`:
+
+= and the title of the document is `pageTitle`:
+=
+- ```scala
++ ```scala
+
+- class Landing extends Archetype, Hero(t"Build pages from parts"),
++ class Landing extends Archetype, Hero(t"Build pages from parts"),
+
+-     StandardMetadata(t"Pages composed from archetypes"), Author(t"Shakespeare"),
++     StandardMetadata(t"Pages composed from archetypes"), Author(t"Shakespeare"),
+
+-     Keywords(t"scala", t"html"), Favicon(t"/icon.png"),
++     Keywords(t"scala", t"html"), Favicon(t"/icon.png"),
+
+-     Canonical(t"https://example.com/"), ThemeColor(t"#336699"):
++     Canonical(t"https://example.com/"), ThemeColor(t"#336699"):
+
+-   override def pageTitle: Text = t"Example"
++   override def pageTitle: Text = t"Example"
+
+=   override def pageTitle: Text = t"Example"
+-   override def stylesheetUrl: Optional[Text] = t"/site.css"
++   override def stylesheetUrl: Optional[Text] = t"/site.css"
+
+-   def content: Html of (? <: Flow) = P("Welcome aboard")
++   def content: Html of (? <: Flow) = P("Welcome aboard")
+
+-   override def hero: Html of (? <: Flow) = P("Compose, don't template")
++   override def hero: Html of (? <: Flow) = P("Compose, don't template")
+
+- Landing().html
++ Landing().html
+
+= Landing().html
+- ```
++ ```
+
+= Landing().html
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= Landing().html
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= Landing().html
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Landing().html.show)
++ Out.println(Landing().html.show)
+
+= Out.println(Landing().html.show)
+- ```
++ ```
+
+- A favicon or a canonical address is a path, so these take `Text` directly, and not a parsed URL.
++ Ein Favicon oder eine kanonische Adresse ist ein Pfad, daher nehmen diese Merkmale direkt `Text`
++ entgegen und keine geparste URL.
+
+- ### Stylesheets
++ ### Stylesheets
+
+- Every feature carries its own [CSS](css.md) rules, and the page accumulates them into one
+- stylesheet, available as `css`. By default it is embedded in a `<style>` element in the head, so
+- a page is self-contained:
++ Jedes Merkmal trägt seine eigenen [CSS](css.md)-Regeln, und die Seite sammelt sie in einem
++ Stylesheet, das als `css` verfügbar ist. Standardmäßig wird es in einem `<style>`-Element im Kopf
++ eingebettet, sodass eine Seite eigenständig ist:
+
+= a page is self-contained:
+=
+- ```scala fuel
++ ```scala fuel
+
+= a page is self-contained:
+=
+= ```scala fuel
+- run
++ run
+
+= a page is self-contained:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Welcome().css.show)
++ Out.println(Welcome().css.show)
+
+= Out.println(Welcome().css.show)
+- ```
++ ```
+
+- The rules of a feature are a hook like any other, such as `mastheadStyles`, `menuStyles` or
+- `heroStyles`, so a page restyles one feature by overriding its rules, and leaves the others
+- untouched. The rules are checked as the code compiles, like any `css"…"` literal:
++ Die Regeln eines Merkmals sind ein Hook wie jeder andere, etwa `mastheadStyles`, `menuStyles`
++ oder `heroStyles`, sodass eine Seite ein Merkmal neu gestaltet, indem sie seine Regeln
++ überschreibt, und die übrigen unberührt lässt. Die Regeln werden beim Kompilieren geprüft, wie
++ jedes `css"…"`-Literal:
+
+= untouched. The rules are checked as the code compiles, like any `css"…"` literal:
+=
+- ```scala
++ ```scala
+
+- class Branded extends Welcome:
++ class Branded extends Welcome:
+
+-   override def mastheadStyles: Css =
++   override def mastheadStyles: Css =
+
+-     super.mastheadStyles + css".graffiti-masthead { padding-block: 1rem }"
++     super.mastheadStyles + css".graffiti-masthead { padding-block: 1rem }"
+
+=     super.mastheadStyles + css".graffiti-masthead { padding-block: 1rem }"
+- ```
++ ```
+
+- A site with many pages serves one stylesheet, instead of embedding a copy in each. Setting
+- `stylesheetUrl` makes the head refer to it with `<link rel="stylesheet">` in place of the inline
+- `<style>`, and the application serves `css` at that address:
++ Eine Website mit vielen Seiten stellt ein einziges Stylesheet bereit, statt in jede Seite eine
++ Kopie einzubetten. Wird `stylesheetUrl` gesetzt, verweist der Kopf mit `<link rel="stylesheet">`
++ statt des eingebetteten `<style>` darauf, und die Anwendung stellt `css` unter dieser Adresse
++ bereit:
+
+= `<style>`, and the application serves `css` at that address:
+=
+- ```scala
++ ```scala
+
+- class Linked extends Welcome:
++ class Linked extends Welcome:
+
+= class Linked extends Welcome:
+-   override def stylesheetUrl: Optional[Text] = t"/site.css"
++   override def stylesheetUrl: Optional[Text] = t"/site.css"
+
+= class Linked extends Welcome:
+=   override def stylesheetUrl: Optional[Text] = t"/site.css"
+- ```
++ ```
+
+= class Linked extends Welcome:
+=   override def stylesheetUrl: Optional[Text] = t"/site.css"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= class Linked extends Welcome:
+=   override def stylesheetUrl: Optional[Text] = t"/site.css"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= class Linked extends Welcome:
+=   override def stylesheetUrl: Optional[Text] = t"/site.css"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Linked().html.show)
++ Out.println(Linked().html.show)
+
+= Out.println(Linked().html.show)
+- ```
++ ```
+
+- ### Dashboards
++ ### Dashboards
+
+- Archetypes compose into larger archetypes. `Dashboard` is built from `Mainstay` and `Masthead`.
+- It titles the document after a `brand`, shows the brand in the masthead, and lays out `cards` in
+- a responsive grid as the content. A concrete dashboard supplies only those two details:
++ Archetypen lassen sich zu größeren Archetypen zusammensetzen. `Dashboard` ist aus `Mainstay` und
++ `Masthead` gebaut. Es benennt das Dokument nach einer `brand`, zeigt diesen Namen im Seitenkopf und
++ legt als Inhalt `cards` in einem responsiven Raster an. Ein konkretes Dashboard liefert nur diese
++ beiden Angaben:
+
+= a responsive grid as the content. A concrete dashboard supplies only those two details:
+=
+- ```scala
++ ```scala
+
+- class Admin extends Dashboard:
++ class Admin extends Dashboard:
+
+-   def brand: Text = t"Admin"
++   def brand: Text = t"Admin"
+
+-   def cards: List[Dashboard.Card] =
++   def cards: List[Dashboard.Card] =
+
+-     List(Dashboard.Card(t"Users", P("128 active")), Dashboard.Card(t"Revenue", P("4200")))
++     List(Dashboard.Card(t"Users", P("128 active")), Dashboard.Card(t"Revenue", P("4200")))
+
+=
+-   override def stylesheetUrl: Optional[Text] = t"/site.css"
++   override def stylesheetUrl: Optional[Text] = t"/site.css"
+
+=
+=   override def stylesheetUrl: Optional[Text] = t"/site.css"
+- ```
++ ```
+
+=
+=   override def stylesheetUrl: Optional[Text] = t"/site.css"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=
+=   override def stylesheetUrl: Optional[Text] = t"/site.css"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=
+=   override def stylesheetUrl: Optional[Text] = t"/site.css"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Admin().html.show)
++ Out.println(Admin().html.show)
+
+= Out.println(Admin().html.show)
+- ```
++ ```
+
+- Each `Dashboard.Card` is a heading and its own flow content, rendered through `card`, which a
+- dashboard overrides to restructure a tile, while `dashboardStyles` restyles the grid.
++ Jede `Dashboard.Card` ist eine Überschrift mit eigenem Flow-Inhalt, dargestellt über `card`, das
++ ein Dashboard überschreibt, um eine Kachel umzustrukturieren, während `dashboardStyles` das
++ Raster neu gestaltet.
+
+- ### Serving a page
++ ### Eine Seite bereitstellen
+
+- A page declares its media type, `text/html`, and streams its rendered document, so it is a
+- response body in its own right. A [server](http-server.md) handler returns it directly, and the
+- `Content-Type` header follows from the value. A `Css` value serves the same way, as `text/css`,
+- which is all a linked stylesheet needs:
++ Eine Seite deklariert ihren Medientyp, `text/html`, und streamt ihr dargestelltes Dokument, ist
++ also selbst ein Response-Body. Ein [Server](http-server.md)-Handler gibt sie direkt zurück, und
++ der `Content-Type`-Header ergibt sich aus dem Wert. Ein `Css`-Wert wird auf dieselbe Weise
++ bereitgestellt, als `text/css`, und mehr braucht ein verlinktes Stylesheet nicht:
+
+= which is all a linked stylesheet needs:
+=
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+= typecheck
+- ##
++ ##
+
+- def site(): Unit = supervise:
++ def site(): Unit = supervise:
+
+-   SocketServer(8080).handle:
++   SocketServer(8080).handle:
+
+-     request.target match
++     request.target match
+
+-       case t"/"         => Http.Response(Http.Ok)(Linked())
++       case t"/"         => Http.Response(Http.Ok)(Linked())
+
+-       case t"/site.css" => Http.Response(Http.Ok)(Linked().css)
++       case t"/site.css" => Http.Response(Http.Ok)(Linked().css)
+
+-       case _            => Http.Response(Http.NotFound)(t"No such page")
++       case _            => Http.Response(Http.NotFound)(t"No such page")
+
+=       case _            => Http.Response(Http.NotFound)(t"No such page")
+- ```
++ ```
+
+- The page is rendered when the response is streamed, within the `supervise` scope the server
+- runs under, and nothing is buffered. The document flows to the client as it is produced.
++ Die Seite wird dargestellt, während die Response gestreamt wird, innerhalb des
++ `supervise`-Geltungsbereichs, unter dem der Server läuft, und nichts wird gepuffert. Das Dokument
++ fließt zum Client, während es erzeugt wird.
+
+- ### Related
++ ### Verwandte Themen
+
+- - [HTML](html.md) describes the typed elements which fill each slot.
+- - [CSS](css.md) describes the `css"…"` literals which restyle a feature.
+- - [HTTP server](http-server.md) serves a page as a response.
+- - [Markdown](markdown.md) renders written content into the HTML a page holds.
+- - [Internationalization](internationalization.md) describes the writing directions which
+-   `direction` chooses between.
+- - [Hyphenation](hyphenation.md) describes the soft hyphens which a page's text may carry.
++ - [HTML](html.md) beschreibt die typisierten Elemente, die jeden Slot füllen.
++ - [CSS](css.md) beschreibt die `css"…"`-Literale, die ein Merkmal neu gestalten.
++ - [HTTP-Server](http-server.md) stellt eine Seite als Response bereit.
++ - [Markdown](markdown.md) stellt geschriebenen Inhalt als das HTML dar, das eine Seite enthält.
++ - [Internationalisierung](internationalization.md) beschreibt die Schreibrichtungen, zwischen
++   denen `direction` wählt.
++ - [Silbentrennung](hyphenation.md) beschreibt die weichen Trennstriche, die der Text einer Seite
++   tragen kann.

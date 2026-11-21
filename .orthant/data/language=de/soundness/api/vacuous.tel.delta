@@ -1,0 +1,1270 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base vacuous
++ base vacuous
+
+- import soundness
++ import soundness
+
+- info   absent values without a wrapper: `Optional`, `Unset`, and the combinators that consume them
++ info   fehlende Werte ohne Wrapper: `Optional`, `Unset` und die Kombinatoren, die sie verarbeiten
+
+- detail
++ detail
+
+-     _Vacuous_ represents a value that may be absent as an `Optional[value]`, which is
+-     exactly the union type `Unset | value`: a present value is the value itself, with no
+-     `Some` to allocate or unwrap, and absence is the single sentinel `Unset`. Unlike
+-     `null`, absence is visible in the type and cannot be dereferenced by accident; unlike
+-     `Option`, optionality is *flat* — a union absorbs a repeated member, so
+-     `Optional[Optional[Int]]` is the same type as `Optional[Int]`, and a "present absence"
+-     such as `Some(None)` cannot be written at all.
++     _Vacuous_ stellt einen Wert, der fehlen kann, als `Optional[value]` dar, was genau der
++     Union-Typ `Unset | value` ist: Ein vorhandener Wert ist der Wert selbst, ohne ein `Some`,
++     das alloziert oder ausgepackt werden müsste, und das Fehlen ist der einzige Sentinel
++     `Unset`. Anders als bei `null` ist das Fehlen im Typ sichtbar und kann nicht versehentlich
++     dereferenziert werden; anders als bei `Option` ist Optionalität *flach* — eine Union
++     absorbiert einen wiederholten Member, sodass `Optional[Optional[Int]]` derselbe Typ wie
++     `Optional[Int]` ist und sich ein „vorhandenes Fehlen“ wie `Some(None)` gar nicht schreiben
++     lässt.
+
+=     such as `Some(None)` cannot be written at all.
+=
+-     ```scala
++     ```scala
+
+=     such as `Some(None)` cannot be written at all.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     such as `Some(None)` cannot be written at all.
+=
+=     ```scala
+=     import soundness.*
+=
+-     val name: Optional[Text] = t"Hamlet"
++     val name: Optional[Text] = t"Hamlet"
+
+=     val name: Optional[Text] = t"Hamlet"
+-     val nickname: Optional[Text] = Unset
++     val nickname: Optional[Text] = Unset
+
+-     name.or(t"anonymous")          // t"Hamlet"
++     name.or(t"anonymous")          // t"Hamlet"
+
+-     nickname.or(t"anonymous")      // t"anonymous"
++     nickname.or(t"anonymous")      // t"anonymous"
+
+-     name.let(_.upper)              // Optional[Text]: t"ADA"
++     name.let(_.upper)              // Optional[Text]: t"ADA"
+
+-     name.lay(0)(_.length)          // Int: 3
++     name.lay(0)(_.length)          // Int: 3
+
+-     name.present                   // true
++     name.present                   // true
+
+=     name.present                   // true
+-     ```
++     ```
+
+-     The combinators read as the questions they answer. `or` supplies a fallback; `let`
+-     transforms a present value and passes `Unset` through, serving where `Option` would
+-     need both `map` and `flatMap`; `lay` takes a fallback and a transformation together
+-     and so returns a plain value; `present` and `absent` ask directly; `mask` discards a
+-     present value which fails a predicate; `assume` and `presume` require a value, by
+-     throwing `Optional.Error` or by falling back to the type's `Default`. Going the other
+-     way, `unless`, `puncture` and `only` make any value optional by a condition, and
+-     `optional`/`option`/`javaOptional` convert at the boundary with code that speaks
+-     `Option` or `java.util.Optional`.
++     Die Kombinatoren lesen sich wie die Fragen, die sie beantworten. `or` liefert einen
++     Rückfall; `let` transformiert einen vorhandenen Wert und reicht `Unset` durch und dient
++     dort, wo `Option` sowohl `map` als auch `flatMap` bräuchte; `lay` nimmt einen Rückfall und
++     eine Transformation zusammen und gibt daher einen einfachen Wert zurück; `present` und
++     `absent` fragen direkt; `mask` verwirft einen vorhandenen Wert, der ein Prädikat nicht
++     erfüllt; `assume` und `presume` verlangen einen Wert, indem sie `Optional.Error` werfen
++     oder auf den `Default` des Typs zurückfallen. In der anderen Richtung machen `unless`,
++     `puncture` und `only` jeden Wert anhand einer Bedingung optional, und
++     `optional`/`option`/`javaOptional` konvertieren an der Grenze zu Code, der `Option` oder
++     `java.util.Optional` spricht.
+
+-     `Optional` is deliberately not a monad: there is no `flatMap` and no `for`
+-     comprehension over it. Absence is dealt with where it arises — close to where the value
+-     was obtained — rather than carried through the program in a wrapper every later step
+-     must accommodate.
++     `Optional` ist bewusst keine Monade: Es gibt kein `flatMap` und keine
++     `for`-Comprehension darüber. Das Fehlen wird dort behandelt, wo es entsteht — nahe der
++     Stelle, an der der Wert beschafft wurde —, statt in einem Wrapper durch das Programm
++     getragen zu werden, auf den sich jeder spätere Schritt einstellen muss.
+
+-     The flat representation has one cost, which the compiler enforces. The absorption
+-     works because both members of the union are known, and for an *abstract* type they are
+-     not: a `value` later instantiated to something already optional would merge two
+-     absences meant to be distinct. So the combinators require an `Optionality` proof that
+-     their receiver's type really is an `Optional` (calling `let` on a plain `Text` is a
+-     compile error, _the type Text is not an `Optional`_), and a generic method taking an
+-     `Optional[value]` for an abstract `value` asks for `value: Concrete` in its signature.
+-     `Distinct` and `Mandatable` are the other two type-level facts: that a type is not a
+-     member of a union, and the non-optional type a present value has.
++     Die flache Darstellung hat einen Preis, den der Compiler durchsetzt. Die Absorption
++     funktioniert, weil beide Member der Union bekannt sind, und bei einem *abstrakten* Typ sind
++     sie es nicht: Ein `value`, das später mit etwas bereits Optionalem instanziiert wird, würde
++     zwei Formen des Fehlens zusammenführen, die verschieden sein sollen. Daher verlangen die
++     Kombinatoren einen `Optionality`-Beweis, dass der Typ ihres Empfängers wirklich ein
++     `Optional` ist (`let` auf einem einfachen `Text` aufzurufen ist ein Kompilierfehler, _the
++     type Text is not an `Optional`_), und eine generische Methode, die ein `Optional[value]`
++     für ein abstraktes `value` nimmt, verlangt `value: Concrete` in ihrer Signatur. `Distinct`
++     und `Mandatable` sind die beiden anderen Tatsachen auf Typebene: dass ein Typ kein Member
++     einer Union ist, und der nicht-optionale Typ, den ein vorhandener Wert hat.
+
+-     With `Option`, every step wraps, and the result may be a `Some(None)`; with `Optional`, a
+-     present value is itself, `let` never nests, and a fallback closes the question where it
+-     was asked:
++     Mit `Option` verpackt jeder Schritt, und das Ergebnis kann ein `Some(None)` sein; mit
++     `Optional` ist ein vorhandener Wert er selbst, `let` verschachtelt nie, und ein Rückfall
++     schließt die Frage dort, wo sie gestellt wurde:
+
+-     ```scala fuel
++     ```scala fuel
+
+-     alternative `Option`
++     alternative `Option`
+
+=     alternative `Option`
+-       code
++       code
+
+-           val users: Map[Text, Option[Text]] = Map(t"hamlet" -> Some(t"Hamlet"))
++           val users: Map[Text, Option[Text]] = Map(t"hamlet" -> Some(t"Hamlet"))
+
+-           def email(name: Text): Option[Text] = if name == t"Hamlet" then Some(t"hamlet@example.com") else None
++           def email(name: Text): Option[Text] = if name == t"Hamlet" then Some(t"hamlet@example.com") else None
+
+-           val result: Option[Option[Text]] = users.stdlib.get(t"hamlet").map(_.flatMap(email))
++           val result: Option[Option[Text]] = users.stdlib.get(t"hamlet").map(_.flatMap(email))
+
+-     alternative `Optional`
++     alternative `Optional`
+
+=     alternative `Optional`
+-       code
++       code
+
+-           val users: Map[Text, Optional[Text]] = Map(t"hamlet" -> t"Hamlet")
++           val users: Map[Text, Optional[Text]] = Map(t"hamlet" -> t"Hamlet")
+
+-           def email(name: Text): Optional[Text] = if name == t"Hamlet" then t"hamlet@example.com" else Unset
++           def email(name: Text): Optional[Text] = if name == t"Hamlet" then t"hamlet@example.com" else Unset
+
+-           val result: Optional[Text] = users.at(t"hamlet").let(email)
++           val result: Optional[Text] = users.at(t"hamlet").let(email)
+
+-           val address: Text = result.or(t"nobody@example.com")
++           val address: Text = result.or(t"nobody@example.com")
+
+-     ##
++     ##
+
+=     ##
+-     ```
++     ```
+
+-     Every collection accessor which may find nothing — `head` on a list not proven
+-     `Populated`, `at` on a `Map`, an index on a `Sequence` — returns an `Optional`, so the
+-     combinators here are the ordinary way to consume the collections' results.
++     Jeder Collection-Accessor, der nichts finden kann — `head` auf einer Liste, die nicht als
++     `Populated` bewiesen ist, `at` auf einer `Map`, ein Index auf einer `Sequence` —, gibt ein
++     `Optional` zurück, sodass die Kombinatoren hier der gewöhnliche Weg sind, die Ergebnisse
++     der Collections zu verarbeiten.
+
+-     The library is a single source set, `vacuous.core`, compiled for the JVM, Scala.js
+-     and Scala Native, and everything is exported to the `soundness` umbrella. Its only
+-     givens are in companions (`Default`'s instances for the types with an obvious zero;
+-     the macro-backed `Concrete`, `Distinct`, `Mandatable` and `Optionality` proofs) and so
+-     resolve with no import. The `Unsafe` capability token also lives here, below
+-     contingency's `unsafely`, which supplies it.
++     Die Bibliothek ist ein einziges Source-Set, `vacuous.core`, kompiliert für die JVM,
++     Scala.js und Scala Native, und alles wird in das Umbrella `soundness` exportiert. Ihre
++     einzigen Givens liegen in Begleitobjekten (die `Default`-Instanzen für die Typen mit einer
++     offensichtlichen Null; die makrogestützten Beweise `Concrete`, `Distinct`, `Mandatable` und
++     `Optionality`) und werden daher ohne Import aufgelöst. Das Capability-Token `Unsafe` liegt
++     ebenfalls hier, unterhalb von `unsafely` aus Contingency, das es liefert.
+
+- refer vacuous.Optional
++ refer vacuous.Optional
+
+- refer vacuous.Unset
++ refer vacuous.Unset
+
+- refer vacuous.or
++ refer vacuous.or
+
+- refer vacuous.let
++ refer vacuous.let
+
+- refer vacuous.lay
++ refer vacuous.lay
+
+- refer vacuous.Default
++ refer vacuous.Default
+
+- entry .Optional   a value which may be absent, as the flat union `Unset | value`
++ entry .Optional   ein Wert, der fehlen kann, als die flache Union `Unset | value`
+
+= entry .Optional   a value which may be absent, as the flat union `Unset | value`
+-   detail
++   detail
+
+-       `Optional[value]` is the type alias `Unset | value`. A present value is stored,
+-       passed and read as itself; absence is `Unset`. Because a union absorbs a repeated
+-       member, `Optional[Optional[Int]]` is `Optional[Int]`, so optionality never nests and
+-       there is no ambiguous "present absence". An `Optional[Text]` therefore costs nothing
+-       to hold that a `Text` does not, which is the whole reason for the design: `Option`
+-       allocates a `Some` for every present value.
++       `Optional[value]` ist der Typalias `Unset | value`. Ein vorhandener Wert wird als er
++       selbst gespeichert, übergeben und gelesen; das Fehlen ist `Unset`. Da eine Union einen
++       wiederholten Member absorbiert, ist `Optional[Optional[Int]]` gleich `Optional[Int]`,
++       sodass Optionalität nie verschachtelt und es kein mehrdeutiges „vorhandenes Fehlen“ gibt.
++       Ein `Optional[Text]` zu halten kostet daher nichts, was ein `Text` nicht kostet, und das
++       ist der ganze Grund für das Design: `Option` alloziert für jeden vorhandenen Wert ein
++       `Some`.
+
+=       allocates a `Some` for every present value.
+=
+-       ```scala
++       ```scala
+
+=       allocates a `Some` for every present value.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val name: Optional[Text] = t"Hamlet"
++       val name: Optional[Text] = t"Hamlet"
+
+-       val missing: Optional[Text] = Unset
++       val missing: Optional[Text] = Unset
+
+-       name.let(_.upper).or(t"ANONYMOUS")   // t"ADA"
++       name.let(_.upper).or(t"ANONYMOUS")   // t"ADA"
+
+-       missing.lay(t"nobody")(_.upper)      // t"nobody"
++       missing.lay(t"nobody")(_.upper)      // t"nobody"
+
+-       missing.absent                       // true
++       missing.absent                       // true
+
+=       missing.absent                       // true
+-       ```
++       ```
+
+-       The combinators — `or`, `let`, `lay`, `present`, `absent`, `mask`, `assume`,
+-       `presume`, `option`, `javaOptional`, `letGiven`, `layGiven` — are package-level
+-       extensions, each guarded by an `Optionality` proof that the receiver's type is an
+-       `Optional`; `Optional.check[value]` makes the same check explicitly. The object has
+-       `.apply`, which turns a nullable Java result into an `Optional`, and the two
+-       `CanEqual` givens which let any value be compared with `Unset` under strict equality.
++       Die Kombinatoren — `or`, `let`, `lay`, `present`, `absent`, `mask`, `assume`,
++       `presume`, `option`, `javaOptional`, `letGiven`, `layGiven` — sind Erweiterungen auf
++       Paketebene, jede durch einen `Optionality`-Beweis geschützt, dass der Typ des Empfängers
++       ein `Optional` ist; `Optional.check[value]` nimmt dieselbe Prüfung explizit vor. Das Objekt
++       hat `.apply`, das ein nullbares Java-Ergebnis in ein `Optional` umwandelt, und die beiden
++       `CanEqual`-Givens, mit denen sich unter strikter Gleichheit jeder Wert mit `Unset`
++       vergleichen lässt.
+
+-       Two capture-checking facts matter to a user. A *frozen array* inside the union — a
+-       method returning `Optional[Data]`, say — is freshened to a read-only capture at every
+-       call site as soon as the method also takes a capability parameter (a `Loggable`, or
+-       the `logs Event` sugar), and that result then cannot enter `safely` or a type
+-       variable; the shape which works is a capability-free method returning the
+-       `Optional[Data]`, called from an `inline` shell which does the logging, and the shell
+-       should test `present` rather than `let` over the bytes, since a lambda over them
+-       freshens them again. And an `Optional` of a *capability* (`Optional[Handle^]`)
+-       should be branched by a `match` whose first case is `case Unset =>`, rather than
+-       through a `| Null` sentinel and flow typing, which loses the separation checker's
+-       tracking of a consumed value.
++       Zwei Tatsachen des Capture-Checkings sind für einen Benutzer wichtig. Ein *eingefrorenes
++       Array* innerhalb der Union — etwa eine Methode, die `Optional[Data]` zurückgibt — wird an
++       jeder Aufrufstelle zu einer Nur-Lese-Erfassung aufgefrischt, sobald die Methode auch einen
++       Capability-Parameter nimmt (ein `Loggable` oder den Zucker `logs Event`), und dieses
++       Ergebnis kann dann nicht in `safely` oder eine Typvariable gelangen; die Gestalt, die
++       funktioniert, ist eine Capability-freie Methode, die das `Optional[Data]` zurückgibt,
++       aufgerufen aus einer `inline`-Hülle, die das Logging übernimmt, und die Hülle sollte
++       `present` prüfen statt `let` über die Bytes anzuwenden, da ein Lambda über ihnen sie erneut
++       auffrischt. Und ein `Optional` einer *Capability* (`Optional[Handle^]`) sollte durch ein
++       `match` verzweigt werden, dessen erster Fall `case Unset =>` ist, statt über einen
++       `| Null`-Sentinel und Flow-Typing, was die Verfolgung eines verbrauchten Werts durch den
++       Separation-Checker verliert.
+
+-   refer vacuous.Unset
++   refer vacuous.Unset
+
+-   refer vacuous.Optionality
++   refer vacuous.Optionality
+
+-   refer vacuous.or
++   refer vacuous.or
+
+-   refer vacuous.let
++   refer vacuous.let
+
+-   refer vacuous.lay
++   refer vacuous.lay
+
+-   entry .Unset   the one absent value; its type is the opaque `Unset`
+-       `Unset` is both the opaque type `Unset <: Matchable & caps.Pure` and the one value of
+-       it. The underlying representation is `null`, so a present value is never boxed and
+-       an absence costs nothing, but the type is opaque: `Unset` is not a subtype of `Null`,
+-       so `nn` does not strip it and `Unset | value` normalises predictably in given
+-       resolution. It is pure, so `Optional[value]` is pure whenever `value` is. The name
+-       is exported at the package level too, so `Unset` is reached with `import soundness.*`
+-       alone.
+-   entry .unsetEquality   `CanEqual[value, Unset]`: any value may be compared with `Unset`
+-       Under strict equality, `optional == Unset` would otherwise be rejected for a `value`
+-       with no `CanEqual` of its own; this given and `.equalityUnset` admit the comparison
+-       in either order, which is what `absent` and `present` compile to.
+-   entry .equalityUnset   `CanEqual[Unset, value]`: `Unset` may be compared with any value
+-   entry .apply   turns a nullable value into an `Optional`: `Optional(javaResult)`
+-       `Optional(value)` is `Unset` when `value` is `null` and `value` otherwise. It is the
+-       entry point for a Java API's nullable result:
++   entry .Unset   der eine fehlende Wert; sein Typ ist der opake `Unset`
++       `Unset` ist sowohl der opake Typ `Unset <: Matchable & caps.Pure` als auch dessen einziger
++       Wert. Die zugrunde liegende Darstellung ist `null`, sodass ein vorhandener Wert nie geboxt
++       wird und ein Fehlen nichts kostet, aber der Typ ist opak: `Unset` ist kein Untertyp von
++       `Null`, sodass `nn` ihn nicht entfernt und sich `Unset | value` bei der Given-Auflösung
++       vorhersehbar normalisiert. Er ist pur, sodass `Optional[value]` pur ist, wann immer
++       `value` es ist. Der Name wird auch auf Paketebene exportiert, sodass `Unset` allein mit
++       `import soundness.*` erreicht wird.
++   entry .unsetEquality   `CanEqual[value, Unset]`: Jeder Wert darf mit `Unset` verglichen werden
++       Unter strikter Gleichheit würde `optional == Unset` sonst für ein `value` ohne eigenes
++       `CanEqual` abgelehnt; dieses Given und `.equalityUnset` lassen den Vergleich in beiden
++       Reihenfolgen zu, und dazu kompilieren `absent` und `present`.
++   entry .equalityUnset   `CanEqual[Unset, value]`: `Unset` darf mit jedem Wert verglichen werden
++   entry .apply   wandelt einen nullbaren Wert in ein `Optional` um: `Optional(javaResult)`
++       `Optional(value)` ist `Unset`, wenn `value` gleich `null` ist, und sonst `value`. Es ist
++       der Einstiegspunkt für das nullbare Ergebnis einer Java-API:
+
+=       entry point for a Java API's nullable result:
+=
+-       ```scala
++       ```scala
+
+=       entry point for a Java API's nullable result:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val home: Optional[Text] = Optional(java.lang.System.getProperty("user.home")).let(_.tt)
++       val home: Optional[Text] = Optional(java.lang.System.getProperty("user.home")).let(_.tt)
+
+=       val home: Optional[Text] = Optional(java.lang.System.getProperty("user.home")).let(_.tt)
+-       ```
++       ```
+
+-   entry .check   a compile-time check that a type is an `Optional`
+-       `Optional.check[value]` expands to nothing if `Unset` is a subtype of `value`, and
+-       otherwise fails to compile with error `↯/s.20.3`, _the type `value` is not an `Optional`_.
+-       It is what the `Optionality` given does, exposed for code which wants to assert the
+-       property directly.
+-   entry .Error   raised by `assume` when the value was absent
+-       Error `↯/s.20.4`: _the value was not set_. Thrown by `assume`, which needs a
+-       `CanThrow[Optional.Error]` in scope (`import unsafeExceptions.canThrowAny`, or an
+-       enclosing `unsafely`) precisely because it is an unchecked assertion of presence.
++   entry .check   eine Prüfung zur Kompilierzeit, dass ein Typ ein `Optional` ist
++       `Optional.check[value]` expandiert zu nichts, wenn `Unset` ein Untertyp von `value` ist,
++       und lässt sich andernfalls mit dem Fehler `↯/s.20.3` nicht kompilieren, _the type `value`
++       is not an `Optional`_. Es ist das, was das Given `Optionality` tut, offengelegt für Code,
++       der die Eigenschaft direkt zusichern will.
++   entry .Error   ausgelöst von `assume`, wenn der Wert fehlte
++       Fehler `↯/s.20.4`: _the value was not set_. Geworfen von `assume`, das ein
++       `CanThrow[Optional.Error]` im Geltungsbereich braucht (`import unsafeExceptions.canThrowAny`
++       oder ein umschließendes `unsafely`), gerade weil es eine ungeprüfte Zusicherung des
++       Vorhandenseins ist.
+
+- entry .Unset   the one absent value, exported from `Optional.Unset`
+-     The value every `Optional` holds when it is absent, and the type of that value. It is
+-     `Optional.Unset`, exported at the package level so that `Unset` reads as a keyword.
+-     Compare with `== Unset` (the `CanEqual` givens in `Optional` admit it), match with
+-     `case Unset =>`, and construct an absent `Optional[Text]` as `Unset` with no type
+-     argument, since `Unset` conforms to every `Optional`.
++ entry .Unset   der eine fehlende Wert, exportiert aus `Optional.Unset`
++     Der Wert, den jedes `Optional` hält, wenn es fehlt, und der Typ dieses Werts. Er ist
++     `Optional.Unset`, auf Paketebene exportiert, sodass sich `Unset` wie ein Schlüsselwort
++     liest. Verglichen wird mit `== Unset` (die `CanEqual`-Givens in `Optional` lassen es zu),
++     abgeglichen mit `case Unset =>`, und ein fehlendes `Optional[Text]` wird als `Unset` ohne
++     Typargument konstruiert, da `Unset` zu jedem `Optional` konform ist.
+
+- entry .or   the value if present, or a fallback
+-     `optional.or(fallback)` is the value when it is present and `fallback` otherwise; the
+-     fallback is by-name and evaluated only when needed. Its result is a plain `value`, so
+-     `or` is the usual last step of a chain of `let`s. It is a macro: a receiver which is an
+-     `optimizable` block is rewritten so that the fallback is supplied to the block
+-     directly, with no intermediate `Optional`, and a receiver whose type is not an
+-     `Optional` is a compile error (465, _the type `T` is not an `Optional`_).
++ entry .or   der Wert, wenn vorhanden, oder ein Rückfall
++     `optional.or(fallback)` ist der Wert, wenn er vorhanden ist, und sonst `fallback`; der
++     Rückfall ist by-name und wird nur bei Bedarf ausgewertet. Sein Ergebnis ist ein einfaches
++     `value`, daher ist `or` der übliche letzte Schritt einer Kette von `let`s. Es ist ein
++     Makro: Ein Empfänger, der ein `optimizable`-Block ist, wird so umgeschrieben, dass der
++     Rückfall dem Block direkt übergeben wird, ohne ein zwischengeschaltetes `Optional`, und ein
++     Empfänger, dessen Typ kein `Optional` ist, ist ein Kompilierfehler (465, _the type `T` is
++     not an `Optional`_).
+
+=     `Optional` is a compile error (465, _the type `T` is not an `Optional`_).
+=
+-     ```scala
++     ```scala
+
+=     `Optional` is a compile error (465, _the type `T` is not an `Optional`_).
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     `Optional` is a compile error (465, _the type `T` is not an `Optional`_).
+=
+=     ```scala
+=     import soundness.*
+=
+-     val nickname: Optional[Text] = Unset
++     val nickname: Optional[Text] = Unset
+
+-     nickname.or(t"anonymous")   // t"anonymous"
++     nickname.or(t"anonymous")   // t"anonymous"
+
+=     nickname.or(t"anonymous")   // t"anonymous"
+-     ```
++     ```
+
+- entry .let   transforms a present value; passes `Unset` through
+-     `optional.let(lambda)` applies `lambda` to a present value and yields `Unset` for an
+-     absent one. Since optionality is flat, a `lambda` which itself returns an `Optional`
+-     adds no layer — `let` serves where `Option` needs both `map` and `flatMap`:
++ entry .let   transformiert einen vorhandenen Wert; reicht `Unset` durch
++     `optional.let(lambda)` wendet `lambda` auf einen vorhandenen Wert an und liefert `Unset` für
++     einen fehlenden. Da Optionalität flach ist, fügt ein `lambda`, das selbst ein `Optional`
++     zurückgibt, keine Schicht hinzu — `let` dient dort, wo `Option` sowohl `map` als auch
++     `flatMap` braucht:
+
+=     adds no layer — `let` serves where `Option` needs both `map` and `flatMap`:
+=
+-     ```scala
++     ```scala
+
+=     adds no layer — `let` serves where `Option` needs both `map` and `flatMap`:
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     def initial(text: Text): Optional[Char] = text.chars.head
++     def initial(text: Text): Optional[Char] = text.chars.head
+
+=     def initial(text: Text): Optional[Char] = text.chars.head
+-     val name: Optional[Text] = t"Hamlet"
++     val name: Optional[Text] = t"Hamlet"
+
+-     name.let(_.upper)                 // Optional[Text]: t"ADA"
++     name.let(_.upper)                 // Optional[Text]: t"ADA"
+
+-     name.let(_.keep(1)).let(initial)  // Optional[Char]: 'A', with no nesting
++     name.let(_.keep(1)).let(initial)  // Optional[Char]: 'A', with no nesting
+
+=     name.let(_.keep(1)).let(initial)  // Optional[Char]: 'A', with no nesting
+-     ```
++     ```
+
+-     Needs an `Optionality` proof for the receiver's type, which is in implicit scope for
+-     any `Optional`.
++     Braucht einen `Optionality`-Beweis für den Typ des Empfängers, der für jedes `Optional` im
++     impliziten Geltungsbereich ist.
+
+- entry .lay   a fallback for absence and a function for presence, giving a plain value
+-     `optional.lay(alternative)(lambda)` is `lambda(value)` when the value is present and
+-     `alternative` (by-name) otherwise, so it returns a plain `value2` rather than an
+-     `Optional`. It is `let` and `or` in one step, and is inlined.
++ entry .lay   ein Rückfall für das Fehlen und eine Funktion für das Vorhandensein, mit einem einfachen Wert als Ergebnis
++     `optional.lay(alternative)(lambda)` ist `lambda(value)`, wenn der Wert vorhanden ist, und
++     sonst `alternative` (by-name), gibt also ein einfaches `value2` statt eines `Optional`
++     zurück. Es ist `let` und `or` in einem Schritt und wird geinlinet.
+
+=     `Optional`. It is `let` and `or` in one step, and is inlined.
+=
+-     ```scala
++     ```scala
+
+=     `Optional`. It is `let` and `or` in one step, and is inlined.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     `Optional`. It is `let` and `or` in one step, and is inlined.
+=
+=     ```scala
+=     import soundness.*
+=
+-     val name: Optional[Text] = t"Hamlet"
++     val name: Optional[Text] = t"Hamlet"
+
+-     name.lay(0)(_.length)   // 3
++     name.lay(0)(_.length)   // 3
+
+=     name.lay(0)(_.length)   // 3
+-     ```
++     ```
+
+- entry .letGiven   `let` with the present value supplied as a contextual value
+-     `optional.letGiven(block)` evaluates `block` with the present value as a `given`,
+-     yielding `Unset` for an absent one. For a block whose body summons the value (a
+-     `Tactic`, a `Classloader`, a session) rather than naming it.
++ entry .letGiven   `let`, wobei der vorhandene Wert als Kontextwert geliefert wird
++     `optional.letGiven(block)` wertet `block` mit dem vorhandenen Wert als `given` aus und
++     liefert `Unset` für einen fehlenden. Für einen Block, dessen Rumpf den Wert herbeiruft
++     (eine `Tactic`, einen `Classloader`, eine Sitzung), statt ihn zu benennen.
+
+- entry .layGiven   `lay` with the present value supplied as a contextual value
+-     `optional.layGiven(alternative)(block)` evaluates `block` with the present value as a
+-     `given` and `alternative` (by-name) when it is absent, returning a plain value.
++ entry .layGiven   `lay`, wobei der vorhandene Wert als Kontextwert geliefert wird
++     `optional.layGiven(alternative)(block)` wertet `block` mit dem vorhandenen Wert als
++     `given` aus und `alternative` (by-name), wenn er fehlt, und gibt einen einfachen Wert
++     zurück.
+
+- entry .present   whether the value is present
+-     `optional.present` is `optional != Unset`, inlined. Requires an `Optionality` proof,
+-     so it can only be asked of a type which is an `Optional`.
++ entry .present   ob der Wert vorhanden ist
++     `optional.present` ist `optional != Unset`, geinlinet. Verlangt einen
++     `Optionality`-Beweis, kann also nur für einen Typ gefragt werden, der ein `Optional` ist.
+
+- entry .absent   whether the value is `Unset`
+-     `optional.absent` is `optional == Unset`, inlined.
++ entry .absent   ob der Wert `Unset` ist
++     `optional.absent` ist `optional == Unset`, geinlinet.
+
+- entry .mask   discards a present value which satisfies a predicate
+-     `optional.mask(predicate)` is `Unset` when the value is present and `predicate` holds
+-     of it, and otherwise the receiver unchanged. The sense is "mask out": the predicate
+-     names what to *remove*.
++ entry .mask   verwirft einen vorhandenen Wert, der ein Prädikat erfüllt
++     `optional.mask(predicate)` ist `Unset`, wenn der Wert vorhanden ist und `predicate` für ihn
++     gilt, und sonst der unveränderte Empfänger. Gemeint ist „ausblenden“: Das Prädikat nennt,
++     was *entfernt* werden soll.
+
+=     names what to *remove*.
+=
+-     ```scala
++     ```scala
+
+=     names what to *remove*.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     names what to *remove*.
+=
+=     ```scala
+=     import soundness.*
+=
+-     val name: Optional[Text] = t"Hamlet"
++     val name: Optional[Text] = t"Hamlet"
+
+-     name.mask(_.length > 64)   // t"Hamlet": unchanged, since it is not unreasonably long
++     name.mask(_.length > 64)   // t"Hamlet": unchanged, since it is not unreasonably long
+
+=     name.mask(_.length > 64)   // t"Hamlet": unchanged, since it is not unreasonably long
+-     ```
++     ```
+
+- entry .assume   the value, or a thrown `Optional.Error` if it is absent
+-     `optional.assume` asserts presence. It is an unchecked assertion, so it needs a
+-     `CanThrow[Optional.Error]` in scope — `import unsafeExceptions.canThrowAny`, or an
+-     enclosing `unsafely` — and throws error `↯/s.20.4`, _the value was not set_, when the
+-     assertion is wrong. Prefer `or`, `lay` or a match where the code can say what absence
+-     means.
++ entry .assume   der Wert oder ein geworfener `Optional.Error`, wenn er fehlt
++     `optional.assume` sichert das Vorhandensein zu. Es ist eine ungeprüfte Zusicherung, braucht
++     also ein `CanThrow[Optional.Error]` im Geltungsbereich —
++     `import unsafeExceptions.canThrowAny` oder ein umschließendes `unsafely` — und wirft den Fehler
++     `↯/s.20.4`, _the value was not set_, wenn die Zusicherung falsch ist. Vorzuziehen sind
++     `or`, `lay` oder ein Match, wo der Code sagen kann, was das Fehlen bedeutet.
+
+=     means.
+=
+-     ```scala
++     ```scala
+
+=     means.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import unsafeExceptions.canThrowAny
++     import unsafeExceptions.canThrowAny
+
+=     import unsafeExceptions.canThrowAny
+=
+-     val name: Optional[Text] = t"Hamlet"
++     val name: Optional[Text] = t"Hamlet"
+
+-     name.assume   // t"Hamlet"
++     name.assume   // t"Hamlet"
+
+=     name.assume   // t"Hamlet"
+-     ```
++     ```
+
+- entry .presume   the value, or the type's `Default` if it is absent
+-     `optional.presume` is `optional.or(default)` for a `value` with a `Default` instance:
+-     an empty text, zero, an empty list. A type with no `Default` cannot be presumed, which
+-     is a compile error rather than a surprise at runtime.
++ entry .presume   der Wert oder der `Default` des Typs, wenn er fehlt
++     `optional.presume` ist `optional.or(default)` für ein `value` mit einer `Default`-Instanz:
++     ein leerer Text, null, eine leere Liste. Ein Typ ohne `Default` kann nicht vorausgesetzt
++     werden, was ein Kompilierfehler ist statt einer Überraschung zur Laufzeit.
+
+=     is a compile error rather than a surprise at runtime.
+=
+-     ```scala
++     ```scala
+
+=     is a compile error rather than a surprise at runtime.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     is a compile error rather than a surprise at runtime.
+=
+=     ```scala
+=     import soundness.*
+=
+-     val nickname: Optional[Text] = Unset
++     val nickname: Optional[Text] = Unset
+
+-     nickname.presume   // t"": the default Text
++     nickname.presume   // t"": the default Text
+
+=     nickname.presume   // t"": the default Text
+-     ```
++     ```
+
+- entry .option   the value as an `Option`, for the boundary with code that speaks `Option`
+-     `optional.option` is `Some(value)` or `None`. The conversion is meant for the edge of
+-     a program — a library which returns or takes `Option` — and `optional` converts back;
+-     a Soundness program's interior speaks `Optional` alone.
++ entry .option   der Wert als `Option`, für die Grenze zu Code, der `Option` spricht
++     `optional.option` ist `Some(value)` oder `None`. Die Konvertierung ist für den Rand eines
++     Programms gedacht — eine Bibliothek, die `Option` zurückgibt oder nimmt —, und `optional`
++     konvertiert zurück; das Innere eines Soundness-Programms spricht nur `Optional`.
+
+- entry .javaOptional   the value as a `java.util.Optional`, for Java APIs
+-     `optional.javaOptional` is `java.util.Optional.of(value)` or `java.util.Optional.empty`;
+-     `optional` on a `java.util.Optional` converts back.
++ entry .javaOptional   der Wert als `java.util.Optional`, für Java-APIs
++     `optional.javaOptional` ist `java.util.Optional.of(value)` oder `java.util.Optional.empty`;
++     `optional` auf einem `java.util.Optional` konvertiert zurück.
+
+- entry .optional   an `Option` or a `java.util.Optional` as an `Optional`
+-     Two extensions share the name: `option.optional` is the value of a `Some` or `Unset`
+-     for `None`, and `javaOptional.optional` is the same for a `java.util.Optional`. Both
+-     are the boundary conversions inward; `option` and `javaOptional` are the conversions
+-     outward.
++ entry .optional   ein `Option` oder ein `java.util.Optional` als `Optional`
++     Zwei Erweiterungen teilen sich den Namen: `option.optional` ist der Wert eines `Some` oder
++     `Unset` für `None`, und `javaOptional.optional` ist dasselbe für ein `java.util.Optional`.
++     Beide sind die Konvertierungen an der Grenze nach innen; `option` und `javaOptional` sind
++     die Konvertierungen nach außen.
+
+=     outward.
+=
+-     ```scala
++     ```scala
+
+=     outward.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     Some(t"Hamlet").optional                  // t"Hamlet": Optional[Text]
++     Some(t"Hamlet").optional                  // t"Hamlet": Optional[Text]
+
+-     java.util.Optional.empty[Text].optional   // Unset
++     java.util.Optional.empty[Text].optional   // Unset
+
+=     java.util.Optional.empty[Text].optional   // Unset
+-     ```
++     ```
+
+- entry .unless   makes a value optional: `Unset` when a predicate holds
+-     `value.unless(predicate)` is `Unset` if `predicate(value)` holds (or, in the overload
+-     taking a `Boolean`, if the condition is true) and `value` otherwise. The condition names
+-     the case to *discard*.
++ entry .unless   macht einen Wert optional: `Unset`, wenn ein Prädikat gilt
++     `value.unless(predicate)` ist `Unset`, wenn `predicate(value)` gilt (oder, in der Überladung
++     mit einem `Boolean`, wenn die Bedingung wahr ist), und sonst `value`. Die Bedingung nennt
++     den Fall, der *verworfen* werden soll.
+
+=     the case to *discard*.
+=
+-     ```scala
++     ```scala
+
+=     the case to *discard*.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val count = 0
++     val count = 0
+
+-     count.unless(_ == 0)      // Unset: the count is zero
++     count.unless(_ == 0)      // Unset: the count is zero
+
+-     count.unless(count < 0)   // 0
++     count.unless(count < 0)   // 0
+
+=     count.unless(count < 0)   // 0
+-     ```
++     ```
+
+- entry .puncture   makes a value optional: `Unset` when it equals one particular value
+-     `value.puncture(point)` is `Unset` when `value == point` and `value` otherwise, for the
+-     sentinel values an API uses for absence — the empty text, `-1`, `0`:
++ entry .puncture   macht einen Wert optional: `Unset`, wenn er einem bestimmten Wert gleicht
++     `value.puncture(point)` ist `Unset`, wenn `value == point`, und sonst `value`, für die
++     Sentinel-Werte, die eine API für das Fehlen verwendet — den leeren Text, `-1`, `0`:
+
+=     sentinel values an API uses for absence — the empty text, `-1`, `0`:
+=
+-     ```scala
++     ```scala
+
+=     sentinel values an API uses for absence — the empty text, `-1`, `0`:
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     t"".puncture(t"")   // Unset
++     t"".puncture(t"")   // Unset
+
+=     t"".puncture(t"")   // Unset
+-     ```
++     ```
+
+- entry .only   keeps a value only where a partial function is defined, applying it
+-     `value.only { case pattern => result }` is `result` when the partial function is
+-     defined at `value` and `Unset` otherwise: a filter and a transformation in one match.
+-     The partial function may capture a capability (an extractor which raises an error
+-     captures its `Tactic`), so it is taken as a capturing value.
++ entry .only   behält einen Wert nur dort, wo eine partielle Funktion definiert ist, und wendet sie an
++     `value.only { case pattern => result }` ist `result`, wenn die partielle Funktion für
++     `value` definiert ist, und sonst `Unset`: ein Filter und eine Transformation in einem
++     Match. Die partielle Funktion kann eine Capability erfassen (ein Extraktor, der einen
++     Fehler auslöst, erfasst seine `Tactic`), daher wird sie als erfassender Wert genommen.
+
+=     captures its `Tactic`), so it is taken as a capturing value.
+=
+-     ```scala
++     ```scala
+
+=     captures its `Tactic`), so it is taken as a capturing value.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     7.only { case n if n > 0 => n*n }   // 49
++     7.only { case n if n > 0 => n*n }   // 49
+
+=     7.only { case n if n > 0 => n*n }   // 49
+-     ```
++     ```
+
+- entry .per   applies a function to a value only if an optional second argument is present
+-     `value.per(optional)(lambda)` is `lambda(value, present)` when `optional` is present
+-     and `value` unchanged when it is absent: the shape for applying an optional setting to
+-     a builder, `element.per(start)(_.start = _)`.
++ entry .per   wendet eine Funktion nur dann auf einen Wert an, wenn ein optionales zweites Argument vorhanden ist
++     `value.per(optional)(lambda)` ist `lambda(value, present)`, wenn `optional` vorhanden ist,
++     und das unveränderte `value`, wenn es fehlt: die Gestalt, um eine optionale Einstellung auf
++     einen Builder anzuwenden, `element.per(start)(_.start = _)`.
+
+- entry .compact   the present elements of a collection or iterator of `Optional`s
+-     `collection.compact` drops every `Unset` and yields the present values, rebuilt in the
+-     collection's own shape: a `List[Optional[Text]]` compacts to a `List[Text]`, a `Set` to a
+-     `Set`. It works on any `Traversable` collection; the overload on a `murmuration`
+-     `Iterator[Optional[value]]^`
+-     consumes the iterator and yields an `Iterator[value]^` which drops absent elements as
+-     it advances. The result is typed as the element type with the optionality removed.
++ entry .compact   die vorhandenen Elemente einer Collection oder eines Iterators von `Optional`s
++     `collection.compact` verwirft jedes `Unset` und liefert die vorhandenen Werte, neu
++     aufgebaut in der eigenen Gestalt der Collection: Eine `List[Optional[Text]]` wird zu einer
++     `List[Text]` verdichtet, ein `Set` zu einem `Set`. Es funktioniert auf jeder
++     `Traversable`-Collection; die Überladung auf einem `Iterator[Optional[value]]^` aus
++     `murmuration` verbraucht den Iterator und liefert einen `Iterator[value]^`, der fehlende Elemente beim
++     Fortschreiten verwirft. Das Ergebnis ist als der Elementtyp ohne die Optionalität
++     typisiert.
+
+=     it advances. The result is typed as the element type with the optionality removed.
+=
+-     ```scala
++     ```scala
+
+=     it advances. The result is typed as the element type with the optionality removed.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     List[Optional[Text]](t"a", Unset, t"c").compact   // List(t"a", t"c")
++     List[Optional[Text]](t"a", Unset, t"c").compact   // List(t"a", t"c")
+
+=     List[Optional[Text]](t"a", Unset, t"c").compact   // List(t"a", t"c")
+-     ```
++     ```
+
+- entry .entire   the whole collection if every element is present, or `Unset`
+-     `collection.entire` is all-or-nothing: an `Optional` of the collection, in its own shape,
+-     of every element when none is `Unset`, and `Unset` if any is. One presence sweep, with the
+-     answer recorded in the result's type, where `compact` would silently drop the gaps.
++ entry .entire   die ganze Collection, wenn jedes Element vorhanden ist, oder `Unset`
++     `collection.entire` ist alles oder nichts: ein `Optional` der Collection, in ihrer eigenen
++     Gestalt, aus jedem Element, wenn keines `Unset` ist, und `Unset`, wenn eines es ist. Ein
++     einziger Durchgang zur Prüfung des Vorhandenseins, wobei die Antwort im Typ des Ergebnisses
++     festgehalten wird, wo `compact` die Lücken stillschweigend verwerfen würde.
+
+- entry .default   the `Default` value of a type, summoned: `default[Text]` is `t""`
+-     `default[value]` is `summon[Default[value]]()`, the value a type falls back to.
+-     `presume` uses the same instance for an absent `Optional`.
++ entry .default   der `Default`-Wert eines Typs, herbeigerufen: `default[Text]` ist `t""`
++     `default[value]` ist `summon[Default[value]]()`, der Wert, auf den ein Typ zurückfällt.
++     `presume` verwendet dieselbe Instanz für ein fehlendes `Optional`.
+
+- entry .optimizable   marks a block whose fallback `or` can supply directly
+-     `optimizable[value] { default => body }` builds an `Optional[value]` from a lambda
+-     which receives the fallback, and is at first applied to `Unset`. When the result is
+-     immediately consumed by `or(fallback)`, the `or` macro rewrites the application so
+-     that `fallback` is passed to the lambda instead and no intermediate `Optional` is
+-     built: concordance's indexed `apply` uses it so that `xs(index).or(fallback)` reads
+-     the slot with the fallback in hand. Library code; a program has little call for it.
++ entry .optimizable   markiert einen Block, dem `or` seinen Rückfall direkt liefern kann
++     `optimizable[value] { default => body }` baut ein `Optional[value]` aus einem Lambda, das
++     den Rückfall erhält und zunächst auf `Unset` angewendet wird. Wenn das Ergebnis sofort von
++     `or(fallback)` verbraucht wird, schreibt das Makro `or` die Anwendung so um, dass
++     stattdessen `fallback` an das Lambda übergeben und kein zwischengeschaltetes `Optional`
++     gebaut wird: Das indizierte `apply` von Concordance verwendet es, sodass
++     `xs(index).or(fallback)` den Slot mit dem Rückfall in der Hand liest. Bibliothekscode; ein
++     Programm hat wenig Bedarf dafür.
+
+- entry .invite   an instance of a type if one is in scope, or `Unset`
+-     `invite[entity]` is a `transparent inline` summon which yields the given of type
+-     `entity` when one is available and `Unset` otherwise, where `summon` would fail to
+-     compile. For an optional capability — a logger, a diagnostics context — which a method
+-     uses if present and does without if not.
++ entry .invite   eine Instanz eines Typs, wenn eine im Geltungsbereich ist, oder `Unset`
++     `invite[entity]` ist ein `transparent inline`-Herbeirufen, das das Given vom Typ `entity`
++     liefert, wenn eines verfügbar ist, und sonst `Unset`, wo `summon` sich nicht kompilieren
++     ließe. Für eine optionale Capability — einen Logger, einen Diagnosekontext —, die eine
++     Methode verwendet, wenn sie vorhanden ist, und auf die sie sonst verzichtet.
+
+- entry .Default   the value a type falls back to, used by `presume` and `default`
++ entry .Default   der Wert, auf den ein Typ zurückfällt, verwendet von `presume` und `default`
+
+= entry .Default   the value a type falls back to, used by `presume` and `default`
+-   detail
++   detail
+
+-       A `Default[value]` is a by-name thunk, `() => value`, so a default which is
+-       expensive to compute is computed only where it is used. Instances exist in the
+-       companion for the types with an obvious zero — `Int`, `Long`, `Text`, `String`,
+-       `List`, `Set`, `Sequence` — and for any singleton type with a `ValueOf`; a type
+-       declares its own by defining one:
++       Ein `Default[value]` ist ein By-name-Thunk, `() => value`, sodass ein Vorgabewert, dessen
++       Berechnung teuer ist, nur dort berechnet wird, wo er verwendet wird. Instanzen gibt es im
++       Begleitobjekt für die Typen mit einer offensichtlichen Null — `Int`, `Long`, `Text`,
++       `String`, `List`, `Set`, `Sequence` — und für jeden Singleton-Typ mit einem `ValueOf`; ein
++       Typ deklariert seinen eigenen, indem er einen definiert:
+
+=       declares its own by defining one:
+=
+-       ```scala
++       ```scala
+
+=       declares its own by defining one:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Volume(level: Int)
++       case class Volume(level: Int)
+
+-       given Default[Volume] = Default(Volume(0))
++       given Default[Volume] = Default(Volume(0))
+
+-       val setting: Optional[Volume] = Unset
++       val setting: Optional[Volume] = Unset
+
+-       setting.presume   // Volume(0)
++       setting.presume   // Volume(0)
+
+-       default[Volume]   // Volume(0)
++       default[Volume]   // Volume(0)
+
+=       default[Volume]   // Volume(0)
+-       ```
++       ```
+
+-       `Default` is covariant and pure (`scala.caps.Pure` directly, since it is
+-       parameterised rather than selected through a `Self` member), and `Findable`,
+-       beneficence's marker for a type whose values are supplied contextually.
++       `Default` ist kovariant und pur (direkt `scala.caps.Pure`, da es parametrisiert ist,
++       statt über einen `Self`-Member ausgewählt zu werden) und `Findable`, der Marker von
++       Beneficence für einen Typ, dessen Werte kontextuell geliefert werden.
+
+-   refer vacuous.presume
++   refer vacuous.presume
+
+-   refer vacuous.default
++   refer vacuous.default
+
+-   entry .apply   makes a `Default` from a by-name value: `Default(Volume(0))`
+-       The argument is a pure by-name thunk (`-> value`), evaluated at each use.
++   entry .apply   erzeugt einen `Default` aus einem By-name-Wert: `Default(Volume(0))`
++       Das Argument ist ein purer By-name-Thunk (`-> value`), der bei jeder Verwendung
++       ausgewertet wird.
+
+-   entry .int   `Default[Int]`: `0`
++   entry .int   `Default[Int]`: `0`
+
+-   entry .default   `Default[Long]`: `0L`
++   entry .default   `Default[Long]`: `0L`
+
+-       The given for `Long`, named `default` rather than `long`.
+-   entry .singleton   `Default[value]` for any singleton type with a `ValueOf`: its value
+-   entry .text   `Default[Text]`: the empty text
+-   entry .string   `Default[String]`: the empty string
++       Das Given für `Long`, `default` statt `long` genannt.
++   entry .singleton   `Default[value]` für jeden Singleton-Typ mit einem `ValueOf`: sein Wert
++   entry .text   `Default[Text]`: der leere Text
++   entry .string   `Default[String]`: der leere String
+
+-   entry .list   `Default[List[element]]`: `Nil`
++   entry .list   `Default[List[element]]`: `Nil`
+
+-   entry .set   `Default[Set[element]]`: the empty set
+-   entry .sequence   `Default[Sequence[element]]`: the empty sequence
+-   entry #apply   the default value, computed at each call
++   entry .set   `Default[Set[element]]`: die leere Menge
++   entry .sequence   `Default[Sequence[element]]`: die leere Sequenz
++   entry #apply   der Vorgabewert, bei jedem Aufruf berechnet
+
+- entry .Optionality   the proof that a type is an `Optional`, required by every combinator
++ entry .Optionality   der Beweis, dass ein Typ ein `Optional` ist, den jeder Kombinator verlangt
+
+= entry .Optionality   the proof that a type is an `Optional`, required by every combinator
+-   detail
++   detail
+
+-       `Optionality[value]` is a sealed marker whose only given, `.default`, is a macro
+-       which succeeds when `Unset` is a subtype of `value` and fails with error `↯/s.20.3`, _the
+-       type `value` is not an `Optional`_, otherwise. The extensions `or`, `let`, `lay`,
+-       `present`, `absent`, `mask`, `assume`, `presume`, `option`, `javaOptional`,
+-       `letGiven` and `layGiven` take an `Optionality[optional.type]`, so they resolve only
+-       on a receiver whose static type admits `Unset`; a plain `Text` has no `let`. The
+-       check costs nothing at runtime: the given is a `null` cast to the marker.
++       `Optionality[value]` ist ein versiegelter Marker, dessen einziges Given, `.default`, ein
++       Makro ist, das gelingt, wenn `Unset` ein Untertyp von `value` ist, und andernfalls mit dem
++       Fehler `↯/s.20.3` fehlschlägt, _the type `value` is not an `Optional`_. Die Erweiterungen
++       `or`, `let`, `lay`, `present`, `absent`, `mask`, `assume`, `presume`, `option`,
++       `javaOptional`, `letGiven` und `layGiven` nehmen ein `Optionality[optional.type]`, sodass
++       sie nur auf einem Empfänger aufgelöst werden, dessen statischer Typ `Unset` zulässt; ein
++       einfacher `Text` hat kein `let`. Die Prüfung kostet zur Laufzeit nichts: Das Given ist ein
++       auf den Marker gecastetes `null`.
+
+=       check costs nothing at runtime: the given is a `null` cast to the marker.
+=
+-       ```scala
++       ```scala
+
+=       check costs nothing at runtime: the given is a `null` cast to the marker.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val name: Text = t"Hamlet"
++       val name: Text = t"Hamlet"
+
+-       name.let(_.upper)   // does not compile
++       name.let(_.upper)   // does not compile
+
+=       name.let(_.upper)   // does not compile
+-       ```
++       ```
+
+-   entry .default   the macro given: an `Optionality[value]` when `Unset <: value`
++   entry .default   das Makro-Given: ein `Optionality[value]`, wenn `Unset <: value`
+
+- entry .Concrete   the proof that a type is definite, not abstract
++ entry .Concrete   der Beweis, dass ein Typ bestimmt und nicht abstrakt ist
+
+= entry .Concrete   the proof that a type is definite, not abstract
+-   detail
++   detail
+
+-       `self is Concrete` is produced by the inline given `.concrete`, a macro which
+-       succeeds when `self` is not an abstract type and otherwise fails with error `↯/s.20.5`,
+-       _type `self` is abstract_. A generic method which takes an `Optional[value]` asks for
+-       `value: Concrete` because the flat union is only unambiguous when both members are
+-       known — an abstract `value` might later be instantiated to a type already optional,
+-       merging two absences meant to be distinct:
++       `self is Concrete` wird vom Inline-Given `.concrete` erzeugt, einem Makro, das gelingt,
++       wenn `self` kein abstrakter Typ ist, und andernfalls mit dem Fehler `↯/s.20.5`
++       fehlschlägt, _type `self` is abstract_. Eine generische Methode, die ein `Optional[value]`
++       nimmt, verlangt `value: Concrete`, weil die flache Union nur dann eindeutig ist, wenn beide
++       Member bekannt sind — ein abstraktes `value` könnte später mit einem bereits optionalen
++       Typ instanziiert werden und so zwei Formen des Fehlens zusammenführen, die verschieden sein
++       sollen:
+
+=       merging two absences meant to be distinct:
+=
+-       ```scala
++       ```scala
+
+=       merging two absences meant to be distinct:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def firstOrElse[value: Concrete](values: List[Optional[value]], fallback: value): value =
++       def firstOrElse[value: Concrete](values: List[Optional[value]], fallback: value): value =
+
+-         values.compact.to(List).head.or(fallback)
++         values.compact.to(List).head.or(fallback)
+
+-       summon[String is Concrete]
++       summon[String is Concrete]
+
+=       summon[String is Concrete]
+-       ```
++       ```
+
+-       Inside an `inline` method the check is deferred to the expansion site, where the
+-       type parameter is concrete, so `inline def f[value: Concrete]` compiles and each
+-       call to it is checked. `Concrete.apply[self]()` makes an instance by hand, for a
+-       macro which has established the fact itself.
+-   entry .concrete   the macro given: `typeRef is Concrete` when the type is not abstract
+-   entry .apply   an instance by assertion: `Concrete[self]()`
++       Innerhalb einer `inline`-Methode wird die Prüfung auf die Expansionsstelle verschoben, wo
++       der Typparameter konkret ist, sodass sich `inline def f[value: Concrete]` kompilieren lässt
++       und jeder Aufruf davon geprüft wird. `Concrete.apply[self]()` erzeugt eine Instanz von
++       Hand, für ein Makro, das die Tatsache selbst festgestellt hat.
++   entry .concrete   das Makro-Given: `typeRef is Concrete`, wenn der Typ nicht abstrakt ist
++   entry .apply   eine Instanz per Zusicherung: `Concrete[self]()`
+
+- entry .Distinct   the proof that a type is not a member of a union: `self is Distinct from union`
++ entry .Distinct   der Beweis, dass ein Typ kein Member einer Union ist: `self is Distinct from union`
+
+= entry .Distinct   the proof that a type is not a member of a union: `self is Distinct from union`
+-   detail
++   detail
+
+-       `typeRef is Distinct from otherType` is produced by the inline given `.distinct`, a
+-       macro which first requires `typeRef` to be `Concrete` (error `↯/s.20.5` otherwise) and then
+-       fails with error `↯/s.20.2`, _type `typeRef` cannot be proven distinct from `otherType`_,
+-       when `typeRef` is a subtype of `otherType`. It is the check which keeps `Unset` out
+-       of a value type, and it lets an API accept "one or several" without ambiguity:
+-       caduceus's `many[entity: Distinct from List[Any]](value: entity | List[entity])`
+-       can tell a single element from a list of them only because `entity` is proven not
+-       to be a list itself.
++       `typeRef is Distinct from otherType` wird vom Inline-Given `.distinct` erzeugt, einem
++       Makro, das zuerst verlangt, dass `typeRef` `Concrete` ist (sonst Fehler `↯/s.20.5`), und
++       dann mit dem Fehler `↯/s.20.2` fehlschlägt, _type `typeRef` cannot be proven distinct from
++       `otherType`_, wenn `typeRef` ein Untertyp von `otherType` ist. Es ist die Prüfung, die
++       `Unset` aus einem Werttyp heraushält, und sie lässt eine API „eines oder mehrere“ ohne
++       Mehrdeutigkeit annehmen: `many[entity: Distinct from List[Any]](value: entity | List[entity])`
++       aus Caduceus kann ein einzelnes Element nur deshalb von einer Liste solcher Elemente
++       unterscheiden, weil bewiesen ist, dass `entity` selbst keine Liste ist.
+
+=       to be a list itself.
+=
+-       ```scala
++       ```scala
+
+=       to be a list itself.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       summon[Int is Distinct from String]
++       summon[Int is Distinct from String]
+
+-       summon[Int is Distinct from (Int | String)]   // does not compile
++       summon[Int is Distinct from (Int | String)]   // does not compile
+
+-       summon[String is Distinct from String]        // does not compile
++       summon[String is Distinct from String]        // does not compile
+
+=       summon[String is Distinct from String]        // does not compile
+-       ```
++       ```
+
+-       `Distinct` extends `Original`, so the other type is its `Origin` and is named with
+-       `from`. `Distinct.apply[self, origin]()` makes an instance by assertion.
+-   entry .distinct   the macro given: `typeRef is Distinct from otherType` unless `typeRef <: otherType`
+-   entry .apply   an instance by assertion: `Distinct[self, origin]()`
++       `Distinct` erweitert `Original`, daher ist der andere Typ sein `Origin` und wird mit `from`
++       benannt. `Distinct.apply[self, origin]()` erzeugt eine Instanz per Zusicherung.
++   entry .distinct   das Makro-Given: `typeRef is Distinct from otherType`, sofern nicht `typeRef <: otherType`
++   entry .apply   eine Instanz per Zusicherung: `Distinct[self, origin]()`
+
+- entry .Mandatable   the non-optional type a present value has: `self is Mandatable to result`
++ entry .Mandatable   der nicht-optionale Typ, den ein vorhandener Wert hat: `self is Mandatable to result`
+
+= entry .Mandatable   the non-optional type a present value has: `self is Mandatable to result`
+-   detail
++   detail
+
+-       `typeRef is Mandatable` is produced by the transparent inline given `.mandatable`, a
+-       macro which strips every `Unset` from a union type and records what is left as its
+-       `#Result`: `Optional[Text] is Mandatable to Text`. A type with no `Unset` in it fails
+-       with error `↯/s.20.1`, _the value is not an `Optional`_. Derivation code uses it to find the
+-       type to encode or render for an optional field — breviloquence's CBOR encoder and the
+-       derived `Inspectable` both take `[inner <: value, value >: Unset.type: Mandatable to
++       `typeRef is Mandatable` wird vom transparenten Inline-Given `.mandatable` erzeugt, einem
++       Makro, das jedes `Unset` aus einem Union-Typ entfernt und den Rest als sein `#Result`
++       festhält: `Optional[Text] is Mandatable to Text`. Ein Typ ohne `Unset` darin schlägt mit dem
++       Fehler `↯/s.20.1` fehl, _the value is not an `Optional`_. Ableitungscode verwendet es, um
++       den Typ zu finden, der für ein optionales Feld kodiert oder dargestellt werden soll — der
++       CBOR-Encoder von Breviloquence und das abgeleitete `Inspectable` nehmen beide
++       `[inner <: value, value >: Unset.type: Mandatable to
+
+-       inner]`.
++       inner]`.
+
+-   entry .mandatable   the macro given: `typeRef is Mandatable to result`, with the `Unset` removed
+-   entry .apply   an instance by assertion: `Mandatable[self, result]()`
+-   entry #Result   the type with optionality removed; a subtype of `Self`
++   entry .mandatable   das Makro-Given: `typeRef is Mandatable to result`, mit entferntem `Unset`
++   entry .apply   eine Instanz per Zusicherung: `Mandatable[self, result]()`
++   entry #Result   der Typ ohne Optionalität; ein Untertyp von `Self`
+
+- entry .Extractor   a pattern extractor which answers with an `Optional`
++ entry .Extractor   ein Pattern-Extraktor, der mit einem `Optional` antwortet
+
+= entry .Extractor   a pattern extractor which answers with an `Optional`
+-   detail
++   detail
+
+-       A trait for an object meant to be used in `case Name(value) =>` patterns: implement
+-       `#extract`, returning an `Optional[extraction]`, and `#unapply` is derived from it as
+-       the `Option` the pattern matcher requires. `Uuid` and phoenicia's `Otf` are
+-       `Extractor[Text, …]`, so `case Uuid(uuid) =>` matches text that parses as one.
++       Ein Trait für ein Objekt, das in `case Name(value) =>`-Patterns verwendet werden soll:
++       Man implementiert `#extract`, das ein `Optional[extraction]` zurückgibt, und `#unapply`
++       wird daraus als das `Option` abgeleitet, das der Musterabgleich verlangt. `Uuid` und `Otf`
++       aus Phoenicia sind `Extractor[Text, …]`, sodass `case Uuid(uuid) =>` auf Text passt, der
++       sich als UUID parsen lässt.
+
+=       `Extractor[Text, …]`, so `case Uuid(uuid) =>` matches text that parses as one.
+=
+-       ```scala
++       ```scala
+
+=       `Extractor[Text, …]`, so `case Uuid(uuid) =>` matches text that parses as one.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       object Positive extends Extractor[Int, Int]:
++       object Positive extends Extractor[Int, Int]:
+
+-         def extract(value: Int): Optional[Int] = value.unless(_ <= 0)
++         def extract(value: Int): Optional[Int] = value.unless(_ <= 0)
+
+-       7 match
++       7 match
+
+-         case Positive(n) => n
++         case Positive(n) => n
+
+-         case _           => 0
++         case _           => 0
+
+=         case _           => 0
+-       ```
++       ```
+
+-   entry #extract   the extraction, or `Unset` if the scrutinee does not match
+-   entry #unapply   `extract(value).option`, for the pattern matcher
++   entry #extract   die Extraktion oder `Unset`, wenn der Prüfwert nicht passt
++   entry #unapply   `extract(value).option`, für den Musterabgleich
+
+- entry .Unsafe   the capability token which gates operations that bypass a safety guarantee
+-     A method which performs an unchecked operation — parsing a literal the compiler has
+-     already validated, an interpolation whose parts a macro has checked — takes a
+-     `(using Unsafe)` parameter and is named `unsafe…`; the caller supplies the token
+-     through contingency's `unsafely` block, or passes `Unsafe` explicitly. `Unsafe` is
+-     both the sealed trait and its single object value. It is a real value rather than an
+-     `erased` one, since the Scala.js backend cannot compile a closure over an erased
+-     parameter, but a `using erased Unsafe` parameter still erases it at its call sites.
+-     The token is a greppable claim, confined to the operations which need it; a method
+-     should take it only where its own body genuinely relies on an unproven property.
++ entry .Unsafe   das Capability-Token, das Operationen sperrt, die eine Sicherheitsgarantie umgehen
++     Eine Methode, die eine ungeprüfte Operation ausführt — das Parsen eines Literals, das der
++     Compiler bereits validiert hat, eine Interpolation, deren Teile ein Makro geprüft hat —,
++     nimmt einen `(using Unsafe)`-Parameter und heißt `unsafe…`; der Aufrufer liefert das Token
++     über den `unsafely`-Block aus Contingency oder übergibt `Unsafe` explizit. `Unsafe` ist
++     sowohl der versiegelte Trait als auch sein einziger Objektwert. Es ist ein echter Wert und
++     kein `erased`, da das Scala.js-Backend keinen Closure über einem gelöschten Parameter
++     kompilieren kann, aber ein `using erased Unsafe`-Parameter löscht ihn an seinen
++     Aufrufstellen trotzdem. Das Token ist eine durchsuchbare Behauptung, beschränkt auf die
++     Operationen, die es brauchen; eine Methode sollte es nur dort nehmen, wo ihr eigener Rumpf
++     tatsächlich auf einer unbewiesenen Eigenschaft beruht.
+
+- entry .internal   the macro implementations behind the proofs and the optimised `or`
++ entry .internal   die Makroimplementierungen hinter den Beweisen und dem optimierten `or`
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use. `check[value]` is the `Optionality` and `Optional.check` macro;
+-       `concrete`, `distinct` and `mandatable` produce the `Concrete`, `Distinct` and
+-       `Mandatable` proofs; and `optimizeOr` is the macro behind `or`, which rewrites an
+-       `optimizable` receiver so that the fallback is supplied to it directly.
+-   entry .check   the `Optionality[value]` macro: succeeds when `Unset <: value`, else error `↯/s.20.3`
+-   entry .concrete   the `typeRef is Concrete` macro: fails with error `↯/s.20.5` on an abstract type
+-   entry .distinct   the `typeRef is Distinct from union` macro: fails with error `↯/s.20.2` on a subtype
+-   entry .mandatable   the `typeRef is Mandatable` macro: strips `Unset`, or error `↯/s.20.1` if there is none
+-   entry .optimizeOr   the macro behind `or`: inlines the fallback into an `optimizable` receiver
++       Nicht zur direkten Verwendung. `check[value]` ist das Makro für `Optionality` und
++       `Optional.check`; `concrete`, `distinct` und `mandatable` erzeugen die Beweise `Concrete`,
++       `Distinct` und `Mandatable`; und `optimizeOr` ist das Makro hinter `or`, das einen
++       `optimizable`-Empfänger so umschreibt, dass ihm der Rückfall direkt geliefert wird.
++   entry .check   das Makro für `Optionality[value]`: gelingt, wenn `Unset <: value`, sonst Fehler `↯/s.20.3`
++   entry .concrete   das Makro für `typeRef is Concrete`: schlägt bei einem abstrakten Typ mit Fehler `↯/s.20.5` fehl
++   entry .distinct   das Makro für `typeRef is Distinct from union`: schlägt bei einem Untertyp mit Fehler `↯/s.20.2` fehl
++   entry .mandatable   das Makro für `typeRef is Mandatable`: entfernt `Unset`, oder Fehler `↯/s.20.1`, wenn es keines gibt
++   entry .optimizeOr   das Makro hinter `or`: inlinet den Rückfall in einen `optimizable`-Empfänger

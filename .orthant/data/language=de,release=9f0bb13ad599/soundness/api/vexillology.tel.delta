@@ -1,0 +1,26 @@
+orthant 1 language
+
+-         The opaque type over `Long`. Its page under the `vexillology` package has the full
+-         account.
+-     entry .apply   the empty set of flags over an enumeration, with no bit set, `Flags[Color]()`
+-   entry .apply   whether a case is set in some flags, `flags(case)`
+-       Needs the enumeration to be `Enumerable`, to find the case's ordinal.
+-   entry .update   a copy of some flags with a case set or cleared, `flags(case) = enabled`
+-       Returns the new `Flags` rather than changing the receiver, so a variable holding the
+-       flags is reassigned: `flags = flags(Orange) = true`.
+-   entry .bits   the flags as their underlying bits, a `B64`: the case of index `n` owns bit `n`
+-       Needs no `Enumerable`. A `B64` converts to a `Long` with `.long`.
+-   entry .set   the cases set in some flags, as a `Set` of the enumeration
+-       Visits only the set bits, lowest first.
++         Der opake Typ über `Long`. Seine Seite unter dem Paket `vexillology` enthält die
++         vollständige Darstellung.
++     entry .apply   die leere Menge von Flags über eine Aufzählung, ohne gesetztes Bit, `Flags[Color]()`
++   entry .apply   ob ein Fall in bestimmten Flags gesetzt ist, `flags(case)`
++       Braucht eine Aufzählung, die `Enumerable` ist, um die Ordinalzahl des Falls zu finden.
++   entry .update   eine Kopie bestimmter Flags, in der ein Fall gesetzt oder gelöscht ist, `flags(case) = enabled`
++       Gibt das neue `Flags` zurück, statt den Empfänger zu ändern, sodass eine Variable, die die
++       Flags hält, neu zugewiesen wird: `flags = flags(Orange) = true`.
++   entry .bits   die Flags als ihre zugrunde liegenden Bits, ein `B64`: dem Fall mit dem Index `n` gehört das Bit `n`
++       Braucht kein `Enumerable`. Ein `B64` wird mit `.long` in ein `Long` umgewandelt.
++   entry .set   die in bestimmten Flags gesetzten Fälle, als `Set` der Aufzählung
++       Besucht nur die gesetzten Bits, das niedrigste zuerst.

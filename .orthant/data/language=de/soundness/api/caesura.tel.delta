@@ -1,0 +1,2271 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base caesura
++ base caesura
+
+- import soundness
++ import soundness
+
+- info   CSV, TSV and other delimited text: rows parsed under a chosen format, and decoded to and from case classes
++ info   CSV, TSV und anderer Text mit Trennzeichen: Zeilen, unter einem gewählten Format geparst und aus und in Case-Klassen dekodiert und kodiert
+
+- detail
++ detail
+
+-     _Caesura_ reads and writes delimiter-separated values — CSV, its tab-separated cousin TSV,
+-     and space-separated data — with the quoting, escaping and header conventions decided by a
+-     `Dsv.Format` chosen in scope rather than guessed. Text parses into a `Sheet`, a
+-     materialized array of rows; each row is a `Dsv`, an array of cells which knows its column
+-     names when the data had a header; and a row decodes into a case class, or a case class
+-     encodes into a row, through a derivation from the type, so the mapping from columns to
+-     fields is never written by hand.
++     _Caesura_ liest und schreibt durch Trennzeichen getrennte Werte — CSV, seinen
++     tabulatorgetrennten Verwandten TSV und durch Leerzeichen getrennte Daten —, wobei die
++     Konventionen für Quotierung, Escaping und Kopfzeile von einem im Geltungsbereich gewählten
++     `Dsv.Format` festgelegt und nicht erraten werden. Text wird zu einem `Sheet` geparst, einem
++     materialisierten Array von Zeilen; jede Zeile ist ein `Dsv`, ein Array von Zellen, das seine
++     Spaltennamen kennt, wenn die Daten eine Kopfzeile hatten; und eine Zeile wird über eine
++     Ableitung aus dem Typ in eine Case-Klasse dekodiert oder eine Case-Klasse in eine Zeile
++     kodiert, sodass die Zuordnung von Spalten zu Feldern nie von Hand geschrieben wird.
+
+=     fields is never written by hand.
+=
+-     ```scala
++     ```scala
+
+=     fields is never written by hand.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     fields is never written by hand.
+=
+=     ```scala
+=     import soundness.*
+-     import dsvFormats.csvFormat
++     import dsvFormats.csvFormat
+
+=     fields is never written by hand.
+=
+=     ```scala
+=     import soundness.*
+=     import dsvFormats.csvFormat
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=     import strategies.throwUnsafely
+=
+-     case class FullName(first: Text, last: Text)
++     case class FullName(first: Text, last: Text)
+
+-     case class Person(id: Int, name: FullName, age: Int)
++     case class Person(id: Int, name: FullName, age: Int)
+
+-     val sheet: Sheet = t"1,Nick,Bottom,36\n2,Francis,Flute,41".read[Sheet]
++     val sheet: Sheet = t"1,Nick,Bottom,36\n2,Francis,Flute,41".read[Sheet]
+
+-     val nick: Person = t"1,Nick,Bottom,36".read[Person in Dsv]
++     val nick: Person = t"1,Nick,Bottom,36".read[Person in Dsv]
+
+-     val people: List[Person] = sheet.as[Person]
++     val people: List[Person] = sheet.as[Person]
+
+-     val text: Text = people.dsv.show   // t"1,Nick,Bottom,36\n2,Francis,Flute,41"
++     val text: Text = people.dsv.show   // t"1,Nick,Bottom,36\n2,Francis,Flute,41"
+
+=     val text: Text = people.dsv.show   // t"1,Nick,Bottom,36\n2,Francis,Flute,41"
+-     ```
++     ```
+
+-     A nested case class flattens across as many columns as it has fields (its _span_, the
+-     `Spannable` typeclass), an `Optional` field reads a short row as `Unset`, and with a
+-     header-bearing format each field is matched to the column of its own name, so the order
+-     of the columns need not match the order of the fields.
++     Eine verschachtelte Case-Klasse erstreckt sich über so viele Spalten, wie sie Felder hat
++     (ihre _Spanne_, die Typklasse `Spannable`), ein `Optional`-Feld liest eine zu kurze Zeile als
++     `Unset`, und bei einem Format mit Kopfzeile wird jedes Feld der Spalte seines eigenen Namens
++     zugeordnet, sodass die Reihenfolge der Spalten nicht der Reihenfolge der Felder entsprechen
++     muss.
+
+-     There are two ways from text to a value. The **row decoder** builds a `Dsv` for each row
+-     and decodes it with a `Decodable in Dsv`, which every product type derives; under an
+-     accruing strategy it reports every bad cell, each focused on a `CellRef`. The **direct
+-     parser** reads a type which has a `Dsv.Parsable` straight off the parser's reusable row
+-     buffer, building no `Dsv` at all, which is the fast path for large files. The `codecs`
+-     modes (`codecs.direct`, `codecs.derived`, `codecs.strict`) choose between them as they do
+-     for every other format. A file too large to hold is read with `rows` or `rowsOf` on a
+-     character stream, which yields one row at a time.
++     Es gibt zwei Wege von Text zu einem Wert. Der **Zeilendekodierer** baut für jede Zeile ein
++     `Dsv` und dekodiert es mit einem `Decodable in Dsv`, das jeder Produkttyp ableitet; unter einer
++     sammelnden Strategie meldet er jede fehlerhafte Zelle, jeweils mit einer `CellRef` als Fokus.
++     Der **direkte Parser** liest einen Typ, der ein `Dsv.Parsable` hat, unmittelbar aus dem
++     wiederverwendbaren Zeilenpuffer des Parsers und baut dabei überhaupt kein `Dsv`; das ist der
++     schnelle Weg für große Dateien. Die `codecs`-Modi (`codecs.direct`, `codecs.derived`,
++     `codecs.strict`) wählen zwischen beiden, wie bei jedem anderen Format. Eine Datei, die zu
++     groß ist, um sie im Speicher zu halten, wird mit `rows` oder `rowsOf` auf einem
++     Zeichen-Stream gelesen, der eine Zeile nach der anderen liefert.
+
+-     The choices are givens in packages, each imported by name, because `import soundness.*`
+-     does not import givens:
++     Die Auswahlmöglichkeiten sind Givens in Paketen, die jeweils über ihren Namen importiert
++     werden, weil `import soundness.*` keine Givens importiert:
+
+-     - `dsvFormats` — the format: `csvFormat`, `tsvFormat` and `ssvFormat`, each with a
+-       `…WithHeaderFormat` variant. Nothing parses or renders without one.
+-     - `dsvRedesignations` — how a camel-case member name is mapped to a header name for
+-       dynamic access, such as `capitalizedWordsRedesignation` (`targetPerson` to
+-       `Target Person`).
+-     - `dynamicAccess` — `dynamicDsv`, which lets a row's cells be read as members,
++     - `dsvFormats` — das Format: `csvFormat`, `tsvFormat` und `ssvFormat`, jeweils mit einer
++       Variante `…WithHeaderFormat`. Ohne eines wird nichts geparst oder dargestellt.
++     - `dsvRedesignations` — wie ein Membername in Camel-Case für den dynamischen Zugriff auf
++       einen Kopfzeilennamen abgebildet wird, etwa `capitalizedWordsRedesignation`
++       (`targetPerson` zu `Target Person`).
++     - `dynamicAccess` — `dynamicDsv`, das die Zellen einer Zeile als Member lesen lässt,
+
+-       `row.age[Int]`.
++       `row.age[Int]`.
+
+-     - `optionalityOptions` — whether an `Optional` field treats a missing or a malformed cell
+-       as `Unset` or as an error.
+-     - `optics` — lenses over a row's cells and a sheet's rows, for `panopticon`'s `lens`.
+-     - `construables` — the media types `text/csv` and `text/tab-separated-values` construed
+-       as a `Sheet`, for HTTP clients.
++     - `optionalityOptions` — ob ein `Optional`-Feld eine fehlende oder fehlerhafte Zelle als
++       `Unset` oder als Fehler behandelt.
++     - `optics` — Linsen über die Zellen einer Zeile und die Zeilen eines Sheets, für `lens` aus
++       `panopticon`.
++     - `construables` — die Medientypen `text/csv` und `text/tab-separated-values`, als `Sheet`
++       interpretiert, für HTTP-Clients.
+
+-     The library has two components. `caesura.core` has everything but the media-type
+-     mappings, and is platform-neutral. `caesura.http` adds the `construables` package, and
+-     depends on `gesticulate`. Everything is exported to the `soundness` umbrella, and the
+-     choice packages merge with the umbrella's own packages of the same names.
++     Die Bibliothek hat zwei Komponenten. `caesura.core` enthält alles außer den Zuordnungen von
++     Medientypen und ist plattformneutral. `caesura.http` fügt das Paket `construables` hinzu und
++     hängt von `gesticulate` ab. Alles wird in das `soundness`-Umbrella exportiert, und die
++     Auswahlpakete verschmelzen mit den gleichnamigen Paketen des Umbrellas.
+
+- refer caesura.Dsv
++ refer caesura.Dsv
+
+- refer caesura.Sheet
++ refer caesura.Sheet
+
+- refer caesura.Dsv.Format
++ refer caesura.Dsv.Format
+
+- refer caesura.dsvFormats
++ refer caesura.dsvFormats
+
+- refer caesura.Dsv.Parsable
++ refer caesura.Dsv.Parsable
+
+- refer caesura.Spannable
++ refer caesura.Spannable
+
+- entry .Dsv   one row of delimited data: an array of cells, with the column names where the data had a header
++ entry .Dsv   eine Zeile mit Trennzeichen getrennter Daten: ein Array von Zellen, mit den Spaltennamen, wo die Daten eine Kopfzeile hatten
+
+= entry .Dsv   one row of delimited data: an array of cells, with the column names where the data had a header
+-   detail
++   detail
+
+-       A `Dsv` is a single row: its `#data` is the row's cells as `Text`, in order, and its
+-       `#columns` maps each column name to its index when the row was parsed under a
+-       header-bearing format (and is `Unset` otherwise). It is the value a `Sheet`'s rows are
+-       made of, what `rows` yields from a stream, and the `Form` of every row codec: a type
+-       is `Decodable in Dsv` if it can be read from a row, and `Encodable in Dsv` if it can be
+-       written as one.
++       Ein `Dsv` ist eine einzelne Zeile: Sein `#data` sind die Zellen der Zeile als `Text`, der
++       Reihe nach, und seine `#columns` ordnen jedem Spaltennamen seinen Index zu, wenn die Zeile
++       unter einem Format mit Kopfzeile geparst wurde (und sind sonst `Unset`). Es ist der Wert,
++       aus dem die Zeilen eines `Sheet` bestehen, das, was `rows` aus einem Stream liefert, und die
++       `Form` jedes Zeilencodecs: Ein Typ ist `Decodable in Dsv`, wenn er aus einer Zeile gelesen
++       werden kann, und `Encodable in Dsv`, wenn er als eine geschrieben werden kann.
+
+=       written as one.
+=
+-       ```scala
++       ```scala
+
+=       written as one.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       written as one.
+=
+=       ```scala
+=       import soundness.*
+-       import dsvFormats.csvWithHeaderFormat
++       import dsvFormats.csvWithHeaderFormat
+
+=       written as one.
+=
+=       ```scala
+=       import soundness.*
+=       import dsvFormats.csvWithHeaderFormat
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       written as one.
+=
+=       ```scala
+=       import soundness.*
+=       import dsvFormats.csvWithHeaderFormat
+=       import strategies.throwUnsafely
+=
+-       case class Measurement(name: Text, age: Int)
++       case class Measurement(name: Text, age: Int)
+
+-       val row: Optional[Dsv] = t"name,age\nPercy,30".read[Sheet].rows(Prim)
++       val row: Optional[Dsv] = t"name,age\nPercy,30".read[Sheet].rows(Prim)
+
+-       row.let(_.as[Measurement])          // Measurement(t"Percy", 30)
++       row.let(_.as[Measurement])          // Measurement(t"Percy", 30)
+
+-       row.let(_[Int](t"age"))             // 30
++       row.let(_[Int](t"age"))             // 30
+
+-       Dsv(t"a", t"b, c").show             // t"a,\"b, c\""
++       Dsv(t"a", t"b, c").show             // t"a,\"b, c\""
+
+=       Dsv(t"a", t"b, c").show             // t"a,\"b, c\""
+-       ```
++       ```
+
+-       The companion holds every codec, so none needs an import: cell decoders for `Int`,
+-       `Long`, `Double`, `Float`, `Boolean`, `Text` and `String`; a fallback which reads the
+-       first cell of a row as any type `Decodable in Text` (in `Dsv2`); `Optional` fields;
+-       encoding of any type `Encodable in Text` as a one-cell row; the derivations of row
+-       decoders and encoders for every product type; and the `Aggregable` givens behind
+-       `read[Play in Dsv]` and `read[List[Play] in Dsv]` (some in its parents, `Dsv1` and
+-       `Dsv2`). It also has `Format`, `Error`, `Redesignation`, and the direct-parsing
+-       typeclasses `Parsable` and `Field`.
++       Das Begleitobjekt enthält jeden Codec, sodass keiner einen Import braucht:
++       Zellendekodierer für `Int`, `Long`, `Double`, `Float`, `Boolean`, `Text` und `String`;
++       einen Rückfall, der die erste Zelle einer Zeile als beliebigen Typ liest, der
++       `Decodable in Text` ist (in `Dsv2`); `Optional`-Felder; die Kodierung jedes Typs, der
++       `Encodable in Text` ist, als einzellige Zeile; die Ableitungen von Zeilendekodierern und
++       -kodierern für jeden Produkttyp; und die `Aggregable`-Givens hinter `read[Play in Dsv]` und
++       `read[List[Play] in Dsv]` (einige in seinen Eltern, `Dsv1` und `Dsv2`). Außerdem enthält es
++       `Format`, `Error`, `Redesignation` und die Typklassen für direktes Parsen, `Parsable` und
++       `Field`.
+
+-       The primitive cell decoders do not abort on a bad cell: they raise a `Dsv.Error` and
+-       continue with a placeholder, so that when a row decodes into a product under an
+-       accruing strategy (`Validate[…, CellRef]`) every malformed or missing cell is reported,
+-       each focused on the `CellRef` of its column, rather than only the first.
++       Die primitiven Zellendekodierer brechen bei einer fehlerhaften Zelle nicht ab: Sie lösen
++       einen `Dsv.Error` aus und machen mit einem Platzhalter weiter, sodass beim Dekodieren einer
++       Zeile in ein Produkt unter einer sammelnden Strategie (`Validate[…, CellRef]`) jede
++       fehlerhafte oder fehlende Zelle gemeldet wird, jeweils mit der `CellRef` ihrer Spalte als
++       Fokus, statt nur der ersten.
+
+-       With `dynamicAccess.dynamicDsv` imported and a `Dsv.Redesignation` in scope, a cell is a
+-       member of the row: `row.age[Int]` (see `#selectDynamic`).
++       Mit importiertem `dynamicAccess.dynamicDsv` und einer `Dsv.Redesignation` im
++       Geltungsbereich ist eine Zelle ein Member der Zeile: `row.age[Int]` (siehe
++       `#selectDynamic`).
+
+-   refer caesura.Sheet
++   refer caesura.Sheet
+
+=   refer caesura.Sheet
+-   refer caesura.Dsv.Format
++   refer caesura.Dsv.Format
+
+=   refer caesura.Dsv.Format
+-   refer caesura.Dsv.Parsable
++   refer caesura.Dsv.Parsable
+
+-   refer caesura.CellRef
++   refer caesura.CellRef
+
+-   entry .apply   makes a row from its cells, given as arguments or as an `Iterable[Text]`
+-       `Dsv(t"a", t"b")` and `Dsv(cells)` make a row with no column names. A row with column
+-       names comes from parsing under a header-bearing format, or from the case-class
+-       constructor, `Dsv(data, columns)`.
+-   entry .optionalDecodable   decodes an `Optional` field: a missing cell is `Unset`, a present one is decoded by the inner type
+-       A row with no cells — a short positional row, or a header column the row lacks — decodes
+-       to `Unset`; a present cell, even an empty one, is decoded by the inner type's
+-       `Decodable in Dsv`. Both answers are policies chosen in `optionalityOptions`: a strict
+-       `Decodable.Absence in Dsv` raises `Dsv.Error.Reason.Absent` for a missing cell, and a
+-       lenient `Decodable.Fault in Dsv` reads a cell the inner decoder rejects as `Unset`.
+-       The defaults are lenient absence and strict faults. Needs a `Dsv.Format` and a
+-       `Tactic[Dsv.Error]`.
+-   entry .encoder   writes any type which is `Encodable in Text` as a one-cell row
+-   entry .int   decodes the first cell of a row as an `Int`, raising `Dsv.Error` and continuing if it cannot
+-       As every primitive cell decoder: a missing cell raises `Dsv.Error.Reason.Absent` and an
+-       unparseable one `Dsv.Error.Reason.Unparseable(cell, t"Int")`, each through `raise`, so
+-       that an accruing strategy collects the error and decoding goes on with `0`. Needs a
+-       `Dsv.Format` and a `Tactic[Dsv.Error]`.
+-   entry .long   decodes the first cell of a row as a `Long`, raising `Dsv.Error` and continuing if it cannot
+-   entry .double   decodes the first cell of a row as a `Double`, raising `Dsv.Error` and continuing if it cannot
+-   entry .float   decodes the first cell of a row as a `Float`, raising `Dsv.Error` and continuing if it cannot
+-   entry .boolean   decodes the first cell of a row as a `Boolean`: only `true` and `false` are accepted
+-       Any other text, including `TRUE` or `1`, raises `Dsv.Error.Reason.Unparseable` and
+-       decoding continues with `false`.
+-   entry .text   decodes the first cell of a row as `Text`; raises `Dsv.Error` only if the cell is missing
+-   entry .string   decodes the first cell of a row as a `String`; raises `Dsv.Error` only if the cell is missing
+-   entry .decodableDerivation   derives a row decoder for any product type, taking its fields' cells in turn
+-       Each field takes as many cells as its span (`Spannable`): one for a field which is
+-       `Decodable in Text`, and the sum of its own fields' spans for a nested case class. Under
+-       a header-bearing format, each field is instead found by the column of its own name,
+-       exactly as the field is spelt, and a field whose column is absent receives an empty
+-       row, so an `Optional` field is `Unset`. Under an accruing strategy each field is decoded
+-       inside a `focus(CellRef(…))`, and the record is constructed only when every field
+-       decoded cleanly.
++   entry .apply   erzeugt eine Zeile aus ihren Zellen, als Argumente oder als `Iterable[Text]` gegeben
++       `Dsv(t"a", t"b")` und `Dsv(cells)` erzeugen eine Zeile ohne Spaltennamen. Eine Zeile mit
++       Spaltennamen entsteht durch Parsen unter einem Format mit Kopfzeile oder über den
++       Konstruktor der Case-Klasse, `Dsv(data, columns)`.
++   entry .optionalDecodable   dekodiert ein `Optional`-Feld: eine fehlende Zelle ist `Unset`, eine vorhandene wird vom inneren Typ dekodiert
++       Eine Zeile ohne Zellen — eine zu kurze positionale Zeile oder eine Kopfzeilenspalte, die der
++       Zeile fehlt — wird zu `Unset` dekodiert; eine vorhandene Zelle, selbst eine leere, wird vom
++       `Decodable in Dsv` des inneren Typs dekodiert. Beide Antworten sind Richtlinien, die in
++       `optionalityOptions` gewählt werden: Eine strikte `Decodable.Absence in Dsv` löst für eine
++       fehlende Zelle `Dsv.Error.Reason.Absent` aus, und ein nachsichtiges
++       `Decodable.Fault in Dsv` liest eine Zelle, die der innere Dekodierer ablehnt, als `Unset`.
++       Die Voreinstellungen sind nachsichtiges Fehlen und strikte Fehler. Braucht ein `Dsv.Format`
++       und eine `Tactic[Dsv.Error]`.
++   entry .encoder   schreibt jeden Typ, der `Encodable in Text` ist, als einzellige Zeile
++   entry .int   dekodiert die erste Zelle einer Zeile als `Int`, löst `Dsv.Error` aus und macht weiter, wenn das nicht geht
++       Wie jeder primitive Zellendekodierer: Eine fehlende Zelle löst `Dsv.Error.Reason.Absent`
++       aus und eine nicht parsbare `Dsv.Error.Reason.Unparseable(cell, t"Int")`, jeweils über
++       `raise`, sodass eine sammelnde Strategie den Fehler sammelt und das Dekodieren mit `0`
++       weitergeht. Braucht ein `Dsv.Format` und eine `Tactic[Dsv.Error]`.
++   entry .long   dekodiert die erste Zelle einer Zeile als `Long`, löst `Dsv.Error` aus und macht weiter, wenn das nicht geht
++   entry .double   dekodiert die erste Zelle einer Zeile als `Double`, löst `Dsv.Error` aus und macht weiter, wenn das nicht geht
++   entry .float   dekodiert die erste Zelle einer Zeile als `Float`, löst `Dsv.Error` aus und macht weiter, wenn das nicht geht
++   entry .boolean   dekodiert die erste Zelle einer Zeile als `Boolean`: nur `true` und `false` werden akzeptiert
++       Jeder andere Text, auch `TRUE` oder `1`, löst `Dsv.Error.Reason.Unparseable` aus, und das
++       Dekodieren geht mit `false` weiter.
++   entry .text   dekodiert die erste Zelle einer Zeile als `Text`; löst `Dsv.Error` nur aus, wenn die Zelle fehlt
++   entry .string   dekodiert die erste Zelle einer Zeile als `String`; löst `Dsv.Error` nur aus, wenn die Zelle fehlt
++   entry .decodableDerivation   leitet für jeden Produkttyp einen Zeilendekodierer ab, der der Reihe nach die Zellen seiner Felder nimmt
++       Jedes Feld nimmt so viele Zellen, wie seine Spanne (`Spannable`) beträgt: eine für ein Feld,
++       das `Decodable in Text` ist, und die Summe der Spannen seiner eigenen Felder für eine
++       verschachtelte Case-Klasse. Unter einem Format mit Kopfzeile wird jedes Feld stattdessen
++       über die Spalte seines eigenen Namens gefunden, genau so geschrieben wie das Feld, und ein
++       Feld, dessen Spalte fehlt, erhält eine leere Zeile, sodass ein `Optional`-Feld `Unset` ist.
++       Unter einer sammelnden Strategie wird jedes Feld innerhalb eines `focus(CellRef(…))`
++       dekodiert, und der Datensatz wird erst konstruiert, wenn jedes Feld fehlerfrei dekodiert
++       wurde.
+
+=       decoded cleanly.
+=
+-       ```scala
++       ```scala
+
+=       decoded cleanly.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       decoded cleanly.
+=
+=       ```scala
+=       import soundness.*
+-       import dsvFormats.csvFormat
++       import dsvFormats.csvFormat
+
+=       decoded cleanly.
+=
+=       ```scala
+=       import soundness.*
+=       import dsvFormats.csvFormat
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       decoded cleanly.
+=
+=       ```scala
+=       import soundness.*
+=       import dsvFormats.csvFormat
+=       import strategies.throwUnsafely
+=
+-       case class FullName(first: Text, last: Text)
++       case class FullName(first: Text, last: Text)
+
+=       import strategies.throwUnsafely
+=
+=       case class FullName(first: Text, last: Text)
+-       case class Person(id: Int, name: FullName, age: Int)
++       case class Person(id: Int, name: FullName, age: Int)
+
+-       t"1,Nick,Bottom,36".read[Sheet].rows(Prim).let(_.as[Person])
++       t"1,Nick,Bottom,36".read[Sheet].rows(Prim).let(_.as[Person])
+
+=       t"1,Nick,Bottom,36".read[Sheet].rows(Prim).let(_.as[Person])
+-       ```
++       ```
+
+-   entry .encodableDerivation   derives a row encoder for any product type, concatenating its fields' cells
+-       A nested case class contributes its own cells in place, so encoding is the mirror of
+-       `.decodableDerivation`'s positional reading.
+-   entry .showable   renders a row as one line of delimited text in the `Dsv.Format` in scope
+-       Cells are joined with the format's delimiter. A cell is quoted only if it contains the
+-       quote character, the delimiter, a line feed or a carriage return, and a quote within a
+-       quoted cell is doubled.
+-   entry .aggregableDerived   under `codecs.derived`, reads `Play in Dsv` through the row decoder even where `Play` has a `Dsv.Parsable`
+-       Selected by `import codecs.derived`, it outranks the direct path for a type which has a
+-       `Dsv.Parsable` in scope, so a program can compare the two, or keep the accruing row
+-       decoder for one read.
+-   entry .aggregableStrict   under `codecs.strict`, reads `Play in Dsv` directly, through the `Dsv.Parsable` in scope
+-       Paired with `Dsv1#aggregableStrictFailure`: under `import codecs.strict` a type with a
+-       `Dsv.Parsable` is parsed directly, and one without is a compile error naming the type,
+-       instead of falling back to the row decoder.
+-   entry .aggregableParsedList   `read[List[Play] in Dsv]`: parses every row directly, through `Play`'s `Dsv.Parsable`
+-       There is no row-decoder counterpart for a whole sheet, so this read is direct in every
+-       `codecs` mode, and needs a `Dsv.Parsable` for the element type (which `codecs.direct`
+-       derives for any product). Needs a `Dsv.Format`, a `Tactic[Dsv.Error]` and a
+-       `Buffering`.
++   entry .encodableDerivation   leitet für jeden Produkttyp einen Zeilenkodierer ab, der die Zellen seiner Felder aneinanderhängt
++       Eine verschachtelte Case-Klasse steuert ihre eigenen Zellen an Ort und Stelle bei, sodass die
++       Kodierung das Spiegelbild des positionalen Lesens von `.decodableDerivation` ist.
++   entry .showable   stellt eine Zeile als eine Zeile mit Trennzeichen getrennten Texts im `Dsv.Format` im Geltungsbereich dar
++       Die Zellen werden mit dem Trennzeichen des Formats verbunden. Eine Zelle wird nur quotiert,
++       wenn sie das Anführungszeichen, das Trennzeichen, einen Zeilenvorschub oder einen
++       Wagenrücklauf enthält, und ein Anführungszeichen innerhalb einer quotierten Zelle wird
++       verdoppelt.
++   entry .aggregableDerived   liest unter `codecs.derived` `Play in Dsv` über den Zeilendekodierer, selbst wo `Play` ein `Dsv.Parsable` hat
++       Mit `import codecs.derived` ausgewählt, hat es Vorrang vor dem direkten Weg für einen Typ,
++       der ein `Dsv.Parsable` im Geltungsbereich hat, sodass ein Programm die beiden vergleichen
++       oder für ein einzelnes Lesen den sammelnden Zeilendekodierer beibehalten kann.
++   entry .aggregableStrict   liest unter `codecs.strict` `Play in Dsv` direkt, über das `Dsv.Parsable` im Geltungsbereich
++       Gepaart mit `Dsv1#aggregableStrictFailure`: Unter `import codecs.strict` wird ein Typ mit
++       einem `Dsv.Parsable` direkt geparst, und einer ohne ist ein Kompilierfehler, der den Typ
++       nennt, statt auf den Zeilendekodierer zurückzufallen.
++   entry .aggregableParsedList   `read[List[Play] in Dsv]`: parst jede Zeile direkt, über das `Dsv.Parsable` von `Play`
++       Für ein ganzes Sheet gibt es kein Gegenstück mit Zeilendekodierer, daher ist dieses Lesen in
++       jedem `codecs`-Modus direkt und braucht ein `Dsv.Parsable` für den Elementtyp (das
++       `codecs.direct` für jedes Produkt ableitet). Braucht ein `Dsv.Format`, eine
++       `Tactic[Dsv.Error]` und ein `Buffering`.
+
+=       `Buffering`.
+=
+-       ```scala
++       ```scala
+
+=       `Buffering`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Buffering`.
+=
+=       ```scala
+=       import soundness.*
+-       import dsvFormats.csvFormat
++       import dsvFormats.csvFormat
+
+=       `Buffering`.
+=
+=       ```scala
+=       import soundness.*
+=       import dsvFormats.csvFormat
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       case class Stat(name: Text, count: Int)
++       case class Stat(name: Text, count: Int)
+
+-       given Stat is Dsv.Parsable = Dsv.Parsable.derived
++       given Stat is Dsv.Parsable = Dsv.Parsable.derived
+
+-       t"a,1\nb,2".read[List[Stat] in Dsv]   // List(Stat(t"a", 1), Stat(t"b", 2))
++       t"a,1\nb,2".read[List[Stat] in Dsv]   // List(Stat(t"a", 1), Stat(t"b", 2))
+
+=       t"a,1\nb,2".read[List[Stat] in Dsv]   // List(Stat(t"a", 1), Stat(t"b", 2))
+-       ```
++       ```
+
+-   entry .Parsing   the common parent of `Dsv.Parsable` and `Dsv.Field`: reads a value off a `DsvReader`
++   entry .Parsing   das gemeinsame Elternteil von `Dsv.Parsable` und `Dsv.Field`: liest einen Wert aus einem `DsvReader`
+
+=   entry .Parsing   the common parent of `Dsv.Parsable` and `Dsv.Field`: reads a value off a `DsvReader`
+-     detail
++     detail
+
+-         A `distillate.Parsable` whose `#Transport` is `Dsv` and whose `#Reader` is a
+-         `DsvReader`. An instance occupies `#width` cells of the current row and reads them,
+-         from a given offset, with `#parse`. Neither `Parsable` nor `Field` is a subtype of the
+-         other: `Parsable` is the opt-in surface which switches a read to the direct path, and
+-         `Field` the operational one which every field type resolves.
++         Ein `distillate.Parsable`, dessen `#Transport` `Dsv` und dessen `#Reader` ein `DsvReader`
++         ist. Eine Instanz belegt `#width` Zellen der aktuellen Zeile und liest sie ab einem
++         gegebenen Offset mit `#parse`. Weder `Parsable` noch `Field` ist ein Untertyp des
++         anderen: `Parsable` ist die Opt-in-Oberfläche, die ein Lesen auf den direkten Weg
++         umschaltet, und `Field` die operative, die jeder Feldtyp auflöst.
+
+=         `Field` the operational one which every field type resolves.
+-     refer caesura.DsvReader
++     refer caesura.DsvReader
+
+-     entry #Transport   the transport format: `Dsv`
+-     entry #Reader   the token reader instances parse from: `DsvReader`
+-     entry #width   the number of cells the value occupies in a positional row; `1` unless overridden
+-     entry #parse   reads the value from the current row of a `DsvReader`, from a cell offset (`0` by default)
+-   entry .Parsable2   the low-priority home of `Dsv.Parsable.generated`, the `codecs.direct` derivation
++     entry #Transport   das Transportformat: `Dsv`
++     entry #Reader   der Token-Reader, aus dem Instanzen parsen: `DsvReader`
++     entry #width   die Anzahl der Zellen, die der Wert in einer positionalen Zeile belegt; `1`, sofern nicht überschrieben
++     entry #parse   liest den Wert aus der aktuellen Zeile eines `DsvReader`, ab einem Zellen-Offset (standardmäßig `0`)
++   entry .Parsable2   das Zuhause niedriger Priorität von `Dsv.Parsable.generated`, der `codecs.direct`-Ableitung
+
+=   entry .Parsable2   the low-priority home of `Dsv.Parsable.generated`, the `codecs.direct` derivation
+-     hidden
++     hidden
+
+=   entry .Parsable2   the low-priority home of `Dsv.Parsable.generated`, the `codecs.direct` derivation
+=     hidden
+-     detail
++     detail
+
+-         The parent of the `Dsv.Parsable` companion, holding the given which `codecs.direct`
+-         enables. Not for direct use.
+-     entry #generated   under `codecs.direct`, a `Dsv.Parsable` derived for every product type
+-         A type with a `Dsv.Parsable` of its own uses that instead. The derivation reads each
+-         field through `Dsv.Field`, so a product with a field which is not `Decodable in Text`
+-         (or a product of such fields) fails to derive rather than falling back.
+-   entry .Parsable   the opt-in typeclass for parsing a type straight from the source, with no `Dsv` per row
++         Das Elternteil des `Dsv.Parsable`-Begleitobjekts, das das Given enthält, welches
++         `codecs.direct` aktiviert. Nicht zur direkten Verwendung.
++     entry #generated   unter `codecs.direct` ein für jeden Produkttyp abgeleitetes `Dsv.Parsable`
++         Ein Typ mit einem eigenen `Dsv.Parsable` verwendet stattdessen dieses. Die Ableitung liest
++         jedes Feld über `Dsv.Field`, sodass ein Produkt mit einem Feld, das nicht
++         `Decodable in Text` ist (oder ein Produkt aus solchen Feldern), nicht abgeleitet werden
++         kann, statt zurückzufallen.
++   entry .Parsable   die Opt-in-Typklasse, um einen Typ direkt aus der Quelle zu parsen, ohne ein `Dsv` pro Zeile
+
+=   entry .Parsable   the opt-in typeclass for parsing a type straight from the source, with no `Dsv` per row
+-     detail
++     detail
+
+-         A type which is `Dsv.Parsable` is read by `read[Play in Dsv]`, `read[List[Play] in Dsv]`
+-         and `rowsOf[Play]` directly from the parser's reusable row buffer, its cells addressed
+-         in place, so no `Dsv` row value is built for each record. Declaring one switches the
+-         path; a type without one keeps the row decoder, unless `codecs.direct` is imported.
++         Ein Typ, der `Dsv.Parsable` ist, wird von `read[Play in Dsv]`, `read[List[Play] in Dsv]`
++         und `rowsOf[Play]` direkt aus dem wiederverwendbaren Zeilenpuffer des Parsers gelesen,
++         wobei seine Zellen an Ort und Stelle adressiert werden, sodass für keinen Datensatz ein
++         `Dsv`-Zeilenwert gebaut wird. Die Deklaration einer Instanz schaltet den Weg um; ein Typ
++         ohne eine behält den Zeilendekodierer, es sei denn, `codecs.direct` ist importiert.
+
+=         path; a type without one keeps the row decoder, unless `codecs.direct` is imported.
+=
+-         ```scala
++         ```scala
+
+=         path; a type without one keeps the row decoder, unless `codecs.direct` is imported.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         path; a type without one keeps the row decoder, unless `codecs.direct` is imported.
+=
+=         ```scala
+=         import soundness.*
+-         import dsvFormats.csvFormat
++         import dsvFormats.csvFormat
+
+=         import dsvFormats.csvFormat
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         case class Stat(name: Text, count: Int, note: Optional[Text])
++         case class Stat(name: Text, count: Int, note: Optional[Text])
+
+-         object Stat:
++         object Stat:
+
+-           given parsable: Stat is Dsv.Parsable = Dsv.Parsable.derived
++           given parsable: Stat is Dsv.Parsable = Dsv.Parsable.derived
+
+-         t"z,9,note".read[Stat in Dsv]                                 // Stat(t"z", 9, t"note")
++         t"z,9,note".read[Stat in Dsv]                                 // Stat(t"z", 9, t"note")
+
+-         t"x,1\ny,2".source[Text].rowsOf[Stat].map(_.count).to(List)   // List(1, 2)
++         t"x,1\ny,2".source[Text].rowsOf[Stat].map(_.count).to(List)   // List(1, 2)
+
+=         t"x,1\ny,2".source[Text].rowsOf[Stat].map(_.count).to(List)   // List(1, 2)
+-         ```
++         ```
+
+-         Fields are matched by heading under a header-bearing format, and positionally
+-         otherwise, and an `Optional` field the row does not reach is `Unset`. A direct parse
+-         fails fast: it does not accrue every bad cell as the row decoder does.
++         Felder werden unter einem Format mit Kopfzeile über die Überschrift zugeordnet und sonst
++         positional, und ein `Optional`-Feld, das die Zeile nicht erreicht, ist `Unset`. Ein
++         direktes Parsen schlägt sofort fehl: Es sammelt nicht jede fehlerhafte Zelle, wie der
++         Zeilendekodierer es tut.
+
+-         The companion inherits the `codecs.direct` derivation, `generated`, from its parent
++         Das Begleitobjekt erbt die `codecs.direct`-Ableitung, `generated`, von seinem Elternteil
+
+-         `Dsv.Parsable2`.
++         `Dsv.Parsable2`.
+
+-     refer caesura.Dsv.Field
++     refer caesura.Dsv.Field
+
+=     refer caesura.Dsv.Field
+-     refer caesura.DsvReader
++     refer caesura.DsvReader
+
+-     entry .derived   derives a `Dsv.Parsable` for a product type, each field read through its `Dsv.Field`
+-         `given Play is Dsv.Parsable = Dsv.Parsable.derived`, or `derives Dsv.Parsable`. Every
+-         field must have a `Dsv.Field`, which any `Decodable in Text` type, any `Optional` of
+-         one, and any product of such fields has.
+-     entry .fromField   makes a `Dsv.Parsable` from a `Dsv.Field`, keeping its width
+-   entry .Field   how one field of a directly-parsed product reads its cells from a `DsvReader`
++     entry .derived   leitet ein `Dsv.Parsable` für einen Produkttyp ab, wobei jedes Feld über sein `Dsv.Field` gelesen wird
++         `given Play is Dsv.Parsable = Dsv.Parsable.derived` oder `derives Dsv.Parsable`. Jedes
++         Feld muss ein `Dsv.Field` haben, wie es jeder Typ, der `Decodable in Text` ist, jedes
++         `Optional` eines solchen und jedes Produkt aus solchen Feldern hat.
++     entry .fromField   erzeugt ein `Dsv.Parsable` aus einem `Dsv.Field` und behält dessen Breite
++   entry .Field   wie ein Feld eines direkt geparsten Produkts seine Zellen aus einem `DsvReader` liest
+
+=   entry .Field   how one field of a directly-parsed product reads its cells from a `DsvReader`
+-     detail
++     detail
+
+-         The typeclass the `Dsv.Parsable` derivation summons for each field. It always
+-         resolves for a type which is `Decodable in Text`, which reads one cell; a nested
+-         product is a `Field` of the summed width of its own fields (through
+-         `Dsv.ParsableDerivation`); and an `Optional` field is one too. A missing cell aborts
+-         with `Dsv.Error.Reason.Absent` through the reader's tactic, except where
+-         `.optional` intercepts it.
+-     entry .decodable   any type which is `Decodable in Text`, read from one cell
+-     entry .optional   an `Optional` field: `Unset` for a missing cell, as the `optionalityOptions` policies say
+-         As `Dsv.optionalDecodable` for the row decoder: a missing cell is `Unset` unless
+-         absence is strict, and a cell the inner field rejects raises unless faults are
+-         lenient, when it is `Unset`.
+-     entry .parseField   calls a field's `#parse` on a reader held as a neutral reference; for generated code
+-         Not for direct use: the derived parse lambda cannot take the reader capability as a
+-         parameter, so it carries it as an `AnyRef` and calls through this method.
+-     entry .fieldColumn   the column index of a heading on a reader held as a neutral reference; for generated code
+-         Not for direct use. `Unset` in positional mode.
+-   entry .ParsableDerivation   the product derivation of `Dsv.Field`, behind `Dsv.Parsable.derived`
++         Die Typklasse, die die `Dsv.Parsable`-Ableitung für jedes Feld herbeiruft. Sie löst sich
++         für einen Typ, der `Decodable in Text` ist, immer auf und liest dann eine Zelle; ein
++         verschachteltes Produkt ist ein `Field` mit der summierten Breite seiner eigenen Felder
++         (über `Dsv.ParsableDerivation`); und ein `Optional`-Feld ist ebenfalls eines. Eine
++         fehlende Zelle bricht über die Taktik des Readers mit `Dsv.Error.Reason.Absent` ab, außer
++         dort, wo `.optional` sie abfängt.
++     entry .decodable   jeder Typ, der `Decodable in Text` ist, aus einer Zelle gelesen
++     entry .optional   ein `Optional`-Feld: `Unset` für eine fehlende Zelle, wie es die `optionalityOptions`-Richtlinien bestimmen
++         Wie `Dsv.optionalDecodable` für den Zeilendekodierer: Eine fehlende Zelle ist `Unset`, es
++         sei denn, Fehlen ist strikt, und eine Zelle, die das innere Feld ablehnt, löst einen Fehler
++         aus, es sei denn, Fehler sind nachsichtig; dann ist sie `Unset`.
++     entry .parseField   ruft `#parse` eines Felds auf einem als neutrale Referenz gehaltenen Reader auf; für generierten Code
++         Nicht zur direkten Verwendung: Das abgeleitete Parse-Lambda kann die Reader-Capability
++         nicht als Parameter nehmen, daher trägt es sie als `AnyRef` und ruft über diese Methode
++         auf.
++     entry .fieldColumn   der Spaltenindex einer Überschrift auf einem als neutrale Referenz gehaltenen Reader; für generierten Code
++         Nicht zur direkten Verwendung. Im positionalen Modus `Unset`.
++   entry .ParsableDerivation   die Produktableitung von `Dsv.Field`, hinter `Dsv.Parsable.derived`
+
+=   entry .ParsableDerivation   the product derivation of `Dsv.Field`, behind `Dsv.Parsable.derived`
+-     hidden
++     hidden
+
+=   entry .ParsableDerivation   the product derivation of `Dsv.Field`, behind `Dsv.Parsable.derived`
+=     hidden
+-     detail
++     detail
+
+-         Not for direct use: `Dsv.Parsable.derived` calls it. Under a header-bearing format a
+-         field is found by its column name; otherwise each field reads its span from a running
+-         offset.
+-     entry .DsvProductParser   the `Dsv.Field` a derivation produces: a width and a parse function
+-       entry #width   the total span of the product's fields
+-       entry #parse   reads the product from the current row, from a cell offset
+-     entry .conjunction   the macro which derives a `Dsv.Field` for a product
+-   entry .DecodableDerivation   the product derivation of `Decodable in Dsv`, behind `Dsv.decodableDerivation`
++         Nicht zur direkten Verwendung: `Dsv.Parsable.derived` ruft sie auf. Unter einem Format mit
++         Kopfzeile wird ein Feld über seinen Spaltennamen gefunden; andernfalls liest jedes Feld
++         seine Spanne ab einem laufenden Offset.
++     entry .DsvProductParser   das `Dsv.Field`, das eine Ableitung erzeugt: eine Breite und eine Parse-Funktion
++       entry #width   die Gesamtspanne der Felder des Produkts
++       entry #parse   liest das Produkt aus der aktuellen Zeile, ab einem Zellen-Offset
++     entry .conjunction   das Makro, das ein `Dsv.Field` für ein Produkt ableitet
++   entry .DecodableDerivation   die Produktableitung von `Decodable in Dsv`, hinter `Dsv.decodableDerivation`
+
+=   entry .DecodableDerivation   the product derivation of `Decodable in Dsv`, behind `Dsv.decodableDerivation`
+-     hidden
++     hidden
+
+=   entry .DecodableDerivation   the product derivation of `Decodable in Dsv`, behind `Dsv.decodableDerivation`
+=     hidden
+-     detail
++     detail
+
+-         Not for direct use: the given `Dsv.decodableDerivation` calls it. It traverses the
+-         fields once, decoding each from its span (or, under a header, its named column), and
+-         under an accruing strategy focuses each on a `CellRef` and builds the record only when
+-         every field succeeded.
+-     entry .DsvProductDecoder   the `Decodable in Dsv` a derivation produces, wrapping its decode function
+-       entry #Self   the product type decoded
+-       entry #Form   the form decoded from: `Dsv`
+-       entry #decoded   decodes a row to the product
+-     entry .conjunction   the macro which derives a row decoder for a product
+-   entry .EncodableDerivation   the product derivation of `Encodable in Dsv`, behind `Dsv.encodableDerivation`
++         Nicht zur direkten Verwendung: Das Given `Dsv.decodableDerivation` ruft sie auf. Sie
++         durchläuft die Felder einmal, dekodiert jedes aus seiner Spanne (oder, unter einer
++         Kopfzeile, aus seiner benannten Spalte), setzt unter einer sammelnden Strategie bei jedem
++         eine `CellRef` als Fokus und baut den Datensatz erst, wenn jedes Feld erfolgreich war.
++     entry .DsvProductDecoder   das `Decodable in Dsv`, das eine Ableitung erzeugt, um ihre Dekodierfunktion gehüllt
++       entry #Self   der dekodierte Produkttyp
++       entry #Form   die Form, aus der dekodiert wird: `Dsv`
++       entry #decoded   dekodiert eine Zeile in das Produkt
++     entry .conjunction   das Makro, das einen Zeilendekodierer für ein Produkt ableitet
++   entry .EncodableDerivation   die Produktableitung von `Encodable in Dsv`, hinter `Dsv.encodableDerivation`
+
+=   entry .EncodableDerivation   the product derivation of `Encodable in Dsv`, behind `Dsv.encodableDerivation`
+-     hidden
++     hidden
+
+=   entry .EncodableDerivation   the product derivation of `Encodable in Dsv`, behind `Dsv.encodableDerivation`
+=     hidden
+-     detail
++     detail
+
+-         Not for direct use: the given `Dsv.encodableDerivation` calls it.
+-     entry .conjunction   the macro which derives a row encoder for a product, concatenating its fields' cells
+-   entry .Error   raised when delimited text cannot be parsed, or a row cannot be decoded
++         Nicht zur direkten Verwendung: Das Given `Dsv.encodableDerivation` ruft sie auf.
++     entry .conjunction   das Makro, das einen Zeilenkodierer für ein Produkt ableitet und die Zellen seiner Felder aneinanderhängt
++   entry .Error   ausgelöst, wenn mit Trennzeichen getrennter Text nicht geparst oder eine Zeile nicht dekodiert werden kann
+
+=   entry .Error   raised when delimited text cannot be parsed, or a row cannot be decoded
+-     detail
++     detail
+
+-         Error `↯/s.83.1`, with a subcode from its `#reason`. A **parse** failure, a quote found after
+-         the start of an unquoted cell, reads _could not parse row data at row `row`, column
+-         `column` because a quote was found after the start of a cell_, and carries the 1-based
+-         row and column and the character offset into the input. A **decode** failure reads
+-         _could not decode the cell because the cell was absent_, or _because the value `value`
+-         could not be parsed as `expected`_; its position is not in the error itself (`#row` and
+-         `#column` are `Prim`, `#offset` is `0`) but in the `CellRef` focus an accruing
+-         strategy records with it.
++         Fehler `↯/s.83.1`, mit einem Untercode aus seinem `#reason`. Ein **Parse**-Fehler, ein nach
++         dem Beginn einer nicht quotierten Zelle gefundenes Anführungszeichen, lautet _could not
++         parse row data at row `row`, column `column` because a quote was found after the start
++         of a cell_ und trägt die 1-basierte Zeile und Spalte sowie den Zeichen-Offset in der
++         Eingabe. Ein **Dekodier**-Fehler lautet _could not decode the cell because the cell was
++         absent_ oder _because the value `value` could not be parsed as `expected`_; seine
++         Position steht nicht im Fehler selbst (`#row` und `#column` sind `Prim`, `#offset` ist
++         `0`), sondern im `CellRef`-Fokus, den eine sammelnde Strategie mit ihm vermerkt.
+
+=         strategy records with it.
+=
+-         ```scala
++         ```scala
+
+=         strategy records with it.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         strategy records with it.
+=
+=         ```scala
+=         import soundness.*
+-         import dsvFormats.csvFormat
++         import dsvFormats.csvFormat
+
+-         case class Person(name: Text, age: Int)
++         case class Person(name: Text, age: Int)
+
+-         safely(t"Nym,many".read[Person in Dsv])   // Unset
++         safely(t"Nym,many".read[Person in Dsv])   // Unset
+
+=         safely(t"Nym,many".read[Person in Dsv])   // Unset
+-         ```
++         ```
+
+-         Raised through the `Tactic[Dsv.Error]` in scope by `read[Sheet]`, `read[Play in Dsv]`,
+-         `rows`, `rowsOf` and `Dsv#as`. `Reason` is the enum `MisplacedQuote` (subcode 1, a
+-         parse failure), `Absent` (2, a cell missing from a short row or a header column the
+-         row lacks) and `Unparseable(value, expected)` (3, a cell its decoder rejected, with
+-         the cell's text and the name of the type expected).
+-     entry .communicable   renders a `Dsv.Error.Reason` as the clause the error's message ends with
+-     entry .Reason   why delimited data failed: `MisplacedQuote`, `Absent`, or `Unparseable(value, expected)`
++         Ausgelöst über die `Tactic[Dsv.Error]` im Geltungsbereich von `read[Sheet]`,
++         `read[Play in Dsv]`, `rows`, `rowsOf` und `Dsv#as`. `Reason` ist das Enum
++         `MisplacedQuote` (Untercode 1, ein Parse-Fehler), `Absent` (2, eine Zelle, die in einer
++         zu kurzen Zeile fehlt, oder eine Kopfzeilenspalte, die der Zeile fehlt) und
++         `Unparseable(value, expected)` (3, eine Zelle, die ihr Dekodierer abgelehnt hat, mit dem
++         Text der Zelle und dem Namen des erwarteten Typs).
++     entry .communicable   stellt einen `Dsv.Error.Reason` als den Satzteil dar, mit dem die Fehlermeldung endet
++     entry .Reason   warum mit Trennzeichen getrennte Daten fehlschlugen: `MisplacedQuote`, `Absent` oder `Unparseable(value, expected)`
+
+-       detail
++       detail
+
+-           `MisplacedQuote` (subcode 1) is a parse failure: a quote character found after the
+-           start of an unquoted cell. `Absent` (2) is a decode failure for a cell the row does
+-           not have. `Unparseable(value, expected)` (3) is a decode failure for a cell whose
+-           text, `value`, could not be read as the type named by `expected`.
+-       entry #number   the reason's subcode, which follows the error number 364
+-     entry .apply   makes a decode-phase error from a format and a reason, with no position
+-         The position is filled with placeholders (`Prim`, `Prim`, `0`), since a decoder's
+-         position is carried by the `CellRef` it is focused on.
+-     entry #format   the `Dsv.Format` the data was read under
+-     entry #reason   the `Dsv.Error.Reason` for the failure
+-     entry #row   the 1-based row of a parse failure; `Prim` for a decode failure
+-     entry #column   the 1-based column of a parse failure; `Prim` for a decode failure
+-     entry #offset   the character (UTF-16 code-unit) offset of a parse failure into the decoded text; `0` for a decode failure
+-         A byte offset is not available: the parser reads text which has already been decoded
+-         from bytes.
+-   entry .Format   the conventions of a delimited format: header row, delimiter, quote and escape characters
++           `MisplacedQuote` (Untercode 1) ist ein Parse-Fehler: ein Anführungszeichen, das nach dem
++           Beginn einer nicht quotierten Zelle gefunden wurde. `Absent` (2) ist ein Dekodierfehler
++           für eine Zelle, die die Zeile nicht hat. `Unparseable(value, expected)` (3) ist ein
++           Dekodierfehler für eine Zelle, deren Text, `value`, nicht als der durch `expected`
++           benannte Typ gelesen werden konnte.
++       entry #number   der Untercode des Grunds, der auf die Fehlernummer 364 folgt
++     entry .apply   erzeugt einen Fehler der Dekodierphase aus einem Format und einem Grund, ohne Position
++         Die Position wird mit Platzhaltern gefüllt (`Prim`, `Prim`, `0`), da die Position eines
++         Dekodierers von der `CellRef` getragen wird, auf die er fokussiert ist.
++     entry #format   das `Dsv.Format`, unter dem die Daten gelesen wurden
++     entry #reason   der `Dsv.Error.Reason` für den Fehlschlag
++     entry #row   die 1-basierte Zeile eines Parse-Fehlers; `Prim` bei einem Dekodierfehler
++     entry #column   die 1-basierte Spalte eines Parse-Fehlers; `Prim` bei einem Dekodierfehler
++     entry #offset   der Zeichen-Offset (in UTF-16-Codeeinheiten) eines Parse-Fehlers im dekodierten Text; `0` bei einem Dekodierfehler
++         Ein Byte-Offset ist nicht verfügbar: Der Parser liest Text, der bereits aus Bytes dekodiert
++         wurde.
++   entry .Format   die Konventionen eines Formats mit Trennzeichen: Kopfzeile, Trennzeichen, Anführungs- und Escape-Zeichen
+
+=   entry .Format   the conventions of a delimited format: header row, delimiter, quote and escape characters
+-     detail
++     detail
+
+-         A `Dsv.Format` says whether the data's first row is a header (`#header`), which
+-         character separates cells (`#delimiter`), which quotes a cell (`#quote`), and which
+-         escapes a quote (`#escape`). Nothing parses or renders without one in scope; the
+-         standard ones are in `dsvFormats`, imported by name, and any other is a value bound
+-         as a local given:
++         Ein `Dsv.Format` sagt, ob die erste Zeile der Daten eine Kopfzeile ist (`#header`), welches
++         Zeichen Zellen trennt (`#delimiter`), welches eine Zelle quotiert (`#quote`) und welches
++         ein Anführungszeichen escapt (`#escape`). Ohne eines im Geltungsbereich wird nichts geparst
++         oder dargestellt; die Standardformate liegen in `dsvFormats` und werden über ihren Namen
++         importiert, und jedes andere ist ein Wert, der als lokales Given gebunden wird:
+
+=         as a local given:
+=
+-         ```scala
++         ```scala
+
+=         as a local given:
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         given Dsv.Format = Dsv.Format(header = false, delimiter = ';', quote = '"', escape = '"')
++         given Dsv.Format = Dsv.Format(header = false, delimiter = ';', quote = '"', escape = '"')
+
+-         t"a;\"b;c\"".read[Sheet].rows(Prim)   // Dsv(t"a", t"b;c")
++         t"a;\"b;c\"".read[Sheet].rows(Prim)   // Dsv(t"a", t"b;c")
+
+=         t"a;\"b;c\"".read[Sheet].rows(Prim)   // Dsv(t"a", t"b;c")
+-         ```
++         ```
+
+-         Under a header-bearing format, `read[Sheet]` takes the first row as the column names,
+-         so each row's cells can be addressed by name and a derived decoder matches fields to
+-         columns by name. Both the parser and the renderer escape a quote within a quoted cell
+-         by doubling it, which is the convention every standard format uses.
++         Unter einem Format mit Kopfzeile nimmt `read[Sheet]` die erste Zeile als Spaltennamen,
++         sodass die Zellen jeder Zeile über ihren Namen adressiert werden können und ein
++         abgeleiteter Dekodierer Felder über den Namen Spalten zuordnet. Sowohl der Parser als auch
++         der Renderer escapen ein Anführungszeichen innerhalb einer quotierten Zelle, indem sie es
++         verdoppeln; das ist die Konvention, die jedes Standardformat verwendet.
+
+-     refer caesura.dsvFormats
++     refer caesura.dsvFormats
+
+-     entry #header   whether the first row names the columns
+-     entry #delimiter   the character between cells: `,`, a tab, or a space for the standard formats
+-     entry #quote   the character which encloses a cell containing the delimiter, a quote or a line break
+-     entry #escape   the character which escapes a quote within a quoted cell; the same as `#quote` for every standard format
+-     entry #Delimiter   the delimiter as a stable identifier, for use in patterns
+-     entry #Quote   the quote character as a stable identifier, for use in patterns
+-     entry #Escape   the escape character as a stable identifier, for use in patterns
+-     entry #doublingEscapes   whether a quote is escaped by doubling it: whether `#escape` is `#quote`
+-   entry .Redesignation   how a camel-case member name is mapped to a header name, for dynamic access to a row's cells
++     entry #header   ob die erste Zeile die Spalten benennt
++     entry #delimiter   das Zeichen zwischen Zellen: `,`, ein Tabulator oder ein Leerzeichen bei den Standardformaten
++     entry #quote   das Zeichen, das eine Zelle umschließt, die das Trennzeichen, ein Anführungszeichen oder einen Zeilenumbruch enthält
++     entry #escape   das Zeichen, das ein Anführungszeichen innerhalb einer quotierten Zelle escapt; bei jedem Standardformat dasselbe wie `#quote`
++     entry #Delimiter   das Trennzeichen als stabiler Bezeichner, zur Verwendung in Patterns
++     entry #Quote   das Anführungszeichen als stabiler Bezeichner, zur Verwendung in Patterns
++     entry #Escape   das Escape-Zeichen als stabiler Bezeichner, zur Verwendung in Patterns
++     entry #doublingEscapes   ob ein Anführungszeichen durch Verdoppeln escapt wird: ob `#escape` gleich `#quote` ist
++   entry .Redesignation   wie ein Membername in Camel-Case auf einen Kopfzeilennamen abgebildet wird, für den dynamischen Zugriff auf die Zellen einer Zeile
+
+=   entry .Redesignation   how a camel-case member name is mapped to a header name, for dynamic access to a row's cells
+-     detail
++     detail
+
+-         A single-method trait: `#transform` maps a Scala name such as `targetPerson` to the
+-         header text it should match, such as `Target Person`. `Dsv#selectDynamic` needs one
+-         in scope, so `row.targetPerson[Text]` reads the column `Target Person`. The standard
+-         ones are in `dsvRedesignations`, imported by name; there is no default, and a lambda
+-         from `Text` to `Text` is one.
++         Ein Trait mit einer einzigen Methode: `#transform` bildet einen Scala-Namen wie
++         `targetPerson` auf den Kopfzeilentext ab, dem er entsprechen soll, etwa `Target Person`.
++         `Dsv#selectDynamic` braucht eines im Geltungsbereich, sodass `row.targetPerson[Text]` die
++         Spalte `Target Person` liest. Die Standardvarianten liegen in `dsvRedesignations` und
++         werden über ihren Namen importiert; es gibt keine Voreinstellung, und ein Lambda von `Text`
++         nach `Text` ist eine.
+
+=         from `Text` to `Text` is one.
+=
+-         ```scala
++         ```scala
+
+=         from `Text` to `Text` is one.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         import dsvRedesignations.capitalizedWordsRedesignation
++         import dsvRedesignations.capitalizedWordsRedesignation
+
+-         summon[Dsv.Redesignation].transform(t"targetPerson")   // t"Target Person"
++         summon[Dsv.Redesignation].transform(t"targetPerson")   // t"Target Person"
+
+=         summon[Dsv.Redesignation].transform(t"targetPerson")   // t"Target Person"
+-         ```
++         ```
+
+-         A redesignation applies to dynamic member access only: a derived decoder matches each
+-         field to the column of exactly the field's name.
++         Eine Redesignation gilt nur für den dynamischen Memberzugriff: Ein abgeleiteter
++         Dekodierer ordnet jedes Feld der Spalte zu, die genau den Namen des Felds trägt.
+
+-     refer caesura.dsvRedesignations
++     refer caesura.dsvRedesignations
+
+-     entry #transform   maps a member name to the header text it should match
+-   entry #data   the row's cells, in order
+-   entry #columns   the index of each column by its name, where the data had a header; `Unset` otherwise
+-   entry #as   decodes the row as a type which is `Decodable in Dsv`, such as any case class
+-       Needs a `Tactic[Dsv.Error]`, and accrues through the `Foci[CellRef]` in scope, which is
+-       the default unless an accruing strategy such as `Validate[…, CellRef]` supplies one.
++     entry #transform   bildet einen Membernamen auf den Kopfzeilentext ab, dem er entsprechen soll
++   entry #data   die Zellen der Zeile, der Reihe nach
++   entry #columns   der Index jeder Spalte nach ihrem Namen, wo die Daten eine Kopfzeile hatten; sonst `Unset`
++   entry #as   dekodiert die Zeile als einen Typ, der `Decodable in Dsv` ist, etwa jede Case-Klasse
++       Braucht eine `Tactic[Dsv.Error]` und sammelt über die `Foci[CellRef]` im Geltungsbereich,
++       was die Voreinstellung ist, sofern nicht eine sammelnde Strategie wie
++       `Validate[…, CellRef]` eine bereitstellt.
+
+=       the default unless an accruing strategy such as `Validate[…, CellRef]` supplies one.
+=
+-       ```scala
++       ```scala
+
+=       the default unless an accruing strategy such as `Validate[…, CellRef]` supplies one.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       the default unless an accruing strategy such as `Validate[…, CellRef]` supplies one.
+=
+=       ```scala
+=       import soundness.*
+-       import dsvFormats.csvFormat
++       import dsvFormats.csvFormat
+
+=       the default unless an accruing strategy such as `Validate[…, CellRef]` supplies one.
+=
+=       ```scala
+=       import soundness.*
+=       import dsvFormats.csvFormat
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       the default unless an accruing strategy such as `Validate[…, CellRef]` supplies one.
+=
+=       ```scala
+=       import soundness.*
+=       import dsvFormats.csvFormat
+=       import strategies.throwUnsafely
+=
+-       case class FullName(first: Text, last: Text)
++       case class FullName(first: Text, last: Text)
+
+-       Dsv(t"Nick", t"Bottom").as[FullName]   // FullName(t"Nick", t"Bottom")
++       Dsv(t"Nick", t"Bottom").as[FullName]   // FullName(t"Nick", t"Bottom")
+
+=       Dsv(t"Nick", t"Bottom").as[FullName]   // FullName(t"Nick", t"Bottom")
+-       ```
++       ```
+
+-   entry #header   the column names in order, where the row has them; `Unset` otherwise
+-   entry #apply   reads the cell of a named column, decoded to any type `Decodable in Text`
+-       `row[Int](t"age")` is `Unset` if the row has no column names or no such column, and
+-       otherwise the cell decoded by the type's `Decodable in Text`, which may raise through
+-       its own tactic.
+-   entry #selectDynamic   reads the cell of a column as a member, `row.age[Int]`, with dynamic access enabled
+-       Needs `Dsv is Dynamical` — `import dynamicAccess.dynamicDsv`, or a `dynamically[Dsv]:`
+-       block — and a `Dsv.Redesignation`, which maps the member name to the column name. The
+-       result is `Optional`, `Unset` where the row has no such column.
++   entry #header   die Spaltennamen der Reihe nach, wo die Zeile sie hat; sonst `Unset`
++   entry #apply   liest die Zelle einer benannten Spalte, dekodiert in einen beliebigen Typ, der `Decodable in Text` ist
++       `row[Int](t"age")` ist `Unset`, wenn die Zeile keine Spaltennamen oder keine solche Spalte
++       hat, und andernfalls die Zelle, dekodiert vom `Decodable in Text` des Typs, das über seine
++       eigene Taktik einen Fehler auslösen kann.
++   entry #selectDynamic   liest die Zelle einer Spalte als Member, `row.age[Int]`, bei aktiviertem dynamischem Zugriff
++       Braucht `Dsv is Dynamical` — `import dynamicAccess.dynamicDsv` oder einen
++       `dynamically[Dsv]:`-Block — und eine `Dsv.Redesignation`, die den Membernamen auf den
++       Spaltennamen abbildet. Das Ergebnis ist `Optional`, und `Unset`, wo die Zeile keine solche
++       Spalte hat.
+
+=       result is `Optional`, `Unset` where the row has no such column.
+=
+-       ```scala
++       ```scala
+
+=       result is `Optional`, `Unset` where the row has no such column.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       result is `Optional`, `Unset` where the row has no such column.
+=
+=       ```scala
+=       import soundness.*
+-       import dsvFormats.csvWithHeaderFormat
++       import dsvFormats.csvWithHeaderFormat
+
+=       result is `Optional`, `Unset` where the row has no such column.
+=
+=       ```scala
+=       import soundness.*
+=       import dsvFormats.csvWithHeaderFormat
+-       import dsvRedesignations.unchangedRedesignation
++       import dsvRedesignations.unchangedRedesignation
+
+=       result is `Optional`, `Unset` where the row has no such column.
+=
+=       ```scala
+=       import soundness.*
+=       import dsvFormats.csvWithHeaderFormat
+=       import dsvRedesignations.unchangedRedesignation
+-       import dynamicAccess.dynamicDsv
++       import dynamicAccess.dynamicDsv
+
+=       result is `Optional`, `Unset` where the row has no such column.
+=
+=       ```scala
+=       import soundness.*
+=       import dsvFormats.csvWithHeaderFormat
+=       import dsvRedesignations.unchangedRedesignation
+=       import dynamicAccess.dynamicDsv
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val row = t"greeting,number\nhello,23".read[Sheet].rows(Prim)
++       val row = t"greeting,number\nhello,23".read[Sheet].rows(Prim)
+
+-       row.let(_.number[Int])   // 23
++       row.let(_.number[Int])   // 23
+
+=       row.let(_.number[Int])   // 23
+-       ```
++       ```
+
+- entry .Dsv1   the middle-priority givens of the `Dsv` companion: the direct read of `Play in Dsv`, and the `codecs.strict` failure
++ entry .Dsv1   die Givens mittlerer Priorität des `Dsv`-Begleitobjekts: das direkte Lesen von `Play in Dsv` und der Fehlschlag unter `codecs.strict`
+
+= entry .Dsv1   the middle-priority givens of the `Dsv` companion: the direct read of `Play in Dsv`, and the `codecs.strict` failure
+-   hidden
++   hidden
+
+= entry .Dsv1   the middle-priority givens of the `Dsv` companion: the direct read of `Play in Dsv`, and the `codecs.strict` failure
+=   hidden
+-   detail
++   detail
+
+-       A parent of the `Dsv` companion, so its givens are in `Dsv`'s implicit scope at a lower
+-       priority than the companion's own. Not referred to directly.
+-   entry #aggregableParsed   `read[Play in Dsv]` through `Play`'s `Dsv.Parsable`: the first row, parsed directly
+-       Outranks the row decoder in `Dsv2`, so declaring a `Dsv.Parsable` switches the path.
+-       An input with no data row raises `Dsv.Error.Reason.Absent`. Needs a `Dsv.Format`, a
+-       `Tactic[Dsv.Error]` and a `Buffering`.
+-   entry #aggregableStrictFailure   under `codecs.strict`, a compile error for a `Play in Dsv` read with no direct codec
+-       An inline given which names the type in the error, raised at the use site after
+-       selection, so that `codecs.strict` reports a type the direct path cannot read rather
+-       than letting the row decoder take it.
++       Ein Elternteil des `Dsv`-Begleitobjekts, sodass seine Givens im impliziten Geltungsbereich
++       von `Dsv` mit niedrigerer Priorität liegen als die eigenen des Begleitobjekts. Wird nicht
++       direkt referenziert.
++   entry #aggregableParsed   `read[Play in Dsv]` über das `Dsv.Parsable` von `Play`: die erste Zeile, direkt geparst
++       Hat Vorrang vor dem Zeilendekodierer in `Dsv2`, sodass die Deklaration eines
++       `Dsv.Parsable` den Weg umschaltet. Eine Eingabe ohne Datenzeile löst
++       `Dsv.Error.Reason.Absent` aus. Braucht ein `Dsv.Format`, eine `Tactic[Dsv.Error]` und ein
++       `Buffering`.
++   entry #aggregableStrictFailure   unter `codecs.strict` ein Kompilierfehler für ein Lesen von `Play in Dsv` ohne direkten Codec
++       Ein Inline-Given, das den Typ im Fehler nennt und nach der Auswahl an der Verwendungsstelle
++       ausgelöst wird, sodass `codecs.strict` einen Typ meldet, den der direkte Weg nicht lesen
++       kann, statt ihn dem Zeilendekodierer zu überlassen.
+
+- entry .Dsv2   the lowest-priority givens of the `Dsv` companion: the text fallback, single-record writes and the row-decoder read
++ entry .Dsv2   die Givens niedrigster Priorität des `Dsv`-Begleitobjekts: der Text-Rückfall, das Schreiben einzelner Datensätze und das Lesen über den Zeilendekodierer
+
+= entry .Dsv2   the lowest-priority givens of the `Dsv` companion: the text fallback, single-record writes and the row-decoder read
+-   hidden
++   hidden
+
+= entry .Dsv2   the lowest-priority givens of the `Dsv` companion: the text fallback, single-record writes and the row-decoder read
+=   hidden
+-   detail
++   detail
+
+-       A parent of the `Dsv` companion, below `Dsv1`, holding the instances any type takes
+-       only when nothing more specific applies. Not referred to directly.
+-   entry #decoder   any type `Decodable in Text`, decoded from the first cell of a row
+-       Held below the primitive cell decoders, which accrue errors, so `Int` and the rest use
+-       those; this one aborts on a bad cell through the text decoder.
+-   entry #encodableOver   `play.in[Text over Dsv]`: a value as one record of text in the `Dsv.Format` in scope
++       Ein Elternteil des `Dsv`-Begleitobjekts, unterhalb von `Dsv1`, das die Instanzen enthält,
++       die ein Typ nur dann erhält, wenn nichts Spezifischeres zutrifft. Wird nicht direkt
++       referenziert.
++   entry #decoder   jeder Typ, der `Decodable in Text` ist, aus der ersten Zelle einer Zeile dekodiert
++       Liegt unterhalb der primitiven Zellendekodierer, die Fehler sammeln, sodass `Int` und die
++       übrigen diese verwenden; dieser hier bricht bei einer fehlerhaften Zelle über den
++       Textdekodierer ab.
++   entry #encodableOver   `play.in[Text over Dsv]`: ein Wert als ein Datensatz aus Text im `Dsv.Format` im Geltungsbereich
+
+=   entry #encodableOver   `play.in[Text over Dsv]`: a value as one record of text in the `Dsv.Format` in scope
+-       ```scala
++       ```scala
+
+=   entry #encodableOver   `play.in[Text over Dsv]`: a value as one record of text in the `Dsv.Format` in scope
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=   entry #encodableOver   `play.in[Text over Dsv]`: a value as one record of text in the `Dsv.Format` in scope
+=       ```scala
+=       import soundness.*
+-       import dsvFormats.csvFormat
++       import dsvFormats.csvFormat
+
+=       import dsvFormats.csvFormat
+=
+-       case class FullName(first: Text, last: Text)
++       case class FullName(first: Text, last: Text)
+
+-       FullName(t"Nick", t"Bottom").in[Text over Dsv]   // t"Nick,Bottom"
++       FullName(t"Nick", t"Bottom").in[Text over Dsv]   // t"Nick,Bottom"
+
+=       FullName(t"Nick", t"Bottom").in[Text over Dsv]   // t"Nick,Bottom"
+-       ```
++       ```
+
+-   entry #encodableOverData   `play.in[Data over Dsv]`: a value as one record, encoded as bytes in the `Codepage` in scope
+-   entry #aggregableIn   `read[Play in Dsv]` through the row decoder: the first row, decoded with `Play`'s `Decodable in Dsv`
+-       The path for a type with no `Dsv.Parsable`, and for any type under `codecs.derived`.
+-       Reading from a stream parses only as far as the first record extends. Needs a
+-       `Dsv.Format`, a `Tactic[Dsv.Error]` and a `Buffering`.
++   entry #encodableOverData   `play.in[Data over Dsv]`: ein Wert als ein Datensatz, als Bytes in der `Codepage` im Geltungsbereich kodiert
++   entry #aggregableIn   `read[Play in Dsv]` über den Zeilendekodierer: die erste Zeile, mit dem `Decodable in Dsv` von `Play` dekodiert
++       Der Weg für einen Typ ohne `Dsv.Parsable` und für jeden Typ unter `codecs.derived`. Das
++       Lesen aus einem Stream parst nur so weit, wie der erste Datensatz reicht. Braucht ein
++       `Dsv.Format`, eine `Tactic[Dsv.Error]` und ein `Buffering`.
+
+- entry .Sheet   delimited data held in memory: every row, with the format and column names it was read under
++ entry .Sheet   im Speicher gehaltene Daten mit Trennzeichen: jede Zeile, mit dem Format und den Spaltennamen, unter denen sie gelesen wurde
+
+= entry .Sheet   delimited data held in memory: every row, with the format and column names it was read under
+-   detail
++   detail
+
+-       A `Sheet` is the materialized form of delimited data: its `#rows` are an array of `Dsv`
+-       rows, replayable, indexable and cheap to compare, with the `#format` they were parsed
+-       under and the `#columns` named by a header row, where there was one. Text reads as a
+-       sheet with `read[Sheet]` under a `Dsv.Format`, and a sheet renders back to text with
+-       `show` under one; a list of encodable values becomes a sheet with `dsv`.
++       Ein `Sheet` ist die materialisierte Form von Daten mit Trennzeichen: Seine `#rows` sind ein
++       Array von `Dsv`-Zeilen, wiederholt abspielbar, indizierbar und günstig zu vergleichen, mit
++       dem `#format`, unter dem sie geparst wurden, und den `#columns`, die eine Kopfzeile benennt,
++       wo es eine gab. Text wird mit `read[Sheet]` unter einem `Dsv.Format` als Sheet gelesen, und
++       ein Sheet wird unter einem solchen mit `show` wieder als Text dargestellt; eine Liste
++       kodierbarer Werte wird mit `dsv` zu einem Sheet.
+
+=       `show` under one; a list of encodable values becomes a sheet with `dsv`.
+=
+-       ```scala
++       ```scala
+
+=       `show` under one; a list of encodable values becomes a sheet with `dsv`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `show` under one; a list of encodable values becomes a sheet with `dsv`.
+=
+=       ```scala
+=       import soundness.*
+-       import dsvFormats.csvWithHeaderFormat
++       import dsvFormats.csvWithHeaderFormat
+
+=       `show` under one; a list of encodable values becomes a sheet with `dsv`.
+=
+=       ```scala
+=       import soundness.*
+=       import dsvFormats.csvWithHeaderFormat
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       `show` under one; a list of encodable values becomes a sheet with `dsv`.
+=
+=       ```scala
+=       import soundness.*
+=       import dsvFormats.csvWithHeaderFormat
+=       import strategies.throwUnsafely
+=
+-       case class Measurement(name: Text, age: Int)
++       case class Measurement(name: Text, age: Int)
+
+=       case class Measurement(name: Text, age: Int)
+=
+-       val sheet: Sheet = t"name,age\nPercy,30\nHal,25".read[Sheet]
++       val sheet: Sheet = t"name,age\nPercy,30\nHal,25".read[Sheet]
+
+-       sheet.columns                          // Array(t"name", t"age")
++       sheet.columns                          // Array(t"name", t"age")
+
+-       sheet.as[Measurement]                  // List(Measurement(t"Percy", 30), Measurement(t"Hal", 25))
++       sheet.as[Measurement]                  // List(Measurement(t"Percy", 30), Measurement(t"Hal", 25))
+
+-       sheet.rows(Prim).let(_[Text](t"name")) // t"Percy"
++       sheet.rows(Prim).let(_[Text](t"name")) // t"Percy"
+
+=       sheet.rows(Prim).let(_[Text](t"name")) // t"Percy"
+-       ```
++       ```
+
+-       The format decides how the same rows are written out, quoting a cell which holds its
+-       delimiter: in CSV the comma needs quoting, in TSV nothing does, and space-separated
+-       values quote the space:
++       Das Format entscheidet, wie dieselben Zeilen ausgegeben werden, und quotiert eine Zelle, die
++       sein Trennzeichen enthält: In CSV muss das Komma quotiert werden, in TSV nichts, und durch
++       Leerzeichen getrennte Werte quotieren das Leerzeichen:
+
+=       values quote the space:
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative CSV
++       alternative CSV
+
+=       alternative CSV
+-         code
++         code
+
+=       alternative CSV
+=         code
+-             locally:
++             locally:
+
+=       alternative CSV
+=         code
+=             locally:
+-               import dsvFormats.csvFormat
++               import dsvFormats.csvFormat
+
+-               Sheet(Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick,\"Bottom, weaver\""
++               Sheet(Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick,\"Bottom, weaver\""
+
+-       alternative TSV
++       alternative TSV
+
+=       alternative TSV
+-         code
++         code
+
+=       alternative TSV
+=         code
+-             locally:
++             locally:
+
+-               import dsvFormats.tsvFormat
++               import dsvFormats.tsvFormat
+
+-               Sheet(Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick\tBottom, weaver"
++               Sheet(Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick\tBottom, weaver"
+
+-       alternative Space-separated
++       alternative Space-separated
+
+=       alternative Space-separated
+-         code
++         code
+
+=       alternative Space-separated
+=         code
+-             locally:
++             locally:
+
+-               import dsvFormats.ssvFormat
++               import dsvFormats.ssvFormat
+
+-               Sheet(Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick \"Bottom, weaver\""
++               Sheet(Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick \"Bottom, weaver\""
+
+=               Sheet(Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick \"Bottom, weaver\""
+-       ##
++       ##
+
+=               Sheet(Array(Dsv(t"Nick", t"Bottom, weaver"))).show   // t"Nick \"Bottom, weaver\""
+=       ##
+-       ```
++       ```
+
+-       A file too large to hold needs no sheet: `rows` on a character stream yields the rows
+-       one at a time through the same parser, and `rowsOf` parses each straight to a type.
+-       A sheet is also `Tabular`, so `escritoire` renders it as a table with a column per
+-       header (or per position), and it is the body of an HTTP response, sent as `text/csv`,
+-       or as `text/tab-separated-values` when its format's delimiter is a tab.
++       Eine Datei, die zu groß ist, um sie im Speicher zu halten, braucht kein Sheet: `rows` auf
++       einem Zeichen-Stream liefert die Zeilen eine nach der anderen über denselben Parser, und
++       `rowsOf` parst jede direkt in einen Typ. Ein Sheet ist außerdem `Tabular`, sodass
++       `escritoire` es als Tabelle mit einer Spalte je Kopfzeilenname (oder je Position) darstellt,
++       und es ist der Rumpf einer HTTP-Response, gesendet als `text/csv` oder als
++       `text/tab-separated-values`, wenn das Trennzeichen seines Formats ein Tabulator ist.
+
+-   refer caesura.Dsv
++   refer caesura.Dsv
+
+=   refer caesura.Dsv
+-   refer caesura.Dsv.Format
++   refer caesura.Dsv.Format
+
+-   refer caesura.rows
++   refer caesura.rows
+
+-   entry .aggregable   reads text as a `Sheet`, in the `Dsv.Format` in scope
+-       The given behind `read[Sheet]`. Quoted cells may contain the delimiter, line breaks and
+-       doubled quotes, and may span the chunks of a stream. Under a header-bearing format the
+-       first row is taken as the column names: it is not one of the `#rows`, each row's
+-       `Dsv#columns` maps the names to indices, and the sheet's `#columns` lists them. Needs a
+-       `Tactic[Dsv.Error]`, through which a quote found after the start of an unquoted cell is
+-       raised as `Dsv.Error.Reason.MisplacedQuote`.
+-   entry .showable   renders a sheet as delimited text in the `Dsv.Format` in scope, one line per row
+-       Rows are joined with a line feed, with no trailing one; each row is rendered as
+-       `Dsv.showable` renders it, quoting only the cells which need it. A header is not
+-       written: the sheet's `#columns` are not rendered.
+-   entry .streamable   renders a sheet as a stream of text, one row and a line feed per chunk
+-       Needs a `Dsv.Format`. This is what lets a sheet be written to any sink which takes a
+-       stream of `Text`.
+-   entry .inspectable   a debug rendering of a sheet's format, column names and cells, needing no format
+-       `Sheet(format:○ ╱ columns:○ ╱ rows:⟦⟨ t"hello" t"world" ⟩⟧)`: each cell inspected as
+-       `Text`, so a cell which contains a delimiter cannot be mistaken for two, as it could in
+-       the `show` rendering.
+-   entry .tabular   renders a sheet as an `escritoire` table, with a column per header name or per position
+-       The columns are the sheet's `#columns` where it has them, and otherwise the numbers
+-       `1`, `2`, … up to the width of the first row; each column is collapsible, and a cell
+-       the row lacks is empty.
+-   entry .abstractable   sends a sheet as an HTTP body, as `text/csv`, or `text/tab-separated-values` for a tab delimiter
+-       Needs a `Codepage` to encode the text and a `Dsv.Format`; the media type is chosen from
+-       the delimiter of the sheet's own `#format`.
+-   entry #rows   the rows, in order, each a `Dsv`; the header row is not among them
+-   entry #format   the `Dsv.Format` the sheet was parsed under, or `Unset` for one built by hand
+-   entry #columns   the column names from the header row, in order; `Unset` if the data had no header
+-   entry #as   decodes every row as a type which is `Decodable in Dsv`, into a `List`
+-       Needs a `Tactic[Dsv.Error]` and a `Foci[CellRef]`, which is the default unless an
+-       accruing strategy supplies one.
++   entry .aggregable   liest Text als `Sheet`, im `Dsv.Format` im Geltungsbereich
++       Das Given hinter `read[Sheet]`. Quotierte Zellen dürfen das Trennzeichen, Zeilenumbrüche
++       und verdoppelte Anführungszeichen enthalten und sich über die Chunks eines Streams
++       erstrecken. Unter einem Format mit Kopfzeile wird die erste Zeile als Spaltennamen
++       genommen: Sie gehört nicht zu den `#rows`, die `Dsv#columns` jeder Zeile bilden die Namen
++       auf Indizes ab, und die `#columns` des Sheets listen sie auf. Braucht eine
++       `Tactic[Dsv.Error]`, über die ein nach dem Beginn einer nicht quotierten Zelle gefundenes
++       Anführungszeichen als `Dsv.Error.Reason.MisplacedQuote` ausgelöst wird.
++   entry .showable   stellt ein Sheet als Text mit Trennzeichen im `Dsv.Format` im Geltungsbereich dar, eine Zeile je Datenzeile
++       Die Zeilen werden mit einem Zeilenvorschub verbunden, ohne abschließenden; jede Zeile wird
++       so dargestellt, wie `Dsv.showable` sie darstellt, wobei nur die Zellen quotiert werden, die
++       es brauchen. Eine Kopfzeile wird nicht geschrieben: Die `#columns` des Sheets werden nicht
++       dargestellt.
++   entry .streamable   stellt ein Sheet als Stream von Text dar, eine Zeile und ein Zeilenvorschub je Chunk
++       Braucht ein `Dsv.Format`. Dadurch kann ein Sheet in jede Senke geschrieben werden, die einen
++       Stream von `Text` nimmt.
++   entry .inspectable   eine Debug-Darstellung von Format, Spaltennamen und Zellen eines Sheets, die kein Format braucht
++       `Sheet(format:○ ╱ columns:○ ╱ rows:⟦⟨ t"hello" t"world" ⟩⟧)`: Jede Zelle wird als `Text`
++       inspiziert, sodass eine Zelle, die ein Trennzeichen enthält, nicht für zwei gehalten werden
++       kann, wie es in der `show`-Darstellung möglich wäre.
++   entry .tabular   stellt ein Sheet als `escritoire`-Tabelle dar, mit einer Spalte je Kopfzeilenname oder je Position
++       Die Spalten sind die `#columns` des Sheets, wo es sie hat, und sonst die Zahlen `1`, `2`, …
++       bis zur Breite der ersten Zeile; jede Spalte ist wegfallfähig, und eine Zelle, die der Zeile
++       fehlt, ist leer.
++   entry .abstractable   sendet ein Sheet als HTTP-Rumpf, als `text/csv` oder, bei einem Tabulator als Trennzeichen, als `text/tab-separated-values`
++       Braucht eine `Codepage`, um den Text zu kodieren, und ein `Dsv.Format`; der Medientyp wird
++       nach dem Trennzeichen des eigenen `#format` des Sheets gewählt.
++   entry #rows   die Zeilen, der Reihe nach, jede ein `Dsv`; die Kopfzeile gehört nicht dazu
++   entry #format   das `Dsv.Format`, unter dem das Sheet geparst wurde, oder `Unset` bei einem von Hand gebauten
++   entry #columns   die Spaltennamen aus der Kopfzeile, der Reihe nach; `Unset`, wenn die Daten keine Kopfzeile hatten
++   entry #as   dekodiert jede Zeile als einen Typ, der `Decodable in Dsv` ist, in eine `List`
++       Braucht eine `Tactic[Dsv.Error]` und ein `Foci[CellRef]`, was die Voreinstellung ist, sofern
++       nicht eine sammelnde Strategie eines bereitstellt.
+
+- entry .DsvReader   the token reader a `Dsv.Parsable` reads from: one row at a time, its cells addressed in place
++ entry .DsvReader   der Token-Reader, aus dem ein `Dsv.Parsable` liest: eine Zeile nach der anderen, ihre Zellen an Ort und Stelle adressiert
+
+= entry .DsvReader   the token reader a `Dsv.Parsable` reads from: one row at a time, its cells addressed in place
+-   detail
++   detail
+
+-       A `DsvReader` is the direct parser's view of the input: it advances one data row at a
+-       time with `#nextRow` and exposes the current row's cells, held in the parser's reusable
+-       buffer, by index with `#cell` and by heading with `#column`, so a `Dsv.Parsable` reads a
+-       record with no `Dsv` row value built. It carries the format and the error tactic, so
+-       instances need neither. It is an exclusive, stateful capability, owned by the read for
+-       its duration: nothing of it may be retained in the value parsed.
++       Ein `DsvReader` ist die Sicht des direkten Parsers auf die Eingabe: Er rückt mit `#nextRow`
++       jeweils um eine Datenzeile vor und stellt die Zellen der aktuellen Zeile, die im
++       wiederverwendbaren Puffer des Parsers liegen, über den Index mit `#cell` und über die
++       Überschrift mit `#column` bereit, sodass ein `Dsv.Parsable` einen Datensatz liest, ohne dass
++       ein `Dsv`-Zeilenwert gebaut wird. Er trägt das Format und die Fehlertaktik, sodass
++       Instanzen keines von beiden brauchen. Er ist eine exklusive, zustandsbehaftete Capability,
++       die für die Dauer des Lesens diesem gehört: Nichts davon darf im geparsten Wert
++       zurückbehalten werden.
+
+-       Readers are made only by caesura itself, for `read[Play in Dsv]`, `read[List[Play] in
+-       Dsv]` and `rowsOf`; a program meets one only when writing a `Dsv.Parsable` or
+-       `Dsv.Field` by hand, rather than deriving it. The class is not exported to the
+-       `soundness` umbrella, and is named `caesura.DsvReader`.
++       Reader werden nur von Caesura selbst erzeugt, für `read[Play in Dsv]`, `read[List[Play] in
++       Dsv]` und `rowsOf`; ein Programm begegnet einem nur, wenn es ein `Dsv.Parsable` oder
++       `Dsv.Field` von Hand schreibt, statt es abzuleiten. Die Klasse wird nicht in das
++       `soundness`-Umbrella exportiert und heißt `caesura.DsvReader`.
+
+=       `soundness` umbrella, and is named `caesura.DsvReader`.
+-   refer caesura.Dsv.Parsable
++   refer caesura.Dsv.Parsable
+
+-   refer caesura.Dsv.Field
++   refer caesura.Dsv.Field
+
+-   entry #absent   aborts the read with `Dsv.Error.Reason.Absent`, for a cell the row lacks
+-   entry #nextRow   advances to the next data row, consuming the header row first under a header format; `false` at the end
+-   entry #cells   the number of cells in the current row
+-   entry #cell   the cell at an index of the current row, or `Unset` if the row is shorter
+-   entry #column   the index of a heading, or `Unset` in positional mode or for an unknown heading
++   entry #absent   bricht das Lesen mit `Dsv.Error.Reason.Absent` ab, für eine Zelle, die der Zeile fehlt
++   entry #nextRow   rückt zur nächsten Datenzeile vor, wobei unter einem Format mit Kopfzeile zuerst die Kopfzeile verbraucht wird; `false` am Ende
++   entry #cells   die Anzahl der Zellen in der aktuellen Zeile
++   entry #cell   die Zelle an einem Index der aktuellen Zeile, oder `Unset`, wenn die Zeile kürzer ist
++   entry #column   der Index einer Überschrift, oder `Unset` im positionalen Modus oder für eine unbekannte Überschrift
+
+- entry .CellRef   the position of a cell being decoded: the focus each accrued `Dsv.Error` is recorded with
++ entry .CellRef   die Position einer Zelle, die dekodiert wird: der Fokus, mit dem jeder gesammelte `Dsv.Error` vermerkt wird
+
+= entry .CellRef   the position of a cell being decoded: the focus each accrued `Dsv.Error` is recorded with
+-   detail
++   detail
+
+-       When a row decodes into a product under an accruing strategy, each field is decoded
+-       inside a `focus(CellRef(…))`, so each error the strategy collects comes with the
+-       `CellRef` of the column it was found in. `Validate[…, CellRef]` names it as the focus
+-       type, and its handler reads it as `prior`.
++       Wenn eine Zeile unter einer sammelnden Strategie in ein Produkt dekodiert wird, wird jedes
++       Feld innerhalb eines `focus(CellRef(…))` dekodiert, sodass jeder Fehler, den die Strategie
++       sammelt, mit der `CellRef` der Spalte kommt, in der er gefunden wurde. `Validate[…, CellRef]`
++       nennt sie als Fokustyp, und sein Handler liest sie als `prior`.
+
+=       type, and its handler reads it as `prior`.
+=
+-       ```scala
++       ```scala
+
+=       type, and its handler reads it as `prior`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       type, and its handler reads it as `prior`.
+=
+=       ```scala
+=       import soundness.*
+-       import dsvFormats.csvWithHeaderFormat
++       import dsvFormats.csvWithHeaderFormat
+
+-       import dysasymptotics.linearSize
++       import dysasymptotics.linearSize
+
+-       import errorDiagnostics.stackTracesDiagnostics
++       import errorDiagnostics.stackTracesDiagnostics
+
+-       case class Issues(items: List[(Text, Dsv.Error)] = Nil)(using Diagnostics)
++       case class Issues(items: List[(Text, Dsv.Error)] = Nil)(using Diagnostics)
+
+-       extends Error(m"${items.size} decoding issues"):
++       extends Error(m"${items.size} decoding issues"):
+
+-         def +(column: Text, error: Dsv.Error): Issues = Issues(items :+ (column, error))
++         def +(column: Text, error: Dsv.Error): Issues = Issues(items :+ (column, error))
+
+-       case class Measurement(name: Text, age: Int, height: Int)
++       case class Measurement(name: Text, age: Int, height: Int)
+
+-       val damaged = t"name,age,height\nPercy,thirty,tall".read[Sheet].rows(Prim)
++       val damaged = t"name,age,height\nPercy,thirty,tall".read[Sheet].rows(Prim)
+
+-       Validate[Issues, [r] =>> r raises Dsv.Error, CellRef]
++       Validate[Issues, [r] =>> r raises Dsv.Error, CellRef]
+
+-         ( Issues(),
++         ( Issues(),
+
+-           { case error: Dsv.Error => accrual + (prior.let(_.column).or(t"#"), error) } )
++           { case error: Dsv.Error => accrual + (prior.let(_.column).or(t"#"), error) } )
+
+-       . protect(damaged.let(_.as[Measurement]))
++       . protect(damaged.let(_.as[Measurement]))
+
+-       . items.map(_(0))   // List(t"age", t"height")
++       . items.map(_(0))   // List(t"age", t"height")
+
+=       . items.map(_(0))   // List(t"age", t"height")
+-       ```
++       ```
+
+-   refer caesura.Dsv.Error
++   refer caesura.Dsv.Error
+
+-   entry #ordinal   the row of the cell; the derived decoder, which sees one row, always records `Prim`
+-   entry #column   the name of the field being decoded, which is the column's name under a header
++   entry #ordinal   die Zeile der Zelle; der abgeleitete Dekodierer, der eine einzige Zeile sieht, vermerkt immer `Prim`
++   entry #column   der Name des Felds, das dekodiert wird; unter einer Kopfzeile ist das der Name der Spalte
+
+- entry .Spannable   how many cells a type occupies in a positional row, field by field
++ entry .Spannable   wie viele Zellen ein Typ in einer positionalen Zeile belegt, Feld für Feld
+
+= entry .Spannable   how many cells a type occupies in a positional row, field by field
+-   detail
++   detail
+
+-       A `Spannable` gives the spans of a type's fields: one cell for a field which is
+-       `Decodable in Text`, the span of the inner type for an `Optional` field, and the total
+-       of its own fields' spans for a nested case class. The row decoder and the direct parser
+-       use it to know where each field of a positional row begins, without discovering it
+-       while parsing. `Spannable.derived` gives the instance for any product type.
++       Ein `Spannable` gibt die Spannen der Felder eines Typs an: eine Zelle für ein Feld, das
++       `Decodable in Text` ist, die Spanne des inneren Typs für ein `Optional`-Feld und die Summe
++       der Spannen seiner eigenen Felder für eine verschachtelte Case-Klasse. Der Zeilendekodierer
++       und der direkte Parser verwenden es, um zu wissen, wo jedes Feld einer positionalen Zeile
++       beginnt, ohne es beim Parsen herauszufinden. `Spannable.derived` liefert die Instanz für
++       jeden Produkttyp.
+
+=       while parsing. `Spannable.derived` gives the instance for any product type.
+=
+-       ```scala
++       ```scala
+
+=       while parsing. `Spannable.derived` gives the instance for any product type.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+=
+-       case class FullName(first: Text, last: Text)
++       case class FullName(first: Text, last: Text)
+
+=       import soundness.*
+=
+=       case class FullName(first: Text, last: Text)
+-       case class Person(id: Int, name: FullName, age: Int)
++       case class Person(id: Int, name: FullName, age: Int)
+
+-       Spannable.derived[Person].spans()   // Array(1, 2, 1): four cells in all
++       Spannable.derived[Person].spans()   // Array(1, 2, 1): four cells in all
+
+=       Spannable.derived[Person].spans()   // Array(1, 2, 1): four cells in all
+-       ```
++       ```
+
+-       Positional decoding is brittle by nature: a field added to a nested case class moves
+-       every column after it, with nothing in the file to say so. A header-bearing format,
+-       which matches fields to columns by name, avoids it.
+-   entry .conjunction   the macro which derives a product's spans, one per field
+-   entry .decoder   a span of one cell, for any type which is `Decodable in Text`
+-   entry .optional   an `Optional` field spans exactly as many cells as its inner type
+-       A present value occupies the inner span, and an absent one leaves those cells empty.
+-   entry #spans   the span of each field, in order; for a single-cell type, `Array(1)`
++       Positionales Dekodieren ist von Natur aus fragil: Ein Feld, das einer verschachtelten
++       Case-Klasse hinzugefügt wird, verschiebt jede Spalte dahinter, ohne dass die Datei etwas
++       davon verrät. Ein Format mit Kopfzeile, das Felder über den Namen Spalten zuordnet,
++       vermeidet das.
++   entry .conjunction   das Makro, das die Spannen eines Produkts ableitet, eine je Feld
++   entry .decoder   eine Spanne von einer Zelle, für jeden Typ, der `Decodable in Text` ist
++   entry .optional   ein `Optional`-Feld umspannt genau so viele Zellen wie sein innerer Typ
++       Ein vorhandener Wert belegt die innere Spanne, und ein fehlender lässt diese Zellen leer.
++   entry #spans   die Spanne jedes Felds, der Reihe nach; für einen einzelligen Typ `Array(1)`
+
+- entry .dsv   encodes a value as a `Dsv` row, or a list of values as a `Sheet`
+-     An extension on any value which is `Encodable in Dsv`, which every product type derives,
+-     and on a `List` of them. The result renders as text with `show` under a `Dsv.Format`.
++ entry .dsv   kodiert einen Wert als `Dsv`-Zeile oder eine Liste von Werten als `Sheet`
++     Eine Erweiterung auf jedem Wert, der `Encodable in Dsv` ist, was jeder Produkttyp ableitet,
++     und auf einer `List` solcher Werte. Das Ergebnis wird unter einem `Dsv.Format` mit `show` als
++     Text dargestellt.
+
+=     and on a `List` of them. The result renders as text with `show` under a `Dsv.Format`.
+=
+-     ```scala
++     ```scala
+
+=     and on a `List` of them. The result renders as text with `show` under a `Dsv.Format`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     and on a `List` of them. The result renders as text with `show` under a `Dsv.Format`.
+=
+=     ```scala
+=     import soundness.*
+-     import dsvFormats.csvFormat
++     import dsvFormats.csvFormat
+
+=     import dsvFormats.csvFormat
+=
+-     case class FullName(first: Text, last: Text)
++     case class FullName(first: Text, last: Text)
+
+-     FullName(t"Nick", t"Bottom").dsv                                     // Dsv(t"Nick", t"Bottom")
++     FullName(t"Nick", t"Bottom").dsv                                     // Dsv(t"Nick", t"Bottom")
+
+-     List(FullName(t"Nick", t"Bottom"), FullName(t"Francis", t"Flute")).dsv.show
++     List(FullName(t"Nick", t"Bottom"), FullName(t"Francis", t"Flute")).dsv.show
+
+-     // t"Nick,Bottom\nFrancis,Flute"
++     // t"Nick,Bottom\nFrancis,Flute"
+
+=     // t"Nick,Bottom\nFrancis,Flute"
+-     ```
++     ```
+
+- entry .rows   the rows of a character stream, parsed one at a time, as a single-use `Iterator[Dsv]`
+-     The streaming counterpart of `read[Sheet]`, which holds every row: an extension on a
+-     `Stream[Text] over Credit`, which it consumes, yielding each row as it is parsed. A
+-     quoted cell may span chunk and line boundaries, since the parser carries its state
+-     across refills. Under a header-bearing format the header row is not yielded, but each
+-     row knows its column names. Needs a `Dsv.Format`, a `Tactic[Dsv.Error]` and a
+-     `Buffering`.
++ entry .rows   die Zeilen eines Zeichen-Streams, eine nach der anderen geparst, als einmalig verwendbarer `Iterator[Dsv]`
++     Das Streaming-Gegenstück zu `read[Sheet]`, das jede Zeile hält: eine Erweiterung auf einem
++     `Stream[Text] over Credit`, den sie verbraucht, wobei sie jede Zeile liefert, sobald sie
++     geparst ist. Eine quotierte Zelle darf sich über Chunk- und Zeilengrenzen erstrecken, da der
++     Parser seinen Zustand über das Nachfüllen hinweg mitnimmt. Unter einem Format mit Kopfzeile
++     wird die Kopfzeile nicht geliefert, aber jede Zeile kennt ihre Spaltennamen. Braucht ein
++     `Dsv.Format`, eine `Tactic[Dsv.Error]` und ein `Buffering`.
+
+=     `Buffering`.
+=
+-     ```scala
++     ```scala
+
+=     `Buffering`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import dsvFormats.csvWithHeaderFormat
++     import dsvFormats.csvWithHeaderFormat
+
+=     import dsvFormats.csvWithHeaderFormat
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     t"name,age\nalpha,1\nbeta,2".source[Text].rows.map(_[Text](t"name").or(t"?")).to(List)
++     t"name,age\nalpha,1\nbeta,2".source[Text].rows.map(_[Text](t"name").or(t"?")).to(List)
+
+-     // List(t"alpha", t"beta")
++     // List(t"alpha", t"beta")
+
+=     // List(t"alpha", t"beta")
+-     ```
++     ```
+
+- entry .rowsOf   the rows of a character stream, each parsed straight to a type through its `Dsv.Parsable`
+-     `stream.rowsOf[Play]` consumes the stream and yields one `Play` per data row, read directly
+-     from the parser's buffer with no `Dsv` built: the fastest way through a large file.
+-     `Play` needs a `Dsv.Parsable`, declared or (under `codecs.direct`) derived. Needs a
+-     `Dsv.Format`, a `Tactic[Dsv.Error]` and a `Buffering`.
++ entry .rowsOf   die Zeilen eines Zeichen-Streams, jede über ihr `Dsv.Parsable` direkt in einen Typ geparst
++     `stream.rowsOf[Play]` verbraucht den Stream und liefert ein `Play` je Datenzeile, direkt aus
++     dem Puffer des Parsers gelesen, ohne dass ein `Dsv` gebaut wird: der schnellste Weg durch
++     eine große Datei. `Play` braucht ein `Dsv.Parsable`, deklariert oder (unter `codecs.direct`)
++     abgeleitet. Braucht ein `Dsv.Format`, eine `Tactic[Dsv.Error]` und ein `Buffering`.
+
+=     `Dsv.Format`, a `Tactic[Dsv.Error]` and a `Buffering`.
+=
+-     ```scala
++     ```scala
+
+=     `Dsv.Format`, a `Tactic[Dsv.Error]` and a `Buffering`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     `Dsv.Format`, a `Tactic[Dsv.Error]` and a `Buffering`.
+=
+=     ```scala
+=     import soundness.*
+-     import dsvFormats.csvFormat
++     import dsvFormats.csvFormat
+
+=     `Dsv.Format`, a `Tactic[Dsv.Error]` and a `Buffering`.
+=
+=     ```scala
+=     import soundness.*
+=     import dsvFormats.csvFormat
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     case class Stat(name: Text, count: Int)
++     case class Stat(name: Text, count: Int)
+
+-     given Stat is Dsv.Parsable = Dsv.Parsable.derived
++     given Stat is Dsv.Parsable = Dsv.Parsable.derived
+
+-     t"x,1\ny,2".source[Text].rowsOf[Stat].map(_.count).to(List)   // List(1, 2)
++     t"x,1\ny,2".source[Text].rowsOf[Stat].map(_.count).to(List)   // List(1, 2)
+
+=     t"x,1\ny,2".source[Text].rowsOf[Stat].map(_.count).to(List)   // List(1, 2)
+-     ```
++     ```
+
+- entry .dsvFormats   the standard delimited formats — CSV, TSV and space-separated, with and without a header — to import by name
++ entry .dsvFormats   die Standardformate mit Trennzeichen — CSV, TSV und durch Leerzeichen getrennt, mit und ohne Kopfzeile —, über den Namen zu importieren
+
+= entry .dsvFormats   the standard delimited formats — CSV, TSV and space-separated, with and without a header — to import by name
+-   detail
++   detail
+
+-       Every parse and every rendering needs a `Dsv.Format` in scope, and the choice is never
+-       implicit: `import soundness.*` brings none of these in, and one is imported by name.
+-       Each quotes with `"` and escapes a quote by doubling it.
++       Jedes Parsen und jede Darstellung braucht ein `Dsv.Format` im Geltungsbereich, und die Wahl
++       ist nie implizit: `import soundness.*` bringt keines davon herein, und eines wird über
++       seinen Namen importiert. Jedes quotiert mit `"` und escapt ein Anführungszeichen durch
++       Verdoppeln.
+
+=       Each quotes with `"` and escapes a quote by doubling it.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Positional
++       alternative Positional
+
+=       alternative Positional
+-         code
++         code
+
+=       alternative Positional
+=         code
+-             locally:
++             locally:
+
+=       alternative Positional
+=         code
+=             locally:
+-               import dsvFormats.csvFormat
++               import dsvFormats.csvFormat
+
+=               import dsvFormats.csvFormat
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+-               t"last,first\nBottom,Nick".read[Sheet].rows.length   // 2: the header is just another row
++               t"last,first\nBottom,Nick".read[Sheet].rows.length   // 2: the header is just another row
+
+-       alternative With a header
++       alternative With a header
+
+=       alternative With a header
+-         code
++         code
+
+=       alternative With a header
+=         code
+-             locally:
++             locally:
+
+-               import dsvFormats.csvWithHeaderFormat
++               import dsvFormats.csvWithHeaderFormat
+
+=               import dsvFormats.csvWithHeaderFormat
+-               import strategies.throwUnsafely
++               import strategies.throwUnsafely
+
+-               t"last,first\nBottom,Nick".read[Sheet].rows.length   // 1, with columns `last` and `first`
++               t"last,first\nBottom,Nick".read[Sheet].rows.length   // 1, with columns `last` and `first`
+
+=               t"last,first\nBottom,Nick".read[Sheet].rows.length   // 1, with columns `last` and `first`
+-       ##
++       ##
+
+=               t"last,first\nBottom,Nick".read[Sheet].rows.length   // 1, with columns `last` and `first`
+=       ##
+-       ```
++       ```
+
+-       A format with another delimiter is a `Dsv.Format` value bound as a local given.
++       Ein Format mit einem anderen Trennzeichen ist ein `Dsv.Format`-Wert, der als lokales Given
++       gebunden wird.
+
+=       A format with another delimiter is a `Dsv.Format` value bound as a local given.
+-   refer caesura.Dsv.Format
++   refer caesura.Dsv.Format
+
+-   entry .csvFormat   comma-separated values, with no header row
+-   entry .csvWithHeaderFormat   comma-separated values whose first row names the columns
+-   entry .tsvFormat   tab-separated values, with no header row
+-   entry .tsvWithHeaderFormat   tab-separated values whose first row names the columns
+-   entry .ssvFormat   space-separated values, with no header row
+-   entry .ssvWithHeaderFormat   space-separated values whose first row names the columns
++   entry .csvFormat   durch Kommas getrennte Werte, ohne Kopfzeile
++   entry .csvWithHeaderFormat   durch Kommas getrennte Werte, deren erste Zeile die Spalten benennt
++   entry .tsvFormat   durch Tabulatoren getrennte Werte, ohne Kopfzeile
++   entry .tsvWithHeaderFormat   durch Tabulatoren getrennte Werte, deren erste Zeile die Spalten benennt
++   entry .ssvFormat   durch Leerzeichen getrennte Werte, ohne Kopfzeile
++   entry .ssvWithHeaderFormat   durch Leerzeichen getrennte Werte, deren erste Zeile die Spalten benennt
+
+- entry .dsvRedesignations   the mappings from camel-case member names to header names, for dynamic access, to import by name
++ entry .dsvRedesignations   die Abbildungen von Membernamen in Camel-Case auf Kopfzeilennamen, für den dynamischen Zugriff, über den Namen zu importieren
+
+= entry .dsvRedesignations   the mappings from camel-case member names to header names, for dynamic access, to import by name
+-   detail
++   detail
+
+-       `Dsv#selectDynamic`, the member form `row.targetPerson[Text]`, needs a
+-       `Dsv.Redesignation` in scope to find the column a member names, and there is no
+-       default: one is imported by name, or a lambda from `Text` to `Text` is bound as a local
+-       given.
++       `Dsv#selectDynamic`, die Member-Form `row.targetPerson[Text]`, braucht eine
++       `Dsv.Redesignation` im Geltungsbereich, um die Spalte zu finden, die ein Member benennt, und
++       es gibt keine Voreinstellung: Eine wird über ihren Namen importiert, oder ein Lambda von
++       `Text` nach `Text` wird als lokales Given gebunden.
+
+=       given.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Unchanged
++       alternative Unchanged
+
+=       alternative Unchanged
+-         code
++         code
+
+=       alternative Unchanged
+=         code
+-             locally:
++             locally:
+
+-               import dsvRedesignations.unchangedRedesignation
++               import dsvRedesignations.unchangedRedesignation
+
+-               summon[Dsv.Redesignation].transform(t"targetPerson")   // t"targetPerson"
++               summon[Dsv.Redesignation].transform(t"targetPerson")   // t"targetPerson"
+
+-       alternative Capitalized words
++       alternative Capitalized words
+
+=       alternative Capitalized words
+-         code
++         code
+
+=       alternative Capitalized words
+=         code
+-             locally:
++             locally:
+
+-               import dsvRedesignations.capitalizedWordsRedesignation
++               import dsvRedesignations.capitalizedWordsRedesignation
+
+-               summon[Dsv.Redesignation].transform(t"targetPerson")   // t"Target Person"
++               summon[Dsv.Redesignation].transform(t"targetPerson")   // t"Target Person"
+
+-       alternative Lower-case words
++       alternative Lower-case words
+
+=       alternative Lower-case words
+-         code
++         code
+
+=       alternative Lower-case words
+=         code
+-             locally:
++             locally:
+
+-               import dsvRedesignations.lowerWordsRedesignation
++               import dsvRedesignations.lowerWordsRedesignation
+
+-               summon[Dsv.Redesignation].transform(t"targetPerson")   // t"target person"
++               summon[Dsv.Redesignation].transform(t"targetPerson")   // t"target person"
+
+=               summon[Dsv.Redesignation].transform(t"targetPerson")   // t"target person"
+-       ##
++       ##
+
+=               summon[Dsv.Redesignation].transform(t"targetPerson")   // t"target person"
+=       ##
+-       ```
++       ```
+
+-   refer caesura.Dsv.Redesignation
++   refer caesura.Dsv.Redesignation
+
+-   entry .unchangedRedesignation   the member name as it is: `targetPerson` matches the header `targetPerson`
+-   entry .capitalizedWordsRedesignation   capitalized words separated by spaces: `targetPerson` matches `Target Person`
+-   entry .lowerWordsRedesignation   lower-case words separated by spaces: `targetPerson` matches `target person`
+-   entry .lowerDottedRedesignation   lower-case words, meant for dotted headers such as `target.person`
+-       As implemented, the words are joined with spaces, so this gives `target person`, the
+-       same as `lowerWordsRedesignation`.
+-   entry .lowerSlashedRedesignation   lower-case words, meant for slashed headers such as `target/person`
+-       As implemented, the words are joined with spaces, so this gives `target person`, the
+-       same as `lowerWordsRedesignation`.
++   entry .unchangedRedesignation   der Membername unverändert: `targetPerson` entspricht der Kopfzeile `targetPerson`
++   entry .capitalizedWordsRedesignation   großgeschriebene, durch Leerzeichen getrennte Wörter: `targetPerson` entspricht `Target Person`
++   entry .lowerWordsRedesignation   kleingeschriebene, durch Leerzeichen getrennte Wörter: `targetPerson` entspricht `target person`
++   entry .lowerDottedRedesignation   kleingeschriebene Wörter, gedacht für Kopfzeilen mit Punkten wie `target.person`
++       In der vorliegenden Implementierung werden die Wörter mit Leerzeichen verbunden, sodass dies
++       `target person` ergibt, genau wie `lowerWordsRedesignation`.
++   entry .lowerSlashedRedesignation   kleingeschriebene Wörter, gedacht für Kopfzeilen mit Schrägstrichen wie `target/person`
++       In der vorliegenden Implementierung werden die Wörter mit Leerzeichen verbunden, sodass dies
++       `target person` ergibt, genau wie `lowerWordsRedesignation`.
+
+- entry .dynamicAccess   the given which lets a row's cells be read as members, to import by name
++ entry .dynamicAccess   das Given, das die Zellen einer Zeile als Member lesen lässt, über den Namen zu importieren
+
+= entry .dynamicAccess   the given which lets a row's cells be read as members, to import by name
+-   detail
++   detail
+
+-       Dynamic member access is off unless `Dsv is Dynamical` is in scope, so a misspelt member
+-       is not silently a column lookup. `import dynamicAccess.dynamicDsv` grants it for the
+-       rest of the scope; `dynamically[Dsv]:` grants it for one block.
++       Dynamischer Memberzugriff ist ausgeschaltet, sofern nicht `Dsv is Dynamical` im
++       Geltungsbereich ist, sodass ein falsch geschriebener Member nicht stillschweigend zu einer
++       Spaltensuche wird. `import dynamicAccess.dynamicDsv` gewährt ihn für den Rest des
++       Geltungsbereichs; `dynamically[Dsv]:` gewährt ihn für einen Block.
+
+=       rest of the scope; `dynamically[Dsv]:` grants it for one block.
+=
+-       ```scala
++       ```scala
+
+=       rest of the scope; `dynamically[Dsv]:` grants it for one block.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       rest of the scope; `dynamically[Dsv]:` grants it for one block.
+=
+=       ```scala
+=       import soundness.*
+-       import dsvFormats.csvWithHeaderFormat
++       import dsvFormats.csvWithHeaderFormat
+
+=       rest of the scope; `dynamically[Dsv]:` grants it for one block.
+=
+=       ```scala
+=       import soundness.*
+=       import dsvFormats.csvWithHeaderFormat
+-       import dsvRedesignations.unchangedRedesignation
++       import dsvRedesignations.unchangedRedesignation
+
+=       rest of the scope; `dynamically[Dsv]:` grants it for one block.
+=
+=       ```scala
+=       import soundness.*
+=       import dsvFormats.csvWithHeaderFormat
+=       import dsvRedesignations.unchangedRedesignation
+-       import dynamicAccess.dynamicDsv
++       import dynamicAccess.dynamicDsv
+
+=       rest of the scope; `dynamically[Dsv]:` grants it for one block.
+=
+=       ```scala
+=       import soundness.*
+=       import dsvFormats.csvWithHeaderFormat
+=       import dsvRedesignations.unchangedRedesignation
+=       import dynamicAccess.dynamicDsv
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       t"greeting,number\nhello,23".read[Sheet].rows(Prim).let(_.number[Int])   // 23
++       t"greeting,number\nhello,23".read[Sheet].rows(Prim).let(_.number[Int])   // 23
+
+=       t"greeting,number\nhello,23".read[Sheet].rows(Prim).let(_.number[Int])   // 23
+-       ```
++       ```
+
+-   entry .dynamicDsv   `Dsv is Dynamical`: enables `row.column[T]` for every row in scope
+-       An erased witness; it costs nothing at runtime. The `optics.dsvCellLens` given needs it
+-       too.
++   entry .dynamicDsv   `Dsv is Dynamical`: aktiviert `row.column[T]` für jede Zeile im Geltungsbereich
++       Ein gelöschter Zeuge; er kostet zur Laufzeit nichts. Das Given `optics.dsvCellLens` braucht
++       ihn ebenfalls.
+
+- entry .optionalityOptions   the policies for an `Optional` field's missing or malformed cell, to import by name
++ entry .optionalityOptions   die Richtlinien für die fehlende oder fehlerhafte Zelle eines `Optional`-Felds, über den Namen zu importieren
+
+= entry .optionalityOptions   the policies for an `Optional` field's missing or malformed cell, to import by name
+-   detail
++   detail
+
+-       An `Optional` field of a decoded row meets two situations: its cell is **absent** (a
+-       short positional row, or a header column the row lacks), or its cell is present but its
+-       inner decoder **rejects** it. By default an absent cell is `Unset` and a rejected one an
+-       error; each is changed by importing one of these givens by name. An empty cell is a
+-       present value, not an absent one.
++       Ein `Optional`-Feld einer dekodierten Zeile trifft auf zwei Situationen: Seine Zelle
++       **fehlt** (eine zu kurze positionale Zeile oder eine Kopfzeilenspalte, die der Zeile fehlt),
++       oder seine Zelle ist vorhanden, aber sein innerer Dekodierer **lehnt** sie **ab**.
++       Standardmäßig ist eine fehlende Zelle `Unset` und eine abgelehnte ein Fehler; beides wird
++       geändert, indem eines dieser Givens über seinen Namen importiert wird. Eine leere Zelle ist
++       ein vorhandener Wert, kein fehlender.
+
+=       present value, not an absent one.
+=
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Default
++       alternative Default
+
+=       alternative Default
+-         code
++         code
+
+=       alternative Default
+=         code
+-             locally:
++             locally:
+
+=       alternative Default
+=         code
+=             locally:
+-               import dsvFormats.csvFormat
++               import dsvFormats.csvFormat
+
+=               import dsvFormats.csvFormat
+-               case class Person(name: Text, age: Optional[Int])
++               case class Person(name: Text, age: Optional[Int])
+
+-               safely(t"Nym,many".read[Person in Dsv])   // Unset: the whole read failed
++               safely(t"Nym,many".read[Person in Dsv])   // Unset: the whole read failed
+
+-       alternative Lenient faults
++       alternative Lenient faults
+
+=       alternative Lenient faults
+-         code
++         code
+
+=       alternative Lenient faults
+=         code
+-             locally:
++             locally:
+
+=       alternative Lenient faults
+=         code
+=             locally:
+-               import dsvFormats.csvFormat
++               import dsvFormats.csvFormat
+
+-               import optionalityOptions.lenientDsvFaults
++               import optionalityOptions.lenientDsvFaults
+
+=               import optionalityOptions.lenientDsvFaults
+-               case class Person(name: Text, age: Optional[Int])
++               case class Person(name: Text, age: Optional[Int])
+
+-               safely(t"Nym,many".read[Person in Dsv])   // Person(t"Nym", Unset)
++               safely(t"Nym,many".read[Person in Dsv])   // Person(t"Nym", Unset)
+
+=               safely(t"Nym,many".read[Person in Dsv])   // Person(t"Nym", Unset)
+-       ##
++       ##
+
+=               safely(t"Nym,many".read[Person in Dsv])   // Person(t"Nym", Unset)
+=       ##
+-       ```
++       ```
+
+-       They govern both the row decoder (`Dsv.optionalDecodable`) and the direct parser
+-       (`Dsv.Field.optional`).
+-   entry .strictDsvAbsence   an absent cell for an `Optional` field raises `Dsv.Error.Reason.Absent`
+-   entry .lenientDsvAbsence   an absent cell for an `Optional` field is `Unset`; the default
+-   entry .strictDsvFaults   a cell the inner decoder rejects raises `Dsv.Error`, even for an `Optional` field; the default
+-   entry .lenientDsvFaults   a cell the inner decoder rejects is `Unset` for an `Optional` field
+-       The inner decode runs under `tolerate`, so its error is discarded rather than raised.
++       Sie steuern sowohl den Zeilendekodierer (`Dsv.optionalDecodable`) als auch den direkten
++       Parser (`Dsv.Field.optional`).
++   entry .strictDsvAbsence   eine fehlende Zelle für ein `Optional`-Feld löst `Dsv.Error.Reason.Absent` aus
++   entry .lenientDsvAbsence   eine fehlende Zelle für ein `Optional`-Feld ist `Unset`; die Voreinstellung
++   entry .strictDsvFaults   eine Zelle, die der innere Dekodierer ablehnt, löst `Dsv.Error` aus, selbst für ein `Optional`-Feld; die Voreinstellung
++   entry .lenientDsvFaults   eine Zelle, die der innere Dekodierer ablehnt, ist für ein `Optional`-Feld `Unset`
++       Das innere Dekodieren läuft unter `tolerate`, sodass sein Fehler verworfen statt ausgelöst
++       wird.
+
+- entry .optics   lenses over a row's cells by column name and over a sheet's rows, to import by name
++ entry .optics   Linsen über die Zellen einer Zeile nach Spaltenname und über die Zeilen eines Sheets, über den Namen zu importieren
+
+= entry .optics   lenses over a row's cells by column name and over a sheet's rows, to import by name
+-   detail
++   detail
+
+-       The `panopticon` optics for tabular data, which mirror the row-and-cell structure: a
+-       cell of a header-bearing row is addressed by its column name, and a sheet's rows by
+-       position, all at once, or by a predicate. With them imported, `lens` updates a sheet in
+-       place of a hand-written copy.
++       Die `panopticon`-Optiken für tabellarische Daten, die die Struktur aus Zeilen und Zellen
++       widerspiegeln: Eine Zelle einer Zeile mit Kopfzeile wird über ihren Spaltennamen adressiert
++       und die Zeilen eines Sheets über ihre Position, alle auf einmal oder über ein Prädikat. Sind
++       sie importiert, aktualisiert `lens` ein Sheet, statt dass eine Kopie von Hand geschrieben
++       wird.
+
+=       place of a hand-written copy.
+=
+-       ```scala
++       ```scala
+
+=       place of a hand-written copy.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       place of a hand-written copy.
+=
+=       ```scala
+=       import soundness.*
+-       import dsvFormats.csvWithHeaderFormat
++       import dsvFormats.csvWithHeaderFormat
+
+=       import dsvFormats.csvWithHeaderFormat
+-       import dynamicAccess.dynamicDsv
++       import dynamicAccess.dynamicDsv
+
+-       import optics.{dsvCellLens, dsvRowEachOptical, dsvRowFilterOptical, dsvRowOptical}
++       import optics.{dsvCellLens, dsvRowEachOptical, dsvRowFilterOptical, dsvRowOptical}
+
+=       import optics.{dsvCellLens, dsvRowEachOptical, dsvRowFilterOptical, dsvRowOptical}
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       import strategies.throwUnsafely
+=
+-       val sheet: Sheet = t"name,age\nPercy,30\nHal,25".read[Sheet]
++       val sheet: Sheet = t"name,age\nPercy,30\nHal,25".read[Sheet]
+
+-       sheet.lens(_(Sec).name = t"Poins")                                // Hal becomes Poins
++       sheet.lens(_(Sec).name = t"Poins")                                // Hal becomes Poins
+
+-       sheet.lens(_(Each).name = t"X")                                   // every name becomes X
++       sheet.lens(_(Each).name = t"X")                                   // every name becomes X
+
+-       sheet.lens(_(Filter[Dsv](_.data.head == t"Hal")).name = t"X")     // only Hal's
++       sheet.lens(_(Filter[Dsv](_.data.head == t"Hal")).name = t"X")     // only Hal's
+
+=       sheet.lens(_(Filter[Dsv](_.data.head == t"Hal")).name = t"X")     // only Hal's
+-       ```
++       ```
+
+-   entry .dsvCellLens   a lens from a row onto the cell of a named column, `_.name`
+-       Needs `Dsv is Dynamical` (`dynamicAccess.dynamicDsv`). Reading a column the row lacks
+-       gives the empty text, and writing one leaves the row unchanged. The column name is the
+-       member name as written: no `Dsv.Redesignation` is applied.
+-   entry .dsvRowOptical   addresses the row of a sheet at an `Ordinal`: `_(Sec)` is the second row
+-   entry .dsvRowEachOptical   addresses every row of a sheet: `_(Each)`
+-   entry .dsvRowFilterOptical   addresses the rows of a sheet matching a predicate: `_(Filter[Dsv](…))`
++   entry .dsvCellLens   eine Linse von einer Zeile auf die Zelle einer benannten Spalte, `_.name`
++       Braucht `Dsv is Dynamical` (`dynamicAccess.dynamicDsv`). Das Lesen einer Spalte, die der
++       Zeile fehlt, ergibt den leeren Text, und das Schreiben einer solchen lässt die Zeile
++       unverändert. Der Spaltenname ist der Membername, wie er geschrieben ist: Es wird keine
++       `Dsv.Redesignation` angewandt.
++   entry .dsvRowOptical   adressiert die Zeile eines Sheets an einem `Ordinal`: `_(Sec)` ist die zweite Zeile
++   entry .dsvRowEachOptical   adressiert jede Zeile eines Sheets: `_(Each)`
++   entry .dsvRowFilterOptical   adressiert die Zeilen eines Sheets, die einem Prädikat entsprechen: `_(Filter[Dsv](…))`
+
+- entry .construables   the media types `text/csv` and `text/tab-separated-values` construed as a `Sheet`, to import by name
++ entry .construables   die Medientypen `text/csv` und `text/tab-separated-values`, als `Sheet` interpretiert, über den Namen zu importieren
+
+= entry .construables   the media types `text/csv` and `text/tab-separated-values` construed as a `Sheet`, to import by name
+-   detail
++   detail
+
+-       In the `caesura.http` component. A `Construable` tells an HTTP client which type to read
+-       a response body of a given media type as; nothing is construed without a deliberate
+-       choice, so each mapping is imported by name. With one in scope, an `apoplexy` client
+-       reads a CSV response as a `Sheet`.
++       In der Komponente `caesura.http`. Ein `Construable` sagt einem HTTP-Client, als welchen Typ
++       er einen Response-Rumpf eines gegebenen Medientyps lesen soll; ohne bewusste Wahl wird
++       nichts interpretiert, daher wird jede Zuordnung über ihren Namen importiert. Ist eine im
++       Geltungsbereich, liest ein `apoplexy`-Client eine CSV-Response als `Sheet`.
+
+=       reads a CSV response as a `Sheet`.
+=
+-       ```scala
++       ```scala
+
+=       reads a CSV response as a `Sheet`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import construables.{csvConstruable, tsvConstruable}
++       import construables.{csvConstruable, tsvConstruable}
+
+=       import construables.{csvConstruable, tsvConstruable}
+-       ```
++       ```
+
+-   entry .csvConstruable   a `text/csv` body is a `Sheet`
+-   entry .tsvConstruable   a `text/tab-separated-values` body is a `Sheet`
++   entry .csvConstruable   ein `text/csv`-Rumpf ist ein `Sheet`
++   entry .tsvConstruable   ein `text/tab-separated-values`-Rumpf ist ein `Sheet`

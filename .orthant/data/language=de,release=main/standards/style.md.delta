@@ -1,0 +1,66 @@
+orthant 1 language
+
+- The documents in `doc/work/soundness/modules/` are tutorials, each introducing one feature of
+- Soundness — a capability that may span several internal modules — to a reader meeting
+- it for the first time. This guide sets out how to write them: who they address, the
+- voice they use, and the conventions they follow.
++ Die Dokumente in `doc/work/soundness/modules/` sind Tutorials, von denen jedes ein Feature von Soundness
++ vorstellt — eine Fähigkeit, die sich über mehrere interne Module erstrecken kann —, und zwar
++ einem Leser, der ihm zum ersten Mal begegnet. Dieser Leitfaden legt fest, wie sie geschrieben
++ werden: an wen sie sich richten, welche Stimme sie verwenden und welchen Konventionen sie folgen.
+
+- - A sample must introduce every name it uses, in a fence of the same tutorial, so the fences
+-   form one continuous session. Where a tutorial needs a value it cannot sensibly construct
+-   in prose — a path that must exist, a running service — put the binding in
+-   `etc/fixtures/<tutorial>.scala`, which both checkers compile before the first fence.
+- - A line that is meant not to compile carries a trailing `// does not compile` comment (with
+-   an optional explanation after a colon). Both checkers compile it on its own and report it
+-   if it compiles after all; fuel shows its error as a note on the line. New samples use an
+-   `errors show` fence instead, for the reason given under "Showing, not telling".
+- - A fence that says more than its code does so in a TEL preamble: it opens with
+-   ` ```scala fuel `, and the preamble ends at a line holding `##`. Its directives are below.
++ - Ein Beispiel muss jeden Namen, den es verwendet, in einem Code-Block desselben Tutorials
++   einführen, sodass die Code-Blöcke eine durchgehende Sitzung bilden. Braucht ein Tutorial einen
++   Wert, den es in der Prosa nicht sinnvoll konstruieren kann — einen Pfad, der existieren muss,
++   einen laufenden Dienst —, legen Sie die Bindung in `etc/fixtures/<tutorial>.scala` ab, das
++   beide Prüfer vor dem ersten Code-Block kompilieren.
++ - Eine Zeile, die nicht kompilieren soll, trägt einen nachgestellten Kommentar
++   `// does not compile` (optional mit einer Erklärung nach einem Doppelpunkt). Beide Prüfer
++   kompilieren sie für sich und melden sie, wenn sie doch kompiliert; Fuel zeigt ihren Fehler als
++   Anmerkung an der Zeile. Neue Beispiele verwenden stattdessen einen `errors show`-Code-Block,
++   aus dem unter „Zeigen, nicht erzählen“ genannten Grund.
++ - Ein Code-Block, der mehr sagt als sein Code, tut dies in einer TEL-Präambel: Er beginnt mit
++   ` ```scala fuel `, und die Präambel endet an einer Zeile, die `##` enthält. Ihre Direktiven
++   stehen unten.
+
+- - a concept another tutorial teaches, at its first use in each section, with the section's anchor
+-   where the target is one section of a long page: `[strategy](errors.md#choosing-a-strategy)`;
+- - a combination of two features, from both pages. Where an instance joins one module's type to
+-   another's typeclass — a date that is encoded in JSON, a quantity that is shown in a table, a
+-   path that is a command-line parameter — each tutorial gives the combination a short section or
+-   a sentence, with a sample, and links to the other;
+- - a design idea, to its essay in `doc/work/philosophy/`, once, where the design is being explained;
+- - an API entity, by naming it in inline code with its sigil (`` `#Json` `` for a type,
+-   `` `.fetch` `` for a term), which fuel resolves and links.
++ - ein Konzept, das ein anderes Tutorial lehrt, bei seiner ersten Verwendung in jedem Abschnitt,
++   mit dem Anker des Abschnitts, wo das Ziel ein Abschnitt einer langen Seite ist:
++   `[strategy](errors.md#choosing-a-strategy)`;
++ - eine Kombination zweier Features, von beiden Seiten aus. Wo eine Instanz den Typ eines Moduls
++   mit der Typklasse eines anderen verbindet — ein Datum, das in JSON kodiert wird, eine Größe, die
++   in einer Tabelle angezeigt wird, ein Pfad, der ein Kommandozeilenparameter ist —, gibt jedes
++   Tutorial der Kombination einen kurzen Abschnitt oder einen Satz, mit einem Beispiel, und
++   verlinkt auf das andere;
++ - eine Designidee, auf ihren Essay in `doc/work/philosophy/`, einmal, dort, wo das Design erklärt
++   wird;
++ - eine API-Entität, indem man sie in Inline-Code mit ihrem Sigel nennt (`` `#Json` `` für einen
++   Typ, `` `.fetch` `` für einen Term), das Fuel auflöst und verlinkt.
+
+- A word with a precise meaning in Soundness — *tactic*, *strategy*, *capability*, *choice
+- package* — is defined in `doc/work/soundness/glossary.tel`, and written in brackets where a reader may not yet
+- know it: `[tactic]`, or `[strategies][strategy]` for an inflected form. Fuel shows the definition
+- when the term is pointed at, and links it to the page named in its entry.
++ Ein Wort mit einer präzisen Bedeutung in Soundness — *Taktik*, *Strategie*, *Capability*,
++ *Auswahlpaket* — wird in `doc/work/soundness/glossary.tel` definiert und in Klammern geschrieben, wo ein
++ Leser es womöglich noch nicht kennt: `[tactic]`, oder `[strategies][strategy]` für eine
++ flektierte Form. Fuel zeigt die Definition, wenn auf den Begriff gezeigt wird, und verlinkt ihn
++ auf die in seinem Eintrag genannte Seite.

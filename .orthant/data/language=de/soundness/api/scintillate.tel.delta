@@ -1,0 +1,2567 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base scintillate
++ base scintillate
+
+- import soundness
++ import soundness
+
+- info   HTTP servers: a handler served on a port, over raw sockets, the JDK server or a servlet container
++ info   HTTP-Server: ein auf einem Port bereitgestellter Handler, über rohe Sockets, den JDK-Server oder einen Servlet-Container
+
+- detail
++ detail
+
+-     _Scintillate_ serves HTTP. A server is a **handler** — a block of code which reads the
+-     ambient `request`, matches on its method and target, and returns an `Http.Response` —
+-     bound to a port by a `RequestServable` backend: `SocketServer`, the raw-TCP backend
+-     which speaks HTTP/1.1 (keep-alive, pipelining, chunked bodies, `100-continue`, TLS and
+-     `101` protocol upgrades) and HTTP/2 on any TLS connection whose handshake negotiates it;
+-     or `Httpd`, the same handler over the JDK's `com.sun.net.httpserver`. A third component
+-     adapts a handler to a Jakarta servlet (`JavaServlet`, `@servlet`) for a container such as
+-     Jetty or Tomcat.
++     _Scintillate_ stellt HTTP bereit. Ein Server ist ein **Handler** — ein Codeblock, der den
++     ambienten `request` liest, auf dessen Methode und Ziel abgleicht und eine `Http.Response`
++     zurückgibt —, der von einem `RequestServable`-Backend an einen Port gebunden wird:
++     `SocketServer`, das Raw-TCP-Backend, das HTTP/1.1 spricht (Keep-alive, Pipelining,
++     gechunkte Bodys, `100-continue`, TLS und Protokoll-Upgrades mit `101`) sowie HTTP/2 auf
++     jeder TLS-Verbindung, deren Handshake es aushandelt; oder `Httpd`, derselbe Handler über
++     `com.sun.net.httpserver` des JDK. Eine dritte Komponente passt einen Handler an ein
++     Jakarta-Servlet an (`JavaServlet`, `@servlet`), für einen Container wie Jetty oder Tomcat.
+
+=     Jetty or Tomcat.
+=
+-     ```scala fuel
++     ```scala fuel
+
+-     typecheck
++     typecheck
+
+=     typecheck
+-     ##
++     ##
+
+=     ##
+-     import soundness.*
++     import soundness.*
+
+-     import logging.silentLogging
++     import logging.silentLogging
+
+=     import logging.silentLogging
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     import threads.virtualThreads
++     import threads.virtualThreads
+
+-     import probates.awaitProbate
++     import probates.awaitProbate
+
+-     import webserverErrorPages.minimalErrorPage
++     import webserverErrorPages.minimalErrorPage
+
+-     def main(): Unit = supervise:
++     def main(): Unit = supervise:
+
+-       SocketServer(8080).handle:
++       SocketServer(8080).handle:
+
+-         request.target match
++         request.target match
+
+-           case t"/"       => Http.Response(Http.Ok)(t"<h1>Welcome</h1>")
++           case t"/"       => Http.Response(Http.Ok)(t"<h1>Welcome</h1>")
+
+-           case t"/status" => Http.Response(Http.Ok)(t"OK")
++           case t"/status" => Http.Response(Http.Ok)(t"OK")
+
+-           case _          => Http.Response(NotFound(t"No such page"))
++           case _          => Http.Response(NotFound(t"No such page"))
+
+=           case _          => Http.Response(NotFound(t"No such page"))
+-     ```
++     ```
+
+-     `handle` binds the port and returns a `Service`, whose `cancel()` stops the server and
+-     whose `port` is the one bound (the system's choice, for a request of `0`). The server
+-     runs on tasks of the enclosing `supervise`, so the block lasts as long as the server
+-     does, and it needs a `Monitor`, a `Probate`, an `Httpd.Event is Loggable` (such as
+-     `logging.silentLogging`), a `Tactic[Httpd.Error]` for a port which cannot be bound, and
+-     a `WebserverErrorPage` for a handler which throws. Within a handler, `request` is the
+-     `Http.Connection` being served — its method, target, headers, cookies and body — and
+-     `cookie`, `basicAuth` and `as[Multipart]` read from it.
++     `handle` bindet den Port und gibt einen `Service` zurück, dessen `cancel()` den Server
++     stoppt und dessen `port` der gebundene ist (die Wahl des Systems, wenn `0` angefordert
++     wurde). Der Server läuft auf Aufgaben des umschließenden `supervise`, sodass der Block so
++     lange dauert wie der Server, und er benötigt einen `Monitor`, ein `Probate`, ein
++     `Httpd.Event is Loggable` (etwa `logging.silentLogging`), einen `Tactic[Httpd.Error]` für
++     einen Port, der nicht gebunden werden kann, und eine `WebserverErrorPage` für einen
++     Handler, der eine Ausnahme wirft. Innerhalb eines Handlers ist `request` die gerade
++     bediente `Http.Connection` — ihre Methode, ihr Ziel, ihre Header, Cookies und ihr Body —,
++     und `cookie`, `basicAuth` und `as[Multipart]` lesen aus ihr.
+
+-     A response body is a stream: a handler's `Http.Response` may capture the connection it
+-     answers (`Http.Response^{connection}`), which is how a chunked response, a server-sent
+-     event stream or an upgraded WebSocket reads the live request stream, and the server
+-     writes it out block by block within the connection's lifetime. Nothing else scoped may
+-     be captured, and the connection cannot be stashed past the handler: capture checking
+-     rejects both. A request body likewise arrives as it is received, and a second
+-     `request.body()` resumes where the first left off rather than replaying, so a handler
+-     which needs a body twice calls `request.body().memoize` once.
++     Der Body einer Response ist ein Stream: Die `Http.Response` eines Handlers darf die
++     Verbindung einfangen, die sie beantwortet (`Http.Response^{connection}`); so liest eine
++     gechunkte Response, ein Stream von Server-Sent Events oder ein per Upgrade übernommener
++     WebSocket den aktiven Request-Stream, und der Server schreibt sie Block für Block innerhalb
++     der Lebensdauer der Verbindung hinaus. Nichts anderes mit begrenztem Geltungsbereich darf
++     eingefangen werden, und die Verbindung kann nicht über den Handler hinaus aufbewahrt
++     werden: Das Capture-Checking weist beides zurück. Ebenso kommt der Body eines Requests so
++     an, wie er empfangen wird, und ein zweites `request.body()` setzt dort fort, wo das erste
++     aufgehört hat, statt ihn erneut abzuspielen; ein Handler, der einen Body zweimal braucht,
++     ruft daher einmal `request.body().memoize` auf.
+
+-     The three components:
++     Die drei Komponenten:
+
+-     - `scintillate.server` (JVM) — `SocketServer`, `Httpd`, `Reactor`, `RequestServable`,
++     - `scintillate.server` (JVM) — `SocketServer`, `Httpd`, `Reactor`, `RequestServable`,
+
+-       `Http2Session`, the response wrappers `Redirect`, `NotFound`, `NoCache` and
+-       `Unfulfilled`, `Acceptable`, `WebserverErrorPage`, the handler helpers `request`,
+-       `cookie`, `basicAuth` and `as`, and the choice packages `frontends`, `httpServers`
+-       and `webserverErrorPages`.
+-     - `scintillate.servlet` (JVM) — `JavaServlet` and the `@servlet` annotation, for a
+-       servlet container.
++       `Http2Session`, die Response-Hüllen `Redirect`, `NotFound`, `NoCache` und
++       `Unfulfilled`, `Acceptable`, `WebserverErrorPage`, die Handler-Helfer `request`,
++       `cookie`, `basicAuth` und `as` sowie die Auswahlpakete `frontends`, `httpServers`
++       und `webserverErrorPages`.
++     - `scintillate.servlet` (JVM) — `JavaServlet` und die Annotation `@servlet`, für einen
++       Servlet-Container.
+
+-     Everything is exported to the `soundness` umbrella except the request-body `as`
+-     extension, which clashes with distillate's `as` and is reached as `scintillate.as`. The
+-     choice packages are mirrored in the umbrella (`soundness.frontends`,
+-     `soundness.httpServers`, `soundness.webserverErrorPages`); their givens are imported by
+-     name, since `import soundness.*` does not import givens. The `httpServers` givens in the
+-     umbrella are hand-written forwarders rather than an `export`, because a synthesized
+-     export forwarder loses a given's capture-annotated refinement type.
++     Alles wird in das `soundness`-Umbrella exportiert, außer der Erweiterung `as` für den
++     Request-Body, die mit `as` aus distillate kollidiert und als `scintillate.as` erreicht
++     wird. Die Auswahlpakete werden im Umbrella gespiegelt (`soundness.frontends`,
++     `soundness.httpServers`, `soundness.webserverErrorPages`); ihre Givens werden beim Namen
++     importiert, da `import soundness.*` keine Givens importiert. Die `httpServers`-Givens im
++     Umbrella sind handgeschriebene Weiterleiter statt eines `export`, weil ein synthetisierter
++     Export-Weiterleiter den mit Captures annotierten Verfeinerungstyp eines Givens verliert.
+
+- refer scintillate.SocketServer
++ refer scintillate.SocketServer
+
+- refer scintillate.Httpd
++ refer scintillate.Httpd
+
+- refer scintillate.RequestServable
++ refer scintillate.RequestServable
+
+- refer scintillate.request
++ refer scintillate.request
+
+- refer scintillate.WebserverErrorPage
++ refer scintillate.WebserverErrorPage
+
+- refer telekinesis.Http
++ refer telekinesis.Http
+
+- entry .SocketServer   the raw-TCP backend: HTTP/1.1 keep-alive, TLS and ALPN-negotiated HTTP/2
++ entry .SocketServer   das Raw-TCP-Backend: HTTP/1.1 mit Keep-alive, TLS und per ALPN ausgehandeltes HTTP/2
+
+= entry .SocketServer   the raw-TCP backend: HTTP/1.1 keep-alive, TLS and ALPN-negotiated HTTP/2
+-   detail
++   detail
+
+-       `SocketServer(port, local, ssl)` is an HTTP server over a `java.net.ServerSocket`,
+-       independent of the JDK's `httpserver`. `port` is the port to bind, or `0` for a free
+-       port chosen by the system; `local` (default `true`) binds `localhost` only, and `false`
+-       binds every interface; `ssl` is an `Optional[javax.net.ssl.SSLContext]` which, when
+-       present, serves TLS and offers `h2` then `http/1.1` by ALPN, so a client which speaks
+-       HTTP/2 negotiates it during the handshake. It needs a `WebserverErrorPage` given, which
+-       turns a throwing handler into a response.
++       `SocketServer(port, local, ssl)` ist ein HTTP-Server über einem `java.net.ServerSocket`,
++       unabhängig vom `httpserver` des JDK. `port` ist der zu bindende Port, oder `0` für einen
++       freien Port, den das System wählt; `local` (Vorgabe `true`) bindet nur `localhost`, und
++       `false` bindet jede Schnittstelle; `ssl` ist ein `Optional[javax.net.ssl.SSLContext]`,
++       das, wenn vorhanden, TLS bereitstellt und per ALPN `h2` und dann `http/1.1` anbietet,
++       sodass ein Client, der HTTP/2 spricht, es während des Handshakes aushandelt. Er benötigt
++       ein `WebserverErrorPage`-Given, das einen Handler, der eine Ausnahme wirft, in eine
++       Response verwandelt.
+
+=       turns a throwing handler into a response.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       turns a throwing handler into a response.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       turns a throwing handler into a response.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       turns a throwing handler into a response.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       turns a throwing handler into a response.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       turns a throwing handler into a response.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       turns a throwing handler into a response.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+=       turns a throwing handler into a response.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+-       import probates.awaitProbate
++       import probates.awaitProbate
+
+=       turns a throwing handler into a response.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+=       import probates.awaitProbate
+-       import webserverErrorPages.minimalErrorPage
++       import webserverErrorPages.minimalErrorPage
+
+=       turns a throwing handler into a response.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+=       import probates.awaitProbate
+=       import webserverErrorPages.minimalErrorPage
+=
+-       def main(): Unit = supervise:
++       def main(): Unit = supervise:
+
+-         val service: Service = SocketServer(0).handle:
++         val service: Service = SocketServer(0).handle:
+
+-           Http.Response(Http.Ok)(t"${request.method.show} ${request.target}")
++           Http.Response(Http.Ok)(t"${request.method.show} ${request.target}")
+
+-         service.port
++         service.port
+
+-         service.cancel()
++         service.cancel()
+
+=         service.cancel()
+-       ```
++       ```
+
+-       Each accepted connection is served by `#serveConnection`: a keep-alive loop which
+-       parses one request head after another off the socket, frames each body by its
+-       `Content-Length` or its chunking (or as empty), answers `Expect: 100-continue` with
+-       an interim `100` before the handler reads the body, and drains an unread body of up
+-       to 64 KiB to reach the next pipelined request, closing instead of reading a larger
+-       one. A request line over the limit is refused with `414`, headers over it with
+-       `431`, any other malformed head with `400`, and a read timeout (30 s idle) with a
+-       best-effort `408`. A `Connection: close` from either side ends the loop after the
+-       response, and a streaming body to an HTTP/1.0 client is delimited by closing the
+-       connection, since it cannot be chunked.
++       Jede angenommene Verbindung wird von `#serveConnection` bedient: einer
++       Keep-alive-Schleife, die einen Request-Kopf nach dem anderen vom Socket parst, jeden Body
++       nach seiner `Content-Length` oder seinem Chunking rahmt (oder als leer),
++       `Expect: 100-continue` mit einem vorläufigen `100` beantwortet, bevor der Handler den Body liest,
++       und einen ungelesenen Body von bis zu 64 KiB leert, um den nächsten per Pipelining
++       gesendeten Request zu erreichen, wobei sie bei einem größeren die Verbindung schließt,
++       statt ihn zu lesen. Eine Request-Zeile über dem Limit wird mit `414` abgewiesen, Header
++       darüber mit `431`, jeder andere fehlerhafte Kopf mit `400` und ein Lese-Timeout (30 s
++       Leerlauf) nach bestem Bemühen mit `408`. Ein `Connection: close` von einer der beiden
++       Seiten beendet die Schleife nach der Response, und ein streamender Body an einen
++       HTTP/1.0-Client wird durch Schließen der Verbindung begrenzt, da er nicht gechunkt werden
++       kann.
+
+-       A request carrying `Connection: Upgrade` and an `Upgrade` header (other than
+-       `h2c`, which Java's `HttpClient` offers on every cleartext request and this server
+-       never performs) is a protocol upgrade: its body is the unbounded remainder of the
+-       connection, and a handler which answers `101 Switching Protocols` with a streaming
+-       body takes over the socket for as long as that body runs — this is how a WebSocket
+-       handler works. Small responses are not delayed by Nagle's algorithm (`TCP_NODELAY`),
+-       and a fixed-extent response's head and body coalesce into one socket write.
++       Ein Request mit `Connection: Upgrade` und einem `Upgrade`-Header (außer
++       `h2c`, das der `HttpClient` von Java bei jedem Klartext-Request anbietet und das dieser
++       Server nie durchführt) ist ein Protokoll-Upgrade: Sein Body ist der unbegrenzte Rest der
++       Verbindung, und ein Handler, der mit `101 Switching Protocols` und einem streamenden Body
++       antwortet, übernimmt den Socket, solange dieser Body läuft — so funktioniert ein
++       WebSocket-Handler. Kleine Responses werden nicht durch den Nagle-Algorithmus verzögert
++       (`TCP_NODELAY`), und Kopf und Body einer Response mit fester Länge werden zu einem
++       einzigen Schreibvorgang auf den Socket zusammengefasst.
+
+-       The listening socket has a backlog of 1024 (the kernel caps it: 128 on a default
+-       macOS, 4096 on Linux). A failure inside one connection is logged as
+-       `Httpd.Event.ConnectionFailed` and confined to that connection; the server keeps
+-       accepting.
++       Der lauschende Socket hat einen Backlog von 1024 (der Kernel begrenzt ihn: 128 auf einem
++       macOS mit Standardeinstellungen, 4096 unter Linux). Ein Fehler innerhalb einer Verbindung
++       wird als `Httpd.Event.ConnectionFailed` protokolliert und bleibt auf diese Verbindung
++       beschränkt; der Server nimmt weiter Verbindungen an.
+
+=       accepting.
+-   refer scintillate.Httpd
++   refer scintillate.Httpd
+
+=   refer scintillate.Httpd
+-   refer scintillate.Frontend
++   refer scintillate.Frontend
+
+=   refer scintillate.Frontend
+-   refer scintillate.Http2Session
++   refer scintillate.Http2Session
+
+-   refer scintillate.WebserverErrorPage
++   refer scintillate.WebserverErrorPage
+
+-   entry #port   the port given at construction: the one to bind, or `0` for any free port
+-       The `Service` returned by `#handle` reports the port actually bound, as does every
+-       `Http.Connection` served, so a server built with `0` is still addressable.
+-   entry #local   whether only `localhost` is bound (`true`, the default) or every interface
+-   entry #ssl   the `SSLContext` to serve TLS with, or `Unset` for cleartext
+-       A TLS server offers `h2` and `http/1.1` by ALPN; a connection which negotiates `h2`
+-       is driven by the HTTP/2 engine, with the same handler. The TLS path always uses a
+-       virtual thread per connection, whatever `Frontend` is in scope, since an `SSLSocket`
+-       cannot ride a selector.
+-   entry #handle   serves every request with a handler, on a chosen `Frontend`
+-       Binds the port and returns a `Service^` which stops the server when cancelled. The
+-       handler is a context function from the `Http.Connection` to an
+-       `Http.Response^{connection}`: it may retain the connection in a streamed body, and
+-       nothing else. It needs a `Monitor` and `Probate` (the server's accept loop and each
+-       connection run as daemons under them), an `Httpd.Event is Loggable`, a
+-       `Tactic[Httpd.Error]` (raised if the port cannot be bound) and a `Frontend`, which the
+-       companion defaults to `Frontend.ThreadPerConnection` and which
+-       `import frontends.reactiveFrontend` overrides for a cleartext server: the selector-loop
+-       `Reactor` then serves it, with the handler run inline on the loop. A TLS server
+-       ignores the frontend and takes the per-connection daemon path.
++   entry #port   der bei der Konstruktion angegebene Port: der zu bindende, oder `0` für einen beliebigen freien Port
++       Der von `#handle` zurückgegebene `Service` meldet den tatsächlich gebundenen Port, ebenso
++       wie jede bediente `Http.Connection`, sodass ein mit `0` gebauter Server trotzdem
++       adressierbar ist.
++   entry #local   ob nur `localhost` gebunden wird (`true`, die Vorgabe) oder jede Schnittstelle
++   entry #ssl   der `SSLContext`, mit dem TLS bereitgestellt wird, oder `Unset` für Klartext
++       Ein TLS-Server bietet per ALPN `h2` und `http/1.1` an; eine Verbindung, die `h2`
++       aushandelt, wird von der HTTP/2-Engine mit demselben Handler betrieben. Der TLS-Pfad
++       verwendet immer einen virtuellen Thread pro Verbindung, egal welches `Frontend` im
++       Geltungsbereich ist, da ein `SSLSocket` nicht auf einem Selektor laufen kann.
++   entry #handle   bedient jeden Request mit einem Handler, auf einem gewählten `Frontend`
++       Bindet den Port und gibt einen `Service^` zurück, der den Server stoppt, wenn er
++       abgebrochen wird. Der Handler ist eine Kontextfunktion von der `Http.Connection` zu einer
++       `Http.Response^{connection}`: Er darf die Verbindung in einem gestreamten Body
++       festhalten, und sonst nichts. Er benötigt einen `Monitor` und ein `Probate` (die
++       Accept-Schleife des Servers und jede Verbindung laufen unter ihnen als Daemons), ein
++       `Httpd.Event is Loggable`, einen `Tactic[Httpd.Error]` (ausgelöst, wenn der Port nicht
++       gebunden werden kann) und ein `Frontend`, das das Begleitobjekt mit
++       `Frontend.ThreadPerConnection` vorgibt und das
++       `import frontends.reactiveFrontend` für einen Klartext-Server überschreibt: Dann bedient
++       ihn der Selektor-Schleifen-`Reactor`, wobei der Handler inline auf der Schleife läuft. Ein
++       TLS-Server ignoriert das Frontend und nimmt den Pfad mit einem Daemon pro Verbindung.
+
+=       ignores the frontend and takes the per-connection daemon path.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       ignores the frontend and takes the per-connection daemon path.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       ignores the frontend and takes the per-connection daemon path.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       ignores the frontend and takes the per-connection daemon path.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       ignores the frontend and takes the per-connection daemon path.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       ignores the frontend and takes the per-connection daemon path.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       ignores the frontend and takes the per-connection daemon path.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+=       ignores the frontend and takes the per-connection daemon path.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+-       import probates.awaitProbate
++       import probates.awaitProbate
+
+=       ignores the frontend and takes the per-connection daemon path.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+=       import probates.awaitProbate
+-       import webserverErrorPages.minimalErrorPage
++       import webserverErrorPages.minimalErrorPage
+
+=       ignores the frontend and takes the per-connection daemon path.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+=       import probates.awaitProbate
+=       import webserverErrorPages.minimalErrorPage
+-       import frontends.reactiveFrontend
++       import frontends.reactiveFrontend
+
+=       ignores the frontend and takes the per-connection daemon path.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+=       import probates.awaitProbate
+=       import webserverErrorPages.minimalErrorPage
+=       import frontends.reactiveFrontend
+=
+-       def main(): Unit = supervise:
++       def main(): Unit = supervise:
+
+-         SocketServer(8080).handle:
++         SocketServer(8080).handle:
+
+-           Http.Response(Http.Ok)(t"served inline on a selector lane")
++           Http.Response(Http.Ok)(t"served inline on a selector lane")
+
+=           Http.Response(Http.Ok)(t"served inline on a selector lane")
+-       ```
++       ```
+
+-       The per-request `handle` is the degenerate case of `#handleSession`: every connection
+-       is served with no per-connection setup.
+-   entry #handleSession   serves each connection as a session, with state set up once per connection
+-       `handleSession(scope)` runs `scope` once for every accepted connection — an HTTP/2
+-       connection, or an HTTP/1.1 keep-alive socket — with an `Http2Session` in scope. The
+-       scope may set up per-connection state (an authenticated principal, a rate limiter, a
+-       counter) and then call `session.handle(handler)` to serve that connection's requests
+-       or streams with the state in scope. Capture checking confines the state to its
+-       connection, so it cannot leak to another client's.
++       Das `handle` pro Request ist der degenerierte Fall von `#handleSession`: Jede Verbindung
++       wird ohne Einrichtung pro Verbindung bedient.
++   entry #handleSession   bedient jede Verbindung als Sitzung, mit einem einmal pro Verbindung eingerichteten Zustand
++       `handleSession(scope)` führt `scope` einmal für jede angenommene Verbindung aus — eine
++       HTTP/2-Verbindung oder einen HTTP/1.1-Keep-alive-Socket — mit einer `Http2Session` im
++       Geltungsbereich. Der Geltungsbereich kann Zustand pro Verbindung einrichten (einen
++       authentifizierten Principal, einen Ratenbegrenzer, einen Zähler) und dann
++       `session.handle(handler)` aufrufen, um die Requests oder Streams dieser Verbindung mit dem
++       Zustand im Geltungsbereich zu bedienen. Das Capture-Checking beschränkt den Zustand auf
++       seine Verbindung, sodass er nicht zur Verbindung eines anderen Clients durchsickern kann.
+
+=       connection, so it cannot leak to another client's.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       connection, so it cannot leak to another client's.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       connection, so it cannot leak to another client's.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       connection, so it cannot leak to another client's.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       connection, so it cannot leak to another client's.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       connection, so it cannot leak to another client's.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       connection, so it cannot leak to another client's.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+=       connection, so it cannot leak to another client's.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+-       import probates.awaitProbate
++       import probates.awaitProbate
+
+=       connection, so it cannot leak to another client's.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+=       import probates.awaitProbate
+-       import webserverErrorPages.minimalErrorPage
++       import webserverErrorPages.minimalErrorPage
+
+-       def main(context: javax.net.ssl.SSLContext): Unit = supervise:
++       def main(context: javax.net.ssl.SSLContext): Unit = supervise:
+
+-         SocketServer(8443, ssl = context).handleSession: session ?=>
++         SocketServer(8443, ssl = context).handleSession: session ?=>
+
+-           val counter = java.util.concurrent.atomic.AtomicInteger(0)
++           val counter = java.util.concurrent.atomic.AtomicInteger(0)
+
+-           session.handle:
++           session.handle:
+
+-             Http.Response(Http.Ok)(t"request ${counter.incrementAndGet} on this connection")
++             Http.Response(Http.Ok)(t"request ${counter.incrementAndGet} on this connection")
+
+=             Http.Response(Http.Ok)(t"request ${counter.incrementAndGet} on this connection")
+-       ```
++       ```
+
+-       Over HTTP/2, the streams multiplexed on one connection are served concurrently, each
+-       on its own virtual thread, sharing the scope's state. It takes the same contextual
+-       values as `#handle` except the `Frontend`: a session is always per-thread.
+-   entry #serveConnection   drives the HTTP/1.1 keep-alive loop over an input and output stream
+-       `serveConnection(handler)(in, out)` serves every request readable from `in`, writing
+-       the responses to `out`, until the input ends or a request closes the connection. The
+-       server calls it once per accepted socket; it is also the in-process entry point for
+-       tests and benchmarks, which feed a `ByteArrayInputStream` of requests and read the
+-       responses from a `ByteArrayOutputStream`, with no socket or thread involved. The
+-       caller owns the streams: closing them and any read timeout. It needs only an
+-       `Httpd.Event is Loggable`; a stream error tearing the connection down is logged as
+-       `Httpd.Event.BrokenStream`.
++       Über HTTP/2 werden die auf einer Verbindung gemultiplexten Streams nebenläufig bedient,
++       jeder auf seinem eigenen virtuellen Thread, und teilen sich den Zustand des
++       Geltungsbereichs. Es nimmt dieselben Kontextwerte wie `#handle` außer dem `Frontend`: Eine
++       Sitzung ist immer eine pro Thread.
++   entry #serveConnection   betreibt die HTTP/1.1-Keep-alive-Schleife über einem Eingabe- und einem Ausgabestream
++       `serveConnection(handler)(in, out)` bedient jeden aus `in` lesbaren Request und schreibt
++       die Responses nach `out`, bis die Eingabe endet oder ein Request die Verbindung schließt.
++       Der Server ruft es einmal pro angenommenem Socket auf; es ist auch der prozessinterne
++       Einstiegspunkt für Tests und Benchmarks, die einen `ByteArrayInputStream` von Requests
++       einspeisen und die Responses aus einem `ByteArrayOutputStream` lesen, ohne Socket oder
++       Thread. Der Aufrufer besitzt die Streams: das Schließen und jedes Lese-Timeout. Es
++       benötigt nur ein `Httpd.Event is Loggable`; ein Stream-Fehler, der die Verbindung
++       abreißt, wird als `Httpd.Event.BrokenStream` protokolliert.
+
+=       `Httpd.Event.BrokenStream`.
+=
+-       ```scala
++       ```scala
+
+=       `Httpd.Event.BrokenStream`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       ```scala
+=       import soundness.*
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       ```scala
+=       import soundness.*
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       ```scala
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import webserverErrorPages.minimalErrorPage
++       import webserverErrorPages.minimalErrorPage
+
+-       val in = java.io.ByteArrayInputStream(t"GET / HTTP/1.1\r\nHost: x\r\n\r\n".s.getBytes("US-ASCII").nn)
++       val in = java.io.ByteArrayInputStream(t"GET / HTTP/1.1\r\nHost: x\r\n\r\n".s.getBytes("US-ASCII").nn)
+
+-       val out = java.io.ByteArrayOutputStream()
++       val out = java.io.ByteArrayOutputStream()
+
+-       SocketServer(0).serveConnection(Http.Response(Http.Ok)(t"in-process"))(in, out)
++       SocketServer(0).serveConnection(Http.Response(Http.Ok)(t"in-process"))(in, out)
+
+-       String(out.toByteArray.nn, "US-ASCII").tt.contains(t"in-process")
++       String(out.toByteArray.nn, "US-ASCII").tt.contains(t"in-process")
+
+=       String(out.toByteArray.nn, "US-ASCII").tt.contains(t"in-process")
+-       ```
++       ```
+
+- entry .Httpd   the JDK backend: the same handler over `com.sun.net.httpserver`, and the server events and error
++ entry .Httpd   das JDK-Backend: derselbe Handler über `com.sun.net.httpserver`, sowie die Server-Ereignisse und der Fehler
+
+= entry .Httpd   the JDK backend: the same handler over `com.sun.net.httpserver`, and the server events and error
+-   detail
++   detail
+
+-       `Httpd(port, local)` serves a handler through the JDK's built-in `HttpServer`, on a
+-       virtual thread per exchange. Its `#handle` has the signature of `SocketServer`'s, so
+-       the two backends are interchangeable, but the JDK server has one engine: the
+-       `Frontend` is accepted and ignored, there is no TLS or HTTP/2, and there are no
+-       sessions. `SocketServer` is the backend to prefer; `Httpd` remains for a program which
+-       wants the JDK's server, and its companion is where every backend's events and error
+-       live.
++       `Httpd(port, local)` bedient einen Handler über den eingebauten `HttpServer` des JDK, mit
++       einem virtuellen Thread pro Austausch. Sein `#handle` hat die Signatur desjenigen von
++       `SocketServer`, sodass die beiden Backends austauschbar sind, aber der JDK-Server hat nur
++       eine Engine: Das `Frontend` wird angenommen und ignoriert, es gibt kein TLS und kein
++       HTTP/2, und es gibt keine Sitzungen. `SocketServer` ist das zu bevorzugende Backend;
++       `Httpd` bleibt für ein Programm, das den Server des JDK will, und in seinem Begleitobjekt
++       liegen die Ereignisse und der Fehler aller Backends.
+
+=       live.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       live.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       live.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       live.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       live.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       live.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       live.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+=       live.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+-       import probates.awaitProbate
++       import probates.awaitProbate
+
+=       live.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+=       import probates.awaitProbate
+-       import webserverErrorPages.minimalErrorPage
++       import webserverErrorPages.minimalErrorPage
+
+=       live.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+=       import probates.awaitProbate
+=       import webserverErrorPages.minimalErrorPage
+=
+-       def main(): Unit = supervise:
++       def main(): Unit = supervise:
+
+-         Httpd(8080).handle:
++         Httpd(8080).handle:
+
+-           Http.Response(Http.Ok)(t"served by the JDK")
++           Http.Response(Http.Ok)(t"served by the JDK")
+
+=           Http.Response(Http.Ok)(t"served by the JDK")
+-       ```
++       ```
+
+-       A request whose host cannot be parsed is answered `400` and logged as
+-       `Httpd.Event.ConnectionFailed`; a response cut short is logged as `BrokenStream`.
++       Ein Request, dessen Host nicht geparst werden kann, wird mit `400` beantwortet und als
++       `Httpd.Event.ConnectionFailed` protokolliert; eine abgebrochene Response wird als
++       `BrokenStream` protokolliert.
+
+=       `Httpd.Event.ConnectionFailed`; a response cut short is logged as `BrokenStream`.
+-   refer scintillate.SocketServer
++   refer scintillate.SocketServer
+
+-   refer scintillate.RequestServable
++   refer scintillate.RequestServable
+
+-   entry .Event   what a server logs: requests received and processed, broken streams and failed connections
++   entry .Event   was ein Server protokolliert: empfangene und verarbeitete Requests, abgebrochene Streams und gescheiterte Verbindungen
+
+=   entry .Event   what a server logs: requests received and processed, broken streams and failed connections
+-     detail
++     detail
+
+-         Every `Event` is tagged `Log.Network`, and `Received` also `Log.Protocol`. Both
+-         backends log `Received` at `fine` when a request's head has been parsed and
+-         `Processed` at `info` once its response has been delivered, with the time taken;
+-         `BrokenStream` is a warning when writing a response (or reading a request) is cut
+-         short, and `ConnectionFailed` is logged at `fail` when a connection's handling throws
+-         something which was not turned into a response. An `Httpd.Event is Loggable` must be
+-         in scope to serve at all; `logging.silentLogging` discards them.
+-     entry .communicable   renders each event as a message
+-     entry .Received   a request's head has been read: _received the request `request`_
+-       entry #request   the request
+-     entry .Processed   a response has been sent: _processed the request `request` in `duration`ms_
+-       entry #request   the request
+-       entry #duration   the milliseconds from the request's arrival to its response's delivery
+-     entry .BrokenStream   a response could not be written in full: _sending the response was aborted after `length`_
+-       entry #length   the bytes written before the failure
+-     entry .ConnectionFailed   a connection's handler failed: _the connection handler failed: `message`_
+-       entry #error   the failure, as a `fulminate.Error`
+-   entry .Error   raised when the port cannot be bound
++         Jedes `Event` ist mit `Log.Network` getaggt und `Received` zusätzlich mit
++         `Log.Protocol`. Beide Backends protokollieren `Received` auf `fine`, wenn der Kopf eines
++         Requests geparst wurde, und `Processed` auf `info`, sobald seine Response ausgeliefert
++         wurde, mit der benötigten Zeit; `BrokenStream` ist eine Warnung, wenn das Schreiben
++         einer Response (oder das Lesen eines Requests) abgebrochen wird, und `ConnectionFailed`
++         wird auf `fail` protokolliert, wenn die Behandlung einer Verbindung etwas wirft, das
++         nicht in eine Response verwandelt wurde. Ein `Httpd.Event is Loggable` muss im
++         Geltungsbereich sein, damit überhaupt etwas bedient wird; `logging.silentLogging`
++         verwirft sie.
++     entry .communicable   stellt jedes Ereignis als Meldung dar
++     entry .Received   der Kopf eines Requests wurde gelesen: _received the request `request`_
++       entry #request   der Request
++     entry .Processed   eine Response wurde gesendet: _processed the request `request` in `duration`ms_
++       entry #request   der Request
++       entry #duration   die Millisekunden von der Ankunft des Requests bis zur Auslieferung seiner Response
++     entry .BrokenStream   eine Response konnte nicht vollständig geschrieben werden: _sending the response was aborted after `length`_
++       entry #length   die vor dem Fehler geschriebenen Bytes
++     entry .ConnectionFailed   der Handler einer Verbindung ist gescheitert: _the connection handler failed: `message`_
++       entry #error   der Fehler, als `fulminate.Error`
++   entry .Error   ausgelöst, wenn der Port nicht gebunden werden kann
+
+=   entry .Error   raised when the port cannot be bound
+-     detail
++     detail
+
+-         Error `↯/s.116.1`: _could not start an HTTP server on port `port`_. Raised by `handle` (of
+-         either backend) and `SocketServer#handleSession` when binding the listening socket
+-         throws a `BindException`, typically because the port is already in use. A
+-         `Tactic[Httpd.Error]` is required to call `handle`.
+-     entry #port   the port which could not be bound
+-   entry #port   the port to bind, or `0` for a free port chosen by the system
+-   entry #local   whether only `localhost` is bound (`true`, the default) or every interface
+-   entry #handle   serves every request with a handler, on the JDK server
+-       Creates the `HttpServer`, installs the handler on the root context, starts it and
+-       returns a `Service^` whose `cancel()` stops it (with a one-second grace period) and
+-       whose `port` is the one bound. Takes the same contextual values as
+-       `SocketServer#handle`; the `Frontend` is ignored.
++         Fehler `↯/s.116.1`: _could not start an HTTP server on port `port`_. Ausgelöst von
++         `handle` (beider Backends) und von `SocketServer#handleSession`, wenn das Binden des
++         lauschenden Sockets eine `BindException` wirft, typischerweise weil der Port bereits
++         belegt ist. Ein `Tactic[Httpd.Error]` ist nötig, um `handle` aufzurufen.
++     entry #port   der Port, der nicht gebunden werden konnte
++   entry #port   der zu bindende Port, oder `0` für einen freien Port, den das System wählt
++   entry #local   ob nur `localhost` gebunden wird (`true`, die Vorgabe) oder jede Schnittstelle
++   entry #handle   bedient jeden Request mit einem Handler, auf dem JDK-Server
++       Erzeugt den `HttpServer`, installiert den Handler auf dem Wurzelkontext, startet ihn und
++       gibt einen `Service^` zurück, dessen `cancel()` ihn stoppt (mit einer Schonfrist von
++       einer Sekunde) und dessen `port` der gebundene ist. Nimmt dieselben Kontextwerte wie
++       `SocketServer#handle`; das `Frontend` wird ignoriert.
+
+- entry .RequestServable   what every HTTP server backend offers: `handle(handler)` on a port
++ entry .RequestServable   was jedes HTTP-Server-Backend bietet: `handle(handler)` auf einem Port
+
+= entry .RequestServable   what every HTTP server backend offers: `handle(handler)` on a port
+-   detail
++   detail
+
+-       The trait `SocketServer` and `Httpd` implement. Its one method, `#handle`, takes the
+-       handler which serves every request, and a program which wants to choose its backend
+-       at runtime can hold either as a `RequestServable`. The handler's type is the contract
+-       of the whole library: a context function from the live `Http.Connection` to an
+-       `Http.Response^{connection}`, which may retain the connection in a streamed body and
+-       nothing else.
++       Der Trait, den `SocketServer` und `Httpd` implementieren. Seine einzige Methode,
++       `#handle`, nimmt den Handler, der jeden Request bedient, und ein Programm, das sein
++       Backend zur Laufzeit wählen will, kann jedes der beiden als `RequestServable` halten. Der
++       Typ des Handlers ist der Vertrag der ganzen Bibliothek: eine Kontextfunktion von der
++       aktiven `Http.Connection` zu einer `Http.Response^{connection}`, die die Verbindung in
++       einem gestreamten Body festhalten darf, und sonst nichts.
+
+=       nothing else.
+-   refer scintillate.SocketServer
++   refer scintillate.SocketServer
+
+=       nothing else.
+=   refer scintillate.SocketServer
+-   refer scintillate.Httpd
++   refer scintillate.Httpd
+
+-   entry #handle   serves every request with a handler, returning the running `Service`
+-       Needs a `Monitor` and `Probate`, an `Httpd.Event is Loggable`, a
+-       `Tactic[Httpd.Error]` and a `Frontend`. The `Frontend` is a parameter rather than
+-       summoned inside the implementation so that a `frontends` given imported at the call
+-       site, not the companion default, is the one found.
++   entry #handle   bedient jeden Request mit einem Handler und gibt den laufenden `Service` zurück
++       Benötigt einen `Monitor` und ein `Probate`, ein `Httpd.Event is Loggable`, einen
++       `Tactic[Httpd.Error]` und ein `Frontend`. Das `Frontend` ist ein Parameter, statt in der
++       Implementierung herbeigerufen zu werden, damit ein an der Aufrufstelle importiertes
++       `frontends`-Given gefunden wird und nicht die Vorgabe des Begleitobjekts.
+
+- entry .Http2Session   a per-connection scope: `handle` serves one connection's requests with shared state
++ entry .Http2Session   ein Geltungsbereich pro Verbindung: `handle` bedient die Requests einer Verbindung mit gemeinsamem Zustand
+
+= entry .Http2Session   a per-connection scope: `handle` serves one connection's requests with shared state
+-   detail
++   detail
+
+-       The value `SocketServer#handleSession` lends its scope, for each accepted connection.
+-       `#handle(handler)` serves every request on that connection (every stream, for HTTP/2,
+-       concurrently) with the handler, which closes over whatever state the scope set up;
+-       the state is confined to the connection by capture checking. A session over an
+-       HTTP/1.1 keep-alive socket serves its requests in order; over HTTP/2 it is the server
+-       dual of the client's `Http2.Endpoint.session`.
++       Der Wert, den `SocketServer#handleSession` seinem Geltungsbereich für jede angenommene
++       Verbindung leiht. `#handle(handler)` bedient jeden Request auf dieser Verbindung (bei
++       HTTP/2 jeden Stream, nebenläufig) mit dem Handler, der den vom Geltungsbereich
++       eingerichteten Zustand einschließt; das Capture-Checking beschränkt den Zustand auf die
++       Verbindung. Eine Sitzung über einem HTTP/1.1-Keep-alive-Socket bedient ihre Requests der
++       Reihe nach; über HTTP/2 ist sie das serverseitige Gegenstück zu
++       `Http2.Endpoint.session` des Clients.
+
+=       dual of the client's `Http2.Endpoint.session`.
+-   refer scintillate.SocketServer
++   refer scintillate.SocketServer
+
+-   entry #handle   serves every request or stream of this connection with the handler
++   entry #handle   bedient jeden Request oder Stream dieser Verbindung mit dem Handler
+
+- entry .Frontend   which engine `SocketServer.handle` serves on: a thread per connection, or the reactor
++ entry .Frontend   auf welcher Engine `SocketServer.handle` bedient: ein Thread pro Verbindung, oder der Reactor
+
+= entry .Frontend   which engine `SocketServer.handle` serves on: a thread per connection, or the reactor
+-   detail
++   detail
+
+-       A `SocketServer` serving cleartext HTTP/1.1 can run in two ways, and the `Frontend`
+-       given in scope when `handle` is called chooses. `ThreadPerConnection`, the default
+-       (`.default`, in the companion), spawns a virtual-thread daemon per accepted socket: a
+-       handler may block — on a database, a file, another service — and only its own
+-       connection waits; it serves streaming responses, TLS, HTTP/2 and sessions. `Reactive`
+-       serves on the `Reactor`, an event loop of selector lanes which runs the handler inline
+-       with no per-request thread transition: about half again the throughput on small
+-       requests, and less allocation, at the price that a handler which blocks stalls every
+-       connection on its lane. The reactor hands anything it cannot serve inline — a chunked
+-       or oversized body, `Expect: 100-continue`, a protocol upgrade — to the
+-       thread-per-connection path, so a WebSocket handler works under either, and a TLS
+-       server ignores the selection entirely.
++       Ein `SocketServer`, der Klartext-HTTP/1.1 bedient, kann auf zwei Arten laufen, und das
++       beim Aufruf von `handle` im Geltungsbereich befindliche `Frontend`-Given wählt.
++       `ThreadPerConnection`, die Vorgabe (`.default`, im Begleitobjekt), startet einen Daemon auf
++       einem virtuellen Thread pro angenommenem Socket: Ein Handler darf blockieren — auf einer
++       Datenbank, einer Datei, einem anderen Dienst —, und nur seine eigene Verbindung wartet; es
++       bedient streamende Responses, TLS, HTTP/2 und Sitzungen. `Reactive` bedient auf dem
++       `Reactor`, einer Ereignisschleife aus Selektor-Lanes, die den Handler inline ausführt,
++       ohne Threadwechsel pro Request: etwa anderthalbfacher Durchsatz bei kleinen Requests und
++       weniger Allokation, um den Preis, dass ein blockierender Handler jede Verbindung auf
++       seiner Lane aufhält. Der Reactor übergibt alles, was er nicht inline bedienen kann — einen
++       gechunkten oder übergroßen Body, `Expect: 100-continue`, ein Protokoll-Upgrade — an den
++       Pfad mit einem Thread pro Verbindung, sodass ein WebSocket-Handler unter beiden
++       funktioniert, und ein TLS-Server ignoriert die Auswahl vollständig.
+
+=       server ignores the selection entirely.
+=
+-       ```scala
++       ```scala
+
+=       server ignores the selection entirely.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import frontends.reactiveFrontend
++       import frontends.reactiveFrontend
+
+-       summon[Frontend] == Frontend.Reactive
++       summon[Frontend] == Frontend.Reactive
+
+=       summon[Frontend] == Frontend.Reactive
+-       ```
++       ```
+
+-       The choice is made by importing one of the `frontends` givens by name, which outranks
+-       the companion's default.
++       Die Wahl erfolgt, indem eines der `frontends`-Givens beim Namen importiert wird, das
++       Vorrang vor der Vorgabe des Begleitobjekts hat.
+
+-   refer scintillate.frontends
++   refer scintillate.frontends
+
+-   refer scintillate.Reactor
++   refer scintillate.Reactor
+
+-   entry .default   the companion's default, `Frontend.ThreadPerConnection`
+-       In implicit scope with no import, and outranked by a `frontends` given imported by
+-       name.
++   entry .default   die Vorgabe des Begleitobjekts, `Frontend.ThreadPerConnection`
++       Ohne Import im impliziten Geltungsbereich, und von einem beim Namen importierten
++       `frontends`-Given übertroffen.
+
+- entry .frontends   the two front-ends, each a given to import by name
++ entry .frontends   die beiden Frontends, jedes ein beim Namen zu importierendes Given
+
+= entry .frontends   the two front-ends, each a given to import by name
+-   detail
++   detail
+
+-       `import frontends.reactiveFrontend` selects the selector-loop `Reactor` for cleartext
+-       servers; `import frontends.threadPerConnectionFrontend` states the default explicitly.
+-       `import soundness.*` brings neither in; `Frontend.default` applies when no import is
+-       made.
++       `import frontends.reactiveFrontend` wählt den Selektor-Schleifen-`Reactor` für
++       Klartext-Server; `import frontends.threadPerConnectionFrontend` gibt die Vorgabe explizit
++       an. `import soundness.*` bringt keines von beiden herein; `Frontend.default` gilt, wenn
++       nichts importiert wird.
+
+=       made.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       made.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       made.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       made.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       made.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       made.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       made.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+=       made.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+-       import probates.awaitProbate
++       import probates.awaitProbate
+
+=       made.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+=       import probates.awaitProbate
+-       import webserverErrorPages.minimalErrorPage
++       import webserverErrorPages.minimalErrorPage
+
+=       made.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+=       import probates.awaitProbate
+=       import webserverErrorPages.minimalErrorPage
+-       import frontends.reactiveFrontend
++       import frontends.reactiveFrontend
+
+=       made.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+=       import probates.awaitProbate
+=       import webserverErrorPages.minimalErrorPage
+=       import frontends.reactiveFrontend
+=
+-       def main(): Unit = supervise:
++       def main(): Unit = supervise:
+
+-         SocketServer(8080).handle(Http.Response(Http.Ok)(t"Hello, world!"))
++         SocketServer(8080).handle(Http.Response(Http.Ok)(t"Hello, world!"))
+
+=         SocketServer(8080).handle(Http.Response(Http.Ok)(t"Hello, world!"))
+-       ```
++       ```
+
+-   entry .threadPerConnectionFrontend   a virtual thread per connection: handlers may block
+-   entry .reactiveFrontend   the selector-loop reactor: handlers must not block
++   entry .threadPerConnectionFrontend   ein virtueller Thread pro Verbindung: Handler dürfen blockieren
++   entry .reactiveFrontend   der Selektor-Schleifen-Reactor: Handler dürfen nicht blockieren
+
+- entry .Reactor   the event-loop front-end: selector lanes serving cleartext HTTP/1.1 with the handler inline
++ entry .Reactor   das Ereignisschleifen-Frontend: Selektor-Lanes, die Klartext-HTTP/1.1 mit dem Handler inline bedienen
+
+= entry .Reactor   the event-loop front-end: selector lanes serving cleartext HTTP/1.1 with the handler inline
+-   detail
++   detail
+
+-       `Reactor(requested, local, loops)(handler)` binds a listening channel and starts
+-       `loops` platform threads (one per available processor, if `0`), each owning a
+-       `Selector` and every connection registered with it, plus a boss thread accepting
+-       connections and distributing them round-robin. A lane services a batch of ready
+-       connections per wake-up: it accumulates each request until its head (and any fixed
+-       body up to 64 KiB) is complete, parses it over an in-memory cursor which cannot block,
+-       runs the handler inline, and writes a response of known extent in one gathering
+-       write. A slow reader is back-pressured: past 256 KiB of queued response bytes a
+-       connection's read interest is withdrawn until the queue drains to 64 KiB.
++       `Reactor(requested, local, loops)(handler)` bindet einen lauschenden Kanal und startet
++       `loops` Plattform-Threads (einen pro verfügbarem Prozessor, bei `0`), von denen jeder
++       einen `Selector` und jede bei ihm registrierte Verbindung besitzt, sowie einen
++       Boss-Thread, der Verbindungen annimmt und sie reihum verteilt. Eine Lane bearbeitet pro
++       Aufwachen einen Stapel bereiter Verbindungen: Sie sammelt jeden Request an, bis sein Kopf
++       (und ein etwaiger Body fester Länge bis 64 KiB) vollständig ist, parst ihn über einem
++       Cursor im Speicher, der nicht blockieren kann, führt den Handler inline aus und schreibt
++       eine Response bekannter Länge in einem einzigen sammelnden Schreibvorgang. Ein langsamer
++       Leser erfährt Gegendruck: Ab 256 KiB eingereihter Response-Bytes wird das Leseinteresse
++       einer Verbindung zurückgezogen, bis die Warteschlange auf 64 KiB abgeflossen ist.
+
+-       `SocketServer.handle` constructs one when `frontends.reactiveFrontend` is in scope;
+-       it can also be used directly, as a value with a `#port` and a `#stop()`, which is how
+-       a test exercises it without a `Monitor`. It needs a `WebserverErrorPage` and an
+-       `Httpd.Event is Loggable`.
++       `SocketServer.handle` konstruiert einen, wenn `frontends.reactiveFrontend` im
++       Geltungsbereich ist; er kann auch direkt verwendet werden, als Wert mit einem `#port` und
++       einem `#stop()`, und so übt ein Test ihn ohne `Monitor` aus. Er benötigt eine
++       `WebserverErrorPage` und ein `Httpd.Event is Loggable`.
+
+=       `Httpd.Event is Loggable`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       `Httpd.Event is Loggable`.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       `Httpd.Event is Loggable`.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       `Httpd.Event is Loggable`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       `Httpd.Event is Loggable`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       `Httpd.Event is Loggable`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import webserverErrorPages.minimalErrorPage
++       import webserverErrorPages.minimalErrorPage
+
+-       val reactor = Reactor(0, loops = 2)(Http.Response(Http.Ok)(t"from the reactor"))
++       val reactor = Reactor(0, loops = 2)(Http.Response(Http.Ok)(t"from the reactor"))
+
+-       reactor.port
++       reactor.port
+
+-       reactor.stop()
++       reactor.stop()
+
+=       reactor.stop()
+-       ```
++       ```
+
+-       The contract is a non-blocking handler: one which computes its response from what it
+-       already has, or hands off to other tasks and answers from memory. A streaming
+-       (`Flowing`) response is forced to completion on the lane before it is written.
+-       Requests the lane cannot serve inline — a chunked or oversized body, `Expect:
+-       100-continue`, a protocol upgrade — leave the reactor: the channel and every byte
+-       already read are handed to a virtual thread running `SocketServer#serveConnection`,
+-       which re-parses the request as if it had owned the socket from the start. A head
+-       which exceeds the limits is refused with `431` (or `414`, `400`); the threads are
+-       daemons, so a reactor never pins a JVM whose main thread has ended.
++       Der Vertrag ist ein nicht blockierender Handler: einer, der seine Response aus dem
++       berechnet, was er bereits hat, oder an andere Aufgaben übergibt und aus dem Speicher
++       antwortet. Eine streamende (`Flowing`) Response wird auf der Lane bis zum Ende erzwungen,
++       bevor sie geschrieben wird. Requests, die die Lane nicht inline bedienen kann — ein
++       gechunkter oder übergroßer Body, `Expect:
++       100-continue`, ein Protokoll-Upgrade — verlassen den Reactor: Der Kanal und jedes
++       bereits gelesene Byte werden an einen virtuellen Thread übergeben, der
++       `SocketServer#serveConnection` ausführt und den Request neu parst, als hätte er den
++       Socket von Anfang an besessen. Ein Kopf, der die Limits überschreitet, wird mit `431`
++       (oder `414`, `400`) abgewiesen; die Threads sind Daemons, sodass ein Reactor nie eine JVM
++       festhält, deren Haupt-Thread beendet ist.
+
+=       daemons, so a reactor never pins a JVM whose main thread has ended.
+-   refer scintillate.Frontend
++   refer scintillate.Frontend
+
+=   refer scintillate.Frontend
+-   refer scintillate.SocketServer
++   refer scintillate.SocketServer
+
+-   entry #port   the port bound: the one requested, or the system's choice for a request of `0`
+-   entry #stop   closes the listener, wakes every lane and joins the threads
++   entry #port   der gebundene Port: der angeforderte, oder die Wahl des Systems, wenn `0` angefordert wurde
++   entry #stop   schließt den Listener, weckt jede Lane und wartet auf die Threads
+
+- entry .WebserverErrorPage   how a handler's exception becomes a response
++ entry .WebserverErrorPage   wie die Ausnahme eines Handlers zu einer Response wird
+
+= entry .WebserverErrorPage   how a handler's exception becomes a response
+-   detail
++   detail
+
+-       A `WebserverErrorPage` is a function from the `Throwable` a handler threw and the
+-       `Http.Request` it was serving to the `Http.Response` the client receives. Every
+-       backend needs one as a given when it is constructed (`SocketServer`, `Httpd`,
+-       `Reactor`), and the three in `webserverErrorPages` — minimal, styled and with a stack
+-       trace — are imported by name; a program's own is a lambda:
++       Eine `WebserverErrorPage` ist eine Funktion von dem `Throwable`, das ein Handler geworfen
++       hat, und dem `Http.Request`, den er bediente, zu der `Http.Response`, die der Client
++       erhält. Jedes Backend braucht eine als Given, wenn es konstruiert wird (`SocketServer`,
++       `Httpd`, `Reactor`), und die drei in `webserverErrorPages` — minimal, gestaltet und mit
++       einem Stacktrace — werden beim Namen importiert; eine eigene eines Programms ist ein
++       Lambda:
+
+=       trace — are imported by name; a program's own is a lambda:
+=
+-       ```scala
++       ```scala
+
+=       trace — are imported by name; a program's own is a lambda:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       given WebserverErrorPage = (throwable, request) =>
++       given WebserverErrorPage = (throwable, request) =>
+
+-         Http.Response(Unfulfilled(t"Something went wrong serving ${request.target}"))
++         Http.Response(Unfulfilled(t"Something went wrong serving ${request.target}"))
+
+=         Http.Response(Unfulfilled(t"Something went wrong serving ${request.target}"))
+-       ```
++       ```
+
+-       A handler's exception reaches the error page only when it escapes the handler as a
+-       thrown exception; an error raised through a `Tactic` the handler supplies is the
+-       handler's own business.
++       Die Ausnahme eines Handlers erreicht die Fehlerseite nur, wenn sie als geworfene
++       Ausnahme aus dem Handler entkommt; ein über einen vom Handler bereitgestellten `Tactic`
++       ausgelöster Fehler ist Sache des Handlers selbst.
+
+-   refer scintillate.webserverErrorPages
++   refer scintillate.webserverErrorPages
+
+-   refer scintillate.Unfulfilled
++   refer scintillate.Unfulfilled
+
+-   entry #handle   the response for a throwable and the request it interrupted
++   entry #handle   die Response für ein Throwable und den Request, den es unterbrochen hat
+
+- entry .webserverErrorPages   the standard error pages, each a given to import by name
++ entry .webserverErrorPages   die Standard-Fehlerseiten, jede ein beim Namen zu importierendes Given
+
+= entry .webserverErrorPages   the standard error pages, each a given to import by name
+-   detail
++   detail
+
+-       A `WebserverErrorPage` is required by every server; none is chosen by default.
+-       `minimalErrorPage` is a one-line text response, with no dependencies.
+-       `styledErrorPage` and `stackTracesErrorPage` are HTML pages built from templates
+-       bundled in scintillate's jar, read through the `Classloader` given in scope (such as
+-       `classloaders.threadContextClassloader`), and the latter includes the exception's
+-       stack trace, which suits development and not production.
++       Jeder Server benötigt eine `WebserverErrorPage`; keine wird standardmäßig gewählt.
++       `minimalErrorPage` ist eine einzeilige Text-Response ohne Abhängigkeiten.
++       `styledErrorPage` und `stackTracesErrorPage` sind HTML-Seiten, gebaut aus Vorlagen, die
++       im Jar von scintillate mitgeliefert und über das `Classloader`-Given im Geltungsbereich
++       gelesen werden (etwa `classloaders.threadContextClassloader`), und letztere enthält den
++       Stacktrace der Ausnahme, was zur Entwicklung passt und nicht zur Produktion.
+
+=       stack trace, which suits development and not production.
+=
+-       ```scala
++       ```scala
+
+=       stack trace, which suits development and not production.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import webserverErrorPages.minimalErrorPage
++       import webserverErrorPages.minimalErrorPage
+
+-       summon[WebserverErrorPage]
++       summon[WebserverErrorPage]
+
+=       summon[WebserverErrorPage]
+-       ```
++       ```
+
+-   entry .minimalErrorPage   a `500` with the text _An error occurred which prevented the request from completing._
+-   entry .styledErrorPage   a `500` with a styled HTML page; needs a `Classloader` for the bundled template
+-   entry .stackTracesErrorPage   a `500` with a styled HTML page showing the exception's stack trace; needs a `Classloader`
++   entry .minimalErrorPage   ein `500` mit dem Text _An error occurred which prevented the request from completing._
++   entry .styledErrorPage   ein `500` mit einer gestalteten HTML-Seite; benötigt einen `Classloader` für die mitgelieferte Vorlage
++   entry .stackTracesErrorPage   ein `500` mit einer gestalteten HTML-Seite, die den Stacktrace der Ausnahme zeigt; benötigt einen `Classloader`
+
+- entry .request   the request being served, inside a handler
+-     `request` is an inline accessor for the `Http.Request` in context — inside a handler,
+-     the `Http.Connection` being served, which is a request with the means of answering it.
+-     It gives the method, version, host, target, headers, cookies and body, so routing is a
+-     match on `request.target` and content negotiation a read of `request.headers`. A handler
+-     grows one concern at a time:
++ entry .request   der gerade bediente Request, innerhalb eines Handlers
++     `request` ist ein Inline-Accessor für den `Http.Request` im Kontext — innerhalb eines
++     Handlers die gerade bediente `Http.Connection`, die ein Request mitsamt den Mitteln ist, ihn
++     zu beantworten. Er liefert Methode, Version, Host, Ziel, Header, Cookies und Body, sodass
++     das Routing ein Abgleich auf `request.target` ist und die Inhaltsaushandlung ein Lesen von
++     `request.headers`. Ein Handler wächst um ein Anliegen nach dem anderen:
+
+=     grows one concern at a time:
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     ```scala fuel
+-     frame
++     frame
+
+-       label One response to every request
++       label Eine Response auf jeden Request
+
+=       label One response to every request
+-       code
++       code
+
+=       label One response to every request
+=       code
+-           import soundness.*
++           import soundness.*
+
+=       label One response to every request
+=       code
+=           import soundness.*
+-           import logging.silentLogging
++           import logging.silentLogging
+
+=       label One response to every request
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+-           import strategies.throwUnsafely
++           import strategies.throwUnsafely
+
+=       label One response to every request
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+-           import threads.virtualThreads
++           import threads.virtualThreads
+
+=       label One response to every request
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+-           import probates.awaitProbate
++           import probates.awaitProbate
+
+=       label One response to every request
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+-           import webserverErrorPages.minimalErrorPage
++           import webserverErrorPages.minimalErrorPage
+
+=       label One response to every request
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+=           import webserverErrorPages.minimalErrorPage
+=
+-           def main(): Unit = supervise:
++           def main(): Unit = supervise:
+
+=       label One response to every request
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+=           import webserverErrorPages.minimalErrorPage
+=
+=           def main(): Unit = supervise:
+-             SocketServer(8080).handle:
++             SocketServer(8080).handle:
+
+-               Http.Response(Http.Ok)(t"Hello, world!")
++               Http.Response(Http.Ok)(t"Hello, world!")
+
+=               Http.Response(Http.Ok)(t"Hello, world!")
+-     frame
++     frame
+
+-       label Routed on the request's target
++       label Nach dem Ziel des Requests geroutet
+
+=       label Routed on the request's target
+-       code
++       code
+
+=       label Routed on the request's target
+=       code
+-           import soundness.*
++           import soundness.*
+
+=       label Routed on the request's target
+=       code
+=           import soundness.*
+-           import logging.silentLogging
++           import logging.silentLogging
+
+=       label Routed on the request's target
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+-           import strategies.throwUnsafely
++           import strategies.throwUnsafely
+
+=       label Routed on the request's target
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+-           import threads.virtualThreads
++           import threads.virtualThreads
+
+=       label Routed on the request's target
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+-           import probates.awaitProbate
++           import probates.awaitProbate
+
+=       label Routed on the request's target
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+-           import webserverErrorPages.minimalErrorPage
++           import webserverErrorPages.minimalErrorPage
+
+=       label Routed on the request's target
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+=           import webserverErrorPages.minimalErrorPage
+=
+-           def main(): Unit = supervise:
++           def main(): Unit = supervise:
+
+=       label Routed on the request's target
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+=           import webserverErrorPages.minimalErrorPage
+=
+=           def main(): Unit = supervise:
+-             SocketServer(8080).handle:
++             SocketServer(8080).handle:
+
+-               request.target match
++               request.target match
+
+-                 case t"/"       => Http.Response(Http.Ok)(t"Hello, world!")
++                 case t"/"       => Http.Response(Http.Ok)(t"Hello, world!")
+
+-                 case t"/status" => Http.Response(Http.Ok)(t"OK")
++                 case t"/status" => Http.Response(Http.Ok)(t"OK")
+
+-                 case _          => Http.Response(NotFound(t"No such page"))
++                 case _          => Http.Response(NotFound(t"No such page"))
+
+=                 case _          => Http.Response(NotFound(t"No such page"))
+-     frame
++     frame
+
+-       label A posted body, read as it arrives
++       label Ein per POST gesendeter Body, gelesen, während er ankommt
+
+=       label A posted body, read as it arrives
+-       code
++       code
+
+=       label A posted body, read as it arrives
+=       code
+-           import soundness.*
++           import soundness.*
+
+=       label A posted body, read as it arrives
+=       code
+=           import soundness.*
+-           import logging.silentLogging
++           import logging.silentLogging
+
+=       label A posted body, read as it arrives
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+-           import strategies.throwUnsafely
++           import strategies.throwUnsafely
+
+=       label A posted body, read as it arrives
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+-           import threads.virtualThreads
++           import threads.virtualThreads
+
+=       label A posted body, read as it arrives
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+-           import probates.awaitProbate
++           import probates.awaitProbate
+
+=       label A posted body, read as it arrives
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+-           import webserverErrorPages.minimalErrorPage
++           import webserverErrorPages.minimalErrorPage
+
+=       label A posted body, read as it arrives
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+=           import webserverErrorPages.minimalErrorPage
+=
+-           def main(): Unit = supervise:
++           def main(): Unit = supervise:
+
+=       label A posted body, read as it arrives
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+=           import webserverErrorPages.minimalErrorPage
+=
+=           def main(): Unit = supervise:
+-             SocketServer(8080).handle:
++             SocketServer(8080).handle:
+
+=       label A posted body, read as it arrives
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+=           import webserverErrorPages.minimalErrorPage
+=
+=           def main(): Unit = supervise:
+=             SocketServer(8080).handle:
+-               (request.method, request.target) match
++               (request.method, request.target) match
+
+-                 case (Http.Get, t"/")        => Http.Response(Http.Ok)(t"Hello, world!")
++                 case (Http.Get, t"/")        => Http.Response(Http.Ok)(t"Hello, world!")
+
+=                 case (Http.Get, t"/")        => Http.Response(Http.Ok)(t"Hello, world!")
+-                 case (Http.Get, t"/status")  => Http.Response(Http.Ok)(t"OK")
++                 case (Http.Get, t"/status")  => Http.Response(Http.Ok)(t"OK")
+
+=                 case (Http.Get, t"/")        => Http.Response(Http.Ok)(t"Hello, world!")
+=                 case (Http.Get, t"/status")  => Http.Response(Http.Ok)(t"OK")
+-                 case (Http.Post, t"/echo")   => Http.Response(Http.Ok)(request.body().memoize.utf8)
++                 case (Http.Post, t"/echo")   => Http.Response(Http.Ok)(request.body().memoize.utf8)
+
+=                 case (Http.Get, t"/")        => Http.Response(Http.Ok)(t"Hello, world!")
+=                 case (Http.Get, t"/status")  => Http.Response(Http.Ok)(t"OK")
+=                 case (Http.Post, t"/echo")   => Http.Response(Http.Ok)(request.body().memoize.utf8)
+-                 case _                       => Http.Response(NotFound(t"No such page"))
++                 case _                       => Http.Response(NotFound(t"No such page"))
+
+=                 case _                       => Http.Response(NotFound(t"No such page"))
+-     frame
++     frame
+
+-       label A cookie, and a redirect for a visitor without one
++       label Ein Cookie, und eine Weiterleitung für einen Besucher ohne eines
+
+=       label A cookie, and a redirect for a visitor without one
+-       code
++       code
+
+=       label A cookie, and a redirect for a visitor without one
+=       code
+-           import soundness.*
++           import soundness.*
+
+=       label A cookie, and a redirect for a visitor without one
+=       code
+=           import soundness.*
+-           import logging.silentLogging
++           import logging.silentLogging
+
+=       label A cookie, and a redirect for a visitor without one
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+-           import strategies.throwUnsafely
++           import strategies.throwUnsafely
+
+=       label A cookie, and a redirect for a visitor without one
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+-           import threads.virtualThreads
++           import threads.virtualThreads
+
+=       label A cookie, and a redirect for a visitor without one
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+-           import probates.awaitProbate
++           import probates.awaitProbate
+
+=       label A cookie, and a redirect for a visitor without one
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+-           import webserverErrorPages.minimalErrorPage
++           import webserverErrorPages.minimalErrorPage
+
+=       label A cookie, and a redirect for a visitor without one
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+=           import webserverErrorPages.minimalErrorPage
+=
+-           def main(): Unit = supervise:
++           def main(): Unit = supervise:
+
+=       label A cookie, and a redirect for a visitor without one
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+=           import webserverErrorPages.minimalErrorPage
+=
+=           def main(): Unit = supervise:
+-             SocketServer(8080).handle:
++             SocketServer(8080).handle:
+
+=       label A cookie, and a redirect for a visitor without one
+=       code
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+=           import webserverErrorPages.minimalErrorPage
+=
+=           def main(): Unit = supervise:
+=             SocketServer(8080).handle:
+-               (request.method, request.target) match
++               (request.method, request.target) match
+
+-                 case (Http.Get, t"/") =>
++                 case (Http.Get, t"/") =>
+
+-                   cookie(t"name").lay(Http.Response(Redirect(t"/welcome"))): name =>
++                   cookie(t"name").lay(Http.Response(Redirect(t"/welcome"))): name =>
+
+-                     Http.Response(Http.Ok)(t"Hello, $name!")
++                     Http.Response(Http.Ok)(t"Hello, $name!")
+
+-                 case (Http.Get, t"/welcome") => Http.Response(Http.Ok)(t"Welcome, stranger")
++                 case (Http.Get, t"/welcome") => Http.Response(Http.Ok)(t"Welcome, stranger")
+
+=                 case (Http.Get, t"/welcome") => Http.Response(Http.Ok)(t"Welcome, stranger")
+-                 case (Http.Get, t"/status")  => Http.Response(Http.Ok)(t"OK")
++                 case (Http.Get, t"/status")  => Http.Response(Http.Ok)(t"OK")
+
+=                 case (Http.Get, t"/welcome") => Http.Response(Http.Ok)(t"Welcome, stranger")
+=                 case (Http.Get, t"/status")  => Http.Response(Http.Ok)(t"OK")
+-                 case (Http.Post, t"/echo")   => Http.Response(Http.Ok)(request.body().memoize.utf8)
++                 case (Http.Post, t"/echo")   => Http.Response(Http.Ok)(request.body().memoize.utf8)
+
+=                 case (Http.Get, t"/welcome") => Http.Response(Http.Ok)(t"Welcome, stranger")
+=                 case (Http.Get, t"/status")  => Http.Response(Http.Ok)(t"OK")
+=                 case (Http.Post, t"/echo")   => Http.Response(Http.Ok)(request.body().memoize.utf8)
+-                 case _                       => Http.Response(NotFound(t"No such page"))
++                 case _                       => Http.Response(NotFound(t"No such page"))
+
+=                 case _                       => Http.Response(NotFound(t"No such page"))
+-     ##
++     ##
+
+=     ##
+-     ```
++     ```
+
+-     The body is a stream the connection owns: `request.body()` reads on from wherever the
+-     previous read stopped, so a handler which needs the whole body more than once calls
+-     `request.body().memoize` once and keeps the result. Whatever the handler leaves unread
+-     is drained by the server (up to 64 KiB) to reach the next pipelined request. `request`
+-     is `infer[Http.Request]`, so outside a handler it is a compile error for want of a
+-     contextual `Http.Request`.
++     Der Body ist ein Stream, den die Verbindung besitzt: `request.body()` liest dort weiter,
++     wo das vorige Lesen aufgehört hat, sodass ein Handler, der den ganzen Body mehr als einmal
++     braucht, einmal `request.body().memoize` aufruft und das Ergebnis behält. Was der Handler
++     ungelesen lässt, leert der Server (bis 64 KiB), um den nächsten per Pipelining gesendeten
++     Request zu erreichen. `request` ist `infer[Http.Request]`, sodass es außerhalb eines
++     Handlers mangels eines kontextuellen `Http.Request` ein Kompilierfehler ist.
+
+- entry .cookie   the value of a named request cookie, inside a handler
+-     `cookie(key)` is `request.textCookies(key)`: the cookie's value as `Text`, or `Unset`
+-     if the request carries no cookie of that name. It needs an `Http.Request` in context,
+-     so it is called from a handler.
++ entry .cookie   der Wert eines benannten Request-Cookies, innerhalb eines Handlers
++     `cookie(key)` ist `request.textCookies(key)`: der Wert des Cookies als `Text`, oder
++     `Unset`, wenn der Request kein Cookie dieses Namens trägt. Es benötigt einen
++     `Http.Request` im Kontext und wird daher aus einem Handler aufgerufen.
+
+=     so it is called from a handler.
+=
+-     ```scala
++     ```scala
+
+=     so it is called from a handler.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     def greeting(using Http.Request): Text = cookie(t"name").lay(t"Hello, stranger")(t"Hello, "+_)
++     def greeting(using Http.Request): Text = cookie(t"name").lay(t"Hello, stranger")(t"Hello, "+_)
+
+=     def greeting(using Http.Request): Text = cookie(t"name").lay(t"Hello, stranger")(t"Hello, "+_)
+-     ```
++     ```
+
+- entry .basicAuth   guards a response behind HTTP Basic authentication
+-     `basicAuth(validate, realm)(response)` checks the request's `Authorization` header: if
+-     it carries exactly one `Basic` credential and `validate(username, password)` is true,
+-     the by-name `response` is evaluated and returned; a wrong credential is answered `403
+-     Forbidden`, and a missing one `401 Unauthorized` with a `WWW-Authenticate: Basic
+-     realm="…", charset="UTF-8"` challenge, which makes a browser prompt. It needs the
+-     `Http.Connection` in context and a `Tactic[Auth.Error]`, raised when the header cannot
+-     be parsed.
++ entry .basicAuth   schützt eine Response hinter HTTP-Basic-Authentifizierung
++     `basicAuth(validate, realm)(response)` prüft den `Authorization`-Header des Requests:
++     Trägt er genau eine `Basic`-Berechtigung und ist `validate(username, password)` wahr,
++     wird die By-Name-`response` ausgewertet und zurückgegeben; eine falsche Berechtigung wird
++     mit `403
++     Forbidden` beantwortet und eine fehlende mit `401 Unauthorized` samt einer
++     `WWW-Authenticate: Basic
++     realm="…", charset="UTF-8"`-Aufforderung, die einen Browser nachfragen lässt. Es benötigt
++     die `Http.Connection` im Kontext und einen `Tactic[Auth.Error]`, der ausgelöst wird, wenn
++     der Header nicht geparst werden kann.
+
+=     be parsed.
+=
+-     ```scala
++     ```scala
+
+=     be parsed.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     import soundness.*
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     def secret(using Http.Connection): Http.Response =
++     def secret(using Http.Connection): Http.Response =
+
+-       basicAuth((user, password) => user == t"admin" && password == t"hunter2", t"Admin"):
++       basicAuth((user, password) => user == t"admin" && password == t"hunter2", t"Admin"):
+
+-         Http.Response(Http.Ok)(t"the secret")
++         Http.Response(Http.Ok)(t"the secret")
+
+=         Http.Response(Http.Ok)(t"the secret")
+-     ```
++     ```
+
+- entry .as   reads the request body as a typed value, through `Acceptable`: `request.as[Multipart]`
+-     An extension on `Http.Request`, `request.as[body]` for any `body: Acceptable`, which
+-     decodes the request according to its headers and body. The one instance scintillate
+-     provides is `Acceptable.multipart`, for a `multipart/form-data` upload. The extension is
+-     not exported to the `soundness` umbrella, since distillate's generic `as` (decoding a
+-     `Text` through `Decodable`) has the same name: reach it as `scintillate.as`.
++ entry .as   liest den Request-Body als typisierten Wert, über `Acceptable`: `request.as[Multipart]`
++     Eine Erweiterung auf `Http.Request`, `request.as[body]` für jedes `body: Acceptable`, die
++     den Request gemäß seinen Headern und seinem Body dekodiert. Die einzige Instanz, die
++     scintillate bereitstellt, ist `Acceptable.multipart`, für einen Upload als
++     `multipart/form-data`. Die Erweiterung wird nicht in das `soundness`-Umbrella exportiert,
++     da das generische `as` von distillate (das einen `Text` über `Decodable` dekodiert)
++     denselben Namen hat: Erreichen Sie sie als `scintillate.as`.
+
+=     `Text` through `Decodable`) has the same name: reach it as `scintillate.as`.
+=
+-     ```scala
++     ```scala
+
+=     `Text` through `Decodable`) has the same name: reach it as `scintillate.as`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import scintillate.as
++     import scintillate.as
+
+=     import scintillate.as
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     def upload(using Http.Request): Http.Response =
++     def upload(using Http.Request): Http.Response =
+
+-       val parts = request.as[Multipart]
++       val parts = request.as[Multipart]
+
+-       Http.Response(Http.Ok)(t"received the upload")
++       Http.Response(Http.Ok)(t"received the upload")
+
+=       Http.Response(Http.Ok)(t"received the upload")
+-     ```
++     ```
+
+- entry .Acceptable   a typeclass for reading a request body as a value: `request.as[T]`
++ entry .Acceptable   eine Typklasse, um einen Request-Body als Wert zu lesen: `request.as[T]`
+
+= entry .Acceptable   a typeclass for reading a request body as a value: `request.as[T]`
+-   detail
++   detail
+
+-       `T is Acceptable` says how an `Http.Request` becomes a `T`, from its headers and its
+-       body, and `request.as[T]` (the `scintillate.as` extension) applies it. The library's
+-       one instance is `.multipart`, which parses a `multipart/form-data` body; a program
+-       adds its own by giving `MyType is Acceptable`.
++       `T is Acceptable` gibt an, wie ein `Http.Request` aus seinen Headern und seinem Body zu
++       einem `T` wird, und `request.as[T]` (die Erweiterung `scintillate.as`) wendet es an. Die
++       einzige Instanz der Bibliothek ist `.multipart`, die einen `multipart/form-data`-Body
++       parst; ein Programm fügt seine eigene hinzu, indem es `MyType is Acceptable` angibt.
+
+-   refer scintillate.as
++   refer scintillate.as
+
+-   entry .multipart   reads a `multipart/form-data` request as a `Multipart`, part by part
+-       Checks the `Content-Type` is `multipart/form-data` with a `boundary` parameter, and
+-       parses the body with `Multipart.parse`. The parts are lent from the body as it
+-       arrives, so a handler reads each part's content before moving to the next. It needs a
+-       `Tactic[Multipart.Error]`: raised with reason `MediaType` for a missing or wrong
+-       content type or boundary, and `Truncated` for a body cut short.
+-   entry #accept   the value read from a request
++   entry .multipart   liest einen `multipart/form-data`-Request als `Multipart`, Teil für Teil
++       Prüft, dass der `Content-Type` `multipart/form-data` mit einem `boundary`-Parameter ist,
++       und parst den Body mit `Multipart.parse`. Die Teile werden aus dem Body geliehen, während
++       er ankommt, sodass ein Handler den Inhalt jedes Teils liest, bevor er zum nächsten
++       übergeht. Es benötigt einen `Tactic[Multipart.Error]`: ausgelöst mit dem Grund
++       `MediaType` bei fehlendem oder falschem Inhaltstyp oder Boundary und mit `Truncated` bei
++       einem abgeschnittenen Body.
++   entry #accept   der aus einem Request gelesene Wert
+
+- entry .Redirect   a response which redirects: `302 Found`, or `301 Moved Permanently`
++ entry .Redirect   eine weiterleitende Response: `302 Found` oder `301 Moved Permanently`
+
+= entry .Redirect   a response which redirects: `302 Found`, or `301 Moved Permanently`
+-   detail
++   detail
+
+-       `Redirect(location, permanent)` is a `Servable` value, so `Http.Response(Redirect(…))`
+-       is a response with the status and a `Location` header. `location` may be any type
+-       `Abstractable across Urls to Text` — a `Text`, an `HttpUrl` — and `permanent` (default
+-       `false`) chooses `301` over `302`.
++       `Redirect(location, permanent)` ist ein `Servable`-Wert, sodass `Http.Response(Redirect(…))`
++       eine Response mit dem Status und einem `Location`-Header ist. `location` kann jeder Typ
++       sein, der `Abstractable across Urls to Text` ist — ein `Text`, eine `HttpUrl` —, und
++       `permanent` (Vorgabe `false`) wählt `301` statt `302`.
+
+=       `false`) chooses `301` over `302`.
+=
+-       ```scala
++       ```scala
+
+=       `false`) chooses `301` over `302`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Http.Response(Redirect(t"/elsewhere")).status == Http.Found
++       Http.Response(Redirect(t"/elsewhere")).status == Http.Found
+
+-       Http.Response(Redirect(t"/moved", permanent = true)).status == Http.MovedPermanently
++       Http.Response(Redirect(t"/moved", permanent = true)).status == Http.MovedPermanently
+
+=       Http.Response(Redirect(t"/moved", permanent = true)).status == Http.MovedPermanently
+-       ```
++       ```
+
+-   entry .apply   `Redirect(location, permanent = false)` from any URL-like value
+-   entry .redirect   the `Servable` which renders the redirect as a response with a `Location` header
+-   entry #location   the target, as text
+-   entry #permanent   whether the redirect is `301` rather than `302`
++   entry .apply   `Redirect(location, permanent = false)` aus jedem URL-artigen Wert
++   entry .redirect   das `Servable`, das die Weiterleitung als Response mit einem `Location`-Header darstellt
++   entry #location   das Ziel, als Text
++   entry #permanent   ob die Weiterleitung `301` statt `302` ist
+
+- entry .NotFound   wraps a servable value as a `404 Not Found` response
++ entry .NotFound   hüllt einen bereitstellbaren Wert als Response `404 Not Found` ein
+
+= entry .NotFound   wraps a servable value as a `404 Not Found` response
+-   detail
++   detail
+
+-       `NotFound(content)` serves `content` — any `Servable` value: text, HTML, JSON —
+-       exactly as it would be served otherwise, with its headers and body, but with status
+-       `404`. The usual last case of a route match.
++       `NotFound(content)` stellt `content` bereit — jeden `Servable`-Wert: Text, HTML, JSON —,
++       genau wie er sonst bereitgestellt würde, mit seinen Headern und seinem Body, aber mit dem
++       Status `404`. Der übliche letzte Fall eines Routing-Abgleichs.
+
+=       `404`. The usual last case of a route match.
+=
+-       ```scala
++       ```scala
+
+=       `404`. The usual last case of a route match.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Http.Response(NotFound(t"No such page")).status == Http.NotFound
++       Http.Response(NotFound(t"No such page")).status == Http.NotFound
+
+=       Http.Response(NotFound(t"No such page")).status == Http.NotFound
+-       ```
++       ```
+
+-   entry .servable   the `Servable` for `NotFound[content]`, given `content is Servable`
+-   entry #content   the value served with the `404`
++   entry .servable   das `Servable` für `NotFound[content]`, sofern `content is Servable`
++   entry #content   der mit dem `404` bereitgestellte Wert
+
+- entry .Unfulfilled   wraps a servable value as a `500 Internal Server Error` response
++ entry .Unfulfilled   hüllt einen bereitstellbaren Wert als Response `500 Internal Server Error` ein
+
+= entry .Unfulfilled   wraps a servable value as a `500 Internal Server Error` response
+-   detail
++   detail
+
+-       `Unfulfilled(content)` serves `content` with status `500`, keeping its headers and
+-       body. The `webserverErrorPages` givens build their responses from it, and a handler
+-       which detects its own failure can do the same.
++       `Unfulfilled(content)` stellt `content` mit dem Status `500` bereit und behält seine
++       Header und seinen Body. Die `webserverErrorPages`-Givens bauen ihre Responses daraus, und
++       ein Handler, der sein eigenes Scheitern erkennt, kann dasselbe tun.
+
+=       which detects its own failure can do the same.
+=
+-       ```scala
++       ```scala
+
+=       which detects its own failure can do the same.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Http.Response(Unfulfilled(t"The database is unavailable")).status == Http.InternalServerError
++       Http.Response(Unfulfilled(t"The database is unavailable")).status == Http.InternalServerError
+
+=       Http.Response(Unfulfilled(t"The database is unavailable")).status == Http.InternalServerError
+-       ```
++       ```
+
+-   entry .servable   the `Servable` for `Unfulfilled[content]`, given `content is Servable`
+-   entry #content   the value served with the `500`
++   entry .servable   das `Servable` für `Unfulfilled[content]`, sofern `content is Servable`
++   entry #content   der mit dem `500` bereitgestellte Wert
+
+- entry .NoCache   wraps a servable value with headers which forbid caching
++ entry .NoCache   hüllt einen bereitstellbaren Wert mit Headern ein, die das Caching verbieten
+
+= entry .NoCache   wraps a servable value with headers which forbid caching
+-   detail
++   detail
+
+-       `NoCache(content)` serves `content` with its own status and body, and the headers
+-       `Cache-Control: no-store`, `Pragma: no-cache` and `Expires: 0` prepended, so neither
+-       a browser nor a proxy keeps it.
++       `NoCache(content)` stellt `content` mit seinem eigenen Status und Body bereit, wobei die
++       Header `Cache-Control: no-store`, `Pragma: no-cache` und `Expires: 0` vorangestellt
++       werden, sodass weder ein Browser noch ein Proxy ihn aufbewahrt.
+
+=       a browser nor a proxy keeps it.
+=
+-       ```scala
++       ```scala
+
+=       a browser nor a proxy keeps it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Http.Response(NoCache(t"""{"time": 1}""")).textHeaders.map(_.key)
++       Http.Response(NoCache(t"""{"time": 1}""")).textHeaders.map(_.key)
+
+=       Http.Response(NoCache(t"""{"time": 1}""")).textHeaders.map(_.key)
+-       ```
++       ```
+
+-   entry .servable   the `Servable` for `NoCache[content]`, given `content is Servable`
+-   entry #content   the value served uncached
++   entry .servable   das `Servable` für `NoCache[content]`, sofern `content is Servable`
++   entry #content   der ungecacht bereitgestellte Wert
+
+- entry .httpServers   HTTP as a `Protocolic` protocol over a port: `tcp"8080".serve[Http](handler)`
++ entry .httpServers   HTTP als `Protocolic`-Protokoll über einem Port: `tcp"8080".serve[Http](handler)`
+
+= entry .httpServers   HTTP as a `Protocolic` protocol over a port: `tcp"8080".serve[Http](handler)`
+-   detail
++   detail
+
+-       urticose's `port.serve[protocol](handler)` serves a protocol on a port through a
+-       `protocol is Protocolic over port` given, and these four givens make `Http` such a
+-       protocol over the `Tcp.Port`s `80`, `443`, `8080` and `8000`: `jdkHttpserver` and
+-       `jdkHttpserverPublic` serve through `Httpd`, `soundnessHttpd` and
+-       `soundnessHttpdPublic` through `SocketServer`, the `Public` variants binding every
+-       interface rather than `localhost` only. One is imported by name, and the handler is
+-       the same context function `handle` takes. Each given retains the `Tactic[Httpd.Error]`,
+-       `Monitor`, `Probate`, `Httpd.Event is Loggable` and `WebserverErrorPage` it is built
+-       from, so the same contextual values are needed as for `SocketServer#handle`.
++       `port.serve[protocol](handler)` von urticose stellt ein Protokoll auf einem Port über ein
++       Given `protocol is Protocolic over port` bereit, und diese vier Givens machen `Http` zu
++       einem solchen Protokoll über den `Tcp.Port`s `80`, `443`, `8080` und `8000`:
++       `jdkHttpserver` und `jdkHttpserverPublic` stellen über `Httpd` bereit, `soundnessHttpd`
++       und `soundnessHttpdPublic` über `SocketServer`, wobei die `Public`-Varianten jede
++       Schnittstelle binden statt nur `localhost`. Eines wird beim Namen importiert, und der
++       Handler ist dieselbe Kontextfunktion, die `handle` nimmt. Jedes Given behält den
++       `Tactic[Httpd.Error]`, den `Monitor`, das `Probate`, das `Httpd.Event is Loggable` und die
++       `WebserverErrorPage`, aus denen es gebaut ist, sodass dieselben Kontextwerte nötig sind
++       wie für `SocketServer#handle`.
+
+=       from, so the same contextual values are needed as for `SocketServer#handle`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       from, so the same contextual values are needed as for `SocketServer#handle`.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       from, so the same contextual values are needed as for `SocketServer#handle`.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       from, so the same contextual values are needed as for `SocketServer#handle`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       from, so the same contextual values are needed as for `SocketServer#handle`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       from, so the same contextual values are needed as for `SocketServer#handle`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       from, so the same contextual values are needed as for `SocketServer#handle`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+=       from, so the same contextual values are needed as for `SocketServer#handle`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+-       import probates.awaitProbate
++       import probates.awaitProbate
+
+=       from, so the same contextual values are needed as for `SocketServer#handle`.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+=       import soundness.*
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+=       import probates.awaitProbate
+-       import webserverErrorPages.minimalErrorPage
++       import webserverErrorPages.minimalErrorPage
+
+-       import httpServers.soundnessHttpd
++       import httpServers.soundnessHttpd
+
+=       import httpServers.soundnessHttpd
+=
+-       def main(): Unit = supervise:
++       def main(): Unit = supervise:
+
+-         tcp"8080".serve[Http](Http.Response(Http.Ok)(t"served through Protocolic"))
++         tcp"8080".serve[Http](Http.Response(Http.Ok)(t"served through Protocolic"))
+
+=         tcp"8080".serve[Http](Http.Response(Http.Ok)(t"served through Protocolic"))
+-       ```
++       ```
+
+-       In the `soundness` umbrella the four are hand-written forwarding givens rather than
+-       an `export`, since a synthesized export forwarder would lose their capture-annotated
+-       refinement type; they have the same names.
++       Im `soundness`-Umbrella sind die vier handgeschriebene weiterleitende Givens statt eines
++       `export`, da ein synthetisierter Export-Weiterleiter ihren mit Captures annotierten
++       Verfeinerungstyp verlieren würde; sie haben dieselben Namen.
+
+-   refer urticose.Protocolic
++   refer urticose.Protocolic
+
+=   refer urticose.Protocolic
+-   refer scintillate.SocketServer
++   refer scintillate.SocketServer
+
+=   refer urticose.Protocolic
+=   refer scintillate.SocketServer
+-   refer scintillate.Httpd
++   refer scintillate.Httpd
+
+-   entry .HttpdFor   the type of these givens: `Http is Protocolic` over a `Tcp.Port of port`, serving `Http.Connection`s
+-       `HttpdFor[port]` refines `Protocolic` with `Transport = Tcp.Port of port`, `Request =
+-       Http.Connection^`, `Response = Http.Response` and `Server = Service`. Public so that
+-       the umbrella's forwarders can name it.
+-   entry .jdkHttpserver   `Http` served by `Httpd` on `localhost`
+-   entry .jdkHttpserverPublic   `Http` served by `Httpd` on every interface
+-   entry .soundnessHttpd   `Http` served by `SocketServer` on `localhost`
+-   entry .soundnessHttpdPublic   `Http` served by `SocketServer` on every interface
++   entry .HttpdFor   der Typ dieser Givens: `Http is Protocolic` über einem `Tcp.Port of port`, der `Http.Connection`s bedient
++       `HttpdFor[port]` verfeinert `Protocolic` mit `Transport = Tcp.Port of port`, `Request =
++       Http.Connection^`, `Response = Http.Response` und `Server = Service`. Öffentlich, damit
++       die Weiterleiter des Umbrellas ihn benennen können.
++   entry .jdkHttpserver   `Http`, bereitgestellt von `Httpd` auf `localhost`
++   entry .jdkHttpserverPublic   `Http`, bereitgestellt von `Httpd` auf jeder Schnittstelle
++   entry .soundnessHttpd   `Http`, bereitgestellt von `SocketServer` auf `localhost`
++   entry .soundnessHttpdPublic   `Http`, bereitgestellt von `SocketServer` auf jeder Schnittstelle
+
+- entry .Http2Serve   the HTTP/2 engine behind a TLS `SocketServer`: serves one negotiated connection's streams
++ entry .Http2Serve   die HTTP/2-Engine hinter einem TLS-`SocketServer`: bedient die Streams einer ausgehandelten Verbindung
+
+= entry .Http2Serve   the HTTP/2 engine behind a TLS `SocketServer`: serves one negotiated connection's streams
+-   detail
++   detail
+
+-       `SocketServer` dispatches here once a TLS socket has negotiated `h2` by ALPN. Each
+-       client-initiated stream becomes an `Http.Connection` served by the handler on its own
+-       virtual thread, so requests multiplexed on the connection run concurrently; the
+-       engine applies flow control, HPACK, and trailers (a response `Trailer` header names
+-       the headers sent after the body, as gRPC's `grpc-status` is), and tolerates the frame
+-       types it does not act on. Both methods block the calling thread for the connection's
+-       lifetime, and take the handler or scope as an `AnyRef` carrier (an `AnyRef => AnyRef`
+-       from a connection to a response, or an `AnyRef => Unit` over an `Http2Session`), which
+-       is why a program reaches HTTP/2 through `SocketServer#handle` or `#handleSession`
+-       rather than here. A response body is driven block by block off its stream, never
+-       memoized: a body transformed by a text encoder does not terminate under `memoize`.
++       `SocketServer` verteilt hierher, sobald ein TLS-Socket per ALPN `h2` ausgehandelt hat.
++       Jeder vom Client eröffnete Stream wird zu einer `Http.Connection`, die der Handler auf
++       ihrem eigenen virtuellen Thread bedient, sodass die auf der Verbindung gemultiplexten
++       Requests nebenläufig laufen; die Engine wendet Flusskontrolle, HPACK und Trailer an (ein
++       `Trailer`-Header der Response benennt die nach dem Body gesendeten Header, wie es
++       `grpc-status` bei gRPC ist) und toleriert die Frame-Typen, auf die sie nicht reagiert.
++       Beide Methoden blockieren den aufrufenden Thread für die Lebensdauer der Verbindung und
++       nehmen den Handler oder Geltungsbereich als `AnyRef`-Träger (ein `AnyRef => AnyRef` von
++       einer Verbindung zu einer Response, oder ein `AnyRef => Unit` über einer
++       `Http2Session`); deshalb erreicht ein Programm HTTP/2 über `SocketServer#handle` oder
++       `#handleSession` statt hier. Der Body einer Response wird Block für Block von seinem
++       Stream betrieben, nie memoisiert: Ein von einem Text-Encoder transformierter Body
++       terminiert unter `memoize` nicht.
+
+=       memoized: a body transformed by a text encoder does not terminate under `memoize`.
+-   refer scintillate.SocketServer
++   refer scintillate.SocketServer
+
+=   refer scintillate.SocketServer
+-   refer scintillate.Http2Session
++   refer scintillate.Http2Session
+
+-   entry .serve   serves every stream of an HTTP/2 connection over a socket's streams, with a handler
+-       `serve(handler, in, out, port)`: opens the server connection over `in` and `out`,
+-       and runs the handler for each stream until the client sends `GOAWAY` or the socket
+-       closes. Needs a `Monitor`, a `Tactic[Async.Error]` for the connection's start, and
+-       an `Httpd.Event is Loggable`.
+-   entry .serveSession   serves an HTTP/2 connection as a session, lending an `Http2Session` to the scope
+-       `serveSession(scope, in, out, port)`: as `.serve`, but the scope runs once with an
+-       `Http2Session` whose `handle` serves every stream; the state the scope sets up is
+-       shared by that connection's streams and no other's.
++   entry .serve   bedient jeden Stream einer HTTP/2-Verbindung über den Streams eines Sockets, mit einem Handler
++       `serve(handler, in, out, port)`: öffnet die Serververbindung über `in` und `out` und führt
++       den Handler für jeden Stream aus, bis der Client `GOAWAY` sendet oder der Socket schließt.
++       Benötigt einen `Monitor`, einen `Tactic[Async.Error]` für den Start der Verbindung und
++       ein `Httpd.Event is Loggable`.
++   entry .serveSession   bedient eine HTTP/2-Verbindung als Sitzung und leiht dem Geltungsbereich eine `Http2Session`
++       `serveSession(scope, in, out, port)`: wie `.serve`, aber der Geltungsbereich läuft einmal
++       mit einer `Http2Session`, deren `handle` jeden Stream bedient; der vom Geltungsbereich
++       eingerichtete Zustand wird von den Streams dieser Verbindung geteilt und von keinen
++       anderen.
+
+- entry .Responder   a sink for a status, headers and body: `sendBody` and `addHeader`
++ entry .Responder   eine Senke für einen Status, Header und einen Body: `sendBody` und `addHeader`
+
+= entry .Responder   a sink for a status, headers and body: `sendBody` and `addHeader`
+-   detail
++   detail
+
+-       A minimal response sink: `#addHeader(key, value)` adds a header and
+-       `#sendBody(status, body)` sends the status with a body given as a `Chain[Data]`. It is
+-       declared and exported but not implemented by any backend in this component; the
+-       backends answer through `Http.Connection.Respond`.
+-   entry #sendBody   sends a status and a body of data blocks
+-   entry #addHeader   adds a response header
++       Eine minimale Response-Senke: `#addHeader(key, value)` fügt einen Header hinzu, und
++       `#sendBody(status, body)` sendet den Status mit einem als `Chain[Data]` gegebenen Body.
++       Sie ist deklariert und exportiert, wird aber von keinem Backend in dieser Komponente
++       implementiert; die Backends antworten über `Http.Connection.Respond`.
++   entry #sendBody   sendet einen Status und einen Body aus Datenblöcken
++   entry #addHeader   fügt einen Response-Header hinzu
+
+- entry .JavaServlet   a handler as a Jakarta `HttpServlet`, for a servlet container
++ entry .JavaServlet   ein Handler als Jakarta-`HttpServlet`, für einen Servlet-Container
+
+= entry .JavaServlet   a handler as a Jakarta `HttpServlet`, for a servlet container
+-   detail
++   detail
+
+-       `JavaServlet(handle)` is an `HttpServlet` which turns each servlet request into an
+-       `Http.Connection` — method, version, host, target, headers (lowercased) and the body
+-       streamed from the servlet's input — runs `handle` on it, and writes the response's
+-       status, headers and body back through the servlet response, chunked for a streaming
+-       body. In the `scintillate.servlet` component. The handler is a plain function
+-       `Http.Connection => Http.Response`, not a context function, because a context-function
+-       class parameter cannot be applied from a subclass's superclass argument; a subclass
+-       (or `.Fn`) supplies it. A body read error or an unparseable host is printed to the
+-       servlet's standard output, and the latter answered `400`.
++       `JavaServlet(handle)` ist ein `HttpServlet`, das jeden Servlet-Request in eine
++       `Http.Connection` verwandelt — Methode, Version, Host, Ziel, Header (kleingeschrieben) und
++       den aus der Eingabe des Servlets gestreamten Body —, `handle` darauf ausführt und Status,
++       Header und Body der Response über die Servlet-Response zurückschreibt, gechunkt bei einem
++       streamenden Body. In der Komponente `scintillate.servlet`. Der Handler ist eine schlichte
++       Funktion `Http.Connection => Http.Response`, keine Kontextfunktion, weil ein
++       Klassenparameter vom Typ einer Kontextfunktion nicht aus dem Superklassen-Argument einer
++       Unterklasse angewendet werden kann; eine Unterklasse (oder `.Fn`) liefert ihn. Ein Fehler
++       beim Lesen des Bodys oder ein nicht parsbarer Host wird auf der Standardausgabe des
++       Servlets ausgegeben, und letzterer wird mit `400` beantwortet.
+
+=       servlet's standard output, and the latter answered `400`.
+=
+-       ```scala
++       ```scala
+
+=       servlet's standard output, and the latter answered `400`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       class Hello extends JavaServlet(connection => Http.Response(Http.Ok)(t"Hello from a servlet"))
++       class Hello extends JavaServlet(connection => Http.Response(Http.Ok)(t"Hello from a servlet"))
+
+=       class Hello extends JavaServlet(connection => Http.Response(Http.Ok)(t"Hello from a servlet"))
+-       ```
++       ```
+
+-       The `@servlet` annotation generates such a class from a method.
++       Die Annotation `@servlet` erzeugt eine solche Klasse aus einer Methode.
+
+-   refer scintillate.servlet
++   refer scintillate.servlet
+
+-   entry .Fn   `JavaServlet.Fn(handle)`: a servlet from a function, to extend or instantiate
+-       An open class whose constructor takes the handler, so an anonymous subclass or a
+-       generated one (what `@servlet` produces) needs no body of its own.
+-   entry #handle   serves one servlet request and response pair through the handler
+-       Builds the `Http.Connection`, applies the handler and delivers the response. The
+-       servlet's `service` calls it for every request, and prints any exception to standard
+-       output rather than letting it escape to the container.
++   entry .Fn   `JavaServlet.Fn(handle)`: ein Servlet aus einer Funktion, zum Erweitern oder Instanziieren
++       Eine offene Klasse, deren Konstruktor den Handler nimmt, sodass eine anonyme oder eine
++       generierte Unterklasse (das, was `@servlet` erzeugt) keinen eigenen Rumpf braucht.
++   entry #handle   bedient ein Paar aus Servlet-Request und -Response über den Handler
++       Baut die `Http.Connection`, wendet den Handler an und liefert die Response aus. Die
++       `service`-Methode des Servlets ruft es für jeden Request auf und gibt jede Ausnahme auf der
++       Standardausgabe aus, statt sie zum Container entkommen zu lassen.
+
+- entry .servlet   the `@servlet` annotation: a method returning `Http.Response` becomes a servlet class
+-     A macro annotation on a method `def name(connection: Http.Connection): Http.Response`,
+-     which adds beside it a class of the same name extending `JavaServlet.Fn`, delegating
+-     to the method, so that a servlet container can instantiate it by name. The method's
+-     result type must be a subtype of `Http.Response`, and the annotation must be applied to
+-     a method: either violation is a compile error. In the `scintillate.servlet` component.
++ entry .servlet   die Annotation `@servlet`: Eine Methode, die `Http.Response` zurückgibt, wird zu einer Servlet-Klasse
++     Eine Makro-Annotation an einer Methode `def name(connection: Http.Connection): Http.Response`,
++     die neben ihr eine gleichnamige Klasse hinzufügt, die `JavaServlet.Fn` erweitert und an die
++     Methode delegiert, sodass ein Servlet-Container sie beim Namen instanziieren kann. Der
++     Ergebnistyp der Methode muss ein Subtyp von `Http.Response` sein, und die Annotation muss
++     auf eine Methode angewendet werden: Jede Verletzung davon ist ein Kompilierfehler. In der
++     Komponente `scintillate.servlet`.
+
+=     a method: either violation is a compile error. In the `scintillate.servlet` component.
+=
+-     ```scala
++     ```scala
+
+=     a method: either violation is a compile error. In the `scintillate.servlet` component.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     @servlet
++     @servlet
+
+-     def hello(connection: Http.Connection): Http.Response = Http.Response(Http.Ok)(t"Hello")
++     def hello(connection: Http.Connection): Http.Response = Http.Response(Http.Ok)(t"Hello")
+
+=     def hello(connection: Http.Connection): Http.Response = Http.Response(Http.Ok)(t"Hello")
+-     ```
++     ```
