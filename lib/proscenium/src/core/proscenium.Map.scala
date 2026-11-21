@@ -58,6 +58,7 @@ object Map extends scala.caps.Pure:
   // a tree. Anything else is filled in place.
   def from[key, value](pairs: IterableOnce[(key, value)]^): Map[key, value] =
     if pairs.isInstanceOf[FlatMap[?, ?]] then of(pairs.asInstanceOf[FlatMap[key, value]])
+    else if pairs.isInstanceOf[PerfectMap[?, ?]] then of(pairs.asInstanceOf[PerfectMap[key, value]])
     else if pairs.isInstanceOf[sci.Map[?, ?]] then of(sci.Map.from(pairs))
     else filled(pairs)
 
@@ -71,6 +72,14 @@ object Map extends scala.caps.Pure:
       builder(pair._1) = pair._2
 
     of(builder.result())
+
+  // A map whose keys are written out where it is made, read through a perfect hash of them
+  // which is found as the code is compiled —
+  //     val ages = Map.fixed(t"Lear" -> 80, t"Kent" -> 48, …)
+  // The keys must be literals: texts, `Int`s, `Long`s or `Char`s, all of one kind, each given
+  // once. A map that cannot be fixed is a compile error, never an ordinary map in its place.
+  inline def fixed[key, value](inline entries: (key, value)*): Map[key, value] =
+    ${PerfectMap.fixed[key, value]('entries)}
 
   // Allocate → mutate → freeze, for a map: the block is lent an exclusive `Builder` to fill in
   // place, and what it has filled comes back as an ordinary immutable `Map` without being
@@ -169,6 +178,38 @@ object Map extends scala.caps.Pure:
         val stored = scala.caps.unsafe.unsafeAssumePure(hashes)
         new FlatMap[key, value](table, stored, shift, count)
 
+  // The entries of `map` laid out for a perfect hash of its keys, which `make` supplies as a
+  // `PerfectMap` over whatever slots it is given: it is made once over none, to ask where each
+  // key belongs, and once more over the table that answers. Nothing is taken on trust: if any
+  // key is sent outside `capacity` slots, or two to the same one, or there is a `null` key,
+  // `map` is handed back as it was.
+  def perfect[key, value](map: Map[key, value], capacity: Int)
+    ( make: scala.Array[Any]^{} => PerfectMap[key, value] )
+  :   Map[key, value] =
+
+    val count = map.size
+    // [construction-fresh] an empty array, which nothing could write to
+    val none: scala.Array[Any]^{} = scala.caps.unsafe.unsafeAssumePure(new scala.Array[Any](0))
+    val probe = make(none)
+    val slots: scala.Array[Any]^ = new scala.Array[Any](capacity << 1)
+    val iterator = map.iterator
+    var sound = count <= capacity
+
+    // Terminated by the source's own state.
+    while sound && iterator.hasNext do
+      val pair = iterator.next()
+      val key: Any = pair._1
+      val at = if key == null then -1 else probe.index(key)
+
+      if at < 0 || at >= capacity || slots(at << 1) != null then sound = false else
+        slots(at << 1) = key
+        slots((at << 1) + 1) = pair._2
+
+    if !sound then map else
+      // [transfer] freeze: the table is written only above, and never after this
+      val table: scala.Array[Any]^{} = scala.caps.unsafe.unsafeAssumePure(slots)
+      of(make(table))
+
   // `.to[Map]` support (see `List`): the conversion is on `Map.type` only, so it cannot
   // expose members of `Map` values.
   given factory: [key, value] => Conversion[Map.type, scala.collection.Factory[(key, value), Map[key, value]]] =
@@ -205,13 +246,14 @@ object Map extends scala.caps.Pure:
 
   // The primitive operations, for the typeclass instances defined in the libraries above;
   // see `List` for the rationale. Within this file the opaque alias is transparent. `read`
-  // mirrors the stdlib's `Option`-returning `get`: the ergonomic `Optional` form is layered
-  // above, in `vacuous`-aware libraries.
+  // gives `null` for a key that is not defined, with no `Option` made: the ergonomic
+  // `Optional` form is layered above, in `vacuous`-aware libraries.
   def size[key, value](map: Map[key, value]): Int = map.size
   def nil[key, value](map: Map[key, value]): Boolean = map.isEmpty
   def defines[key, value](map: Map[key, value], index: key): Boolean = map.contains(index)
   def at[key, value](map: Map[key, value], index: key): value = map(index)
-  def read[key, value](map: Map[key, value], index: key): Option[value] = map.get(index)
+  def read[key, value](map: Map[key, value], index: key): value | Null =
+    map.getOrElse[value | Null](index, null)
 
   // The checked read in one probe: the value for `index`, or `absent`, with no `Option` made
   // and the key hashed once, where `defines` followed by `at` hashes it twice. The by-name

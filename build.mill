@@ -922,9 +922,11 @@ object soundness extends Fork:
   // packaged somewhere, so they get a bundle each rather than joining a general-purpose one — the
   // opt-in is now "don't depend on this artifact" instead of "don't depend on this component".
   object staged extends Bundle(breviloquence.staged, jacinta.staged, locomotion.staged,
-    stratiform.staged, stratiform.binaryStaged, xylophone.staged):
+    murmuration.staged, stratiform.staged, stratiform.binaryStaged, xylophone.staged):
     override def optIn = true
-    def summary = "Expansion-time (staging compiler) variants of the data-format modules"
+
+    def summary =
+      "Staging-compiler variants of the data-format modules, and runtime-optimized maps"
 
   object android extends Bundle(anthology.dex, anthology.apk):
     override def optIn = true
@@ -3161,10 +3163,21 @@ object murmuration extends Library:
   object core extends Component(proscenium.core, prepositional.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core):
+  // `optimize`, which compiles a perfect hash of a map's keys while the program runs, and so
+  // needs the staging compiler: kept out of `core` so that nobody inherits the compiler jars
+  // unless they opt in.
+  object staged extends Component(core):
+    override def scalaJs = false // runtime compilation via staging
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
+    def mvnDeps = Seq(
+      mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
+      mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
+    )
+  object test extends Tests(core, staged):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
-  object bench extends Benchmarks(core, quantitative.units):
+  object bench extends Benchmarks(core, staged, quantitative.units):
     // Not yet checked: the suite object holds its exclusive payload arrays as fields, which
     // capture checking rejects ("needs to extend Capability since it has fields … with `any`");
     // the fix is breviloquence.bench's — frozen `^{}` payloads — and is pending (`safety-6`).

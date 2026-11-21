@@ -1285,6 +1285,22 @@ object internal:
                     Literal(IntConstant(field.index)),
                     chain(rest) )
 
+          // With enough fields, the chain gives way to a perfect hash of their packed names,
+          // found here and spliced as arithmetic on the key's two words: the slot it computes
+          // selects one field, and one comparison confirms that the key is that field's name.
+          def literals(remaining: List[Field]): scala.collection.immutable.List[(Int, Long, Long)] =
+            remaining match
+              case Nil => scala.collection.immutable.Nil
+
+              case field :: rest => field.packed match
+                case None                   => literals(rest)
+                case Some((low, highWord)) => (field.index, low, highWord) :: literals(rest)
+
+          val hashed: Expr[Int] | Null =
+            PerfectHash.dispatch(literals(fields), wordRef, highRef, '{Json.KeyTable.Unknown})
+
+          val dispatch: Term = if hashed == null then chain(fields) else hashed.asTerm
+
           val resolve: Term =
             If
               ( '{$wordRef == Json.Reader.KeyOpaque}.asTerm,
@@ -1292,7 +1308,7 @@ object internal:
                 Block
                   ( scala.collection.immutable.List
                       ( ValDef(high, Some('{$reader.keyWordHigh}.asTerm)) ),
-                    chain(fields) ) )
+                    dispatch ) )
 
           val step: Term =
             Block

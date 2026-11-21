@@ -1,0 +1,37 @@
+orthant 1 release
+
+- row  `Doughnut()`  a `Dag` of `Weighted`, `Progressive` nodes  none  none  `Doughnut.Style`
++ row  `Annulus()`  a `Dag` of `Weighted`, `Progressive` nodes  none  none  `Annulus.Style`
+
+- row  `shade`, `sector`, `remainder`  a sector's colour and its two parts  `Doughnut.Style`
++ row  `shade`, `sector`, `remainder`  a sector's colour and its two parts  `Annulus.Style`
+
+- row  `rank-0`, `rank-1`, …  each band  `Doughnut`
++ row  `rank-0`, `rank-1`, …  each band  `Annulus`
+
+- ### Doughnuts
++ ### Annuli
+
+- A `Doughnut` draws a dependency graph, a [`Dag`](graphs.md), as concentric bands. The nodes
++ An `Annulus` draws a dependency graph, a [`Dag`](graphs.md), as concentric bands. The nodes
+
+- right, and it is darker below the middle and lighter above. A doughnut has no labels and no
++ right, and it is darker below the middle and lighter above. An annulus has no labels and no
+
+- A node carries its progress, so a doughnut is revised like any chart, with new data. The fit
++ A node carries its progress, so an annulus is revised like any chart, with new data. The fit
+
+- val doughnut = Dag(typecheck -> parse, emit -> typecheck).chart(Doughnut())
++ val annulus = Dag(typecheck -> parse, emit -> typecheck).chart(Annulus())
+
+- Out.println(doughnut.fit.bands.size.show)
++ Out.println(annulus.fit.bands.size.show)
+
+- Out.println(doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size.show)
++ Out.println(annulus.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size.show)
+
+- grout between sectors and between bands. `Doughnut.Style` has `shade` for the color of a sector
++ grout between sectors and between bands. `Annulus.Style` has `shade` for the color of a sector
+
+- - [Graphs](graphs.md) describes the `Dag` which a doughnut draws.
++ - [Graphs](graphs.md) describes the `Dag` which an annulus draws.

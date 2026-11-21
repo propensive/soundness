@@ -787,6 +787,14 @@ object inlining:
               Literal(IntConstant(index)),
               packedChain(index + 1) )
 
+    // With enough fields, a perfect hash of their packed names in place of the chain.
+    val packedDispatch: Term =
+      val entries = scala.collection.Iterator.range(0, arity).flatMap: index =>
+        packedNames(index).iterator.map { case (low, highWord) => (index, low, highWord) }
+
+      val hashed = PerfectHash.dispatch(entries, wordRef, highRef, Expr(-1))
+      if hashed == null then packedChain(0) else hashed.asTerm
+
     val textStep: Term =
       val name =
         Symbol.newVal(owner, "name", TypeRepr.of[String], Flags.EmptyFlags, Symbol.noSymbol)
@@ -811,7 +819,7 @@ object inlining:
           textStep,
           Block
             ( List(ValDef(high, Some('{$reader.childWordHigh}.asTerm))),
-              packedChain(0) ) )
+              packedDispatch ) )
 
     val step: Term =
       Block

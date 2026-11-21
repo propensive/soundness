@@ -1107,7 +1107,9 @@ object Json extends Json1, Dynamic:
       caps.unsafe.unsafeAssumePure:
         new Json.Parsable:
           type Self = value
-          def shape(): Morphology = Morphology.Opt(field.shape())
+          // Evaluated once, as in `iterable`.
+          private lazy val parser = field
+          def shape(): Morphology = Morphology.Opt(parser.shape())
 
           // A wire `null` reads as `Unset`, and so does an absent key: both mean "no value",
           // exactly as the AST decoder's `optional`; the `optionalityOptions` policies vary
@@ -1116,11 +1118,11 @@ object Json extends Json1, Dynamic:
             if reader.hasNull && !nullity.strict then
               reader.nullValue()
               Unset
-            else if Json.Parsable.mismatched(fault, field, reader) then
+            else if Json.Parsable.mismatched(fault, parser, reader) then
               reader.skipValue()
               Unset
             else
-              field.parse(reader)
+              parser.parse(reader)
 
           override def absent()(using Tactic[Json.Error]): value =
             if absence.strict then abort(Json.Error(Reason.Absent)) else Unset
@@ -1136,7 +1138,9 @@ object Json extends Json1, Dynamic:
       caps.unsafe.unsafeAssumePure:
         new Json.Parsable:
           type Self = Option[value]
-          def shape(): Morphology = Morphology.Opt(field.shape())
+          // Evaluated once, as in `iterable`.
+          private lazy val parser = field
+          def shape(): Morphology = Morphology.Opt(parser.shape())
 
           // As `optionality`, yielding `None`: an absent key or a wire `null` is `None` unless
           // the policy is strict, and a value of the wrong kind is `None` under lenient faults.
@@ -1144,11 +1148,11 @@ object Json extends Json1, Dynamic:
             if reader.hasNull && !nullity.strict then
               reader.nullValue()
               None
-            else if Json.Parsable.mismatched(fault, field, reader) then
+            else if Json.Parsable.mismatched(fault, parser, reader) then
               reader.skipValue()
               None
             else
-              Some(field.parse(reader))
+              Some(parser.parse(reader))
 
           override def absent()(using Tactic[Json.Error]): Option[value] =
             if absence.strict then abort(Json.Error(Reason.Absent)) else None
@@ -1179,7 +1183,13 @@ object Json extends Json1, Dynamic:
       caps.unsafe.unsafeAssumePure:
         new Json.Parsable:
           type Self = collection[element]
-          def shape(): Morphology = Morphology.Arr(field.shape())
+
+          // The by-name parser, evaluated once. Left by-name, every element re-evaluates it — and
+          // when it is an inline derivation, that rebuilds the whole derived parser per element.
+          // Lazy, so a recursive type's parser is still resolved only at its first use.
+          private lazy val parser = field
+
+          def shape(): Morphology = Morphology.Arr(parser.shape())
 
           def parse(reader: Json.Reader^): collection[element] =
             val builder = factory.newBuilder
@@ -1191,8 +1201,8 @@ object Json extends Json1, Dynamic:
             while reader.element() do
               builder +=
                 ( if focused
-                  then focus(descend(prior, index.show))(field.parse(reader))
-                  else field.parse(reader) )
+                  then focus(descend(prior, index.show))(parser.parse(reader))
+                  else parser.parse(reader) )
 
               index += 1
 
@@ -1207,7 +1217,9 @@ object Json extends Json1, Dynamic:
       caps.unsafe.unsafeAssumePure:
         new Json.Parsable:
           type Self = Map[key, element]
-          def shape(): Morphology = Morphology.Dict(Morphology.Str, field.shape())
+          // Evaluated once, as in `iterable`.
+          private lazy val parser = field
+          def shape(): Morphology = Morphology.Dict(Morphology.Str, parser.shape())
 
           def parse(reader: Json.Reader^): Map[key, element] =
             reader.openObject()
@@ -1216,7 +1228,7 @@ object Json extends Json1, Dynamic:
               var name: String | Null = reader.keyName()
 
               while name != null do
-                entries(name.nn.tt.as[key]) = field.parse(reader)
+                entries(name.nn.tt.as[key]) = parser.parse(reader)
                 name = reader.keyName()
 
     // Support points for staged parsers, which are generated into user

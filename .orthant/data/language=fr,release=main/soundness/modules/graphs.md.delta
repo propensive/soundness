@@ -1,0 +1,17 @@
+orthant 1 language
+
+- - [Trees](trees.md) draws trees and graphs as text.
+- - [Collections](collections.md) describes the vocabulary which a graph shares, and the
+-   acknowledgements of cost in `dysasymptotics`.
+- - [Concurrency](concurrency.md) runs the tasks which a dependency graph orders.
+- - [Impossible states](../../philosophy/impossible-states.md) explains why a `Dag` cannot hold a
+-   cycle.
+- - [Charts](charts.md) draws a graph as an annulus, and [compiler](compiler.md) builds a toolchain as one.
++ - [Arbres](trees.md) dessine des arbres et des graphes sous forme de texte.
++ - [Collections](collections.md) décrit le vocabulaire que partage un graphe, et les
++   reconnaissances de coût de `dysasymptotics`.
++ - [Concurrence](concurrency.md) exécute les tâches qu'ordonne un graphe de dépendances.
++ - [États impossibles](../../philosophy/impossible-states.md) explique pourquoi un `Dag` ne peut
++   contenir de cycle.
++ - [Graphiques](charts.md) dessine un graphe en anneau, et [compilateur](compiler.md) construit
++   une toolchain sous forme de graphe.

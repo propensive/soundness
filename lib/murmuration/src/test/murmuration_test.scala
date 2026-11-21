@@ -914,3 +914,151 @@ object Tests extends Suite("collections", m"Murmuration tests"):
 
         byQuicksort == expected && byHeapsort == expected
       . assert(_ == true)
+
+    suite(m"Maps optimized by a perfect hash"):
+      val court: Map[Text, Int] =
+        Map
+          ( t"Lear" -> 80, t"Cordelia" -> 25, t"Goneril" -> 40, t"Regan" -> 38, t"Kent" -> 48,
+            t"Gloucester" -> 60, t"Edgar" -> 28, t"Edmund" -> 27, t"Albany" -> 42,
+            t"Cornwall" -> 44, t"Oswald" -> 33 )
+
+      val optimized: Map[Text, Int] = court.optimize
+
+      // Whether a map is read through a perfect hash: the one thing here that only its
+      // runtime class can say.
+      def perfect[key, value](map: Map[key, value]): Boolean =
+        map.stdlib.isInstanceOf[proscenium.PerfectMap[?, ?]]
+
+      test(m"an optimized map of texts is read through a perfect hash"):
+        perfect(optimized)
+      . assert(_ == true)
+
+      test(m"an optimized map finds every key it was made with"):
+        court.all { entry => optimized.at(entry(0)) == entry(1) }
+      . assert(_ == true)
+
+      test(m"an optimized map does not find a key it was not made with"):
+        (optimized.at(t"Fool"), optimized.at(t""), optimized.defines(t"France"))
+      . assert(_ == (Unset, Unset, false))
+
+      test(m"an optimized map equals the map it was made from"):
+        optimized == court && court == optimized && optimized.hashCode == court.hashCode
+      . assert(_ == true)
+
+      test(m"an optimized map has every entry of the map it was made from"):
+        optimized.all { entry => court.at(entry(0)) == entry(1) }
+      . assert(_ == true)
+
+      test(m"defining a key on an optimized map gives a map with them all"):
+        val more = optimized.define(t"Fool", 30)
+        (more == court.define(t"Fool", 30), more.at(t"Fool"), optimized.at(t"Fool"))
+      . assert(_ == (true, 30, Unset))
+
+      test(m"omitting a key from an optimized map leaves the rest"):
+        val fewer = optimized.omit(t"Lear")
+        (fewer == court.omit(t"Lear"), fewer.at(t"Lear"), fewer.at(t"Kent"))
+      . assert(_ == (true, Unset, 48))
+
+      test(m"a map of integers is optimized"):
+        val squares: Map[Int, Int] = Map.build[Int, Int]: map =>
+          var number = 0
+
+          while number < 300 do
+            map(number*7919 + 13) = number*number
+            number += 1
+
+        val fast = squares.optimize
+
+        ( perfect(fast),
+          squares.all { entry => fast.at(entry(0)) == entry(1) },
+          fast.at(14),
+          fast == squares )
+      . assert(_ == (true, true, Unset, true))
+
+      test(m"an integer key of an optimized map is found by an equal long"):
+        val ages: Map[Any, Int] =
+          Map[Any, Int](1 -> 10, 2 -> 20, 3 -> 30, 4 -> 40, 5 -> 50, 6 -> 60).optimize
+
+        (perfect(ages), ages.at(3L), ages.at(7L), ages.at(t"3"))
+      . assert(_ == (true, 30, Unset, Unset))
+
+      test(m"a map of four entries is left as it was"):
+        perfect(Map(t"Lear" -> 80, t"Kent" -> 48, t"Edgar" -> 28, t"Oswald" -> 33).optimize)
+      . assert(_ == false)
+
+      test(m"a map whose keys are of no hashable kind is left as it was"):
+        val pairs: Map[(Int, Int), Int] =
+          Map((1, 1) -> 1, (1, 2) -> 2, (2, 1) -> 3, (2, 2) -> 4, (3, 1) -> 5, (3, 2) -> 6)
+
+        val same = pairs.optimize
+        (perfect(same), same == pairs)
+      . assert(_ == (false, true))
+
+    suite(m"Maps fixed by a perfect hash of literal keys"):
+      def perfect[key, value](map: Map[key, value]): Boolean =
+        map.stdlib.isInstanceOf[proscenium.PerfectMap[?, ?]]
+
+      val court: Map[Text, Int] =
+        Map.fixed
+          ( t"Lear" -> 80, t"Cordelia" -> 25, t"Goneril" -> 40, t"Regan" -> 38, t"Kent" -> 48,
+            t"Gloucester" -> 60, t"Edgar" -> 28, t"Edmund" -> 27, t"Albany" -> 42,
+            t"Cornwall" -> 44, t"Oswald" -> 33 )
+
+      val plain: Map[Text, Int] =
+        Map
+          ( t"Lear" -> 80, t"Cordelia" -> 25, t"Goneril" -> 40, t"Regan" -> 38, t"Kent" -> 48,
+            t"Gloucester" -> 60, t"Edgar" -> 28, t"Edmund" -> 27, t"Albany" -> 42,
+            t"Cornwall" -> 44, t"Oswald" -> 33 )
+
+      test(m"a fixed map of texts is read through a perfect hash"):
+        perfect(court)
+      . assert(_ == true)
+
+      test(m"a fixed map equals the ordinary map of the same entries"):
+        court == plain && plain == court && court.hashCode == plain.hashCode
+      . assert(_ == true)
+
+      test(m"a fixed map finds every key and no other"):
+        ( plain.all { entry => court.at(entry(0)) == entry(1) },
+          court.at(t"Fool"),
+          court.at(t""),
+          court.defines(t"Lears") )
+      . assert(_ == (true, Unset, Unset, false))
+
+      test(m"a fixed map's values are computed where it is made"):
+        val base = 100
+        val ages = Map.fixed(1 -> (base + 1), 2 -> (base + 2), 3 -> (base + 3), 4 -> (base + 4),
+            5 -> (base + 5), 6 -> (base + 6))
+
+        (perfect(ages), ages.at(4), ages.at(7))
+      . assert(_ == (true, 104, Unset))
+
+      test(m"a fixed map of characters is read through a perfect hash"):
+        val vowels = Map.fixed('a' -> 1, 'e' -> 2, 'i' -> 3, 'o' -> 4, 'u' -> 5, 'y' -> 6)
+        (perfect(vowels), vowels.at('o'), vowels.at('b'))
+      . assert(_ == (true, 4, Unset))
+
+      test(m"a fixed map of two entries is read through a perfect hash too"):
+        val few = Map.fixed(t"Lear" -> 80, t"Kent" -> 48)
+        (perfect(few), few.at(t"Kent"), few.at(t"Edgar"), few == Map(t"Lear" -> 80, t"Kent" -> 48))
+      . assert(_ == (true, 48, Unset, true))
+
+      test(m"a fixed map large enough to need a displacement table finds every key"):
+        val lines =
+          Map.fixed
+            ( t"a01" -> 1, t"b02" -> 2, t"c03" -> 3, t"d04" -> 4, t"e05" -> 5, t"f06" -> 6,
+              t"g07" -> 7, t"h08" -> 8, t"i09" -> 9, t"j10" -> 10, t"k11" -> 11, t"l12" -> 12,
+              t"m13" -> 13, t"n14" -> 14, t"o15" -> 15, t"p16" -> 16, t"q17" -> 17, t"r18" -> 18,
+              t"s19" -> 19, t"t20" -> 20, t"u21" -> 21, t"v22" -> 22, t"w23" -> 23, t"x24" -> 24,
+              t"y25" -> 25, t"z26" -> 26, t"A27" -> 27, t"B28" -> 28, t"C29" -> 29, t"D30" -> 30,
+              t"E31" -> 31, t"F32" -> 32, t"G33" -> 33, t"H34" -> 34, t"I35" -> 35, t"J36" -> 36,
+              t"K37" -> 37, t"L38" -> 38, t"M39" -> 39, t"N40" -> 40, t"O41" -> 41, t"P42" -> 42,
+              t"Q43" -> 43, t"R44" -> 44, t"S45" -> 45, t"T46" -> 46, t"U47" -> 47 )
+
+        ( perfect(lines), lines.all { entry => lines.at(entry(0)) == entry(1) },
+          lines.at(t"h08"), lines.at(t"U47"), lines.at(t"V48"), lines.fold(0) { (total, entry) => total + entry(1) } )
+      . assert(_ == (true, true, 8, 47, Unset, 1128))
+
+      test(m"defining a key on a fixed map gives a map with them all"):
+        court.define(t"Fool", 30) == plain.define(t"Fool", 30)
+      . assert(_ == true)

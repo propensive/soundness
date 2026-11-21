@@ -1292,11 +1292,24 @@ object internal:
                 Literal(IntConstant(field.index)),
                 chain(rest) )
 
+      // With enough fields, a perfect hash of their packed keywords in place of the chain.
+      def literals(remaining: List[Field]): scala.collection.immutable.List[(Int, Long)] =
+        remaining match
+          case Nil => scala.collection.immutable.Nil
+
+          case field :: rest => field.packed match
+            case None         => literals(rest)
+            case Some(packed) => (field.index, packed) :: literals(rest)
+
+      def dispatch: Term =
+        val hashed = PerfectHash.dispatch(literals(fields), wordRef, Expr(-1))
+        if hashed == null then chain(fields) else hashed.asTerm
+
       val textStep: Term = '{Tel.Parsable.keywordIndex($keys, $reader.keywordText)}.asTerm
 
       val resolve: Term =
         if literalKeys then
-          If('{$wordRef == TelReader.KeywordOpaque}.asTerm, textStep, chain(fields))
+          If('{$wordRef == TelReader.KeywordOpaque}.asTerm, textStep, dispatch)
         else
           textStep
 

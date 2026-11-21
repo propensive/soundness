@@ -509,6 +509,12 @@ object Benchmarks extends Suite("collections-bench", m"Murmuration benchmarks"):
           case (MapBench.Lookup.BuiltOnce, size) =>
             '{ murmuration.MapBench.lookupBuiltOnce($kind, $size, $flag == 1) }
 
+          case (MapBench.Lookup.Optimized, size) =>
+            '{ murmuration.MapBench.lookupOptimized($kind, $size, $flag == 1) }
+
+          case (MapBench.Lookup.OptimizedOnce, size) =>
+            '{ murmuration.MapBench.lookupOptimizedOnce($kind, $size, $flag == 1) }
+
           case (MapBench.Lookup.JavaHashMap, size) =>
             '{ murmuration.MapBench.lookupJavaHashMap($kind, $size, $flag == 1) }
 

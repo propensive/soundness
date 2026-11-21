@@ -34,7 +34,7 @@ package tasseomancy
 
 import prepositional.*
 
-// The extent of a node of a doughnut: the share of its rank's angle it sweeps and, summed over
+// The extent of a node of an annulus: the share of its rank's angle it sweeps and, summed over
 // the rank, the thickness of the rank's band. A negative weight counts as zero.
 trait Weighted extends Typeclass.Pure:
   def weight(value: Self): Double

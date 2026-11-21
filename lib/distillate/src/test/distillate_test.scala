@@ -37,6 +37,27 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.emptyDiagnostics
 
+// Few enough cases that a name is looked up in a map.
+enum Humour:
+  case Blood, Phlegm, Choler, Melancholy
+
+// Enough that it is found by a perfect hash of the names.
+enum Tragedy:
+  case Hamlet, Macbeth, Othello, Lear, Coriolanus, Timon, Titus, Cymbeline
+
+// As many, but named by `toString`, which only the values can say.
+enum Comedy:
+  case Tempest, Twelfth, Measure, Errors, Shrew, Merchant, Dream
+
+  override def toString: String = this match
+    case Tempest  => "The Tempest"
+    case Twelfth  => "Twelfth Night"
+    case Measure  => "Measure for Measure"
+    case Errors   => "The Comedy of Errors"
+    case Shrew    => "The Taming of the Shrew"
+    case Merchant => "The Merchant of Venice"
+    case Dream    => "A Midsummer Night's Dream"
+
 object Tests extends Suite("decode", m"Distillate Tests"):
   def run(): Unit =
     test(m"Extract an int"):
@@ -134,3 +155,32 @@ object Tests extends Suite("decode", m"Distillate Tests"):
       test(m"Nonsense is an error"):
         capture(t"maybe".as[Boolean])
       . assert(_ == Truth.Error(t"maybe"))
+
+    suite(m"Enumerations by name"):
+      test(m"a value of a small enumeration is found by name"):
+        val humours = summon[Humour is Enumerable]
+        (humours.value(t"Choler"), humours.value(t"Bile"))
+      . assert(_ == (Humour.Choler, Unset))
+
+      test(m"every value of a large enumeration is found by name"):
+        val tragedies = summon[Tragedy is Enumerable]
+        val all = tragedies.values.to[List]
+        all.map { tragedy => tragedies.value(tragedies.name(tragedy)) } == all
+      . assert(_ == true)
+
+      test(m"a name that is no value of a large enumeration is not found"):
+        val tragedies = summon[Tragedy is Enumerable]
+
+        ( tragedies.value(t"Pericles"), tragedies.value(t"hamlet"), tragedies.value(t""),
+          tragedies.value(t"Hamlets") )
+      . assert(_ == (Unset, Unset, Unset, Unset))
+
+      test(m"an enumeration which names itself is found by those names"):
+        val comedies = summon[Comedy is Enumerable]
+        (comedies.value(t"Twelfth Night"), comedies.value(t"Twelfth"))
+      . assert(_ == (Comedy.Twelfth, Unset))
+
+      test(m"a value of a large enumeration is found by its position too"):
+        val tragedies = summon[Tragedy is Enumerable]
+        (tragedies.value(Prim), tragedies.value(t"Macbeth").let(tragedies.index(_)))
+      . assert(_ == (Tragedy.Hamlet, 1))

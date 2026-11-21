@@ -22,3 +22,62 @@ orthant 1 release
 + reference to it for later is a compile error. So the map is immutable from the moment `build`
 + returns, and equal to any other map with the same entries, however that one was made.
 +
++ ### Maps with keys known in advance
++
++ A map whose keys are all written where it is made can be read faster still. `Map.fixed` finds a
++ *perfect hash* of its keys while the code is compiled: a small calculation which sends each key
++ to a slot of its own. A read is then that calculation and one comparison, whether or not the
++ key is there:
++
++ ```scala fuel
++ run
++ ##
++ val cast = Map.fixed(t"Lear" -> 80, t"Kent" -> 48, t"Gloucester" -> 60, t"Edgar" -> 28)
++
++ Out.println(cast.at(t"Edgar").inspect)
++ Out.println(cast.at(t"Fool").inspect)
++ Out.println((cast == court.define(t"Edgar", 28)).inspect)
++ ```
++
++ The keys must be literals: texts, `Int`s, `Long`s or `Char`s, all of one kind, and each given
++ once. The values can be any expressions. A fixed map is an ordinary `Map` to everything which
++ uses it, and `define` and `omit` work on it as on any other.
++
++ A map which cannot be fixed does not compile, so a map made with `fixed` is never a slower one
++ in disguise. Giving a key twice is one such error:
++
++ ```scala fuel
++ compile
++ errors show
++ ##
++ Map.fixed(t"Lear" -> 80, t"Kent" -> 48, t"Lear" -> 81)
++ ```
++
++ A key which is not a literal is another, as are keys of different kinds, and two texts which
++ happen to share a hash code. A map of more than 1,024 entries is too large to write out this
++ way, and is better filled with `Map.build`.
++
++ When the keys are only known once the program is running, `optimize` gives an existing map the
++ same treatment. It finds the hash then, and compiles it with the Scala compiler:
++
++ ```scala
++ import murmuration.optimize
++ ```
++
++ ```scala fuel
++ typecheck
++ ##
++ val quick = court.optimize
++ ```
++
++ The compiler must therefore be on the classpath when the program runs, which is why `optimize`
++ comes from a module of its own, in the `staged` bundle, and only on the JVM. Compiling takes
++ about a tenth of a second for each map, and several seconds for the first, so it suits a map
++ which is made once and read a great many times.
++
++ It helps a map keyed by numbers most, which reads about twice as fast. A map keyed by text
++ reads faster when its keys are usually found, and slower when they usually are not, since a
++ text which is absent must still be compared with the one in its slot. A map of four entries or
++ fewer, or one whose keys are not all texts, all `Int`s, all `Long`s or all `Char`s, is given
++ back as it was.
++

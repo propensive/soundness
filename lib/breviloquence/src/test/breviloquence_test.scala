@@ -79,6 +79,12 @@ enum Shape derives CanEqual:
 // exactly the degradation the suite exercises.
 case class Defaulted(x: Int, y: Int = 7) derives CanEqual
 case class Wide(seventeenCharacter: Int, y: Int) derives CanEqual
+
+// Wide enough that a generated parser finds its fields by a perfect hash of their names rather
+// than by comparing with each in turn.
+case class Census
+  ( acts: Int, scenes: Int, lines: Int, songs: Int, deaths: Int, duels: Int, ghosts: Int, fools: Int )
+derives CanEqual
 case class Blob(data: Data)
 case class Nums(values: List[Int]) derives CanEqual
 case class Mixed(a: Double, b: Boolean, c: Text) derives CanEqual
@@ -652,6 +658,11 @@ object Tests extends Suite("cbor", m"Breviloquence Tests"):
       test(m"a flat product reads directly from bytes"):
         encoded(Point(3, 4)).read[Point in Cbor]
       . assert(_ == Point(3, 4))
+
+      test(m"a wide product finds each of its fields"):
+        given (Census is Cbor.Parsable) = Inlinable.parsable[Census]
+        encoded(Census(1, 2, 3, 4, 5, 6, 7, 8)).read[Census in Cbor]
+      . assert(_ == Census(1, 2, 3, 4, 5, 6, 7, 8))
 
       test(m"text and numeric scalars agree with the AST path"):
         encoded(Mixed(2.5, true, t"hello")).read[Mixed in Cbor]

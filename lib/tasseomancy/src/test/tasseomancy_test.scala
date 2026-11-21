@@ -526,7 +526,7 @@ object Tests extends Suite("charts", m"Tasseomancy tests"):
         Category(42).label
       . assert(_ == t"42")
 
-    suite(m"Doughnuts"):
+    suite(m"Annuli"):
       case class Step(name: Text, size: Double, done: Double = 0.0)
       given Step is Weighted = _.size
       given Step is Progressive = _.done
@@ -538,22 +538,22 @@ object Tests extends Suite("charts", m"Tasseomancy tests"):
       val turn = 2.0*π
 
       test(m"a diamond's ranks are its depths of dependency"):
-        diamond.chart(Doughnut()).fit.bands.map(_.sectors.map(_.node.name).to[Set])
+        diamond.chart(Annulus()).fit.bands.map(_.sectors.map(_.node.name).to[Set])
       . assert(_ == List(Set(t"d"), Set(t"b", t"c"), Set(t"a")))
 
       test(m"each rank's sectors sweep a full turn"):
-        diamond.chart(Doughnut()).fit.bands.all: band =>
+        diamond.chart(Annulus()).fit.bands.all: band =>
           (band.sectors.fold(0.0) { (acc, sector) => acc.max(sector.end) } - turn).abs < 1e-9
       . assert(_ == true)
 
       test(m"a band's thickness is its rank's share of the size"):
-        diamond.chart(Doughnut()).fit.bands.map { band => (band.outer*9.0 + 0.5).toInt }
+        diamond.chart(Annulus()).fit.bands.map { band => (band.outer*9.0 + 0.5).toInt }
       . assert(_ == List(4, 8, 9))
 
       test(m"a dependent sits over its dependency"):
         val (p, q, x, y) = (Step(t"p", 1.0), Step(t"q", 1.0), Step(t"x", 1.0), Step(t"y", 1.0))
         val crossed: Dag[Step] = Dag(p -> y, q -> x)
-        val bands = crossed.chart(Doughnut()).fit.bands
+        val bands = crossed.chart(Annulus()).fit.bands
         val inner = bands.at(Prim).let(_.sectors).or(Nil)
         val outer = bands.at(Sec).let(_.sectors).or(Nil)
         outer.all: sector =>
@@ -563,28 +563,28 @@ object Tests extends Suite("charts", m"Tasseomancy tests"):
       . assert(_ == true)
 
       test(m"every sector is drawn in the parts it has"):
-        val text = rendered(diamond.chart(Doughnut()))
+        val text = rendered(diamond.chart(Annulus()))
         (occurrences(text, t"<path"), text.contains(t"""id="rank-0""""),
          text.contains(t"""id="sector-0""""), text.contains(t"""id="sector-0-rest""""))
       . assert(_ == (5, true, true, false))
 
-      test(m"a hollow doughnut draws the same sectors"):
+      test(m"a hollow annulus draws the same sectors"):
         given Chart.Standard = Chart.Standard(hole = 0.3)
-        occurrences(rendered(diamond.chart(Doughnut())), t"<path")
+        occurrences(rendered(diamond.chart(Annulus())), t"<path")
       . assert(_ == 5)
 
       test(m"unchanged progress revises nothing"):
-        val chart = diamond.chart(Doughnut())
+        val chart = diamond.chart(Annulus())
         chart.revise(chart.data)(1)
       . assert(_ == Nil)
 
       test(m"progress on a node replaces only its band"):
         val done = b.copy(done = 1.0)
-        diamond.chart(Doughnut()).revise(Dag(a -> done, a -> c, done -> d, c -> d))(1).map(describe)
+        diamond.chart(Annulus()).revise(Dag(a -> done, a -> c, done -> d, c -> d))(1).map(describe)
       . assert(_ == List(t"replace rank-1"))
 
-      test(m"a graph of another shape redraws the doughnut"):
-        diamond.chart(Doughnut()).revise(Dag(a -> d))(1).map(describe)
+      test(m"a graph of another shape redraws the annulus"):
+        diamond.chart(Annulus()).revise(Dag(a -> d))(1).map(describe)
       . assert(_ == List(t"redraw"))
 
     suite(m"Compatibility"):
@@ -606,14 +606,14 @@ object Tests extends Suite("charts", m"Tasseomancy tests"):
         . exists(_.error)
       . assert(_ == true)
 
-      test(m"a graph of nodes without a size or a progress cannot be a doughnut"):
+      test(m"a graph of nodes without a size or a progress cannot be an annulus"):
         demilitarize:
-          Dag(1 -> 2).chart(Doughnut())
+          Dag(1 -> 2).chart(Annulus())
         . exists(_.error)
       . assert(_ == true)
 
-      test(m"series cannot be a doughnut"):
+      test(m"series cannot be an annulus"):
         demilitarize:
-          sales.chart(Doughnut())
+          sales.chart(Annulus())
         . exists(_.error)
       . assert(_ == true)

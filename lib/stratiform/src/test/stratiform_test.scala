@@ -92,6 +92,12 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
   case class KebabRecord(firstName: Text, shoeSize: Int) derives CanEqual
   case class Play(title: Text, hero: Person) derives CanEqual
   case class OptField(x: Int, note: Optional[Text]) derives CanEqual
+
+  // Wide enough that a generated parser finds its fields by a perfect hash of their keywords
+  // rather than by comparing with each in turn.
+  case class Census
+    ( acts: Int, scenes: Int, lines: Int, songs: Int, deaths: Int, duels: Int, ghosts: Int, fools: Int )
+  derives CanEqual
   case class Scene(place: Text, number: Int) derives CanEqual
   case class Act(scene: Scene, size: Int) derives CanEqual
 
@@ -724,6 +730,15 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       test(m"A staged parser accepts reordered fields, equally on both paths"):
         parity[Tests.Person](t"age 30\nname Percy\n")
       . assert(identity)
+
+      test(m"A staged parser reads a wide record, skipping keywords nearly its fields"):
+        given Tests.Census is Tel.Parsable = Tel.Parsable.staged
+
+        val document =
+          t"fools 8\nfool 0\nghosts 7\nduels 6\ndeaths 5\nsongs 4\nlines 3\nscenes 2\nacts 1\n"
+
+        document.read[Tests.Census in Tel]
+      . assert(_ == Tests.Census(1, 2, 3, 4, 5, 6, 7, 8))
 
       test(m"Staged field names map to kebab-case keywords"):
         t"first-name Hal\nshoe-size 9\n".read[Tests.KebabRecord in Tel]

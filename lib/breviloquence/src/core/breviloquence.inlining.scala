@@ -668,6 +668,14 @@ object inlining:
                 Literal(IntConstant(index)),
                 packedChainOver(wordRef, highRef)(index + 1) )
 
+      // With enough fields, a perfect hash of their packed names in place of the chain.
+      def packedDispatch(wordRef: Expr[Long], highRef: Expr[Long]): Term =
+        val entries = scala.collection.Iterator.range(0, arity).flatMap: index =>
+          packedNames(index).iterator.map { case (low, highWord) => (index, low, highWord) }
+
+        val hashed = PerfectHash.dispatch(entries, wordRef, highRef, Expr(-1))
+        if hashed == null then packedChainOver(wordRef, highRef)(0) else hashed.asTerm
+
       def namedChain(name: Expr[String], index: Int): Expr[Int] =
         if index == arity then Expr(-1)
         else
@@ -706,7 +714,7 @@ object inlining:
               opaque.asTerm,
               Block
                 ( List(ValDef(high, Some('{$parser.directKeyHigh}.asTerm))),
-                  packedChainOver(wordRef, highRef)(0) ) )
+                  packedDispatch(wordRef, highRef) ) )
 
         val entry: Term =
           Block
