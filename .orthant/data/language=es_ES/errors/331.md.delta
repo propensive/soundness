@@ -1,0 +1,52 @@
+orthant 1 language
+
+- # `SN-331` — `OverflowError` (retired)
++ # `SN-331` — `OverflowError` (retirado)
+
+- **This code is no longer raised.** `OverflowError` and `DivisionError` were two
+- names for one concept — an arithmetic operation with no representable result — and
+- are now `Arithmetic.Error`, whose `Overflow` reason is `↯/s.27.15.2`.
++ **Este código ya no se lanza.** `OverflowError` y `DivisionError` eran dos nombres para un mismo
++ concepto —una operación aritmética sin resultado representable— y ahora son `Arithmetic.Error`,
++ cuyo motivo `Overflow` es `↯/s.27.15.2`.
+
+- It was raised when a numeric operation would exceed the representable
+- range of its result type.
++ Se lanzaba cuando una operación numérica excedía el rango representable de su tipo de resultado.
+
+- ## Cause
++ ## Causa
+
+- Hypotenuse's checked arithmetic raises this error rather than
+- silently wrapping when an addition, subtraction, multiplication,
+- or shift would overflow.
++ La aritmética comprobada de Hypotenuse lanza este error en lugar de dar la vuelta en silencio
++ cuando una suma, una resta, una multiplicación o un desplazamiento producirían un desbordamiento.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯SN-331] an overflow error occurred
++ [↯SN-331] an overflow error occurred
+
+= [↯SN-331] an overflow error occurred
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Use a wider numeric type for the result, or restructure the
+- computation to avoid intermediate overflow.
++ Usa un tipo numérico más amplio para el resultado, o reestructura el cálculo para evitar un
++ desbordamiento intermedio.
+
+- ## See also
++ ## Véase también
+
+- - Superseded by: `↯/s.27.15.2` (`Arithmetic.Error`, `Overflow`)
++ - Sustituido por: `↯/s.27.15.2` (`Arithmetic.Error`, `Overflow`)

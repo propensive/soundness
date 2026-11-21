@@ -1,0 +1,934 @@
+orthant 1 language
+
+- ## SVG
++ ## SVG
+
+- ### About
++ ### Descripción
+
+- [SVG](https://en.wikipedia.org/wiki/SVG) drawings are built from typed values: shapes with
+- typed coordinates, paths which are assembled a step at a time, transforms and gradients.
+- They are composed into an `Svg` document, which is written as XML.
++ Los dibujos [SVG](https://en.wikipedia.org/wiki/SVG) se construyen a partir de valores tipados:
++ formas con coordenadas tipadas, trazados que se montan paso a paso, transformaciones y degradados.
++ Se componen en un documento `Svg`, que se escribe como XML.
+
+- Drawing tools suit artwork which is made once. Generating SVG from a program, as a chart, a
+- diagram, or a figure for each point of data, wants values which compose, and typed points
+- and vectors instead of strings of numbers.
++ Las herramientas de dibujo se prestan a ilustraciones que se hacen una sola vez. Generar SVG desde
++ un programa, como un gráfico, un diagrama o una figura para cada punto de datos, requiere valores
++ que se compongan, y puntos y vectores tipados en lugar de cadenas de números.
+
+- ### On vector graphics
++ ### Sobre los gráficos vectoriales
+
+- An SVG document is XML which is full of little languages. The `d` attribute of a path is a
+- program of coordinates. `transform` is a pipeline of functions. Colors and units have
+- syntaxes of their own. A program which generates SVG by joining strings must get all of
+- them right at once, and a misplaced coordinate produces a drawing which is silently wrong.
++ Un documento SVG es XML repleto de pequeños lenguajes. El atributo `d` de un trazado es un programa
++ de coordenadas. `transform` es una canalización de funciones. Los colores y las unidades tienen sus
++ propias sintaxis. Un programa que genera SVG uniendo cadenas debe acertar con todos ellos a la vez,
++ y una coordenada fuera de sitio produce un dibujo que está mal sin que nada lo indique.
+
+- Here the structure is built from values. A `Point` is a position, and a `Delta` is a
+- displacement. They are distinct types, with vector arithmetic between them. Paths grow by
+- named steps, and each little language is written by the types which understand it. Figures
+- which are typed values, with coordinates which are numbers and not text, follow
+- [impossible states](../../philosophy/impossible-states.md): a malformed drawing cannot be
+- written.
++ Aquí la estructura se construye a partir de valores. Un `Point` es una posición, y un `Delta` es un
++ desplazamiento. Son tipos distintos, con aritmética vectorial entre ellos. Los trazados crecen
++ mediante pasos con nombre, y cada pequeño lenguaje lo escriben los tipos que lo entienden. Las
++ figuras que son valores tipados, con coordenadas que son números y no texto, siguen el principio de
++ los [estados imposibles](../../philosophy/impossible-states.md): no se puede escribir un dibujo mal
++ formado.
+
+- Everything comes from the `soundness` package. The last import lets the samples print their
+- results:
++ Todo procede del paquete `soundness`. La última importación permite a los ejemplos imprimir sus
++ resultados:
+
+= results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+- import Svg.{Ellipse, Figure, Group, Lettering, Outline, Polyline, Rectangle}
++ import Svg.{Ellipse, Figure, Group, Lettering, Outline, Polyline, Rectangle}
+
+= import Svg.{Ellipse, Figure, Group, Lettering, Outline, Polyline, Rectangle}
+- ```
++ ```
+
+- The shapes are nested in `Svg`, as `Svg.Rectangle` and so on, and imported from it above.
++ Las formas están anidadas en `Svg`, como `Svg.Rectangle` y demás, y se importan de ahí arriba.
+
+- ### Shapes
++ ### Formas
+
+- Every figure is written as one SVG element:
++ Cada figura se escribe como un elemento SVG:
+
+= Every figure is written as one SVG element:
+=
+- ```tabular
++ ```tabular
+
+- column  Figure
+- column  Element
++ column  Figura
++ column  Elemento
+
+- row  `Rectangle`  `<rect>`
++ row  `Rectangle`  `<rect>`
+
+- row  `Circle`  `<circle>`
++ row  `Circle`  `<circle>`
+
+- row  `Ellipse`  `<ellipse>`, or `<circle>` when its radii are equal
++ row  `Ellipse`  `<ellipse>`, o `<circle>` cuando sus radios son iguales
+
+- row  `Outline`  `<path>`
++ row  `Outline`  `<path>`
+
+- row  `Polyline`  `<polyline>`, or `<polygon>` when it is `closed`
++ row  `Polyline`  `<polyline>`, o `<polygon>` cuando es `closed`
+
+- row  `Group`  `<g>`
++ row  `Group`  `<g>`
+
+- row  `Lettering`  `<text>`
++ row  `Lettering`  `<text>`
+
+= row  `Lettering`  `<text>`
+- ```
++ ```
+
+- Rectangles, circles and ellipses are values, positioned by points. A pair of numbers
+- converts to a point where one is expected. `in[Xml]` writes a figure as [XML](xml.md):
++ Los rectángulos, círculos y elipses son valores, situados mediante puntos. Un par de números se
++ convierte en un punto donde se espera uno. `in[Xml]` escribe una figura como [XML](xml.md):
+
+= converts to a point where one is expected. `in[Xml]` writes a figure as [XML](xml.md):
+=
+- ```scala fuel
++ ```scala fuel
+
+= converts to a point where one is expected. `in[Xml]` writes a figure as [XML](xml.md):
+=
+= ```scala fuel
+- run
++ run
+
+= converts to a point where one is expected. `in[Xml]` writes a figure as [XML](xml.md):
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Rectangle((0, 0), 10, 5).in[Xml].show)
++ Out.println(Rectangle((0, 0), 10, 5).in[Xml].show)
+
+- Out.println(Circle((0, 0), 5).in[Xml].show)
++ Out.println(Circle((0, 0), 5).in[Xml].show)
+
+= Out.println(Circle((0, 0), 5).in[Xml].show)
+- ```
++ ```
+
+- ### Paths
++ ### Trazados
+
+- An `Outline` is a path which is built a step at a time. Absolute steps have names which end
+- in `To`, and take `Point`s. Relative steps do not, and take `Delta`s. There are curves,
+- quadratic curves, and a `closed` end:
++ Un `Outline` es un trazado que se construye paso a paso. Los pasos absolutos tienen nombres que
++ terminan en `To` y reciben valores `Point`. Los relativos no, y reciben valores `Delta`. Hay curvas,
++ curvas cuadráticas y un final `closed`:
+
+= quadratic curves, and a `closed` end:
+=
+- ```tabular
++ ```tabular
+
+- column  Absolute
+- column  Relative
+- column  Path command
++ column  Absoluto
++ column  Relativo
++ column  Orden de trazado
+
+- row  `moveTo(point)`  `move(delta)`  `M`, `m`
++ row  `moveTo(point)`  `move(delta)`  `M`, `m`
+
+- row  `lineTo(point)`  `line(delta)`  `L`, `l`
++ row  `lineTo(point)`  `line(delta)`  `L`, `l`
+
+- row  `curveTo(control1, control2, point)`  `curve(control1, control2, delta)`  `C`, `c`
++ row  `curveTo(control1, control2, point)`  `curve(control1, control2, delta)`  `C`, `c`
+
+- row  `curveTo(control2, point)`  `curve(control2, delta)`  `S`, `s`
++ row  `curveTo(control2, point)`  `curve(control2, delta)`  `S`, `s`
+
+- row  `quadCurveTo(control, point)`  `quadCurve(control, delta)`  `Q`, `q`
++ row  `quadCurveTo(control, point)`  `quadCurve(control, delta)`  `Q`, `q`
+
+- row  `quadCurveTo(point)`  `quadCurve(delta)`  `T`, `t`
++ row  `quadCurveTo(point)`  `quadCurve(delta)`  `T`, `t`
+
+= row  `quadCurveTo(point)`  `quadCurve(delta)`  `T`, `t`
+- row
++ row
+
+= row  `quadCurveTo(point)`  `quadCurve(delta)`  `T`, `t`
+= row
+-   cell
++   cell
+
+-   cell  `lineUp(n)`, `lineDown(n)`, `lineLeft(n)`, `lineRight(n)`
++   cell  `lineUp(n)`, `lineDown(n)`, `lineLeft(n)`, `lineRight(n)`
+
+-   cell  `l`
++   cell  `l`
+
+=   cell  `l`
+- row
++ row
+
+=   cell  `l`
+= row
+-   cell
++   cell
+
+-   cell  `moveUp(n)`, `moveDown(n)`, `moveLeft(n)`, `moveRight(n)`
++   cell  `moveUp(n)`, `moveDown(n)`, `moveLeft(n)`, `moveRight(n)`
+
+-   cell  `m`
++   cell  `m`
+
+=   cell  `m`
+- row
++ row
+
+-   cell  `closed`
++   cell  `closed`
+
+=   cell  `closed`
+-   cell
++   cell
+
+-   cell  `Z`
++   cell  `Z`
+
+=   cell  `Z`
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- val plus = Outline().moveTo((0, 0))
++ val plus = Outline().moveTo((0, 0))
+
+-   . lineUp(2).lineLeft(2).lineUp(1).lineRight(2)
++   . lineUp(2).lineLeft(2).lineUp(1).lineRight(2)
+
+-   . lineUp(2).lineRight(1).lineDown(2).lineRight(2)
++   . lineUp(2).lineRight(1).lineDown(2).lineRight(2)
+
+-   . lineDown(1).lineLeft(2).lineDown(2).closed
++   . lineDown(1).lineLeft(2).lineDown(2).closed
+
+=   . lineDown(1).lineLeft(2).lineDown(2).closed
+- ```
++ ```
+
+=   . lineDown(1).lineLeft(2).lineDown(2).closed
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   . lineDown(1).lineLeft(2).lineDown(2).closed
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   . lineDown(1).lineLeft(2).lineDown(2).closed
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Outline().moveTo((0, 0)).curveTo((1, 1), (2, 1), (3, 0)).in[Xml].show)
++ Out.println(Outline().moveTo((0, 0)).curveTo((1, 1), (2, 1), (3, 0)).in[Xml].show)
+
+- Out.println(plus.in[Xml].show)
++ Out.println(plus.in[Xml].show)
+
+= Out.println(plus.in[Xml].show)
+- ```
++ ```
+
+- ### Points and deltas
++ ### Puntos y deltas
+
+- Positions and displacements are different things, and different types:
++ Las posiciones y los desplazamientos son cosas distintas, y tipos distintos:
+
+= Positions and displacements are different things, and different types:
+=
+- ```tabular
++ ```tabular
+
+- column  Expression
+- column  Type
++ column  Expresión
++ column  Tipo
+
+- row  `Point + Delta`, `Point - Delta`  `Point`
++ row  `Point + Delta`, `Point - Delta`  `Point`
+
+- row  `Point - Point`  `Delta`
++ row  `Point - Point`  `Delta`
+
+- row  `Delta + Delta`, `Delta - Delta`, `-Delta`  `Delta`
++ row  `Delta + Delta`, `Delta - Delta`, `-Delta`  `Delta`
+
+- row  `Delta*n`, `n*Delta`  `Delta`
++ row  `Delta*n`, `n*Delta`  `Delta`
+
+= row  `Delta*n`, `n*Delta`  `Delta`
+- ```
++ ```
+
+- The named directions `Delta.Up`, `Delta.Down`, `Delta.Left` and `Delta.Right` make arithmetic on
+- displacements read plainly. The y-axis of SVG points down, so `Up` is a negative change in y:
++ Las direcciones con nombre `Delta.Up`, `Delta.Down`, `Delta.Left` y `Delta.Right` hacen que la
++ aritmética sobre desplazamientos se lea con claridad. El eje y de SVG apunta hacia abajo, así que
++ `Up` es un cambio negativo en y:
+
+= displacements read plainly. The y-axis of SVG points down, so `Up` is a negative change in y:
+=
+- ```scala
++ ```scala
+
+- val step: Delta = 7*Delta.Up + 3*Delta.Right
++ val step: Delta = 7*Delta.Up + 3*Delta.Right
+
+= val step: Delta = 7*Delta.Up + 3*Delta.Right
+- ```
++ ```
+
+= val step: Delta = 7*Delta.Up + 3*Delta.Right
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val step: Delta = 7*Delta.Up + 3*Delta.Right
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val step: Delta = 7*Delta.Up + 3*Delta.Right
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(step.inspect)
++ Out.println(step.inspect)
+
+= Out.println(step.inspect)
+- ```
++ ```
+
+- Adding two positions has no meaning, and does not compile:
++ Sumar dos posiciones no tiene sentido, y no compila:
+
+= Adding two positions has no meaning, and does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Adding two positions has no meaning, and does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= Adding two positions has no meaning, and does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= Adding two positions has no meaning, and does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Point(1, 2) + Point(3, 4)
++ Point(1, 2) + Point(3, 4)
+
+= Point(1, 2) + Point(3, 4)
+- ```
++ ```
+
+- ### Transforms
++ ### Transformaciones
+
+- A shape is translated, scaled, rotated and skewed. Each gives a new figure, and angles are
+- typed [angles](geography.md):
++ Una forma se traslada, se escala, se rota y se inclina. Cada operación da una figura nueva, y los
++ ángulos son [ángulos](geography.md) tipados:
+
+= typed [angles](geography.md):
+=
+- ```scala
++ ```scala
+
+- val turned = Rectangle((0, 0), 1, 1).translate(Delta(5, 0)).rotate(Angle.degrees(45))
++ val turned = Rectangle((0, 0), 1, 1).translate(Delta(5, 0)).rotate(Angle.degrees(45))
+
+= val turned = Rectangle((0, 0), 1, 1).translate(Delta(5, 0)).rotate(Angle.degrees(45))
+- ```
++ ```
+
+- A transform is recorded on the figure. It is not applied to the figure's coordinates. The
+- geometry which a figure was defined with is therefore the geometry which it keeps, and the
+- element which is written has a `transform` attribute. That is what makes the output
+- editable in a drawing program afterwards:
++ Una transformación se registra en la figura. No se aplica a las coordenadas de la figura. Por tanto,
++ la geometría con la que se definió una figura es la geometría que conserva, y el elemento que se
++ escribe tiene un atributo `transform`. Eso es lo que permite editar después el resultado en un
++ programa de dibujo:
+
+= editable in a drawing program afterwards:
+=
+- ```scala fuel
++ ```scala fuel
+
+= editable in a drawing program afterwards:
+=
+= ```scala fuel
+- run
++ run
+
+= editable in a drawing program afterwards:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Rectangle((0, 0), 10, 5).translate(Delta(3, 4)).in[Xml].show)
++ Out.println(Rectangle((0, 0), 10, 5).translate(Delta(3, 4)).in[Xml].show)
+
+- Out.println(turned.in[Xml].show)
++ Out.println(turned.in[Xml].show)
+
+= Out.println(turned.in[Xml].show)
+- ```
++ ```
+
+- Transforms compose in the order in which they are applied, and several may be supplied at
+- construction instead. A tuple may stand for a delta, with a unary `+` to read as a
+- displacement, as in `Rectangle((0, 0), 10, 5).translate(+(3, 4))`.
++ Las transformaciones se componen en el orden en que se aplican, y en su lugar se pueden
++ proporcionar varias en la construcción. Una tupla puede hacer las veces de un delta, con un `+`
++ unario para que se lea como un desplazamiento, como en `Rectangle((0, 0), 10, 5).translate(+(3, 4))`.
+
+- ### Identifiers
++ ### Identificadores
+
+- A figure, or a definition, may have an `Svg.Id`. That is what a reference to a gradient, the
+- target of an animation, or a `<use>` element needs, to name it. The identifier is a distinct
+- type, not text, so a reference to a definition which does not exist is not silently
+- written:
++ Una figura, o una definición, puede tener un `Svg.Id`. Es lo que necesitan una referencia a un
++ degradado, el objetivo de una animación o un elemento `<use>` para nombrarla. El identificador es
++ un tipo distinto, no texto, así que una referencia a una definición que no existe no se escribe sin
++ que nada lo indique:
+
+= written:
+=
+- ```scala
++ ```scala
+
+- val named = Outline(id = Svg.Id(t"plus")).moveTo((0, 0)).closed
++ val named = Outline(id = Svg.Id(t"plus")).moveTo((0, 0)).closed
+
+= val named = Outline(id = Svg.Id(t"plus")).moveTo((0, 0)).closed
+- ```
++ ```
+
+- ### Groups, polylines and text
++ ### Grupos, polilíneas y texto
+
+- A `Group` is a `<g>` element: figures which move, are styled and are identified together.
+- The axes of a [chart](charts.md), or one series of it, are a group, so that the whole part
+- can be found and replaced, by its identifier, when it changes:
++ Un `Group` es un elemento `<g>`: figuras que se mueven, reciben estilo y se identifican juntas. Los
++ ejes de un [gráfico](charts.md), o una de sus series, son un grupo, de modo que la parte entera se
++ puede encontrar y sustituir, por su identificador, cuando cambia:
+
+= can be found and replaced, by its identifier, when it changes:
+=
+- ```scala
++ ```scala
+
+- val axes = Group(List(Rectangle((0, 0), 100, 60)), id = Svg.Id(t"axes"))
++ val axes = Group(List(Rectangle((0, 0), 100, 60)), id = Svg.Id(t"axes"))
+
+= val axes = Group(List(Rectangle((0, 0), 100, 60)), id = Svg.Id(t"axes"))
+- ```
++ ```
+
+- A `Polyline` joins absolute points with straight segments, and becomes a `<polygon>` when it
+- is `closed`. A plotted line, and the filled area beneath it, are therefore the same figure,
+- with one flag different:
++ Un `Polyline` une puntos absolutos con segmentos rectos, y se convierte en un `<polygon>` cuando es
++ `closed`. Por tanto, una línea trazada y el área rellena bajo ella son la misma figura, con un
++ indicador distinto:
+
+= with one flag different:
+=
+- ```scala
++ ```scala
+
+- val line = Polyline(List(Point(0, 60), Point(50, 20), Point(100, 40)))
++ val line = Polyline(List(Point(0, 60), Point(50, 20), Point(100, 40)))
+
+- val area = Polyline(List(Point(0, 60), Point(50, 20), Point(100, 40), Point(100, 60)), closed = true)
++ val area = Polyline(List(Point(0, 60), Point(50, 20), Point(100, 40), Point(100, 60)), closed = true)
+
+= val area = Polyline(List(Point(0, 60), Point(50, 20), Point(100, 40), Point(100, 60)), closed = true)
+- ```
++ ```
+
+= val area = Polyline(List(Point(0, 60), Point(50, 20), Point(100, 40), Point(100, 60)), closed = true)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val area = Polyline(List(Point(0, 60), Point(50, 20), Point(100, 40), Point(100, 60)), closed = true)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val area = Polyline(List(Point(0, 60), Point(50, 20), Point(100, 40), Point(100, 60)), closed = true)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(line.in[Xml].show)
++ Out.println(line.in[Xml].show)
+
+- Out.println(area.in[Xml].show)
++ Out.println(area.in[Xml].show)
+
+= Out.println(area.in[Xml].show)
+- ```
++ ```
+
+- `Lettering` sets text at a position. It is named for what it is in a drawing, since `Text`
+- is the type of a string. Its anchor says whether the position is the start, the middle or
+- the end of the run, and its baseline says which line of the glyphs lies on the position:
++ `Lettering` coloca texto en una posición. Su nombre dice lo que es en un dibujo, ya que `Text` es el
++ tipo de una cadena. Su ancla indica si la posición es el principio, el centro o el final de la racha,
++ y su línea base indica qué línea de los glifos descansa sobre la posición:
+
+= the end of the run, and its baseline says which line of the glyphs lies on the position:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the end of the run, and its baseline says which line of the glyphs lies on the position:
+=
+= ```scala fuel
+- run
++ run
+
+= the end of the run, and its baseline says which line of the glyphs lies on the position:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Lettering((50, 70), t"time", Lettering.Anchor.Middle, Lettering.Baseline.Hanging).in[Xml].show)
++ Out.println(Lettering((50, 70), t"time", Lettering.Anchor.Middle, Lettering.Baseline.Hanging).in[Xml].show)
+
+= Out.println(Lettering((50, 70), t"time", Lettering.Anchor.Middle, Lettering.Baseline.Hanging).in[Xml].show)
+- ```
++ ```
+
+- A `Lettering` may also name its `font`. That is a `Font in Web`: a face, paired with a
+- provision for its typeface, which exists only where such a provision is in scope, as
+- [Fonts](fonts.md) describes. The font's declarations join the element's inline style. The
+- SVG writes a `<style>` of `@font-face` rules into its definitions, for every typeface which
+- its lettering names, so the drawing looks alike wherever it is shown:
++ Un `Lettering` también puede nombrar su `font`. Se trata de un `Font in Web`: un estilo tipográfico
++ emparejado con una provisión para su tipo de letra, que solo existe donde hay una provisión así en
++ el ámbito, como describe [Fuentes](fonts.md). Las declaraciones de la fuente se unen al estilo en
++ línea del elemento. El SVG escribe en sus definiciones un `<style>` de reglas `@font-face` para cada
++ tipo de letra que nombra su rotulación, de modo que el dibujo se ve igual dondequiera que se
++ muestre:
+
+= its lettering names, so the drawing looks alike wherever it is shown:
+=
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+= typecheck
+- ##
++ ##
+
+- given menlo: ((Typeface of "Menlo") is Typesettable in Web) = Web.local()
++ given menlo: ((Typeface of "Menlo") is Typesettable in Web) = Web.local()
+
+- Lettering((50, 70), t"time", font = Font(Typeface["Menlo"].bold))
++ Lettering((50, 70), t"time", font = Font(Typeface["Menlo"].bold))
+
+= Lettering((50, 70), t"time", font = Font(Typeface["Menlo"].bold))
+- ```
++ ```
+
+- Every figure may have an inline `style`, which is a typed set of [CSS](css.md)
+- declarations, and an `id`:
++ Toda figura puede tener un `style` en línea, que es un conjunto tipado de declaraciones
++ [CSS](css.md), y un `id`:
+
+= declarations, and an `id`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= declarations, and an `id`:
+=
+= ```scala fuel
+- run
++ run
+
+= declarations, and an `id`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Rectangle((0, 0), 10, 10, style = Css.Style(fill = Srgb(1, 0, 0)), id = Svg.Id(t"box")).in[Xml].show)
++ Out.println(Rectangle((0, 0), 10, 10, style = Css.Style(fill = Srgb(1, 0, 0)), id = Svg.Id(t"box")).in[Xml].show)
+
+= Out.println(Rectangle((0, 0), 10, 10, style = Css.Style(fill = Srgb(1, 0, 0)), id = Svg.Id(t"box")).in[Xml].show)
+- ```
++ ```
+
+- ### Gradients and color
++ ### Degradados y color
+
+- A linear gradient is a definition with typed stops. Each stop has an offset in `[0, 1]`,
+- and a [color](colors.md). The offset is a [bounded number](numbers.md#bounded-numbers), so
+- one outside the range does not compile:
++ Un degradado lineal es una definición con paradas de color tipadas. Cada parada tiene un
++ desplazamiento en `[0, 1]` y un [color](colors.md). El desplazamiento es un
++ [número acotado](numbers.md#bounded-numbers), así que uno fuera del intervalo no compila:
+
+= one outside the range does not compile:
+=
+- ```scala
++ ```scala
+
+- val fade = Svg.LinearGradient(Svg.Id(t"fade"), Stop(0.0, WebColors.Red), Stop(1.0, WebColors.Blue))
++ val fade = Svg.LinearGradient(Svg.Id(t"fade"), Stop(0.0, WebColors.Red), Stop(1.0, WebColors.Blue))
+
+= val fade = Svg.LinearGradient(Svg.Id(t"fade"), Stop(0.0, WebColors.Red), Stop(1.0, WebColors.Blue))
+- ```
++ ```
+
+= val fade = Svg.LinearGradient(Svg.Id(t"fade"), Stop(0.0, WebColors.Red), Stop(1.0, WebColors.Blue))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- compile
++ compile
+
+= ```
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= ```
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Stop(1.5, WebColors.Red)
++ Stop(1.5, WebColors.Red)
+
+= Stop(1.5, WebColors.Red)
+- ```
++ ```
+
+- ### Documents
++ ### Documentos
+
+- Figures and definitions are assembled into an `Svg`, with a size. It is written as a
+- standalone document, with its XML header:
++ Las figuras y las definiciones se reúnen en un `Svg`, con un tamaño. Se escribe como un documento
++ independiente, con su cabecera XML:
+
+= standalone document, with its XML header:
+=
+- ```scala
++ ```scala
+
+- val drawing = Svg(50, 50, figures = List(plus))
++ val drawing = Svg(50, 50, figures = List(plus))
+
+= val drawing = Svg(50, 50, figures = List(plus))
+- ```
++ ```
+
+= val drawing = Svg(50, 50, figures = List(plus))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val drawing = Svg(50, 50, figures = List(plus))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val drawing = Svg(50, 50, figures = List(plus))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Document(drawing, enc"UTF-8").show)
++ Out.println(Document(drawing, enc"UTF-8").show)
+
+= Out.println(Document(drawing, enc"UTF-8").show)
+- ```
++ ```
+
+- Parsing runs the other way. It reads SVG text back into typed figures and definitions, so a
+- drawing which was produced elsewhere can be inspected, measured or altered, and not merely
+- embedded. The XML parser beneath it is given the free-form schema, since SVG's own
+- vocabulary is validated by the types of the figures, so no `XmlSchema` is needed in scope:
++ El análisis funciona en sentido inverso. Vuelve a leer texto SVG como figuras y definiciones
++ tipadas, de modo que un dibujo producido en otro sitio se puede inspeccionar, medir o modificar, y no
++ solo incrustar. Al analizador XML que hay debajo se le da el esquema de forma libre, ya que el
++ vocabulario propio de SVG lo validan los tipos de las figuras, así que no hace falta ningún
++ `XmlSchema` en el ámbito:
+
+= vocabulary is validated by the types of the figures, so no `XmlSchema` is needed in scope:
+=
+- ```scala
++ ```scala
+
+- import dysasymptotics.linearSize
++ import dysasymptotics.linearSize
+
+- val svg = t"""<svg width="50" height="50"><rect x="0" y="0" width="10" height="10"/></svg>"""
++ val svg = t"""<svg width="50" height="50"><rect x="0" y="0" width="10" height="10"/></svg>"""
+
+-         . read[Svg]
++         . read[Svg]
+
+=         . read[Svg]
+- ```
++ ```
+
+=         . read[Svg]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=         . read[Svg]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=         . read[Svg]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(svg.width.inspect)
++ Out.println(svg.width.inspect)
+
+- Out.println(svg.height.inspect)
++ Out.println(svg.height.inspect)
+
+- Out.println(svg.figures.size.show)
++ Out.println(svg.figures.size.show)
+
+= Out.println(svg.figures.size.show)
+- ```
++ ```
+
+- A file which was written by a drawing tool begins with an XML declaration, and often a
+- comment, before the `<svg>` element. `read[Svg]` accepts the declaration, and discards it,
+- so a file is read in the same way as a bare element. `load[Svg]` keeps it, and gives a
+- `Document[Svg]`, whose metadata has the encoding.
++ Un fichero escrito por una herramienta de dibujo empieza con una declaración XML, y a menudo un
++ comentario, antes del elemento `<svg>`. `read[Svg]` acepta la declaración y la descarta, de modo
++ que un fichero se lee igual que un elemento suelto. `load[Svg]` la conserva y da un
++ `Document[Svg]`, cuyos metadatos incluyen la codificación.
+
+= `Document[Svg]`, whose metadata has the encoding.
+=
+- ```scala
++ ```scala
+
+- val saved = t"""<?xml version="1.0" encoding="UTF-8" standalone="no"?>
++ val saved = t"""<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+-                 <!-- created by a drawing tool -->
++                 <!-- created by a drawing tool -->
+
+-                 <svg width="100" height="100"/>""".read[Svg]
++                 <svg width="100" height="100"/>""".read[Svg]
+
+=                 <svg width="100" height="100"/>""".read[Svg]
+- ```
++ ```
+
+- The `width` and `height` of the root element may have a unit, as a drawing tool writes
+- them, and a `viewBox` names the rectangle of user space which the viewport shows. Both are
+- kept, and are written back as they were read:
++ El ancho (`width`) y el alto (`height`) del elemento raíz pueden llevar una unidad, como los escribe
++ una herramienta de dibujo, y un `viewBox` nombra el rectángulo del espacio de usuario que muestra
++ el viewport. Ambos se conservan, y se vuelven a escribir tal como se leyeron:
+
+= kept, and are written back as they were read:
+=
+- ```scala
++ ```scala
+
+- val sized = t"""<svg width="48.5mm" height="20mm" viewBox="0 0 48.5 20"/>""".read[Svg]
++ val sized = t"""<svg width="48.5mm" height="20mm" viewBox="0 0 48.5 20"/>""".read[Svg]
+
+= val sized = t"""<svg width="48.5mm" height="20mm" viewBox="0 0 48.5 20"/>""".read[Svg]
+- ```
++ ```
+
+= val sized = t"""<svg width="48.5mm" height="20mm" viewBox="0 0 48.5 20"/>""".read[Svg]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val sized = t"""<svg width="48.5mm" height="20mm" viewBox="0 0 48.5 20"/>""".read[Svg]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val sized = t"""<svg width="48.5mm" height="20mm" viewBox="0 0 48.5 20"/>""".read[Svg]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(saved.width.inspect)
++ Out.println(saved.width.inspect)
+
+- Out.println(sized.width.inspect)
++ Out.println(sized.width.inspect)
+
+- Out.println(sized.unit.inspect)
++ Out.println(sized.unit.inspect)
+
+- Out.println(sized.viewBox.inspect)
++ Out.println(sized.viewBox.inspect)
+
+= Out.println(sized.viewBox.inspect)
+- ```
++ ```
+
+- An `Svg` is an XML value underneath. A drawing is therefore embedded directly into an
+- [HTML](html.md) page, with no step of serialization between, and the same drawing serves as
+- a standalone `*.svg` file when it is wrapped in a `Document`.
++ Un `Svg` es, por debajo, un valor XML. Por tanto, un dibujo se incrusta directamente en una página
++ [HTML](html.md), sin ningún paso de serialización entre medias, y el mismo dibujo sirve como fichero
++ `*.svg` independiente cuando se envuelve en un `Document`.
+
+- ### Related
++ ### Relacionado
+
+- - [Charts](charts.md) draws plots as SVG.
+- - [XML](xml.md) is the format beneath an SVG document.
+- - [Colors](colors.md) and [CSS](css.md) supply fills, strokes and styles.
+- - [Fonts](fonts.md) describes the typefaces which lettering names.
+- - [Images](images.md) covers raster pictures.
+- - [Label placement](label-placement.md) decides where the text in a drawing goes.
++ - [Gráficos](charts.md) dibuja gráficas como SVG.
++ - [XML](xml.md) es el formato que hay bajo un documento SVG.
++ - [Colores](colors.md) y [CSS](css.md) proporcionan rellenos, trazos y estilos.
++ - [Fuentes](fonts.md) describe los tipos de letra que nombra la rotulación.
++ - [Imágenes](images.md) trata las imágenes ráster.
++ - [Colocación de etiquetas](label-placement.md) decide adónde va el texto de un dibujo.

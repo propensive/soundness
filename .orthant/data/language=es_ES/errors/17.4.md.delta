@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.17.4` — Companion has no candidate `apply` methods
++ # `↯/s.17.4` — El objeto compañero no tiene métodos `apply` candidatos
+
+- Raised at compile time by Mercator's `identity` macro when the
+- companion object of the target type has no usable `apply` methods.
++ Lo lanza en tiempo de compilación la macro `identity` de Mercator cuando el objeto compañero del
++ tipo de destino no tiene ningún método `apply` utilizable.
+
+- ## Cause
++ ## Causa
+
+- Mercator derives `Identity` instances by invoking a companion's
+- `apply`. If none exist, derivation cannot proceed.
++ Mercator deriva instancias de `Identity` invocando el `apply` de un objeto compañero. Si no existe
++ ninguno, la derivación no puede continuar.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.17.4] the companion object Play has no candidate apply methods
++ [↯/s.17.4] the companion object Play has no candidate apply methods
+
+= [↯/s.17.4] the companion object Play has no candidate apply methods
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Define an `apply` on the companion object that constructs a value
+- of the type, or supply an `Identity` instance manually.
++ Define en el objeto compañero un `apply` que construya un valor del tipo, o proporciona a mano una
++ instancia de `Identity`.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/mercator/src/core/mercator.internal.scala`
++ - Fuente: `lib/mercator/src/core/mercator.internal.scala`

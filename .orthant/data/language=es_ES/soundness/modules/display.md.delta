@@ -1,0 +1,641 @@
+orthant 1 language
+
+- ## Display
++ ## Visualización
+
+- ### About
++ ### Descripción
+
+- A value becomes text in two ways, for two audiences. `show` writes it for a person, in the
+- form which belongs in a message, a log line, or on a screen. `inspect` writes it for a
+- programmer, in an unambiguous form for debugging. Keeping the two apart lets a type be
+- presentable to users, presentable only to developers, or presentable differently to each.
++ Un valor se convierte en texto de dos maneras, para dos públicos. `show` lo escribe para una
++ persona, en la forma que corresponde a un mensaje, a una línea de registro o a una pantalla.
++ `inspect` lo escribe para un programador, en una forma inequívoca para depurar. Mantener ambas
++ separadas permite que un tipo sea presentable para los usuarios, presentable solo para los
++ desarrolladores o presentable de forma distinta para cada uno.
+
+- `show` requires a `Showable` instance, and is a compile error without one, so a type which
+- should never reach a user simply has none. `inspect` always produces something. It falls back
+- through a value's encodings and, as a last resort, its structure, so a developer can always
+- see what a value is.
++ `show` requiere una instancia de `Showable`, y sin ella es un error de compilación, así que un
++ tipo que nunca debería llegar a un usuario simplemente no tiene ninguna. `inspect` siempre produce
++ algo. Recurre sucesivamente a las codificaciones de un valor y, como último recurso, a su
++ estructura, de modo que un desarrollador siempre puede ver qué es un valor.
+
+- ### On display
++ ### Sobre la visualización
+
+- A single rendering cannot serve both a user and a programmer. `toString` tries, and manages
+- neither. It leaks internal shapes into output which users see, and yet it is too haphazard
+- to trust when debugging. Nothing stops it from being called on a value which has no sensible
+- textual form.
++ Una única representación no puede servir a la vez a un usuario y a un programador. `toString` lo
++ intenta, y no consigue ninguna de las dos cosas. Filtra formas internas a una salida que ven los
++ usuarios y, aun así, es demasiado aleatoria para fiarse de ella al depurar. Nada impide llamarla
++ sobre un valor que no tiene ninguna forma textual sensata.
+
+- The familiar `Show` typeclass fixes the trustworthiness, but still collapses the two
+- audiences into one.
++ La conocida clase de tipos `Show` resuelve la fiabilidad, pero sigue fundiendo los dos públicos en
++ uno.
+
+- Here two [typeclasses][typeclass] keep them apart. `Showable` is deliberately demanding: its
+- absence is the signal that a value is not meant for display. `Inspectable` is deliberately
+- total, so that debugging output is never blocked. Separating what a value is from how it is
+- displayed, through typeclasses chosen by import, is
+- [decoupling](../../philosophy/decoupling.md) at the smallest scale.
++ Aquí dos [clases de tipos][clase de tipos] los mantienen separados. `Showable` es deliberadamente
++ exigente: su ausencia es la señal de que un valor no está pensado para mostrarse. `Inspectable` es
++ deliberadamente total, para que la salida de depuración nunca quede bloqueada. Separar lo que es
++ un valor de cómo se muestra, mediante clases de tipos elegidas por importación, es el
++ [desacoplamiento](../../philosophy/decoupling.md) a la escala más pequeña.
+
+- Everything comes from the `soundness` package. The second import lets the samples print
+- their results:
++ Todo procede del paquete `soundness`. La segunda importación permite que los ejemplos impriman sus
++ resultados:
+
+= their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Showing a value
++ ### Mostrar un valor
+
+- `show` writes a value as `Text`, through its `Showable` instance. The primitive types, `Text`
+- itself, and collections all have one:
++ `show` escribe un valor como `Text`, mediante su instancia de `Showable`. Los tipos primitivos, el
++ propio `Text` y las colecciones tienen todos una:
+
+= itself, and collections all have one:
+=
+- ```scala fuel
++ ```scala fuel
+
+= itself, and collections all have one:
+=
+= ```scala fuel
+- run
++ run
+
+= itself, and collections all have one:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"Hello world".show)
++ Out.println(t"Hello world".show)
+
+- Out.println(43.show)
++ Out.println(43.show)
+
+- Out.println(List(1, 2, 3).show)
++ Out.println(List(1, 2, 3).show)
+
+= Out.println(List(1, 2, 3).show)
+- ```
++ ```
+
+- The same instances drive [interpolation](text.md#writing-text), so a value which is
+- substituted into a `t"…"` string is shown by its `Showable`.
++ Las mismas instancias gobiernan la [interpolación](text.md#writing-text), de modo que un valor que
++ se sustituye en una cadena `t"…"` se muestra mediante su `Showable`.
+
+- A type with no instance cannot be shown. Asking to show one is a compile error, and there is
+- no silent fallback to some default rendering:
++ Un tipo sin instancia no puede mostrarse. Pedir que se muestre uno es un error de compilación, y
++ no hay ninguna alternativa silenciosa a alguna representación por defecto:
+
+= no silent fallback to some default rendering:
+=
+- ```scala
++ ```scala
+
+- case class Money(pence: Int)
++ case class Money(pence: Int)
+
+= case class Money(pence: Int)
+- ```
++ ```
+
+= case class Money(pence: Int)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= ```
+=
+= ```scala fuel
+- compile
++ compile
+
+= ```
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= ```
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Money(1099).show
++ Money(1099).show
+
+= Money(1099).show
+- ```
++ ```
+
+- ### Writing a Showable
++ ### Escribir un Showable
+
+- `Showable` is a typeclass with a single method, so an instance is a function from the value
+- to its text:
++ `Showable` es una clase de tipos con un único método, así que una instancia es una función del
++ valor a su texto:
+
+= to its text:
+=
+- ```scala
++ ```scala
+
+- given moneyShowable: (Money is Showable) = money => t"£${money.pence/100}.${money.pence%100}"
++ given moneyShowable: (Money is Showable) = money => t"£${money.pence/100}.${money.pence%100}"
+
+= given moneyShowable: (Money is Showable) = money => t"£${money.pence/100}.${money.pence%100}"
+- ```
++ ```
+
+= given moneyShowable: (Money is Showable) = money => t"£${money.pence/100}.${money.pence%100}"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= given moneyShowable: (Money is Showable) = money => t"£${money.pence/100}.${money.pence%100}"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= given moneyShowable: (Money is Showable) = money => t"£${money.pence/100}.${money.pence%100}"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Money(1099).show)
++ Out.println(Money(1099).show)
+
+- Out.println(t"The total is ${Money(1099)}")
++ Out.println(t"The total is ${Money(1099)}")
+
+= Out.println(t"The total is ${Money(1099)}")
+- ```
++ ```
+
+- ### Inspecting
++ ### Inspeccionar
+
+- `inspect` writes a value for a developer, and always succeeds. Case classes, enumerations and
+- collections are written structurally, with no instance to write, each in a form chosen to be
+- unambiguous:
++ `inspect` escribe un valor para un desarrollador, y siempre tiene éxito. Las case classes, las
++ enumeraciones y las colecciones se escriben estructuralmente, sin que haya que escribir ninguna
++ instancia, cada una en una forma elegida para ser inequívoca:
+
+= unambiguous:
+=
+- ```scala
++ ```scala
+
+- case class Person(name: Text, age: Int)
++ case class Person(name: Text, age: Int)
+
+= case class Person(name: Text, age: Int)
+- ```
++ ```
+
+= case class Person(name: Text, age: Int)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Person(name: Text, age: Int)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Person(name: Text, age: Int)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Person(t"Lear", 80).inspect)
++ Out.println(Person(t"Lear", 80).inspect)
+
+- Out.println(List(t"one", t"two").inspect)
++ Out.println(List(t"one", t"two").inspect)
+
+- Out.println((5: Optional[Int]).inspect)
++ Out.println((5: Optional[Int]).inspect)
+
+- Out.println((Unset: Optional[Int]).inspect)
++ Out.println((Unset: Optional[Int]).inspect)
+
+= Out.println((Unset: Optional[Int]).inspect)
+- ```
++ ```
+
+- `inspect` writes a `Text` in the form in which it appears in source code, `t"Lear"`, where
+- `show` writes it verbatim. That is the distinction which the two audiences call for.
++ `inspect` escribe un `Text` en la forma en que aparece en el código fuente, `t"Lear"`, mientras
++ que `show` lo escribe literalmente. Esa es la distinción que exigen los dos públicos.
+
+- The source form is a real source form. Control characters and quotes are escaped as Scala
+- would escape them, so an inspected value could be pasted back into code. A text which
+- contains a newline can be told apart from one which contains the two characters `\` and `n`:
++ La forma de código fuente es una forma de código fuente real. Los caracteres de control y las
++ comillas se escapan como los escaparía Scala, de modo que un valor inspeccionado podría volver a
++ pegarse en el código. Un texto que contiene un salto de línea puede distinguirse de uno que
++ contiene los dos caracteres `\` y `n`:
+
+= contains a newline can be told apart from one which contains the two characters `\` and `n`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= contains a newline can be told apart from one which contains the two characters `\` and `n`:
+=
+= ```scala fuel
+- run
++ run
+
+= contains a newline can be told apart from one which contains the two characters `\` and `n`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"Hello\nworld".inspect)
++ Out.println(t"Hello\nworld".inspect)
+
+- Out.println(t"Hello \"world\"".inspect)
++ Out.println(t"Hello \"world\"".inspect)
+
+= Out.println(t"Hello \"world\"".inspect)
+- ```
++ ```
+
+- Collections are written so that the *kind* of collection is visible without being named, and
+- so that nesting is unambiguous. A map has arrows, a list is in square brackets, and an
+- [optional](optional-values.md) value is in corner brackets, or is a circle when it is unset:
++ Las colecciones se escriben de modo que la *clase* de colección sea visible sin nombrarla, y de
++ modo que el anidamiento sea inequívoco. Un mapa tiene flechas, una lista va entre corchetes, y un
++ valor [opcional](optional-values.md) va entre corchetes angulares, o es un círculo cuando no está
++ definido:
+
+= [optional](optional-values.md) value is in corner brackets, or is a circle when it is unset:
+=
+- ```scala fuel
++ ```scala fuel
+
+= [optional](optional-values.md) value is in corner brackets, or is a circle when it is unset:
+=
+= ```scala fuel
+- run
++ run
+
+= [optional](optional-values.md) value is in corner brackets, or is a circle when it is unset:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Map(1 -> 2, 3 -> 4).inspect)
++ Out.println(Map(1 -> 2, 3 -> 4).inspect)
+
+- Out.println(Map[Int, Int]().inspect)
++ Out.println(Map[Int, Int]().inspect)
+
+- Out.println(Set(1).inspect)
++ Out.println(Set(1).inspect)
+
+= Out.println(Set(1).inspect)
+- ```
++ ```
+
+- Enumerations and sealed hierarchies are derived too. A case with no fields is written as its
+- bare name, without empty parentheses:
++ Las enumeraciones y las jerarquías selladas también se derivan. Un caso sin campos se escribe con
++ su nombre sin más, sin paréntesis vacíos:
+
+= bare name, without empty parentheses:
+=
+- ```scala
++ ```scala
+
+- enum Animal:
++ enum Animal:
+
+-   case Dog(name: Text)
++   case Dog(name: Text)
+
+-   case Cat
++   case Cat
+
+- val dog: Animal = Animal.Dog(t"Crab")
++ val dog: Animal = Animal.Dog(t"Crab")
+
+- val cat: Animal = Animal.Cat
++ val cat: Animal = Animal.Cat
+
+= val cat: Animal = Animal.Cat
+- ```
++ ```
+
+= val cat: Animal = Animal.Cat
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val cat: Animal = Animal.Cat
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val cat: Animal = Animal.Cat
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(dog.inspect)
++ Out.println(dog.inspect)
+
+- Out.println(cat.inspect)
++ Out.println(cat.inspect)
+
+= Out.println(cat.inspect)
+- ```
++ ```
+
+- A custom `Inspectable` is written just as a `Showable` is, where the structural default is
+- not wanted.
++ Donde no se quiere el valor estructural por defecto, se escribe un `Inspectable` personalizado
++ igual que un `Showable`.
+
+- ### The fallback chain
++ ### La cadena de alternativas
+
+- `Inspectable` is total, but it is not indiscriminate. Asked to inspect a value, it tries in
+- turn:
++ `Inspectable` es total, pero no indiscriminado. Cuando se le pide inspeccionar un valor, intenta
++ sucesivamente:
+
+= turn:
+=
+- ```tabular
++ ```tabular
+
+- column  Tried
+- column  Rendering
+- row  1  the type's own `Inspectable` instance
+- row  2  its `Showable` instance
+- row  3  a structural rendering derived from its shape
+- row  4  a last-resort rendering
++ column  Intento
++ column  Representación
++ row  1  la propia instancia de `Inspectable` del tipo
++ row  2  su instancia de `Showable`
++ row  3  una representación estructural derivada de su forma
++ row  4  una representación de último recurso
+
+= row  4  a last-resort rendering
+- ```
++ ```
+
+- A type which has said how it should look is therefore shown in that way in debugging output
+- too. `Money` has a `Showable` and no `Inspectable`, so `inspect` uses the former:
++ Por tanto, un tipo que ha dicho cómo debe verse se muestra de esa forma también en la salida de
++ depuración. `Money` tiene un `Showable` y ningún `Inspectable`, así que `inspect` usa el primero:
+
+= too. `Money` has a `Showable` and no `Inspectable`, so `inspect` uses the former:
+=
+- ```scala fuel
++ ```scala fuel
+
+= too. `Money` has a `Showable` and no `Inspectable`, so `inspect` uses the former:
+=
+= ```scala fuel
+- run
++ run
+
+= too. `Money` has a `Showable` and no `Inspectable`, so `inspect` uses the former:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Money(1099).inspect)
++ Out.println(Money(1099).inspect)
+
+= Out.println(Money(1099).inspect)
+- ```
++ ```
+
+- A type which has said nothing still produces something useful, and not a hash code.
++ Un tipo que no ha dicho nada sigue produciendo algo útil, y no un código hash.
+
+- ### Booleans
++ ### Booleanos
+
+- A boolean has no single obvious rendering. "Yes" and "no", "on" and "off", and "true" and
+- "false" each suit a different context. Showing one therefore draws on an `Affirmation` in
+- scope, and there is no default. Without an `Affirmation`, a boolean does not show at all,
+- because presuming one would be presuming the context:
++ Un booleano no tiene una única representación evidente. «yes» y «no», «on» y «off», y «true» y
++ «false» se adecuan cada uno a un contexto distinto. Por tanto, mostrar uno recurre a una
++ `Affirmation` del ámbito, y no hay ninguna por defecto. Sin una `Affirmation`, un booleano no se
++ muestra en absoluto, porque presuponer una sería presuponer el contexto:
+
+= because presuming one would be presuming the context:
+=
+- ```scala fuel
++ ```scala fuel
+
+= because presuming one would be presuming the context:
+=
+= ```scala fuel
+- compile
++ compile
+
+= because presuming one would be presuming the context:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= because presuming one would be presuming the context:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- true.show
++ true.show
+
+= true.show
+- ```
++ ```
+
+- Four affirmations are provided:
++ Se proporcionan cuatro afirmaciones:
+
+= Four affirmations are provided:
+=
+- ```tabular
++ ```tabular
+
+- column  Import
++ column  Importación
+
+- column  `true`
++ column  `true`
+
+- column  `false`
++ column  `false`
+
+- row  `affirmations.yesNoAffirmation`  `yes`  `no`
++ row  `affirmations.yesNoAffirmation`  `yes`  `no`
+
+- row  `affirmations.onOffAffirmation`  `on`  `off`
++ row  `affirmations.onOffAffirmation`  `on`  `off`
+
+- row  `affirmations.trueFalseAffirmation`  `true`  `false`
++ row  `affirmations.trueFalseAffirmation`  `true`  `false`
+
+- row  `affirmations.oneZeroAffirmation`  `1`  `0`
++ row  `affirmations.oneZeroAffirmation`  `1`  `0`
+
+= row  `affirmations.oneZeroAffirmation`  `1`  `0`
+- ```
++ ```
+
+= row  `affirmations.oneZeroAffirmation`  `1`  `0`
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= row  `affirmations.oneZeroAffirmation`  `1`  `0`
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= row  `affirmations.oneZeroAffirmation`  `1`  `0`
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= ##
+- locally:
++ locally:
+
+-   import affirmations.yesNoAffirmation
++   import affirmations.yesNoAffirmation
+
+-   Out.println(t"the answer is ${true}")
++   Out.println(t"the answer is ${true}")
+
+=   Out.println(t"the answer is ${true}")
+=
+- locally:
++ locally:
+
+-   import affirmations.onOffAffirmation
++   import affirmations.onOffAffirmation
+
+-   Out.println(t"the switch is ${false}")
++   Out.println(t"the switch is ${false}")
+
+=   Out.println(t"the switch is ${false}")
+=
+- locally:
++ locally:
+
+-   given affirmation: Affirmation = Affirmation(t"+", t"-")
++   given affirmation: Affirmation = Affirmation(t"+", t"-")
+
+-   Out.println(t"the sign is ${true}")
++   Out.println(t"the sign is ${true}")
+
+=   Out.println(t"the sign is ${true}")
+- ```
++ ```
+
+- The last is any other pair, defined in one line. `inspect` needs no affirmation, and always
+- writes `true` or `false`.
++ La última es cualquier otro par, definido en una línea. `inspect` no necesita ninguna afirmación,
++ y siempre escribe `true` o `false`.
+
+- ### Related
++ ### Relacionado
+
+- - [Text](text.md) describes the `Text` which `show` produces.
+- - [Terminal](terminal.md#styled-text) displays values with color and style.
+- - [Tables](tables.md) lays out many values in columns.
+- - [Internationalization](internationalization.md) displays values in a user's own language.
+- - [Derivation](derivation.md) explains how `inspect` is derived for a case class.
++ - [Texto](text.md) describe el `Text` que produce `show`.
++ - [Terminal](terminal.md#styled-text) muestra valores con color y estilo.
++ - [Tablas](tables.md) dispone muchos valores en columnas.
++ - [Internacionalización](internationalization.md) muestra valores en el idioma propio del usuario.
++ - [Derivación](derivation.md) explica cómo se deriva `inspect` para una case class.

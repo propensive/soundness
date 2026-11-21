@@ -1,0 +1,1327 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base hyperbole
++ base hyperbole
+
+- import soundness
++ import soundness
+
+- info   TASTy as data: introspecting trees and symbols, and resolving stack frames to the source definitions they came from
++ info   TASTy como datos: introspección de árboles y símbolos, y resolución de marcos de pila en las definiciones del código fuente de las que proceden
+
+- detail
++ detail
+
+-     _Hyperbole_ reads what the Scala compiler knows about a program — its **TASTy** — and
+-     makes it available as values, for two purposes.
++     _Hyperbole_ lee lo que el compilador de Scala sabe sobre un programa (su **TASTy**) y lo
++     pone a disposición como valores, con dos fines.
+
+-     The first is **introspection**. `Introspect.syntax` captures the typed tree of any
+-     expression, as the compiler sees it after typing and inlining, as a `Tasty.Tree`; and
+-     `Introspect.semantics` captures a symbol — a type's, a value's, or the enclosing
+-     definition's — as a `Tasty.Symbol` with its flags, properties and members. Inside a
+-     macro, the `syntax` and `semantics` extensions do the same for an `Expr` or a `Symbol`
+-     in hand. Both render at a terminal, through a `TastyPalette`, as a tree diagram or a
+-     table, which replaces `println`-archaeology when a macro author wants to see what an
+-     expansion produced, or when anyone wants to see what the compiler made of a line of
+-     ordinary code.
++     El primero es la **introspección**. `Introspect.syntax` captura el árbol tipado de cualquier
++     expresión, tal como lo ve el compilador tras el tipado y la expansión inline, como un
++     `Tasty.Tree`; e `Introspect.semantics` captura un símbolo (el de un tipo, el de un valor o el
++     de la definición contenedora) como un `Tasty.Symbol` con sus indicadores, propiedades y
++     miembros. Dentro de una macro, las extensiones `syntax` y `semantics` hacen lo mismo con un
++     `Expr` o un `Symbol` que se tenga a mano. Ambos se representan en un terminal, mediante una
++     `TastyPalette`, como un diagrama de árbol o una tabla, lo que sustituye la arqueología a base
++     de `println` cuando el autor de una macro quiere ver qué produjo una expansión, o cuando
++     cualquiera quiere ver qué hizo el compilador con una línea de código corriente.
+
+=     ordinary code.
+=
+-     ```scala
++     ```scala
+
+=     ordinary code.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val tree: Tasty.Tree = Introspect.syntax(true):
++     val tree: Tasty.Tree = Introspect.syntax(true):
+
+-       println("hello world")
++       println("hello world")
+
+-     tree.name    // t"Apply"
++     tree.name    // t"Apply"
+
+-     tree.nodes.map(_.name)   // List(t"Ident", t"Literal")
++     tree.nodes.map(_.name)   // List(t"Ident", t"Literal")
+
+=     tree.nodes.map(_.name)   // List(t"Ident", t"Literal")
+-     ```
++     ```
+
+-     The second is **stack-frame resolution**. A JVM stack frame names a compiled class and
+-     method, and demangling (`StackTrace.rewrite` in digression) can only tidy that name:
+-     `$anonfun$3` becomes `λ₃`, which says a lambda ran but not which. The compiler records
+-     the extent of every definition in the TASTy it writes beside each class file, so the
+-     line a frame carries is enough to find the definition it belongs to. `StackResolver`
+-     does that lookup, and importing `stackResolutions.tastyStackResolution` makes every
+-     `StackTrace` captured in scope carry a `StackTrace.Frame.Source` naming the file, the
+-     chain of enclosing definitions, the definition's source name and its `Kind`; `resolved`
+-     does the same to a trace already in hand.
++     El segundo es la **resolución de marcos de pila**. Un marco de pila de la JVM nombra una
++     clase y un método compilados, y desdecorar (`StackTrace.rewrite` en digression) solo puede
++     arreglar ese nombre: `$anonfun$3` pasa a ser `λ₃`, que dice que se ejecutó una lambda pero
++     no cuál. El compilador registra la extensión de cada definición en el TASTy que escribe junto
++     a cada fichero de clase, así que la línea que lleva un marco basta para encontrar la
++     definición a la que pertenece. `StackResolver` hace esa búsqueda, e importar
++     `stackResolutions.tastyStackResolution` hace que cada `StackTrace` capturada en el ámbito
++     lleve un `StackTrace.Frame.Source` que nombra el fichero, la cadena de definiciones
++     contenedoras, el nombre de la definición en el código fuente y su `Kind`; `resolved` hace lo
++     mismo con una traza que ya se tiene a mano.
+
+=     does the same to a trace already in hand.
+=
+-     ```scala
++     ```scala
+
+=     does the same to a trace already in hand.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import stackResolutions.tastyStackResolution
++     import stackResolutions.tastyStackResolution
+
+=     import stackResolutions.tastyStackResolution
+-     import classloaders.threadContextClassloader
++     import classloaders.threadContextClassloader
+
+=     import stackResolutions.tastyStackResolution
+=     import classloaders.threadContextClassloader
+-     import workingDirectories.javaBaseWorkingDirectory
++     import workingDirectories.javaBaseWorkingDirectory
+
+-     val trace: StackTrace = Exception("boom").stackTrace
++     val trace: StackTrace = Exception("boom").stackTrace
+
+=     val trace: StackTrace = Exception("boom").stackTrace
+-     trace.frames.head.let(_.displayClass)
++     trace.frames.head.let(_.displayClass)
+
+-     trace.frames.head.let(_.source.let(_.kind))
++     trace.frames.head.let(_.source.let(_.kind))
+
+=     trace.frames.head.let(_.source.let(_.kind))
+-     ```
++     ```
+
+-     The library has three source sets, by what each platform can do:
++     La biblioteca tiene tres conjuntos de fuentes, según lo que puede hacer cada plataforma:
+
+-     - `hyperbole.tasty` — the `Tasty` data model (`Symbol`, `Tree`, `Definition`, `File`) and
+-       `Tasty.parse`, which reads a `.tasty` file's definitions from raw bytes through
+-       `tasty-core` alone: no compiler, no classpath, no filesystem. It compiles for the JVM,
+-       Scala.js and Scala Native, so a debugger can parse TASTy fetched over a wire.
+-     - `hyperbole.core` — `Introspect`, the `syntax` and `semantics` macros and extensions,
+-       `TastyPalette` and the `Teletypeable` renderings. JVM-only, as it depends on the
+-       compiler's syntax highlighting and on the staging compiler.
+-     - `hyperbole.stacks` — `StackResolver`, the `stackResolutions` choice package and the
+-       `resolved` extension. JVM-only: it reads TASTy and class files through the `Classloader`
+-       given in scope, and source files from disk.
++     - `hyperbole.tasty`: el modelo de datos `Tasty` (`Symbol`, `Tree`, `Definition`, `File`) y
++       `Tasty.parse`, que lee las definiciones de un fichero `.tasty` a partir de bytes en bruto
++       solo mediante `tasty-core`: sin compilador, sin classpath, sin sistema de ficheros. Compila
++       para la JVM, Scala.js y Scala Native, de modo que un depurador puede analizar TASTy
++       obtenido a través de una conexión.
++     - `hyperbole.core`: `Introspect`, las macros y extensiones `syntax` y `semantics`,
++       `TastyPalette` y las representaciones `Teletypeable`. Solo para la JVM, ya que depende del
++       resaltado de sintaxis del compilador y del compilador de ejecución por etapas.
++     - `hyperbole.stacks`: `StackResolver`, el paquete de elección `stackResolutions` y la
++       extensión `resolved`. Solo para la JVM: lee el TASTy y los ficheros de clase a través del
++       `Classloader` dado en el ámbito, y los ficheros fuente del disco.
+
+-     The resolver's givens are imported by name, since `import soundness.*` imports no givens:
+-     a `Classloader` from `classloaders`, a `WorkingDirectory` from `workingDirectories`, and
+-     `stackResolutions.tastyStackResolution` itself. Everything is exported to the `soundness`
+-     umbrella, and `stackResolutions` merges with the umbrella's own package of that name.
++     Los givens del resolutor se importan por nombre, ya que `import soundness.*` no importa
++     ningún given: un `Classloader` de `classloaders`, un `WorkingDirectory` de
++     `workingDirectories` y el propio `stackResolutions.tastyStackResolution`. Todo se exporta al
++     paraguas `soundness`, y `stackResolutions` se fusiona con el paquete del mismo nombre del
++     propio paraguas.
+
+- refer hyperbole.Introspect
++ refer hyperbole.Introspect
+
+- refer hyperbole.Tasty
++ refer hyperbole.Tasty
+
+- refer hyperbole.StackResolver
++ refer hyperbole.StackResolver
+
+- refer hyperbole.stackResolutions
++ refer hyperbole.stackResolutions
+
+- entry .Introspect   captures the tree of an expression, or a symbol, as a value, from ordinary code
++ entry .Introspect   captura como valor el árbol de una expresión, o un símbolo, desde código corriente
+
+= entry .Introspect   captures the tree of an expression, or a symbol, as a value, from ordinary code
+-   detail
++   detail
+
+-       Two macros which work from outside any macro, on any expression or type in ordinary
+-       code. `Introspect.syntax` gives the typed tree of an expression as a `Tasty.Tree`,
+-       with every node's tag, name, type and source; `Introspect.semantics` gives a symbol's
+-       flags, properties and details as a `Tasty.Symbol`. Both produce plain values which can
+-       be compared, traversed, or rendered as `Teletype` with a `TastyPalette` in scope.
++       Dos macros que funcionan fuera de cualquier macro, sobre cualquier expresión o tipo de
++       código corriente. `Introspect.syntax` da el árbol tipado de una expresión como un
++       `Tasty.Tree`, con la etiqueta, el nombre, el tipo y el código fuente de cada nodo;
++       `Introspect.semantics` da los indicadores, las propiedades y los detalles de un símbolo
++       como un `Tasty.Symbol`. Ambas producen valores simples que se pueden comparar, recorrer o
++       representar como `Teletype` con una `TastyPalette` en el ámbito.
+
+=       be compared, traversed, or rendered as `Teletype` with a `TastyPalette` in scope.
+=
+-       ```scala
++       ```scala
+
+=       be compared, traversed, or rendered as `Teletype` with a `TastyPalette` in scope.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val x = 5
++       val x = 5
+
+=       val x = 5
+=
+-       Introspect.syntax(true):
++       Introspect.syntax(true):
+
+-         1 + x
++         1 + x
+
+-       // an Apply of a Select over a Literal and an Ident
++       // an Apply of a Select over a Literal and an Ident
+
+-       Introspect.semantics[Option[Int]]   // the symbol of `scala.Option`: flags, members, position
++       Introspect.semantics[Option[Int]]   // the symbol of `scala.Option`: flags, members, position
+
+=       Introspect.semantics[Option[Int]]   // the symbol of `scala.Option`: flags, members, position
+-       ```
++       ```
+
+-       Introspecting `1 + x` for a `val x = 5` shows the `Apply` of a `Select` over a `Literal`
+-       and an `Ident`; the same for a `val y: 5 = 5` shows a single `Literal`, since the
+-       singleton type let the compiler fold the addition away — which is how the macros answer
+-       questions about the language itself.
++       La introspección de `1 + x` para un `val x = 5` muestra el `Apply` de un `Select` sobre un
++       `Literal` y un `Ident`; la misma para un `val y: 5 = 5` muestra un único `Literal`, ya que
++       el tipo singleton permitió al compilador eliminar la suma plegándola, que es como las
++       macros responden a preguntas sobre el propio lenguaje.
+
+=       questions about the language itself.
+-   refer hyperbole.Tasty
++   refer hyperbole.Tasty
+
+-   refer hyperbole.syntax
++   refer hyperbole.syntax
+
+-   refer hyperbole.semantics
++   refer hyperbole.semantics
+
+-   entry .syntax   the typed tree of an expression, as a `Tasty.Tree`, with or without its inlining
+-       `Introspect.syntax(inlining)(expression)` is a transparent inline macro: the expression
+-       is typed, and its tree is serialised into a `Tasty.Tree` whose nodes carry the tag, the
+-       node's kind (`Apply`, `Ident`, `Literal`, …), its type, the source it came from and its
+-       children. With `inlining = true` (the default is `false`) the tree is the one after
+-       inline expansion, so the bodies of inline methods and macros appear in it; with `false`
+-       the expression's own tree is shown and inlined calls stay as calls.
++   entry .syntax   el árbol tipado de una expresión, como `Tasty.Tree`, con o sin su expansión inline
++       `Introspect.syntax(inlining)(expression)` es una macro transparent inline: la expresión se
++       tipa, y su árbol se serializa en un `Tasty.Tree` cuyos nodos llevan la etiqueta, la clase
++       de nodo (`Apply`, `Ident`, `Literal`, …), su tipo, el código fuente del que procede y sus
++       hijos. Con `inlining = true` (el valor por defecto es `false`) el árbol es el posterior a
++       la expansión inline, de modo que en él aparecen los cuerpos de los métodos inline y de las
++       macros; con `false` se muestra el propio árbol de la expresión y las llamadas inline siguen
++       siendo llamadas.
+
+=       the expression's own tree is shown and inlined calls stay as calls.
+=
+-       ```scala
++       ```scala
+
+=       the expression's own tree is shown and inlined calls stay as calls.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+=
+-       Introspect.syntax(true):
++       Introspect.syntax(true):
+
+-         println("hello world")
++         println("hello world")
+
+=         println("hello world")
+-       ```
++       ```
+
+-       Here the root is an `Apply` of type `Unit` whose `expr` is
+-       `scala.Predef.println("hello world")`, with an `Ident` (`println`) and a `Literal`
+-       (tagged `a`, of type `"hello world"`) as its `nodes`.
+-   entry .semantics   a symbol as a `Tasty.Symbol`: of a type, of a value, or of the enclosing definition
+-       Three forms. `Introspect.semantics[T]` gives the symbol of the type `T`, dealiased;
+-       `Introspect.semantics(value)` gives the symbol of the term the expression refers to; and
+-       `Introspect.semantics()` gives the symbol of the definition the call is written in. Each
+-       `Tasty.Symbol` records the symbol's full name split into `prefix` and `name`, every
+-       compiler flag with whether it is set, the properties the symbol has, and details such as
+-       its owner, position, members and annotations.
++       Aquí la raíz es un `Apply` de tipo `Unit` cuyo `expr` es
++       `scala.Predef.println("hello world")`, con un `Ident` (`println`) y un `Literal`
++       (etiquetado `a`, de tipo `"hello world"`) como sus `nodes`.
++   entry .semantics   un símbolo como `Tasty.Symbol`: de un tipo, de un valor o de la definición contenedora
++       Tres formas. `Introspect.semantics[T]` da el símbolo del tipo `T`, sin alias;
++       `Introspect.semantics(value)` da el símbolo del término al que se refiere la expresión; e
++       `Introspect.semantics()` da el símbolo de la definición en la que está escrita la llamada.
++       Cada `Tasty.Symbol` registra el nombre completo del símbolo dividido en `prefix` y `name`,
++       cada indicador del compilador con si está activado o no, las propiedades que tiene el
++       símbolo, y detalles como su propietario, su posición, sus miembros y sus anotaciones.
+
+- entry .syntax   the tree of an `Expr`, inside a macro, as a `Tasty.Tree`
+-     An extension on `Expr[T]`, needing a `Quotes`: `expr.syntax` is the macro-side
+-     counterpart of `Introspect.syntax`, for a macro author inspecting an argument or the
+-     tree an expansion produced. The tree is taken as it is, without re-inlining. Rendered
+-     with `tastyTreeTeletypeable` and a `TastyPalette`, it reads as an indented diagram with
+-     each node's type and source beside it.
++ entry .syntax   el árbol de un `Expr`, dentro de una macro, como `Tasty.Tree`
++     Una extensión sobre `Expr[T]`, que necesita un `Quotes`: `expr.syntax` es el equivalente en
++     el lado de la macro de `Introspect.syntax`, para el autor de una macro que inspecciona un
++     argumento o el árbol que produjo una expansión. El árbol se toma tal cual, sin volver a
++     expandirlo inline. Representado con `tastyTreeTeletypeable` y una `TastyPalette`, se lee
++     como un diagrama sangrado con el tipo y el código fuente de cada nodo a su lado.
+
+=     each node's type and source beside it.
+=
+-     ```scala
++     ```scala
+
+=     each node's type and source beside it.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     import scala.quoted.*
++     import scala.quoted.*
+
+-     def inspect(expr: Expr[Any])(using Quotes): Tasty.Tree = expr.syntax
++     def inspect(expr: Expr[Any])(using Quotes): Tasty.Tree = expr.syntax
+
+=     def inspect(expr: Expr[Any])(using Quotes): Tasty.Tree = expr.syntax
+-     ```
++     ```
+
+- entry .semantics   the `Tasty.Symbol` of a `quotes.reflect.Symbol`, inside a macro
+-     An extension on `Symbol`, needing a `Quotes`: `symbol.semantics` is the macro-side
+-     counterpart of `Introspect.semantics`, reducing a reflection symbol to a value with its
+-     flags, properties and details, which a macro may inspect, compare or render.
++ entry .semantics   el `Tasty.Symbol` de un `quotes.reflect.Symbol`, dentro de una macro
++     Una extensión sobre `Symbol`, que necesita un `Quotes`: `symbol.semantics` es el
++     equivalente en el lado de la macro de `Introspect.semantics`, y reduce un símbolo de
++     reflexión a un valor con sus indicadores, sus propiedades y sus detalles, que una macro
++     puede inspeccionar, comparar o representar.
+
+- entry .TastyPalette   the colours TASTy trees and symbols are rendered with
+-     A `Palette` in sRGB with, beyond the `background` and `foreground` every palette has:
+-     `typeDefinition` and `termDefinition` for nodes which define a type or a term,
+-     `typeReference` and `termReference` for nodes which refer to one, `flagOn`/`flagOff` and
+-     `propertyOn`/`propertyOff` for a symbol's flags and properties, `outline` for types and
+-     detail values, and `accented` for parameter names. A `TastyPalette` must be in scope to
+-     render a `Tasty.Tree` or `Tasty.Symbol` as `Teletype`; the library supplies none.
++ entry .TastyPalette   los colores con los que se representan los árboles y los símbolos de TASTy
++     Una `Palette` en sRGB con, además del `background` y el `foreground` que tiene toda paleta:
++     `typeDefinition` y `termDefinition` para los nodos que definen un tipo o un término,
++     `typeReference` y `termReference` para los nodos que se refieren a uno, `flagOn`/`flagOff`
++     y `propertyOn`/`propertyOff` para los indicadores y las propiedades de un símbolo, `outline`
++     para los tipos y los valores de detalle, y `accented` para los nombres de parámetro. Para
++     representar un `Tasty.Tree` o un `Tasty.Symbol` como `Teletype` debe haber una
++     `TastyPalette` en el ámbito; la biblioteca no proporciona ninguna.
+
+=     render a `Tasty.Tree` or `Tasty.Symbol` as `Teletype`; the library supplies none.
+=
+-     ```scala
++     ```scala
+
+=     render a `Tasty.Tree` or `Tasty.Symbol` as `Teletype`; the library supplies none.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     given palette: TastyPalette = new Palette:
++     given palette: TastyPalette = new Palette:
+
+-       type Form = Srgb
++       type Form = Srgb
+
+-       def background: Color in Srgb     = WebColors.Black
++       def background: Color in Srgb     = WebColors.Black
+
+-       def foreground: Color in Srgb     = WebColors.White
++       def foreground: Color in Srgb     = WebColors.White
+
+-       def typeDefinition: Color in Srgb = WebColors.Turquoise
++       def typeDefinition: Color in Srgb = WebColors.Turquoise
+
+-       def termDefinition: Color in Srgb = WebColors.Gold
++       def termDefinition: Color in Srgb = WebColors.Gold
+
+-       def typeReference: Color in Srgb  = WebColors.Teal
++       def typeReference: Color in Srgb  = WebColors.Teal
+
+-       def termReference: Color in Srgb  = WebColors.Silver
++       def termReference: Color in Srgb  = WebColors.Silver
+
+-       def flagOn: Color in Srgb         = WebColors.LimeGreen
++       def flagOn: Color in Srgb         = WebColors.LimeGreen
+
+-       def flagOff: Color in Srgb        = WebColors.Gray
++       def flagOff: Color in Srgb        = WebColors.Gray
+
+-       def propertyOn: Color in Srgb     = WebColors.DeepSkyBlue
++       def propertyOn: Color in Srgb     = WebColors.DeepSkyBlue
+
+-       def propertyOff: Color in Srgb    = WebColors.Gray
++       def propertyOff: Color in Srgb    = WebColors.Gray
+
+-       def outline: Color in Srgb        = WebColors.Gray
++       def outline: Color in Srgb        = WebColors.Gray
+
+-       def accented: Color in Srgb       = WebColors.Orange
++       def accented: Color in Srgb       = WebColors.Orange
+
+=       def accented: Color in Srgb       = WebColors.Orange
+-     ```
++     ```
+
+- entry .tastySymbolTeletypeable   renders a `Tasty.Symbol` as a two-column table of its properties
+-     The `Teletypeable` given for `Tasty.Symbol`, needing a `TastyPalette`. The table has a
+-     row for the name (prefix dimmed, name bold), a row of flags with the set ones highlighted
+-     on the palette's `flagOff` colour, a row of properties with the set ones on
+-     `propertyOn`, and one row per detail. It is a top-level given, so it resolves without
+-     an import inside `hyperbole` and by name elsewhere:
+-     `import soundness.tastySymbolTeletypeable`.
++ entry .tastySymbolTeletypeable   representa un `Tasty.Symbol` como una tabla de dos columnas con sus propiedades
++     El given `Teletypeable` para `Tasty.Symbol`, que necesita una `TastyPalette`. La tabla tiene
++     una fila para el nombre (el prefijo atenuado, el nombre en negrita), una fila de indicadores
++     con los activados resaltados sobre el color `flagOff` de la paleta, una fila de propiedades
++     con las activadas en `propertyOn`, y una fila por cada detalle. Es un given de nivel
++     superior, así que se resuelve sin importación dentro de `hyperbole` y por nombre en otros
++     lugares: `import soundness.tastySymbolTeletypeable`.
+
+- entry .tastyTreeTeletypeable   renders a `Tasty.Tree` as an indented diagram with type and source columns
+-     The `Teletypeable` given for `Tasty.Tree`, needing a `TastyPalette`. Each node is a row:
+-     the tree lines, the node's tag in angle brackets (or `▪` for an untagged node), its name
+-     coloured as a term or type definition or reference, and a parameter name in the
+-     `accented` colour; then its type, demangled with `StackTrace.rewrite`; then the source
+-     it came from, with the common indentation cropped. A top-level given, imported by name
+-     outside `hyperbole`: `import soundness.tastyTreeTeletypeable`.
++ entry .tastyTreeTeletypeable   representa un `Tasty.Tree` como un diagrama sangrado con columnas de tipo y de código fuente
++     El given `Teletypeable` para `Tasty.Tree`, que necesita una `TastyPalette`. Cada nodo es una
++     fila: las líneas del árbol, la etiqueta del nodo entre corchetes angulares (o `▪` para un
++     nodo sin etiqueta), su nombre coloreado como definición o referencia de término o de tipo,
++     y un nombre de parámetro con el color `accented`; después su tipo, desdecorado con
++     `StackTrace.rewrite`; y después el código fuente del que procede, con la sangría común
++     recortada. Un given de nivel superior, que fuera de `hyperbole` se importa por nombre:
++     `import soundness.tastyTreeTeletypeable`.
+
+- entry .Tasty   the TASTy data model: trees, symbols, definitions and files, readable from raw bytes
++ entry .Tasty   el modelo de datos de TASTy: árboles, símbolos, definiciones y ficheros, legibles a partir de bytes en bruto
+
+= entry .Tasty   the TASTy data model: trees, symbols, definitions and files, readable from raw bytes
+-   detail
++   detail
+
+-       `Tasty` is an object holding the model types and the reader. `Tasty.Tree` and
+-       `Tasty.Symbol` are what `Introspect` produces. `Tasty.File` and `Tasty.Definition` are
+-       what `Tasty.parse` reads from the bytes of a `.tasty` file: the definitions the compiler
+-       recorded for one top-level class, each with its name, its chain of owners, its `Kind`
+-       and the lines it covers, and the path of the source file it was compiled from. Reading
+-       needs only `tasty-core`, the format's constants and byte reader, so this component
+-       runs on the JVM, Scala.js and Scala Native.
++       `Tasty` es un objeto que contiene los tipos del modelo y el lector. `Tasty.Tree` y
++       `Tasty.Symbol` son lo que produce `Introspect`. `Tasty.File` y `Tasty.Definition` son lo
++       que `Tasty.parse` lee de los bytes de un fichero `.tasty`: las definiciones que el
++       compilador registró para una clase de nivel superior, cada una con su nombre, su cadena de
++       propietarios, su `Kind` y las líneas que abarca, y la ruta del fichero fuente a partir del
++       cual se compiló. La lectura solo necesita `tasty-core`, las constantes y el lector de bytes
++       del formato, así que este componente se ejecuta en la JVM, Scala.js y Scala Native.
+
+=       runs on the JVM, Scala.js and Scala Native.
+=
+-       ```scala
++       ```scala
+
+=       runs on the JVM, Scala.js and Scala Native.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val file: Optional[Tasty.File] = Tasty.parse(cp"/scala/Option.tasty".read[Data])
++       val file: Optional[Tasty.File] = Tasty.parse(cp"/scala/Option.tasty".read[Data])
+
+-       file.let(_.path)
++       file.let(_.path)
+
+-       file.let(_.covering(100).map(_.name))
++       file.let(_.covering(100).map(_.name))
+
+=       file.let(_.covering(100).map(_.name))
+-       ```
++       ```
+
+-       TASTy is written once per top-level class, so a nested, anonymous or module class's
+-       definitions are found in the file of the outermost class enclosing it, and top-level
+-       definitions in `<file>$package.tasty`.
++       TASTy se escribe una vez por clase de nivel superior, así que las definiciones de una
++       clase anidada, anónima o de módulo se encuentran en el fichero de la clase más externa que
++       la contiene, y las definiciones de nivel superior en `<file>$package.tasty`.
+
+-   refer hyperbole.Introspect
++   refer hyperbole.Introspect
+
+-   refer hyperbole.StackResolver
++   refer hyperbole.StackResolver
+
+-   entry .parse   reads the definitions of a `.tasty` file from its bytes, or `Unset` if it cannot
+-       Anything unexpected — a TASTy version this reader does not understand, a truncated file,
+-       an absent section — gives `Unset` rather than an error, since TASTy is only ever a
+-       source of extra detail. The result is a `Tasty.File` with the source path the compiler
+-       recorded (relative to its `-sourceroot`, if one was given) and every definition with
+-       its extent. Names the compiler derived render as it spells them: `name$1`,
+-       `method$default$2`, `super$name`.
+-   entry .Symbol   a compiler symbol reduced to its name, flags, properties and details
++   entry .parse   lee las definiciones de un fichero `.tasty` a partir de sus bytes, o `Unset` si no puede
++       Cualquier cosa inesperada (una versión de TASTy que este lector no entiende, un fichero
++       truncado, una sección ausente) da `Unset` en lugar de un error, ya que TASTy no es más que
++       una fuente de detalles adicionales. El resultado es un `Tasty.File` con la ruta del código
++       fuente que registró el compilador (relativa a su `-sourceroot`, si se dio uno) y cada
++       definición con su extensión. Los nombres que derivó el compilador se representan tal como
++       él los escribe: `name$1`, `method$default$2`, `super$name`.
++   entry .Symbol   un símbolo del compilador reducido a su nombre, sus indicadores, sus propiedades y sus detalles
+
+=   entry .Symbol   a compiler symbol reduced to its name, flags, properties and details
+-     detail
++     detail
+
+-         Produced by `Introspect.semantics` or the `semantics` extension. `#prefix` and
+-         `#name` split the full name at the last segment; `#flags` lists every compiler flag
+-         (`Abstract`, `Case`, `Given`, `Inline`, …) paired with whether it is set, and
+-         `#properties` every property (whether the symbol is a class, a type, a term, a
+-         package, …) likewise; `#details` is a list of named values — the owner, position,
+-         members, annotations and the like — each a text or a list of texts. It renders with
+-         `tastySymbolTeletypeable`.
+-     entry #prefix   the full name up to the last segment, with its trailing `.`
+-     entry #name   the symbol's own name
+-     entry #flags   every compiler flag, paired with whether it is set on this symbol
+-     entry #properties   every symbol property, paired with whether this symbol has it
+-     entry #details   named details of the symbol: each a text or a list of texts
+-   entry .Tree   one node of a typed tree, with its tag, kind, type, source and children
++         Lo producen `Introspect.semantics` o la extensión `semantics`. `#prefix` y `#name`
++         dividen el nombre completo en el último segmento; `#flags` enumera cada indicador del
++         compilador (`Abstract`, `Case`, `Given`, `Inline`, …) emparejado con si está activado, y
++         `#properties` hace lo mismo con cada propiedad (si el símbolo es una clase, un tipo, un
++         término, un paquete, …); `#details` es una lista de valores con nombre (el propietario,
++         la posición, los miembros, las anotaciones y similares), cada uno un texto o una lista
++         de textos. Se representa con `tastySymbolTeletypeable`.
++     entry #prefix   el nombre completo hasta el último segmento, con su `.` final
++     entry #name   el nombre propio del símbolo
++     entry #flags   cada indicador del compilador, emparejado con si está activado en este símbolo
++     entry #properties   cada propiedad de símbolo, emparejada con si este símbolo la tiene
++     entry #details   detalles con nombre del símbolo: cada uno un texto o una lista de textos
++   entry .Tree   un nodo de un árbol tipado, con su etiqueta, su clase, su tipo, su código fuente y sus hijos
+
+=   entry .Tree   one node of a typed tree, with its tag, kind, type, source and children
+-     detail
++     detail
+
+-         Produced by `Introspect.syntax` or the `syntax` extension, and nested through
+-         `#nodes`. `#name` is the node's kind as the compiler names it (`Apply`, `Select`,
+-         `Ident`, `Literal`, `DefDef`, …); `#typeName` its type, where it has one; `#expr` the
+-         node printed as code; `#source` the source line it was parsed from; `#tag` a
+-         one-character marker for a child's role in its parent (`a` for an argument, `' '` for
+-         none); `#param` the parameter name a child fills, if any; `#term` whether the node is
+-         a term rather than a type; and `#definitional` whether it defines rather than refers.
+-         Two trees are equal when every field is, which is how a test pins an expansion.
++         Lo producen `Introspect.syntax` o la extensión `syntax`, y se anida mediante `#nodes`.
++         `#name` es la clase del nodo tal como la nombra el compilador (`Apply`, `Select`,
++         `Ident`, `Literal`, `DefDef`, …); `#typeName` su tipo, cuando lo tiene; `#expr` el nodo
++         impreso como código; `#source` la línea de código fuente de la que se analizó; `#tag` un
++         marcador de un carácter para el papel de un hijo en su padre (`a` para un argumento,
++         `' '` para ninguno); `#param` el nombre del parámetro que ocupa un hijo, si lo hay;
++         `#term` si el nodo es un término y no un tipo; y `#definitional` si define en lugar de
++         referirse. Dos árboles son iguales cuando lo son todos sus campos, que es como una prueba
++         fija una expansión.
+
+-         ```scala
++         ```scala
+
+-         import soundness.*
++         import soundness.*
+
+-         val tree = Introspect.syntax(true):
++         val tree = Introspect.syntax(true):
+
+-           println("hello world")
++           println("hello world")
+
+-         tree == Tasty.Tree
++         tree == Tasty.Tree
+
+-           ( ' ', t"Unit", t"Apply", t"scala.Predef.println(\"hello world\")",
++           ( ' ', t"Unit", t"Apply", t"scala.Predef.println(\"hello world\")",
+
+-             t"println(\"hello world\")", tree.nodes, Unset, true, false )
++             t"println(\"hello world\")", tree.nodes, Unset, true, false )
+
+-         ```
++         ```
+
+-     entry #tag   a one-character marker for the node's role in its parent; `' '` for none
+-     entry #typeName   the node's type, as text; empty where the node has none
+-     entry #name   the node's kind: `Apply`, `Ident`, `Literal`, `DefDef`, …
+-     entry #expr   the node printed as code
+-     entry #source   the source line the node came from, as written
+-     entry #nodes   the node's children, in order
+-     entry #param   the parameter name this node fills in its parent, if any
+-     entry #term   whether the node is a term; `false` for a type
+-     entry #definitional   whether the node defines something, rather than referring to it
+-     entry #shortCode   the first line of `#expr`, with `...` if there were more
+-     entry #typeNode   this node marked as a type (`term = false`)
+-     entry #definition   this node marked as a definition (`definitional = true`)
+-   entry .Definition   one definition the compiler recorded: its name, owners, kind and source extent
++     entry #tag   un marcador de un carácter para el papel del nodo en su padre; `' '` para ninguno
++     entry #typeName   el tipo del nodo, como texto; vacío cuando el nodo no tiene
++     entry #name   la clase del nodo: `Apply`, `Ident`, `Literal`, `DefDef`, …
++     entry #expr   el nodo impreso como código
++     entry #source   la línea de código fuente de la que procede el nodo, tal como se escribió
++     entry #nodes   los hijos del nodo, en orden
++     entry #param   el nombre del parámetro que ocupa este nodo en su padre, si lo hay
++     entry #term   si el nodo es un término; `false` para un tipo
++     entry #definitional   si el nodo define algo, en lugar de referirse a ello
++     entry #shortCode   la primera línea de `#expr`, con `...` si había más
++     entry #typeNode   este nodo marcado como tipo (`term = false`)
++     entry #definition   este nodo marcado como definición (`definitional = true`)
++   entry .Definition   una definición que registró el compilador: su nombre, sus propietarios, su clase y su extensión en el código fuente
+
+=   entry .Definition   one definition the compiler recorded: its name, owners, kind and source extent
+-     detail
++     detail
+
+-         What resolving a stack frame needs of a definition. `#name` is the source name
+-         (`<init>` for a constructor); `#owners` the chain of enclosing definitions,
+-         innermost first, including the package; `#kind` a `StackTrace.Frame.Kind` (`Method`,
+-         `Lambda`, `Value`, `Class`, `Constructor`, …); `#start` and `#end` the character
+-         offsets of its extent and `#firstLine` and `#lastLine` the lines. A definition the
+-         compiler synthesised — an `object`'s constructor — has an empty extent at whatever
+-         position was to hand.
+-     entry #name   the definition's source name; `<init>` for a constructor
+-     entry #owners   the enclosing definitions, innermost first, ending with the package
+-     entry #kind   what the definition is, as a `StackTrace.Frame.Kind`
+-     entry #start   the character offset where the definition begins
+-     entry #end   the character offset where it ends
+-     entry #firstLine   the first source line it covers
+-     entry #lastLine   the last source line it covers
+-     entry #span   the length of the extent, `end - start`: `0` for a synthesised definition
+-     entry #covers   whether a line falls within `#firstLine` to `#lastLine`
+-   entry .File   the definitions of one top-level class, and the source path they were compiled from
++         Lo que necesita de una definición la resolución de un marco de pila. `#name` es el
++         nombre en el código fuente (`<init>` para un constructor); `#owners` la cadena de
++         definiciones contenedoras, de la más interna a la más externa, incluido el paquete;
++         `#kind` un `StackTrace.Frame.Kind` (`Method`, `Lambda`, `Value`, `Class`,
++         `Constructor`, …); `#start` y `#end` los desplazamientos en caracteres de su extensión, y
++         `#firstLine` y `#lastLine` las líneas. Una definición que sintetizó el compilador (el
++         constructor de un `object`) tiene una extensión vacía en la posición que hubiera a mano.
++     entry #name   el nombre de la definición en el código fuente; `<init>` para un constructor
++     entry #owners   las definiciones contenedoras, de la más interna a la más externa, terminando en el paquete
++     entry #kind   lo que es la definición, como un `StackTrace.Frame.Kind`
++     entry #start   el desplazamiento en caracteres donde empieza la definición
++     entry #end   el desplazamiento en caracteres donde termina
++     entry #firstLine   la primera línea de código fuente que abarca
++     entry #lastLine   la última línea de código fuente que abarca
++     entry #span   la longitud de la extensión, `end - start`: `0` para una definición sintetizada
++     entry #covers   si una línea está entre `#firstLine` y `#lastLine`
++   entry .File   las definiciones de una clase de nivel superior, y la ruta del código fuente a partir de la cual se compilaron
+
+=   entry .File   the definitions of one top-level class, and the source path they were compiled from
+-     detail
++     detail
+
+-         What `Tasty.parse` returns. `#path` is the source path as the compiler recorded it —
+-         the full path, or one relative to `-sourceroot` — or `Unset` if the file carries no
+-         source attribute; `#definitions` is every definition in the file. `#covering` finds
+-         the definitions around a line, innermost first, which is the lookup a stack frame's
+-         line makes.
+-     entry #path   the source path the compiler recorded, if any
+-     entry #definitions   every definition the file records
+-     entry #compiledFrom   whether this file was compiled from a given source path
+-         True when the paths are equal or either is a trailing segment of the other, since a
+-         build with `-sourceroot` records its paths relatively while an SMAP written in the
+-         same compilation may name the same file absolutely.
+-     entry #covering   every definition covering a line, innermost first
+-         Nesting is measured by extent — a lambda's extent is smaller than its enclosing
+-         method's, so it sorts first — and definitions with an empty extent sort last, to be
+-         reached only when a frame really is one of them.
++         Lo que devuelve `Tasty.parse`. `#path` es la ruta del código fuente tal como la registró
++         el compilador (la ruta completa, o una relativa a `-sourceroot`), o `Unset` si el fichero
++         no lleva atributo de código fuente; `#definitions` es cada definición del fichero.
++         `#covering` encuentra las definiciones que rodean una línea, de la más interna a la más
++         externa, que es la búsqueda que hace la línea de un marco de pila.
++     entry #path   la ruta del código fuente que registró el compilador, si la hay
++     entry #definitions   cada definición que registra el fichero
++     entry #compiledFrom   si este fichero se compiló a partir de una ruta de código fuente dada
++         Verdadero cuando las rutas son iguales o una es un segmento final de la otra, ya que una
++         construcción con `-sourceroot` registra sus rutas de forma relativa, mientras que un SMAP
++         escrito en la misma compilación puede nombrar el mismo fichero de forma absoluta.
++     entry #covering   cada definición que abarca una línea, de la más interna a la más externa
++         El anidamiento se mide por la extensión (la extensión de una lambda es menor que la del
++         método que la contiene, así que se ordena antes), y las definiciones con extensión vacía
++         se ordenan al final, para que solo se lleguen a usar cuando un marco es realmente una de
++         ellas.
+
+- entry .StackResolver   recovers the source definition behind each frame of a stack trace, from TASTy
++ entry .StackResolver   recupera a partir de TASTy la definición del código fuente que hay detrás de cada marco de una traza de pila
+
+= entry .StackResolver   recovers the source definition behind each frame of a stack trace, from TASTy
+-   detail
++   detail
+
+-       A `StackResolver` is a `StackTrace.Resolver` which, for each frame, finds the TASTy
+-       file of the frame's top-level class through the `Classloader` in scope, looks up the
+-       definitions covering the frame's line, picks the one the compiled name's kind agrees
+-       with, and attaches a `StackTrace.Frame.Source` naming the file, the chain of enclosing
+-       definitions, the definition's source name, its `Kind`, and the line of source itself
+-       when the file can be read. A frame whose class has no TASTy, or whose file has no line
+-       for it, is returned as it was.
++       Un `StackResolver` es un `StackTrace.Resolver` que, para cada marco, encuentra el fichero
++       TASTy de la clase de nivel superior del marco a través del `Classloader` del ámbito, busca
++       las definiciones que abarcan la línea del marco, elige aquella con la que concuerda la
++       clase del nombre compilado, y adjunta un `StackTrace.Frame.Source` que nombra el fichero,
++       la cadena de definiciones contenedoras, el nombre de la definición en el código fuente, su
++       `Kind` y la propia línea de código fuente cuando se puede leer el fichero. Un marco cuya
++       clase no tiene TASTy, o cuyo fichero no tiene ninguna línea para él, se devuelve tal como
++       estaba.
+
+-       Without a resolver, a trace has only the compiled names, demangled but anonymous; with
+-       one imported, every trace captured in its scope names its definitions; and a trace
+-       already in hand is resolved explicitly:
++       Sin un resolutor, una traza solo tiene los nombres compilados, desdecorados pero
++       anónimos; con uno importado, cada traza capturada en su ámbito nombra sus definiciones; y
++       una traza que ya se tiene a mano se resuelve explícitamente:
+
+-       ```scala fuel
++       ```scala fuel
+
+-       alternative Raw
++       alternative Raw
+
+=       alternative Raw
+-         code
++         code
+
+=       alternative Raw
+=         code
+-             import soundness.*
++             import soundness.*
+
+=             import soundness.*
+=
+-             object Fixture:
++             object Fixture:
+
+=             import soundness.*
+=
+=             object Fixture:
+-               def run(): Unit = List(1).each: value =>
++               def run(): Unit = List(1).each: value =>
+
+=             import soundness.*
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+-                 throw Exception("boom")
++                 throw Exception("boom")
+
+=             import soundness.*
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+=                 throw Exception("boom")
+=
+-             def capture(block: => Unit): StackTrace =
++             def capture(block: => Unit): StackTrace =
+
+=             import soundness.*
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+=                 throw Exception("boom")
+=
+=             def capture(block: => Unit): StackTrace =
+-               try
++               try
+
+=             import soundness.*
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+=                 throw Exception("boom")
+=
+=             def capture(block: => Unit): StackTrace =
+=               try
+-                 block
++                 block
+
+=             import soundness.*
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+=                 throw Exception("boom")
+=
+=             def capture(block: => Unit): StackTrace =
+=               try
+=                 block
+-                 panic(m"the fixture did not throw")
++                 panic(m"the fixture did not throw")
+
+=             import soundness.*
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+=                 throw Exception("boom")
+=
+=             def capture(block: => Unit): StackTrace =
+=               try
+=                 block
+=                 panic(m"the fixture did not throw")
+-               catch case error: Throwable => error.stackTrace
++               catch case error: Throwable => error.stackTrace
+
+=             import soundness.*
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+=                 throw Exception("boom")
+=
+=             def capture(block: => Unit): StackTrace =
+=               try
+=                 block
+=                 panic(m"the fixture did not throw")
+=               catch case error: Throwable => error.stackTrace
+=
+-             val frame = capture(Fixture.run()).frames.seek(_.jvmClass.starts(t"Fixture"))
++             val frame = capture(Fixture.run()).frames.seek(_.jvmClass.starts(t"Fixture"))
+
+-             frame.let(_.displayMethod)   // t"λ₁": a lambda ran, but which?
++             frame.let(_.displayMethod)   // t"λ₁": a lambda ran, but which?
+
+-             frame.let(_.source)          // Unset
++             frame.let(_.source)          // Unset
+
+-       alternative Imported
++       alternative Imported
+
+=       alternative Imported
+-         code
++         code
+
+=       alternative Imported
+=         code
+-             import soundness.*
++             import soundness.*
+
+-             import stackResolutions.tastyStackResolution
++             import stackResolutions.tastyStackResolution
+
+=             import stackResolutions.tastyStackResolution
+-             import classloaders.threadContextClassloader
++             import classloaders.threadContextClassloader
+
+=             import stackResolutions.tastyStackResolution
+=             import classloaders.threadContextClassloader
+-             import workingDirectories.javaBaseWorkingDirectory
++             import workingDirectories.javaBaseWorkingDirectory
+
+=             import stackResolutions.tastyStackResolution
+=             import classloaders.threadContextClassloader
+=             import workingDirectories.javaBaseWorkingDirectory
+=
+-             object Fixture:
++             object Fixture:
+
+=             import stackResolutions.tastyStackResolution
+=             import classloaders.threadContextClassloader
+=             import workingDirectories.javaBaseWorkingDirectory
+=
+=             object Fixture:
+-               def run(): Unit = List(1).each: value =>
++               def run(): Unit = List(1).each: value =>
+
+=             import stackResolutions.tastyStackResolution
+=             import classloaders.threadContextClassloader
+=             import workingDirectories.javaBaseWorkingDirectory
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+-                 throw Exception("boom")
++                 throw Exception("boom")
+
+=             import stackResolutions.tastyStackResolution
+=             import classloaders.threadContextClassloader
+=             import workingDirectories.javaBaseWorkingDirectory
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+=                 throw Exception("boom")
+=
+-             def capture(block: => Unit): StackTrace =
++             def capture(block: => Unit): StackTrace =
+
+=             import stackResolutions.tastyStackResolution
+=             import classloaders.threadContextClassloader
+=             import workingDirectories.javaBaseWorkingDirectory
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+=                 throw Exception("boom")
+=
+=             def capture(block: => Unit): StackTrace =
+-               try
++               try
+
+=             import stackResolutions.tastyStackResolution
+=             import classloaders.threadContextClassloader
+=             import workingDirectories.javaBaseWorkingDirectory
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+=                 throw Exception("boom")
+=
+=             def capture(block: => Unit): StackTrace =
+=               try
+-                 block
++                 block
+
+=             import stackResolutions.tastyStackResolution
+=             import classloaders.threadContextClassloader
+=             import workingDirectories.javaBaseWorkingDirectory
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+=                 throw Exception("boom")
+=
+=             def capture(block: => Unit): StackTrace =
+=               try
+=                 block
+-                 panic(m"the fixture did not throw")
++                 panic(m"the fixture did not throw")
+
+=             import stackResolutions.tastyStackResolution
+=             import classloaders.threadContextClassloader
+=             import workingDirectories.javaBaseWorkingDirectory
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+=                 throw Exception("boom")
+=
+=             def capture(block: => Unit): StackTrace =
+=               try
+=                 block
+=                 panic(m"the fixture did not throw")
+-               catch case error: Throwable => error.stackTrace
++               catch case error: Throwable => error.stackTrace
+
+=             import workingDirectories.javaBaseWorkingDirectory
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+=                 throw Exception("boom")
+=
+=             def capture(block: => Unit): StackTrace =
+=               try
+=                 block
+=                 panic(m"the fixture did not throw")
+=               catch case error: Throwable => error.stackTrace
+=
+-             val frame = capture(Fixture.run()).frames.seek(_.jvmClass.starts(t"Fixture"))
++             val frame = capture(Fixture.run()).frames.seek(_.jvmClass.starts(t"Fixture"))
+
+-             frame.let(_.displayClass)              // t"Fixture.run"
++             frame.let(_.displayClass)              // t"Fixture.run"
+
+-             frame.let(_.displayMethod)             // t"λ"
++             frame.let(_.displayMethod)             // t"λ"
+
+-             frame.let(_.source.let(_.kind))        // Kind.Lambda
++             frame.let(_.source.let(_.kind))        // Kind.Lambda
+
+-             frame.let(_.source.let(_.code))        // t"throw Exception(\"boom\")"
++             frame.let(_.source.let(_.code))        // t"throw Exception(\"boom\")"
+
+-       alternative Explicit
++       alternative Explicit
+
+=       alternative Explicit
+-         code
++         code
+
+=       alternative Explicit
+=         code
+-             import soundness.*
++             import soundness.*
+
+=             import soundness.*
+-             import classloaders.threadContextClassloader
++             import classloaders.threadContextClassloader
+
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+-             import workingDirectories.javaBaseWorkingDirectory
++             import workingDirectories.javaBaseWorkingDirectory
+
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=             import workingDirectories.javaBaseWorkingDirectory
+=
+-             object Fixture:
++             object Fixture:
+
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=             import workingDirectories.javaBaseWorkingDirectory
+=
+=             object Fixture:
+-               def run(): Unit = List(1).each: value =>
++               def run(): Unit = List(1).each: value =>
+
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=             import workingDirectories.javaBaseWorkingDirectory
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+-                 throw Exception("boom")
++                 throw Exception("boom")
+
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=             import workingDirectories.javaBaseWorkingDirectory
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+=                 throw Exception("boom")
+=
+-             def capture(block: => Unit): StackTrace =
++             def capture(block: => Unit): StackTrace =
+
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=             import workingDirectories.javaBaseWorkingDirectory
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+=                 throw Exception("boom")
+=
+=             def capture(block: => Unit): StackTrace =
+-               try
++               try
+
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=             import workingDirectories.javaBaseWorkingDirectory
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+=                 throw Exception("boom")
+=
+=             def capture(block: => Unit): StackTrace =
+=               try
+-                 block
++                 block
+
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=             import workingDirectories.javaBaseWorkingDirectory
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+=                 throw Exception("boom")
+=
+=             def capture(block: => Unit): StackTrace =
+=               try
+=                 block
+-                 panic(m"the fixture did not throw")
++                 panic(m"the fixture did not throw")
+
+=             import soundness.*
+=             import classloaders.threadContextClassloader
+=             import workingDirectories.javaBaseWorkingDirectory
+=
+=             object Fixture:
+=               def run(): Unit = List(1).each: value =>
+=                 throw Exception("boom")
+=
+=             def capture(block: => Unit): StackTrace =
+=               try
+=                 block
+=                 panic(m"the fixture did not throw")
+-               catch case error: Throwable => error.stackTrace
++               catch case error: Throwable => error.stackTrace
+
+-             val trace: StackTrace = capture(Fixture.run()).resolved
++             val trace: StackTrace = capture(Fixture.run()).resolved
+
+-             trace.frames.seek(_.jvmClass.starts(t"Fixture")).let(_.source.let(_.definition))
++             trace.frames.seek(_.jvmClass.starts(t"Fixture")).let(_.source.let(_.definition))
+
+-             // t"Fixture.run.λ"
++             // t"Fixture.run.λ"
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       Construction needs a `Classloader`, through which `.tasty` and `.class` resources are
+-       read, and a `WorkingDirectory`, against which a source path TASTy records relative to
+-       `-sourceroot` is resolved: it must be the directory the code was compiled under, or the
+-       frame keeps everything but its line of source. A frame whose line is a synthetic one
+-       the compiler allocated for inlined code is first expanded through the class file's
+-       SMAP (read with mandible's `Classfile#sourceDebugExtension`): the frame gets its real
+-       call-site line, and its `inlined` list the levels of inlining beneath it, each resolved
+-       against TASTy to name the inline method it falls inside.
++       La construcción necesita un `Classloader`, a través del cual se leen los recursos
++       `.tasty` y `.class`, y un `WorkingDirectory`, contra el que se resuelve una ruta de código
++       fuente que TASTy registra de forma relativa a `-sourceroot`: debe ser el directorio en el
++       que se compiló el código, o el marco lo conserva todo salvo su línea de código fuente. Un
++       marco cuya línea es una línea sintética que el compilador asignó al código expandido
++       inline se expande primero mediante el SMAP del fichero de clase (leído con el
++       `Classfile#sourceDebugExtension` de mandible): el marco recibe su línea real del punto de
++       llamada, y su lista `inlined` los niveles de expansión inline que hay debajo de él, cada
++       uno resuelto contra TASTy para nombrar el método inline dentro del cual cae.
+
+-       TASTy and source files are read once per class and cached in the resolver, so one
+-       resolver should serve many traces; `stackResolutions.tastyStackResolution` builds one
+-       per scope. Resolution costs a file read per top-level class named in a trace, which is
+-       why it is opt-in.
++       Los ficheros TASTy y de código fuente se leen una vez por clase y se guardan en caché en el
++       resolutor, así que un mismo resolutor debería servir a muchas trazas;
++       `stackResolutions.tastyStackResolution` construye uno por ámbito. La resolución cuesta una
++       lectura de fichero por cada clase de nivel superior nombrada en una traza, y por eso es de
++       adhesión voluntaria.
+
+-   refer hyperbole.stackResolutions
++   refer hyperbole.stackResolutions
+
+-   refer hyperbole.resolved
++   refer hyperbole.resolved
+
+=   refer hyperbole.resolved
+-   refer hyperbole.Tasty
++   refer hyperbole.Tasty
+
+-   entry .hint   what kind of definition a compiled method name betrays, if any
+-       `StackResolver.hint(method)` reads the markers the compiler mints after TASTy is
+-       written, as digression's `StackTrace.Marker.all` lists them with their kinds: `<init>`
+-       is a `Constructor`; `<clinit>`, `$init$` and `$lzyINIT` an `Initializer`; `$anonfun` a
+-       `Lambda` and `$adapted` a `Bridge`; `super$`, `protected$`, `inline$` and `$accessor` a
+-       `Forwarder`; `$_setter_$` and `$retainedBody` `Synthetic`; `$extension` an `Extension`;
+-       `$default` a `Default`; `$mc…$sp` a `Specialized`. A name with no marker gives `Unset`,
+-       and the definition the frame resolves to speaks for itself.
+-   entry .matches   whether a definition is the one a frame's compiled name and kind hint describe
+-       With a `Constructor` hint the definition must be `<init>`; with a `Lambda` hint its
+-       kind must be `Lambda`; otherwise its source name must equal the compiled method name,
+-       which a name that survived compilation unchanged does. This is how the resolver tells
+-       a constructor from the first member declared beside it, and a lambda from its
+-       enclosing method, when both cover the same line.
+-   entry .display   a TASTy name as a frame shows it: module `$` dropped, derived names demangled
+-       A module class's trailing `$` is removed, `<init>` becomes `ⲛ`, and a name with a `$`
+-       in it — an anonymous function, a default getter, a package file — is passed through
+-       `StackTrace.rewrite`, so a resolved frame reads in the same vocabulary as an unresolved
+-       one.
+-   entry #resolve   the frame with its `source` filled in, or unchanged if nothing can be found
++   entry .hint   qué clase de definición delata un nombre de método compilado, si delata alguna
++       `StackResolver.hint(method)` lee los marcadores que acuña el compilador después de
++       escribir TASTy, tal como los enumera con sus clases el `StackTrace.Marker.all` de
++       digression: `<init>` es un `Constructor`; `<clinit>`, `$init$` y `$lzyINIT` un
++       `Initializer`; `$anonfun` una `Lambda` y `$adapted` un `Bridge`; `super$`, `protected$`,
++       `inline$` y `$accessor` un `Forwarder`; `$_setter_$` y `$retainedBody` `Synthetic`;
++       `$extension` una `Extension`; `$default` un `Default`; `$mc…$sp` un `Specialized`. Un
++       nombre sin marcador da `Unset`, y la definición a la que se resuelve el marco habla por sí
++       misma.
++   entry .matches   si una definición es la que describen el nombre compilado de un marco y la pista de clase
++       Con una pista `Constructor` la definición debe ser `<init>`; con una pista `Lambda` su
++       clase debe ser `Lambda`; en otro caso su nombre en el código fuente debe ser igual al
++       nombre del método compilado, como ocurre con un nombre que sobrevivió a la compilación sin
++       cambios. Así es como el resolutor distingue un constructor del primer miembro declarado
++       junto a él, y una lambda del método que la contiene, cuando ambos abarcan la misma línea.
++   entry .display   un nombre de TASTy tal como lo muestra un marco: sin el `$` de módulo, con los nombres derivados desdecorados
++       Se elimina el `$` final de una clase de módulo, `<init>` pasa a ser `ⲛ`, y un nombre que
++       contiene un `$` (una función anónima, un getter de valor por defecto, un fichero de
++       paquete) pasa por `StackTrace.rewrite`, de modo que un marco resuelto se lee con el mismo
++       vocabulario que uno sin resolver.
++   entry #resolve   el marco con su `source` rellenado, o sin cambios si no se encuentra nada
+
+- entry .stackResolutions   the stack-frame resolvers, each a given to import by name
++ entry .stackResolutions   los resolutores de marcos de pila, cada uno un given que se importa por nombre
+
+= entry .stackResolutions   the stack-frame resolvers, each a given to import by name
+-   detail
++   detail
+
+-       Which `StackTrace.Resolver` a captured trace uses is decided by the given in scope: the
+-       default, in digression, does nothing, and `import soundness.*` brings in no other.
+-       Importing one from this package by name makes every `StackTrace` captured in the
+-       enclosing scope — every `error.stackTrace`, and every Soundness error's diagnostics —
+-       carry its frames' source definitions.
++       Qué `StackTrace.Resolver` usa una traza capturada lo decide el given del ámbito: el valor
++       por defecto, en digression, no hace nada, e `import soundness.*` no trae ningún otro.
++       Importar uno de este paquete por nombre hace que cada `StackTrace` capturada en el ámbito
++       contenedor (cada `error.stackTrace`, y los diagnósticos de cada error de Soundness) lleve
++       las definiciones del código fuente de sus marcos.
+
+=       carry its frames' source definitions.
+=
+-       ```scala
++       ```scala
+
+=       carry its frames' source definitions.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import stackResolutions.tastyStackResolution
++       import stackResolutions.tastyStackResolution
+
+=       import stackResolutions.tastyStackResolution
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+-       import workingDirectories.javaBaseWorkingDirectory
++       import workingDirectories.javaBaseWorkingDirectory
+
+=       import workingDirectories.javaBaseWorkingDirectory
+-       ```
++       ```
+
+-       The given is a context function, so it must be imported where its own givens — a
+-       `Classloader` and a `WorkingDirectory` — are also in scope; the umbrella's
+-       `soundness.stackResolutions` re-exports it for that reason.
+-   entry .tastyStackResolution   resolves frames against the TASTy beside the class files, through the classloader in scope
+-       A `(Classloader, WorkingDirectory) => StackTrace.Resolver` which builds a
+-       `StackResolver` over the two givens. Each trace captured in scope reads one TASTy file
+-       per top-level class it names, cached within the resolver; a source path recorded
+-       relative to `-sourceroot` is read from the `WorkingDirectory`, which should therefore
+-       be the directory the code was compiled under.
++       El given es una función contextual, así que debe importarse donde también estén en el
++       ámbito sus propios givens, un `Classloader` y un `WorkingDirectory`; por esa razón el
++       `soundness.stackResolutions` del paraguas lo reexporta.
++   entry .tastyStackResolution   resuelve los marcos contra el TASTy que hay junto a los ficheros de clase, a través del cargador de clases del ámbito
++       Un `(Classloader, WorkingDirectory) => StackTrace.Resolver` que construye un
++       `StackResolver` sobre los dos givens. Cada traza capturada en el ámbito lee un fichero
++       TASTy por cada clase de nivel superior que nombra, guardado en caché dentro del resolutor;
++       una ruta de código fuente registrada de forma relativa a `-sourceroot` se lee del
++       `WorkingDirectory`, que por tanto debería ser el directorio en el que se compiló el código.
+
+- entry .resolved   a stack trace with every frame resolved against TASTy, including its causes
+-     An extension on `StackTrace`, needing a `Classloader` and a `WorkingDirectory`: builds a
+-     `StackResolver` and rebuilds the trace with `StackResolver#resolve` applied to each frame,
+-     recursively through the `cause` chain. For callers which hold a trace already and would
+-     rather ask explicitly than import `stackResolutions.tastyStackResolution` into the scope
+-     which captures it.
++ entry .resolved   una traza de pila con cada marco resuelto contra TASTy, incluidas sus causas
++     Una extensión sobre `StackTrace`, que necesita un `Classloader` y un `WorkingDirectory`:
++     construye un `StackResolver` y reconstruye la traza aplicando `StackResolver#resolve` a cada
++     marco, recursivamente a lo largo de la cadena de `cause`. Para quien ya tiene una traza y
++     prefiere pedirlo explícitamente en lugar de importar `stackResolutions.tastyStackResolution`
++     en el ámbito que la captura.
+
+=     which captures it.
+=
+-     ```scala
++     ```scala
+
+=     which captures it.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     import soundness.*
+-     import classloaders.threadContextClassloader
++     import classloaders.threadContextClassloader
+
+=     import soundness.*
+=     import classloaders.threadContextClassloader
+-     import workingDirectories.javaBaseWorkingDirectory
++     import workingDirectories.javaBaseWorkingDirectory
+
+-     val trace: StackTrace = Exception("boom").stackTrace.resolved
++     val trace: StackTrace = Exception("boom").stackTrace.resolved
+
+=     val trace: StackTrace = Exception("boom").stackTrace.resolved
+-     trace.frames.head.let(_.displayClass)
++     trace.frames.head.let(_.displayClass)
+
+=     trace.frames.head.let(_.displayClass)
+-     ```
++     ```
+
+- entry .internal   the macro implementations behind `Introspect` and the `syntax` and `semantics` extensions
++ entry .internal   las implementaciones de las macros que hay detrás de `Introspect` y de las extensiones `syntax` y `semantics`
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object exists so that the macros have a stable home.
+-   entry .introspection   the macro behind `Introspect.syntax`: builds a `Tasty.Tree` and splices it as a literal
+-   entry .tastyTree   builds a `Tasty.Tree` from an `Expr` at macro-expansion time, optionally inlined
+-   entry .semantics   the macros behind the three forms of `Introspect.semantics`
+-   entry .introspect   a reflection `Symbol` to a spliced `Tasty.Symbol` expression
+-   entry .tastySymbol   builds a `Tasty.Symbol` from a reflection `Symbol` at macro-expansion time
+-   entry .serialize   splices a `Tasty.Symbol` value as an expression
++       No es para uso directo: el objeto existe para que las macros tengan un lugar estable.
++   entry .introspection   la macro que hay detrás de `Introspect.syntax`: construye un `Tasty.Tree` y lo inserta como literal
++   entry .tastyTree   construye un `Tasty.Tree` a partir de un `Expr` en el momento de la expansión de la macro, opcionalmente expandido inline
++   entry .semantics   las macros que hay detrás de las tres formas de `Introspect.semantics`
++   entry .introspect   un `Symbol` de reflexión a una expresión `Tasty.Symbol` insertada
++   entry .tastySymbol   construye un `Tasty.Symbol` a partir de un `Symbol` de reflexión en el momento de la expansión de la macro
++   entry .serialize   inserta un valor `Tasty.Symbol` como expresión

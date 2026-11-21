@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.68.4` — Bad type in `parse`
++ # `↯/s.68.4` — Tipo incorrecto en `parse`
+
+- Raised at compile time by Nomenclature's `parse` macro when the
+- type constraint is not in the expected form.
++ Lo lanza en tiempo de compilación la macro `parse` de Nomenclature cuando la restricción de tipo
++ no tiene la forma esperada.
+
+- ## Cause
++ ## Causa
+
+- The macro expects a specific type-level shape for the constraint
+- parameter. Other shapes cannot be analysed.
++ La macro espera una forma concreta, a nivel de tipos, para el parámetro de la restricción. Las
++ demás formas no se pueden analizar.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.68.4] Bad type
++ [↯/s.68.4] Bad type
+
+= [↯/s.68.4] Bad type
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- The message is intentionally generic. Inspect the type the macro
+- is being applied to and confirm it matches the documented form.
++ El mensaje es genérico a propósito. Inspecciona el tipo al que se aplica la macro y confirma que
++ coincide con la forma documentada.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/nomenclature/src/core/nomenclature.protointernal.scala`
++ - Fuente: `lib/nomenclature/src/core/nomenclature.protointernal.scala`

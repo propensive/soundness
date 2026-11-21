@@ -1,0 +1,47 @@
+orthant 1 language
+
+- # `↯/s.137.3` — `Compiler.Error`
++ # `↯/s.137.3` — `Compiler.Error`
+
+- Raised when Anthology cannot honour a compiler-configuration
+- request.
++ Se lanza cuando Anthology no puede atender una petición de configuración del compilador.
+
+- ## Cause
++ ## Causa
+
+- Anthology programmatically configures and runs the Scala compiler.
+- This error reports a problem with the configuration — for example
+- missing classpath entries, an invalid option, or a target that the
+- embedded compiler does not support.
++ Anthology configura y ejecuta el compilador de Scala mediante programación. Este error informa de
++ un problema con la configuración: por ejemplo, entradas del classpath que faltan, una opción no
++ válida o un destino que el compilador integrado no admite.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.137.3] there was a problem with the compiler configuration
++ [↯/s.137.3] there was a problem with the compiler configuration
+
+= [↯/s.137.3] there was a problem with the compiler configuration
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Inspect the cause chain for the underlying compiler error. More
+- specific variants may be added as the module evolves.
++ Inspecciona la cadena de causas en busca del error subyacente del compilador. Podrían añadirse
++ variantes más específicas a medida que evolucione el módulo.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/anthology/src/core/anthology.Compiler.scala`
++ - Fuente: `lib/anthology/src/core/anthology.Compiler.scala`

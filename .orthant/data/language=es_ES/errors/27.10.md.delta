@@ -1,0 +1,36 @@
+orthant 1 language
+
+- # `↯/s.27.10` — `Decimal.Error`
++ # `↯/s.27.10` — `Decimal.Error`
+
+- Raised when a value cannot be represented as an arbitrary-precision decimal.
++ Se lanza cuando un valor no se puede representar como un decimal de precisión arbitraria.
+
+- ## Cause
++ ## Causa
+
+- A `Decimal` is constructed from text, from an integer, or from a `Double`. From text, this
+- error means the text is not a decimal number; from a `Double`, that the double has no exact
+- decimal representation.
++ Un `Decimal` se construye a partir de un texto, de un entero o de un `Double`. A partir de un
++ texto, este error significa que el texto no es un número decimal; a partir de un `Double`, que el
++ double no tiene una representación decimal exacta.
+
+- ## Resolution
++ ## Solución
+
+- For text, check the syntax — an optional sign, digits, an optional point and an optional
+- exponent. For a `Double`, the failure is telling you the binary value is not exactly the
+- decimal you intended; construct from text, or from an unscaled integer and a scale.
++ Para un texto, comprueba la sintaxis: un signo opcional, dígitos, un punto opcional y un exponente
++ opcional. Para un `Double`, el fallo te está diciendo que el valor binario no es exactamente el
++ decimal que pretendías; constrúyelo a partir de un texto, o de un entero sin escala y una escala.
+
+- > This error previously used the code `↯/s.62.2`, which collided with `EnvironmentError`.
++ > Este error usaba antes el código `↯/s.62.2`, que colisionaba con `EnvironmentError`.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/hypotenuse/src/core/hypotenuse.Decimal.scala`
++ - Fuente: `lib/hypotenuse/src/core/hypotenuse.Decimal.scala`

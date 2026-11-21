@@ -1,0 +1,591 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base corpuscular
++ base corpuscular
+
+- import soundness
++ import soundness
+
+- info   the CRC-32, CRC-64 and Adler-32 checksums, and the incremental `Digestion` every hash is fed through
++ info   las sumas de verificación CRC-32, CRC-64 y Adler-32, y la `Digestion` incremental por la que pasa todo hash
+
+- detail
++ detail
+
+-     _Corpuscular_ holds the three non-cryptographic checksums the compression and container
+-     formats need — `Crc32` (gzip, PNG, ZIP, XZ), `Crc64` (the ECMA-182 form XZ uses) and
+-     `Adler32` (zlib) — and the `Digestion` interface through which every hash in Soundness,
+-     cryptographic or not, is computed incrementally.
++     _Corpuscular_ contiene las tres sumas de verificación no criptográficas que necesitan los
++     formatos de compresión y de contenedor —`Crc32` (gzip, PNG, ZIP, XZ), `Crc64` (la forma
++     ECMA-182 que usa XZ) y `Adler32` (zlib)— y la interfaz `Digestion` mediante la que se calcula
++     de forma incremental todo hash de Soundness, criptográfico o no.
+
+-     Each checksum is named twice. As a **type**, `Crc32` is an `Algorithm`, a marker which
+-     names the checksum in a type position, so a value is checksummed with the same
+-     `digest[Crc32]` as it is hashed with `digest[Sha2[256]]`, through gastronomy. As an
+-     **object**, `Crc32` makes a running `Crc32.Accumulator`, a mutable `Digestion` for code
+-     which feeds bytes as they stream past and reads the checksum as the integer a container
+-     format writes into its trailer.
++     Cada suma de verificación tiene dos nombres. Como **tipo**, `Crc32` es un `Algorithm`, un
++     marcador que nombra la suma de verificación en una posición de tipo, así que un valor se
++     somete a la suma de verificación con el mismo `digest[Crc32]` con el que se le calcula el hash
++     con `digest[Sha2[256]]`, a través de gastronomy. Como **objeto**, `Crc32` crea un
++     `Crc32.Accumulator` en curso, una `Digestion` mutable para el código que va aportando bytes a
++     medida que pasan en flujo y lee la suma de verificación como el entero que un formato de
++     contenedor escribe en su tráiler.
+
+-     ```scala
++     ```scala
+
+-     import soundness.*
++     import soundness.*
+
+-     import alphabets.hexLowerCase
++     import alphabets.hexLowerCase
+
+-     import cryptoPermits.permitNonCryptographicHashes
++     import cryptoPermits.permitNonCryptographicHashes
+
+-     import providers.javaBaseProvider
++     import providers.javaBaseProvider
+
+-     t"123456789".digest[Crc32].serialize[Hex]   // t"cbf43926"
++     t"123456789".digest[Crc32].serialize[Hex]   // t"cbf43926"
+
+-     val crc = Crc32()
++     val crc = Crc32()
+
+-     crc.append(t"1234".in[Data])
++     crc.append(t"1234".in[Data])
+
+-     crc.append(t"56789".in[Data])
++     crc.append(t"56789".in[Data])
+
+-     crc.value                                   // 0xcbf43926L
++     crc.value                                   // 0xcbf43926L
+
+=     crc.value                                   // 0xcbf43926L
+-     ```
++     ```
+
+-     A checksum detects accidental corruption and defends against nothing, so `digest` with
+-     one is gated behind gastronomy's permit `cryptoPermits.permitNonCryptographicHashes`,
+-     which concedes that no adversary is in the threat model. The JDK's provider,
+-     `providers.javaBaseProvider`, offers CRC-32 and Adler-32; CRC-64 has no JDK
+-     implementation, and is offered only by `providers.soundnessProvider`, which uses this
+-     library's implementations of all three. The same input gives the published check value
+-     under each:
++     Una suma de verificación detecta la corrupción accidental y no defiende de nada, así que
++     `digest` con una de ellas está protegido por la compuerta del permiso de gastronomy
++     `cryptoPermits.permitNonCryptographicHashes`, que admite que no hay ningún adversario en el
++     modelo de amenazas. El proveedor del JDK, `providers.javaBaseProvider`, ofrece CRC-32 y
++     Adler-32; CRC-64 no tiene implementación en el JDK, y solo lo ofrece
++     `providers.soundnessProvider`, que usa las implementaciones de esta biblioteca para las tres.
++     La misma entrada da el valor de comprobación publicado con cada una:
+
+-     ```scala fuel
++     ```scala fuel
+
+-     alternative CRC-32
++     alternative CRC-32
+
+=     alternative CRC-32
+-       code
++       code
+
+=     alternative CRC-32
+=       code
+-           locally:
++           locally:
+
+=     alternative CRC-32
+=       code
+=           locally:
+-             import providers.soundnessProvider
++             import providers.soundnessProvider
+
+-             t"123456789".digest[Crc32].serialize[Hex]     // t"cbf43926"
++             t"123456789".digest[Crc32].serialize[Hex]     // t"cbf43926"
+
+-     alternative Adler-32
++     alternative Adler-32
+
+=     alternative Adler-32
+-       code
++       code
+
+=     alternative Adler-32
+=       code
+-           locally:
++           locally:
+
+=     alternative Adler-32
+=       code
+=           locally:
+-             import providers.soundnessProvider
++             import providers.soundnessProvider
+
+-             t"123456789".digest[Adler32].serialize[Hex]   // t"091e01de"
++             t"123456789".digest[Adler32].serialize[Hex]   // t"091e01de"
+
+-     alternative CRC-64
++     alternative CRC-64
+
+=     alternative CRC-64
+-       code
++       code
+
+=     alternative CRC-64
+=       code
+-           locally:
++           locally:
+
+=     alternative CRC-64
+=       code
+=           locally:
+-             import providers.soundnessProvider
++             import providers.soundnessProvider
+
+-             t"123456789".digest[Crc64].serialize[Hex]     // t"995dc9bbdf1939fa"
++             t"123456789".digest[Crc64].serialize[Hex]     // t"995dc9bbdf1939fa"
+
+-     ##
++     ##
+
+=     ##
+-     ```
++     ```
+
+-     The library has one source set, `corpuscular.core`, written in portable Scala, so the
+-     checksums compute the same values on the JVM, Scala.js, Scala Native and WebAssembly.
+-     `Adler32`, `Algorithm`, `Crc32`, `Crc64` and `Digestion` are exported to the `soundness`
+-     umbrella.
++     La biblioteca tiene un solo conjunto de fuentes, `corpuscular.core`, escrito en Scala
++     portable, así que las sumas de verificación calculan los mismos valores en la JVM, Scala.js,
++     Scala Native y WebAssembly. `Adler32`, `Algorithm`, `Crc32`, `Crc64` y `Digestion` se
++     exportan al paraguas `soundness`.
+
+- refer corpuscular.Crc32
++ refer corpuscular.Crc32
+
+- refer corpuscular.Crc64
++ refer corpuscular.Crc64
+
+- refer corpuscular.Adler32
++ refer corpuscular.Adler32
+
+- refer corpuscular.Digestion
++ refer corpuscular.Digestion
+
+- refer gastronomy.Digest
++ refer gastronomy.Digest
+
+- entry .Algorithm   the marker type of a hash or checksum algorithm, named in a type position as `digest[Crc32]`
+-     A trait with no members. Every algorithm Soundness can digest with is a type extending it:
+-     the checksums `Crc32`, `Crc64` and `Adler32` here, and gastronomy's `Sha2[256]`, `Sha1`,
+-     `Md5`, `Blake3` and `Murmur3`. Algorithms are never instantiated; a `Digest in Crc32`
+-     carries its algorithm in its type, so digests from different algorithms are never
+-     confused.
++ entry .Algorithm   el tipo marcador de un algoritmo de hash o de suma de verificación, nombrado en una posición de tipo como `digest[Crc32]`
++     Un trait sin miembros. Cada algoritmo con el que Soundness puede calcular un resumen es un
++     tipo que lo extiende: aquí, las sumas de verificación `Crc32`, `Crc64` y `Adler32`, y los
++     `Sha2[256]`, `Sha1`, `Md5`, `Blake3` y `Murmur3` de gastronomy. Los algoritmos nunca se
++     instancian; un `Digest in Crc32` lleva su algoritmo en su tipo, así que los resúmenes de
++     algoritmos distintos nunca se confunden.
+
+- entry .Digestion   an incremental hash or checksum computation: append bytes, then read the digest
++ entry .Digestion   un cálculo incremental de hash o de suma de verificación: se añaden bytes y luego se lee el resumen
+
+= entry .Digestion   an incremental hash or checksum computation: append bytes, then read the digest
+-   detail
++   detail
+
+-       A `Digestion` is the mutable state of one hash in progress. It is honestly mutable — a
+-       `caps.Mutable`, whose `append` and `digest` are `update` methods — so a fresh one is an
+-       exclusive `Digestion^`, and each computation needs its own. The checksums' accumulators
+-       (`Crc32.Accumulator`, `Crc64.Accumulator`, `Adler32.Accumulator`) implement it directly,
+-       and gastronomy's `Hashing` providers supply one for each cryptographic hash.
++       Una `Digestion` es el estado mutable de un hash en curso. Es honestamente mutable —un
++       `caps.Mutable`, cuyos `append` y `digest` son métodos `update`—, así que una nueva es una
++       `Digestion^` exclusiva, y cada cálculo necesita la suya. Los acumuladores de las sumas de
++       verificación (`Crc32.Accumulator`, `Crc64.Accumulator`, `Adler32.Accumulator`) la
++       implementan directamente, y los proveedores `Hashing` de gastronomy proporcionan una para
++       cada hash criptográfico.
+
+=       and gastronomy's `Hashing` providers supply one for each cryptographic hash.
+=
+-       ```scala
++       ```scala
+
+=       and gastronomy's `Hashing` providers supply one for each cryptographic hash.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val digestion: Digestion^ = Crc32()
++       val digestion: Digestion^ = Crc32()
+
+-       digestion.append(t"1234".in[Data])
++       digestion.append(t"1234".in[Data])
+
+-       digestion.append(t"56789".in[Data])
++       digestion.append(t"56789".in[Data])
+
+-       digestion.digest()   // the four big-endian bytes cb f4 39 26
++       digestion.digest()   // the four big-endian bytes cb f4 39 26
+
+=       digestion.digest()   // the four big-endian bytes cb f4 39 26
+-       ```
++       ```
+
+-       A streaming consumer which reads into a reusable window feeds it with the windowed
+-       `#append` rather than snapshotting it: hashing consumes its input synchronously and never
+-       retains it.
++       Un consumidor de flujos que lee en una ventana reutilizable la aporta con el `#append` de
++       ventana en lugar de tomar una instantánea: el cálculo de hash consume su entrada de forma
++       síncrona y nunca la retiene.
+
+-   refer corpuscular.Algorithm
++   refer corpuscular.Algorithm
+
+-   entry #append   feeds bytes to the computation: all of a `Data`, or a window of a mutable array
+-       `append(bytes)` hashes the whole of an immutable `Data`. `append(array, start, count)`
+-       hashes `count` bytes of a mutable array from `start`, which needs only read access to
+-       it; the default implementation copies the window, and the checksums' accumulators
+-       override it to read the array in place, with no allocation.
+-   entry #digest   the result so far, as bytes
+-       For the checksums, the checksum's value as big-endian bytes: four for `Crc32` and
+-       `Adler32`, eight for `Crc64`. Whether further appends may follow depends on the
+-       implementation; the checksums' accumulators allow it, and the result then covers every
+-       byte appended.
++   entry #append   aporta bytes al cálculo: todo un `Data`, o una ventana de un array mutable
++       `append(bytes)` calcula el hash de todo un `Data` inmutable. `append(array, start, count)`
++       calcula el hash de `count` bytes de un array mutable a partir de `start`, para lo que solo
++       necesita acceso de lectura a él; la implementación por defecto copia la ventana, y los
++       acumuladores de las sumas de verificación la sobrescriben para leer el array en el sitio,
++       sin asignar memoria.
++   entry #digest   el resultado hasta el momento, como bytes
++       Para las sumas de verificación, el valor de la suma como bytes big-endian: cuatro para
++       `Crc32` y `Adler32`, ocho para `Crc64`. Que puedan seguir más adiciones depende de la
++       implementación; los acumuladores de las sumas de verificación lo permiten, y el resultado
++       cubre entonces todos los bytes añadidos.
+
+- entry .Crc32   the standard CRC-32 checksum, as used by gzip, PNG, ZIP and XZ
++ entry .Crc32   la suma de verificación CRC-32 estándar, la que usan gzip, PNG, ZIP y XZ
+
+= entry .Crc32   the standard CRC-32 checksum, as used by gzip, PNG, ZIP and XZ
+-   detail
++   detail
+
+-       The reflected CRC-32 with polynomial `0xedb88320`, whose check value for `123456789` is
+-       `0xcbf43926`. As a type it is an `Algorithm`, so `digest[Crc32]` checksums any digestible
+-       value through gastronomy (behind `cryptoPermits.permitNonCryptographicHashes`). As an
+-       object it offers the one-shot `.checksum` over several segments and the running
+-       `.Accumulator`.
++       El CRC-32 reflejado con el polinomio `0xedb88320`, cuyo valor de comprobación para
++       `123456789` es `0xcbf43926`. Como tipo es un `Algorithm`, así que `digest[Crc32]` calcula
++       la suma de verificación de cualquier valor del que se pueda obtener un resumen a través de
++       gastronomy (tras `cryptoPermits.permitNonCryptographicHashes`). Como objeto ofrece el
++       `.checksum` de un solo uso sobre varios segmentos y el `.Accumulator` en curso.
+
+=       object it offers the one-shot `.checksum` over several segments and the running
+=       `.Accumulator`.
+=
+-       ```scala
++       ```scala
+
+=       object it offers the one-shot `.checksum` over several segments and the running
+=       `.Accumulator`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Crc32.checksum(t"1234".in[Data], t"56789".in[Data])   // 0xcbf43926, as an Int
++       Crc32.checksum(t"1234".in[Data], t"56789".in[Data])   // 0xcbf43926, as an Int
+
+-       val crc = Crc32()
++       val crc = Crc32()
+
+=       val crc = Crc32()
+-       crc.append(t"123456789".in[Data])
++       crc.append(t"123456789".in[Data])
+
+-       crc.value                                             // 0xcbf43926L
++       crc.value                                             // 0xcbf43926L
+
+=       crc.value                                             // 0xcbf43926L
+-       ```
++       ```
+
+-       `.checksum` returns the CRC as a signed `Int`, the bits the formats write;
+-       `Accumulator#value` returns it as an unsigned `Long`.
++       `.checksum` devuelve el CRC como un `Int` con signo, los bits que escriben los formatos;
++       `Accumulator#value` lo devuelve como un `Long` sin signo.
+
+-   refer corpuscular.Crc64
++   refer corpuscular.Crc64
+
+-   refer corpuscular.Adler32
++   refer corpuscular.Adler32
+
+-   entry .table   the 256-entry lookup table of the bytewise CRC-32 algorithm
+-       A frozen `Array[Int]`, computed once, indexed by the low byte of the running CRC xor the
+-       next input byte.
+-   entry .checksum   the CRC-32 of a sequence of byte segments, taken as one stream, as an `Int`
+-       As PNG chunks and ZIP entries need: `Crc32.checksum(a, b)` equals the checksum of `a`
+-       followed by `b`. With no segments, or an empty one, the result is 0.
+-   entry .apply   a fresh running CRC-32, a `Crc32.Accumulator`
+-       Returns an exclusive `Accumulator^`; each checksum needs its own.
+-   entry .Accumulator   the running state of a CRC-32, fed incrementally, as a `Digestion`
++   entry .table   la tabla de búsqueda de 256 entradas del algoritmo CRC-32 byte a byte
++       Un `Array[Int]` congelado, calculado una vez, indexado por el byte bajo del CRC en curso
++       combinado mediante xor con el siguiente byte de entrada.
++   entry .checksum   el CRC-32 de una secuencia de segmentos de bytes, tomados como un solo flujo, como `Int`
++       Como necesitan los fragmentos PNG y las entradas ZIP: `Crc32.checksum(a, b)` es igual a la
++       suma de verificación de `a` seguido de `b`. Sin segmentos, o con uno vacío, el resultado es
++       0.
++   entry .apply   un CRC-32 en curso nuevo, un `Crc32.Accumulator`
++       Devuelve un `Accumulator^` exclusivo; cada suma de verificación necesita el suyo.
++   entry .Accumulator   el estado en curso de un CRC-32, alimentado de forma incremental, como una `Digestion`
+
+=   entry .Accumulator   the running state of a CRC-32, fed incrementally, as a `Digestion`
+-     detail
++     detail
+
+-         A mutable `Digestion` whose `append`s, of a whole `Data` or of a window of a mutable
+-         array, both run the native loop over the array in place, with no copy. `#update` is the
+-         same loop over a raw `scala.Array[Byte]`, for code which already holds one. `#value`
+-         reads the CRC as an unsigned number and `#digest` as four big-endian bytes; either may
+-         be read at any point, and appending may continue afterwards.
++         Una `Digestion` mutable cuyos `append`, de todo un `Data` o de una ventana de un array
++         mutable, ejecutan ambos el bucle nativo sobre el array en el sitio, sin copia. `#update`
++         es el mismo bucle sobre un `scala.Array[Byte]` en bruto, para el código que ya tiene uno.
++         `#value` lee el CRC como un número sin signo y `#digest` como cuatro bytes big-endian;
++         cualquiera de los dos puede leerse en cualquier momento, y después se puede seguir
++         añadiendo.
+
+-         ```scala
++         ```scala
+
+-         import soundness.*
++         import soundness.*
+
+-         val crc = Crc32()
++         val crc = Crc32()
+
+-         crc.append(t"1234".in[Data])
++         crc.append(t"1234".in[Data])
+
+-         crc.append(t"56789".in[Data])
++         crc.append(t"56789".in[Data])
+
+-         crc.value   // 0xcbf43926L
++         crc.value   // 0xcbf43926L
+
+-         crc.reset()
++         crc.reset()
+
+-         crc.value   // 0L
++         crc.value   // 0L
+
+-         ```
++         ```
+
+-     entry #update   feeds `length` bytes of a raw `scala.Array[Byte]` from `index`
+-         The primitive loop the `append` methods delegate to; it reads the array in place.
+-     entry #reset    returns the accumulator to its initial state, the CRC of no bytes
+-     entry #value    the CRC-32 so far, as an unsigned `Long` from 0 to 0xffffffff
+-     entry #digest   the CRC-32 so far, as four big-endian bytes
+-   entry #Bits   the width of the checksum: `32`
++     entry #update   aporta `length` bytes de un `scala.Array[Byte]` en bruto a partir de `index`
++         El bucle primitivo en el que delegan los métodos `append`; lee el array en el sitio.
++     entry #reset    devuelve el acumulador a su estado inicial, el CRC de cero bytes
++     entry #value    el CRC-32 hasta el momento, como un `Long` sin signo de 0 a 0xffffffff
++     entry #digest   el CRC-32 hasta el momento, como cuatro bytes big-endian
++   entry #Bits   la anchura de la suma de verificación: `32`
+
+- entry .Crc64   the CRC-64 checksum in the ECMA-182 form XZ uses
++ entry .Crc64   la suma de verificación CRC-64 en la forma ECMA-182 que usa XZ
+
+= entry .Crc64   the CRC-64 checksum in the ECMA-182 form XZ uses
+-   detail
++   detail
+
+-       The reflected CRC-64 with polynomial `0xc96c5795d7870f42`, whose check value for
+-       `123456789` is `0x995dc9bbdf1939fa`. As a type it is an `Algorithm`, so
+-       `digest[Crc64]` checksums any digestible value — but only under
+-       `providers.soundnessProvider`, since the JDK has no CRC-64 and
+-       `providers.javaBaseProvider` does not offer one. As an object it makes the running
+-       `.Accumulator`.
++       El CRC-64 reflejado con el polinomio `0xc96c5795d7870f42`, cuyo valor de comprobación para
++       `123456789` es `0x995dc9bbdf1939fa`. Como tipo es un `Algorithm`, así que
++       `digest[Crc64]` calcula la suma de verificación de cualquier valor del que se pueda obtener
++       un resumen, pero solo con `providers.soundnessProvider`, ya que el JDK no tiene CRC-64 y
++       `providers.javaBaseProvider` no ofrece ninguno. Como objeto crea el `.Accumulator` en
++       curso.
+
+=       `providers.javaBaseProvider` does not offer one. As an object it makes the running
+=       `.Accumulator`.
+=
+-       ```scala
++       ```scala
+
+=       `providers.javaBaseProvider` does not offer one. As an object it makes the running
+=       `.Accumulator`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val crc = Crc64()
++       val crc = Crc64()
+
+=       val crc = Crc64()
+-       crc.append(t"123456789".in[Data])
++       crc.append(t"123456789".in[Data])
+
+-       crc.value   // 0x995dc9bbdf1939faL
++       crc.value   // 0x995dc9bbdf1939faL
+
+=       crc.value   // 0x995dc9bbdf1939faL
+-       ```
++       ```
+
+-       The accumulator uses slicing-by-eight, consuming eight bytes per step through eight
+-       independent table lookups, which is three to four times faster than the bytewise loop
+-       and as fast as xz-java's implementation.
++       El acumulador usa slicing-by-eight, que consume ocho bytes por paso mediante ocho
++       búsquedas en tablas independientes, lo que es de tres a cuatro veces más rápido que el
++       bucle byte a byte y tan rápido como la implementación de xz-java.
+
+=       and as fast as xz-java's implementation.
+-   refer corpuscular.Crc32
++   refer corpuscular.Crc32
+
+-   entry .table   the eight 256-entry slicing tables of CRC-64, flattened into one array
+-       A frozen `Array[Long]` of 2048 entries: `table(n)` for `n` under 256 is the classic
+-       bytewise table, and `table(k*256 + n)` folds a byte `k` positions further into an
+-       eight-byte word.
+-   entry .apply   a fresh running CRC-64, a `Crc64.Accumulator`
+-       Returns an exclusive `Accumulator^`; each checksum needs its own.
+-   entry .Accumulator   the running state of a CRC-64, fed incrementally, as a `Digestion`
++   entry .table   las ocho tablas de slicing de 256 entradas de CRC-64, aplanadas en un solo array
++       Un `Array[Long]` congelado de 2048 entradas: `table(n)` para `n` menor que 256 es la tabla
++       clásica byte a byte, y `table(k*256 + n)` pliega un byte situado `k` posiciones más
++       adentro en una palabra de ocho bytes.
++   entry .apply   un CRC-64 en curso nuevo, un `Crc64.Accumulator`
++       Devuelve un `Accumulator^` exclusivo; cada suma de verificación necesita el suyo.
++   entry .Accumulator   el estado en curso de un CRC-64, alimentado de forma incremental, como una `Digestion`
+
+=   entry .Accumulator   the running state of a CRC-64, fed incrementally, as a `Digestion`
+-     detail
++     detail
+
+-         A mutable `Digestion` whose `append`s read their input in place, eight bytes at a
+-         time with a bytewise tail, so a segmented input gives the same checksum as the whole
+-         at every alignment. `#value` reads the CRC as a `Long` and `#digest` as eight
+-         big-endian bytes; either may be read at any point, and appending may continue.
+-     entry #update   feeds `length` bytes of a raw `scala.Array[Byte]` from `index`
+-         The primitive loop the `append` methods delegate to; it reads the array in place.
+-     entry #reset    returns the accumulator to its initial state, the CRC of no bytes
+-     entry #value    the CRC-64 so far, as a `Long`: 0 for no bytes
+-     entry #digest   the CRC-64 so far, as eight big-endian bytes
+-   entry #Bits   the width of the checksum: `64`
++         Una `Digestion` mutable cuyos `append` leen su entrada en el sitio, ocho bytes cada vez
++         con una cola byte a byte, así que una entrada segmentada da la misma suma de
++         verificación que la entrada entera con cualquier alineación. `#value` lee el CRC como un
++         `Long` y `#digest` como ocho bytes big-endian; cualquiera de los dos puede leerse en
++         cualquier momento, y se puede seguir añadiendo.
++     entry #update   aporta `length` bytes de un `scala.Array[Byte]` en bruto a partir de `index`
++         El bucle primitivo en el que delegan los métodos `append`; lee el array en el sitio.
++     entry #reset    devuelve el acumulador a su estado inicial, el CRC de cero bytes
++     entry #value    el CRC-64 hasta el momento, como un `Long`: 0 para cero bytes
++     entry #digest   el CRC-64 hasta el momento, como ocho bytes big-endian
++   entry #Bits   la anchura de la suma de verificación: `64`
+
+- entry .Adler32   the Adler-32 checksum, as used by the zlib wrapper
++ entry .Adler32   la suma de verificación Adler-32, la que usa el envoltorio zlib
+
+= entry .Adler32   the Adler-32 checksum, as used by the zlib wrapper
+-   detail
++   detail
+
+-       Adler-32: two running sums modulo 65521, the largest prime below 65536, combined as
+-       `s2 << 16 | s1`. Its check value for `123456789` is `0x091e01de`, and the checksum of no
+-       bytes is 1. As a type it is an `Algorithm`, so `digest[Adler32]` checksums any
+-       digestible value through gastronomy (behind
+-       `cryptoPermits.permitNonCryptographicHashes`). As an object it makes the running
+-       `.Accumulator`.
++       Adler-32: dos sumas en curso módulo 65521, el mayor primo por debajo de 65536,
++       combinadas como `s2 << 16 | s1`. Su valor de comprobación para `123456789` es
++       `0x091e01de`, y la suma de verificación de cero bytes es 1. Como tipo es un `Algorithm`,
++       así que `digest[Adler32]` calcula la suma de verificación de cualquier valor del que se
++       pueda obtener un resumen a través de gastronomy (tras
++       `cryptoPermits.permitNonCryptographicHashes`). Como objeto crea el `.Accumulator` en
++       curso.
+
+=       `cryptoPermits.permitNonCryptographicHashes`). As an object it makes the running
+=       `.Accumulator`.
+=
+-       ```scala
++       ```scala
+
+=       `cryptoPermits.permitNonCryptographicHashes`). As an object it makes the running
+=       `.Accumulator`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val adler = Adler32()
++       val adler = Adler32()
+
+-       adler.append(t"123456789".in[Data])
++       adler.append(t"123456789".in[Data])
+
+-       adler.value   // 0x091e01deL
++       adler.value   // 0x091e01deL
+
+=       adler.value   // 0x091e01deL
+-       ```
++       ```
+
+=       ```
+-   refer corpuscular.Crc32
++   refer corpuscular.Crc32
+
+-   entry .apply   a fresh running Adler-32, an `Adler32.Accumulator`
+-       Returns an exclusive `Accumulator^`; each checksum needs its own.
+-   entry .Accumulator   the running state of an Adler-32, fed incrementally, as a `Digestion`
++   entry .apply   un Adler-32 en curso nuevo, un `Adler32.Accumulator`
++       Devuelve un `Accumulator^` exclusivo; cada suma de verificación necesita el suyo.
++   entry .Accumulator   el estado en curso de un Adler-32, alimentado de forma incremental, como una `Digestion`
+
+=   entry .Accumulator   the running state of an Adler-32, fed incrementally, as a `Digestion`
+-     detail
++     detail
+
+-         A mutable `Digestion` whose `append`s read their input in place. `#value` reads the
+-         checksum as a `Long` and `#digest` as four big-endian bytes; either may be read at any
+-         point, and appending may continue.
+-     entry #update   feeds `length` bytes of a raw `scala.Array[Byte]` from `index`
+-         The primitive loop the `append` methods delegate to; it reads the array in place.
+-     entry #reset    returns the accumulator to its initial state, whose value is 1
+-     entry #value    the Adler-32 so far, as a `Long`: 1 for no bytes
+-     entry #digest   the Adler-32 so far, as four big-endian bytes
+-   entry #Bits   the width of the checksum: `32`
++         Una `Digestion` mutable cuyos `append` leen su entrada en el sitio. `#value` lee la suma
++         de verificación como un `Long` y `#digest` como cuatro bytes big-endian; cualquiera de
++         los dos puede leerse en cualquier momento, y se puede seguir añadiendo.
++     entry #update   aporta `length` bytes de un `scala.Array[Byte]` en bruto a partir de `index`
++         El bucle primitivo en el que delegan los métodos `append`; lee el array en el sitio.
++     entry #reset    devuelve el acumulador a su estado inicial, cuyo valor es 1
++     entry #value    el Adler-32 hasta el momento, como un `Long`: 1 para cero bytes
++     entry #digest   el Adler-32 hasta el momento, como cuatro bytes big-endian
++   entry #Bits   la anchura de la suma de verificación: `32`

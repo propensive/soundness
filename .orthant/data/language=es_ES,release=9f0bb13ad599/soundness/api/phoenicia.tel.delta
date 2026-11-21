@@ -1,0 +1,424 @@
+orthant 1 language
+
+-     The upper layer is the **typographic request**. A `Typeface` is a family by its name, which
+-     is also its type (`Typeface["Inter"]` is a `Typeface of "Inter"`); a `Face` says how it is
+-     to be set — a `Weight`, a `Slant`, a `Stretch`, positions on any further `Variation` axes,
+-     and the `Face.Feature`s to enable or disable — and nothing about where the font comes from.
+-     A `Typesettable` provision says how a `Medium` (the web, print, or any a renderer defines)
+-     obtains the typeface and which faces it can then set, as a `Font.Coverage`. A `Font` pairs a
+-     face with the provision in scope for its typeface in a medium, and is the only form in
+-     which a renderer accepts a font, so a document cannot name a typeface it does not carry,
+-     nor ask a provision for a face it cannot set.
++     La capa superior es la **petición tipográfica**. Un `Typeface` es una familia por su nombre,
++     que es también su tipo (`Typeface["Inter"]` es un `Typeface of "Inter"`); un `Face` dice cómo
++     se ha de componer — un `Weight`, un `Slant`, un `Stretch`, posiciones en cualquier otro eje
++     `Variation`, y los `Face.Feature` que se activan o desactivan — y nada sobre de dónde
++     procede la fuente. Una provisión `Typesettable` dice cómo un `Medium` (la web, la imprenta o
++     cualquiera que defina un representador) obtiene el tipo de letra y qué estilos tipográficos
++     puede componer entonces, como un `Font.Coverage`. Un `Font` empareja un estilo tipográfico con la
++     provisión que está en el ámbito para su tipo de letra en un medio, y es la única forma en
++     que un representador acepta una fuente, de modo que un documento no puede nombrar un tipo de
++     letra que no lleva, ni pedir a una provisión un estilo tipográfico que no puede componer.
+
+-     Everything is exported to the `soundness` umbrella: `Face`, `Font` (with `Font.Coverage`),
+-     `Glyph`, `Medium`, `Opentype`, `Sfnt`, `Slant`, `Stretch`, `Truetype`, `Typeface`,
+-     `Typesettable`, `Variation` and `Weight`.
++     Todo se exporta al paraguas `soundness`: `Face`, `Font` (con `Font.Coverage`), `Glyph`,
++     `Medium`, `Opentype`, `Sfnt`, `Slant`, `Stretch`, `Truetype`, `Typeface`, `Typesettable`,
++     `Variation` y `Weight`.
+
+- refer phoenicia.Font.Coverage
++ refer phoenicia.Font.Coverage
+
+-   entry #leftSideBearing   a character's left side bearing in the font's design units
+-       The bearing of the character's glyph from `hmtx`, which continues in its own array for
+-       glyphs beyond the metric count. Raises `Font.Error` if a needed table is missing.
+-   entry #head   the `head` table: units per em, bounding box, creation dates and the `loca` format
+-       Unpacked as a `HeadTable`; raises `Font.Error` with `MissingTable` if absent and with
+-       `MagicNumber` if the table's check constant is not the format's `0x5f0f3cf5`.
+-   entry #cmap   the `cmap` table: the character-to-glyph mappings
+-       As a `CmapTable`, whose `best` subtable is chosen by Unicode preference and whose `glyph`
+-       resolves a character. Raises `Font.Error` with `MissingTable` if absent.
+-   entry #hhea   the `hhea` table: ascender, descender, line gap and the metric count
+-       Unpacked as an `HheaTable`; raises `Font.Error` with `MissingTable` if absent.
+-   entry #hmtx   the `hmtx` table: advance widths and left side bearings by glyph
+-       As an `HmtxTable` sized by `hhea.numberOfHMetrics`; raises `Font.Error` if either table
+-       is absent.
+-   entry #maxp   the `maxp` table: the glyph count
+-       As a `MaxpTable`; raises `Font.Error` with `MissingTable` if absent.
+-   entry #post   the `post` table: italic angle, underline metrics and whether the font is monospaced
+-       As a `PostTable`; raises `Font.Error` with `MissingTable` if absent.
+-   entry #os2   the `OS/2` table: weight and width classes, typographic metrics, embedding rights
+-       As an `Os2Table`; raises `Font.Error` with `MissingTable` if absent.
+-   entry #name   the `name` table: the font's localised names, by `Sfnt.NameId`
+-       As a `NameTable`; raises `Font.Error` with `MissingTable` if absent.
+-   entry #fontName   the font's PostScript name, or `Unset`
+-       `name(Sfnt.NameId.PostScriptName)`, with any `Font.Error` absorbed: the name by which
+-       PDF and PostScript documents reference a font. `Unset` for a font which does not record
+-       one or has no `name` table.
+-   entry #familyName   the font's family name, or `Unset`
+-       `name(Sfnt.NameId.Family)`, with any `Font.Error` absorbed.
+-   entry #fvar   a variable font's `fvar` table, or `Unset` for a static font
+-       The axes along which a variable font's outlines move, each with its range. `Font.Coverage.of`
+-       reads the weight and width ranges from here when the table is present.
+-   entry #features   the layout features the font implements, by tag, from `GSUB` and `GPOS`
+-       The feature lists of the two layout tables, as `Face.Feature`s, deduplicated. A font with
+-       neither table implements none. These are what `Font.Coverage.of` records, so a face which
+-       enables a feature the font lacks is refused.
++   entry #leftSideBearing   el espaciado lateral izquierdo de un carácter en las unidades de diseño de la fuente
++       El espaciado del glifo del carácter según `hmtx`, que continúa en su propio array para los
++       glifos más allá del recuento de métricas. Lanza `Font.Error` si falta una tabla necesaria.
++   entry #head   la tabla `head`: unidades por em, caja delimitadora, fechas de creación y el formato de `loca`
++       Desempaquetada como una `HeadTable`; lanza `Font.Error` con `MissingTable` si no está y
++       con `MagicNumber` si la constante de comprobación de la tabla no es la `0x5f0f3cf5` del
++       formato.
++   entry #cmap   la tabla `cmap`: las asignaciones de caracteres a glifos
++       Como una `CmapTable`, cuya subtabla `best` se elige por preferencia de Unicode y cuyo
++       `glyph` resuelve un carácter. Lanza `Font.Error` con `MissingTable` si no está.
++   entry #hhea   la tabla `hhea`: ascendente, descendente, interlineado y el recuento de métricas
++       Desempaquetada como una `HheaTable`; lanza `Font.Error` con `MissingTable` si no está.
++   entry #hmtx   la tabla `hmtx`: anchuras de avance y espaciados laterales izquierdos por glifo
++       Como una `HmtxTable` dimensionada por `hhea.numberOfHMetrics`; lanza `Font.Error` si falta
++       alguna de las dos tablas.
++   entry #maxp   la tabla `maxp`: el recuento de glifos
++       Como una `MaxpTable`; lanza `Font.Error` con `MissingTable` si no está.
++   entry #post   la tabla `post`: ángulo de cursiva, métricas de subrayado y si la fuente es monoespaciada
++       Como una `PostTable`; lanza `Font.Error` con `MissingTable` si no está.
++   entry #os2   la tabla `OS/2`: clases de peso y anchura, métricas tipográficas, derechos de incrustación
++       Como una `Os2Table`; lanza `Font.Error` con `MissingTable` si no está.
++   entry #name   la tabla `name`: los nombres localizados de la fuente, por `Sfnt.NameId`
++       Como una `NameTable`; lanza `Font.Error` con `MissingTable` si no está.
++   entry #fontName   el nombre PostScript de la fuente, o `Unset`
++       `name(Sfnt.NameId.PostScriptName)`, con cualquier `Font.Error` absorbido: el nombre con
++       el que los documentos PDF y PostScript hacen referencia a una fuente. `Unset` para una
++       fuente que no lo registra o que no tiene tabla `name`.
++   entry #familyName   el nombre de familia de la fuente, o `Unset`
++       `name(Sfnt.NameId.Family)`, con cualquier `Font.Error` absorbido.
++   entry #fvar   la tabla `fvar` de una fuente variable, o `Unset` para una fuente estática
++       Los ejes a lo largo de los cuales se mueven los contornos de una fuente variable, cada uno
++       con su rango. `Font.Coverage.of` lee de aquí los rangos de peso y anchura cuando la tabla está
++       presente.
++   entry #features   las características de composición que implementa la fuente, por etiqueta, según `GSUB` y `GPOS`
++       Las listas de características de las dos tablas de composición, como `Face.Feature`, sin
++       duplicados. Una fuente sin ninguna de las dos tablas no implementa ninguna. Son lo que
++       registra `Font.Coverage.of`, de modo que se rechaza un estilo tipográfico que activa una
++       característica de la que carece la fuente.
+
+-         The `post` table. The italic angle is a fixed-point number of degrees, negative for a
+-         rightward lean, and is one of the signs `Font.Coverage.of` reads to decide that a file is
+-         italic.
++         La tabla `post`. El ángulo de cursiva es un número de grados en coma fija, negativo para
++         una inclinación hacia la derecha, y es uno de los indicios que lee `Font.Coverage.of` para
++         decidir que un fichero es cursivo.
+
+-         The `OS/2` table, read field by field at the offsets its version defines. The weight
+-         class (1–1000, the scale `Weight` uses) and width class (1–9, which
+-         `Stretch.widthClass` names) are what `Font.Coverage.of` records for a static font; the
+-         selection bits say whether the face is italic; the typographic ascender, descender and
+-         line gap, the Windows ascent and descent, the x-height and the cap height are what a
+-         PDF font descriptor needs. Fields which a table's version predates are `Unset`.
++         La tabla `OS/2`, leída campo a campo en los desplazamientos que define su versión. La
++         clase de peso (1–1000, la escala que usa `Weight`) y la clase de anchura (1–9, que nombra
++         `Stretch.widthClass`) son lo que registra `Font.Coverage.of` para una fuente estática; los
++         bits de selección dicen si el estilo tipográfico es cursivo; el ascendente, el
++         descendente y el interlineado tipográficos, el ascenso y el descenso de Windows, la
++         altura de la x y la altura de las mayúsculas son lo que necesita un descriptor de fuente
++         de PDF. Los campos anteriores a la versión de una tabla son `Unset`.
+
+=       exported, and documented there.
+=   refer phoenicia.Face
+-   refer phoenicia.Font.Coverage
++   refer phoenicia.Font.Coverage
+
+=       ```
+=   refer phoenicia.Face
+-   refer phoenicia.Font.Coverage
++   refer phoenicia.Font.Coverage
+
+=   refer phoenicia.Font
+-   refer phoenicia.Font.Coverage
++   refer phoenicia.Font.Coverage
+
+-         A named class, so the provision has a stable type. It is `in Medium`, its sources are
+-         one `Source.Embedded` per file, and its coverage is `Font.Coverage.combine` over the files'
+-         `Font.Coverage.of`.
+-     entry #Self   the typeface provided
+-     entry #Form   `Medium`: an embedded file serves every medium
+-     entry #sources   one `Typesettable.Source.Embedded` per font file
+-     entry #coverage   the union of the files' coverage, read from their tables
+-   entry .embedded   a provision from font files, `in Medium`, with coverage read from the files
+-       Two overloads. `Typesettable.embedded[family](sfnts*)` takes any number of `Sfnt`s
+-       already in hand and makes a `Typeface of family is Typesettable in Medium`; the family is
+-       given explicitly or inferred from the given's declared type. `Typesettable.embedded
+-       (source)` takes one `Locative` streamable source — a `cp"…"` resource — reads it, and
+-       keeps its path as the provision's `Locus`, so a `Font` made from the provision is checked
+-       as the code compiles against the file at that path on the compiler's classpath. Where the
+-       file is not on the compiler's classpath, the check is left to runtime.
++         Una clase con nombre, para que la provisión tenga un tipo estable. Es `in Medium`, sus
++         fuentes de procedencia son un `Source.Embedded` por fichero, y su cobertura es
++         `Font.Coverage.combine` sobre los `Font.Coverage.of` de los ficheros.
++     entry #Self   el tipo de letra proporcionado
++     entry #Form   `Medium`: un fichero incrustado sirve a todos los medios
++     entry #sources   un `Typesettable.Source.Embedded` por fichero de fuente
++     entry #coverage   la unión de la cobertura de los ficheros, leída de sus tablas
++   entry .embedded   una provisión a partir de ficheros de fuente, `in Medium`, con la cobertura leída de los ficheros
++       Dos sobrecargas. `Typesettable.embedded[family](sfnts*)` recibe cualquier número de
++       `Sfnt`s ya disponibles y crea un `Typeface of family is Typesettable in Medium`; la
++       familia se da explícitamente o se infiere del tipo declarado del given.
++       `Typesettable.embedded (source)` recibe una única fuente `Locative` que se puede leer
++       como flujo (un recurso `cp"…"`), la lee y conserva su ruta como el `Locus` de la
++       provisión, de modo que una `Font` creada a partir de la provisión se comprueba, mientras
++       se compila el código, contra el fichero que está en esa ruta del classpath del
++       compilador. Donde el fichero no está en el classpath del compilador, la comprobación se
++       deja para el tiempo de ejecución.
+
+-         Error `↯/s.89.1`, _the font could not be used because …_, with a `Reason` whose number is the
+-         error's subcode. The table-reading reasons are raised by `Sfnt`'s accessors; the
+-         coverage reasons by `Font(…)`, `Font.of[…](…)` and `Font.paired` when the provision's
+-         `Font.Coverage` refuses the face.
++         Error `↯/s.89.1`, _the font could not be used because …_, con un `Reason` cuyo número
++         es el subcódigo del error. Los motivos de lectura de tablas los lanzan los accesores de
++         `Sfnt`; los motivos de cobertura, `Font(…)`, `Font.of[…](…)` y `Font.paired` cuando el
++         `Font.Coverage` de la provisión rechaza el estilo tipográfico.
+
+-       entry #number   the reason's number, 1 to 10, which is the error's subcode
+-     entry .communicable   renders each reason as its message
+-     entry #reason   the reason
+-   entry .Coverage   which faces a provision can set: weights, slants, widths, axes and features
+-     detail
+-         A `Font.Coverage` is either `Unknown` — nothing is known of the faces a source offers, so
+-         every face is admitted — or `Entries(entries)`, a list of `Font.Coverage.Entry`s, each one
+-         face a provision offers or the range of faces a variable font offers. A `Font` is made
+-         only for a face the coverage admits; `#complaint` gives the `Font.Error.Reason` why it
+-         is not, or `Unset` if it is.
+-
+-         Coverage is matched as a browser matches a `@font-face` declaration: the entries which
+-         span the weight are found first, then of those the ones with the slant, then the
+-         stretch, and the face's variations and features are checked against what remains. The
+-         first failing step names the refusal: `UncoveredWeight`, `UncoveredSlant`,
+-         `UncoveredStretch`, `UnknownAxis`, `AxisOutOfRange` or `MissingFeature`.
+-
+-         `.of(sfnt)` reads a font file's coverage from its tables — the `fvar` axes of a
+-         variable font, else the single weight and width the `OS/2` table records, the italic
+-         bits of `OS/2` and `post`, and the features of `GSUB` and `GPOS` — and `.combine` unions
+-         several files'. `Font.Coverage(weights = …, italic = …)` declares the coverage of a source
+-         whose file is not to hand, a URL or an installed font; only what is declared is admitted,
+-         so a linked font declared at one weight rejects a request for another rather than
+-         letting the browser synthesize it.
+-
+-         ```scala
+-         import soundness.*
+-         import strategies.throwUnsafely
+-
+-         val file: Sfnt = Sfnt(cp"/fonts/Inter-BoldItalic.ttf")
+-         Font.Coverage.of(file).complaint(Typeface["Inter"].bold.italic)    // Unset
+-         Font.Coverage.of(file).complaint(Typeface["Inter"].light)          // UncoveredWeight("Inter", 300)
+-
+-         val declared: Font.Coverage = Font.Coverage(weights = Weight.Light to Weight.Bold, italic = true)
+-         ```
+-     refer phoenicia.Typesettable
+-     refer phoenicia.Face
+-     entry .Entry   one face a provision offers, or the range a variable font offers
+-       detail
+-           The weights and widths spanned, whether the entry is upright, italic or both, the
+-           further axes with their ranges, and the layout features implemented — or `Unset` for
+-           the features of a face declared without a file, which then admits any feature.
+-
+-           ```scala
+-           import soundness.*
+-
+-           val boldItalic = Font.Coverage.Entry(Weight.Bold.range, false, true, Stretch.Normal.range, Nil, Nil)
+-           ```
+-       entry #weights   the span of weights
+-       entry #upright   whether an upright face is offered
+-       entry #italic   whether an italic face is offered
+-       entry #stretches   the span of widths
+-       entry #axes   the further variation axes, each with its range
+-       entry #features   the features implemented, or `Unset` if unknown
+-       entry #sets   whether the entry's weight, slant and stretch admit a face
+-       entry #complaint   the first variation or feature setting the entry cannot give, or `Unset`
+-           `complaint(name, variations, settings)` checks each variation's axis and value against
+-           `axes` (`UnknownAxis`, `AxisOutOfRange`) and each setting's feature against `features`
+-           (`MissingFeature`), naming the typeface in the reason. Unknown features admit anything.
+-     entry .apply   a declared coverage, for a source whose file is not to hand
+-         `Font.Coverage(weights, upright, italic, stretches, axes)`, each with a default — regular,
+-         upright only, normal width, no axes — making one `Entry` with unknown features. For a
+-         URL or an installed font, whose faces are what the declaration says and nothing more.
+-     entry .of   a font file's coverage, read from its tables
+-         From a variable font's `fvar`: the `wght` axis as the weight span, `wdth` as the width
+-         span, an `ital` or `slnt` axis as offering both postures, and every axis as a
+-         `Variation.Range`. From a static font: the `OS/2` weight and width classes as single
+-         weights and widths. The italic bits of `OS/2` and a nonzero `post` italic angle make the entry
+-         italic. The features are `Sfnt#features`. A file whose tables cannot be read has
+-         `Unknown` coverage, which admits everything, rather than refusing faces it may well
+-         have.
+-     entry .combine   the union of several coverages; any `Unknown` makes the whole `Unknown`
+-     entry #complaint   why a face cannot be set from this coverage, or `Unset` if it can
+-         Two overloads. `complaint(face)` checks a whole face. `complaint(name, weight, slant,
+-         stretch, variations, features)` checks only what is given: a part passed as `Unset` is
+-         not checked, which is the form the compile-time check uses when a face's weight or slant
+-         is decided at runtime. `Unknown` coverage never complains.
+-   entry .apply   `Font(face)`: pairs a face with the provision in scope, in the medium the expected type names
+-       An inline method whose medium is inferred from the expected type: `Font in Web`, or
+-       `Optional[Font in Web]`, since `Form` is a type member and the expected type pins it.
+-       Needs a `Typeface of family is Typesettable in (? >: medium)` and a `Tactic[Font.Error]`.
+-       Where the provision carries a `Locus` the face's recorded request is checked at compile
+-       time; the runtime check then runs regardless. Where there is no expected type, use `.of`.
+-   entry .of   `Font.of[Web](face)`: the same pairing with the medium named
+-       Returns an `.Of[medium]` whose `apply` takes the face, so that only the medium need be
+-       written and the family is inferred from the face. Cataclysm's `Web.font(face)` is
+-       `Font.of[Web](face)`.
+-   entry .Of   the helper `.of` returns, whose `apply` takes the face
++       entry #number   el número del motivo, de 1 a 10, que es el subcódigo del error
++     entry .communicable   representa cada motivo como su mensaje
++     entry #reason   el motivo
++   entry .Coverage   qué estilos tipográficos puede componer una provisión: pesos, inclinaciones, anchuras, ejes y características
++     detail
++         Un `Font.Coverage` es o bien `Unknown` (no se sabe nada de los estilos tipográficos que
++         ofrece una fuente de procedencia, así que se admite cualquiera) o bien
++         `Entries(entries)`, una lista de `Font.Coverage.Entry`s, cada una un estilo tipográfico
++         que ofrece una provisión o el rango de estilos que ofrece una fuente variable. Solo se
++         crea una `Font` para un estilo tipográfico que la cobertura admite; `#complaint` da el
++         `Font.Error.Reason` por el que no se admite, o `Unset` si se admite.
++
++         La cobertura se compara como un navegador compara una declaración `@font-face`: primero
++         se buscan las entradas que abarcan el peso, después, de ellas, las que tienen la
++         inclinación, después la anchura, y las variaciones y características del estilo
++         tipográfico se comprueban contra lo que queda. El primer paso que falla da nombre al
++         rechazo: `UncoveredWeight`, `UncoveredSlant`, `UncoveredStretch`, `UnknownAxis`,
++         `AxisOutOfRange` o `MissingFeature`.
++
++         `.of(sfnt)` lee la cobertura de un fichero de fuente a partir de sus tablas (los ejes
++         `fvar` de una fuente variable o, si no, el único peso y la única anchura que registra la
++         tabla `OS/2`, los bits de cursiva de `OS/2` y `post`, y las características de `GSUB` y
++         `GPOS`), y `.combine` une las de varios ficheros. `Font.Coverage(weights = …, italic = …)`
++         declara la cobertura de una fuente de procedencia cuyo fichero no está a mano, una URL o
++         una fuente instalada; solo se admite lo declarado, así que una fuente enlazada declarada
++         con un peso rechaza una petición de otro en lugar de dejar que el navegador lo sintetice.
++
++         ```scala
++         import soundness.*
++         import strategies.throwUnsafely
++
++         val file: Sfnt = Sfnt(cp"/fonts/Inter-BoldItalic.ttf")
++         Font.Coverage.of(file).complaint(Typeface["Inter"].bold.italic)    // Unset
++         Font.Coverage.of(file).complaint(Typeface["Inter"].light)          // UncoveredWeight("Inter", 300)
++
++         val declared: Font.Coverage = Font.Coverage(weights = Weight.Light to Weight.Bold, italic = true)
++         ```
++     refer phoenicia.Typesettable
++     refer phoenicia.Face
++     entry .Entry   un estilo tipográfico que ofrece una provisión, o el rango que ofrece una fuente variable
++       detail
++           Los pesos y las anchuras que abarca, si la entrada es vertical, cursiva o ambas cosas,
++           los demás ejes con sus rangos, y las características de disposición implementadas, o
++           `Unset` para las características de un estilo tipográfico declarado sin fichero, que
++           entonces admite cualquier característica.
++
++           ```scala
++           import soundness.*
++
++           val boldItalic = Font.Coverage.Entry(Weight.Bold.range, false, true, Stretch.Normal.range, Nil, Nil)
++           ```
++       entry #weights   el tramo de pesos
++       entry #upright   si se ofrece un estilo tipográfico vertical
++       entry #italic   si se ofrece un estilo tipográfico cursivo
++       entry #stretches   el tramo de anchuras
++       entry #axes   los demás ejes de variación, cada uno con su rango
++       entry #features   las características implementadas, o `Unset` si no se conocen
++       entry #sets   si el peso, la inclinación y la anchura de la entrada admiten un estilo tipográfico
++       entry #complaint   la primera variación o el primer ajuste de característica que la entrada no puede dar, o `Unset`
++           `complaint(name, variations, settings)` comprueba el eje y el valor de cada variación
++           contra `axes` (`UnknownAxis`, `AxisOutOfRange`) y la característica de cada ajuste
++           contra `features` (`MissingFeature`), nombrando el tipo de letra en el motivo. Unas
++           características desconocidas lo admiten todo.
++     entry .apply   una cobertura declarada, para una fuente de procedencia cuyo fichero no está a mano
++         `Font.Coverage(weights, upright, italic, stretches, axes)`, cada uno con un valor por
++         defecto (regular, solo vertical, anchura normal, sin ejes), que crea una única `Entry`
++         con características desconocidas. Para una URL o una fuente instalada, cuyos estilos
++         tipográficos son lo que dice la declaración y nada más.
++     entry .of   la cobertura de un fichero de fuente, leída de sus tablas
++         De la `fvar` de una fuente variable: el eje `wght` como tramo de pesos, `wdth` como
++         tramo de anchuras, un eje `ital` o `slnt` como oferta de ambas posturas, y cada eje como
++         un `Variation.Range`. De una fuente estática: las clases de peso y de anchura de `OS/2`
++         como pesos y anchuras únicos. Los bits de cursiva de `OS/2` y un ángulo de cursiva de
++         `post` distinto de cero hacen cursiva la entrada. Las características son
++         `Sfnt#features`. Un fichero cuyas tablas no se pueden leer tiene cobertura `Unknown`, que
++         lo admite todo, en lugar de rechazar estilos tipográficos que bien puede tener.
++     entry .combine   la unión de varias coberturas; cualquier `Unknown` hace `Unknown` el conjunto
++     entry #complaint   por qué no se puede componer un estilo tipográfico con esta cobertura, o `Unset` si se puede
++         Dos sobrecargas. `complaint(face)` comprueba un estilo tipográfico completo.
++         `complaint(name, weight, slant, stretch, variations, features)` solo comprueba lo que se
++         da: una parte que se pasa como `Unset` no se comprueba, que es la forma que usa la
++         comprobación en tiempo de compilación cuando el peso o la inclinación de un estilo
++         tipográfico se deciden en tiempo de ejecución. Una cobertura `Unknown` nunca se queja.
++   entry .apply   `Font(face)`: empareja un estilo tipográfico con la provisión del ámbito, en el medio que nombra el tipo esperado
++       Un método inline cuyo medio se infiere del tipo esperado: `Font in Web`, u
++       `Optional[Font in Web]`, puesto que `Form` es un miembro de tipo y el tipo esperado lo
++       fija. Necesita un `Typeface of family is Typesettable in (? >: medium)` y una
++       `Tactic[Font.Error]`. Donde la provisión lleva un `Locus`, la petición registrada del
++       estilo tipográfico se comprueba en tiempo de compilación; la comprobación en tiempo de
++       ejecución se hace de todos modos. Donde no hay tipo esperado, se usa `.of`.
++   entry .of   `Font.of[Web](face)`: el mismo emparejamiento, nombrando el medio
++       Devuelve un `.Of[medium]` cuyo `apply` recibe el estilo tipográfico, de modo que solo
++       hay que escribir el medio y la familia se infiere del estilo tipográfico. El
++       `Web.font(face)` de cataclysm es `Font.of[Web](face)`.
++   entry .Of   el auxiliar que devuelve `.of`, cuyo `apply` recibe el estilo tipográfico
+
+-         The companion of the opaque type `Stretch`, exported with it to the `phoenicia`
+-         package.
+-     entry .apply   a stretch from a percentage, clamped to 50–200
+-     entry .UltraCondensed   50%
+-     entry .ExtraCondensed   62.5%
+-     entry .Condensed   75%
+-     entry .SemiCondensed   87.5%
+-     entry .Normal   100%
+-     entry .SemiExpanded   112.5%
+-     entry .Expanded   125%
+-     entry .ExtraExpanded   150%
+-     entry .UltraExpanded   200%
+-     entry .widthClass   the stretch an OS/2 width class 1 to 9 names; `Normal` for 5 or an unknown value
+-     entry .Range   an inclusive span of stretches
+-       entry #lower   the narrowest stretch in the span
+-       entry #upper   the widest stretch in the span
+-       entry #contains   whether a stretch lies within the span
+-     entry .showable   shows a stretch as a percentage: `100.0%`
+-     entry .inspectable   inspects a stretch as `Stretch(100.0)`
+-     entry .percentage   the stretch as a percentage of normal width
+-     entry .to   `lower to upper`: the inclusive range between two stretches
+-     entry .range   the range of this stretch alone
+-   entry .id   the glyph's id within its font; 0 is the missing-glyph
+-   entry .font   the macro behind `Font(face)` and `Font.of[medium](face)`
+-       Reads the provision's `Locus` from its type; if it is a string literal naming a resource
+-       on the compiler's classpath, reads the font (once per path), derives its `Font.Coverage` and
+-       checks the face's `Weights`, `Slanting` and `Enabled` type members against it, halting
+-       with _phoenicia: the font at `path` cannot set this face: …_ on refusal. Then expands to
+-       `Font.paired`.
++         El objeto compañero del tipo opaco `Stretch`, exportado con él al paquete `phoenicia`.
++     entry .apply   una anchura a partir de un porcentaje, limitada a 50–200
++     entry .UltraCondensed   50 %
++     entry .ExtraCondensed   62,5 %
++     entry .Condensed   75 %
++     entry .SemiCondensed   87,5 %
++     entry .Normal   100 %
++     entry .SemiExpanded   112,5 %
++     entry .Expanded   125 %
++     entry .ExtraExpanded   150 %
++     entry .UltraExpanded   200 %
++     entry .widthClass   la anchura que nombra una clase de anchura OS/2 de 1 a 9; `Normal` para 5 o para un valor desconocido
++     entry .Range   un tramo inclusivo de anchuras
++       entry #lower   la anchura más estrecha del tramo
++       entry #upper   la anchura más ancha del tramo
++       entry #contains   si una anchura está dentro del tramo
++     entry .showable   muestra una anchura como porcentaje: `100.0%`
++     entry .inspectable   inspecciona una anchura como `Stretch(100.0)`
++     entry .percentage   la anchura como porcentaje de la anchura normal
++     entry .to   `lower to upper`: el rango inclusivo entre dos anchuras
++     entry .range   el rango de esta anchura sola
++   entry .id   el id del glifo dentro de su fuente; 0 es el glifo ausente
++   entry .font   la macro que hay detrás de `Font(face)` y `Font.of[medium](face)`
++       Lee el `Locus` de la provisión a partir de su tipo; si es un literal de cadena que nombra
++       un recurso del classpath del compilador, lee la fuente (una vez por ruta), deriva su
++       `Font.Coverage` y comprueba contra ella los miembros de tipo `Weights`, `Slanting` y
++       `Enabled` del estilo tipográfico, deteniéndose con _phoenicia: the font at `path` cannot
++       set this face: …_ si hay rechazo. Después se expande a `Font.paired`.

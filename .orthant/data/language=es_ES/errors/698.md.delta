@@ -1,0 +1,19 @@
+orthant 1 language
+
+- # `SN-698` — `InterpolationError` (retired)
++ # `SN-698` — `InterpolationError` (retirado)
+
+- This error no longer exists. The page is kept so that the code is not reused, and so
+- that a reference to it from an older release can still be resolved.
++ Este error ya no existe. La página se conserva para que el código no se reutilice, y para que una
++ referencia a él desde una versión anterior pueda seguir resolviéndose.
+
+- ## What became of it
++ ## Qué fue de ello
+
+- Contextual's `Interpolator` API, which raised this error, was replaced by the
+- `Interpolable` typeclass. Each interpolator now defines its own error type, so a failure
+- is reported in the vocabulary of the thing being parsed rather than through a shared one.
++ La API `Interpolator` de Contextual, que lanzaba este error, se sustituyó por la clase de tipos
++ `Interpolable`. Ahora cada interpolador define su propio tipo de error, de modo que un fallo se
++ notifica en el vocabulario de lo que se analiza en lugar de mediante uno compartido.

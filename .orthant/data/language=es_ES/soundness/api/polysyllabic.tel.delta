@@ -1,0 +1,624 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base polysyllabic
++ base polysyllabic
+
+- import soundness
++ import soundness
+
+- info   hyphenation by Liang's algorithm over TeX pattern files: break points, soft hyphens and syllables
++ info   división silábica con el algoritmo de Liang sobre ficheros de patrones de TeX: puntos de corte, guiones blandos y sílabas
+
+- detail
++ detail
+
+-     _Polysyllabic_ finds where a word may be broken at the end of a line, with the algorithm and
+-     the pattern files TeX uses. Where a word breaks cannot be read off its spelling, so Liang's
+-     algorithm scores every gap between letters against a dictionary of thousands of small
+-     patterns derived from real hyphenation dictionaries, and allows a break wherever the
+-     highest score is odd. The language is a contextual `Hyphenation`, and three extensions on
+-     `Text` use it: `hyphenate` inserts a hyphen at each permissible break, `syllables` splits
+-     text into its parts, and `breakPoints` gives the raw positions.
++     _Polysyllabic_ encuentra dónde puede partirse una palabra al final de una línea, con el
++     algoritmo y los ficheros de patrones que usa TeX. Dónde se parte una palabra no puede
++     deducirse de su ortografía, así que el algoritmo de Liang puntúa cada hueco entre letras
++     contra un diccionario de miles de pequeños patrones derivados de diccionarios reales de
++     división silábica, y permite un corte allí donde la puntuación más alta es impar. El idioma
++     es una `Hyphenation` contextual, y tres extensiones sobre `Text` la usan: `hyphenate` inserta
++     un guion en cada corte permitido, `syllables` divide el texto en sus partes y `breakPoints`
++     da las posiciones en bruto.
+
+=     text into its parts, and `breakPoints` gives the raw positions.
+=
+-     ```scala
++     ```scala
+
+=     text into its parts, and `breakPoints` gives the raw positions.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     text into its parts, and `breakPoints` gives the raw positions.
+=
+=     ```scala
+=     import soundness.*
+-     import hyphenations.englishHyphenation
++     import hyphenations.englishHyphenation
+
+-     t"hyphenation".hyphenate(hyphen = '-')   // t"hy-phen-ation"
++     t"hyphenation".hyphenate(hyphen = '-')   // t"hy-phen-ation"
+
+-     t"the algorithm".syllables.to[List]      // List(t"the", t" ", t"al", t"go", t"rithm")
++     t"the algorithm".syllables.to[List]      // List(t"the", t" ", t"al", t"go", t"rithm")
+
+-     t"hyphenation".breakPoints               // the offsets 2 and 6
++     t"hyphenation".breakPoints               // the offsets 2 and 6
+
+=     t"hyphenation".breakPoints               // the offsets 2 and 6
+-     ```
++     ```
+
+-     American English is provided as `hyphenations.englishHyphenation`, parsed from the CTAN
+-     hyph-utf8 pattern file bundled on the classpath. It is a given in a choice package, so it
+-     is imported by name: `import hyphenations.*` does not import givens. Any other language is
+-     loaded from its TeX pattern file with `Hyphenation.fromTex`, and any set is corrected with
+-     extra patterns or exceptions by `Hyphenation#extending`. With no language imported, the
+-     companion's `Hyphenation.fallback` hyphenates nothing, so text passes through unchanged
+-     rather than being broken by rules the program does not have.
++     El inglés americano se proporciona como `hyphenations.englishHyphenation`, analizado a partir
++     del fichero de patrones hyph-utf8 de CTAN incluido en el classpath. Es un given de un paquete
++     de elección, así que se importa por nombre: `import hyphenations.*` no importa givens.
++     Cualquier otro idioma se carga desde su fichero de patrones de TeX con `Hyphenation.fromTex`,
++     y cualquier conjunto se corrige con patrones o excepciones adicionales mediante
++     `Hyphenation#extending`. Si no se importa ningún idioma, el `Hyphenation.fallback` del objeto
++     compañero no divide nada, de modo que el texto pasa sin cambios en lugar de partirse según
++     reglas que el programa no tiene.
+
+-     Each run of letters is hyphenated independently; spaces, punctuation and digits pass
+-     through untouched. The library has one source set, `polysyllabic.core`, for every
+-     platform, and everything is exported to the `soundness` umbrella, where the
+-     `hyphenations` package merges with the umbrella's own.
++     Cada racha de letras se divide de forma independiente; los espacios, la puntuación y las
++     cifras pasan intactos. La biblioteca tiene un único conjunto de fuentes,
++     `polysyllabic.core`, para todas las plataformas, y todo se exporta al paraguas `soundness`,
++     donde el paquete `hyphenations` se fusiona con el propio del paraguas.
+
+- refer polysyllabic.Hyphenation
++ refer polysyllabic.Hyphenation
+
+- refer polysyllabic.hyphenate
++ refer polysyllabic.hyphenate
+
+- refer polysyllabic.hyphenations.englishHyphenation
++ refer polysyllabic.hyphenations.englishHyphenation
+
+- entry .Hyphenation   a language's hyphenation patterns and exceptions, with its minimum fragment lengths
++ entry .Hyphenation   los patrones y las excepciones de división silábica de un idioma, con sus longitudes mínimas de trozo
+
+= entry .Hyphenation   a language's hyphenation patterns and exceptions, with its minimum fragment lengths
+-   detail
++   detail
+
+-       A `Hyphenation` is the contextual value every operation in the library reads: the
+-       language's scoring `#patterns`, its `#exceptions` list of words whose breaks are stated
+-       outright, and the `#leftMin` and `#rightMin` characters a break must leave before and
+-       after it. It is chosen as a given — usually `hyphenations.englishHyphenation`, imported
+-       by name — and is immutable: `#extending` makes a new one.
++       Una `Hyphenation` es el valor contextual que lee cada operación de la biblioteca: los
++       `#patterns` de puntuación del idioma, su lista `#exceptions` de palabras cuyos cortes se
++       indican directamente, y los caracteres `#leftMin` y `#rightMin` que un corte debe dejar
++       antes y después de él. Se elige como given —normalmente `hyphenations.englishHyphenation`,
++       importado por nombre— y es inmutable: `#extending` construye uno nuevo.
+
+=       by name — and is immutable: `#extending` makes a new one.
+=
+-       ```scala
++       ```scala
+
+=       by name — and is immutable: `#extending` makes a new one.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       by name — and is immutable: `#extending` makes a new one.
+=
+=       ```scala
+=       import soundness.*
+-       import hyphenations.englishHyphenation
++       import hyphenations.englishHyphenation
+
+-       given Hyphenation = englishHyphenation.extending(patterns = List(t"klm9nop"))
++       given Hyphenation = englishHyphenation.extending(patterns = List(t"klm9nop"))
+
+-       t"klmnop".hyphenate(hyphen = '-')   // t"klm-nop"
++       t"klmnop".hyphenate(hyphen = '-')   // t"klm-nop"
+
+=       t"klmnop".hyphenate(hyphen = '-')   // t"klm-nop"
+-       ```
++       ```
+
+-       A new language is built from raw patterns with `Hyphenation(patterns, exceptions)`, or
+-       read from a whole TeX pattern file with `.fromTex`. Patterns are in TeX's notation: the
+-       letters of a fragment with a digit in any gap, so `hy3ph` scores 3 in the gap between
+-       `y` and `p`, and a `.` marks a word boundary (`.ach4`, `ion5.`). Exceptions are words
+-       with hyphens at their breaks, such as `as-so-ciate`. Only the ASCII letters `a` to `z`
+-       take part in the pattern trie; a word is lowercased before it is looked up.
++       Un idioma nuevo se construye a partir de patrones en bruto con
++       `Hyphenation(patterns, exceptions)`, o se lee de un fichero de patrones de TeX completo con
++       `.fromTex`. Los patrones usan la notación de TeX: las letras de un trozo con una cifra en
++       cualquier hueco, de modo que `hy3ph` puntúa 3 en el hueco entre `y` y `p`, y un `.` marca
++       un límite de palabra (`.ach4`, `ion5.`). Las excepciones son palabras con guiones en sus
++       cortes, como `as-so-ciate`. Solo las letras ASCII de la `a` a la `z` intervienen en el trie
++       de patrones; una palabra se pasa a minúsculas antes de buscarla.
+
+-   refer polysyllabic.hyphenations.englishHyphenation
++   refer polysyllabic.hyphenations.englishHyphenation
+
+-   refer polysyllabic.hyphenate
++   refer polysyllabic.hyphenate
+
+-   entry .fallback   the hyphenation in implicit scope when none is imported: it permits no breaks
+-       The companion's given, found when no other `Hyphenation` is in lexical scope. Its
+-       dictionaries are empty and its minimum fragment lengths are as large as an `Int` can
+-       be, so `hyphenate` returns its text unchanged, `syllables` splits only at non-letters,
+-       and `breakPoints` is empty. A line-wrapping algorithm therefore degrades to breaking at
+-       spaces. An imported given, such as `hyphenations.englishHyphenation`, outranks it.
+-   entry .alphabet   the pattern trie's alphabet: the lowercase ASCII letters followed by the `.` boundary
+-       A gossamer `Dictionary.Alphabet` of `abcdefghijklmnopqrstuvwxyz.`, in that order. The
+-       algorithm's inner loop computes slots for this alphabet directly, so every
+-       `Hyphenation` is built over it; a character outside it resets the trie walk.
+-   entry .apply   builds a hyphenation from TeX-format patterns and exceptions
+-       Takes the `patterns` (such as `t"hy3ph"`), optional `exceptions` (such as
+-       `t"as-so-ciate"`), and the minimum fragment lengths `leftMin`, by default 2, and
+-       `rightMin`, by default 3. The patterns are compiled into an Aho–Corasick trie, so each
+-       word is scored in a single forward pass.
++   entry .fallback   la división silábica del ámbito implícito cuando no se importa ninguna: no permite cortes
++       El given del objeto compañero, que se encuentra cuando no hay otra `Hyphenation` en el
++       ámbito léxico. Sus diccionarios están vacíos y sus longitudes mínimas de trozo son tan
++       grandes como puede serlo un `Int`, así que `hyphenate` devuelve su texto sin cambios,
++       `syllables` solo divide en lo que no son letras y `breakPoints` está vacío. Un algoritmo de
++       ajuste de línea se degrada así a partir por los espacios. Un given importado, como
++       `hyphenations.englishHyphenation`, tiene prioridad sobre él.
++   entry .alphabet   el alfabeto del trie de patrones: las letras ASCII minúsculas seguidas del límite `.`
++       Un `Dictionary.Alphabet` de gossamer con `abcdefghijklmnopqrstuvwxyz.`, en ese orden. El
++       bucle interior del algoritmo calcula directamente las posiciones para este alfabeto, así
++       que toda `Hyphenation` se construye sobre él; un carácter fuera de él reinicia el recorrido
++       del trie.
++   entry .apply   construye una división silábica a partir de patrones y excepciones en formato TeX
++       Recibe los `patterns` (como `t"hy3ph"`), unas `exceptions` opcionales (como
++       `t"as-so-ciate"`) y las longitudes mínimas de trozo `leftMin`, por defecto 2, y
++       `rightMin`, por defecto 3. Los patrones se compilan en un trie de Aho–Corasick, así que
++       cada palabra se puntúa en una sola pasada hacia delante.
+
+=       word is scored in a single forward pass.
+=
+-       ```scala
++       ```scala
+
+=       word is scored in a single forward pass.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       given Hyphenation = Hyphenation(Seq(t"a1b", t"c1d"), Seq(t"ef-gh"), leftMin = 1, rightMin = 1)
++       given Hyphenation = Hyphenation(Seq(t"a1b", t"c1d"), Seq(t"ef-gh"), leftMin = 1, rightMin = 1)
+
+-       t"abcd".hyphenate(hyphen = '-')   // t"a-bc-d"
++       t"abcd".hyphenate(hyphen = '-')   // t"a-bc-d"
+
+-       t"efgh".hyphenate(hyphen = '-')   // t"ef-gh"
++       t"efgh".hyphenate(hyphen = '-')   // t"ef-gh"
+
+=       t"efgh".hyphenate(hyphen = '-')   // t"ef-gh"
+-       ```
++       ```
+
+-   entry .fromTex   reads a hyphenation from the text of a whole TeX hyphenation pattern file
+-       Reads a file in the format CTAN's hyph-utf8 publishes: it strips `%` comments, takes the
+-       patterns from the `\patterns{…}` block and the exceptions from the `\hyphenation{…}`
+-       block, and the minimum fragment lengths from `\lefthyphenmin` and `\righthyphenmin`,
+-       which default to 2 and 3 when the file does not set them. The languages published for
+-       TeX are all available this way.
++   entry .fromTex   lee una división silábica a partir del texto de un fichero de patrones de división silábica de TeX completo
++       Lee un fichero en el formato que publica hyph-utf8 de CTAN: quita los comentarios `%`,
++       toma los patrones del bloque `\patterns{…}` y las excepciones del bloque
++       `\hyphenation{…}`, y las longitudes mínimas de trozo de `\lefthyphenmin` y
++       `\righthyphenmin`, que valen por defecto 2 y 3 cuando el fichero no las fija. Todos los
++       idiomas publicados para TeX están disponibles de esta manera.
+
+=       TeX are all available this way.
+=
+-       ```scala
++       ```scala
+
+=       TeX are all available this way.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       import classloaders.threadContextClassloader
++       import classloaders.threadContextClassloader
+
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       given Hyphenation = Hyphenation.fromTex(cp"/polysyllabic/hyph-en-us.tex".read[Text])
++       given Hyphenation = Hyphenation.fromTex(cp"/polysyllabic/hyph-en-us.tex".read[Text])
+
+=       given Hyphenation = Hyphenation.fromTex(cp"/polysyllabic/hyph-en-us.tex".read[Text])
+-       ```
++       ```
+
+-   entry .breakPoints   the positions at which one word may be broken, under explicit minimum fragment lengths
+-       The algorithm itself, as a function. `Hyphenation.breakPoints(word, hyphenation,
+-       leftMin, rightMin)` returns an immutable `Array[Int]` of offsets into the word, in
+-       ascending order: offset `p` means a hyphen may be inserted before letter `p`. An exact
+-       match in the exception list short-circuits the pattern walk. An overload takes a
+-       `String` with an offset and a length, to work on a slice without allocating a
+-       substring. Most code wants the `breakPoints` extension on `Text`, which reads the
+-       minimum lengths from the given `Hyphenation`.
+-   entry .breakPointsInto   writes one word's break positions into caller-supplied buffers, allocating nothing
+-       The allocation-free form of `.breakPoints` for code hyphenating many words, as the
+-       `hyphenate` extension does: it takes a `String` slice and three mutable scratch arrays,
+-       `padded` (at least the word's length plus 2), `scores` (length plus 3) and `breaks`
+-       (length), writes the offsets into `breaks` and returns how many it wrote. The buffers can
+-       be reused across every word of a text.
+-   entry .Error   raised when a hyphenation resource cannot be loaded from the classpath
++   entry .breakPoints   las posiciones en las que puede partirse una palabra, con longitudes mínimas de trozo explícitas
++       El propio algoritmo, como función. `Hyphenation.breakPoints(word, hyphenation, leftMin,
++       rightMin)` devuelve un `Array[Int]` inmutable de desplazamientos dentro de la palabra, en
++       orden ascendente: el desplazamiento `p` significa que puede insertarse un guion antes de la
++       letra `p`. Una coincidencia exacta en la lista de excepciones evita el recorrido de los
++       patrones. Una sobrecarga recibe un `String` con un desplazamiento y una longitud, para
++       trabajar sobre una porción sin reservar una subcadena. La mayor parte del código quiere la
++       extensión `breakPoints` sobre `Text`, que lee las longitudes mínimas de la `Hyphenation`
++       dada.
++   entry .breakPointsInto   escribe las posiciones de corte de una palabra en búferes que proporciona quien llama, sin reservar nada
++       La forma sin reservas de memoria de `.breakPoints` para el código que divide muchas
++       palabras, como hace la extensión `hyphenate`: recibe una porción de `String` y tres arrays
++       mutables temporales, `padded` (al menos la longitud de la palabra más 2), `scores` (la
++       longitud más 3) y `breaks` (la longitud), escribe los desplazamientos en `breaks` y
++       devuelve cuántos ha escrito. Los búferes pueden reutilizarse para todas las palabras de un
++       texto.
++   entry .Error   se lanza cuando no puede cargarse del classpath un recurso de división silábica
+
+-     detail
++     detail
+
+-         _the hyphenation resource `resource` could not be loaded from the classpath_. The
+-         bundled `hyphenations.englishHyphenation` does not raise it: a missing bundled
+-         pattern file is a packaging fault, and panics instead.
+-     entry #resource   the classpath path of the resource which could not be loaded
+-   entry #patterns   the scoring patterns, compiled into an Aho–Corasick trie keyed by letters
+-       A gossamer `Dictionary` from each pattern's letters (with `.` for a word boundary) to
+-       its scores, one per gap including those before the first and after the last letter.
+-   entry #exceptions   the words whose breaks are stated outright, each mapped to its break offsets
+-       An exception takes precedence over the patterns, so a word the patterns break wrongly
+-       is corrected without disturbing any other.
+-   entry #leftMin   the fewest characters a break may leave before it
+-   entry #rightMin   the fewest characters a break may leave after it
+-   entry #extending   a new hyphenation with extra patterns and exceptions, and optionally new minimum lengths
+-       Layers `patterns` and `exceptions` over this hyphenation's, and replaces `leftMin` or
+-       `rightMin` if either is given. Patterns are merged by taking the higher score at each
+-       gap, so an added pattern with an odd score reinstates a break a standard even-scored
+-       pattern forbade; an exception states a word's breaks outright.
++         _the hyphenation resource `resource` could not be loaded from the classpath_. La
++         `hyphenations.englishHyphenation` incluida no lo lanza: la falta de un fichero de
++         patrones incluido es un defecto de empaquetado, y en su lugar entra en pánico.
++     entry #resource   la ruta en el classpath del recurso que no pudo cargarse
++   entry #patterns   los patrones de puntuación, compilados en un trie de Aho–Corasick indexado por letras
++       Un `Dictionary` de gossamer de las letras de cada patrón (con `.` para un límite de
++       palabra) a sus puntuaciones, una por hueco, incluidos los anteriores a la primera letra y
++       posteriores a la última.
++   entry #exceptions   las palabras cuyos cortes se indican directamente, cada una asociada a sus desplazamientos de corte
++       Una excepción tiene prioridad sobre los patrones, así que una palabra que los patrones
++       parten mal se corrige sin alterar ninguna otra.
++   entry #leftMin   el menor número de caracteres que un corte puede dejar antes de él
++   entry #rightMin   el menor número de caracteres que un corte puede dejar después de él
++   entry #extending   una nueva división silábica con patrones y excepciones adicionales, y opcionalmente nuevas longitudes mínimas
++       Superpone `patterns` y `exceptions` a los de esta división silábica, y sustituye `leftMin`
++       o `rightMin` si se da alguno. Los patrones se fusionan tomando la puntuación más alta en
++       cada hueco, así que un patrón añadido con una puntuación impar restablece un corte que un
++       patrón estándar de puntuación par prohibía; una excepción indica directamente los cortes
++       de una palabra.
+
+=       pattern forbade; an exception states a word's breaks outright.
+=
+-       ```scala
++       ```scala
+
+=       pattern forbade; an exception states a word's breaks outright.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       pattern forbade; an exception states a word's breaks outright.
+=
+=       ```scala
+=       import soundness.*
+-       import hyphenations.englishHyphenation
++       import hyphenations.englishHyphenation
+
+-       given Hyphenation = englishHyphenation.extending(exceptions = List(t"hy-phenation"))
++       given Hyphenation = englishHyphenation.extending(exceptions = List(t"hy-phenation"))
+
+-       t"hyphenation".hyphenate(hyphen = '-')   // t"hy-phenation"
++       t"hyphenation".hyphenate(hyphen = '-')   // t"hy-phenation"
+
+=       t"hyphenation".hyphenate(hyphen = '-')   // t"hy-phenation"
+-       ```
++       ```
+
+- entry .hyphenate   inserts a hyphen at every permissible break in each run of letters of a text
++ entry .hyphenate   inserta un guion en cada corte permitido de cada racha de letras de un texto
+
+= entry .hyphenate   inserts a hyphen at every permissible break in each run of letters of a text
+-   detail
++   detail
+
+-       An extension on `Text`, using the `Hyphenation` given in scope. The hyphen is the
+-       Unicode soft hyphen, U+00AD, by default, which is invisible unless a line actually
+-       breaks there; passing a visible character shows the break points. `leftMin` and
+-       `rightMin` override the hyphenation's own minimum fragment lengths, so a break never
+-       strands one or two letters. Each run of letters is hyphenated independently, and
+-       everything else passes through unchanged.
++       Una extensión sobre `Text`, que usa la `Hyphenation` dada en el ámbito. El guion es por
++       defecto el guion blando de Unicode, U+00AD, que es invisible salvo que una línea se parta
++       realmente ahí; pasar un carácter visible muestra los puntos de corte. `leftMin` y
++       `rightMin` sustituyen las longitudes mínimas de trozo propias de la división silábica, de
++       modo que un corte nunca deja aisladas una o dos letras. Cada racha de letras se divide de
++       forma independiente, y todo lo demás pasa sin cambios.
+
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label Every permissible break
++         label Cada corte permitido
+
+=         label Every permissible break
+-         code
++         code
+
+=         label Every permissible break
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label Every permissible break
+=         code
+=             import soundness.*
+-             import hyphenations.englishHyphenation
++             import hyphenations.englishHyphenation
+
+-             t"hyphenation".hyphenate(hyphen = '-')   // t"hy-phen-ation"
++             t"hyphenation".hyphenate(hyphen = '-')   // t"hy-phen-ation"
+
+=             t"hyphenation".hyphenate(hyphen = '-')   // t"hy-phen-ation"
+-       frame
++       frame
+
+-         label At least four characters before the first break
++         label Al menos cuatro caracteres antes del primer corte
+
+=         label At least four characters before the first break
+-         code
++         code
+
+=         label At least four characters before the first break
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label At least four characters before the first break
+=         code
+=             import soundness.*
+-             import hyphenations.englishHyphenation
++             import hyphenations.englishHyphenation
+
+-             t"hyphenation".hyphenate(hyphen = '-', leftMin = 4)   // t"hyphen-ation"
++             t"hyphenation".hyphenate(hyphen = '-', leftMin = 4)   // t"hyphen-ation"
+
+=             t"hyphenation".hyphenate(hyphen = '-', leftMin = 4)   // t"hyphen-ation"
+-       frame
++       frame
+
+-         label At least six characters after the last break
++         label Al menos seis caracteres después del último corte
+
+=         label At least six characters after the last break
+-         code
++         code
+
+=         label At least six characters after the last break
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label At least six characters after the last break
+=         code
+=             import soundness.*
+-             import hyphenations.englishHyphenation
++             import hyphenations.englishHyphenation
+
+-             t"hyphenation".hyphenate(hyphen = '-', rightMin = 6)   // t"hy-phenation"
++             t"hyphenation".hyphenate(hyphen = '-', rightMin = 6)   // t"hy-phenation"
+
+=             t"hyphenation".hyphenate(hyphen = '-', rightMin = 6)   // t"hy-phenation"
+-       frame
++       frame
+
+-         label In running text, word by word
++         label En texto corrido, palabra a palabra
+
+=         label In running text, word by word
+-         code
++         code
+
+=         label In running text, word by word
+=         code
+-             import soundness.*
++             import soundness.*
+
+=         label In running text, word by word
+=         code
+=             import soundness.*
+-             import hyphenations.englishHyphenation
++             import hyphenations.englishHyphenation
+
+-             t"the algorithm runs".hyphenate(hyphen = '-')   // t"the al-go-rithm runs"
++             t"the algorithm runs".hyphenate(hyphen = '-')   // t"the al-go-rithm runs"
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       Scratch buffers are shared by every word of one call and grown only when a longer word
+-       arrives, so hyphenating a long text allocates little beyond its result.
++       Los búferes temporales los comparten todas las palabras de una llamada y solo crecen cuando
++       llega una palabra más larga, así que dividir un texto largo reserva poca memoria más allá
++       de su resultado.
+
+-   refer polysyllabic.Hyphenation
++   refer polysyllabic.Hyphenation
+
+-   refer polysyllabic.syllables
++   refer polysyllabic.syllables
+
+- entry .syllables   splits text into syllables, with each run of non-letters as a segment of its own
+-     An extension on `Text`, using the `Hyphenation` given in scope, returning a `Sequence[Text]`.
+-     Each run of letters is split at its break points, and each run of non-letters is one
+-     segment, so concatenating the segments reproduces the original text exactly.
++ entry .syllables   divide el texto en sílabas, con cada racha de caracteres que no son letras como un segmento propio
++     Una extensión sobre `Text`, que usa la `Hyphenation` dada en el ámbito y devuelve una
++     `Sequence[Text]`. Cada racha de letras se divide por sus puntos de corte, y cada racha de
++     caracteres que no son letras es un segmento, de modo que concatenar los segmentos reproduce
++     exactamente el texto original.
+
+=     segment, so concatenating the segments reproduces the original text exactly.
+=
+-     ```scala
++     ```scala
+
+=     segment, so concatenating the segments reproduces the original text exactly.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     segment, so concatenating the segments reproduces the original text exactly.
+=
+=     ```scala
+=     import soundness.*
+-     import hyphenations.englishHyphenation
++     import hyphenations.englishHyphenation
+
+-     t"the algorithm".syllables.to[List]   // List(t"the", t" ", t"al", t"go", t"rithm")
++     t"the algorithm".syllables.to[List]   // List(t"the", t" ", t"al", t"go", t"rithm")
+
+=     t"the algorithm".syllables.to[List]   // List(t"the", t" ", t"al", t"go", t"rithm")
+-     ```
++     ```
+
+- entry .breakPoints   the offsets at which one word may be broken, under the hyphenation in scope
+-     An extension on `Text`, for code such as a line-wrapping algorithm which places breaks
+-     itself rather than inserting characters. Returns an immutable `Array[Int]` of offsets in
+-     ascending order: offset `p` means a hyphen may go between letters `p - 1` and `p`. It
+-     treats the whole text as one word, with the given `Hyphenation`'s own `leftMin` and
+-     `rightMin`; for running text, use `syllables` or `hyphenate`.
++ entry .breakPoints   los desplazamientos en los que puede partirse una palabra, según la división silábica del ámbito
++     Una extensión sobre `Text`, para código como un algoritmo de ajuste de línea que coloca los
++     cortes por sí mismo en lugar de insertar caracteres. Devuelve un `Array[Int]` inmutable de
++     desplazamientos en orden ascendente: el desplazamiento `p` significa que puede ir un guion
++     entre las letras `p - 1` y `p`. Trata todo el texto como una sola palabra, con los `leftMin`
++     y `rightMin` propios de la `Hyphenation` dada; para texto corrido, se usa `syllables` o
++     `hyphenate`.
+
+=     `rightMin`; for running text, use `syllables` or `hyphenate`.
+=
+-     ```scala
++     ```scala
+
+=     `rightMin`; for running text, use `syllables` or `hyphenate`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     `rightMin`; for running text, use `syllables` or `hyphenate`.
+=
+=     ```scala
+=     import soundness.*
+-     import hyphenations.englishHyphenation
++     import hyphenations.englishHyphenation
+
+-     t"hyphenation".breakPoints.to[List]   // List(2, 6)
++     t"hyphenation".breakPoints.to[List]   // List(2, 6)
+
+=     t"hyphenation".breakPoints.to[List]   // List(2, 6)
+-     ```
++     ```
+
+- entry .hyphenations   the bundled hyphenation languages, each a given to import by name
++ entry .hyphenations   los idiomas de división silábica incluidos, cada uno un given que se importa por nombre
+
+= entry .hyphenations   the bundled hyphenation languages, each a given to import by name
+-   detail
++   detail
+
+-       A choice package: which language's rules apply is decided by the `Hyphenation` given in
+-       scope, and one is imported by name, since `import hyphenations.*` does not import
+-       givens. It merges with the `soundness` umbrella's `hyphenations` package.
++       Un paquete de elección: qué reglas de idioma se aplican lo decide el given `Hyphenation`
++       del ámbito, y se importa uno por nombre, ya que `import hyphenations.*` no importa givens.
++       Se fusiona con el paquete `hyphenations` del paraguas `soundness`.
+
+=       givens. It merges with the `soundness` umbrella's `hyphenations` package.
+=
+-       ```scala
++       ```scala
+
+=       givens. It merges with the `soundness` umbrella's `hyphenations` package.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       givens. It merges with the `soundness` umbrella's `hyphenations` package.
+=
+=       ```scala
+=       import soundness.*
+-       import hyphenations.englishHyphenation
++       import hyphenations.englishHyphenation
+
+=       import hyphenations.englishHyphenation
+-       ```
++       ```
+
+-   entry .englishHyphenation   American English, from the CTAN hyph-utf8 patterns and TeX's exception list
+-       Parsed from `polysyllabic/hyph-en-us.tex`, bundled on the classpath and redistributed
+-       verbatim under the FSF all-permissive licence in its header, the first time the given
+-       is used. It carries the exceptions TeX ships, so `associate` breaks as `as-so-ciate`
+-       and `table` as `ta-ble`, where the patterns alone would not. If the bundled file is
+-       missing from the classpath, the given panics.
++   entry .englishHyphenation   inglés americano, a partir de los patrones hyph-utf8 de CTAN y la lista de excepciones de TeX
++       Se analiza a partir de `polysyllabic/hyph-en-us.tex`, incluido en el classpath y
++       redistribuido literalmente bajo la licencia totalmente permisiva de la FSF que figura en su
++       cabecera, la primera vez que se usa el given. Lleva las excepciones que distribuye TeX, así
++       que `associate` se parte como `as-so-ciate` y `table` como `ta-ble`, donde los patrones por
++       sí solos no lo harían. Si el fichero incluido falta en el classpath, el given entra en
++       pánico.

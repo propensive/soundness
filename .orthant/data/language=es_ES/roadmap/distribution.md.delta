@@ -1,0 +1,330 @@
+orthant 1 language
+
+- # Distribution and Release
++ # Distribución y publicación
+
+- Trust in a platform is trust in its releases: that they arrive predictably, that they say what
+- changed, that breaking changes come with a way through, and that what you download is what was
+- built. Soundness already has the rarest of these — every release is attested by a signed,
+- verifiable note recording exactly what was built and tested — but the rest of the story is
+- thinner: release notes live only in pull-request bodies, and there is no published convention
+- for migrating across breaking changes, even though cheap migration is the platform's entire
+- answer to API stability.
++ Confiar en una plataforma es confiar en sus versiones publicadas: que lleguen de forma
++ previsible, que digan qué ha cambiado, que los cambios incompatibles vengan con una forma de
++ superarlos, y que lo que descargas sea lo que se compiló. Soundness ya tiene la más rara de estas
++ cosas —cada versión está atestada por una nota firmada y verificable que registra exactamente qué
++ se compiló y probó—, pero el resto de la historia es más pobre: las notas de la versión solo viven
++ en los cuerpos de las pull requests, y no hay ninguna convención publicada para migrar a través de
++ los cambios incompatibles, aunque la migración barata sea toda la respuesta de la plataforma a la
++ estabilidad de las API.
+
+- Migration-first stability is the keystone. APIs change whenever a better or safer design
+- exists; what makes that tenable is that every breaking change ships with instructions precise
+- enough for an agent to execute against a downstream codebase. Beyond it lies distribution
+- itself: LIRA — one file per library release carrying every compiled representation, with a TEL
+- manifest, API-derived versioning and verifiable signatures — replaces Maven Central. Its
+- implementation began here as the reliquary library, but LIRA is a format and a tool in its own
+- right, like fury; it now lives in the `lira` repository (`dist-10`), and this roadmap tracks
+- only what Soundness must do to be published through it. Maven Central publishing has already been switched off: each tagged
+- version is published as a GitHub release whose assets are the individual component jars, an
+- interim channel until LIRA is live. Each released jar embeds its POM and ivy.xml, and
+- `make sync-releases` installs a release into `~/.ivy2/local`, from which Mill resolves the
+- components by version with no repository configuration. The gate requires attested LIRA
+- publishing to be live.
++ La estabilidad basada en la migración es la piedra angular. Las API cambian siempre que existe un
++ diseño mejor o más seguro; lo que hace que eso sea sostenible es que cada cambio incompatible se
++ publica con instrucciones lo bastante precisas como para que un agente las ejecute sobre una base
++ de código dependiente. Más allá está la distribución en sí: LIRA —un fichero por versión de
++ biblioteca que lleva todas las representaciones compiladas, con un manifiesto TEL, versionado
++ derivado de la API y firmas verificables— sustituye a Maven Central. Su implementación empezó aquí
++ como la biblioteca reliquary, pero LIRA es un formato y una herramienta por derecho propio, como
++ fury; ahora vive en el repositorio `lira` (`dist-10`), y esta hoja de ruta solo sigue lo que
++ Soundness debe hacer para publicarse a través de él. La publicación en Maven Central ya se ha desactivado: cada
++ versión etiquetada se publica como una release de GitHub cuyos ficheros adjuntos son los jars de
++ cada componente, un canal provisional hasta que LIRA esté en funcionamiento. Cada jar publicado
++ incrusta su POM y su ivy.xml, y `make sync-releases` instala una versión en `~/.ivy2/local`, desde
++ donde Mill resuelve los componentes por versión sin ninguna configuración de repositorios. La
++ compuerta exige que la publicación atestada en LIRA esté en funcionamiento.
+
+- The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
++ Los elementos de la línea de trabajo, con sus horizontes y sus dependencias estrictas;
++ [`status.tel`](status.tel) registra en qué punto está cada uno:
+
+- ```tabular
++ ```tabular
+
+- column  Item
+- column  Title
+- column  Horizon
+- column  Needs
+- row  dist-1  releases are changelogged  near
+- row  dist-2  the migration convention  near
+- row  dist-3  LIRA exists  near → mid
+- row  dist-4  API-derived versioning  mid  doc-5
+- row  dist-5  fury publishes LIRA  mid  tool-4
+- row  dist-6  the trust infrastructure  mid → long
+- row  dist-7  LIRA publishing, attested  mid  dist-3
+- row  dist-8  Maven Central retired  long  dist-5, dist-6, dist-7
+- row  dist-9  trust is verifiable by outsiders  long
+- row  dist-10  LIRA's implementation leaves this repository  near
++ column  Elemento
++ column  Título
++ column  Horizonte
++ column  Requiere
++ row  dist-1  las versiones tienen registro de cambios  cercano
++ row  dist-2  la convención de migración  cercano
++ row  dist-3  LIRA existe  cercano → medio
++ row  dist-4  versionado derivado de la API  medio  doc-5
++ row  dist-5  fury publica en LIRA  medio  tool-4
++ row  dist-6  la infraestructura de confianza  medio → lejano
++ row  dist-7  publicación en LIRA, atestada  medio  dist-3
++ row  dist-8  Maven Central retirado  lejano  dist-5, dist-6, dist-7
++ row  dist-9  la confianza es verificable desde fuera  lejano
++ row  dist-10  la implementación de LIRA sale de este repositorio  cercano
+
+- ```
++ ```
+
+- ## dist-1: releases are changelogged
++ ## dist-1: las versiones tienen registro de cambios
+
+- Horizon: near
+- Baseline: no changelog exists; release notes live in pull-request bodies (measured 2026-08-01)
++ Horizonte: cercano
++ Línea base: no existe ningún registro de cambios; las notas de la versión viven en los cuerpos de las pull requests (medido el 2026-08-01)
+
+- The release notes already written per pull request accumulate into a changelog, and the
+- release refuses to run without one. A release is now cut by pushing a signed tag (#2040):
+- `.github/workflows/release.yml` hands over to the shared `scala-release.yml` in
+- propensive/.github, configured by `etc/release`.
++ Las notas de la versión que ya se escriben en cada pull request se acumulan en un registro de
++ cambios, y la publicación se niega a ejecutarse sin él. Una versión se publica ahora empujando una
++ etiqueta firmada (#2040): `.github/workflows/release.yml` pasa el control al `scala-release.yml`
++ compartido de propensive/.github, configurado mediante `etc/release`.
+
+- Done when: a changelog file exists, and the release fails when the version being released
+- has no entry. Partly done: `release_notes.py` (propensive/.github) assembles every release's
+- **Changes** section from the body of each pull request merged since the previous tag, so the
+- changelog is built rather than kept; nothing yet *refuses* a release for an empty one.
++ Terminado cuando: existe un fichero de registro de cambios, y la publicación falla cuando la
++ versión que se publica no tiene entrada. Hecho en parte: `release_notes.py` (propensive/.github)
++ monta la sección **Changes** de cada versión a partir del cuerpo de cada pull request fusionada
++ desde la etiqueta anterior, de modo que el registro de cambios se genera en lugar de mantenerse;
++ nada *rechaza* todavía una versión con uno vacío.
+
+- ## dist-2: the migration convention
++ ## dist-2: la convención de migración
+
+= ## dist-2: the migration convention
+=
+- Horizon: near
++ Horizonte: cercano
+
+- The keystone item: `doc/migration.md` defines the agent-executable
+- migration-instruction format — what changed, how to detect affected code, the exact rewrite,
+- and how to verify it — and CI enforces that breaking-labelled pull requests carry instructions
+- in that format. Several tracks terminate here: it is what `api-6` flows through and what
+- `tool-5` serves to agents.
++ El elemento que es la piedra angular: `doc/migration.md` define el formato de instrucciones de
++ migración ejecutables por un agente —qué cambió, cómo detectar el código afectado, la reescritura
++ exacta y cómo verificarla—, y la CI obliga a que las pull requests etiquetadas como incompatibles
++ lleven instrucciones en ese formato. Varias líneas de trabajo terminan aquí: es por donde fluye
++ `api-6` y lo que `tool-5` sirve a los agentes.
+
+- Done when: `doc/migration.md` defines the convention, the release refuses to run without
+- `doc/migration/<version>.md`, and a CI check fails any pull request that changes `lib/**/src`
+- without touching the unreleased migration notes. The first two hold: the convention is
+- written, `0.65.0.md` onwards exist, and the `migration` directive in `etc/release` refuses a tag
+- while the version's notes are missing or another version's are unreleased. The pull-request
+- check is what remains: `main.yml` verifies the attestation and nothing else. The convention is
+- not label-based: every material change records itself in the next release's
+- `doc/migration/<version>.md`, named after that release from the start.
++ Terminado cuando: `doc/migration.md` define la convención, la publicación se niega a ejecutarse
++ sin `doc/migration/<version>.md`, y una comprobación de CI hace fallar cualquier pull request que
++ cambie `lib/**/src` sin tocar las notas de migración no publicadas. Las dos primeras se cumplen:
++ la convención está escrita, existen `0.65.0.md` y las posteriores, y la directiva `migration` de
++ `etc/release` rechaza una etiqueta mientras falten las notas de la versión o las de otra versión
++ estén sin publicar. Lo que queda es la comprobación de las pull requests: `main.yml` verifica la
++ atestación y nada más. La convención no se basa en etiquetas: cada cambio material queda
++ registrado en el `doc/migration/<version>.md` de la siguiente versión, que lleva el nombre de esa
++ versión desde el principio.
+
+- ## dist-3: LIRA exists
++ ## dist-3: LIRA existe
+
+- Horizon: near → mid
+- Baseline: the LIRA format implementation (then reliquary) reads and assembles `*.lira` files, with unit round-trips of trees, atoms, deltas and manifests; no whole-release round-trip exists (measured 2026-09-25)
++ Horizonte: cercano → medio
++ Línea base: la implementación del formato LIRA (entonces reliquary) lee y monta ficheros `*.lira`, con idas y vueltas unitarias de árboles, átomos, deltas y manifiestos; no existe ninguna ida y vuelta de una versión completa (medido el 2026-09-25)
+
+- The specification gets its reference implementation: a reader and writer for `*.lira` files
+- carrying classfiles, TASTy, Scala.js IR and Native IR with a TEL manifest, round-tripping the
+- current Soundness artifacts. The `lira` repository's format modules (`Lira`, `LiraAssembler`,
+- and the disciplines over anthology, degustation, mandible and xenophile) are that
+- implementation; what the criterion still wants is the scripted test over a real release, run
+- against it.
++ La especificación obtiene su implementación de referencia: un lector y un escritor de ficheros
++ `*.lira` que llevan ficheros de clase, TASTy, IR de Scala.js e IR de Native con un manifiesto TEL,
++ y que hacen la ida y vuelta de los artefactos actuales de Soundness. Los módulos de formato del
++ repositorio `lira` (`Lira`, `LiraAssembler`, y las disciplinas sobre anthology, degustation,
++ mandible y xenophile) son esa implementación; lo que el criterio aún pide es la prueba guionizada
++ sobre una versión real, ejecutada contra ella.
+
+- Done when: the reference implementation round-trips a Soundness release — every published
+- component packed into `*.lira` files and unpacked byte-identically — in a scripted test.
++ Terminado cuando: la implementación de referencia hace la ida y vuelta de una versión de
++ Soundness —cada componente publicado empaquetado en ficheros `*.lira` y desempaquetado idéntico
++ byte a byte— en una prueba guionizada.
+
+- ## dist-4: API-derived versioning
++ ## dist-4: versionado derivado de la API
+
+- Horizon: mid
+- Needs: doc-5
++ Horizonte: medio
++ Requiere: doc-5
+
+- Version numbers become statements about compatibility, computed from the API surface via the
+- extraction pipeline, rather than assertions of intent.
++ Los números de versión pasan a ser afirmaciones sobre la compatibilidad, calculadas a partir de la
++ superficie de la API mediante la canalización de extracción, en lugar de declaraciones de
++ intención.
+
+- Done when: the release pipeline computes each component's version from its extracted API
+- surface, and a scripted test demonstrates that an incompatible change forces the version it
+- should.
++ Terminado cuando: la canalización de publicación calcula la versión de cada componente a partir de
++ su superficie de API extraída, y una prueba guionizada demuestra que un cambio incompatible
++ fuerza la versión que debe.
+
+- ## dist-5: fury publishes LIRA
++ ## dist-5: fury publica en LIRA
+
+- Horizon: mid
+- Needs: tool-4
++ Horizonte: medio
++ Requiere: tool-4
+
+- Publishing is a build-tool concern: fury packs, signs and publishes `*.lira` files as part of
+- its ordinary release flow.
++ Publicar es asunto de la herramienta de compilación: fury empaqueta, firma y publica ficheros
++ `*.lira` como parte de su flujo de publicación habitual.
+
+- Done when: `fury publish` produces and publishes signed `*.lira` files for a real release.
++ Terminado cuando: `fury publish` produce y publica ficheros `*.lira` firmados para una versión
++ real.
+
+- ## dist-6: the trust infrastructure
++ ## dist-6: la infraestructura de confianza
+
+- Horizon: mid → long
++ Horizonte: medio → lejano
+
+- The rest of the LIRA distribution design: quantum-safe signatures, DNS-verified namespaces,
+- and a transparency log, at minimum-viable scale.
++ El resto del diseño de distribución de LIRA: firmas resistentes a la computación cuántica,
++ espacios de nombres verificados por DNS y un registro de transparencia, a escala mínima viable.
+
+- Done when: a `*.lira` file's signature, namespace and transparency-log inclusion are all
+- verified by a single command shipped with the tooling.
++ Terminado cuando: la firma, el espacio de nombres y la inclusión en el registro de transparencia
++ de un fichero `*.lira` se verifican todos con una sola orden incluida en las herramientas.
+
+- ## dist-7: LIRA publishing, attested
++ ## dist-7: publicación en LIRA, atestada
+
+- Horizon: mid
+- Needs: dist-3
++ Horizonte: medio
++ Requiere: dist-3
+
+- Every release is published as `*.lira` files, attested under the same git-note discipline as
+- the build itself. This is the gate's requirement: the channel that replaces Maven Central,
+- live and verifiable.
++ Cada versión se publica como ficheros `*.lira`, atestados con la misma disciplina de notas de git
++ que la propia compilación. Este es el requisito de la compuerta: el canal que sustituye a Maven
++ Central, en funcionamiento y verificable.
+
+- Done when: a release ships to LIRA, attested, and `make verify-attest` covers the published
+- artifacts.
++ Terminado cuando: una versión se publica en LIRA, atestada, y `make verify-attest` abarca los
++ artefactos publicados.
+
+- ## dist-8: Maven Central retired
++ ## dist-8: Maven Central retirado
+
+- Horizon: long
+- Needs: dist-5, dist-6, dist-7
++ Horizonte: lejano
++ Requiere: dist-5, dist-6, dist-7
+
+- Beyond the gate: fury resolves dependencies from LIRA, a fresh project builds with zero Maven
+- resolution, and the release pipeline no longer publishes to Maven Central at all.
++ Más allá de la compuerta: fury resuelve las dependencias desde LIRA, un proyecto nuevo se compila
++ sin ninguna resolución de Maven, y la canalización de publicación deja de publicar en Maven
++ Central por completo.
+
+- Done when: the release script contains no Maven Central publishing step, and a fresh fury
+- project builds and runs with the Maven resolver disabled.
++ Terminado cuando: el guion de publicación no contiene ningún paso de publicación en Maven Central,
++ y un proyecto nuevo de fury se compila y se ejecuta con el resolutor de Maven desactivado.
+
+- ## dist-9: trust is verifiable by outsiders
++ ## dist-9: la confianza es verificable desde fuera
+
+= ## dist-9: trust is verifiable by outsiders
+=
+- Horizon: long
++ Horizonte: lejano
+
+- The release process is documented end-to-end so that a third party — not a maintainer — can
+- verify any release's attestation from public information alone.
++ El proceso de publicación está documentado de principio a fin, de modo que un tercero —no un
++ mantenedor— pueda verificar la atestación de cualquier versión solo con información pública.
+
+- Done when: the verification instructions are published, and a scripted third-party
+- verification (no maintainer credentials, public data only) passes for the latest release.
++ Terminado cuando: las instrucciones de verificación están publicadas, y una verificación
++ guionizada por terceros (sin credenciales de mantenedor, solo datos públicos) pasa para la última
++ versión.
+
+- ## dist-10: LIRA's implementation leaves this repository
++ ## dist-10: la implementación de LIRA sale de este repositorio
+
+- Done: #2111 (2026-09-30)
+- Baseline was `lib/reliquary` (7,387 lines in `core`, `derive` and `test`) plus the four `lira` adapter components — `anthology.lira`, `degustation.lira`, `mandible.lira`, `xenophile.lira` — and their tests (measured 2026-09-25)
++ Hecho: #2111 (2026-09-30)
++ La línea base era `lib/reliquary` (7.387 líneas en `core`, `derive` y `test`) más los cuatro componentes adaptadores `lira` —`anthology.lira`, `degustation.lira`, `mandible.lira`, `xenophile.lira`— y sus pruebas (medido el 2026-09-25)
+
+- reliquary was written here (#1700) because the libraries it needed were here, but nothing in
+- Soundness depends on it: its only in-tree consumers are the four adapter components that plug
+- each language's atomizer and discipline into its SPI, the `soundness.tool` bundle that lists
+- them, and the degustation and mandible suites that exercise those adapters. Developing LIRA is
+- not Soundness work, any more than developing fury is. reliquary and the four adapters move to
+- the `lira` repository, which pins Soundness as an ordinary consumer; the `library-archives`
+- topic, the umbrella export, the compatibility row and the doc-coverage entry go with them.
+- They arrived there in propensive/lira#26 as its `format`, `derive`, `tasty`, `classfile`,
+- `foreign` and `bundle` modules, all in package `lira`, with their suites.
++ reliquary se escribió aquí (#1700) porque las bibliotecas que necesitaba estaban aquí, pero nada
++ en Soundness depende de ella: sus únicos consumidores dentro del árbol son los cuatro componentes
++ adaptadores que conectan el atomizador y la disciplina de cada lenguaje a su SPI, la agrupación
++ `soundness.tool` que los enumera, y las suites de degustation y mandible que ejercitan esos
++ adaptadores. Desarrollar LIRA no es trabajo de Soundness, igual que no lo es desarrollar fury.
++ reliquary y los cuatro adaptadores se trasladan al repositorio `lira`, que fija Soundness como un
++ consumidor corriente; el tema `library-archives`, la exportación del paraguas, la fila de
++ compatibilidad y la entrada de cobertura de documentación se van con ellos. Llegaron allí en
++ propensive/lira#26 como sus módulos `format`, `derive`, `tasty`, `classfile`, `foreign` y
++ `bundle`, todos en el paquete `lira`, con sus suites.
+
+- Done when:
++ Terminado cuando:
+
+-     test -d lib/reliquary || echo absent                          # absent
++     test -d lib/reliquary || echo absent                          # absent
+
+-     ls -d lib/*/src/lira 2>/dev/null | wc -l                      # 0
++     ls -d lib/*/src/lira 2>/dev/null | wc -l                      # 0
+
+-     git grep -c reliquary -- build.mill etc doc/modules | wc -l   # 0
++     git grep -c reliquary -- build.mill etc doc/modules | wc -l   # 0

@@ -1,0 +1,42 @@
+orthant 1 language
+
+- # `↯/s.73.11` — Time literal: negative value
++ # `↯/s.73.11` — Literal de hora: valor negativo
+
+- Raised by Aviation's `validTime` macro when a time literal is
+- negative.
++ Lo lanza la macro `validTime` de Aviation cuando un literal de hora es negativo.
+
+- ## Cause
++ ## Causa
+
+- A clock face cannot represent negative hours.
++ La esfera de un reloj no puede representar horas negativas.
+
+- ## Example message
++ ## Mensaje de ejemplo
+
+=
+- ```
++ ```
+
+- [↯/s.73.11] a time cannot be negative
++ [↯/s.73.11] a time cannot be negative
+
+= [↯/s.73.11] a time cannot be negative
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- Use a non-negative literal value.
++ Usa un valor literal no negativo.
+
+- ## See also
++ ## Véase también
+
+- - The other time literal errors: [Families](README.md#families)
+- - Source: `lib/aviation/src/core/aviation.internal.scala`
++ - Los demás errores de literales de hora: [Familias](README.md#families)
++ - Código fuente: `lib/aviation/src/core/aviation.internal.scala`

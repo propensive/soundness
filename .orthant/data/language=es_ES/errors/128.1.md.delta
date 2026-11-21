@@ -1,0 +1,191 @@
+orthant 1 language
+
+- # `↯/s.128.1` — `Xml.Error`
++ # `↯/s.128.1` — `Xml.Error`
+
+- Raised when Xylophone cannot read a value from XML.
++ Se lanza cuando Xylophone no puede leer un valor a partir de XML.
+
+- ## Cause
++ ## Causa
+
+- This is the *decoding* error: the document parsed, but a value could not be
+- read out of it. A document that is not well-formed XML at all is a
+- `Parse.Error` (`↯/s.60.2`) over the `Xml` format, and a failure to evaluate an
+- XPath is `↯/s.128.2`.
++ Este es el error de *decodificación*: el documento se analizó, pero no pudo leerse un valor a
++ partir de él. Un documento que ni siquiera es XML bien formado es un `Parse.Error` (`↯/s.60.2`)
++ sobre el formato `Xml`, y un fallo al evaluar un XPath es `↯/s.128.2`.
+
+- These errors are raised *and continue*: a record with several bad fields
+- accrues one error per field rather than stopping at the first. The reason
+- says what went wrong; the ambient `Foci[Xml.Focus]` says where.
++ Estos errores se lanzan *y continúan*: un registro con varios campos erróneos acumula un error por
++ campo en lugar de detenerse en el primero. El motivo dice qué fue mal; el `Foci[Xml.Focus]`
++ ambiental dice dónde.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Meaning
+- column  Message
+- column  Resolution
+- row  `↯/s.128.1.1`  `Malformed`  The element had text, but it did not represent a value of the expected type.  `[↯/s.128.1.1] the XML could not be read because the text abc is not a valid Int`  Correct the content, or read the field at a type that admits it.
++ column  Código
++ column  Motivo
++ column  Significado
++ column  Mensaje
++ column  Solución
++ row  `↯/s.128.1.1`  `Malformed`  El elemento tenía texto, pero no representaba un valor del tipo esperado.  `[↯/s.128.1.1] the XML could not be read because the text abc is not a valid Int`  Corrige el contenido, o lee el campo con un tipo que lo admita.
+
+= row  `↯/s.128.1.1`  `Malformed`  The element had text, but it did not represent a value of the expected type.  `[↯/s.128.1.1] the XML could not be read because the text abc is not a valid Int`  Correct the content, or read the field at a type that admits it.
+- row
++ row
+
+-   cell  `↯/s.128.1.2`
++   cell  `↯/s.128.1.2`
+
+-   cell  `Untextual`
++   cell  `Untextual`
+
+-   cell  The element was present but carried no text to read at the expected type.
++   cell  El elemento estaba presente pero no llevaba texto que leer con el tipo esperado.
+
+-   cell  `[↯/s.128.1.2] the XML could not be read because the element has no text to read as Int`
++   cell  `[↯/s.128.1.2] the XML could not be read because the element has no text to read as Int`
+
+=   cell  `[↯/s.128.1.2] the XML could not be read because the element has no text to read as Int`
+-   cell
++   cell
+
+=   cell  `[↯/s.128.1.2] the XML could not be read because the element has no text to read as Int`
+=   cell
+- row
++ row
+
+-   cell  `↯/s.128.1.3`
++   cell  `↯/s.128.1.3`
+
+-   cell  `Absent`
++   cell  `Absent`
+
+-   cell  No element or attribute supplied a required value of a known type.
++   cell  Ningún elemento ni atributo aportó un valor obligatorio de un tipo conocido.
+
+=   cell  No element or attribute supplied a required value of a known type.
+-   cell
++   cell
+
+=   cell  No element or attribute supplied a required value of a known type.
+=   cell
+-   cell
++   cell
+
+=   cell  No element or attribute supplied a required value of a known type.
+=   cell
+=   cell
+- row
++ row
+
+-   cell  `↯/s.128.1.4`
++   cell  `↯/s.128.1.4`
+
+-   cell  `AbsentProduct`
++   cell  `AbsentProduct`
+
+-   cell  A required nested record had no element, and no `Default` was in scope.
++   cell  Un registro anidado obligatorio no tenía elemento, y no había ningún `Default` en el ámbito.
+
+=   cell  A required nested record had no element, and no `Default` was in scope.
+-   cell
++   cell
+
+-   cell  Supply the element, or give the type a `Default`.
++   cell  Aporta el elemento, o da al tipo un `Default`.
+
+=   cell  Supply the element, or give the type a `Default`.
+- row
++ row
+
+-   cell  `↯/s.128.1.5`
++   cell  `↯/s.128.1.5`
+
+-   cell  `AbsentVariant`
++   cell  `AbsentVariant`
+
+-   cell  A required sum type had no element, and no `Default` was in scope.
++   cell  Un tipo suma obligatorio no tenía elemento, y no había ningún `Default` en el ámbito.
+
+=   cell  A required sum type had no element, and no `Default` was in scope.
+-   cell
++   cell
+
+=   cell  A required sum type had no element, and no `Default` was in scope.
+=   cell
+-   cell
++   cell
+
+- row  `↯/s.128.1.6`  `UnknownVariant`  The discriminant attribute named no variant of the sum being read.  `[↯/s.128.1.6] the XML could not be read because circle does not name a variant of Shape`  Use one of the sum's variant names, or relabel the variant.
++ row  `↯/s.128.1.6`  `UnknownVariant`  El atributo discriminante no nombraba ninguna variante de la suma que se leía.  `[↯/s.128.1.6] the XML could not be read because circle does not name a variant of Shape`  Usa uno de los nombres de variante de la suma, o cambia el rótulo de la variante.
+
+= row  `↯/s.128.1.6`  `UnknownVariant`  The discriminant attribute named no variant of the sum being read.  `[↯/s.128.1.6] the XML could not be read because circle does not name a variant of Shape`  Use one of the sum's variant names, or relabel the variant.
+- row
++ row
+
+-   cell  `↯/s.128.1.7`
++   cell  `↯/s.128.1.7`
+
+-   cell  `Empty`
++   cell  `Empty`
+
+-   cell  An element carried no text, read through a generic text codec that does not name its target type.
++   cell  Un elemento no llevaba texto, leído mediante un códec de texto genérico que no nombra su tipo de destino.
+
+=   cell  An element carried no text, read through a generic text codec that does not name its target type.
+-   cell
++   cell
+
+=   cell  An element carried no text, read through a generic text codec that does not name its target type.
+=   cell
+-   cell
++   cell
+
+=   cell  An element carried no text, read through a generic text codec that does not name its target type.
+=   cell
+=   cell
+- row
++ row
+
+-   cell  `↯/s.128.1.8`
++   cell  `↯/s.128.1.8`
+
+-   cell  `Missing`
++   cell  `Missing`
+
+-   cell  An element or attribute was not present, read through a codec that does not name its target type.
++   cell  Un elemento o atributo no estaba presente, leído mediante un códec que no nombra su tipo de destino.
+
+=   cell  An element or attribute was not present, read through a codec that does not name its target type.
+-   cell
++   cell
+
+=   cell  An element or attribute was not present, read through a codec that does not name its target type.
+=   cell
+-   cell
++   cell
+
+- ```
++ ```
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/xylophone/src/core/xylophone.Xml.scala`
+- - Related: `↯/s.60.2` (`Parse.Error`) for a malformed document, `↯/s.128.2` for XPath evaluation
++ - Código fuente: `lib/xylophone/src/core/xylophone.Xml.scala`
++ - Relacionado: `↯/s.60.2` (`Parse.Error`) para un documento mal formado, `↯/s.128.2` para la evaluación de XPath

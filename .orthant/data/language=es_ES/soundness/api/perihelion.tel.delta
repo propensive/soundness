@@ -1,0 +1,1599 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base perihelion
++ base perihelion
+
+- import soundness
++ import soundness
+
+- info   WebSockets: an upgraded HTTP connection as a typed message loop, as server handler and as client
++ info   WebSockets: una conexión HTTP actualizada como bucle de mensajes tipado, como manejador de servidor y como cliente
+
+- detail
++ detail
+
+-     _Perihelion_ speaks the WebSocket protocol (RFC 6455) on both sides of a connection. On
+-     the **server**, a scintillate handler returns `webSocket(initial)(handle)`: the request
+-     is upgraded with a `101 Switching Protocols` handshake, and the connection becomes a
+-     state machine — each inbound message is decoded to the handler's message type and
+-     passed to `handle` with the current state, which answers with a `Control`: `Reply` to
+-     send a message and continue, `Continue` to wait silently, `Conclude` to send a last
+-     message and close, or `Terminate` to close at once. On the **client**, a
+-     `Websocket.Url` (`ws://` or `wss://`) is a coaxial transport, so `url.react(initial)
+-     { message => … }` connects, performs the handshake and runs the same loop in the other
+-     direction, `url.exchange` lets the client speak first, and `url.session` lends the
+-     live `Websocket.Connection` for free-form use.
++     _Perihelion_ habla el protocolo WebSocket (RFC 6455) en ambos lados de una conexión. En el
++     **servidor**, un manejador de scintillate devuelve `webSocket(initial)(handle)`: la
++     petición se actualiza con un handshake `101 Switching Protocols`, y la conexión se
++     convierte en una máquina de estados: cada mensaje entrante se decodifica al tipo de
++     mensaje del manejador y se pasa a `handle` junto con el estado actual, que responde con un
++     `Control`: `Reply` para enviar un mensaje y continuar, `Continue` para esperar en
++     silencio, `Conclude` para enviar un último mensaje y cerrar, o `Terminate` para cerrar de
++     inmediato. En el **cliente**, una `Websocket.Url` (`ws://` o `wss://`) es un transporte de
++     coaxial, así que `url.react(initial) { message => … }` se conecta, realiza el handshake y
++     ejecuta el mismo bucle en la otra dirección, `url.exchange` permite que el cliente hable
++     primero, y `url.session` presta la `Websocket.Connection` activa para un uso libre.
+
+=     live `Websocket.Connection` for free-form use.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     live `Websocket.Connection` for free-form use.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     live `Websocket.Connection` for free-form use.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     live `Websocket.Connection` for free-form use.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     import soundness.*
++     import soundness.*
+
+=     import soundness.*
+-     import logging.silentLogging
++     import logging.silentLogging
+
+=     import soundness.*
+=     import logging.silentLogging
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=     import soundness.*
+=     import logging.silentLogging
+=     import strategies.throwUnsafely
+-     import threads.virtualThreads
++     import threads.virtualThreads
+
+=     import soundness.*
+=     import logging.silentLogging
+=     import strategies.throwUnsafely
+=     import threads.virtualThreads
+-     import probates.awaitProbate
++     import probates.awaitProbate
+
+-     import webserverErrorPages.minimalErrorPage
++     import webserverErrorPages.minimalErrorPage
+
+=     import webserverErrorPages.minimalErrorPage
+-     import formatting.compactJsonFormatting
++     import formatting.compactJsonFormatting
+
+=     import webserverErrorPages.minimalErrorPage
+=     import formatting.compactJsonFormatting
+-     import codepages.utf8Codepage
++     import codepages.utf8Codepage
+
+=     import webserverErrorPages.minimalErrorPage
+=     import formatting.compactJsonFormatting
+=     import codepages.utf8Codepage
+-     import charsets.utf8Charset
++     import charsets.utf8Charset
+
+=     import webserverErrorPages.minimalErrorPage
+=     import formatting.compactJsonFormatting
+=     import codepages.utf8Codepage
+=     import charsets.utf8Charset
+-     import textSanitizers.skipSanitizer
++     import textSanitizers.skipSanitizer
+
+=     import webserverErrorPages.minimalErrorPage
+=     import formatting.compactJsonFormatting
+=     import codepages.utf8Codepage
+=     import charsets.utf8Charset
+=     import textSanitizers.skipSanitizer
+=
+-     case class Ping(value: Int)
++     case class Ping(value: Int)
+
+=     import webserverErrorPages.minimalErrorPage
+=     import formatting.compactJsonFormatting
+=     import codepages.utf8Codepage
+=     import charsets.utf8Charset
+=     import textSanitizers.skipSanitizer
+=
+=     case class Ping(value: Int)
+=
+-     def main(): Unit = supervise:
++     def main(): Unit = supervise:
+
+-       SocketServer(8080).handle:
++       SocketServer(8080).handle:
+
+-         webSocket(): (ping: Ping over Json) =>
++         webSocket(): (ping: Ping over Json) =>
+
+-           Control.Reply(Ping(ping.value + 1).over[Json], ())
++           Control.Reply(Ping(ping.value + 1).over[Json], ())
+
+=           Control.Reply(Ping(ping.value + 1).over[Json], ())
+-     ```
++     ```
+
+-     Messages are typed. The raw `Message` (a `Text` or a `Binary` frame) is the untyped
+-     form; any coaxial `Ingressive`/`Transmissible` type such as `Text` is carried directly;
+-     and `value over Json` (or `over Tel`, or any format `Encodable in Text`) carries a
+-     record as the format's text in a text frame, through `overIngressive` and
+-     `overTransmissible`. The protocol's sharp edges — masking (clients mask, servers do
+-     not, and each side rejects the other's mistake), fragmentation and reassembly,
+-     `Ping`/`Pong`, incremental UTF-8 validation of text, close codes — are handled by the
+-     shared `Reader` and `Channel`, never surface in a handler, and conform to the Autobahn
+-     test suite. A violation is a `Websocket.Error` whose reason carries the close code the
+-     peer is sent.
++     Los mensajes son tipados. El `Message` en bruto (una trama `Text` o `Binary`) es la forma
++     sin tipo; cualquier tipo `Ingressive`/`Transmissible` de coaxial, como `Text`, se
++     transporta directamente; y `value over Json` (u `over Tel`, o cualquier formato
++     `Encodable in Text`) transporta un registro como el texto del formato en una trama de
++     texto, mediante `overIngressive` y `overTransmissible`. Las aristas cortantes del
++     protocolo (el enmascaramiento, ya que los clientes enmascaran, los servidores no, y cada
++     lado rechaza el error del otro; la fragmentación y el reensamblado; `Ping`/`Pong`; la
++     validación incremental del texto como UTF-8; los códigos de cierre) las gestionan el
++     `Reader` y el `Channel` compartidos, nunca aparecen en un manejador y cumplen la suite de
++     pruebas Autobahn. Una infracción es un `Websocket.Error` cuyo motivo lleva el código de
++     cierre que se envía al interlocutor.
+
+-     The library is one component, `perihelion.core` (JVM), over scintillate's server and
+-     coaxial's sockets. `Websocket.Masking`, `over`, `overIngressive`, `overTransmissible`,
+-     `Websocket`, `webSocket` and `WsSessional` are exported to the `soundness` umbrella.
+-     Three names are not: `Message`, because fulminate's `Message` already holds that name
+-     in the umbrella (`import perihelion.Websocket.Message`), and the client givens `wsClient` and
+-     `wsSessional`, whose capture-annotated refinement types a synthesized export forwarder
+-     would lose (`import perihelion.wsClient`, `import perihelion.wsSessional`). `Channel`
+-     and `Reader` are public in the package but not exported.
++     La biblioteca es un único componente, `perihelion.core` (JVM), sobre el servidor de
++     scintillate y los sockets de coaxial. `Websocket.Masking`, `over`, `overIngressive`,
++     `overTransmissible`, `Websocket`, `webSocket` y `WsSessional` se exportan al paraguas
++     `soundness`. Tres nombres no: `Message`, porque el `Message` de fulminate ya ocupa ese
++     nombre en el paraguas (`import perihelion.Websocket.Message`), y los givens de cliente
++     `wsClient` y `wsSessional`, cuyos tipos refinados con anotaciones de captura perdería un
++     reenviador de exportación sintetizado (`import perihelion.wsClient`,
++     `import perihelion.wsSessional`). `Channel` y `Reader` son públicos en el paquete pero no
++     se exportan.
+
+- refer perihelion.webSocket
++ refer perihelion.webSocket
+
+- refer perihelion.Websocket
++ refer perihelion.Websocket
+
+- refer perihelion.Websocket.Message
++ refer perihelion.Websocket.Message
+
+- refer perihelion.wsClient
++ refer perihelion.wsClient
+
+- refer coaxial.Control
++ refer coaxial.Control
+
+- entry .webSocket   upgrades the request being served to a WebSocket, handled as a stateful message loop
+-     `webSocket(initial)(handle)` is called inside a scintillate handler, where an
+-     `Http.Request` (the connection) is in context, and returns a `Websocket[message,
+-     state]`, which is `Servable`: returning it from the handler sends the `101` handshake
+-     and the connection becomes the loop. `initial` is the starting state (default `()`),
+-     and `handle` is a context function `(state: state) ?=> message => Control[state]`:
+-     each decoded message is passed with the state in context, and the `Control` returned
+-     says what to send and what the next state is (`Unset` keeps the current one). The
+-     message type is inferred from the handler's parameter, so it is annotated there; a
+-     handler which reads its state names it with an explicit context parameter,
+-     `(count: Int) ?=> (message: Message) => …`, since a context parameter inserted by
+-     conversion has no name.
++ entry .webSocket   actualiza a WebSocket la petición que se está sirviendo, gestionada como un bucle de mensajes con estado
++     `webSocket(initial)(handle)` se llama dentro de un manejador de scintillate, donde hay
++     una `Http.Request` (la conexión) en el contexto, y devuelve un
++     `Websocket[message, state]`, que es `Servable`: devolverlo desde el manejador envía el
++     handshake `101` y la conexión se convierte en el bucle. `initial` es el estado inicial
++     (por defecto `()`), y `handle` es una función contextual
++     `(state: state) ?=> message => Control[state]`: cada mensaje decodificado se pasa con el
++     estado en el contexto, y el `Control` devuelto dice qué enviar y cuál es el siguiente
++     estado (`Unset` conserva el actual). El tipo de mensaje se infiere del parámetro del
++     manejador, así que se anota ahí; un manejador que lee su estado lo nombra con un
++     parámetro contextual explícito, `(count: Int) ?=> (message: Message) => …`, puesto que un
++     parámetro contextual insertado por conversión no tiene nombre.
+
+=     conversion has no name.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     ```scala fuel
+-     frame
++     frame
+
+-       label An echo of raw messages
++       label Un eco de mensajes en bruto
+
+=       label An echo of raw messages
+-       code
++       code
+
+=       label An echo of raw messages
+=       code
+-           import soundness.*
++           import soundness.*
+
+=       label An echo of raw messages
+=       code
+=           import soundness.*
+-           import perihelion.Websocket.Message
++           import perihelion.Websocket.Message
+
+=       label An echo of raw messages
+=       code
+=           import soundness.*
+=           import perihelion.Websocket.Message
+-           import logging.silentLogging
++           import logging.silentLogging
+
+=       label An echo of raw messages
+=       code
+=           import soundness.*
+=           import perihelion.Websocket.Message
+=           import logging.silentLogging
+-           import strategies.throwUnsafely
++           import strategies.throwUnsafely
+
+=       label An echo of raw messages
+=       code
+=           import soundness.*
+=           import perihelion.Websocket.Message
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+-           import threads.virtualThreads
++           import threads.virtualThreads
+
+=       label An echo of raw messages
+=       code
+=           import soundness.*
+=           import perihelion.Websocket.Message
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+-           import probates.awaitProbate
++           import probates.awaitProbate
+
+=       label An echo of raw messages
+=       code
+=           import soundness.*
+=           import perihelion.Websocket.Message
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+-           import webserverErrorPages.minimalErrorPage
++           import webserverErrorPages.minimalErrorPage
+
+=       label An echo of raw messages
+=       code
+=           import soundness.*
+=           import perihelion.Websocket.Message
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+=           import webserverErrorPages.minimalErrorPage
+=
+-           def main(): Unit = supervise:
++           def main(): Unit = supervise:
+
+=       label An echo of raw messages
+=       code
+=           import soundness.*
+=           import perihelion.Websocket.Message
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+=           import webserverErrorPages.minimalErrorPage
+=
+=           def main(): Unit = supervise:
+-             SocketServer(8080).handle:
++             SocketServer(8080).handle:
+
+-               webSocket(): (message: Message) =>
++               webSocket(): (message: Message) =>
+
+-                 Control.Reply(message, ())
++                 Control.Reply(message, ())
+
+=                 Control.Reply(message, ())
+-     frame
++     frame
+
+-       label A count of messages, threaded as the state
++       label Una cuenta de mensajes, que se pasa como estado
+
+=       label A count of messages, threaded as the state
+-       code
++       code
+
+=       label A count of messages, threaded as the state
+=       code
+-           import soundness.*
++           import soundness.*
+
+=       label A count of messages, threaded as the state
+=       code
+=           import soundness.*
+-           import perihelion.Websocket.Message
++           import perihelion.Websocket.Message
+
+=       label A count of messages, threaded as the state
+=       code
+=           import soundness.*
+=           import perihelion.Websocket.Message
+-           import logging.silentLogging
++           import logging.silentLogging
+
+=       label A count of messages, threaded as the state
+=       code
+=           import soundness.*
+=           import perihelion.Websocket.Message
+=           import logging.silentLogging
+-           import strategies.throwUnsafely
++           import strategies.throwUnsafely
+
+=       label A count of messages, threaded as the state
+=       code
+=           import soundness.*
+=           import perihelion.Websocket.Message
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+-           import threads.virtualThreads
++           import threads.virtualThreads
+
+=       label A count of messages, threaded as the state
+=       code
+=           import soundness.*
+=           import perihelion.Websocket.Message
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+-           import probates.awaitProbate
++           import probates.awaitProbate
+
+=       label A count of messages, threaded as the state
+=       code
+=           import soundness.*
+=           import perihelion.Websocket.Message
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+-           import webserverErrorPages.minimalErrorPage
++           import webserverErrorPages.minimalErrorPage
+
+=       label A count of messages, threaded as the state
+=       code
+=           import soundness.*
+=           import perihelion.Websocket.Message
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+=           import webserverErrorPages.minimalErrorPage
+=
+-           def main(): Unit = supervise:
++           def main(): Unit = supervise:
+
+=       label A count of messages, threaded as the state
+=       code
+=           import soundness.*
+=           import perihelion.Websocket.Message
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+=           import webserverErrorPages.minimalErrorPage
+=
+=           def main(): Unit = supervise:
+-             SocketServer(8080).handle:
++             SocketServer(8080).handle:
+
+-               webSocket(0): (count: Int) ?=> (message: Message) =>
++               webSocket(0): (count: Int) ?=> (message: Message) =>
+
+-                 Control.Reply(Message.Text(t"message ${count + 1}"), count + 1)
++                 Control.Reply(Message.Text(t"message ${count + 1}"), count + 1)
+
+=                 Control.Reply(Message.Text(t"message ${count + 1}"), count + 1)
+-     frame
++     frame
+
+-       label Typed messages over JSON, and a close after the tenth
++       label Mensajes tipados sobre JSON, y un cierre tras el décimo
+
+=       label Typed messages over JSON, and a close after the tenth
+-       code
++       code
+
+=       label Typed messages over JSON, and a close after the tenth
+=       code
+-           import soundness.*
++           import soundness.*
+
+=           import soundness.*
+-           import logging.silentLogging
++           import logging.silentLogging
+
+=           import soundness.*
+=           import logging.silentLogging
+-           import strategies.throwUnsafely
++           import strategies.throwUnsafely
+
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+-           import threads.virtualThreads
++           import threads.virtualThreads
+
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+-           import probates.awaitProbate
++           import probates.awaitProbate
+
+=           import soundness.*
+=           import logging.silentLogging
+=           import strategies.throwUnsafely
+=           import threads.virtualThreads
+=           import probates.awaitProbate
+-           import webserverErrorPages.minimalErrorPage
++           import webserverErrorPages.minimalErrorPage
+
+-           import formatting.compactJsonFormatting
++           import formatting.compactJsonFormatting
+
+-           import codepages.utf8Codepage
++           import codepages.utf8Codepage
+
+-           import charsets.utf8Charset
++           import charsets.utf8Charset
+
+-           import textSanitizers.skipSanitizer
++           import textSanitizers.skipSanitizer
+
+-           case class Ping(value: Int)
++           case class Ping(value: Int)
+
+=           case class Ping(value: Int)
+=
+-           def main(): Unit = supervise:
++           def main(): Unit = supervise:
+
+=           case class Ping(value: Int)
+=
+=           def main(): Unit = supervise:
+-             SocketServer(8080).handle:
++             SocketServer(8080).handle:
+
+-               webSocket(0): (count: Int) ?=> (ping: Ping over Json) =>
++               webSocket(0): (count: Int) ?=> (ping: Ping over Json) =>
+
+-                 if count < 10 then Control.Reply(Ping(ping.value + 1).over[Json], count + 1)
++                 if count < 10 then Control.Reply(Ping(ping.value + 1).over[Json], count + 1)
+
+-                 else Control.Conclude(Ping(0).over[Json], count)
++                 else Control.Conclude(Ping(0).over[Json], count)
+
+=                 else Control.Conclude(Ping(0).over[Json], count)
+-     ##
++     ##
+
+=     ##
+-     ```
++     ```
+
+-     The message type must be `Ingressive`: the raw `Message` (decoded by identity, so a
+-     handler sees whether a frame was text or binary), `Text` or `Data` through coaxial's
+-     own instances, or `value over format` through `overIngressive`, which needs the
+-     format's `Decodable in Text` (a `Json`'s needs `formatting` and `textSanitizers`
+-     givens), the value's `Decodable in format`, a `Charset` and a `Tactic[Hazard]` (such
+-     as `strategies.throwUnsafely`). A `Reply` or `Conclude` takes any `Transmissible`
+-     value, serialized to one complete frame. The handler runs on its own task under the
+-     `Monitor` and `Probate` in scope; a `Websocket.Error` in the loop closes the connection
+-     with the reason's close code, and the peer's `Close` ends it with the initial state's
+-     type as the task's result.
++     El tipo de mensaje debe ser `Ingressive`: el `Message` en bruto (decodificado por
++     identidad, de modo que un manejador ve si una trama era de texto o binaria), `Text` o
++     `Data` mediante las instancias propias de coaxial, o `value over format` mediante
++     `overIngressive`, que necesita el `Decodable in Text` del formato (el de un `Json`
++     necesita givens de `formatting` y `textSanitizers`), el `Decodable in format` del valor,
++     un `Charset` y una `Tactic[Hazard]` (como `strategies.throwUnsafely`). Un `Reply` o un
++     `Conclude` acepta cualquier valor `Transmissible`, serializado en una trama completa. El
++     manejador se ejecuta en su propia tarea bajo el `Monitor` y la `Probate` del ámbito; un
++     `Websocket.Error` en el bucle cierra la conexión con el código de cierre del motivo, y el
++     `Close` del interlocutor la termina con el tipo del estado inicial como resultado de la
++     tarea.
+
+- entry .Websocket   the server-side WebSocket: the handshake response, its channel and its handler task
++ entry .Websocket   el WebSocket del lado del servidor: la respuesta del handshake, su canal y su tarea manejadora
+
+= entry .Websocket   the server-side WebSocket: the handshake response, its channel and its handler task
+-   detail
++   detail
+
+-       `Websocket[message, state]` is what `webSocket` returns: a `Servable` value whose
+-       response is the `101 Switching Protocols` handshake — `Sec-WebSocket-Accept` computed
+-       from the request's `Sec-WebSocket-Key` and `.magic`, `Connection: Upgrade`,
+-       `Upgrade: websocket` — with the outgoing frame stream as its body, which scintillate
+-       pumps to the socket for as long as the connection lasts. On construction it starts
+-       `#task`, which reads the client's frames, reassembles them into messages, decodes each
+-       to `message` and runs the handler loop. A handler may keep the value before returning
+-       it, to push a message through `#channel` before the client has sent anything:
++       `Websocket[message, state]` es lo que devuelve `webSocket`: un valor `Servable` cuya
++       respuesta es el handshake `101 Switching Protocols` (`Sec-WebSocket-Accept` calculado a
++       partir del `Sec-WebSocket-Key` de la petición y de `.magic`, `Connection: Upgrade`,
++       `Upgrade: websocket`) con el flujo de tramas salientes como cuerpo, que scintillate
++       bombea al socket mientras dure la conexión. Al construirse inicia `#task`, que lee las
++       tramas del cliente, las reensambla en mensajes, decodifica cada uno a `message` y ejecuta
++       el bucle del manejador. Un manejador puede guardar el valor antes de devolverlo, para
++       enviar un mensaje a través de `#channel` antes de que el cliente haya enviado nada:
+
+=       it, to push a message through `#channel` before the client has sent anything:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       it, to push a message through `#channel` before the client has sent anything:
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       it, to push a message through `#channel` before the client has sent anything:
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       it, to push a message through `#channel` before the client has sent anything:
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+=       ##
+=       import soundness.*
+-       import perihelion.Websocket.Message
++       import perihelion.Websocket.Message
+
+=       import perihelion.Websocket.Message
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       import perihelion.Websocket.Message
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       import perihelion.Websocket.Message
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+=       import perihelion.Websocket.Message
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+-       import probates.awaitProbate
++       import probates.awaitProbate
+
+-       import webserverErrorPages.minimalErrorPage
++       import webserverErrorPages.minimalErrorPage
+
+=       import webserverErrorPages.minimalErrorPage
+=
+-       def main(): Unit = supervise:
++       def main(): Unit = supervise:
+
+-         SocketServer(8080).handle:
++         SocketServer(8080).handle:
+
+-           val websocket = webSocket(): (message: Message) => Control.Continue(())
++           val websocket = webSocket(): (message: Message) => Control.Continue(())
+
+-           websocket.channel.send(Message.Text(t"welcome"))
++           websocket.channel.send(Message.Text(t"welcome"))
+
+-           websocket
++           websocket
+
+=           websocket
+-       ```
++       ```
+
+-       The constructor takes the request, the initial state, a decoder from `Message` to
+-       the handler's type, and the handler; `webSocket` builds the decoder and is the
+-       intended way to make one. A request with no `Sec-WebSocket-Key` header is a panic:
+-       the handler should only upgrade a request which asked to be. The companion holds the
+-       protocol's other pieces: the client's `.Url` and `.Connection`, the wire-level
+-       `.Frame`, and the `.Error` and `.Event` types.
++       El constructor recibe la petición, el estado inicial, un decodificador de `Message` al
++       tipo del manejador, y el manejador; `webSocket` construye el decodificador y es la forma
++       prevista de crear uno. Una petición sin cabecera `Sec-WebSocket-Key` hace entrar en
++       pánico: el manejador solo debe actualizar una petición que lo haya pedido. El objeto
++       compañero contiene las demás piezas del protocolo: la `.Url` y la `.Connection` del
++       cliente, la `.Frame` del nivel de transmisión, y los tipos `.Error` y `.Event`.
+
+-   refer perihelion.webSocket
++   refer perihelion.webSocket
+
+=   refer perihelion.webSocket
+-   refer perihelion.Websocket.Channel
++   refer perihelion.Websocket.Channel
+
+-   refer perihelion.Websocket.Reader
++   refer perihelion.Websocket.Reader
+
+-   refer coaxial.Control
++   refer coaxial.Control
+
+-   entry .magic   the GUID RFC 6455 appends to the key, `258EAFA5-E914-47DA-95CA-C5AB0DC85B11`
+-       `Sec-WebSocket-Accept` is the Base64 of the SHA-1 of the client's `Sec-WebSocket-Key`
+-       followed by this text; the server computes it in `.servable` and the client checks it
+-       in `wsClient`.
+-   entry .servable   serves a `Websocket` as the `101` handshake whose body is the outgoing frame stream
+-       The given which lets a handler return a `Websocket`. The body is `Flowing`, and its
+-       source is the channel's single reader endpoint, materialized exactly once by the
+-       server's response writer.
+-   entry .Url   a `ws://` or `wss://` URL: `urticose.Url["ws" | "wss"]`
+-       Decoded from text as any `Url` is (`t"ws://localhost:8080/".as[Websocket.Url]`),
+-       with no bespoke scheme machinery; the port defaults to `80` for `ws` and `443` for
+-       `wss` when the authority omits it. A `wss://` connection is opened over TLS through
+-       coaxial's `SecureEndpoint`, configured by the `Tls` given in scope — the system trust
+-       store with hostname verification by default, or `Tls(context, verify = false)` for a
+-       self-signed test server. With `wsClient` in scope the URL is a `Duplexable` transport,
+-       so `url.react`, `url.exchange` and (with `wsSessional`) `url.session` apply to it.
+-   entry .Connection   a live client connection: reassembled inbound messages, `send` and `close`
++   entry .magic   el GUID que RFC 6455 añade a la clave, `258EAFA5-E914-47DA-95CA-C5AB0DC85B11`
++       `Sec-WebSocket-Accept` es el Base64 del SHA-1 del `Sec-WebSocket-Key` del cliente
++       seguido de este texto; el servidor lo calcula en `.servable` y el cliente lo comprueba
++       en `wsClient`.
++   entry .servable   sirve un `Websocket` como el handshake `101` cuyo cuerpo es el flujo de tramas salientes
++       El given que permite a un manejador devolver un `Websocket`. El cuerpo es `Flowing`, y
++       su fuente es el único extremo lector del canal, que el escritor de respuestas del
++       servidor materializa exactamente una vez.
++   entry .Url   una URL `ws://` o `wss://`: `urticose.Url["ws" | "wss"]`
++       Se decodifica a partir de texto como cualquier `Url` (`t"ws://localhost:8080/".as[Websocket.Url]`),
++       sin maquinaria específica para el esquema; el puerto es por defecto `80` para `ws` y
++       `443` para `wss` cuando la autoridad lo omite. Una conexión `wss://` se abre sobre TLS
++       mediante el `SecureEndpoint` de coaxial, configurado por el given `Tls` del ámbito: por
++       defecto, el almacén de confianza del sistema con verificación del nombre de host, o
++       `Tls(context, verify = false)` para un servidor de pruebas autofirmado. Con `wsClient`
++       en el ámbito, la URL es un transporte `Duplexable`, así que se le aplican `url.react`,
++       `url.exchange` y (con `wsSessional`) `url.session`.
++   entry .Connection   una conexión de cliente activa: mensajes entrantes reensamblados, `send` y `close`
+
+=   entry .Connection   a live client connection: reassembled inbound messages, `send` and `close`
+-     detail
++     detail
+
+-         What `wsClient` connects to a `Websocket.Url` and what `url.session` lends: the
+-         handshake is complete, a background daemon pumps every spooled frame to the socket,
+-         and the inbound stream has been advanced past the `101`. coaxial's `react` and
+-         `exchange` drive it as a state machine; a session scope uses `#messages`, `#send`
+-         and `#close` directly.
++         Lo que `wsClient` conecta a una `Websocket.Url` y lo que presta `url.session`: el
++         handshake está completo, un demonio en segundo plano bombea al socket cada trama
++         encolada, y el flujo entrante ya ha avanzado más allá del `101`. Los `react` y
++         `exchange` de coaxial la manejan como una máquina de estados; un ámbito de sesión usa
++         directamente `#messages`, `#send` y `#close`.
+
+-         ```scala fuel
++         ```scala fuel
+
+-         typecheck
++         typecheck
+
+-         ##
++         ##
+
+=         ##
+-         import soundness.*
++         import soundness.*
+
+-         import perihelion.{wsClient, wsSessional}
++         import perihelion.{wsClient, wsSessional}
+
+-         import internetAccess.online
++         import internetAccess.online
+
+-         import logging.silentLogging
++         import logging.silentLogging
+
+=         import logging.silentLogging
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         import threads.virtualThreads
++         import threads.virtualThreads
+
+-         import probates.awaitProbate
++         import probates.awaitProbate
+
+-         def main(): Unit = supervise:
++         def main(): Unit = supervise:
+
+-           t"ws://localhost:8080/".as[Websocket.Url].session: connection ?=>
++           t"ws://localhost:8080/".as[Websocket.Url].session: connection ?=>
+
+-             connection.send(t"hello".in[Data].stream)
++             connection.send(t"hello".in[Data].stream)
+
+-             connection.messages.refill(Credit(4096))
++             connection.messages.refill(Credit(4096))
+
+=             connection.messages.refill(Credit(4096))
+-         ```
++         ```
+
+-     entry #messages   the inbound messages, one complete message per stream element, as bytes
+-         Runs the shared `Reader` over the connection: `Ping`s are answered, `Pong`s dropped,
+-         fragments reassembled, text validated as UTF-8 and the peer's `Close` ends the
+-         stream. Each element is a message's payload — a text message's UTF-8 bytes, or a
+-         binary message's bytes verbatim — and chunk boundaries frame messages. Needs a
+-         `Tactic[Websocket.Error]` for a protocol violation.
+-     entry #send   sends one message, as one complete frame, masked at the channel
+-         The stream is consumed and memoized as the frame's bytes; a `Transmissible` value's
+-         `serialize` produces exactly such a stream.
+-     entry #close   sends a `1000` close frame, stops the pump and closes the socket
+-         Waits for the pump to finish writing what was spooled. Needs a `Monitor`.
+-   entry #key   the client's `Sec-WebSocket-Key`, from which the handshake's accept key is computed
+-   entry #channel   the outgoing side: `send` pushes a message to the client, `close` ends the connection
+-       The `Channel` the handler loop replies through. A handler may hold the `Websocket`
+-       and call `channel.send(Message.Text(…))` before returning it, to greet a client which
+-       has not yet spoken; the frame is spooled and written once the `101` has been sent.
+-   entry #task   the handler loop, running from construction; its result is the final state
+-       Completes with the state the handler last returned when the client closes or the
+-       handler concludes or terminates, or with the initial state after a `Websocket.Error`
+-       has closed the connection with the reason's close code.
+-   entry .Error   raised when the peer violates the protocol, with the close code to send
++     entry #messages   los mensajes entrantes, un mensaje completo por elemento del flujo, como bytes
++         Ejecuta el `Reader` compartido sobre la conexión: se responde a los `Ping`s, se
++         descartan los `Pong`s, se reensamblan los fragmentos, se valida el texto como UTF-8 y
++         el `Close` del interlocutor termina el flujo. Cada elemento es la carga útil de un
++         mensaje (los bytes UTF-8 de un mensaje de texto, o los bytes tal cual de un mensaje
++         binario), y los límites entre fragmentos delimitan los mensajes. Necesita una
++         `Tactic[Websocket.Error]` para una infracción del protocolo.
++     entry #send   envía un mensaje, como una trama completa, enmascarada en el canal
++         El flujo se consume y se memoiza como los bytes de la trama; el `serialize` de un valor
++         `Transmissible` produce exactamente un flujo así.
++     entry #close   envía una trama de cierre `1000`, detiene el bombeo y cierra el socket
++         Espera a que el bombeo termine de escribir lo encolado. Necesita un `Monitor`.
++   entry #key   el `Sec-WebSocket-Key` del cliente, a partir del cual se calcula la clave de aceptación del handshake
++   entry #channel   el lado saliente: `send` envía un mensaje al cliente, `close` termina la conexión
++       El `Channel` a través del cual responde el bucle del manejador. Un manejador puede
++       guardar el `Websocket` y llamar a `channel.send(Message.Text(…))` antes de devolverlo,
++       para saludar a un cliente que aún no ha hablado; la trama se encola y se escribe una
++       vez enviado el `101`.
++   entry #task   el bucle del manejador, en ejecución desde la construcción; su resultado es el estado final
++       Termina con el último estado que devolvió el manejador cuando el cliente cierra o el
++       manejador concluye o termina, o con el estado inicial después de que un
++       `Websocket.Error` haya cerrado la conexión con el código de cierre del motivo.
++   entry .Error   se lanza cuando el interlocutor infringe el protocolo, con el código de cierre que enviar
+
+=   entry .Error   raised when the peer violates the protocol, with the close code to send
+-     detail
++     detail
+
+-         Error `↯/s.115.1`, with the reason's number as its detail: _the WebSocket protocol was
+-         violated because `reason`_. Raised by `Websocket.Frame.parse` and the `Reader` when a
+-         frame or message breaks RFC 6455, by `wsClient` when the handshake fails, and when
+-         the connection is cut short. The server-side loop catches it, closes the connection
+-         with `reason.closeCode`, and returns the initial state; a client sees it through its
+-         `Tactic[Websocket.Error]`.
+-     entry .Reason   why the protocol was violated, each with its RFC 6455 close code
++         Error `↯/s.115.1`, con el número del motivo como detalle: _the WebSocket protocol was
++         violated because `reason`_. Lo lanzan `Websocket.Frame.parse` y el `Reader` cuando una
++         trama o un mensaje incumple RFC 6455, `wsClient` cuando falla el handshake, y también
++         cuando la conexión se corta antes de tiempo. El bucle del lado del servidor lo captura,
++         cierra la conexión con `reason.closeCode` y devuelve el estado inicial; un cliente lo
++         ve a través de su `Tactic[Websocket.Error]`.
++     entry .Reason   por qué se infringió el protocolo, cada caso con su código de cierre de RFC 6455
+
+-       detail
++       detail
+
+-           Each case carries the RFC 6455 close code to send:
++           Cada caso lleva el código de cierre de RFC 6455 que se envía:
+
+-           ```tabular
++           ```tabular
+
+-           column  Case
+-           column  Code
+-           column  Message
+-           column  Note
+-           row  `Unmasked`  1  _the client sent an unmasked frame_  close code 1002
+-           row  `BadOpcode(code)`  2  _the frame used the reserved opcode `code`_  close code 1002
+-           row  `BadControl`  3  _a control frame was fragmented or exceeded 125 bytes_  close code 1002
+-           row  `BadFragmentation`  4  _the message fragmentation was invalid_  close code 1002: a data frame arrived while a fragmented message was open, or a continuation had nothing to continue
+-           row  `TooLarge(size)`  5  _the frame payload of `size` bytes exceeded the limit_  close code 1009: a payload over 16 MiB
+-           row  `InvalidText`  6  _a text frame contained invalid UTF-8_  close code 1007: also an invalid close reason
+-           row  `ReservedBits`  7  _a reserved header bit (RSV1/2/3) was set_  close code 1002: no extension was negotiated
+-           row  `BadClose`  8  _the close frame had a malformed payload or invalid code_  close code 1002: a one-byte close payload, or an invalid close code
+-           row  `Masked`  9  _the server sent a masked frame_  close code 1002
+-           row  `Handshake(detail)`  10  _the WebSocket handshake failed because `detail`_  close code 1002: the URL had no host, the server did not answer `101`, or its `Sec-WebSocket-Accept` was wrong
+-           row  `Truncated`  11  _the connection closed before the frame was complete_  close code 1006: the connection's bytes ended mid-frame
++           column  Caso
++           column  Código
++           column  Mensaje
++           column  Nota
++           row  `Unmasked`  1  _the client sent an unmasked frame_  código de cierre 1002
++           row  `BadOpcode(code)`  2  _the frame used the reserved opcode `code`_  código de cierre 1002
++           row  `BadControl`  3  _a control frame was fragmented or exceeded 125 bytes_  código de cierre 1002
++           row  `BadFragmentation`  4  _the message fragmentation was invalid_  código de cierre 1002: llegó una trama de datos mientras había un mensaje fragmentado abierto, o una continuación no tenía nada que continuar
++           row  `TooLarge(size)`  5  _the frame payload of `size` bytes exceeded the limit_  código de cierre 1009: una carga útil de más de 16 MiB
++           row  `InvalidText`  6  _a text frame contained invalid UTF-8_  código de cierre 1007: también un motivo de cierre no válido
++           row  `ReservedBits`  7  _a reserved header bit (RSV1/2/3) was set_  código de cierre 1002: no se negoció ninguna extensión
++           row  `BadClose`  8  _the close frame had a malformed payload or invalid code_  código de cierre 1002: una carga útil de cierre de un byte, o un código de cierre no válido
++           row  `Masked`  9  _the server sent a masked frame_  código de cierre 1002
++           row  `Handshake(detail)`  10  _the WebSocket handshake failed because `detail`_  código de cierre 1002: la URL no tenía host, el servidor no respondió `101`, o su `Sec-WebSocket-Accept` era incorrecto
++           row  `Truncated`  11  _the connection closed before the frame was complete_  código de cierre 1006: los bytes de la conexión terminaron a mitad de una trama
+
+-           ```
++           ```
+
+-       entry #number   the reason's number, which is the error's detail number
+-       entry #closeCode   the RFC 6455 close code sent to the peer before closing
+-     entry .communicable   renders each reason as a message
+-     entry #reason   why the protocol was violated
+-   entry .Event   what a connection logs: messages sent and received, and the close
++       entry #number   el número del motivo, que es el número de detalle del error
++       entry #closeCode   el código de cierre de RFC 6455 que se envía al interlocutor antes de cerrar
++     entry .communicable   representa cada motivo como un mensaje
++     entry #reason   por qué se infringió el protocolo
++   entry .Event   lo que registra una conexión: los mensajes enviados y recibidos, y el cierre
+
+=   entry .Event   what a connection logs: messages sent and received, and the close
+-     detail
++     detail
+
+-         Every `Event` is tagged `Log.Network` and `Log.Protocol`. `Sent` is logged at `fine`
+-         by `Channel#send` with the message's byte count, `Received` at `fine` by the
+-         server's loop for each message handled, and `Closed` at `info` by `Channel#close`
+-         with the close code. A `Websocket.Event is Loggable` must be in scope wherever
+-         `Channel#send` or `Channel#close` is called; `logging.silentLogging` discards them.
+-     entry .communicable   renders each event as a message
+-     entry .Sent   a message was sent: _sent a `bytes`-byte websocket message_
+-       entry #bytes   the message's length
+-     entry .Received   a message was received: _received a `bytes`-byte websocket message_
+-       entry #bytes   the message's length
+-     entry .Closed   the connection was closed: _closed the websocket connection with code `code`_
+-       entry #code   the close code sent
+-   entry .Frame   one WebSocket frame: the wire format, parsed from a cursor and encoded to bytes
++         Todo `Event` lleva las etiquetas `Log.Network` y `Log.Protocol`. `Channel#send`
++         registra `Sent` en el nivel `fine` con el número de bytes del mensaje, el bucle del
++         servidor registra `Received` en `fine` por cada mensaje que gestiona, y
++         `Channel#close` registra `Closed` en `info` con el código de cierre. Debe haber un
++         `Websocket.Event is Loggable` en el ámbito allí donde se llame a `Channel#send` o
++         `Channel#close`; `logging.silentLogging` los descarta.
++     entry .communicable   representa cada evento como un mensaje
++     entry .Sent   se envió un mensaje: _sent a `bytes`-byte websocket message_
++       entry #bytes   la longitud del mensaje
++     entry .Received   se recibió un mensaje: _received a `bytes`-byte websocket message_
++       entry #bytes   la longitud del mensaje
++     entry .Closed   se cerró la conexión: _closed the websocket connection with code `code`_
++       entry #code   el código de cierre enviado
++   entry .Frame   una trama WebSocket: el formato de transmisión, analizado desde un cursor y codificado en bytes
+
+=   entry .Frame   one WebSocket frame: the wire format, parsed from a cursor and encoded to bytes
+-     detail
++     detail
+
+-         The enum of frame types, each with its `#opcode` and `#payload`: `Continuation(last,
+-         data)`, `Text(last, data)` and `Binary(last, data)` are the data frames, whose
+-         `last` is the FIN bit; `Close(code, reason)` carries a two-byte code and a reason;
+-         `Ping(data)` and `Pong(data)` are the control frames. `.parse` reads one off a
+-         `Cursor`, enforcing the masking direction and every structural rule, and `#encode`
+-         writes one unmasked; `Masking.Client#outbound` masks an encoded frame for sending
+-         from a client. A program using `webSocket` or `wsClient` never handles frames; they
+-         are for a protocol test or an extension.
++         La enumeración de los tipos de trama, cada uno con su `#opcode` y su `#payload`:
++         `Continuation(last, data)`, `Text(last, data)` y `Binary(last, data)` son las tramas
++         de datos, cuyo `last` es el bit FIN; `Close(code, reason)` lleva un código de dos
++         bytes y un motivo; `Ping(data)` y `Pong(data)` son las tramas de control. `.parse` lee
++         una de un `Cursor`, imponiendo la dirección del enmascaramiento y todas las reglas
++         estructurales, y `#encode` escribe una sin enmascarar; `Masking.Client#outbound`
++         enmascara una trama codificada para enviarla desde un cliente. Un programa que usa
++         `webSocket` o `wsClient` nunca maneja tramas; son para una prueba del protocolo o una
++         extensión.
+
+=         are for a protocol test or an extension.
+=
+-         ```scala
++         ```scala
+
+=         are for a protocol test or an extension.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+=         import soundness.*
+-         import strategies.throwUnsafely
++         import strategies.throwUnsafely
+
+-         val frame = Websocket.Frame.Text(true, t"hello".in[Data])
++         val frame = Websocket.Frame.Text(true, t"hello".in[Data])
+
+-         frame.encode.length == 7
++         frame.encode.length == 7
+
+-         given Websocket.Masking = Websocket.Masking.Client()
++         given Websocket.Masking = Websocket.Masking.Client()
+
+-         Websocket.Frame.parse(Cursor[Data](Chain(frame.encode))) match
++         Websocket.Frame.parse(Cursor[Data](Chain(frame.encode))) match
+
+-           case Websocket.Frame.Text(last, data) => data.utf8
++           case Websocket.Frame.Text(last, data) => data.utf8
+
+-           case _                                => t"?"
++           case _                                => t"?"
+
+=           case _                                => t"?"
+-         ```
++         ```
+
+-     entry .maxPayload   the largest frame payload accepted, 16 MiB; a larger one closes with `1009`
+-     entry .maxControlPayload   the largest control-frame payload, 125 bytes
+-     entry .closeData   a close frame's payload: the two-byte code followed by the reason
+-     entry .validCloseCode   whether a close code may appear on the wire
+-         `1000`–`1003`, `1007`–`1011` and the application range `3000`–`4999`. The codes
+-         `1004`, `1005` and `1006` never travel, and `1012`–`2999` are unassigned, so a close
+-         frame carrying one is `BadClose`.
+-     entry .parse   decodes one frame off a cursor, or `Unset` at a clean end of stream
+-         Consumes exactly the frame's bytes and unmasks the payload. The `Masking` given
+-         fixes the direction: `Masking.Server` requires the frame to be masked (a client's),
+-         `Masking.Client` requires it unmasked (a server's), and the wrong one raises
+-         `Websocket.Error` with `Unmasked` or `Masked`. Also raised: `ReservedBits`,
+-         `TooLarge`, `BadControl`, `BadOpcode` and `BadClose`. A close payload of no bytes
+-         decodes with the sentinel code `1005`. The parser blocks only at the head of a
+-         frame, never after a frame's final byte, so an empty `Ping` or `Pong` is returned
+-         without waiting for the peer's next frame.
+-     entry .unmask   XORs a payload with a four-byte mask key, or returns it unchanged for an empty key
+-         Its own inverse: masking and unmasking are the same operation.
+-     entry #opcode   the frame's opcode: `0x0` continuation, `0x1` text, `0x2` binary, `0x8` close, `0x9` ping, `0xa` pong
+-     entry #payload   the frame's payload; for a `Close`, the code and reason as `closeData` lays them out
+-     entry #fin   whether this frame completes its message; always `true` for a control frame
+-     entry #encode   the frame as unmasked bytes: the header, the length in its short, 16- or 64-bit form, the payload
++     entry .maxPayload   la mayor carga útil de trama que se acepta, 16 MiB; una mayor cierra con `1009`
++     entry .maxControlPayload   la mayor carga útil de una trama de control, 125 bytes
++     entry .closeData   la carga útil de una trama de cierre: el código de dos bytes seguido del motivo
++     entry .validCloseCode   si un código de cierre puede aparecer en la transmisión
++         `1000`–`1003`, `1007`–`1011` y el rango de aplicación `3000`–`4999`. Los códigos
++         `1004`, `1005` y `1006` nunca viajan, y `1012`–`2999` no están asignados, así que una
++         trama de cierre que lleve uno de ellos es `BadClose`.
++     entry .parse   decodifica una trama de un cursor, o `Unset` en un final limpio del flujo
++         Consume exactamente los bytes de la trama y desenmascara la carga útil. El given
++         `Masking` fija la dirección: `Masking.Server` exige que la trama esté enmascarada (la
++         de un cliente), `Masking.Client` exige que no lo esté (la de un servidor), y la
++         incorrecta lanza `Websocket.Error` con `Unmasked` o `Masked`. También se lanzan:
++         `ReservedBits`, `TooLarge`, `BadControl`, `BadOpcode` y `BadClose`. Una carga útil de
++         cierre sin bytes se decodifica con el código centinela `1005`. El analizador solo se
++         bloquea al principio de una trama, nunca después del último byte de una trama, así que
++         un `Ping` o un `Pong` vacío se devuelve sin esperar a la siguiente trama del
++         interlocutor.
++     entry .unmask   aplica XOR a una carga útil con una clave de máscara de cuatro bytes, o la devuelve sin cambios para una clave vacía
++         Es su propia inversa: enmascarar y desenmascarar son la misma operación.
++     entry #opcode   el código de operación de la trama: `0x0` continuación, `0x1` texto, `0x2` binaria, `0x8` cierre, `0x9` ping, `0xa` pong
++     entry #payload   la carga útil de la trama; para un `Close`, el código y el motivo tal como los dispone `closeData`
++     entry #fin   si esta trama completa su mensaje; siempre `true` para una trama de control
++     entry #encode   la trama como bytes sin enmascarar: la cabecera, la longitud en su forma corta, de 16 o de 64 bits, y la carga útil
+
+-   entry .Masking   which side of the connection this is, and so whether frames are masked
++   entry .Masking   qué lado de la conexión es este, y por tanto si las tramas se enmascaran
+
+=   entry .Masking   which side of the connection this is, and so whether frames are masked
+-     detail
++     detail
+
+-         RFC 6455 has a client mask every frame it sends with a fresh 32-bit key, and a server
+-         send unmasked; each side rejects a frame masked the wrong way. A `Masking` fixes the
+-         side: `#outbound(frame)` masks (or passes through) a complete encoded frame on its
+-         way out, and `#inbound` says whether frames read from the peer must be masked.
+-         `Websocket` installs `.Server` and `wsClient` a `.Client()`; a direct use of
+-         `Websocket.Frame.parse`, `Reader` or `Channel` needs one as a given.
++         RFC 6455 hace que un cliente enmascare cada trama que envía con una clave nueva de 32
++         bits, y que un servidor envíe sin enmascarar; cada lado rechaza una trama enmascarada
++         de la forma incorrecta. Un `Masking` fija el lado: `#outbound(frame)` enmascara (o deja
++         pasar) una trama codificada completa al salir, e `#inbound` dice si las tramas leídas
++         del interlocutor deben estar enmascaradas. `Websocket` instala `.Server` y `wsClient`
++         un `.Client()`; un uso directo de `Websocket.Frame.parse`, `Reader` o `Channel` necesita
++         uno como given.
+
+=         `Websocket.Frame.parse`, `Reader` or `Channel` needs one as a given.
+=
+-         ```scala
++         ```scala
+
+=         `Websocket.Frame.parse`, `Reader` or `Channel` needs one as a given.
+=
+=         ```scala
+-         import soundness.*
++         import soundness.*
+
+-         val frame = Websocket.Frame.Text(true, t"hi".in[Data]).encode
++         val frame = Websocket.Frame.Text(true, t"hi".in[Data]).encode
+
+-         Websocket.Masking.Server.outbound(frame) == frame
++         Websocket.Masking.Server.outbound(frame) == frame
+
+-         Websocket.Masking.Client().outbound(frame) != frame
++         Websocket.Masking.Client().outbound(frame) != frame
+
+=         Websocket.Masking.Client().outbound(frame) != frame
+-         ```
++         ```
+
+-     entry .Server   the server side: send unmasked, require inbound frames to be masked
+-     entry .Client   the client side: mask each outgoing frame with a fresh key, reject a masked inbound frame
+-         `Masking.Client()` keeps one `SecureRandom` per connection for the keys, so two
+-         maskings of the same frame differ.
+-     entry #outbound   masks a complete, unmasked frame for sending, or returns it unchanged on the server
+-     entry #inbound   whether frames read from the peer must be masked
++     entry .Server   el lado del servidor: envía sin enmascarar y exige que las tramas entrantes estén enmascaradas
++     entry .Client   el lado del cliente: enmascara cada trama saliente con una clave nueva y rechaza una trama entrante enmascarada
++         `Masking.Client()` mantiene un `SecureRandom` por conexión para las claves, así que dos
++         enmascaramientos de la misma trama difieren.
++     entry #outbound   enmascara una trama completa sin enmascarar para enviarla, o la devuelve sin cambios en el servidor
++     entry #inbound   si las tramas leídas del interlocutor deben estar enmascaradas
+
+- entry .Message   a complete WebSocket message: `Text` reassembled and UTF-8-decoded, or `Binary` as bytes
++ entry .Message   un mensaje WebSocket completo: `Text` reensamblado y decodificado como UTF-8, o `Binary` como bytes
+
+= entry .Message   a complete WebSocket message: `Text` reassembled and UTF-8-decoded, or `Binary` as bytes
+-   detail
++   detail
+
+-       The enum of the two message kinds a handler sees when its message type is `Message`
+-       itself: `Message.Text(text)` for a text message, fragments reassembled and decoded,
+-       and `Message.Binary(data)` for a binary one. Control frames and fragmentation never
+-       surface here. A `Message` is both `Ingressive` and `Transmissible`, so it can be
+-       the handler's parameter type and a `Reply`'s argument, and a `Channel#send` takes
+-       one. It is not exported to `soundness` — fulminate's `Message` holds that name in
+-       the umbrella — so it is imported by name: `import perihelion.Websocket.Message`.
++       La enumeración de las dos clases de mensaje que ve un manejador cuando su tipo de
++       mensaje es el propio `Message`: `Message.Text(text)` para un mensaje de texto, con los
++       fragmentos reensamblados y decodificados, y `Message.Binary(data)` para uno binario.
++       Las tramas de control y la fragmentación nunca aparecen aquí. Un `Message` es a la vez
++       `Ingressive` y `Transmissible`, así que puede ser el tipo del parámetro del manejador y
++       el argumento de un `Reply`, y `Channel#send` acepta uno. No se exporta a `soundness`
++       (el `Message` de fulminate ocupa ese nombre en el paraguas), así que se importa por
++       nombre: `import perihelion.Websocket.Message`.
+
+=       the umbrella — so it is imported by name: `import perihelion.Websocket.Message`.
+=
+-       ```scala
++       ```scala
+
+=       the umbrella — so it is imported by name: `import perihelion.Websocket.Message`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       ```scala
+=       import soundness.*
+-       import perihelion.Websocket.Message
++       import perihelion.Websocket.Message
+
+-       def describe(message: Message): Text = message match
++       def describe(message: Message): Text = message match
+
+-         case Message.Text(text)   => t"text: $text"
++         case Message.Text(text)   => t"text: $text"
+
+-         case Message.Binary(data) => t"${data.length} bytes"
++         case Message.Binary(data) => t"${data.length} bytes"
+
+=         case Message.Binary(data) => t"${data.length} bytes"
+-       ```
++       ```
+
+-   entry .ingressive   the formal `Message is Ingressive`, so `Message` satisfies `webSocket`'s message bound
+-       The reader already produces a `Message`, so a `Message` channel is decoded by
+-       identity and this instance is never applied; it exists so the raw type meets the
+-       `Ingressive` requirement, and lives in the companion so no import is needed.
+-   entry .transmissible   serializes a message to one complete, unmasked frame
+-       A `Text` becomes a text frame of its UTF-8 bytes and a `Binary` a binary frame, so a
+-       `Message` can be a `Reply` or `Conclude` argument and is written verbatim.
++   entry .ingressive   el `Message is Ingressive` formal, para que `Message` cumpla la cota de mensaje de `webSocket`
++       El lector ya produce un `Message`, así que un canal de `Message` se decodifica por
++       identidad y esta instancia nunca se aplica; existe para que el tipo en bruto cumpla el
++       requisito `Ingressive`, y vive en el objeto compañero para que no haga falta ninguna
++       importación.
++   entry .transmissible   serializa un mensaje en una trama completa sin enmascarar
++       Un `Text` se convierte en una trama de texto con sus bytes UTF-8 y un `Binary` en una
++       trama binaria, así que un `Message` puede ser argumento de un `Reply` o un `Conclude` y
++       se escribe tal cual.
+
+- entry .Channel   the outgoing side of a connection: a thread-safe queue of frames pumped to the socket
++ entry .Channel   el lado saliente de una conexión: una cola de tramas segura entre hilos que se bombea al socket
+
+= entry .Channel   the outgoing side of a connection: a thread-safe queue of frames pumped to the socket
+-   detail
++   detail
+
+-       A `Channel` is a bounded conduit of encoded frames. The reader (answering `Ping`s and
+-       `Close`s), the handler loop (`Reply` and `Conclude`) and a program's own `#send` all
+-       enqueue here, under a lock, and one pump — the server's response writer or the
+-       client's daemon — drains it to the socket, so a full queue back-pressures every
+-       producer. Each frame is masked once at this boundary by the `Websocket.Masking` in scope:
+-       passed through by `Websocket.Masking.Server`, masked with a fresh key by `Websocket.Masking.Client`. It
+-       is constructed with a `Websocket.Masking` and a `Buffering`; `Websocket#channel` and the client
+-       connection hold the one for their connection, and a program reaches it through those.
+-       Public in the package, not exported to `soundness`.
++       Un `Channel` es un conducto acotado de tramas codificadas. El lector (que responde a los
++       `Ping`s y los `Close`s), el bucle del manejador (`Reply` y `Conclude`) y el propio
++       `#send` de un programa encolan aquí, bajo un cerrojo, y un único bombeo (el escritor de
++       respuestas del servidor o el demonio del cliente) lo vacía en el socket, así que una
++       cola llena ejerce contrapresión sobre todos los productores. Cada trama se enmascara una
++       vez en esta frontera mediante el `Websocket.Masking` del ámbito: `Websocket.Masking.Server`
++       la deja pasar, y `Websocket.Masking.Client` la enmascara con una clave nueva. Se
++       construye con un `Websocket.Masking` y un `Buffering`; `Websocket#channel` y la conexión
++       del cliente guardan el de su conexión, y un programa llega a él a través de ellos.
++       Público en el paquete, no exportado a `soundness`.
+
+-   refer perihelion.Websocket
++   refer perihelion.Websocket
+
+-   refer perihelion.Websocket.Masking
++   refer perihelion.Websocket.Masking
+
+-   entry #send   enqueues one message as one complete frame, logging `Websocket.Event.Sent`
+-       Takes a `Message`; the frame is flushed at once, since an interactive protocol must
+-       deliver each frame promptly rather than fill a block. Needs a `Websocket.Event is
+-       Loggable`.
+-   entry #stop   ends the outgoing stream, so the pump finishes and the connection's body ends
+-   entry #close   enqueues a close frame with a code (default `1000`), logs `Websocket.Event.Closed`, and stops
++   entry #send   encola un mensaje como una trama completa, registrando `Websocket.Event.Sent`
++       Acepta un `Message`; la trama se vacía de inmediato, puesto que un protocolo interactivo
++       debe entregar cada trama sin demora en lugar de llenar un bloque. Necesita un
++       `Websocket.Event is Loggable`.
++   entry #stop   termina el flujo saliente, de modo que el bombeo acaba y el cuerpo de la conexión termina
++   entry #close   encola una trama de cierre con un código (por defecto `1000`), registra `Websocket.Event.Closed` y se detiene
+
+- entry .Reader   reads a peer's frames into messages: reassembly, `Ping`/`Pong`, `Close`, UTF-8 validation
++ entry .Reader   lee las tramas de un interlocutor como mensajes: reensamblado, `Ping`/`Pong`, `Close`, validación UTF-8
+
+= entry .Reader   reads a peer's frames into messages: reassembly, `Ping`/`Pong`, `Close`, UTF-8 validation
+-   detail
++   detail
+
+-       `Reader(body, channel)` is the inbound half shared by the server and the client. Its
+-       `#messages` is a lazy `Chain[Message]` over the frames parsed from `body` (a
+-       `Spring[Data]`, re-lent each time the chain is forced): data frames are accumulated
+-       until the one with FIN, a text message is validated as UTF-8 incrementally so bad
+-       bytes fail the connection at once, a `Ping` is answered with a `Pong` through the
+-       channel, a `Pong` is dropped, and a `Close` is echoed (with `1000` for an absent
+-       code), the channel stopped and the chain ended. A violation raises
+-       `Websocket.Error`, with `Truncated` for a body cut short. It needs a
+-       `Tactic[Websocket.Error]` and the `Websocket.Masking` of its side. The cursor over the body is
+-       created only when the first message is forced, so a server can send its `101` and a
+-       client its first frame before any read blocks. Public in the package, not exported
+-       to `soundness`.
++       `Reader(body, channel)` es la mitad entrante que comparten el servidor y el cliente. Su
++       `#messages` es una `Chain[Message]` perezosa sobre las tramas analizadas de `body` (un
++       `Spring[Data]`, que se vuelve a prestar cada vez que se fuerza la cadena): las tramas de
++       datos se acumulan hasta la que lleva FIN, un mensaje de texto se valida como UTF-8 de
++       forma incremental para que los bytes incorrectos hagan fallar la conexión de inmediato,
++       a un `Ping` se responde con un `Pong` a través del canal, un `Pong` se descarta, y un
++       `Close` se devuelve como eco (con `1000` si no hay código), se detiene el canal y
++       termina la cadena. Una infracción lanza `Websocket.Error`, con `Truncated` si el cuerpo
++       se corta antes de tiempo. Necesita una `Tactic[Websocket.Error]` y el
++       `Websocket.Masking` de su lado. El cursor sobre el cuerpo solo se crea cuando se fuerza
++       el primer mensaje, así que un servidor puede enviar su `101`, y un cliente su primera
++       trama, antes de que ninguna lectura se bloquee. Público en el paquete, no exportado a
++       `soundness`.
+
+=       to `soundness`.
+=
+-       ```scala
++       ```scala
+
+=       to `soundness`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       given Websocket.Masking = Websocket.Masking.Server
++       given Websocket.Masking = Websocket.Masking.Server
+
+-       val frames = Chain(Websocket.Masking.Client().outbound(Websocket.Frame.Text(true, t"hi".in[Data]).encode))
++       val frames = Chain(Websocket.Masking.Client().outbound(Websocket.Frame.Text(true, t"hi".in[Data]).encode))
+
+-       val spring: Spring[Data] = new Spring[Data]:
++       val spring: Spring[Data] = new Spring[Data]:
+
+-         def apply()(using Tactic[Truncation.Error]): Stream[Data] over Credit = Stream(frames)
++         def apply()(using Tactic[Truncation.Error]): Stream[Data] over Credit = Stream(frames)
+
+-       Reader(spring, Channel()).messages.to[List]
++       Reader(spring, Channel()).messages.to[List]
+
+=       Reader(spring, Channel()).messages.to[List]
+-       ```
++       ```
+
+=       ```
+-   refer perihelion.Websocket.Channel
++   refer perihelion.Websocket.Channel
+
+-   refer perihelion.Websocket.Message
++   refer perihelion.Websocket.Message
+
+-   entry #messages   the reassembled messages, lazily, until the peer closes or the body ends
++   entry #messages   los mensajes reensamblados, de forma perezosa, hasta que el interlocutor cierra o termina el cuerpo
+
+- entry .over   tags a value with the format it rides, `value.over[Json]`, so a reply serializes through it
+-     `over` is a phantom type member, so `value.over[Json]` is a no-op cast to `value over
+-     Json`, which selects `overTransmissible` for a `Reply` or `Conclude` and matches a
+-     handler parameter typed `(ping: Ping over Json)`. Exported to `soundness`.
++ entry .over   etiqueta un valor con el formato en el que viaja, `value.over[Json]`, para que una respuesta se serialice a través de él
++     `over` es un miembro de tipo fantasma, así que `value.over[Json]` es una conversión de
++     tipo sin efecto a `value over Json`, que selecciona `overTransmissible` para un `Reply`
++     o un `Conclude` y encaja con un parámetro de manejador de tipo `(ping: Ping over Json)`.
++     Se exporta a `soundness`.
+
+-     ```scala
++     ```scala
+
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     import soundness.*
+=
+-     case class Ping(value: Int)
++     case class Ping(value: Int)
+
+-     val tagged: Ping over Json = Ping(1).over[Json]
++     val tagged: Ping over Json = Ping(1).over[Json]
+
+=     val tagged: Ping over Json = Ping(1).over[Json]
+-     ```
++     ```
+
+- entry .overTransmissible   serializes `value over format` as one text frame of the format's text
+-     The given which makes any `value over transport` `Transmissible` when `transport is
+-     Encodable in Text` (as `Json` and `Tel` are) and `value is Encodable in transport`, with
+-     a `Codepage` for the bytes. The value is encoded to the format, the format to text, and
+-     the text wrapped in a single unmasked text frame, so a `Reply(Ping(1).over[Json], …)`
+-     is one complete frame. Exported to `soundness`.
++ entry .overTransmissible   serializa `value over format` como una trama de texto con el texto del formato
++     El given que hace `Transmissible` cualquier `value over transport` cuando
++     `transport is Encodable in Text` (como lo son `Json` y `Tel`) y
++     `value is Encodable in transport`, con un `Codepage` para los bytes. El valor se
++     codifica al formato, el formato a texto, y el texto se envuelve en una sola trama de
++     texto sin enmascarar, así que un `Reply(Ping(1).over[Json], …)` es una trama completa.
++     Se exporta a `soundness`.
+
+- entry .overIngressive   decodes a text frame's bytes as `value over format`
+-     The given which makes any `value over transport` `Ingressive` when `transport is
+-     Decodable in Text` and `value is Decodable in transport`. It needs a `Charset` to
+-     decode the bytes and, because the format decoders are conditional on a tactic, a
+-     `Tactic[Hazard]` directly — `strategies.throwUnsafely` satisfies it — so a malformed
+-     payload throws rather than being reported through a narrower tactic. Exported to
+-     `soundness`.
++ entry .overIngressive   decodifica los bytes de una trama de texto como `value over format`
++     El given que hace `Ingressive` cualquier `value over transport` cuando
++     `transport is Decodable in Text` y `value is Decodable in transport`. Necesita un
++     `Charset` para decodificar los bytes y, como los decodificadores de formato están
++     condicionados a una táctica, una `Tactic[Hazard]` directamente (`strategies.throwUnsafely`
++     la satisface), de modo que una carga útil mal formada lanza una excepción en lugar de
++     notificarse mediante una táctica más estrecha. Se exporta a `soundness`.
+
+- entry .wsClient   makes a `Websocket.Url` a coaxial `Duplexable` transport: `url.react`, `url.exchange`
+-     The given which connects a client. `connect` opens TCP (`ws`) or TLS (`wss`, through
+-     `SecureEndpoint` and the `Tls` in scope) to the URL's host and port, sends the
+-     handshake with a fresh 16-byte `Sec-WebSocket-Key`, reads exactly the response's
+-     header block (never past it into a frame the server has not sent), checks for `101`
+-     and the right `Sec-WebSocket-Accept`, and starts the daemon which pumps outgoing
+-     frames; `receive` is the connection's `messages`; `transmit` masks and spools one
+-     message as one frame; `close` sends `1000`. It is a `Duplexable`, not merely a
+-     `Serviceable`, because its channel is safe to send on concurrently, which is what
+-     lets `exchange` send proactively.
++ entry .wsClient   hace de una `Websocket.Url` un transporte `Duplexable` de coaxial: `url.react`, `url.exchange`
++     El given que conecta un cliente. `connect` abre TCP (`ws`) o TLS (`wss`, mediante
++     `SecureEndpoint` y el `Tls` del ámbito) hacia el host y el puerto de la URL, envía el
++     handshake con un `Sec-WebSocket-Key` nuevo de 16 bytes, lee exactamente el bloque de
++     cabeceras de la respuesta (nunca más allá, dentro de una trama que el servidor no ha
++     enviado), comprueba que haya un `101` y el `Sec-WebSocket-Accept` correcto, e inicia el
++     demonio que bombea las tramas salientes; `receive` es el `messages` de la conexión;
++     `transmit` enmascara y encola un mensaje como una trama; `close` envía `1000`. Es un
++     `Duplexable`, no un mero `Serviceable`, porque en su canal se puede enviar de forma
++     concurrente sin peligro, que es lo que permite a `exchange` enviar por iniciativa propia.
+
+=     lets `exchange` send proactively.
+=
+-     ```scala fuel
++     ```scala fuel
+
+=     lets `exchange` send proactively.
+=
+=     ```scala fuel
+-     typecheck
++     typecheck
+
+=     lets `exchange` send proactively.
+=
+=     ```scala fuel
+=     typecheck
+-     ##
++     ##
+
+=     lets `exchange` send proactively.
+=
+=     ```scala fuel
+=     typecheck
+=     ##
+-     import soundness.*
++     import soundness.*
+
+-     import perihelion.wsClient
++     import perihelion.wsClient
+
+-     import internetAccess.online
++     import internetAccess.online
+
+=     import internetAccess.online
+-     import logging.silentLogging
++     import logging.silentLogging
+
+=     import internetAccess.online
+=     import logging.silentLogging
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+=     import internetAccess.online
+=     import logging.silentLogging
+=     import strategies.throwUnsafely
+-     import threads.virtualThreads
++     import threads.virtualThreads
+
+=     import internetAccess.online
+=     import logging.silentLogging
+=     import strategies.throwUnsafely
+=     import threads.virtualThreads
+-     import probates.awaitProbate
++     import probates.awaitProbate
+
+=     import probates.awaitProbate
+-     import formatting.compactJsonFormatting
++     import formatting.compactJsonFormatting
+
+=     import probates.awaitProbate
+=     import formatting.compactJsonFormatting
+-     import codepages.utf8Codepage
++     import codepages.utf8Codepage
+
+=     import probates.awaitProbate
+=     import formatting.compactJsonFormatting
+=     import codepages.utf8Codepage
+-     import charsets.utf8Charset
++     import charsets.utf8Charset
+
+=     import probates.awaitProbate
+=     import formatting.compactJsonFormatting
+=     import codepages.utf8Codepage
+=     import charsets.utf8Charset
+-     import textSanitizers.skipSanitizer
++     import textSanitizers.skipSanitizer
+
+=     import probates.awaitProbate
+=     import formatting.compactJsonFormatting
+=     import codepages.utf8Codepage
+=     import charsets.utf8Charset
+=     import textSanitizers.skipSanitizer
+=
+-     case class Ping(value: Int)
++     case class Ping(value: Int)
+
+=     import probates.awaitProbate
+=     import formatting.compactJsonFormatting
+=     import codepages.utf8Codepage
+=     import charsets.utf8Charset
+=     import textSanitizers.skipSanitizer
+=
+=     case class Ping(value: Int)
+=
+-     def main(): Unit = supervise:
++     def main(): Unit = supervise:
+
+-       val url = t"ws://localhost:8080/".as[Websocket.Url]
++       val url = t"ws://localhost:8080/".as[Websocket.Url]
+
+-       val handle: (state: Int) ?=> (Ping over Json) => Control[Int] =
++       val handle: (state: Int) ?=> (Ping over Json) => Control[Int] =
+
+-         ping => Control.Conclude(Ping(0).over[Json], ping.value)
++         ping => Control.Conclude(Ping(0).over[Json], ping.value)
+
+-       val last: Int = url.exchange(0)(handle)(_.send(Ping(7).over[Json]))
++       val last: Int = url.exchange(0)(handle)(_.send(Ping(7).over[Json]))
+
+=       val last: Int = url.exchange(0)(handle)(_.send(Ping(7).over[Json]))
+-     ```
++     ```
+
+-     `url.react(initial)(handle)` waits for the server to speak first; `url.exchange
+-     (initial)(handle)(interact)` hands `interact` a `Transmitter` before the loop begins.
+-     Both return the final state once the handler concludes or the server closes. The
+-     given needs an `Online` (`internetAccess.online`), a `Monitor` and `Probate`, an
+-     `Every[Socket.Option.Tcp]`, a `Tls`, and tactics for `Websocket.Error`,
+-     `Http.Response.Error` and `Port.Error`, and it retains them, so it is a capability.
+-     It is not exported to `soundness`, since a synthesized forwarder would lose its
+-     refinement: `import perihelion.wsClient`.
++     `url.react(initial)(handle)` espera a que el servidor hable primero;
++     `url.exchange (initial)(handle)(interact)` entrega a `interact` un `Transmitter` antes de
++     que empiece el bucle. Ambos devuelven el estado final una vez que el manejador concluye o
++     el servidor cierra. El given necesita un `Online` (`internetAccess.online`), un `Monitor`
++     y una `Probate`, un `Every[Socket.Option.Tcp]`, un `Tls`, y tácticas para
++     `Websocket.Error`, `Http.Response.Error` y `Port.Error`, y los retiene, así que es una
++     capacidad. No se exporta a `soundness`, puesto que un reenviador sintetizado perdería su
++     refinamiento: `import perihelion.wsClient`.
+
+- entry .WsSessional   lends a connected `Websocket.Connection` to a scope: `url.session { connection ?=> … }`
++ entry .WsSessional   presta a un ámbito una `Websocket.Connection` conectada: `url.session { connection ?=> … }`
+
+= entry .WsSessional   lends a connected `Websocket.Connection` to a scope: `url.session { connection ?=> … }`
+-   detail
++   detail
+
+-       The `Sessional` instance for `Websocket.Url`, behind the given `wsSessional`. `#session`
+-       connects through `wsClient`, lends the `Websocket.Connection` — handshake done, pump
+-       running — to the lambda, and closes it with a `1000` close frame when the lambda ends,
+-       whether it returns or throws. The connection is a fresh capability, so neither it nor
+-       a stream borrowed from it can leave the block. For state-machine consumption
+-       `url.react` and `url.exchange` are the natural forms; a session serves an interaction
+-       which does not fit a per-message handler.
++       La instancia de `Sessional` para `Websocket.Url`, detrás del given `wsSessional`.
++       `#session` se conecta mediante `wsClient`, presta la `Websocket.Connection` (handshake
++       hecho, bombeo en marcha) a la lambda, y la cierra con una trama de cierre `1000` cuando
++       la lambda termina, tanto si devuelve un valor como si lanza una excepción. La conexión es
++       una capacidad nueva, así que ni ella ni un flujo tomado prestado de ella pueden salir del
++       bloque. Para un consumo como máquina de estados, `url.react` y `url.exchange` son las
++       formas naturales; una sesión sirve para una interacción que no encaja en un manejador
++       por mensaje.
+
+=       which does not fit a per-message handler.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       which does not fit a per-message handler.
+=
+=       ```scala fuel
+-       typecheck
++       typecheck
+
+=       which does not fit a per-message handler.
+=
+=       ```scala fuel
+=       typecheck
+-       ##
++       ##
+
+=       which does not fit a per-message handler.
+=
+=       ```scala fuel
+=       typecheck
+=       ##
+-       import soundness.*
++       import soundness.*
+
+-       import perihelion.{wsClient, wsSessional}
++       import perihelion.{wsClient, wsSessional}
+
+-       import internetAccess.online
++       import internetAccess.online
+
+=       import internetAccess.online
+-       import logging.silentLogging
++       import logging.silentLogging
+
+=       import internetAccess.online
+=       import logging.silentLogging
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       import internetAccess.online
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+-       import threads.virtualThreads
++       import threads.virtualThreads
+
+=       import internetAccess.online
+=       import logging.silentLogging
+=       import strategies.throwUnsafely
+=       import threads.virtualThreads
+-       import probates.awaitProbate
++       import probates.awaitProbate
+
+=       import probates.awaitProbate
+=
+-       def main(): Unit = supervise:
++       def main(): Unit = supervise:
+
+-         t"ws://localhost:8080/".as[Websocket.Url].session: connection ?=>
++         t"ws://localhost:8080/".as[Websocket.Url].session: connection ?=>
+
+-           connection.send(t"hello".in[Data].stream)
++           connection.send(t"hello".in[Data].stream)
+
+=           connection.send(t"hello".in[Data].stream)
+-       ```
++       ```
+
+-       It needs the `wsClient` given (as a capturing parameter), a `Monitor` and a
+-       `Tactic[Socket.Error]` for the connection's failure.
++       Necesita el given `wsClient` (como parámetro que captura), un `Monitor` y una
++       `Tactic[Socket.Error]` para el fallo de la conexión.
+
+-   refer perihelion.wsSessional
++   refer perihelion.wsSessional
+
+-   refer perihelion.wsClient
++   refer perihelion.wsClient
+
+-   entry #session   connects to the URL, lends the connection to the lambda and closes it afterwards
+-   entry #Result   the lent handle: a fresh `Websocket.Connection^`
+-   entry #Self   the subject: `Websocket.Url`
++   entry #session   se conecta a la URL, presta la conexión a la lambda y la cierra después
++   entry #Result   el descriptor prestado: una `Websocket.Connection^` nueva
++   entry #Self   el sujeto: `Websocket.Url`
+
+- entry .wsSessional   the `WsSessional` given: imported by name, `import perihelion.wsSessional`
+-     Built from the `wsClient` given, a `Monitor` and a `Tactic[Socket.Error]`, which it
+-     retains. Not exported to `soundness`, since a synthesized forwarder would lose its
+-     capture-annotated type.
++ entry .wsSessional   el given `WsSessional`: se importa por nombre, `import perihelion.wsSessional`
++     Se construye a partir del given `wsClient`, un `Monitor` y una `Tactic[Socket.Error]`, que
++     retiene. No se exporta a `soundness`, puesto que un reenviador sintetizado perdería su
++     tipo con anotaciones de captura.

@@ -1,0 +1,28 @@
+orthant 1 language
+
+- Internally, a permutation is stored as its
+- [inversion table](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)) in
+- factorial-base form, which is a single integer that uniquely identifies it. That makes permutations compact to store and to
+- enumerate: `Permutation.bySize(n)` gives all `n!` of them, as a lazy
+- [chain](collections.md#lazy-chains). A permutation of *n* elements occupies
+- O(*n* log *n*) space, which is the least possible, since there are *n*! of them to tell apart.
++ Internamente, una permutación se almacena como su
++ [tabla de inversiones](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)) en base
++ factorial, que es un único entero que la identifica de forma unívoca. Eso hace que las
++ permutaciones sean compactas de almacenar y de enumerar: `Permutation.bySize(n)` da las `n!`,
++ como una [cadena](collections.md#lazy-chains) perezosa. Una permutación de *n* elementos ocupa un
++ espacio O(*n* log *n*), que es el mínimo posible, ya que hay *n*! que distinguir.
+
+- Out.println((Permutation(Factoradic(104)) == Permutation(Sequence(1, 4, 2, 3, 0))).inspect)
+- Out.println(shuffle.inversions.inspect)
++ Out.println((Permutation(Factoradic(104)) == Permutation(Sequence(1, 4, 2, 3, 0))).inspect)
++ Out.println(shuffle.inversions.inspect)
+
+- A permutation leaves alone every position after the last one it moves, so `shuffle`, whose
+- sixth index stays in place, is a permutation of five. Applying one to a longer sequence is
+- therefore not an error: it rearranges the leading positions it covers, and leaves the rest
+- where they were. A single index is mapped the same way, with `shuffle(3)`.
++ Una permutación deja intactas todas las posiciones posteriores a la última que mueve, así que
++ `shuffle`, cuyo sexto índice se queda en su sitio, es una permutación de cinco. Por tanto, aplicar
++ una a una secuencia más larga no es un error: reordena las posiciones iniciales que abarca, y deja
++ el resto donde estaba. Un único índice se transforma de la misma manera, con `shuffle(3)`.

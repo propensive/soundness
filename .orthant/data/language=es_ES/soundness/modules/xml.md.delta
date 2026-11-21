@@ -1,0 +1,1997 @@
+orthant 1 language
+
+- ## XML
++ ## XML
+
+- ### About
++ ### Descripción
+
+- [XML](https://en.wikipedia.org/wiki/XML) text parses into an `Xml` value. A case class converts
+- to and from XML with an encoder and decoder [derived][derivation] from its shape, and a
+- document's elements can be navigated and queried. XML written literally, with the `x"…"`
+- [interpolator], is parsed and checked at [compiletime], so a malformed fragment does not
+- compile.
++ El texto [XML](https://en.wikipedia.org/wiki/XML) se analiza y da un valor `Xml`. Una case class
++ se convierte a XML, y desde XML, con un codificador y un decodificador [derivados][derivación] de
++ su forma, y los elementos de un documento pueden recorrerse y consultarse. El XML escrito de
++ forma literal, con el [interpolador] `x"…"`, se analiza y se comprueba en
++ [tiempo de compilación], así que un fragmento mal formado no compila.
+
+- The design mirrors that of [JSON](json.md). Parsing keeps the structure and the types together.
+- Conversions are derived, not written by hand. A conversion which cannot be made raises a typed
+- error which names the reason.
++ El diseño refleja el de [JSON](json.md). El análisis mantiene juntos la estructura y los tipos.
++ Las conversiones se derivan, no se escriben a mano. Una conversión que no puede hacerse lanza un
++ error tipado que nombra el motivo.
+
+- ### On XML
++ ### Sobre XML
+
+- The usual API for XML is the [DOM](https://en.wikipedia.org/wiki/Document_Object_Model). It is
+- an untyped tree, whose elements are fetched by string name, and whose text is pulled out and
+- parsed by hand. Where the document does not match what the code expects, the mismatch surfaces
+- as a `null` or a failed cast. XML is verbose already, and an interface which checks nothing
+- makes it worse.
++ La API habitual para XML es el [DOM](https://en.wikipedia.org/wiki/Document_Object_Model). Es un
++ árbol sin tipos, cuyos elementos se obtienen por su nombre como cadena, y cuyo texto se extrae y
++ se analiza a mano. Donde el documento no coincide con lo que espera el código, la discrepancia
++ aflora como un `null` o como una conversión de tipo fallida. XML ya es prolijo de por sí, y una
++ interfaz que no comprueba nada lo empeora.
+
+- Here the conversion between XML and a Scala type is derived from the type. A case class becomes
+- an element with a child for each field, and an enumeration becomes an element named for its
+- case, so there is nothing to keep in step by hand. Literals are checked as they are written,
+- and a failed conversion is a typed `Xml.Error`. An `Xml` value is [immutable], and every edit
+- gives a new value, in keeping with [immutability](../../philosophy/immutability.md).
++ Aquí, la conversión entre XML y un tipo de Scala se deriva del tipo. Una case class se convierte
++ en un elemento con un hijo por cada campo, y una enumeración se convierte en un elemento con el
++ nombre de su caso, así que no hay nada que mantener sincronizado a mano. Los literales se
++ comprueban según se escriben, y una conversión fallida es un `Xml.Error` tipado. Un valor `Xml`
++ es [inmutable], y cada edición da un valor nuevo, de acuerdo con la
++ [inmutabilidad](../../philosophy/immutability.md).
+
+- Everything comes from the `soundness` package. A schema and an error [strategy] are in scope,
+- and the last import lets the samples print their results:
++ Todo procede del paquete `soundness`. Un esquema y una [estrategia] de errores están en el
++ ámbito, y la última importación permite que los ejemplos impriman sus resultados:
+
+= and the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import temporaryDirectories.javaBaseTemporaryDirectory
++ import temporaryDirectories.javaBaseTemporaryDirectory
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import xmlSchemas.freeformXmlSchema
++ import xmlSchemas.freeformXmlSchema
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- The schema is a choice, imported as a charset or a strategy is. `freeformXmlSchema` admits any
+- element and any attribute. An [XSD](#typed-records-from-an-xml-schema) takes its place when a
+- document's shape is known.
++ El esquema es una elección, que se importa como se importa un charset o una estrategia.
++ `freeformXmlSchema` admite cualquier elemento y cualquier atributo. Un
++ [XSD](#typed-records-from-an-xml-schema) ocupa su lugar cuando se conoce la forma de un
++ documento.
+
+- ### Parsing
++ ### Análisis
+
+- `read[Xml]` parses text into an `Xml` value, and `show` writes one back out:
++ `read[Xml]` analiza texto y da un valor `Xml`, y `show` lo vuelve a escribir:
+
+= `read[Xml]` parses text into an `Xml` value, and `show` writes one back out:
+=
+- ```scala
++ ```scala
+
+- val message = t"<message>hello world</message>".read[Xml]
++ val message = t"<message>hello world</message>".read[Xml]
+
+= val message = t"<message>hello world</message>".read[Xml]
+- ```
++ ```
+
+= val message = t"<message>hello world</message>".read[Xml]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val message = t"<message>hello world</message>".read[Xml]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val message = t"<message>hello world</message>".read[Xml]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(message.show)
++ Out.println(message.show)
+
+= Out.println(message.show)
+- ```
++ ```
+
+- Text which is not well-formed XML is an error, which says what was wrong and where:
++ Un texto que no es XML bien formado es un error, que dice qué estaba mal y dónde:
+
+= Text which is not well-formed XML is an error, which says what was wrong and where:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Text which is not well-formed XML is an error, which says what was wrong and where:
+=
+= ```scala fuel
+- run
++ run
+
+= Text which is not well-formed XML is an error, which says what was wrong and where:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= Text which is not well-formed XML is an error, which says what was wrong and where:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"<message>hello world</mesage>".read[Xml]
++ t"<message>hello world</mesage>".read[Xml]
+
+= t"<message>hello world</mesage>".read[Xml]
+- ```
++ ```
+
+- `load` reads a whole document, and keeps its `<?xml?>` header. Where `read` gives the content,
+- `load` gives a `Document`, which pairs the root with its `Header`: the version, and the
+- encoding and standalone declarations where they are given. A document is therefore written back
+- with its declaration intact:
++ `load` lee un documento entero y conserva su cabecera `<?xml?>`. Mientras que `read` da el
++ contenido, `load` da un `Document`, que empareja la raíz con su `Header`: la versión y, cuando se
++ dan, las declaraciones de codificación y de standalone. Por tanto, un documento se vuelve a
++ escribir con su declaración intacta:
+
+= with its declaration intact:
+=
+- ```scala
++ ```scala
+
+- import threads.platformThreads
++ import threads.platformThreads
+
+- val loaded = supervise:
++ val loaded = supervise:
+
+-   t"""<?xml version="1.0"?><root>content</root>""".load[Xml]
++   t"""<?xml version="1.0"?><root>content</root>""".load[Xml]
+
+=   t"""<?xml version="1.0"?><root>content</root>""".load[Xml]
+- ```
++ ```
+
+- Both `read` and `load` take a source of bytes as readily as text: a [file](filesystem.md), the
+- body of an [HTTP response](http-client.md), a [classpath](classpath.md) resource. The bytes are
+- parsed directly, with no `Charset` in scope, since the parser reads UTF-8 itself:
++ Tanto `read` como `load` aceptan una fuente de bytes con la misma facilidad que un texto: un
++ [fichero](filesystem.md), el cuerpo de una [respuesta HTTP](http-client.md), un recurso del
++ [classpath](classpath.md). Los bytes se analizan directamente, sin ningún `Charset` en el
++ ámbito, ya que el analizador lee UTF-8 por sí mismo:
+
+= parsed directly, with no `Charset` in scope, since the parser reads UTF-8 itself:
+=
+- ```scala fuel
++ ```scala fuel
+
+= parsed directly, with no `Charset` in scope, since the parser reads UTF-8 itself:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= parsed directly, with no `Charset` in scope, since the parser reads UTF-8 itself:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val feed: Path on Linux = temporaryDirectory[Path on Linux] / "feed.xml"
++ val feed: Path on Linux = temporaryDirectory[Path on Linux] / "feed.xml"
+
+- val document = feed.load[Xml]
++ val document = feed.load[Xml]
+
+= val document = feed.load[Xml]
+- ```
++ ```
+
+- Anything in the prolog, such as a comment, a processing instruction or a `<!DOCTYPE>`, is kept
+- as a node before the root. A stylesheet instruction therefore survives being read and written.
++ Todo lo que haya en el prólogo, como un comentario, una instrucción de procesamiento o un
++ `<!DOCTYPE>`, se conserva como un nodo anterior a la raíz. Por tanto, una instrucción de hoja de
++ estilo sobrevive a la lectura y a la escritura.
+
+- ### The node types
++ ### Los tipos de nodo
+
+- An `Xml` value is one of the kinds of node which the specification defines. Each is a distinct
+- type, in the `Xml` companion, and not a tagged string. Beyond elements and text, they hold what
+- other libraries tend to flatten away:
++ Un valor `Xml` es una de las clases de nodo que define la especificación. Cada una es un tipo
++ distinto, en el objeto compañero `Xml`, y no una cadena etiquetada. Además de elementos y texto,
++ contienen lo que otras bibliotecas suelen aplanar y perder:
+
+= other libraries tend to flatten away:
+=
+- ```tabular
++ ```tabular
+
+- column  Type
+- column  Holds
+- row  `Xml.Element`  a name, attributes and children
+- row  `Xml.Text`  character data
+- row  `Xml.Cdata`  a `<![CDATA[…]]>` section, kept as a section
+- row  `Xml.Comment`  a `<!-- … -->` comment, wherever it appears
+- row  `Xml.ProcessingInstruction`  a target and its data, including the empty-data case `<?target?>`
+- row  `Xml.Doctype`  a `<!DOCTYPE>` declaration, which serializes back verbatim
+- row  `Xml.Fragment`  a sequence of nodes with no single parent, such as a prolog plus a root
++ column  Tipo
++ column  Contiene
++ row  `Xml.Element`  un nombre, atributos e hijos
++ row  `Xml.Text`  datos de caracteres
++ row  `Xml.Cdata`  una sección `<![CDATA[…]]>`, conservada como sección
++ row  `Xml.Comment`  un comentario `<!-- … -->`, dondequiera que aparezca
++ row  `Xml.ProcessingInstruction`  un destino y sus datos, incluido el caso de datos vacíos `<?target?>`
++ row  `Xml.Doctype`  una declaración `<!DOCTYPE>`, que se vuelve a serializar literalmente
++ row  `Xml.Fragment`  una secuencia de nodos sin un único padre, como un prólogo más una raíz
+
+= row  `Xml.Fragment`  a sequence of nodes with no single parent, such as a prolog plus a root
+- ```
++ ```
+
+- A CDATA section stays a section, so text which contains `<not a tag>` survives being read and
+- written, without being escaped into something else.
++ Una sección CDATA sigue siendo una sección, así que un texto que contiene `<not a tag>`
++ sobrevive a la lectura y a la escritura sin que se escape convirtiéndose en otra cosa.
+
+- The predefined entities are resolved as a document is read, and escaped again as it is written.
+- So are numeric character references, in both decimal and hexadecimal:
++ Las entidades predefinidas se resuelven al leer un documento, y se vuelven a escapar al
++ escribirlo. Lo mismo ocurre con las referencias numéricas de caracteres, tanto decimales como
++ hexadecimales:
+
+= So are numeric character references, in both decimal and hexadecimal:
+=
+- ```tabular
++ ```tabular
+
+- column  Entity
+- column  Character
++ column  Entidad
++ column  Carácter
+
+- row  `&amp;`  `&`
++ row  `&amp;`  `&`
+
+- row  `&lt;`  `<`
++ row  `&lt;`  `<`
+
+- row  `&gt;`  `>`
++ row  `&gt;`  `>`
+
+- row  `&quot;`  `"`
++ row  `&quot;`  `"`
+
+- row  `&apos;`  `'`
++ row  `&apos;`  `'`
+
+- row  `&#NNN;`, `&#xHHH;`  the character with that code point
++ row  `&#NNN;`, `&#xHHH;`  el carácter con ese punto de código
+
+= row  `&#NNN;`, `&#xHHH;`  the character with that code point
+- ```
++ ```
+
+- ### Reading values
++ ### Lectura de valores
+
+- `as` converts an `Xml` value to a Scala type. Content which cannot be read as that type raises
+- an `Xml.Error`:
++ `as` convierte un valor `Xml` en un tipo de Scala. Un contenido que no puede leerse como ese
++ tipo lanza un `Xml.Error`:
+
+= an `Xml.Error`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= an `Xml.Error`:
+=
+= ```scala fuel
+- run
++ run
+
+= an `Xml.Error`:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(x"<message>42</message>".as[Int].show)
++ Out.println(x"<message>42</message>".as[Int].show)
+
+= Out.println(x"<message>42</message>".as[Int].show)
+- ```
++ ```
+
+= Out.println(x"<message>42</message>".as[Int].show)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= Out.println(x"<message>42</message>".as[Int].show)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= ```
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= ```
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- x"<message>forty-two</message>".as[Int]
++ x"<message>forty-two</message>".as[Int]
+
+= x"<message>forty-two</message>".as[Int]
+- ```
++ ```
+
+- ### Case classes
++ ### Case classes
+
+- A case class takes part in XML as it stands. Its encoder and decoder are derived from its
+- fields. The value becomes an element named for the type, with a child element for each field,
+- and is read back whatever the order of the children:
++ Una case class participa en XML tal como es. Su codificador y su decodificador se derivan de sus
++ campos. El valor se convierte en un elemento con el nombre del tipo, con un elemento hijo por
++ cada campo, y se lee de vuelta sea cual sea el orden de los hijos:
+
+= and is read back whatever the order of the children:
+=
+- ```scala
++ ```scala
+
+- case class Person(name: Text, age: Int)
++ case class Person(name: Text, age: Int)
+
+- val hamlet = t"<Person><age>30</age><name>Hamlet</name></Person>".read[Person in Xml]
++ val hamlet = t"<Person><age>30</age><name>Hamlet</name></Person>".read[Person in Xml]
+
+= val hamlet = t"<Person><age>30</age><name>Hamlet</name></Person>".read[Person in Xml]
+- ```
++ ```
+
+= val hamlet = t"<Person><age>30</age><name>Hamlet</name></Person>".read[Person in Xml]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val hamlet = t"<Person><age>30</age><name>Hamlet</name></Person>".read[Person in Xml]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val hamlet = t"<Person><age>30</age><name>Hamlet</name></Person>".read[Person in Xml]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Person(t"Hamlet", 30).in[Xml].show)
++ Out.println(Person(t"Hamlet", 30).in[Xml].show)
+
+- Out.println(hamlet.inspect)
++ Out.println(hamlet.inspect)
+
+= Out.println(hamlet.inspect)
+- ```
++ ```
+
+- `in[Text over Xml]` encodes a value straight to its XML text, as the mirror of
+- `read[Person in Xml]`, and `in[Data over Xml]` writes the same text as bytes, in the `Codepage`
+- in scope.
++ `in[Text over Xml]` codifica un valor directamente en su texto XML, como reflejo de
++ `read[Person in Xml]`, e `in[Data over Xml]` escribe el mismo texto como bytes, en el `Codepage`
++ que está en el ámbito.
+
+- A field marked `@attribute` becomes an attribute instead of a child element, and is read back
+- as one:
++ Un campo marcado con `@attribute` se convierte en un atributo en lugar de un elemento hijo, y se
++ lee de vuelta como tal:
+
+= as one:
+=
+- ```scala
++ ```scala
+
+- case class Play(title: Text, @attribute year: Int)
++ case class Play(title: Text, @attribute year: Int)
+
+= case class Play(title: Text, @attribute year: Int)
+- ```
++ ```
+
+= case class Play(title: Text, @attribute year: Int)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Play(title: Text, @attribute year: Int)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Play(title: Text, @attribute year: Int)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Play(t"Hamlet", 1603).in[Xml].show)
++ Out.println(Play(t"Hamlet", 1603).in[Xml].show)
+
+= Out.println(Play(t"Hamlet", 1603).in[Xml].show)
+- ```
++ ```
+
+- `@name` renames an element or attribute where the Scala name and the XML name should differ.
+- `@name[Xml]` confines the rename to XML, and leaves other formats to their own. It also renames
+- the element of an enumeration's *variant*, so a `Light.Stop` may be written as `<red>`:
++ `@name` cambia el nombre de un elemento o de un atributo cuando el nombre en Scala y el nombre
++ en XML deben ser distintos. `@name[Xml]` limita el cambio de nombre a XML, y deja los demás
++ formatos con el suyo propio. También cambia el nombre del elemento de una *variante* de una
++ enumeración, de modo que un `Light.Stop` puede escribirse como `<red>`:
+
+= the element of an enumeration's *variant*, so a `Light.Stop` may be written as `<red>`:
+=
+- ```scala
++ ```scala
+
+- enum Light:
++ enum Light:
+
+-   @name[Xml](t"red") case Stop(seconds: Int)
++   @name[Xml](t"red") case Stop(seconds: Int)
+
+-   @name(t"green") case Go(seconds: Int)
++   @name(t"green") case Go(seconds: Int)
+
+-   case Wait(seconds: Int)
++   case Wait(seconds: Int)
+
+- val stop: Light = Light.Stop(30)
++ val stop: Light = Light.Stop(30)
+
+= val stop: Light = Light.Stop(30)
+- ```
++ ```
+
+= val stop: Light = Light.Stop(30)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val stop: Light = Light.Stop(30)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val stop: Light = Light.Stop(30)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(stop.in[Xml].show)
++ Out.println(stop.in[Xml].show)
+
+= Out.println(stop.in[Xml].show)
+- ```
++ ```
+
+- A sum type is decoded by its element's name, which selects the variant. A name which matches no
+- variant raises an `Xml.Error`, and never falls through to a default.
++ Un tipo suma se decodifica por el nombre de su elemento, que selecciona la variante. Un nombre
++ que no coincide con ninguna variante lanza un `Xml.Error`, y nunca recurre a un valor por
++ defecto.
+
+- An `Optional` field which is `Unset` is simply absent: there is no child element, or, for an
+- `@attribute` field, no attribute. A document without the element decodes the field as `Unset`.
+- A `Map` field becomes one child element for each entry, holding a `<key>` and a `<value>`, so
+- a key need not be a valid element name, and may be of any type which can be encoded in XML:
++ Un campo `Optional` que es `Unset` simplemente está ausente: no hay elemento hijo o, para un
++ campo `@attribute`, no hay atributo. Un documento sin el elemento decodifica el campo como
++ `Unset`. Un campo `Map` se convierte en un elemento hijo por cada entrada, que contiene un
++ `<key>` y un `<value>`, de modo que una clave no necesita ser un nombre de elemento válido, y
++ puede ser de cualquier tipo que pueda codificarse en XML:
+
+= a key need not be a valid element name, and may be of any type which can be encoded in XML:
+=
+- ```scala
++ ```scala
+
+- case class Profile(name: Text, nickname: Optional[Text], stock: Map[Text, Int])
++ case class Profile(name: Text, nickname: Optional[Text], stock: Map[Text, Int])
+
+= case class Profile(name: Text, nickname: Optional[Text], stock: Map[Text, Int])
+- ```
++ ```
+
+= case class Profile(name: Text, nickname: Optional[Text], stock: Map[Text, Int])
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Profile(name: Text, nickname: Optional[Text], stock: Map[Text, Int])
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Profile(name: Text, nickname: Optional[Text], stock: Map[Text, Int])
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Profile(t"Falstaff", Unset, Map(t"sack" -> 3)).in[Xml].show)
++ Out.println(Profile(t"Falstaff", Unset, Map(t"sack" -> 3)).in[Xml].show)
+
+= Out.println(Profile(t"Falstaff", Unset, Map(t"sack" -> 3)).in[Xml].show)
+- ```
++ ```
+
+- In summary:
++ En resumen:
+
+= In summary:
+=
+- ```tabular
++ ```tabular
+
+- column  Scala
++ column  Scala
+
+- column  XML
++ column  XML
+
+- row  a case class  an element named for the type
+- row  a field  a child element named for the field
+- row  an `@attribute` field  an attribute
+- row  an `@name` or `@name[Xml]` label  the element or attribute renamed
+- row  a variant of a sum type  an element named for the variant
+- row  an `Optional` field that is `Unset`  no element, or no attribute
+- row  a collection field  one element per item, named for the field, in order
+- row  a `Map` field  one element per entry, holding a `<key>` and a `<value>`
++ row  una case class  un elemento con el nombre del tipo
++ row  un campo  un elemento hijo con el nombre del campo
++ row  un campo `@attribute`  un atributo
++ row  un rótulo `@name` o `@name[Xml]`  el elemento o atributo con el nombre cambiado
++ row  una variante de un tipo suma  un elemento con el nombre de la variante
++ row  un campo `Optional` que es `Unset`  ningún elemento, o ningún atributo
++ row  un campo de colección  un elemento por cada ítem, con el nombre del campo, en orden
++ row  un campo `Map`  un elemento por cada entrada, que contiene un `<key>` y un `<value>`
+
+= row  a `Map` field  one element per entry, holding a `<key>` and a `<value>`
+- ```
++ ```
+
+- [Annotations](annotations.md) describes `@name` and `@attribute` and how they are read.
++ [Anotaciones](annotations.md) describe `@name` y `@attribute` y cómo se leen.
+
+- ### What decoding tolerates
++ ### Lo que tolera la decodificación
+
+- Real XML is untidy, and a decoder which insists on tidiness is of little use. Text, comments
+- and processing instructions which sit between the children a type expects are ignored. A
+- document with prose between its fields decodes as though the prose were not there:
++ El XML real es desordenado, y un decodificador que exige orden sirve de poco. Se ignoran el
++ texto, los comentarios y las instrucciones de procesamiento que hay entre los hijos que espera un
++ tipo. Un documento con prosa entre sus campos se decodifica como si la prosa no estuviera:
+
+= document with prose between its fields decodes as though the prose were not there:
+=
+- ```scala
++ ```scala
+
+- val untidy =
++ val untidy =
+
+-   t"<root>hello<name>A</name><!--c--><?pi data?> <age>4</age>bye</root>".read[Person in Xml]
++   t"<root>hello<name>A</name><!--c--><?pi data?> <age>4</age>bye</root>".read[Person in Xml]
+
+=   t"<root>hello<name>A</name><!--c--><?pi data?> <age>4</age>bye</root>".read[Person in Xml]
+- ```
++ ```
+
+=   t"<root>hello<name>A</name><!--c--><?pi data?> <age>4</age>bye</root>".read[Person in Xml]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   t"<root>hello<name>A</name><!--c--><?pi data?> <age>4</age>bye</root>".read[Person in Xml]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   t"<root>hello<name>A</name><!--c--><?pi data?> <age>4</age>bye</root>".read[Person in Xml]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(untidy.inspect)
++ Out.println(untidy.inspect)
+
+= Out.println(untidy.inspect)
+- ```
++ ```
+
+- Entities in text are expanded as they are read. Repeated elements gather into a collection
+- field, in document order, and they need not be next to each other: a `<songs>` before the
+- `<name>` and another after it still form one list, in the order they appeared. A recursive type
+- is handled through its own derivation, so a tree of any depth encodes and decodes without a
+- hand-written codec.
++ Las entidades del texto se expanden según se leen. Los elementos repetidos se reúnen en un campo
++ de colección, en el orden del documento, y no necesitan estar uno junto a otro: un `<songs>`
++ antes del `<name>` y otro después siguen formando una sola lista, en el orden en que aparecieron.
++ Un tipo recursivo se gestiona a través de su propia derivación, así que un árbol de cualquier
++ profundidad se codifica y se decodifica sin un códec escrito a mano.
+
+- Where a nested value is missing altogether, a `Default` for its type turns what would be a
+- cascade of errors about its fields into a single error, at the point where the value should
+- have been. The default is used to carry on, which is what a validation pass reporting to a
+- person wants.
++ Donde falta por completo un valor anidado, un `Default` para su tipo convierte lo que sería una
++ cascada de errores sobre sus campos en un único error, en el punto donde debería haber estado el
++ valor. El valor por defecto se usa para continuar, que es lo que quiere una pasada de validación
++ que informa a una persona.
+
+- A field which is required, and missing, is an error:
++ Un campo obligatorio que falta es un error:
+
+= A field which is required, and missing, is an error:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A field which is required, and missing, is an error:
+=
+= ```scala fuel
+- run
++ run
+
+= A field which is required, and missing, is an error:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= A field which is required, and missing, is an error:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"<Person><name>Hamlet</name></Person>".read[Person in Xml]
++ t"<Person><name>Hamlet</name></Person>".read[Person in Xml]
+
+= t"<Person><name>Hamlet</name></Person>".read[Person in Xml]
+- ```
++ ```
+
+- An `Optional` field has two further policies, from the package `optionalityOptions`, as
+- [Decoding](decoding.md#policies-for-optional-fields) describes:
++ Un campo `Optional` tiene dos políticas más, del paquete `optionalityOptions`, como describe
++ [Decodificación](decoding.md#policies-for-optional-fields):
+
+= [Decoding](decoding.md#policies-for-optional-fields) describes:
+=
+- ```tabular
++ ```tabular
+
+- column  A field whose element or attribute is
+- column  Reads as
+- column  Unless
+- row  omitted from the document  `Unset`  `strictXmlAbsence` makes it an error
+- row  present but rejected by the inner decoder  an error  `lenientXmlFaults` reads it as `Unset`
++ column  Un campo cuyo elemento o atributo está
++ column  Se lee como
++ column  Salvo que
++ row  omitido en el documento  `Unset`  `strictXmlAbsence` lo convierte en un error
++ row  presente pero rechazado por el decodificador interno  un error  `lenientXmlFaults` lo lee como `Unset`
+
+= row  present but rejected by the inner decoder  an error  `lenientXmlFaults` reads it as `Unset`
+- ```
++ ```
+
+- Under `strictXmlAbsence`, a missing element or attribute is an `Xml.Error.Reason.Missing`. XML
+- has no null. An empty element is a present value, so there is no policy for nulls.
++ Con `strictXmlAbsence`, un elemento o un atributo que falta es un `Xml.Error.Reason.Missing`.
++ XML no tiene null. Un elemento vacío es un valor presente, así que no hay ninguna política para
++ los nulos.
+
+= has no null. An empty element is a present value, so there is no policy for nulls.
+=
+- ```scala
++ ```scala
+
+- case class Tally(name: Text, count: Optional[Int])
++ case class Tally(name: Text, count: Optional[Int])
+
+- val tolerant =
++ val tolerant =
+
+-   import optionalityOptions.lenientXmlFaults
++   import optionalityOptions.lenientXmlFaults
+
+-   x"<root><name>Puck</name><count>many</count></root>".as[Tally]
++   x"<root><name>Puck</name><count>many</count></root>".as[Tally]
+
+=   x"<root><name>Puck</name><count>many</count></root>".as[Tally]
+- ```
++ ```
+
+=   x"<root><name>Puck</name><count>many</count></root>".as[Tally]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   x"<root><name>Puck</name><count>many</count></root>".as[Tally]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   x"<root><name>Puck</name><count>many</count></root>".as[Tally]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(tolerant.inspect)
++ Out.println(tolerant.inspect)
+
+= Out.println(tolerant.inspect)
+- ```
++ ```
+
+- ### Writing XML literally
++ ### Escribir XML de forma literal
+
+- The `x"…"` interpolator writes XML directly, and checks it at compiletime. Values are
+- substituted into it:
++ El interpolador `x"…"` escribe XML directamente, y lo comprueba en tiempo de compilación. Se le
++ sustituyen valores:
+
+= substituted into it:
+=
+- ```scala
++ ```scala
+
+- val name = t"Hamlet"
++ val name = t"Hamlet"
+
+- val user = x"<user>$name</user>"
++ val user = x"<user>$name</user>"
+
+= val user = x"<user>$name</user>"
+- ```
++ ```
+
+= val user = x"<user>$name</user>"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val user = x"<user>$name</user>"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val user = x"<user>$name</user>"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(user.show)
++ Out.println(user.show)
+
+= Out.println(user.show)
+- ```
++ ```
+
+- A malformed fragment is rejected where it is written:
++ Un fragmento mal formado se rechaza allí donde se escribe:
+
+= A malformed fragment is rejected where it is written:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+= compile
+- errors show
++ errors show
+
+= compile
+= errors show
+- ##
++ ##
+
+- x"<user>$name</usr>"
++ x"<user>$name</usr>"
+
+= x"<user>$name</usr>"
+- ```
++ ```
+
+- ### Navigating
++ ### Navegación
+
+- With dynamic access enabled, a child element is reached as though it were a member, and the
+- steps chain. An index picks among repeated elements:
++ Con el acceso dinámico habilitado, a un elemento hijo se llega como si fuera un miembro, y los
++ pasos se encadenan. Un índice elige entre elementos repetidos:
+
+= steps chain. An index picks among repeated elements:
+=
+- ```scala
++ ```scala
+
+- import dynamicAccess.dynamicXml
++ import dynamicAccess.dynamicXml
+
+- val data = t"<a><b><c>42</c></b></a>".read[Xml]
++ val data = t"<a><b><c>42</c></b></a>".read[Xml]
+
+- val list = t"<r><x>1</x><x>2</x></r>".read[Xml]
++ val list = t"<r><x>1</x><x>2</x></r>".read[Xml]
+
+= val list = t"<r><x>1</x><x>2</x></r>".read[Xml]
+- ```
++ ```
+
+= val list = t"<r><x>1</x><x>2</x></r>".read[Xml]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val list = t"<r><x>1</x><x>2</x></r>".read[Xml]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val list = t"<r><x>1</x><x>2</x></r>".read[Xml]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(data.b().c().as[Int].show)
++ Out.println(data.b().c().as[Int].show)
+
+- Out.println(list.x(Sec).as[Int].show)
++ Out.println(list.x(Sec).as[Int].show)
+
+= Out.println(list.x(Sec).as[Int].show)
+- ```
++ ```
+
+- The import grants the permission `Xml is Dynamical` to the rest of its scope.
+- `dynamically[Xml]:` grants it to a single block instead, as
+- [JSON](json.md#fields-as-members) describes.
++ La importación concede el permiso `Xml is Dynamical` al resto de su ámbito.
++ `dynamically[Xml]:` lo concede, en cambio, a un solo bloque, como describe
++ [JSON](json.md#fields-as-members).
+
+- ### Updating
++ ### Actualización
+
+- An element is updated through a [lens](optics.md). A lens reaches through several levels, and
+- may carry optics such as `Each`, to change every matching element at once. An update gives a
+- new document, since `Xml` values are immutable. The lens and its optics are givens, imported by
+- name from the package `optics`:
++ Un elemento se actualiza a través de una [lente](optics.md). Una lente llega a través de varios
++ niveles, y puede llevar ópticas como `Each`, para cambiar a la vez todos los elementos que
++ coinciden. Una actualización da un documento nuevo, ya que los valores `Xml` son inmutables. La
++ lente y sus ópticas son givens, que se importan por nombre del paquete `optics`:
+
+= name from the package `optics`:
+=
+- ```scala
++ ```scala
+
+- import optics.{xmlEachOptical, xmlLens}
++ import optics.{xmlEachOptical, xmlLens}
+
+- val numbers = t"<doc><x>1</x><x>2</x><x>3</x></doc>".read[Xml]
++ val numbers = t"<doc><x>1</x><x>2</x><x>3</x></doc>".read[Xml]
+
+= val numbers = t"<doc><x>1</x><x>2</x><x>3</x></doc>".read[Xml]
+- ```
++ ```
+
+= val numbers = t"<doc><x>1</x><x>2</x><x>3</x></doc>".read[Xml]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val numbers = t"<doc><x>1</x><x>2</x><x>3</x></doc>".read[Xml]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val numbers = t"<doc><x>1</x><x>2</x><x>3</x></doc>".read[Xml]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(numbers.lens(_.x = x"<x>9</x>").show)
++ Out.println(numbers.lens(_.x = x"<x>9</x>").show)
+
+- Out.println(numbers.lens(_(Each) = x"<x>0</x>").show)
++ Out.println(numbers.lens(_(Each) = x"<x>0</x>").show)
+
+= Out.println(numbers.lens(_(Each) = x"<x>0</x>").show)
+- ```
++ ```
+
+- The value on the right of the `=` need not be XML already. Anything which can be encoded in
+- XML, such as a case class, an `Int` or a `Text`, is encoded as it is assigned, with no import.
+- The other formats ask for one, such as `conversions.encodableToJson`.
++ El valor a la derecha del `=` no necesita ser ya XML. Cualquier cosa que pueda codificarse en
++ XML, como una case class, un `Int` o un `Text`, se codifica al asignarse, sin ninguna
++ importación. Los demás formatos piden una, como `conversions.encodableToJson`.
+
+= The other formats ask for one, such as `conversions.encodableToJson`.
+=
+- ```scala
++ ```scala
+
+- val court = t"<court><Person><name>x</name><age>1</age></Person></court>".read[Xml]
++ val court = t"<court><Person><name>x</name><age>1</age></Person></court>".read[Xml]
+
+= val court = t"<court><Person><name>x</name><age>1</age></Person></court>".read[Xml]
+- ```
++ ```
+
+= val court = t"<court><Person><name>x</name><age>1</age></Person></court>".read[Xml]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val court = t"<court><Person><name>x</name><age>1</age></Person></court>".read[Xml]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val court = t"<court><Person><name>x</name><age>1</age></Person></court>".read[Xml]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(court.lens(_.Person = Person(t"Hamlet", 30)).show)
++ Out.println(court.lens(_.Person = Person(t"Hamlet", 30)).show)
+
+= Out.println(court.lens(_.Person = Person(t"Hamlet", 30)).show)
+- ```
++ ```
+
+- ### Paths and queries
++ ### Rutas y consultas
+
+- An [XPath](https://en.wikipedia.org/wiki/XPath) names a location within a document. The `xp"…"`
+- interpolator writes one, and checks it at compiletime. A step with no position means the first
+- match, and `@` names an attribute:
++ Un [XPath](https://en.wikipedia.org/wiki/XPath) nombra una ubicación dentro de un documento. El
++ interpolador `xp"…"` escribe uno, y lo comprueba en tiempo de compilación. Un paso sin posición
++ significa la primera coincidencia, y `@` nombra un atributo:
+
+= match, and `@` names an attribute:
+=
+- ```scala fuel
++ ```scala fuel
+
+= match, and `@` names an attribute:
+=
+= ```scala fuel
+- run
++ run
+
+= match, and `@` names an attribute:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(xp"/root[1]/child[2]".encode)
++ Out.println(xp"/root[1]/child[2]".encode)
+
+- Out.println(xp"/root[1]/@id".encode)
++ Out.println(xp"/root[1]/@id".encode)
+
+- Out.println(xp"/root/child".encode)
++ Out.println(xp"/root/child".encode)
+
+= Out.println(xp"/root/child".encode)
+- ```
++ ```
+
+- Positions and accumulated errors are reported as paths, so an error from decoding a large
+- document names the element which caused it.
++ Las posiciones y los errores acumulados se notifican como rutas, así que un error al decodificar
++ un documento grande nombra el elemento que lo causó.
+
+- The same interpolator writes a full [XPath 1.0](https://www.w3.org/TR/xpath-10/) expression,
+- and a document answers it:
++ El mismo interpolador escribe una expresión [XPath 1.0](https://www.w3.org/TR/xpath-10/)
++ completa, y un documento la responde:
+
+= and a document answers it:
+=
+- ```tabular
++ ```tabular
+
+- column  Method
+- column  Returns
+- row  `select`  the matching nodes, as a fragment
+- row  `selectText`  the text of the first match
+- row  `evaluate`  the value of any expression, whether a number, a boolean, a string or a node set, as an `XPath.Value`
++ column  Método
++ column  Devuelve
++ row  `select`  los nodos que coinciden, como un fragmento
++ row  `selectText`  el texto de la primera coincidencia
++ row  `evaluate`  el valor de cualquier expresión, ya sea un número, un booleano, una cadena o un conjunto de nodos, como un `XPath.Value`
+
+= row  `evaluate`  the value of any expression, whether a number, a boolean, a string or a node set, as an `XPath.Value`
+- ```
++ ```
+
+- Axes, predicates on attributes and on text, and the core function library are all supported.
+- That is what a locator for [browser automation](web-automation.md) needs, or a lookup in a
+- configuration file:
++ Se admiten los ejes, los predicados sobre atributos y sobre texto, y la biblioteca de funciones
++ básica. Eso es lo que necesita un localizador para la
++ [automatización de navegadores](web-automation.md), o una búsqueda en un fichero de
++ configuración:
+
+= configuration file:
+=
+- ```scala
++ ```scala
+
+- val page = t"""<app><div id="main"><button data-test="submit">Submit</button>
++ val page = t"""<app><div id="main"><button data-test="submit">Submit</button>
+
+-                  <ul><li>one</li><li>two</li><li>three</li></ul></div></app>""".read[Xml]
++                  <ul><li>one</li><li>two</li><li>three</li></ul></div></app>""".read[Xml]
+
+=                  <ul><li>one</li><li>two</li><li>three</li></ul></div></app>""".read[Xml]
+- ```
++ ```
+
+=                  <ul><li>one</li><li>two</li><li>three</li></ul></div></app>""".read[Xml]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=                  <ul><li>one</li><li>two</li><li>three</li></ul></div></app>""".read[Xml]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=                  <ul><li>one</li><li>two</li><li>three</li></ul></div></app>""".read[Xml]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(page.selectText(xp"//button[text()='Submit']/@data-test").inspect)
++ Out.println(page.selectText(xp"//button[text()='Submit']/@data-test").inspect)
+
+- Out.println(page.selectText(xp"/app/div[1]/ul/li[2]").inspect)
++ Out.println(page.selectText(xp"/app/div[1]/ul/li[2]").inspect)
+
+- Out.println(page.evaluate(xp"count(//li)").inspect)
++ Out.println(page.evaluate(xp"count(//li)").inspect)
+
+= Out.println(page.evaluate(xp"count(//li)").inspect)
+- ```
++ ```
+
+- An expression which the engine does not support, or a variable it was not given, raises an
+- `XPath.Error` which says so.
++ Una expresión que el motor no admite, o una variable que no se le dio, lanza un `XPath.Error`
++ que lo indica.
+
+- ### Namespaces
++ ### Espacios de nombres
+
+- The parser resolves namespaces as it reads. A declaration, `xmlns="…"` or `xmlns:p="…"`, is
+- kept as an attribute, so a document is written back exactly as it was read. The declaration
+- also binds the prefix for the element and its descendants. Every `Xml.Element` carries the
+- bindings in force at it, as its `scope`, and resolves its own name through them:
++ El analizador resuelve los espacios de nombres según lee. Una declaración, `xmlns="…"` o
++ `xmlns:p="…"`, se conserva como atributo, así que un documento se vuelve a escribir exactamente
++ como se leyó. La declaración también liga el prefijo para el elemento y sus descendientes. Cada
++ `Xml.Element` lleva las ligaduras vigentes en él, como su `scope`, y resuelve su propio nombre a
++ través de ellas:
+
+= bindings in force at it, as its `scope`, and resolves its own name through them:
+=
+- ```scala
++ ```scala
+
+- val prefixed = t"""<r xmlns:a="urn:a"><a:x>1</a:x></r>""".read[Xml]
++ val prefixed = t"""<r xmlns:a="urn:a"><a:x>1</a:x></r>""".read[Xml]
+
+- val element = prefixed.`a:x`() match
++ val element = prefixed.`a:x`() match
+
+-   case Xml.Fragment(element: Xml.Element) => element
++   case Xml.Fragment(element: Xml.Element) => element
+
+=   case Xml.Fragment(element: Xml.Element) => element
+- ```
++ ```
+
+=   case Xml.Fragment(element: Xml.Element) => element
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   case Xml.Fragment(element: Xml.Element) => element
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   case Xml.Fragment(element: Xml.Element) => element
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(element.namespace.inspect)
++ Out.println(element.namespace.inspect)
+
+- Out.println(element.localName.inspect)
++ Out.println(element.localName.inspect)
+
+- Out.println(element.qualified.inspect)
++ Out.println(element.qualified.inspect)
+
+= Out.println(element.qualified.inspect)
+- ```
++ ```
+
+- Two names are the same name when their namespace URIs and their local parts agree, whatever
+- prefixes bind them. A prefixed name selects by resolved name when its prefix is bound, whether
+- by a declaration in the document or by an `Xml.Scope` given in scope. The prefix the code uses
+- therefore need not be the one the document used:
++ Dos nombres son el mismo nombre cuando coinciden sus URI de espacio de nombres y sus partes
++ locales, sean cuales sean los prefijos que los ligan. Un nombre con prefijo selecciona por el
++ nombre resuelto cuando su prefijo está ligado, ya sea por una declaración en el documento o por
++ un given `Xml.Scope` en el ámbito. Por tanto, el prefijo que usa el código no tiene por qué ser
++ el que usó el documento:
+
+= therefore need not be the one the document used:
+=
+- ```scala
++ ```scala
+
+- given svg: ("svg" is Namespace of "http://www.w3.org/2000/svg") = Namespace()
++ given svg: ("svg" is Namespace of "http://www.w3.org/2000/svg") = Namespace()
+
+- given svgScope: Xml.Scope = Xml.Scope(t"svg" -> t"http://www.w3.org/2000/svg")
++ given svgScope: Xml.Scope = Xml.Scope(t"svg" -> t"http://www.w3.org/2000/svg")
+
+- val picture = t"""<svg xmlns="http://www.w3.org/2000/svg"><rect/><rect/></svg>""".read[Xml]
++ val picture = t"""<svg xmlns="http://www.w3.org/2000/svg"><rect/><rect/></svg>""".read[Xml]
+
+- val byPrefix = picture.`svg:rect`
++ val byPrefix = picture.`svg:rect`
+
+- val byName = picture.elements(Xml.Name(t"http://www.w3.org/2000/svg", t"rect"))
++ val byName = picture.elements(Xml.Name(t"http://www.w3.org/2000/svg", t"rect"))
+
+= val byName = picture.elements(Xml.Name(t"http://www.w3.org/2000/svg", t"rect"))
+- ```
++ ```
+
+- A `Namespace` binds a prefix, its `Self`, to a URI, its `Topic`. Both are singleton types, so
+- the binding is checked wherever it is used. An `x"…"` literal which uses a prefix it does not
+- declare takes the binding from the givens in scope. An `xp"…"` path does the same for the names
+- it tests, so `xp"//svg:rect"` matches by namespace. `XPath#in(scope)` rebinds a path's
+- prefixes.
++ Un `Namespace` liga un prefijo, su `Self`, a una URI, su `Topic`. Ambos son tipos singleton, así
++ que la ligadura se comprueba allí donde se usa. Un literal `x"…"` que usa un prefijo que no
++ declara toma la ligadura de los givens que están en el ámbito. Una ruta `xp"…"` hace lo mismo
++ con los nombres que prueba, de modo que `xp"//svg:rect"` coincide por espacio de nombres.
++ `XPath#in(scope)` vuelve a ligar los prefijos de una ruta.
+
+- A prefix with no binding is an error, as the Namespaces recommendation requires. Parsing
+- `<p:a/>` without a declaration of `p` raises a `Parse.Error`:
++ Un prefijo sin ligadura es un error, como exige la recomendación Namespaces. Analizar `<p:a/>`
++ sin una declaración de `p` lanza un `Parse.Error`:
+
+= `<p:a/>` without a declaration of `p` raises a `Parse.Error`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `<p:a/>` without a declaration of `p` raises a `Parse.Error`:
+=
+= ```scala fuel
+- run
++ run
+
+= `<p:a/>` without a declaration of `p` raises a `Parse.Error`:
+=
+= ```scala fuel
+= run
+- errors show
++ errors show
+
+= `<p:a/>` without a declaration of `p` raises a `Parse.Error`:
+=
+= ```scala fuel
+= run
+= errors show
+- ##
++ ##
+
+- t"<p:a/>".read[Xml]
++ t"<p:a/>".read[Xml]
+
+= t"<p:a/>".read[Xml]
+- ```
++ ```
+
+- Writing `x"<p:a/>"` without a `Namespace` given for `p` does not compile. Importing
+- `namespaceOptions.lenientNamespaces` makes an unbound prefix resolve to no namespace instead.
++ Escribir `x"<p:a/>"` sin un given `Namespace` para `p` no compila. Importar
++ `namespaceOptions.lenientNamespaces` hace que un prefijo sin ligar se resuelva, en cambio, a
++ ningún espacio de nombres.
+
+- When an `Xml` tree is written, an element may use a prefix, or a default namespace, which its
+- scope binds but which nothing above it has declared. The declaration is then written for it. A
+- subtree which was built in code, or cut from a document by a selection, is therefore written
+- with every namespace it needs. The scope takes no part in equality: a parsed element equals the
+- same element built by hand.
++ Cuando se escribe un árbol `Xml`, un elemento puede usar un prefijo, o un espacio de nombres por
++ defecto, que su ámbito liga pero que nada por encima de él ha declarado. Entonces se escribe la
++ declaración para él. Por tanto, un subárbol que se construyó en código, o que se recortó de un
++ documento mediante una selección, se escribe con todos los espacios de nombres que necesita. El
++ ámbito no interviene en la igualdad: un elemento analizado es igual al mismo elemento construido
++ a mano.
+
+- A derived codec puts a case class in a namespace with an annotation:
++ Un códec derivado sitúa una case class en un espacio de nombres mediante una anotación:
+
+= A derived codec puts a case class in a namespace with an annotation:
+=
+- ```scala
++ ```scala
+
+- case class Item(sku: Text, quantity: Int)
++ case class Item(sku: Text, quantity: Int)
+
+- @xmlns("urn:shop")
++ @xmlns("urn:shop")
+
+- case class Order(id: Int, item: Item)
++ case class Order(id: Int, item: Item)
+
+= case class Order(id: Int, item: Item)
+- ```
++ ```
+
+= case class Order(id: Int, item: Item)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Order(id: Int, item: Item)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Order(id: Int, item: Item)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Order(1, Item(t"a", 2)).in[Xml].show)
++ Out.println(Order(1, Item(t"a", 2)).in[Xml].show)
+
+= Out.println(Order(1, Item(t"a", 2)).in[Xml].show)
+- ```
++ ```
+
+- The fields' elements are in the same namespace as the class, and `as[Order]` reads a document
+- whose elements resolve to that namespace, however it prefixes them. The alternatives are:
++ Los elementos de los campos están en el mismo espacio de nombres que la clase, y `as[Order]` lee
++ un documento cuyos elementos se resuelven a ese espacio de nombres, sea cual sea el prefijo con
++ el que los marque. Las alternativas son:
+
+= whose elements resolve to that namespace, however it prefixes them. The alternatives are:
+=
+- ```tabular
++ ```tabular
+
+- column  Declaration
+- column  Effect
+- row  `@xmlns("urn:shop")` on the class  the class's element and its fields' elements are in the namespace
+- row  `@xmlns("urn:shop", qualified = false)` on the class  the fields' elements are in no namespace, as under `elementFormDefault="unqualified"`
+- row  `@unqualified` on a field  that field's element is in no namespace
+- row  `given Rect is Xml.Namespaced = Xml.Namespaced(t"…")`  a namespace for a type which cannot be annotated
+- row  none  the fields' elements are matched by name alone, whatever namespace the document puts them in
++ column  Declaración
++ column  Efecto
++ row  `@xmlns("urn:shop")` en la clase  el elemento de la clase y los elementos de sus campos están en el espacio de nombres
++ row  `@xmlns("urn:shop", qualified = false)` en la clase  los elementos de los campos no están en ningún espacio de nombres, como con `elementFormDefault="unqualified"`
++ row  `@unqualified` en un campo  el elemento de ese campo no está en ningún espacio de nombres
++ row  `given Rect is Xml.Namespaced = Xml.Namespaced(t"…")`  un espacio de nombres para un tipo que no puede anotarse
++ row  ninguna  los elementos de los campos se emparejan solo por su nombre, sea cual sea el espacio de nombres en que los ponga el documento
+
+= row  none  the fields' elements are matched by name alone, whatever namespace the document puts them in
+- ```
++ ```
+
+- ### Formatting
++ ### Formato
+
+- The output format is a given in scope. Compact formatting leaves out whitespace, and indented
+- formatting adds newlines and indentation for a human reader:
++ El formato de salida es un given que está en el ámbito. El formato compacto omite los espacios
++ en blanco, y el formato indentado añade saltos de línea y sangría para un lector humano:
+
+= formatting adds newlines and indentation for a human reader:
+=
+- ```scala fuel
++ ```scala fuel
+
+= formatting adds newlines and indentation for a human reader:
+=
+= ```scala fuel
+- run
++ run
+
+= formatting adds newlines and indentation for a human reader:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- locally:
++ locally:
+
+-   import formatting.indentedXmlFormatting
++   import formatting.indentedXmlFormatting
+
+-   Out.println(Person(t"Hamlet", 30).in[Xml].show)
++   Out.println(Person(t"Hamlet", 30).in[Xml].show)
+
+=   Out.println(Person(t"Hamlet", 30).in[Xml].show)
+- ```
++ ```
+
+- `show` renders the whole node into one `Text`. A large document need not be held in memory
+- before it is sent:
++ `show` representa el nodo entero en un único `Text`. Un documento grande no necesita estar en
++ memoria antes de enviarse:
+
+= before it is sent:
+=
+- ```tabular
++ ```tabular
+
+- column  Form
+- column  Serializes on
+- column  Hands out
+- row  `show`  the caller's thread  one `Text`
+- row  `Xml.emit[Text](document, f)`  the caller's thread  each block of text to `f`, as it fills
+- row  `Xml.emit[Data](document, f)`  the caller's thread  each block as UTF-8 bytes to `f`, as it fills
+- row  `Xml.lend(document)`  the caller's thread  each block lent to a function, not copied
+- row  `Xml.emit(document)`  a fiber  the text, through an iterator
+- row  `Streamable` by `Text`  a fiber  the text, as a stream
++ column  Forma
++ column  Serializa en
++ column  Entrega
++ row  `show`  el hilo del llamante  un único `Text`
++ row  `Xml.emit[Text](document, f)`  el hilo del llamante  cada bloque de texto a `f`, a medida que se llena
++ row  `Xml.emit[Data](document, f)`  el hilo del llamante  cada bloque como bytes UTF-8 a `f`, a medida que se llena
++ row  `Xml.lend(document)`  el hilo del llamante  cada bloque prestado a una función, sin copiarlo
++ row  `Xml.emit(document)`  una fibra  el texto, a través de un iterador
++ row  `Streamable` por `Text`  una fibra  el texto, como un flujo
+
+= row  `Streamable` by `Text`  a fiber  the text, as a stream
+- ```
++ ```
+
+- The push form of `Xml.emit` serializes a `Document[Xml]`, with its header, and hands each block
+- over as it fills. That suits writing to a file, a [socket](sockets.md) or an `OutputStream`:
++ La forma de inserción de `Xml.emit` serializa un `Document[Xml]`, con su cabecera, y entrega
++ cada bloque a medida que se llena. Eso conviene para escribir en un fichero, en un
++ [socket](sockets.md) o en un `OutputStream`:
+
+= over as it fills. That suits writing to a file, a [socket](sockets.md) or an `OutputStream`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= over as it fills. That suits writing to a file, a [socket](sockets.md) or an `OutputStream`:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= over as it fills. That suits writing to a file, a [socket](sockets.md) or an `OutputStream`:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- Xml.emit[Data](document, chunk => socket.write(chunk))
++ Xml.emit[Data](document, chunk => socket.write(chunk))
+
+= Xml.emit[Data](document, chunk => socket.write(chunk))
+- ```
++ ```
+
+- `Xml.lend` avoids even the copy into each `Data` block. It lends the consumer the writer's own
+- buffer as a `Region`, together with an interval which proves that every index in it is in
+- range. Both are valid only for the duration of the call, the same rule as a
+- [stream's](streams.md) `lend`:
++ `Xml.lend` evita incluso la copia en cada bloque `Data`. Presta al consumidor el propio búfer
++ del escritor como una `Region`, junto con un intervalo que demuestra que todos sus índices están
++ dentro del rango. Ambos son válidos solo mientras dura la llamada, la misma regla que el `lend`
++ de un [flujo](streams.md):
+
+= [stream's](streams.md) `lend`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= [stream's](streams.md) `lend`:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= [stream's](streams.md) `lend`:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- Xml.lend(document): region =>
++ Xml.lend(document): region =>
+
+-   interval => region.visit(interval)(index => sink.put(region(index)))
++   interval => region.visit(interval)(index => sink.put(region(index)))
+
+=   interval => region.visit(interval)(index => sink.put(region(index)))
+- ```
++ ```
+
+- Where the consumer pulls instead, `Xml.emit(document)` and the `Streamable` instance of a
+- `Document[Xml]` serialize on a fiber, under a [`supervise`](concurrency.md) block:
++ Donde el consumidor extrae, en cambio, `Xml.emit(document)` y la instancia `Streamable` de un
++ `Document[Xml]` serializan en una fibra, dentro de un bloque [`supervise`](concurrency.md):
+
+= `Document[Xml]` serialize on a fiber, under a [`supervise`](concurrency.md) block:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `Document[Xml]` serialize on a fiber, under a [`supervise`](concurrency.md) block:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= `Document[Xml]` serialize on a fiber, under a [`supervise`](concurrency.md) block:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import probates.cancelProbate
++ import probates.cancelProbate
+
+- supervise:
++ supervise:
+
+-   Xml.emit(document).each(chunk => out.write(chunk))
++   Xml.emit(document).each(chunk => out.write(chunk))
+
+=   Xml.emit(document).each(chunk => out.write(chunk))
+- ```
++ ```
+
+- ### Skipping the tree
++ ### Prescindir del árbol
+
+- A record with an `Xml.Printable` instance is written directly, with no tree built, wherever
+- the formatting is compact. Indented formatting still renders through the tree. The printer is
+- derived at compiletime, for a record with no `@name` or `@attribute` annotations and no
+- namespace, and writes the same text:
++ Un registro con una instancia de `Xml.Printable` se escribe directamente, sin construir ningún
++ árbol, siempre que el formato sea compacto. El formato indentado sigue representándose a través
++ del árbol. El impresor se deriva en tiempo de compilación, para un registro sin anotaciones
++ `@name` ni `@attribute` y sin espacio de nombres, y escribe el mismo texto:
+
+= namespace, and writes the same text:
+=
+- ```scala fuel
++ ```scala fuel
+
+- alternative Through a tree
++ alternative Through a tree
+
+= alternative Through a tree
+-   code
++   code
+
+-       Person(t"Hamlet", 30).in[Text over Xml]
++       Person(t"Hamlet", 30).in[Text over Xml]
+
+- alternative Direct
++ alternative Direct
+
+= alternative Direct
+-   code
++   code
+
+-       val direct =
++       val direct =
+
+-         given Person is Xml.Printable = Xml.Direct.derived[Person].printable
++         given Person is Xml.Printable = Xml.Direct.derived[Person].printable
+
+-         Person(t"Hamlet", 30).in[Text over Xml]
++         Person(t"Hamlet", 30).in[Text over Xml]
+
+=         Person(t"Hamlet", 30).in[Text over Xml]
+- ##
++ ##
+
+= ##
+- ```
++ ```
+
+- `Xml.Printable.emit` writes the text a block at a time, handing each block to a function as it
+- fills. A record can generate both a parser and a printer at once, into its companion, with
+- `derives Xml.Direct`. A single import then selects the route for every record in scope, as it
+- does for [JSON](json.md#skipping-the-tree):
++ `Xml.Printable.emit` escribe el texto bloque a bloque, y entrega cada bloque a una función a
++ medida que se llena. Un registro puede generar a la vez un analizador y un impresor, en su objeto
++ compañero, con `derives Xml.Direct`. Una sola importación elige entonces la vía para todos los
++ registros del ámbito, como ocurre con [JSON](json.md#skipping-the-tree):
+
+= does for [JSON](json.md#skipping-the-tree):
+=
+- ```tabular
++ ```tabular
+
+- column  Import
+- column  For a record
+- column  For any other type
+- row  `codecs.direct`  a generated parser and printer  the derived codecs, through the tree
+- row  `codecs.derived`  the derived codecs, even where a direct instance is in scope  the derived codecs, through the tree
+- row  `codecs.strict`  a generated parser and printer  a compile error naming the type
++ column  Importación
++ column  Para un registro
++ column  Para cualquier otro tipo
++ row  `codecs.direct`  un analizador y un impresor generados  los códecs derivados, a través del árbol
++ row  `codecs.derived`  los códecs derivados, incluso donde hay una instancia directa en el ámbito  los códecs derivados, a través del árbol
++ row  `codecs.strict`  un analizador y un impresor generados  un error de compilación que nombra el tipo
+
+= row  `codecs.strict`  a generated parser and printer  a compile error naming the type
+- ```
++ ```
+
+- Under `codecs.strict`, the error arises wherever `read[Play in Xml]` or `in[Text over Xml]`
+- would otherwise fall back to the tree. The modes are alternatives, so import one at a time.
++ Con `codecs.strict`, el error surge allí donde `read[Play in Xml]` o `in[Text over Xml]`
++ recurrirían en otro caso al árbol. Los modos son alternativos, así que se importa uno cada vez.
+
+- ### Typed records from an XML Schema
++ ### Registros tipados a partir de un esquema XML
+
+- Sometimes a document's shape is given as an XML Schema (XSD), not as a Scala type. An
+- `Xml.Provider` reads the schema at compiletime, and produces typed records from XML which
+- matches it. A provider object holds the schema:
++ A veces la forma de un documento viene dada como un XML Schema (XSD), y no como un tipo de
++ Scala. Un `Xml.Provider` lee el esquema en tiempo de compilación, y produce registros tipados a
++ partir del XML que se ajusta a él. Un objeto proveedor contiene el esquema:
+
+= matches it. A provider object holds the schema:
+=
+- ```scala fuel
++ ```scala fuel
+
+= matches it. A provider object holds the schema:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= matches it. A provider object holds the schema:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import charsets.utf8Charset
++ import charsets.utf8Charset
+
+- import classloaders.threadContextClassloader
++ import classloaders.threadContextClassloader
+
+- import textSanitizers.skipSanitizer
++ import textSanitizers.skipSanitizer
+
+- object PurchaseOrder extends Xml.Provider(cp"/xsd/po.xsd")
++ object PurchaseOrder extends Xml.Provider(cp"/xsd/po.xsd")
+
+= object PurchaseOrder extends Xml.Provider(cp"/xsd/po.xsd")
+- ```
++ ```
+
+- Its `record` method turns an `Xml` value into a record. The record has one member for each
+- child element and attribute of the schema's root element, and each has the type the schema
+- declares:
++ Su método `record` convierte un valor `Xml` en un registro. El registro tiene un miembro por cada
++ elemento hijo y atributo del elemento raíz del esquema, y cada uno tiene el tipo que declara el
++ esquema:
+
+= declares:
+=
+- ```scala fuel
++ ```scala fuel
+
+= declares:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= declares:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val order = PurchaseOrder.record(cp"/xsd/po.xml".read[Xml])
++ val order = PurchaseOrder.record(cp"/xsd/po.xml".read[Xml])
+
+- val city: Text = order.shipTo.city
++ val city: Text = order.shipTo.city
+
+- val quantities: List[Long] = order.items.item.map(_.quantity)
++ val quantities: List[Long] = order.items.item.map(_.quantity)
+
+- val comment: Optional[Text] = order.comment
++ val comment: Optional[Text] = order.comment
+
+- val parts: List[Text] = order.items.item.map(_.partNum)
++ val parts: List[Text] = order.items.item.map(_.partNum)
+
+= val parts: List[Text] = order.items.item.map(_.partNum)
+- ```
++ ```
+
+- `quantity` is a restriction of `xs:positiveInteger`, `comment` has `minOccurs="0"`, and
+- `partNum` is checked against the schema's pattern for a part number as it is read.
++ `quantity` es una restricción de `xs:positiveInteger`, `comment` tiene `minOccurs="0"`, y
++ `partNum` se comprueba, al leerse, contra el patrón del esquema para un número de pieza.
+
+- The schema may be an `Xsd` value, an `Xml` document, the schema's text, or anything which can
+- be read as text, such as a classpath resource. Where a schema declares several global elements,
+- the root is the one with complex content, or is chosen with `root = t"Envelope"`.
++ El esquema puede ser un valor `Xsd`, un documento `Xml`, el texto del esquema o cualquier cosa
++ que pueda leerse como texto, como un recurso del classpath. Donde un esquema declara varios
++ elementos globales, la raíz es el que tiene contenido complejo, o se elige con
++ `root = t"Envelope"`.
+
+- Child elements and attributes become fields, by local name, shaped by the schema:
++ Los elementos hijos y los atributos se convierten en campos, por su nombre local, con la forma
++ que les da el esquema:
+
+= Child elements and attributes become fields, by local name, shaped by the schema:
+=
+- ```tabular
++ ```tabular
+
+- column  The schema has
+- column  The field is
+- row  an element with `minOccurs="0"`, or `nillable`  `Optional`
+- row  an element whose `maxOccurs` allows more than one  a `List`
+- row  an alternative of a `choice`  `Optional`
+- row  an attribute sharing a name with a child element  reached as `` `@name` ``
+- row  an element with simple content and attributes  its text reached as `text`, or `` `#text` `` if an attribute is called `text`
+- row  an extension  preceded by its base type's fields
++ column  El esquema tiene
++ column  El campo es
++ row  un elemento con `minOccurs="0"`, o `nillable`  `Optional`
++ row  un elemento cuyo `maxOccurs` permite más de uno  una `List`
++ row  una alternativa de una `choice`  `Optional`
++ row  un atributo que comparte nombre con un elemento hijo  al que se llega como `` `@name` ``
++ row  un elemento con contenido simple y atributos  su texto, al que se llega como `text`, o `` `#text` `` si un atributo se llama `text`
++ row  una extensión  precedido por los campos de su tipo base
+
+= row  an extension  preceded by its base type's fields
+- ```
++ ```
+
+- Each field has the Scala type of its XSD type:
++ Cada campo tiene el tipo de Scala de su tipo XSD:
+
+= Each field has the Scala type of its XSD type:
+=
+- ```tabular
++ ```tabular
+
+- column  XSD type
+- column  Scala type
+- row  `xs:string` and the token, name and identifier types, `xs:QName`, the binary types, `xs:gYear` and relatives  `Text`
++ column  Tipo XSD
++ column  Tipo de Scala
++ row  `xs:string` y los tipos de token, de nombre y de identificador, `xs:QName`, los tipos binarios, `xs:gYear` y afines  `Text`
+
+- row  `xs:boolean`  `Boolean`
++ row  `xs:boolean`  `Boolean`
+
+- row  `xs:int`, `xs:short`, `xs:byte`  `Int`, `Short`, `Byte`
++ row  `xs:int`, `xs:short`, `xs:byte`  `Int`, `Short`, `Byte`
+
+- row  `xs:integer`, `xs:long` and the unsigned, positive and negative integer types  `Long`, with the implied bounds checked
++ row  `xs:integer`, `xs:long` y los tipos enteros sin signo, positivos y negativos  `Long`, con las cotas implícitas comprobadas
+
+- row  `xs:decimal`, `xs:double`, `xs:float`  `Double`, `Double`, `Float`
++ row  `xs:decimal`, `xs:double`, `xs:float`  `Double`, `Double`, `Float`
+
+- row  `xs:dateTime`, `xs:date`, `xs:time`, `xs:duration`, `xs:anyURI`  the type an interface in scope instantiates, else `Text`
+- row  `xs:NMTOKENS`, `xs:IDREFS` and any `xs:list`  `List[Text]`
+- row  `xs:anyType`, `xs:any`, a recursive type, an unresolved reference  `Xml`
++ row  `xs:dateTime`, `xs:date`, `xs:time`, `xs:duration`, `xs:anyURI`  el tipo que instancia una interfaz en el ámbito, o si no `Text`
++ row  `xs:NMTOKENS`, `xs:IDREFS` y cualquier `xs:list`  `List[Text]`
++ row  `xs:anyType`, `xs:any`, un tipo recursivo, una referencia sin resolver  `Xml`
+
+= row  `xs:anyType`, `xs:any`, a recursive type, an unresolved reference  `Xml`
+- ```
++ ```
+
+- A restriction's facets are checked as the field is read: `enumeration`, `pattern`, the
+- inclusive and exclusive bounds, the length facets and the digit facets. A failed check raises
+- an `Xml.Provider.Error` with the reason, as does a missing required element, or a value which
+- its type cannot read. Every error is raised through the [tactic] of the code which reads the
+- field, so `validate`, with a `venture` for each field,
+- [collects every problem](errors.md#ventures-and-guards) in a document.
++ Las facetas de una restricción se comprueban al leer el campo: `enumeration`, `pattern`, las
++ cotas inclusivas y exclusivas, las facetas de longitud y las facetas de dígitos. Una
++ comprobación fallida lanza un `Xml.Provider.Error` con el motivo, igual que un elemento
++ obligatorio que falta, o un valor que su tipo no puede leer. Todo error se lanza a través de la
++ [táctica] del código que lee el campo, así que `validate`, con una `venture` por cada campo,
++ [recopila todos los problemas](errors.md#ventures-and-guards) de un documento.
+
+- The provider matches a document's elements by resolved name. A child is expected in the
+- schema's target namespace when the schema qualifies it, through `elementFormDefault`, a `form`,
+- or a `ref` to a global element. Otherwise it is expected in no namespace, whatever prefixes the
+- document uses. An element in another namespace is treated as absent.
++ El proveedor empareja los elementos de un documento por su nombre resuelto. Se espera que un
++ hijo esté en el espacio de nombres destino del esquema cuando el esquema lo cualifica, mediante
++ `elementFormDefault`, un `form` o un `ref` a un elemento global. En caso contrario, se espera que
++ no esté en ningún espacio de nombres, sean cuales sean los prefijos que use el documento. Un
++ elemento de otro espacio de nombres se trata como ausente.
+
+- Substitution groups, `xsi:type`, identity constraints and mixed content are read as the schema
+- declares without them. An `import` or `include` is recorded in the `Xsd`, but not fetched, so a
+- type from another schema is read as raw `Xml`. The provider does not validate documents: it
+- checks what a program reads. [JSON](json.md#typed-records-from-a-schema) has the same facility
+- for JSON Schema, and [Records](records.md) describes the records themselves.
++ Los grupos de sustitución, `xsi:type`, las restricciones de identidad y el contenido mixto se
++ leen como los declara el esquema sin ellos. Un `import` o un `include` se registra en el `Xsd`,
++ pero no se descarga, así que un tipo de otro esquema se lee como `Xml` en bruto. El proveedor no
++ valida documentos: comprueba lo que lee un programa. [JSON](json.md#typed-records-from-a-schema)
++ tiene la misma funcionalidad para JSON Schema, y [Registros](records.md) describe los propios
++ registros.
+
+- ### Positions and errors
++ ### Posiciones y errores
+
+- A malformed document raises a `Parse.Error`. Its position is not merely a line number but a
+- range: the offset and length of the text at fault. A tool can therefore underline exactly the
+- mismatched closing tag or the unterminated attribute, not the whole line.
++ Un documento mal formado lanza un `Parse.Error`. Su posición no es solo un número de línea,
++ sino un rango: el desplazamiento y la longitud del texto erróneo. Por tanto, una herramienta
++ puede subrayar exactamente la etiqueta de cierre que no coincide o el atributo sin terminar, y
++ no la línea entera.
+
+- The positions of *well-formed* content are recorded on request, in the same way as for
++ Las posiciones del contenido *bien formado* se registran cuando se piden, igual que para
+
+- [JSON](json.md#source-positions):
++ [JSON](json.md#source-positions):
+
+= [JSON](json.md#source-positions):
+=
+- ```scala
++ ```scala
+
+- import parsing.trackPositions
++ import parsing.trackPositions
+
+- val source = t"<root><child/></root>"
++ val source = t"<root><child/></root>"
+
+- val tracked = source.load[Xml]
++ val tracked = source.load[Xml]
+
+= val tracked = source.load[Xml]
+- ```
++ ```
+
+- Under a strategy which [accumulates failures](errors.md#accumulating-failures), decoding
+- reports every fault in the document at once, each with the path to the element which failed,
+- instead of stopping at the first.
++ Con una estrategia que [acumula fallos](errors.md#accumulating-failures), la decodificación
++ notifica a la vez todos los fallos del documento, cada uno con la ruta al elemento que falló, en
++ lugar de detenerse en el primero.
+
+- ### XML over HTTP
++ ### XML sobre HTTP
+
+- An `Xml` value is a request body or a response body, with the media type `application/xml`,
+- and a body is parsed back to `Xml` on arrival. An XML API is therefore consumed and offered
+- with no glue between the XML and [HTTP](http-client.md) layers.
++ Un valor `Xml` es un cuerpo de petición o un cuerpo de respuesta, con el tipo de medio
++ `application/xml`, y un cuerpo se analiza de vuelta a `Xml` al llegar. Por tanto, una API XML se
++ consume y se ofrece sin ningún pegamento entre las capas de XML y de [HTTP](http-client.md).
+
+- ### Related
++ ### Relacionado
+
+- - [HTML](html.md) uses the same node types and interpolation for web pages.
+- - [SVG](svg.md) and [mathematical markup](mathematical-markup.md) are XML vocabularies with
+-   typed builders.
+- - [JSON](json.md) and [YAML](yaml.md) share the vocabulary of `read`, `as` and `in`.
+- - [Derivation](derivation.md), [interpolation](interpolation.md), [OpenAPI](openapi.md) and [TEL](tel.md) describe how XML codecs are made, checked and carried.
++ - [HTML](html.md) usa los mismos tipos de nodo y la misma interpolación para páginas web.
++ - [SVG](svg.md) y el [marcado matemático](mathematical-markup.md) son vocabularios XML con
++   constructores tipados.
++ - [JSON](json.md) y [YAML](yaml.md) comparten el vocabulario de `read`, `as` e `in`.
++ - [Derivación](derivation.md), [interpolación](interpolation.md), [OpenAPI](openapi.md) y [TEL](tel.md) describen cómo se crean, se comprueban y se transportan los códecs XML.

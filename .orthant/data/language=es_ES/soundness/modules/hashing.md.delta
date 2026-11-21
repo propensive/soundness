@@ -1,0 +1,782 @@
+orthant 1 language
+
+- ## Hashing
++ ## Hashing
+
+- ### About
++ ### Descripción
+
+- A [hash](https://en.wikipedia.org/wiki/Hash_function) reduces data of any size to a short
+- fingerprint of fixed length. The digest of any value can be computed, whether a case class, a
+- collection or a stream of bytes, with the algorithm named as a type: `Sha2[256]`, `Sha1`, `Md5`
+- or `Blake3`.
++ Un [hash](https://en.wikipedia.org/wiki/Hash_function) reduce datos de cualquier tamaño a una
++ huella digital corta de longitud fija. Puede calcularse el resumen de cualquier valor, ya sea
++ una case class, una colección o un flujo de bytes, con el algoritmo nombrado como un tipo:
++ `Sha2[256]`, `Sha1`, `Md5` o `Blake3`.
+
+- Anything which describes how to feed its bytes into a hash can be digested. A case class does
+- so automatically, [derived][derivation] from its fields, so hashing a structured value needs no
+- manual serialization. A digest is a value, and its bytes are written in hexadecimal or Base64
+- through the same [base encoding](base-encoding.md) used everywhere else.
++ Puede resumirse cualquier cosa que describa cómo introducir sus bytes en un hash. Una case class
++ lo hace automáticamente, [derivado][derivación] de sus campos, así que aplicar un hash a un valor
++ estructurado no requiere ninguna serialización manual. Un resumen es un valor, y sus bytes se
++ escriben en hexadecimal o en Base64 mediante la misma [codificación en base](base-encoding.md)
++ que se usa en todas partes.
+
+- The checksums `Crc32`, `Crc64` and `Adler32` are computed through exactly the same API. The
+- algorithms which are known to be weak, MD5 and SHA-1, can be used only where their use is
+- explicitly permitted. So can the checksums, which are not weak hashes but not hashes at all: a
+- checksum detects accidental corruption, and nothing more.
++ Las sumas de verificación `Crc32`, `Crc64` y `Adler32` se calculan exactamente con la misma API.
++ Los algoritmos que se sabe que son débiles, MD5 y SHA-1, solo pueden usarse donde su uso está
++ permitido explícitamente. Lo mismo ocurre con las sumas de verificación, que no son hashes
++ débiles, sino que no son hashes en absoluto: una suma de verificación detecta la corrupción
++ accidental, y nada más.
+
+- ### On hashing
++ ### Sobre el hashing
+
+- The usual hashing API takes a byte array, and an algorithm named by a string, and hands back
+- another byte array:
++ La API de hashing habitual toma un array de bytes y un algoritmo nombrado mediante una cadena, y
++ devuelve otro array de bytes:
+
+- - The algorithm is unchecked, so a typo is a failure at [runtime].
+- - The input must be serialized to bytes by hand before it is hashed.
+- - The output must be written as text by hand afterwards.
+- - Nothing discourages reaching for a broken algorithm.
++ - El algoritmo no se comprueba, así que una errata es un fallo en [tiempo de ejecución].
++ - La entrada debe serializarse a bytes a mano antes de aplicarle el hash.
++ - La salida debe escribirse como texto a mano después.
++ - Nada disuade de recurrir a un algoritmo roto.
+
+- Here each of these is fixed. The algorithm is a type, checked where it is used, so a digest of
+- one algorithm cannot be confused with another's, which is
+- [safety by construction](../../philosophy/safety-by-construction.md). Any value with a
+- `Digestible` instance is hashed directly. The result is written through the base encodings. And
+- a weak algorithm sits behind a permission which a program must opt into.
++ Aquí se resuelve cada uno de estos problemas. El algoritmo es un tipo, que se comprueba allí
++ donde se usa, de modo que el resumen de un algoritmo no puede confundirse con el de otro, lo que
++ constituye [seguridad por construcción](../../philosophy/safety-by-construction.md). Cualquier
++ valor con una instancia de `Digestible` se resume directamente. El resultado se escribe mediante
++ las codificaciones en base. Y un algoritmo débil queda tras un permiso al que el programa debe
++ adherirse voluntariamente.
+
+- Everything comes from the `soundness` package. A provider of hash algorithms and an alphabet
+- are in scope, and the last import lets the samples print their results:
++ Todo procede del paquete `soundness`. En el ámbito hay un proveedor de algoritmos de hash y un
++ alfabeto, y la última importación permite que los ejemplos impriman sus resultados:
+
+= are in scope, and the last import lets the samples print their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import alphabets.hexLowerCase
++ import alphabets.hexLowerCase
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import providers.javaBaseProvider
++ import providers.javaBaseProvider
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Hashing a value
++ ### Aplicar un hash a un valor
+
+- `digest` computes the digest of a value, in a named algorithm, and `serialize` writes it out:
++ `digest` calcula el resumen de un valor, con un algoritmo nombrado, y `serialize` lo escribe:
+
+= `digest` computes the digest of a value, in a named algorithm, and `serialize` writes it out:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `digest` computes the digest of a value, in a named algorithm, and `serialize` writes it out:
+=
+= ```scala fuel
+- run
++ run
+
+= `digest` computes the digest of a value, in a named algorithm, and `serialize` writes it out:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"Hello world".digest[Sha2[256]].serialize[Hex])
++ Out.println(t"Hello world".digest[Sha2[256]].serialize[Hex])
+
+= Out.println(t"Hello world".digest[Sha2[256]].serialize[Hex])
+- ```
++ ```
+
+- The provider in scope supplies the algorithms. These are the algorithms, the permit each
+- needs, and the providers which offer each on the JVM:
++ El proveedor del ámbito suministra los algoritmos. Estos son los algoritmos, el permiso que
++ necesita cada uno y los proveedores que ofrecen cada uno en la JVM:
+
+= needs, and the providers which offer each on the JVM:
+=
+- ```tabular
++ ```tabular
+
+- column  Algorithm
+- column  Kind
+- column  Permit
+- column  Providers
++ column  Algoritmo
++ column  Clase
++ column  Permiso
++ column  Proveedores
+
+- column  Bits
++ column  Bits
+
+- row  `Sha2[224]`, `Sha2[256]`, `Sha2[384]`, `Sha2[512]`  hash  none  `javaBaseProvider`, `soundnessProvider`  224–512
+- row  `Blake3`  hash  none  `soundnessProvider`  256
+- row  `Sha1`  weak hash  `permitDeprecatedCrypto`  `javaBaseProvider`, `soundnessProvider`  160
+- row  `Md5`  weak hash  `permitDisallowedCrypto`  `javaBaseProvider`, `soundnessProvider`  128
+- row  `Murmur3`  fast hash  `permitNonCryptographicHashes`  `soundnessProvider`  128
+- row  `Crc32`  checksum  `permitNonCryptographicHashes`  `javaBaseProvider`, `soundnessProvider`  32
+- row  `Crc64`  checksum  `permitNonCryptographicHashes`  `soundnessProvider`  64
+- row  `Adler32`  checksum  `permitNonCryptographicHashes`  `javaBaseProvider`, `soundnessProvider`  32
++ row  `Sha2[224]`, `Sha2[256]`, `Sha2[384]`, `Sha2[512]`  hash  ninguno  `javaBaseProvider`, `soundnessProvider`  224–512
++ row  `Blake3`  hash  ninguno  `soundnessProvider`  256
++ row  `Sha1`  hash débil  `permitDeprecatedCrypto`  `javaBaseProvider`, `soundnessProvider`  160
++ row  `Md5`  hash débil  `permitDisallowedCrypto`  `javaBaseProvider`, `soundnessProvider`  128
++ row  `Murmur3`  hash rápido  `permitNonCryptographicHashes`  `soundnessProvider`  128
++ row  `Crc32`  suma de verificación  `permitNonCryptographicHashes`  `javaBaseProvider`, `soundnessProvider`  32
++ row  `Crc64`  suma de verificación  `permitNonCryptographicHashes`  `soundnessProvider`  64
++ row  `Adler32`  suma de verificación  `permitNonCryptographicHashes`  `javaBaseProvider`, `soundnessProvider`  32
+
+= row  `Adler32`  checksum  `permitNonCryptographicHashes`  `javaBaseProvider`, `soundnessProvider`  32
+- ```
++ ```
+
+- The permits are imported from the package `cryptoPermits`.
++ Los permisos se importan del paquete `cryptoPermits`.
+
+- `javaBaseProvider` uses the JDK's `MessageDigest` where there is one. Off the JVM there is
+- not, and the same import then selects pure-Scala implementations of MD5, SHA-1, SHA-2 and
+- CRC-32, which are validated byte for byte against the JDK's. Code which hashes therefore reads
+- the same, and produces the same digests, on the JVM, in a browser and inside a WebAssembly
+- component.
++ `javaBaseProvider` usa el `MessageDigest` del JDK donde lo hay. Fuera de la JVM no lo hay, y
++ entonces la misma importación selecciona implementaciones en Scala puro de MD5, SHA-1, SHA-2 y
++ CRC-32, validadas byte a byte frente a las del JDK. Por tanto, el código que aplica hashes se lee
++ igual, y produce los mismos resúmenes, en la JVM, en un navegador y dentro de un componente
++ WebAssembly.
+
+- ### The algorithm in the type
++ ### El algoritmo en el tipo
+
+- A digest has its algorithm in its type, as in `Digest in Sha2[256]`. Where the expected type
+- already says which algorithm is wanted, `digest` need not name it. A field declared with the
+- type fixes what `digest` computes:
++ Un resumen lleva su algoritmo en su tipo, como en `Digest in Sha2[256]`. Donde el tipo esperado
++ ya indica qué algoritmo se quiere, `digest` no necesita nombrarlo. Un campo declarado con ese
++ tipo fija lo que calcula `digest`:
+
+= type fixes what `digest` computes:
+=
+- ```scala
++ ```scala
+
+- case class Block(digest: Digest in Sha2[256], payload: Text)
++ case class Block(digest: Digest in Sha2[256], payload: Text)
+
+- val payload = t"""{"amount": 100}"""
++ val payload = t"""{"amount": 100}"""
+
+- val block = Block(payload.digest, payload)
++ val block = Block(payload.digest, payload)
+
+= val block = Block(payload.digest, payload)
+- ```
++ ```
+
+= val block = Block(payload.digest, payload)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val block = Block(payload.digest, payload)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val block = Block(payload.digest, payload)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(block.digest.serialize[Hex])
++ Out.println(block.digest.serialize[Hex])
+
+= Out.println(block.digest.serialize[Hex])
+- ```
++ ```
+
+- That is the pattern throughout. Digests, HMACs, keys and signatures are all bytes with a type
+- parameter for the algorithm which produced them. A value from one algorithm cannot be passed
+- where another is expected, and the algorithm rarely has to be written twice:
++ Ese es el patrón en todas partes. Los resúmenes, los HMAC, las claves y las firmas son todos
++ bytes con un parámetro de tipo para el algoritmo que los produjo. Un valor de un algoritmo no
++ puede pasarse donde se espera otro, y rara vez hay que escribir el algoritmo dos veces:
+
+= where another is expected, and the algorithm rarely has to be written twice:
+=
+- ```scala fuel
++ ```scala fuel
+
+= where another is expected, and the algorithm rarely has to be written twice:
+=
+= ```scala fuel
+- compile
++ compile
+
+= where another is expected, and the algorithm rarely has to be written twice:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= where another is expected, and the algorithm rarely has to be written twice:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- Block(payload.digest[Sha2[512]], payload)
++ Block(payload.digest[Sha2[512]], payload)
+
+= Block(payload.digest[Sha2[512]], payload)
+- ```
++ ```
+
+- [Cryptography](cryptography.md) covers HMACs, keys and signatures.
++ [Criptografía](cryptography.md) trata los HMAC, las claves y las firmas.
+
+- ### Hashing your own types
++ ### Aplicar un hash a tus propios tipos
+
+- Any value which can be reduced to bytes is digestible. A case class derives that from its
+- fields, so a structured value is hashed as one:
++ Cualquier valor que pueda reducirse a bytes es resumible. Una case class lo deriva de sus campos,
++ de modo que un valor estructurado se resume como un todo:
+
+= fields, so a structured value is hashed as one:
+=
+- ```scala
++ ```scala
+
+- case class Person(name: Text, age: Int)
++ case class Person(name: Text, age: Int)
+
+= case class Person(name: Text, age: Int)
+- ```
++ ```
+
+= case class Person(name: Text, age: Int)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= case class Person(name: Text, age: Int)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= case class Person(name: Text, age: Int)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Person(t"Hamlet", 30).digest[Sha2[256]].serialize[Hex])
++ Out.println(Person(t"Hamlet", 30).digest[Sha2[256]].serialize[Hex])
+
+- Out.println(Person(t"Hamlet", 31).digest[Sha2[256]].serialize[Hex])
++ Out.println(Person(t"Hamlet", 31).digest[Sha2[256]].serialize[Hex])
+
+= Out.println(Person(t"Hamlet", 31).digest[Sha2[256]].serialize[Hex])
+- ```
++ ```
+
+- A digest is itself digestible, so a hash can be combined into a larger structure, and hashed
+- again.
++ Un resumen es en sí mismo resumible, así que un hash puede combinarse en una estructura mayor y
++ volver a resumirse.
+
+- ### Hashing a stream
++ ### Aplicar un hash a un flujo
+
+- Data which is too large to hold is hashed as it passes. The digest accumulates over successive
+- chunks, and carries partial blocks across the boundaries between them. The result is therefore
+- identical whatever sizes the chunks happen to arrive in, and is the digest of the whole text
+- above:
++ Los datos demasiado grandes para retenerlos se resumen a medida que pasan. El resumen se acumula
++ sobre fragmentos sucesivos y arrastra los bloques parciales a través de las fronteras entre
++ ellos. Por tanto, el resultado es idéntico sean cuales sean los tamaños en que lleguen los
++ fragmentos, y es el resumen del texto completo de antes:
+
+= above:
+=
+- ```scala
++ ```scala
+
+- val chunks = Chain(t"Hello ".in[Data], t"wor".in[Data], t"ld".in[Data])
++ val chunks = Chain(t"Hello ".in[Data], t"wor".in[Data], t"ld".in[Data])
+
+= val chunks = Chain(t"Hello ".in[Data], t"wor".in[Data], t"ld".in[Data])
+- ```
++ ```
+
+= val chunks = Chain(t"Hello ".in[Data], t"wor".in[Data], t"ld".in[Data])
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val chunks = Chain(t"Hello ".in[Data], t"wor".in[Data], t"ld".in[Data])
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val chunks = Chain(t"Hello ".in[Data], t"wor".in[Data], t"ld".in[Data])
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(chunks.checksum[Sha2[256]].serialize[Hex])
++ Out.println(chunks.checksum[Sha2[256]].serialize[Hex])
+
+= Out.println(chunks.checksum[Sha2[256]].serialize[Hex])
+- ```
++ ```
+
+- This is what makes a digest computable over a [stream](streams.md) with bounded memory. It is
+- why hashing composes with [compression](compression.md) and
+- [encryption](cryptography.md) in one pipeline, without the data being held between them.
++ Esto es lo que permite calcular un resumen sobre un [flujo](streams.md) con memoria acotada. Es
++ la razón por la que el hashing se compone con la [compresión](compression.md) y el
++ [cifrado](cryptography.md) en una sola canalización, sin retener los datos entre ellos.
+
+- `checksum` digests what is *behind* a value: a stream's bytes and, for a
+- [filesystem](filesystem.md) path, the content of a file or of a directory. A directory's
+- checksum covers its regular files, in the order of their paths relative to it, and each
+- contributes its relative path and its content. So:
++ `checksum` resume lo que hay *detrás* de un valor: los bytes de un flujo y, para una ruta del
++ [sistema de ficheros](filesystem.md), el contenido de un fichero o de un directorio. La suma de
++ verificación de un directorio abarca sus ficheros regulares, en el orden de sus rutas relativas a
++ él, y cada uno aporta su ruta relativa y su contenido. Así:
+
+- - a rename, a move or an edit changes the checksum;
+- - two directories which hold the same files have the same checksum, wherever they are;
+- - an empty directory has a checksum too.
++ - un cambio de nombre, un traslado o una edición cambia la suma de verificación;
++ - dos directorios que contienen los mismos ficheros tienen la misma suma de verificación, estén
++   donde estén;
++ - un directorio vacío también tiene suma de verificación.
+
+- That is the identity a build keys its caches by:
++ Esa es la identidad con la que una compilación indexa sus cachés:
+
+= That is the identity a build keys its caches by:
+=
+- ```scala fuel
++ ```scala fuel
+
+- typecheck
++ typecheck
+
+= typecheck
+- ##
++ ##
+
+- import filesystemBackends.javaBaseFilesystem
++ import filesystemBackends.javaBaseFilesystem
+
+- import filesystemOptions.dereferenceSymlinks
++ import filesystemOptions.dereferenceSymlinks
+
+- import pathInterfaces.pathOnLinux
++ import pathInterfaces.pathOnLinux
+
+- import temporaryDirectories.javaBaseTemporaryDirectory
++ import temporaryDirectories.javaBaseTemporaryDirectory
+
+- val directory = temporaryDirectory[Path on Linux] / "hashing"
++ val directory = temporaryDirectory[Path on Linux] / "hashing"
+
+- directory.create[Directory](CreateFlag.Replace)
++ directory.create[Directory](CreateFlag.Replace)
+
+- val identity: Digest in Sha2[256] = directory.checksum[Sha2[256]]
++ val identity: Digest in Sha2[256] = directory.checksum[Sha2[256]]
+
+= val identity: Digest in Sha2[256] = directory.checksum[Sha2[256]]
+- ```
++ ```
+
+- ### Rendering a digest
++ ### Representar un resumen
+
+- A digest's bytes are written in any base encoding: hexadecimal for display, or Base64 where
+- they must be compact:
++ Los bytes de un resumen se escriben en cualquier codificación en base: hexadecimal para
++ mostrarlos, o Base64 donde deben ser compactos:
+
+= they must be compact:
+=
+- ```scala fuel
++ ```scala fuel
+
+= they must be compact:
+=
+= ```scala fuel
+- run
++ run
+
+= they must be compact:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= they must be compact:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import alphabets.base64Standard
++   import alphabets.base64Standard
+
+-   Out.println(t"Hello world".digest[Sha2[256]].serialize[Base64])
++   Out.println(t"Hello world".digest[Sha2[256]].serialize[Base64])
+
+=   Out.println(t"Hello world".digest[Sha2[256]].serialize[Base64])
+- ```
++ ```
+
+- ### Self-describing digests
++ ### Resúmenes autodescriptivos
+
+- A digest's bytes say nothing about the algorithm which produced them. A digest which is stored
+- or sent alone can be checked only by something which already knows how it was made. A
+- [Multihash](https://multiformats.io/multihash/) prefixes the digest with a code for its
+- algorithm and its length, so it describes itself. Content-addressed storage, and the
+- distributed protocols built on it, exchange multihashes:
++ Los bytes de un resumen no dicen nada del algoritmo que los produjo. Un resumen que se almacena o
++ se envía solo únicamente puede comprobarlo algo que ya sabe cómo se hizo. Un
++ [Multihash](https://multiformats.io/multihash/) antepone al resumen un código para su algoritmo y
++ su longitud, de modo que se describe a sí mismo. El almacenamiento direccionado por contenido, y
++ los protocolos distribuidos construidos sobre él, intercambian multihashes:
+
+= distributed protocols built on it, exchange multihashes:
+=
+- ```scala fuel
++ ```scala fuel
+
+= distributed protocols built on it, exchange multihashes:
+=
+= ```scala fuel
+- run
++ run
+
+= distributed protocols built on it, exchange multihashes:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Multihash(t"Hello world".digest[Sha2[256]]).serialize.serialize[Hex])
++ Out.println(Multihash(t"Hello world".digest[Sha2[256]]).serialize.serialize[Hex])
+
+= Out.println(Multihash(t"Hello world".digest[Sha2[256]]).serialize.serialize[Hex])
+- ```
++ ```
+
+- The two bytes `12` and `20` say that a SHA-256 digest of thirty-two bytes follows. The
+- algorithm's code comes from the digest's type, so a multihash cannot claim an algorithm other
+- than the one which computed it.
++ Los dos bytes `12` y `20` indican que a continuación viene un resumen SHA-256 de treinta y dos
++ bytes. El código del algoritmo procede del tipo del resumen, así que un multihash no puede
++ declarar un algoritmo distinto del que lo calculó.
+
+- ### Weak algorithms
++ ### Algoritmos débiles
+
+- MD5 and SHA-1 are broken for the purposes of security, and remain only for compatibility.
+- Without a permission in scope, neither compiles:
++ MD5 y SHA-1 están rotos a efectos de seguridad, y solo se mantienen por compatibilidad. Sin un
++ permiso en el ámbito, ninguno de los dos compila:
+
+= Without a permission in scope, neither compiles:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Without a permission in scope, neither compiles:
+=
+= ```scala fuel
+- compile
++ compile
+
+= Without a permission in scope, neither compiles:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= Without a permission in scope, neither compiles:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- t"Hello world".digest[Md5]
++ t"Hello world".digest[Md5]
+
+= t"Hello world".digest[Md5]
+- ```
++ ```
+
+- Importing the permission makes the choice visible and deliberate:
++ Importar el permiso hace que la elección sea visible y deliberada:
+
+= Importing the permission makes the choice visible and deliberate:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Importing the permission makes the choice visible and deliberate:
+=
+= ```scala fuel
+- run
++ run
+
+= Importing the permission makes the choice visible and deliberate:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= Importing the permission makes the choice visible and deliberate:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import cryptoPermits.permitDisallowedCrypto
++   import cryptoPermits.permitDisallowedCrypto
+
+-   Out.println(t"Hello world".digest[Md5].serialize[Hex])
++   Out.println(t"Hello world".digest[Md5].serialize[Hex])
+
+=   Out.println(t"Hello world".digest[Md5].serialize[Hex])
+- ```
++ ```
+
+- The strong algorithms need no permission.
++ Los algoritmos fuertes no necesitan ningún permiso.
+
+- ### Checksums
++ ### Sumas de verificación
+
+- `Crc32`, `Crc64` and `Adler32` are not hashes but checksums. They detect accidental
+- corruption, and defend against nothing. They sit behind a permit of their own, which concedes
+- only that no adversary is being defended against:
++ `Crc32`, `Crc64` y `Adler32` no son hashes, sino sumas de verificación. Detectan la corrupción
++ accidental y no protegen contra nada. Quedan tras un permiso propio, que solo admite que no se
++ está protegiendo contra ningún adversario:
+
+= only that no adversary is being defended against:
+=
+- ```scala
++ ```scala
+
+- import cryptoPermits.permitNonCryptographicHashes
++ import cryptoPermits.permitNonCryptographicHashes
+
+= import cryptoPermits.permitNonCryptographicHashes
+- ```
++ ```
+
+= import cryptoPermits.permitNonCryptographicHashes
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import cryptoPermits.permitNonCryptographicHashes
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import cryptoPermits.permitNonCryptographicHashes
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"123456789".digest[Crc32].serialize[Hex])
++ Out.println(t"123456789".digest[Crc32].serialize[Hex])
+
+= Out.println(t"123456789".digest[Crc32].serialize[Hex])
+- ```
++ ```
+
+- A source of bytes, such as a file or a download, is checksummed without being held in memory,
+- by digesting its stream as it flows, exactly as `checksum` did above.
++ A una fuente de bytes, como un fichero o una descarga, se le calcula la suma de verificación sin
++ retenerla en memoria, resumiendo su flujo a medida que fluye, exactamente como hizo `checksum`
++ más arriba.
+
+- ### Fast hashing
++ ### Hashing rápido
+
+- `Murmur3` is MurmurHash3 in its 128-bit form. It is not a checksum, but it is not
+- cryptographic either. It is a hash made for hash tables, [Bloom filters](bloom-filters.md) and
+- sharding, where the input is not adversarial, and the rounds of a cryptographic digest would
+- be several times the work for no benefit. It sits behind the same permit as the checksums, and
+- its output is byte for byte what Guava's `murmur3_128()` produces:
++ `Murmur3` es MurmurHash3 en su forma de 128 bits. No es una suma de verificación, pero tampoco es
++ criptográfico. Es un hash hecho para tablas hash, [filtros de Bloom](bloom-filters.md) y
++ particionado, donde la entrada no es hostil y las rondas de un resumen criptográfico supondrían
++ varias veces más trabajo sin ningún beneficio. Queda tras el mismo permiso que las sumas de
++ verificación, y su salida es byte a byte la que produce el `murmur3_128()` de Guava:
+
+= its output is byte for byte what Guava's `murmur3_128()` produces:
+=
+- ```scala fuel
++ ```scala fuel
+
+= its output is byte for byte what Guava's `murmur3_128()` produces:
+=
+= ```scala fuel
+- run
++ run
+
+= its output is byte for byte what Guava's `murmur3_128()` produces:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= its output is byte for byte what Guava's `murmur3_128()` produces:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import providers.soundnessProvider
++   import providers.soundnessProvider
+
+-   Out.println(t"hello".digest[Murmur3].serialize[Hex])
++   Out.println(t"hello".digest[Murmur3].serialize[Hex])
+
+=   Out.println(t"hello".digest[Murmur3].serialize[Hex])
+- ```
++ ```
+
+- ### BLAKE3
++ ### BLAKE3
+
+- `Blake3` is implemented in pure Scala, by `soundnessProvider`, and offers the algorithm's three
+- modes:
++ `Blake3` está implementado en Scala puro, por `soundnessProvider`, y ofrece los tres modos del
++ algoritmo:
+
+= modes:
+=
+- ```tabular
++ ```tabular
+
+- column  Mode
+- column  Input
+- column  Use
+- row  hash  the data  an ordinary digest
+- row  keyed hash  a key and the data  message authentication
+- row  key derivation  a context string and key material  deriving keys
++ column  Modo
++ column  Entrada
++ column  Uso
++ row  hash  los datos  un resumen ordinario
++ row  hash con clave  una clave y los datos  autenticación de mensajes
++ row  derivación de claves  una cadena de contexto y material de clave  derivar claves
+
+= row  key derivation  a context string and key material  deriving keys
+- ```
++ ```
+
+- All three are checked against the official test data, at every input length which that data
+- covers, so the implementation is verified, and not merely tested for consistency with itself.
++ Los tres se comprueban con los datos de prueba oficiales, en cada longitud de entrada que cubren
++ esos datos, así que la implementación está verificada, y no solo probada en cuanto a coherencia
++ consigo misma.
+
+- Its output is extendable. A BLAKE3 digest may be taken at any length, not only at 256 bits,
+- which is what makes it usable for deriving keys as well as for hashing.
++ Su salida es extensible. Un resumen BLAKE3 puede tomarse con cualquier longitud, no solo con 256
++ bits, que es lo que lo hace utilizable para derivar claves además de para aplicar hashes.
+
+- ### Related
++ ### Relacionado
+
+- - [UUIDs](uuid.md), [packaging](packaging.md) and [containers](docker.md) identify values by their digests.
++ - [UUID](uuid.md), [empaquetado](packaging.md) y [contenedores](docker.md) identifican valores por sus resúmenes.

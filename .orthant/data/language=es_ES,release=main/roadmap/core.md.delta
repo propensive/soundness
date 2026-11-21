@@ -1,0 +1,10 @@
+orthant 1 language
+
+- Done when: no collection in `lib/` exposes a partial indexed `apply`, and every `while` that
+- remains is one of the three shapes [`doc/work/standards/loops.md`](../standards/loops.md) sanctions,
+- carrying the comment that names its invariant. A literal zero is not the goal: index arithmetic
+- derived from the data, and the combinators' own internals, stay as loops.
++ Terminado cuando: ninguna colección de `lib/` expone un `apply` indexado parcial, y cada `while`
++ que queda es una de las tres formas que admite [`doc/work/standards/loops.md`](../standards/loops.md),
++ con el comentario que nombra su invariante. El objetivo no es un cero literal: la aritmética de
++ índices derivada de los datos, y las entrañas de los propios combinadores, siguen siendo bucles.

@@ -1,0 +1,53 @@
+orthant 1 language
+
+- # `↯/s.135.2` — `Api.Error`
++ # `↯/s.135.2` — `Api.Error`
+
+- Raised when a request to a described API does not succeed.
++ Se lanza cuando una petición a una API descrita no tiene éxito.
+
+- ## Cause
++ ## Causa
+
+- This is a failure of the call rather than of the specification: a non-success status, or a
+- response body that does not match what the specification declared.
++ Es un fallo de la llamada y no de la especificación: un estado que no es de éxito, o un cuerpo de
++ respuesta que no se ajusta a lo que declaraba la especificación.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Código
++ column  Motivo
++ column  Mensaje
+
+- row  `↯/s.135.2.1`  `Status`  `[↯/s.135.2.1] the server responded with an unsuccessful status, <code>`
++ row  `↯/s.135.2.1`  `Status`  `[↯/s.135.2.1] the server responded with an unsuccessful status, <code>`
+
+- row  `↯/s.135.2.2`  `Malformed`  `[↯/s.135.2.2] the response body was not valid JSON`
++ row  `↯/s.135.2.2`  `Malformed`  `[↯/s.135.2.2] the response body was not valid JSON`
+
+- ```
++ ```
+
+- ## Resolution
++ ## Solución
+
+- A status failure carries the status, so a caller can distinguish a client fault from a server
+- one. A body that does not match its declared schema means the service and its specification
+- have diverged.
++ Un fallo de estado lleva el estado, así que quien llama puede distinguir un fallo del cliente de uno
++ del servidor. Un cuerpo que no se ajusta a su esquema declarado significa que el servicio y su
++ especificación han divergido.
+
+- ## See also
++ ## Véase también
+
+- - Source: `lib/apoplexy/src/core/apoplexy.Api.scala`
++ - Código fuente: `lib/apoplexy/src/core/apoplexy.Api.scala`

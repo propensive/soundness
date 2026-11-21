@@ -1,0 +1,93 @@
+orthant 1 language
+
+-     A layout also says whether it is meant to be written to: `readOnly` is `true` for
+-     `/boot`, `/efi`, `/sys`, `/usr` and everything beneath it, and the per-process
+-     directories under `/proc`. The five `Home` layouts which the XDG Base Directory
+-     specification lets a user move follow its variables: `Home.Config` is `$HOME/.config`
+-     unless `XDG_CONFIG_HOME` is set to an absolute path, when it is that path.
++     Una disposición indica también si está pensada para escribir en ella: `readOnly` es `true`
++     para `/boot`, `/efi`, `/sys`, `/usr` y todo lo que hay debajo, y para los directorios por
++     proceso bajo `/proc`. Las cinco disposiciones de `Home` que la especificación XDG Base
++     Directory permite mover al usuario siguen sus variables: `Home.Config` es `$HOME/.config`
++     salvo que `XDG_CONFIG_HOME` tenga como valor una ruta absoluta, en cuyo caso es esa ruta.
+
+-         A layout's `BaseLayout.Dir` is passed to its nested layouts as a contextual value,
+-         which is how a nested object knows the directory it sits in. Segments are held
+-         innermost first.
+-     entry #home   whether the path is relative to the user's home directory
+-     entry #path   the path's segments, innermost first
+-     entry #/   the directory of a child, by its name
+-     entry #render   the absolute path as text, given the home directory's path
+-         A `Dir` which is not home-relative and has no segments renders as `/`.
+-   entry #readOnly   whether the directory is conventionally not written to by programs
+-       `true` for `/boot`, `/efi`, `/sys`, `/usr` and everything beneath it, and the
+-       directories of `/proc`; `false` for every layout under `Home`.
+-   entry #Topic   the directory names from this node up to its root, as a tuple type
+-   entry #absolutePath   the layout's absolute path, as text
+-       Needs an `Environment` and a `System`. A layout which names a `#variable` is that
+-       variable's value, if it is an absolute path. Otherwise a layout under `Home` reads
+-       the `HOME` environment variable, without a trailing `/`, and raises
+-       `Environment.Error` if it is unset.
+-   entry #variable   the environment variable which relocates the layout, if there is one
+-   entry #relocation   where `#variable` puts the layout: its value, if set to an absolute path
+-   entry #dir   the `BaseLayout.Dir` of this layout, given to the layouts nested in it
+-   entry #apply   the layout's absolute path, as a path type of the caller's choosing
+-       `layout[Path on Linux]()` makes a value of any type which is `Instantiable across
+-       Paths from Text` from `#absolutePath`. Needs an `Environment` and a `System`, and
+-       raises `Environment.Error` (for a `Home` layout whose `HOME` is unset) and
++         El `BaseLayout.Dir` de una disposición se pasa a sus disposiciones anidadas como valor
++         contextual, que es como un objeto anidado conoce el directorio en el que se encuentra.
++         Los segmentos se guardan empezando por el más interno.
++     entry #home   si la ruta es relativa al directorio personal del usuario
++     entry #path   los segmentos de la ruta, empezando por el más interno
++     entry #/   el directorio de un hijo, por su nombre
++     entry #render   la ruta absoluta como texto, dada la ruta del directorio personal
++         Un `Dir` que no es relativo al directorio personal y no tiene segmentos se representa
++         como `/`.
++   entry #readOnly   si, por convención, los programas no escriben en el directorio
++       `true` para `/boot`, `/efi`, `/sys`, `/usr` y todo lo que hay debajo, y para los
++       directorios de `/proc`; `false` para todas las disposiciones bajo `Home`.
++   entry #Topic   los nombres de directorio desde este nodo hasta su raíz, como tipo tupla
++   entry #absolutePath   la ruta absoluta de la disposición, como texto
++       Necesita un `Environment` y un `System`. Una disposición que nombra una `#variable` es el
++       valor de esa variable, si es una ruta absoluta. En caso contrario, una disposición bajo
++       `Home` lee la variable de entorno `HOME`, sin `/` final, y lanza `Environment.Error` si no
++       está definida.
++   entry #variable   la variable de entorno que reubica la disposición, si la hay
++   entry #relocation   adonde lleva `#variable` la disposición: su valor, si es una ruta absoluta
++   entry #dir   el `BaseLayout.Dir` de esta disposición, entregado a las disposiciones anidadas en ella
++   entry #apply   la ruta absoluta de la disposición, como un tipo de ruta elegido por el llamador
++       `layout[Path on Linux]()` crea, a partir de `#absolutePath`, un valor de cualquier tipo que
++       sea `Instantiable across Paths from Text`. Necesita un `Environment` y un `System`, y
++       lanza `Environment.Error` (para una disposición de `Home` cuyo `HOME` no está definido) y
+
+-       `Cache`, `Config`, `Local.Bin`, `Local.Share` and `Local.State` are the directories
+-       the XDG Base Directory specification lets a user move, and each is where its variable
+-       says when that is set to an absolute path: `Home.Config` is `$XDG_CONFIG_HOME`, and
+-       `$HOME/.config` otherwise. A relative or empty value is ignored, as the specification
+-       requires. The other layouts are fixed.
++       `Cache`, `Config`, `Local.Bin`, `Local.Share` y `Local.State` son los directorios que la
++       especificación XDG Base Directory permite mover al usuario, y cada uno está donde indica su
++       variable cuando esta tiene como valor una ruta absoluta: `Home.Config` es
++       `$XDG_CONFIG_HOME`, y si no, `$HOME/.config`. Un valor relativo o vacío se ignora, como
++       exige la especificación. Las demás disposiciones son fijas.
+
+-   entry .Cache   the user's cache directory, `$XDG_CACHE_HOME` or `~/.cache`
+-   entry .Config   the user's configuration directory, `$XDG_CONFIG_HOME` or `~/.config`
+-   entry .Local   the user's local installation prefix, `~/.local`
++   entry .Cache   el directorio de caché del usuario, `$XDG_CACHE_HOME` o `~/.cache`
++   entry .Config   el directorio de configuración del usuario, `$XDG_CONFIG_HOME` o `~/.config`
++   entry .Local   el prefijo de instalación local del usuario, `~/.local`
+
+-         The per-user counterpart of `/usr`, holding a user's own programs, libraries, data
+-         and state.
+-     entry .Bin   the user's own executables, `$XDG_BIN_HOME` or `~/.local/bin`
+-     entry .Lib   the user's own libraries, `~/.local/lib`
+-     entry .Share   the user's own application data, `$XDG_DATA_HOME` or `~/.local/share`
+-     entry .State   the user's application state, `$XDG_STATE_HOME` or `~/.local/state`
++         La contrapartida por usuario de `/usr`, que contiene los programas, bibliotecas, datos y
++         estado propios de un usuario.
++     entry .Bin   los ejecutables propios del usuario, `$XDG_BIN_HOME` o `~/.local/bin`
++     entry .Lib   las bibliotecas propias del usuario, `~/.local/lib`
++     entry .Share   los datos de aplicación propios del usuario, `$XDG_DATA_HOME` o `~/.local/share`
++     entry .State   el estado de las aplicaciones del usuario, `$XDG_STATE_HOME` o `~/.local/state`
