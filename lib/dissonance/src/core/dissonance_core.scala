@@ -164,13 +164,16 @@ def diff[element]
     val best = if deletes + inserts == 0 then count(0, 0) else delPos.max(insPos)
 
     if best == left.length && (best - deletes + inserts) == right.length
-    then Diff(backtrack(left.length - 1, deletes, rows, Nil)*).retained
+    then Diff(backtrack(left.length - 1, deletes, rows, rows.size, Nil)*).retained
     else if inserts > 0 then trace(deletes + 1, inserts - 1, best :: focus, rows)
     else trace(0, deletes + 1, Nil, (focus.reverse + List(best)).to[Array] :: rows)
 
+  // `depth` is the size of `rows`, carried so that no step counts them.
   @tailrec
-  def backtrack(position: Int, deletes: Int, rows: List[Array[Int]^{}], edits: Edits): Edits =
-    val rightPosition = position + rows.size - deletes*2
+  def backtrack(position: Int, deletes: Int, rows: List[Array[Int]^{}], depth: Int, edits: Edits)
+  :   Edits =
+
+    val rightPosition = position + depth - deletes*2
 
     // As in `trace`, one lazy stdlib view of the row stack serves the head reads and the pop,
     // both of which the walk's invariants keep legal.
@@ -181,29 +184,29 @@ def diff[element]
     if position == -1 && rightPosition == -1 then edits else if rows.nil
     then
       backtrack
-        ( position - 1, deletes, rows,
+        ( position - 1, deletes, rows, depth,
           Diff.Par(position, rightPosition, left(position)).retained :: edits )
 
-    else if deletes < rows.size && (deletes == 0 || ins >= del)
+    else if deletes < depth && (deletes == 0 || ins >= del)
     then
       if position == ins
       then
         backtrack
-          ( position, deletes, rowStack.tail.to(List),
+          ( position, deletes, rowStack.tail.to(List), depth - 1,
             Diff.Ins(rightPosition, right(rightPosition)).retained :: edits )
       else
         backtrack
-          ( position - 1, deletes, rows,
+          ( position - 1, deletes, rows, depth,
             Diff.Par(position, rightPosition, left(position)).retained :: edits )
     else
       if position == del
       then
         backtrack
-          ( del - 1, deletes - 1, rowStack.tail.to(List),
+          ( del - 1, deletes - 1, rowStack.tail.to(List), depth - 1,
             Diff.Del(position, left(position)).retained :: edits )
       else
         backtrack
-          ( position - 1, deletes, rows,
+          ( position - 1, deletes, rows, depth,
             Diff.Par(position, rightPosition, left(position)).retained :: edits )
 
   trace(0, 0, Nil, Nil)
