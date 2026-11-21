@@ -1,0 +1,79 @@
+orthant 1 language
+
+- # `↯/s.115.1` — `Websocket.Error`
++ # `↯/s.115.1` — `Websocket.Error`
+
+- Raised when a WebSocket peer violates the protocol.
++ Lançado quando um par WebSocket viola o protocolo.
+
+- ## Cause
++ ## Causa
+
+- Perihelion implements RFC 6455 strictly, including the requirements other implementations
+- often relax: masking, fragmentation rules, control-frame limits, UTF-8 validity of text
+- frames, and the permitted close codes.
++ O Perihelion implementa a RFC 6455 de forma estrita, incluindo os requisitos que outras
++ implementações muitas vezes relaxam: mascaramento, regras de fragmentação, limites dos quadros
++ de controle, validade UTF-8 dos quadros de texto e os códigos de fechamento permitidos.
+
+- ## Variants
++ ## Variantes
+
+- ```tabular
++ ```tabular
+
+- column  Code
+- column  Reason
+- column  Message
++ column  Código
++ column  Motivo
++ column  Mensagem
+
+- row  `↯/s.115.1.1`  `Unmasked`  the client sent an unmasked frame
++ row  `↯/s.115.1.1`  `Unmasked`  the client sent an unmasked frame
+
+- row  `↯/s.115.1.2`  `BadOpcode`  the frame used the reserved opcode <code>
++ row  `↯/s.115.1.2`  `BadOpcode`  the frame used the reserved opcode <code>
+
+- row  `↯/s.115.1.3`  `BadControl`  a control frame was fragmented or exceeded 125 bytes
++ row  `↯/s.115.1.3`  `BadControl`  a control frame was fragmented or exceeded 125 bytes
+
+- row  `↯/s.115.1.4`  `BadFragmentation`  the message fragmentation was invalid
++ row  `↯/s.115.1.4`  `BadFragmentation`  the message fragmentation was invalid
+
+- row  `↯/s.115.1.5`  `TooLarge`  the frame payload of <size> bytes exceeded the limit
++ row  `↯/s.115.1.5`  `TooLarge`  the frame payload of <size> bytes exceeded the limit
+
+- row  `↯/s.115.1.6`  `InvalidText`  a text frame contained invalid UTF-8
++ row  `↯/s.115.1.6`  `InvalidText`  a text frame contained invalid UTF-8
+
+- row  `↯/s.115.1.7`  `ReservedBits`  a reserved header bit (RSV1/2/3) was set
++ row  `↯/s.115.1.7`  `ReservedBits`  a reserved header bit (RSV1/2/3) was set
+
+- row  `↯/s.115.1.8`  `BadClose`  the close frame had a malformed payload or invalid code
++ row  `↯/s.115.1.8`  `BadClose`  the close frame had a malformed payload or invalid code
+
+- row  `↯/s.115.1.9`  `Masked`  the server sent a masked frame
++ row  `↯/s.115.1.9`  `Masked`  the server sent a masked frame
+
+- row  `↯/s.115.1.10`  `Handshake`  the WebSocket handshake failed because <detail>
++ row  `↯/s.115.1.10`  `Handshake`  the WebSocket handshake failed because <detail>
+
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- A violation is the peer's fault rather than the local program's; the right response is
+- usually to close the connection with the appropriate close code, which the implementation
+- does. The message names the requirement that was broken.
++ Uma violação é culpa do par, e não do programa local; a resposta certa costuma ser fechar a
++ conexão com o código de fechamento apropriado, o que a implementação faz. A mensagem nomeia o
++ requisito que foi violado.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/perihelion/src/core/perihelion.Websocket.scala`
++ - Código-fonte: `lib/perihelion/src/core/perihelion.Websocket.scala`

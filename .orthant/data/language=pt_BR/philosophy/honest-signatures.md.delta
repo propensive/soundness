@@ -1,0 +1,301 @@
+orthant 1 language
+
+- # Honest Signatures
++ # Assinaturas honestas
+
+- A signature in Soundness tells the truth, the whole truth, and nothing but the truth
+- about what an operation needs. The most important part is the *nothing but*: a
+- signature declares no requirement unless it is always needed. A typeclass describes the
+- single capability it abstracts, without widening its methods to accommodate what some
+- implementation might want — no context parameter "just in case", no error declared
+- because one implementation can fail.
++ Uma assinatura no Soundness diz a verdade, toda a verdade e nada além da verdade sobre aquilo de
++ que uma operação precisa. A parte mais importante é o *nada além*: uma assinatura não declara
++ nenhum requisito a menos que ele seja sempre necessário. Uma classe de tipos descreve a única
++ capability que abstrai, sem alargar seus métodos para acomodar o que alguma implementação
++ poderia querer — nenhum parâmetro de contexto “só por garantia”, nenhum erro declarado porque
++ uma implementação pode falhar.
+
+- Requirements that only certain implementations have belong on those implementations. A
+- `given` declares in its own signature the capabilities its particular implementation
+- depends on — a network-backed instance requires `Online`, a fallible one a `Tactic` —
+- and the requirement is discharged where the instance is chosen, not imposed on the
+- typeclass and every other implementation of it. So the effective requirements of a
+- method are determined by the instances it actually uses: the same generic code is pure
+- with a pure instance and networked with a networked one, and its own signature claims
+- neither.
++ Os requisitos que só certas implementações têm pertencem a essas implementações. Um `given`
++ declara em sua própria assinatura as capabilities de que sua implementação específica depende —
++ uma instância apoiada na rede exige `Online`, uma que pode falhar exige uma `Tactic` —, e o
++ requisito é satisfeito onde a instância é escolhida, e não imposto à classe de tipos e a todas
++ as suas outras implementações. Assim, os requisitos efetivos de um método são determinados pelas
++ instâncias que ele de fato usa: o mesmo código genérico é puro com uma instância pura e usa a
++ rede com uma instância que usa a rede, e sua própria assinatura não declara nenhuma das duas
++ coisas.
+
+- The result is signatures that can be trusted in both directions. Nothing an operation
+- requires is hidden, so a caller sees the true cost; and nothing it declares is unused,
+- so a requirement in a signature is always meaningful. A minimal typeclass is also
+- easier to implement — the gap between what an interface demands and what most
+- implementations need is exactly where dishonest signatures come from.
++ O resultado são assinaturas em que se pode confiar nas duas direções. Nada de que uma operação
++ precisa fica escondido, então quem chama vê o verdadeiro custo; e nada do que ela declara deixa
++ de ser usado, então um requisito em uma assinatura sempre tem significado. Uma classe de tipos
++ mínima também é mais fácil de implementar — a distância entre o que uma interface exige e aquilo
++ de que a maioria das implementações precisa é exatamente de onde vêm as assinaturas desonestas.
+
+- ## The requirement travels with the instance
++ ## O requisito viaja com a instância
+
+- A typeclass says only what it abstracts:
++ Uma classe de tipos diz apenas o que abstrai:
+
+= A typeclass says only what it abstracts:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A typeclass says only what it abstracts:
+=
+= ```scala fuel
+- parse
++ parse
+
+= A typeclass says only what it abstracts:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- trait Showable:
++ trait Showable:
+
+-   def text(value: Self): Text
++   def text(value: Self): Text
+
+=   def text(value: Self): Text
+- ```
++ ```
+
+- No error, no context, no capability — because showing a value, in general, needs none.
+- An instance that *does* need something declares it in its own signature, where it is
+- true:
++ Nenhum erro, nenhum contexto, nenhuma capability — porque exibir um valor, em geral, não exige
++ nada disso. Uma instância que *de fato* precisa de algo o declara em sua própria assinatura, onde
++ é verdade:
+
+= true:
+=
+- ```scala fuel
++ ```scala fuel
+
+= true:
+=
+= ```scala fuel
+- parse
++ parse
+
+- substitute ???  ...
++ substitute ???  ...
+
+= substitute ???  ...
+- ##
++ ##
+
+- given (Tactic[CryptoError]) => PrivateKey is Showable = ???
++ given (Tactic[CryptoError]) => PrivateKey is Showable = ???
+
+= given (Tactic[CryptoError]) => PrivateKey is Showable = ???
+- ```
++ ```
+
+- The consequence is that the effective requirements of generic code are decided by the
+- instances it resolves. The same function is pure when given a pure instance and fallible
+- when given a fallible one, and its own signature — honestly — claims neither.
++ A consequência é que os requisitos efetivos do código genérico são decididos pelas instâncias
++ que ele resolve. A mesma função é pura quando recebe uma instância pura e pode falhar quando
++ recebe uma instância que pode falhar, e sua própria assinatura — honestamente — não declara
++ nenhuma das duas coisas.
+
+- ## What a dishonest signature looks like
++ ## Como é uma assinatura desonesta
+
+- The failure mode is easy to recognise once named. An interface is widened so that the
+- most demanding implementation fits:
++ O modo de falha é fácil de reconhecer depois de nomeado. Uma interface é alargada para que a
++ implementação mais exigente caiba nela:
+
+= most demanding implementation fits:
+=
+- ```scala fuel
++ ```scala fuel
+
+= most demanding implementation fits:
+=
+= ```scala fuel
+- parse
++ parse
+
+= most demanding implementation fits:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- trait Codec:
++ trait Codec:
+
+-   def encode(value: Self)(using Online, Tactic[CodecError]): Text
++   def encode(value: Self)(using Online, Tactic[CodecError]): Text
+
+=   def encode(value: Self)(using Online, Tactic[CodecError]): Text
+- ```
++ ```
+
+- One implementation fetches a schema over the network; one can fail; so the *interface*
+- requires both, and now every caller of every codec must supply an `Online` capability
+- and an error strategy, whether or not the instance they are using needs either.
++ Uma implementação busca um schema pela rede; outra pode falhar; então a *interface* exige as
++ duas coisas, e agora cada chamador de cada codec precisa fornecer uma capability `Online` e uma
++ estratégia de erros, quer a instância que está usando precise delas, quer não.
+
+- This is worse than an inconvenience. The signature has stopped carrying information: a
+- reader who sees `Online` can no longer conclude the operation touches the network,
+- because the requirement is there for a reason that may not apply. Once a few
+- requirements are known to be spurious, none of them can be trusted, and the discipline
+- collapses.
++ Isso é pior que um incômodo. A assinatura deixou de transmitir informação: um leitor que vê
++ `Online` já não pode concluir que a operação acessa a rede, porque o requisito está ali por um
++ motivo que pode não se aplicar. Quando se sabe que alguns requisitos são espúrios, nenhum deles
++ merece confiança, e a disciplina desmorona.
+
+- ## What the signatures do carry
++ ## O que as assinaturas de fato transmitem
+
+- Because they are minimal, the clauses that *are* present mean something:
++ Como são mínimas, as cláusulas que *estão* presentes significam algo:
+
+= Because they are minimal, the clauses that *are* present mean something:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Because they are minimal, the clauses that *are* present mean something:
+=
+= ```scala fuel
+- parse
++ parse
+
+= Because they are minimal, the clauses that *are* present mean something:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- def fetch(url: HttpUrl)(using Online): Http.Response
++ def fetch(url: HttpUrl)(using Online): Http.Response
+
+- def loadConfiguration(path: Path on Linux): Configuration raises Io.Error
++ def loadConfiguration(path: Path on Linux): Configuration raises Io.Error
+
+- def install(target: Path on Linux): Unit logs InstallEvent
++ def install(target: Path on Linux): Unit logs InstallEvent
+
+- def fetchAll(urls: List[HttpUrl])(using Monitor): List[Text]
++ def fetchAll(urls: List[HttpUrl])(using Monitor): List[Text]
+
+= def fetchAll(urls: List[HttpUrl])(using Monitor): List[Text]
+- ```
++ ```
+
+- Each clause makes one claim:
++ Cada cláusula faz uma única afirmação:
+
+- ```tabular
++ ```tabular
+
+- column  Clause
+- column  Means the method
+- row  `using Online`  reaches the network
+- row  `raises`  can fail, and says how
+- row  `logs`  emits events of that type, so a caller knows what to route where
+- row  `using Monitor`  can suspend the calling strand
++ column  Cláusula
++ column  Significa que o método
++ row  `using Online`  acessa a rede
++ row  `raises`  pode falhar, e diz como
++ row  `logs`  emite eventos desse tipo, de modo que quem chama sabe o que encaminhar para onde
++ row  `using Monitor`  pode suspender o fio que chama
+
+= row  `using Monitor`  can suspend the calling strand
+- ```
++ ```
+
+- A method with none of these does none of those things, which is a claim worth being able
+- to make.
++ Um método sem nenhuma delas não faz nenhuma dessas coisas, o que é uma afirmação que vale a pena
++ poder fazer.
+
+- ## Honesty about capture
++ ## Honestidade sobre capturas
+
+- There is a subtler dishonesty a signature can commit: returning a value that secretly
+- depends on something scoped. A stream still holding an open file, a closure still holding
+- an error handler — the type says `Stream[Text]` and the truth is "a stream, but only
+- while that file is open".
++ Há uma desonestidade mais sutil que uma assinatura pode cometer: retornar um valor que depende
++ secretamente de algo com escopo. Um stream que ainda mantém um arquivo aberto, uma closure que
++ ainda guarda um handler de erros — o tipo diz `Stream[Text]`, e a verdade é “um stream, mas só
++ enquanto aquele arquivo estiver aberto”.
+
+- [Capture checking](capture-checking.md) makes that part of the signature too. A value's
+- type records the capabilities it captures, so an operation cannot quietly return
+- something whose validity is narrower than its type suggests. This is why the honesty
+- principle and capture checking belong together: one is about what an operation *needs*,
+- the other about what its results *depend on*, and both are cases of a signature stating
+- the whole truth.
++ A [verificação de capturas](capture-checking.md) torna isso parte da assinatura também. O tipo
++ de um valor registra as capabilities que ele captura, então uma operação não pode retornar
++ discretamente algo cuja validade é mais estreita do que seu tipo sugere. É por isso que o
++ princípio da honestidade e a verificação de capturas andam juntos: um trata do que uma operação
++ *precisa*, o outro do que seus resultados *dependem*, e ambos são casos de uma assinatura dizendo
++ toda a verdade.
+
+- ## What it costs
++ ## Quanto custa
+
+- **Instances carry more.** Pushing requirements onto instances means the instances declare
+- them, and a fallible instance's signature is longer than the naive version's. The reader
+- who benefits is the one calling the generic code, not the one writing the instance.
++ **As instâncias carregam mais.** Empurrar os requisitos para as instâncias significa que as
++ instâncias os declaram, e a assinatura de uma instância que pode falhar é mais longa que a da
++ versão ingênua. O leitor que se beneficia é o que chama o código genérico, e não o que escreve a
++ instância.
+
+- **Requirements propagate.** A method calling something that needs `Online` must either
+- supply it or declare it. That is the mechanism working — the cost of a signature meaning
+- something is that it must be maintained — but it does mean a change deep in a call chain
+- can surface at the top.
++ **Os requisitos se propagam.** Um método que chama algo que precisa de `Online` precisa fornecê-lo
++ ou declará-lo. Esse é o mecanismo funcionando — o custo de uma assinatura significar algo é que
++ ela precisa ser mantida —, mas significa que uma mudança no fundo de uma cadeia de chamadas pode
++ aparecer no topo.
+
+- **Resolution failures are indirect.** When a needed instance is missing, the compiler
+- reports a failed implicit search rather than "this operation needs `Online`". Importing
+- `explainMissingContext` turns that into a diagnosis naming the import that would satisfy
+- it, which is the repair for a cost that would otherwise fall on exactly the people the
+- honesty is meant to serve.
++ **As falhas de resolução são indiretas.** Quando falta uma instância necessária, o compilador
++ relata uma busca implícita que falhou, e não “esta operação precisa de `Online`”. Importar
++ `explainMissingContext` transforma isso em um diagnóstico que nomeia o import que o satisfaria,
++ o que repara um custo que de outra forma recairia exatamente sobre as pessoas a quem a
++ honestidade deve servir.
+
+- See [declarative context](declarative-context.md) for how the requirements are supplied,
+- and [error handling](error-handling.md) for the most common of them.
++ Veja [contexto declarativo](declarative-context.md) para como os requisitos são fornecidos, e
++ [tratamento de erros](error-handling.md) para o mais comum deles.

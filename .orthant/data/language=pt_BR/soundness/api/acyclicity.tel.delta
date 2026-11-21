@@ -1,0 +1,2580 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base acyclicity
++ base acyclicity
+
+- import soundness
++ import soundness
+
+- info   directed graphs as values: acyclic by construction, ordered, searched, edited and drawn
++ info   grafos dirigidos como valores: acíclicos por construção, ordenados, pesquisados, editados e desenhados
+
+- detail
++ detail
+
+-     _Acyclicity_ represents a directed graph — the shape of a build system, a task schedule, a
+-     type hierarchy or a package's dependencies — as an immutable value with the operations such
+-     graphs need: a topological order, reachability, transitive closure and reduction, slicing
+-     around a node, and editing that keeps the graph acyclic. Its central type is `Dag`, a graph
+-     which **cannot hold a cycle**: every way of making one either checks once (and raises
+-     `Dag.Error`) or preserves acyclicity by construction, so `linearized`, `reduction` and
+-     `traversal` have no failure mode. Beside it sit `Digraph`, the general directed graph which
+-     may contain a cycle and is converted to a `Dag` by the one checked step, `acyclic`; and
+-     `Topology`, a graph edited in place which keeps its topological order live as edges arrive,
+-     and which, frozen, is the form laid out for fast querying.
++     _Acyclicity_ representa um grafo dirigido — a forma de um sistema de build, de um
++     cronograma de tarefas, de uma hierarquia de tipos ou das dependências de um pacote — como
++     um valor imutável com as operações de que esses grafos precisam: uma ordem topológica,
++     alcançabilidade, fecho e redução transitivos, recorte em torno de um nó e edição que mantém
++     o grafo acíclico. Seu tipo central é `Dag`, um grafo que **não pode conter um ciclo**: toda
++     forma de criar um ou verifica uma vez (e lança `Dag.Error`) ou preserva a aciclicidade por
++     construção, então `linearized`, `reduction` e `traversal` não têm modo de falha. Ao lado
++     dele estão `Digraph`, o grafo dirigido geral que pode conter um ciclo e é convertido em um
++     `Dag` pelo único passo verificado, `acyclic`; e `Topology`, um grafo editado no lugar que
++     mantém sua ordem topológica atualizada à medida que as arestas chegam e que, congelado, é a
++     forma organizada para consultas rápidas.
+
+-     Every edge is read as a **dependency**: `a -> b` means `a` depends on `b`, so a node's
+-     `successors` are its dependencies, its `predecessors` are its dependants, the `sources` are
+-     the nodes depending on nothing (where a build starts) and the `sinks` the nodes nothing
+-     depends on. A topological order lists every node *after* its dependencies.
++     Toda aresta é lida como uma **dependência**: `a -> b` significa que `a` depende de `b`,
++     então os `successors` de um nó são suas dependências, seus `predecessors` são seus
++     dependentes, as `sources` são os nós que não dependem de nada (onde um build começa) e os
++     `sinks` são os nós dos quais nada depende. Uma ordem topológica lista todo nó *depois* de
++     suas dependências.
+
+=     depends on. A topological order lists every node *after* its dependencies.
+=
+-     ```scala
++     ```scala
+
+=     depends on. A topological order lists every node *after* its dependencies.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     depends on. A topological order lists every node *after* its dependencies.
+=
+=     ```scala
+=     import soundness.*
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     val dag = Dag(8 -> Set(4, 6), 6 -> Set(3, 2), 4 -> Set(2), 3 -> Set(), 2 -> Set())
++     val dag = Dag(8 -> Set(4, 6), 6 -> Set(3, 2), 4 -> Set(2), 3 -> Set(), 2 -> Set())
+
+-     dag.linearized       // List(2, 4, 3, 6, 8): dependencies before dependents
++     dag.linearized       // List(2, 4, 3, 6, 8): dependencies before dependents
+
+-     dag.reachable(8)     // Set(8, 4, 6, 2, 3)
++     dag.reachable(8)     // Set(8, 4, 6, 2, 3)
+
+-     dag.sources          // Set(2, 3)
++     dag.sources          // Set(2, 3)
+
+-     dag.add(8, 3)        // a new Dag; raises Dag.Error if the edge would close a cycle
++     dag.add(8, 3)        // a new Dag; raises Dag.Error if the edge would close a cycle
+
+-     dag.reduction        // only the edges no path already implies
++     dag.reduction        // only the edges no path already implies
+
+=     dag.reduction        // only the edges no path already implies
+-     ```
++     ```
+
+-     All of these, and anything else graph-shaped — a `Hasse` diagram, a `Map[node, Set[node]]`,
+-     a `Ledger` — share one vocabulary through the `Nodal` typeclass (a node set and each node's
+-     successors), with `Bidirectional` for a representation which also stores predecessors,
+-     `Topological` for one whose values can hold no cycle, and `Reachable` and `Invertible` for
+-     those with a native search or inversion. The package-level extensions (`nodes`, `edges`,
+-     `sources`, `sinks`, `cycle`, `acyclic`, `reachable`, `closure`, `invert`, and for
+-     `Topological` graphs `linearized`, `reduction`, `traversal` and `layered`) are written once
+-     against those typeclasses, so a `Hasse` or a `Map` answers them exactly as a `Dag` does.
++     Todos eles, e qualquer outra coisa com forma de grafo — um diagrama `Hasse`, um
++     `Map[node, Set[node]]`, um `Ledger` — compartilham um vocabulário por meio da classe de
++     tipos `Nodal` (um conjunto de nós e os sucessores de cada nó), com `Bidirectional` para uma
++     representação que também armazena predecessores, `Topological` para uma cujos valores não
++     podem conter ciclos, e `Reachable` e `Invertible` para aquelas com busca ou inversão
++     nativas. As extensões de nível de pacote (`nodes`, `edges`, `sources`, `sinks`, `cycle`,
++     `acyclic`, `reachable`, `closure`, `invert` e, para grafos `Topological`, `linearized`,
++     `reduction`, `traversal` e `layered`) são escritas uma vez sobre essas classes de tipos,
++     então um `Hasse` ou um `Map` as responde exatamente como um `Dag`.
+
+-     A `Dag` or `Digraph` stores only the forward direction, so locating a node's predecessors is
+-     a scan of every edge. The operations that need it — `predecessors`, `ancestors`, `lineage`,
+-     `bypass`, `bypassAll` and `-` — are gated on `Dysasymptotic.LinearScan`, acknowledged with
+-     `import dysasymptotics.linearScan`; `subgraph`, which rebuilds the whole map for a bounded
+-     choice of nodes, is gated on `Dysasymptotic.LinearSize` (`import dysasymptotics.linearSize`).
+-     A frozen `Topology` keeps both directions and needs neither.
++     Um `Dag` ou `Digraph` armazena apenas a direção para a frente, então localizar os
++     predecessores de um nó é uma varredura de todas as arestas. As operações que precisam
++     disso — `predecessors`, `ancestors`, `lineage`, `bypass`, `bypassAll` e `-` — são restritas
++     por `Dysasymptotic.LinearScan`, reconhecido com `import dysasymptotics.linearScan`;
++     `subgraph`, que reconstrói o mapa inteiro para uma escolha limitada de nós, é restrito por
++     `Dysasymptotic.LinearSize` (`import dysasymptotics.linearSize`). Um `Topology` congelado
++     mantém as duas direções e não precisa de nenhum deles.
+
+-     A `Dag` draws as a GraphViz DOT document through `Dot`, with `dag.dot` on a `Dag[Text]`; the
+-     `dendrology` library draws any `Topological` graph in the terminal, and `Dag#layered`
+-     arranges one in crossing-minimised layers for it.
++     Um `Dag` é desenhado como um documento DOT do GraphViz por meio de `Dot`, com `dag.dot` em
++     um `Dag[Text]`; a biblioteca `dendrology` desenha qualquer grafo `Topological` no
++     terminal, e `Dag#layered` organiza um em camadas com cruzamentos minimizados para ela.
+
+-     The library is one source set, `acyclicity.core`, compiled for every platform and exported
+-     to the `soundness` umbrella, where the `rankings` choice package merges with the umbrella's
+-     own. The only given a user imports by name is `rankings.balancedRanking`; everything else
+-     resolves from the companions.
++     A biblioteca é um único source set, `acyclicity.core`, compilado para todas as plataformas
++     e exportado para o guarda-chuva `soundness`, onde o pacote de escolhas `rankings` se funde
++     com o do próprio guarda-chuva. O único given que um usuário importa pelo nome é
++     `rankings.balancedRanking`; todo o resto é resolvido a partir dos companheiros.
+
+- refer acyclicity.Dag
++ refer acyclicity.Dag
+
+- refer acyclicity.Digraph
++ refer acyclicity.Digraph
+
+- refer acyclicity.Topology
++ refer acyclicity.Topology
+
+- refer acyclicity.Nodal
++ refer acyclicity.Nodal
+
+- refer acyclicity.Hasse
++ refer acyclicity.Hasse
+
+- refer acyclicity.Dot
++ refer acyclicity.Dot
+
+- entry .Dag   a directed acyclic graph as a persistent value, with a topological order that cannot fail
++ entry .Dag   um grafo dirigido acíclico como valor persistente, com uma ordem topológica que não pode falhar
+
+= entry .Dag   a directed acyclic graph as a persistent value, with a topological order that cannot fail
+-   detail
++   detail
+
+-       A `Dag[node]` is a finite directed graph which holds no cycle, as an immutable value: an
+-       insertion-ordered map from each node to the set of nodes it points at — under the
+-       dependency reading, its dependencies. Every edge target is itself a node, so a dangling
+-       edge is unrepresentable. The absence of a cycle is established once, when the value is
+-       made: the factories `Dag(…)` check (raising `Dag.Error` with `Reason.Cyclic`), `acyclic`
+-       converts a `Digraph` with the same check, and `Dag(topology)` consumes a `Topology`, which
+-       is acyclic by invariant. Every edit then either cannot create a cycle (`-`, `remove`,
+-       `bypass`, `subgraph`, `descendants`), checks the one path that could (`add`), or answers a
+-       `Digraph` where a cycle is possible (`+`, `++`, `map`, `flatMap`).
++       Um `Dag[node]` é um grafo dirigido finito que não contém ciclos, como valor imutável: um
++       mapa ordenado por inserção de cada nó para o conjunto de nós para os quais ele aponta —
++       na leitura de dependências, suas dependências. Todo destino de aresta é ele próprio um
++       nó, então uma aresta pendente é irrepresentável. A ausência de ciclos é estabelecida uma
++       vez, quando o valor é criado: as fábricas `Dag(…)` verificam (lançando `Dag.Error` com
++       `Reason.Cyclic`), `acyclic` converte um `Digraph` com a mesma verificação, e
++       `Dag(topology)` consome um `Topology`, que é acíclico por invariante. Toda edição então
++       ou não pode criar um ciclo (`-`, `remove`, `bypass`, `subgraph`, `descendants`), ou
++       verifica o único caminho que poderia (`add`), ou responde um `Digraph` onde um ciclo é
++       possível (`+`, `++`, `map`, `flatMap`).
+
+=       `Digraph` where a cycle is possible (`+`, `++`, `map`, `flatMap`).
+=
+-       ```scala
++       ```scala
+
+=       `Digraph` where a cycle is possible (`+`, `++`, `map`, `flatMap`).
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Digraph` where a cycle is possible (`+`, `++`, `map`, `flatMap`).
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+=       import strategies.throwUnsafely
+=
+-       val diamond = Dag(t"a" -> t"b", t"a" -> t"c", t"b" -> t"d", t"c" -> t"d")
++       val diamond = Dag(t"a" -> t"b", t"a" -> t"c", t"b" -> t"d", t"c" -> t"d")
+
+-       diamond.linearized          // List(d, b, c, a): every node after its dependencies
++       diamond.linearized          // List(d, b, c, a): every node after its dependencies
+
+-       diamond.sources             // Set(d): depending on nothing
++       diamond.sources             // Set(d): depending on nothing
+
+-       diamond.sinks               // Set(a): nothing depends on it
++       diamond.sinks               // Set(a): nothing depends on it
+
+-       diamond.reachable(t"b")     // Set(b, d)
++       diamond.reachable(t"b")     // Set(b, d)
+
+-       diamond.add(t"d", t"a")     // raises Dag.Error: `a` already reaches `d`
++       diamond.add(t"d", t"a")     // raises Dag.Error: `a` already reaches `d`
+
+=       diamond.add(t"d", t"a")     // raises Dag.Error: `a` already reaches `d`
+-       ```
++       ```
+
+-       What acyclicity buys is `linearized`, `reduction` and `traversal` without a failure mode,
+-       and the `Topological` instance which lets the generic extensions have them too. As a
+-       collection, a `Dag` is its nodes in topological order (`traversable`), so `dag.has(n)`,
+-       `dag.size`, `dag.each(…)` and `dag.map(…)` apply; `map` answers a `Digraph`, since two
+-       nodes may be renamed to one and close a cycle.
++       O que a aciclicidade compra são `linearized`, `reduction` e `traversal` sem modo de
++       falha, e a instância `Topological` que permite que as extensões genéricas também os
++       tenham. Como coleção, um `Dag` são seus nós em ordem topológica (`traversable`), então
++       `dag.has(n)`, `dag.size`, `dag.each(…)` e `dag.map(…)` se aplicam; `map` responde um
++       `Digraph`, já que dois nós podem ser renomeados para um só e fechar um ciclo.
+
+-       A `Dag` can be built one edge at a time:
++       Um `Dag` pode ser construído uma aresta de cada vez:
+
+=       A `Dag` can be built one edge at a time:
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       A `Dag` can be built one edge at a time:
+=
+=       ```scala fuel
+-       frame
++       frame
+
+-         label The first edge: both ends become nodes
++         label A primeira aresta: as duas pontas se tornam nós
+
+=         label The first edge: both ends become nodes
+-         code
++         code
+
+-             val build = Dag(t"app" -> t"lib")
++             val build = Dag(t"app" -> t"lib")
+
+-             build.linearized      // List(lib, app)
++             build.linearized      // List(lib, app)
+
+=             build.linearized      // List(lib, app)
+-       frame
++       frame
+
+-         label A second dependency, checked as it is added
++         label Uma segunda dependência, verificada ao ser acrescentada
+
+=         label A second dependency, checked as it is added
+-         code
++         code
+
+=         label A second dependency, checked as it is added
+=         code
+-             val build = Dag(t"app" -> t"lib").add(t"lib", t"core")
++             val build = Dag(t"app" -> t"lib").add(t"lib", t"core")
+
+-             build.linearized      // List(core, lib, app)
++             build.linearized      // List(core, lib, app)
+
+=             build.linearized      // List(core, lib, app)
+-       frame
++       frame
+
+-         label An edge against the order, refused
++         label Uma aresta contra a ordem, recusada
+
+=         label An edge against the order, refused
+-         code
++         code
+
+=         label An edge against the order, refused
+=         code
+-             val build = Dag(t"app" -> t"lib").add(t"lib", t"core")
++             val build = Dag(t"app" -> t"lib").add(t"lib", t"core")
+
+-             safely(build.add(t"core", t"app"))   // Unset: `app` already reaches `core`
++             safely(build.add(t"core", t"app"))   // Unset: `app` already reaches `core`
+
+=             safely(build.add(t"core", t"app"))   // Unset: `app` already reaches `core`
+-       frame
++       frame
+
+-         label An edge which may close a cycle answers a Digraph instead
++         label Uma aresta que pode fechar um ciclo responde um Digraph em vez disso
+
+=         label An edge which may close a cycle answers a Digraph instead
+-         code
++         code
+
+=         label An edge which may close a cycle answers a Digraph instead
+=         code
+-             val build = Dag(t"app" -> t"lib").add(t"lib", t"core")
++             val build = Dag(t"app" -> t"lib").add(t"lib", t"core")
+
+-             (build + (t"core" -> t"app")).cycle   // List(core, app, lib, core)
++             (build + (t"core" -> t"app")).cycle   // List(core, app, lib, core)
+
+=             (build + (t"core" -> t"app")).cycle   // List(core, app, lib, core)
+-       ##
++       ##
+
+=             (build + (t"core" -> t"app")).cycle   // List(core, app, lib, core)
+=       ##
+-       ```
++       ```
+
+-       Each checked `add` costs the reach of the new edge's target, so a graph of many edges is
+-       built with one `Dag(edges*)` call (one O(n + e) check) rather than a fold of `add`s, and a
+-       graph edited many times is better thawed into a `Topology`, edited in place, and frozen
+-       again. Whole-graph queries which depend on reachability — `closure`, `reduction` — go
+-       through the frozen form's bit matrix, so a graph queried that way more than once is best
+-       frozen once with `#freeze` and kept.
++       Cada `add` verificado custa o alcance do destino da nova aresta, então um grafo de muitas
++       arestas é construído com uma única chamada `Dag(edges*)` (uma verificação O(n + e)) em
++       vez de um fold de `add`s, e um grafo editado muitas vezes fica melhor descongelado em um
++       `Topology`, editado no lugar e congelado de novo. Consultas sobre o grafo inteiro que
++       dependem de alcançabilidade — `closure`, `reduction` — passam pela matriz de bits da
++       forma congelada, então um grafo consultado assim mais de uma vez é melhor congelado uma
++       vez com `#freeze` e mantido.
+
+-       Two `Dag`s are equal when their adjacency is, whatever order their nodes were given in;
+-       a `Dag` is not a `case class`, so it has no `unapply` or `copy`.
++       Dois `Dag`s são iguais quando suas adjacências são, qualquer que seja a ordem em que seus
++       nós foram dados; um `Dag` não é uma `case class`, então não tem `unapply` nem `copy`.
+
+-   refer acyclicity.Digraph
++   refer acyclicity.Digraph
+
+-   refer acyclicity.Topology
++   refer acyclicity.Topology
+
+=   refer acyclicity.Topology
+-   refer acyclicity.Nodal
++   refer acyclicity.Nodal
+
+=   refer acyclicity.Nodal
+-   refer acyclicity.Layering
++   refer acyclicity.Layering
+
+-   entry .apply   a `Dag` from edges, from nodes with their successors, from a node set and a function, from a `Map`, or from a `Topology`
+-       Five constructors, four of which check for a cycle and raise `Dag.Error` (`Reason.Cyclic`)
+-       if they find one:
++   entry .apply   um `Dag` a partir de arestas, de nós com seus sucessores, de um conjunto de nós e uma função, de um `Map` ou de um `Topology`
++       Cinco construtores, quatro dos quais verificam se há ciclo e lançam `Dag.Error`
++       (`Reason.Cyclic`) se encontrarem um:
+
+-       - `Dag(a -> b, a -> c, …)` from edges alone: both ends of every edge become nodes, in order
+-         of first appearance.
+-       - `Dag(a -> Set(b, c), b -> Set(), …)` from each node with its dependency set; a successor
+-         given no entry of its own becomes a node with no dependencies.
+-       - `Dag(nodes)(node => dependencies)` from a node set and a function; a successor outside
+-         the set becomes a node. This one takes its `Tactic[Dag.Error]` as an ordinary contextual
+-         parameter rather than a `raises` clause.
+-       - `Dag(adjacency)` from a `Map[node, Set[node]]`, closing the node set over every target.
+-       - `Dag(topology)` from a `Topology[node]^`, which is **consumed**: the topology is acyclic by
+-         invariant, so there is no check and no `Dag.Error`, and the handle cannot be used again.
++       - `Dag(a -> b, a -> c, …)` apenas a partir de arestas: as duas pontas de toda aresta se
++         tornam nós, na ordem da primeira aparição.
++       - `Dag(a -> Set(b, c), b -> Set(), …)` a partir de cada nó com seu conjunto de
++         dependências; um sucessor sem entrada própria se torna um nó sem dependências.
++       - `Dag(nodes)(node => dependencies)` a partir de um conjunto de nós e uma função; um
++         sucessor fora do conjunto se torna um nó. Este recebe seu `Tactic[Dag.Error]` como um
++         parâmetro contextual comum em vez de uma cláusula `raises`.
++       - `Dag(adjacency)` a partir de um `Map[node, Set[node]]`, fechando o conjunto de nós
++         sobre todo destino.
++       - `Dag(topology)` a partir de um `Topology[node]^`, que é **consumido**: a topologia é
++         acíclica por invariante, então não há verificação nem `Dag.Error`, e o handle não pode
++         ser usado de novo.
+
+=         invariant, so there is no check and no `Dag.Error`, and the handle cannot be used again.
+=
+-       ```scala
++       ```scala
+
+=         invariant, so there is no check and no `Dag.Error`, and the handle cannot be used again.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=         invariant, so there is no check and no `Dag.Error`, and the handle cannot be used again.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       Dag(8 -> 4, 8 -> 6, 6 -> 3)
++       Dag(8 -> 4, 8 -> 6, 6 -> 3)
+
+-       Dag(8 -> Set(4, 6), 6 -> Set(3, 2), 4 -> Set(2))
++       Dag(8 -> Set(4, 6), 6 -> Set(3, 2), 4 -> Set(2))
+
+-       Dag(Set(1, 2, 3, 4, 6, 12))(n => Set.from((1 until n).filter(n%_ == 0)))
++       Dag(Set(1, 2, 3, 4, 6, 12))(n => Set.from((1 until n).filter(n%_ == 0)))
+
+-       Dag[Text]()                      // the empty graph
++       Dag[Text]()                      // the empty graph
+
+=       Dag[Text]()                      // the empty graph
+-       ```
++       ```
+
+-       `Dag(1 -> 2, 2 -> 3, 3 -> 1)` raises `Dag.Error`; `Digraph(…)` with the same arguments
+-       makes the cyclic graph, and `cycle` on it is the witness.
+-   entry .dot   a `Dag[Text]` as a GraphViz DOT digraph, each node's text as its identifier
+-       An extension on `Dag[Text]`: one `Dot.Digraph` with an edge statement `"a" -> "b"` for
+-       every edge. A node's text names its DOT node, so it must be a valid DOT identifier —
+-       non-empty, with no double-quote and no newline — and a node which is not raises
+-       `Name.Error`; a `Tactic[Name.Error]` must be in scope.
++       `Dag(1 -> 2, 2 -> 3, 3 -> 1)` lança `Dag.Error`; `Digraph(…)` com os mesmos argumentos
++       cria o grafo cíclico, e `cycle` sobre ele é a testemunha.
++   entry .dot   um `Dag[Text]` como um digraph DOT do GraphViz, com o texto de cada nó como seu identificador
++       Uma extensão sobre `Dag[Text]`: um `Dot.Digraph` com uma declaração de aresta
++       `"a" -> "b"` para cada aresta. O texto de um nó dá nome ao seu nó DOT, então precisa ser
++       um identificador DOT válido — não vazio, sem aspas duplas e sem quebra de linha — e um
++       nó que não seja lança `Name.Error`; um `Tactic[Name.Error]` precisa estar no escopo.
+
+=       `Name.Error`; a `Tactic[Name.Error]` must be in scope.
+=
+-       ```scala
++       ```scala
+
+=       `Name.Error`; a `Tactic[Name.Error]` must be in scope.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `Name.Error`; a `Tactic[Name.Error]` must be in scope.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       Dag(t"a" -> t"b").dot.serialize   // "\ndigraph {\n  \"a\" -> \"b\"\n}"
++       Dag(t"a" -> t"b").dot.serialize   // "\ndigraph {\n  \"a\" -> \"b\"\n}"
+
+=       Dag(t"a" -> t"b").dot.serialize   // "\ndigraph {\n  \"a\" -> \"b\"\n}"
+-       ```
++       ```
+
+-       A graph of other nodes renders through `map(_.show).acyclic.dot` (the `map` answers a
+-       `Digraph`, since two nodes could show as one).
+-   entry .Error   raised when a graph operation finds a cycle or is asked about a node the graph lacks
++       Um grafo de outros nós é renderizado por `map(_.show).acyclic.dot` (o `map` responde um
++       `Digraph`, já que dois nós poderiam aparecer como um só).
++   entry .Error   lançado quando uma operação de grafo encontra um ciclo ou é consultada sobre um nó que o grafo não tem
+
+=   entry .Error   raised when a graph operation finds a cycle or is asked about a node the graph lacks
+-     detail
++     detail
+
+-         Error `↯/s.72.1`, _the DAG operation failed because `reason`_, with the reason numbered within
+-         it. `Reason.Cyclic` (191.2, _the graph contains a cycle_) is raised by the checking
+-         factories `Dag(…)`, by `acyclic` on any graph, by `Dag#add` for an edge whose target
+-         already reaches its source, and by `Topology#add` likewise; the graph being edited is left
+-         unchanged. `Reason.NodeMissing(node)` (191.1, _the node `node` is not present in the
+-         graph_) is raised by `reachable`, `descendants`, `ancestors` and `lineage` for a node the
+-         graph does not have — on a `Dag`, a `Digraph` and through the generic extension alike —
+-         with the node rendered by its `toString`.
++         Erro `↯/s.72.1`, _the DAG operation failed because `reason`_, com o motivo numerado
++         dentro dele. `Reason.Cyclic` (191.2, _the graph contains a cycle_) é lançado pelas
++         fábricas com verificação `Dag(…)`, por `acyclic` em qualquer grafo, por `Dag#add` para
++         uma aresta cujo destino já alcança sua origem e, da mesma forma, por `Topology#add`; o
++         grafo em edição fica inalterado. `Reason.NodeMissing(node)` (191.1, _the node `node` is
++         not present in the graph_) é lançado por `reachable`, `descendants`, `ancestors` e
++         `lineage` para um nó que o grafo não tem — em um `Dag`, em um `Digraph` e pela extensão
++         genérica igualmente — com o nó renderizado pelo seu `toString`.
+
+-         ```scala
++         ```scala
+
+-         import soundness.*
++         import soundness.*
+
+-         val cyclic = safely(Dag(1 -> 2, 2 -> 1))        // Unset
++         val cyclic = safely(Dag(1 -> 2, 2 -> 1))        // Unset
+
+-         val missing = capture[Dag.Error](unsafely(Dag(1 -> 2)).reachable(9)).reason
++         val missing = capture[Dag.Error](unsafely(Dag(1 -> 2)).reachable(9)).reason
+
+-         // Dag.Error.Reason.NodeMissing(t"9")
++         // Dag.Error.Reason.NodeMissing(t"9")
+
+-         ```
++         ```
+
+-     entry .Reason   why the operation failed: `Cyclic`, or `NodeMissing(node)`
+-         An enum with `number` (1 for `NodeMissing`, 2 for `Cyclic`), each case a
+-         `Clarification` which the error's message quotes.
+-     entry .communicable   renders a reason as its message
+-     entry #reason   the `Dag.Error.Reason`: `Cyclic` or `NodeMissing(node)`
+-   entry .nodal   the `Nodal` instance: a `Dag`'s nodes and each node's successors
+-       In implicit scope through the companion. `nodes` are the nodes in the order they were
+-       given, `successors(n)` the nodes `n` points at (empty for a node the graph lacks), and
+-       `has` is a map lookup, never a scan.
+-   entry .bidirectional   the `Bidirectional` instance, gated on `Dysasymptotic.LinearScan`
+-       A `Dag` stores only the forward direction, so its predecessors come from a transpose
+-       computed once per value by scanning every edge. The instance therefore takes a
+-       `Dysasymptotic.LinearScan`, acknowledged with `import dysasymptotics.linearScan`, which is
+-       what the generic `predecessors` extension needs on a `Dag`. A frozen `Topology` answers
+-       the same question without the gate.
+-   entry .topological   the marker which certifies a `Dag` holds no cycle
+-       The `Topological` instance, in implicit scope. It is what admits a `Dag` to `linearized`,
+-       `reduction`, `traversal` and `layered` through the generic extensions, and to the
+-       `dendrology` diagrams.
+-   entry .traversable   a `Dag` as a collection of its nodes, in topological order
+-       The `Traversable` instance, so `dag.each`, `dag.fold`, `dag.to[List]` and the rest of the
+-       collection vocabulary see the nodes with every node after its dependencies.
+-   entry .inclusive   `dag.has(node)`: whether the node is in the graph
+-   entry .countable   `dag.size` and `dag.nil`: how many nodes, and whether there are none
+-   entry .mappable   `dag.map(lambda)`: renames the nodes, answering a `Digraph`
+-       The `Mappable` instance, with `Result[node2] = Digraph[node2]`: two nodes may map to one,
+-       which unites their edges and may close a cycle, so the result is not a `Dag` until
+-       `acyclic` checks it.
++     entry .Reason   por que a operação falhou: `Cyclic` ou `NodeMissing(node)`
++         Um enum com `number` (1 para `NodeMissing`, 2 para `Cyclic`), cada caso uma
++         `Clarification` que a mensagem do erro cita.
++     entry .communicable   renderiza um motivo como sua mensagem
++     entry #reason   o `Dag.Error.Reason`: `Cyclic` ou `NodeMissing(node)`
++   entry .nodal   a instância `Nodal`: os nós de um `Dag` e os sucessores de cada nó
++       No escopo implícito pelo companheiro. `nodes` são os nós na ordem em que foram dados,
++       `successors(n)` os nós para os quais `n` aponta (vazio para um nó que o grafo não tem), e
++       `has` é uma consulta ao mapa, nunca uma varredura.
++   entry .bidirectional   a instância `Bidirectional`, restrita por `Dysasymptotic.LinearScan`
++       Um `Dag` armazena apenas a direção para a frente, então seus predecessores vêm de uma
++       transposta calculada uma vez por valor, varrendo todas as arestas. Por isso a instância
++       recebe um `Dysasymptotic.LinearScan`, reconhecido com `import dysasymptotics.linearScan`,
++       que é o que a extensão genérica `predecessors` precisa em um `Dag`. Um `Topology`
++       congelado responde à mesma pergunta sem a restrição.
++   entry .topological   o marcador que certifica que um `Dag` não contém ciclos
++       A instância `Topological`, no escopo implícito. É ela que admite um `Dag` em
++       `linearized`, `reduction`, `traversal` e `layered` pelas extensões genéricas, e nos
++       diagramas de `dendrology`.
++   entry .traversable   um `Dag` como coleção de seus nós, em ordem topológica
++       A instância `Traversable`, então `dag.each`, `dag.fold`, `dag.to[List]` e o resto do
++       vocabulário de coleções veem os nós com todo nó depois de suas dependências.
++   entry .inclusive   `dag.has(node)`: se o nó está no grafo
++   entry .countable   `dag.size` e `dag.nil`: quantos nós há, e se não há nenhum
++   entry .mappable   `dag.map(lambda)`: renomeia os nós, respondendo um `Digraph`
++       A instância `Mappable`, com `Result[node2] = Digraph[node2]`: dois nós podem ser
++       mapeados para um só, o que une suas arestas e pode fechar um ciclo, então o resultado não
++       é um `Dag` até que `acyclic` o verifique.
+
+=       `acyclic` checks it.
+=
+-       ```scala
++       ```scala
+
+=       `acyclic` checks it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `acyclic` checks it.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       Dag(1 -> 3, 2 -> 4).map(n => if n < 3 then t"lo" else t"hi").edges   // Set((lo, hi))
++       Dag(1 -> 3, 2 -> 4).map(n => if n < 3 then t"lo" else t"hi").edges   // Set((lo, hi))
+
+-       Dag(1 -> 2).map(_.show).acyclic                                       // a Dag[Text]
++       Dag(1 -> 2).map(_.show).acyclic                                       // a Dag[Text]
+
+=       Dag(1 -> 2).map(_.show).acyclic                                       // a Dag[Text]
+-       ```
++       ```
+
+-   entry #nodes   every node, as a set
+-   entry #successors   the nodes a node points at: its dependencies, or the empty set for an absent node
+-   entry #edges   every edge as a `(from, to)` pair: `from` depends on `to`
+-   entry #sources   the nodes with no successors: those depending on nothing
+-       Where a build or an installation starts. Whole-graph in scope, so no acknowledgement is
+-       needed.
+-   entry #sinks   the nodes with no predecessors: those nothing depends on
+-       One pass over the edges, with no `Dysasymptotic.LinearScan` needed: the question is about
+-       the whole graph, not one node.
+-   entry #linearized   the nodes in topological order: every node after everything it depends on
+-       Computed once per value and kept. Between nodes with no path between them, the order is
+-       the order the nodes were given, so it is stable. It cannot fail: a `Dag` has no cycle.
++   entry #nodes   todos os nós, como um conjunto
++   entry #successors   os nós para os quais um nó aponta: suas dependências, ou o conjunto vazio para um nó ausente
++   entry #edges   todas as arestas como pares `(from, to)`: `from` depende de `to`
++   entry #sources   os nós sem sucessores: os que não dependem de nada
++       Onde um build ou uma instalação começa. O escopo é o grafo inteiro, então nenhum
++       reconhecimento é necessário.
++   entry #sinks   os nós sem predecessores: aqueles dos quais nada depende
++       Uma passagem pelas arestas, sem precisar de `Dysasymptotic.LinearScan`: a pergunta é
++       sobre o grafo inteiro, não sobre um nó.
++   entry #linearized   os nós em ordem topológica: todo nó depois de tudo de que depende
++       Calculada uma vez por valor e mantida. Entre nós sem caminho entre eles, a ordem é a
++       ordem em que os nós foram dados, então é estável. Não pode falhar: um `Dag` não tem
++       ciclos.
+
+=       the order the nodes were given, so it is stable. It cannot fail: a `Dag` has no cycle.
+=
+-       ```scala
++       ```scala
+
+=       the order the nodes were given, so it is stable. It cannot fail: a `Dag` has no cycle.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       the order the nodes were given, so it is stable. It cannot fail: a `Dag` has no cycle.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       Dag(8 -> Set(4, 6), 6 -> Set(3, 2), 4 -> Set(2)).linearized   // List(2, 4, 3, 6, 8)
++       Dag(8 -> Set(4, 6), 6 -> Set(3, 2), 4 -> Set(2)).linearized   // List(2, 4, 3, 6, 8)
+
+=       Dag(8 -> Set(4, 6), 6 -> Set(3, 2), 4 -> Set(2)).linearized   // List(2, 4, 3, 6, 8)
+-       ```
++       ```
+
+-   entry #invert   the same graph with every edge reversed, still a `Dag`
+-       Reversing every edge preserves acyclicity, so the result is a `Dag` whose sources are this
+-       graph's sinks; `invert.invert` is equal to the original.
+-   entry #digraph   the same graph as a `Digraph`, for the operations which may create a cycle
+-   entry #freeze   the frozen `Topology[node]^{}` of this graph, laid out for querying
+-       Builds a `Topology` with the nodes already in topological order and freezes it. The frozen
+-       form keeps both directions of adjacency, so `predecessors` needs no acknowledgement, and
+-       answers `reaches` in O(1) once its reachability matrix is built; `closure` and `reduction`
+-       on a `Dag` go through it. A graph queried this way repeatedly should be frozen once.
++   entry #invert   o mesmo grafo com todas as arestas invertidas, ainda um `Dag`
++       Inverter todas as arestas preserva a aciclicidade, então o resultado é um `Dag` cujas
++       origens são os sinks deste grafo; `invert.invert` é igual ao original.
++   entry #digraph   o mesmo grafo como um `Digraph`, para as operações que podem criar um ciclo
++   entry #freeze   o `Topology[node]^{}` congelado deste grafo, organizado para consultas
++       Constrói um `Topology` com os nós já em ordem topológica e o congela. A forma congelada
++       mantém as duas direções da adjacência, então `predecessors` não precisa de
++       reconhecimento, e responde `reaches` em O(1) depois que sua matriz de alcançabilidade é
++       construída; `closure` e `reduction` em um `Dag` passam por ela. Um grafo consultado
++       assim repetidamente deve ser congelado uma vez.
+
+=       on a `Dag` go through it. A graph queried this way repeatedly should be frozen once.
+=
+-       ```scala
++       ```scala
+
+=       on a `Dag` go through it. A graph queried this way repeatedly should be frozen once.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       on a `Dag` go through it. A graph queried this way repeatedly should be frozen once.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val frozen: Topology[Int]^{} = Dag(8 -> 4, 4 -> 2).freeze
++       val frozen: Topology[Int]^{} = Dag(8 -> 4, 4 -> 2).freeze
+
+-       frozen.reaches(8, 2)        // true
++       frozen.reaches(8, 2)        // true
+
+-       frozen.predecessors(2)      // Set(4)
++       frozen.predecessors(2)      // Set(4)
+
+-       frozen.snapshot             // back to the Dag
++       frozen.snapshot             // back to the Dag
+
+=       frozen.snapshot             // back to the Dag
+-       ```
++       ```
+
+-   entry #thaw   an editable `Topology[node]^` holding this graph's nodes and edges
+-       The same as `Topology(dag)`: a fresh, exclusively-owned topology, edited in place with
+-       `add`, `remove` and `bypass`, and given back as a `Dag` with `Dag(topology)` or
+-       `Topology.freeze`. The right form for many edits, which cost about a microsecond each
+-       there against the reach-sized check of `Dag#add`.
+-   entry #including   the graph with a node added, with no edges, if it was absent
+-   entry #add   the graph with the edge `from -> to` added; raises `Dag.Error` if it would close a cycle
+-       `from` depends on `to`. The one way an edge can close a cycle is for `to` already to reach
+-       `from` (or `from == to`), which is checked by a search of `to`'s reach — so the cost is the
+-       size of that reach, not of the graph. A new target becomes a node. The result is a `Dag`;
+-       `+` is the unchecked form, answering a `Digraph`.
++   entry #thaw   um `Topology[node]^` editável contendo os nós e as arestas deste grafo
++       O mesmo que `Topology(dag)`: uma topologia nova, de posse exclusiva, editada no lugar com
++       `add`, `remove` e `bypass`, e devolvida como `Dag` com `Dag(topology)` ou
++       `Topology.freeze`. A forma certa para muitas edições, que ali custam cerca de um
++       microssegundo cada, contra a verificação do tamanho do alcance de `Dag#add`.
++   entry #including   o grafo com um nó acrescentado, sem arestas, se ele estava ausente
++   entry #add   o grafo com a aresta `from -> to` acrescentada; lança `Dag.Error` se ela fecharia um ciclo
++       `from` depende de `to`. A única forma de uma aresta fechar um ciclo é `to` já alcançar
++       `from` (ou `from == to`), o que é verificado por uma busca no alcance de `to` — então o
++       custo é o tamanho desse alcance, não do grafo. Um novo destino se torna um nó. O
++       resultado é um `Dag`; `+` é a forma sem verificação, que responde um `Digraph`.
+
+=       `+` is the unchecked form, answering a `Digraph`.
+=
+-       ```scala
++       ```scala
+
+=       `+` is the unchecked form, answering a `Digraph`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `+` is the unchecked form, answering a `Digraph`.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val dag = Dag(t"a" -> t"b")
++       val dag = Dag(t"a" -> t"b")
+
+-       dag.add(t"b", t"c").linearized       // List(c, b, a)
++       dag.add(t"b", t"c").linearized       // List(c, b, a)
+
+-       safely(dag.add(t"b", t"a"))          // Unset: refused
++       safely(dag.add(t"b", t"a"))          // Unset: refused
+
+=       safely(dag.add(t"b", t"a"))          // Unset: refused
+-       ```
++       ```
+
+-   entry #+   `dag + (from -> to)`: the edge added without a check, as a `Digraph`
+-       The result may hold a cycle, so it is a `Digraph`; `acyclic` checks it back into a `Dag`,
+-       and `cycle` shows the witness if there is one. `add` is the checked form.
+-   entry #++   `dag ++ other`: the union of two graphs' nodes and edges, as a `Digraph`
+-       Two acyclic graphs can unite into a cyclic one, so the result is a `Digraph`.
+-   entry #remove   the graph with the edge `from -> to` removed, both nodes kept
+-       Unchanged if the edge was not there. Removing an edge cannot create a cycle, so the
+-       result is a `Dag`.
+-   entry #-   `dag - node`: the node and every edge at either end of it dropped
+-       Needs `Dysasymptotic.LinearScan` (`import dysasymptotics.linearScan`), since the edges
+-       pointing at the node are found through the transpose. The dependants of the node lose
+-       that dependency and gain no other; `bypass` is the form which reroutes them.
+-   entry #bypass   the node dropped, with each of its dependants rerouted to each of its dependencies
+-       Every path through the node survives: each predecessor gains every successor as a direct
+-       dependency. This cannot create a cycle, since each predecessor already reached each
+-       successor through the node. Needs `Dysasymptotic.LinearScan`.
++   entry #+   `dag + (from -> to)`: a aresta acrescentada sem verificação, como um `Digraph`
++       O resultado pode conter um ciclo, então é um `Digraph`; `acyclic` o verifica de volta
++       para um `Dag`, e `cycle` mostra a testemunha, se houver uma. `add` é a forma verificada.
++   entry #++   `dag ++ other`: a união dos nós e das arestas de dois grafos, como um `Digraph`
++       Dois grafos acíclicos podem se unir em um cíclico, então o resultado é um `Digraph`.
++   entry #remove   o grafo com a aresta `from -> to` removida, mantendo os dois nós
++       Inalterado se a aresta não estava lá. Remover uma aresta não pode criar um ciclo, então o
++       resultado é um `Dag`.
++   entry #-   `dag - node`: o nó e todas as arestas em qualquer de suas pontas descartados
++       Precisa de `Dysasymptotic.LinearScan` (`import dysasymptotics.linearScan`), já que as
++       arestas que apontam para o nó são encontradas pela transposta. Os dependentes do nó
++       perdem essa dependência e não ganham outra; `bypass` é a forma que os redireciona.
++   entry #bypass   o nó descartado, com cada um de seus dependentes redirecionado para cada uma de suas dependências
++       Todo caminho que passa pelo nó sobrevive: cada predecessor ganha cada sucessor como
++       dependência direta. Isso não pode criar um ciclo, já que cada predecessor já alcançava
++       cada sucessor através do nó. Precisa de `Dysasymptotic.LinearScan`.
+
+=       successor through the node. Needs `Dysasymptotic.LinearScan`.
+=
+-       ```scala
++       ```scala
+
+=       successor through the node. Needs `Dysasymptotic.LinearScan`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       successor through the node. Needs `Dysasymptotic.LinearScan`.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       import dysasymptotics.linearScan
++       import dysasymptotics.linearScan
+
+=       import dysasymptotics.linearScan
+=
+-       val diamond = Dag(t"a" -> t"b", t"a" -> t"c", t"b" -> t"d", t"c" -> t"d")
++       val diamond = Dag(t"a" -> t"b", t"a" -> t"c", t"b" -> t"d", t"c" -> t"d")
+
+-       diamond.bypass(t"b").successors(t"a")   // Set(c, d)
++       diamond.bypass(t"b").successors(t"a")   // Set(c, d)
+
+-       (diamond - t"b").successors(t"a")       // Set(c)
++       (diamond - t"b").successors(t"a")       // Set(c)
+
+=       (diamond - t"b").successors(t"a")       // Set(c)
+-       ```
++       ```
+
+-   entry #bypassAll   several nodes bypassed one after another, so a path through a run of them survives
+-       Takes a `Set` of nodes rather than a predicate — a lambda argument could not be told from
+-       a node — and bypasses them in turn, so that `Dag(1 -> 2, 2 -> 3, 3 -> 4).bypassAll(Set(2,
+-       3))` keeps the edge `1 -> 4`. Needs `Dysasymptotic.LinearScan`.
+-   entry #subgraph   the subgraph induced by a set of nodes: those nodes and the edges among them
+-       Needs `Dysasymptotic.LinearSize` (`import dysasymptotics.linearSize`): a bounded choice of
+-       nodes rebuilds the whole map. An edge to a node outside the set is dropped, not rerouted.
+-   entry #flatMap   substitutes a graph for every node, as a `Digraph`
+-       For each edge `a -> b`, every node of `lambda(a)` points at every node of `lambda(b)`, and
+-       the nodes of `lambda(a)` keep their own edges within it. The result may hold a cycle, so
+-       it is a `Digraph`.
+-   entry #reachable   everything a node reaches, itself included; raises `Dag.Error` for an absent node
+-       The transitive dependencies of a node, as a set, by an iterative search with a visited
+-       set, so a chain of a hundred thousand nodes neither overflows the stack nor takes more
+-       than its reach. `Dag.Error(NodeMissing)` is raised only for a node the graph lacks.
+-   entry #descendants   the subgraph a node reaches, itself included; raises `Dag.Error` for an absent node
+-       `subgraph(reachable(node))`, with no acknowledgement needed: the induced subgraph of
+-       everything beneath the node.
+-   entry #ancestors   the subgraph that reaches a node, itself included; raises `Dag.Error` for an absent node
+-       Everything which depends on the node, transitively, with the edges among them. Needs
+-       `Dysasymptotic.LinearScan`, since it walks the transpose.
+-   entry #lineage   the subgraph of everything a node reaches and everything that reaches it
+-       `ancestors` and `descendants` together, induced. Needs `Dysasymptotic.LinearScan` and
+-       raises `Dag.Error` for an absent node.
+-   entry #closure   every implied edge made explicit: an edge wherever a path exists
+-       The transitive closure, through the frozen form's reachability matrix, in O(e·n/64)
+-       against the sum of all reaches that set unions would cost. `closure.reduction` is the
+-       `reduction`, and `reduction.closure` the `closure`.
+-   entry #reduction   the minimal graph with the same reachability: every edge a longer path implies, removed
+-       The transitive reduction, the form a dependency graph is usually drawn in. Every edge
+-       implied by a path of any length is removed, not only those a path of two edges implies,
+-       and only edges of the graph are kept. Computed on the frozen form by Aho, Garey and
+-       Ullman's method over its bit matrix.
++   entry #bypassAll   vários nós contornados um após o outro, de modo que um caminho por uma sequência deles sobrevive
++       Recebe um `Set` de nós em vez de um predicado — um argumento lambda não poderia ser
++       distinguido de um nó — e os contorna um de cada vez, de modo que
++       `Dag(1 -> 2, 2 -> 3, 3 -> 4).bypassAll(Set(2, 3))` mantém a aresta `1 -> 4`. Precisa de
++       `Dysasymptotic.LinearScan`.
++   entry #subgraph   o subgrafo induzido por um conjunto de nós: esses nós e as arestas entre eles
++       Precisa de `Dysasymptotic.LinearSize` (`import dysasymptotics.linearSize`): uma escolha
++       limitada de nós reconstrói o mapa inteiro. Uma aresta para um nó fora do conjunto é
++       descartada, não redirecionada.
++   entry #flatMap   substitui cada nó por um grafo, como um `Digraph`
++       Para cada aresta `a -> b`, todo nó de `lambda(a)` aponta para todo nó de `lambda(b)`, e
++       os nós de `lambda(a)` mantêm suas próprias arestas dentro dele. O resultado pode conter
++       um ciclo, então é um `Digraph`.
++   entry #reachable   tudo o que um nó alcança, incluindo ele mesmo; lança `Dag.Error` para um nó ausente
++       As dependências transitivas de um nó, como conjunto, por uma busca iterativa com um
++       conjunto de visitados, então uma cadeia de cem mil nós nem estoura a pilha nem leva mais
++       que o seu alcance. `Dag.Error(NodeMissing)` só é lançado para um nó que o grafo não tem.
++   entry #descendants   o subgrafo que um nó alcança, incluindo ele mesmo; lança `Dag.Error` para um nó ausente
++       `subgraph(reachable(node))`, sem precisar de reconhecimento: o subgrafo induzido de tudo
++       o que está abaixo do nó.
++   entry #ancestors   o subgrafo que alcança um nó, incluindo ele mesmo; lança `Dag.Error` para um nó ausente
++       Tudo o que depende do nó, transitivamente, com as arestas entre eles. Precisa de
++       `Dysasymptotic.LinearScan`, já que percorre a transposta.
++   entry #lineage   o subgrafo de tudo o que um nó alcança e de tudo o que o alcança
++       `ancestors` e `descendants` juntos, induzido. Precisa de `Dysasymptotic.LinearScan` e
++       lança `Dag.Error` para um nó ausente.
++   entry #closure   toda aresta implícita tornada explícita: uma aresta onde quer que exista um caminho
++       O fecho transitivo, pela matriz de alcançabilidade da forma congelada, em O(e·n/64),
++       contra a soma de todos os alcances que uniões de conjuntos custariam.
++       `closure.reduction` é a `reduction`, e `reduction.closure` o `closure`.
++   entry #reduction   o grafo mínimo com a mesma alcançabilidade: toda aresta implicada por um caminho mais longo, removida
++       A redução transitiva, a forma em que um grafo de dependências costuma ser desenhado. Toda
++       aresta implicada por um caminho de qualquer comprimento é removida, não apenas as
++       implicadas por um caminho de duas arestas, e apenas arestas do grafo são mantidas.
++       Calculada na forma congelada pelo método de Aho, Garey e Ullman sobre sua matriz de bits.
+
+=       Ullman's method over its bit matrix.
+=
+-       ```scala
++       ```scala
+
+=       Ullman's method over its bit matrix.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       Ullman's method over its bit matrix.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       Dag(1 -> 2, 2 -> 3, 3 -> 4, 1 -> 4).reduction.edges   // Set((1, 2), (2, 3), (3, 4))
++       Dag(1 -> 2, 2 -> 3, 3 -> 4, 1 -> 4).reduction.edges   // Set((1, 2), (2, 3), (3, 4))
+
+=       Dag(1 -> 2, 2 -> 3, 3 -> 4, 1 -> 4).reduction.edges   // Set((1, 2), (2, 3), (3, 4))
+-       ```
++       ```
+
+-   entry #layered   the graph arranged in layers for drawing, as a `Layering`
+-       Each node is assigned to a layer, dependencies above dependents, and each layer ordered to
+-       reduce the crossings between the links joining it to its neighbours — Sugiyama's layered
+-       approach, as GraphViz's `dot` draws it. The `Ranking` in scope decides the layer: the
+-       companion default, `Ranking.LongestPath`, places every node one layer below its deepest
+-       dependency; `import rankings.balancedRanking` pulls each node with dependants down to the
+-       layer above its shallowest dependant. `dendrology`'s `LayeredDagDiagram` renders the
+-       result.
+-   entry #traversal   a value for every node, computed from the values of its dependencies
+-       `dag.traversal[result]((dependencyValues, node) => …)` visits the nodes in topological
+-       order, so each lambda call sees the already-computed values of the node's successors as a
+-       `Set`, and answers a `Map` from every node to its value. This is the shape of most work
+-       over a dependency graph — a build's costs, a propagated constraint, an accumulated
+-       transitive set — without hand-written recursion or visited-set bookkeeping.
++   entry #layered   o grafo organizado em camadas para desenho, como um `Layering`
++       Cada nó é atribuído a uma camada, as dependências acima dos dependentes, e cada camada é
++       ordenada para reduzir os cruzamentos entre as ligações que a unem às vizinhas — a
++       abordagem em camadas de Sugiyama, como o `dot` do GraphViz desenha. O `Ranking` no escopo
++       decide a camada: o padrão do companheiro, `Ranking.LongestPath`, coloca cada nó uma
++       camada abaixo de sua dependência mais profunda; `import rankings.balancedRanking` puxa
++       cada nó que tem dependentes para baixo, até a camada acima de seu dependente mais raso. O
++       `LayeredDagDiagram` de `dendrology` renderiza o resultado.
++   entry #traversal   um valor para cada nó, calculado a partir dos valores de suas dependências
++       `dag.traversal[result]((dependencyValues, node) => …)` visita os nós em ordem
++       topológica, então cada chamada da lambda vê os valores já calculados dos sucessores do
++       nó como um `Set`, e responde um `Map` de cada nó para seu valor. Essa é a forma da maior
++       parte do trabalho sobre um grafo de dependências — os custos de um build, uma restrição
++       propagada, um conjunto transitivo acumulado — sem recursão escrita à mão nem controle
++       manual de um conjunto de visitados.
+
+=       transitive set — without hand-written recursion or visited-set bookkeeping.
+=
+-       ```scala
++       ```scala
+
+=       transitive set — without hand-written recursion or visited-set bookkeeping.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       transitive set — without hand-written recursion or visited-set bookkeeping.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val dag = Dag(8 -> Set(4, 6), 6 -> Set(3, 2), 4 -> Set(2))
++       val dag = Dag(8 -> Set(4, 6), 6 -> Set(3, 2), 4 -> Set(2))
+
+-       dag.traversal[Int]((below, node) => below.total + 1)   // one more than the sum beneath
++       dag.traversal[Int]((below, node) => below.total + 1)   // one more than the sum beneath
+
+=       dag.traversal[Int]((below, node) => below.total + 1)   // one more than the sum beneath
+-       ```
++       ```
+
+- entry .Digraph   a directed graph which may contain a cycle, as a persistent value
++ entry .Digraph   um grafo dirigido que pode conter um ciclo, como valor persistente
+
+= entry .Digraph   a directed graph which may contain a cycle, as a persistent value
+-   detail
++   detail
+
+-       A `Digraph[node]` is a finite directed graph, as an insertion-ordered map from each node
+-       to the set of nodes it points at — its dependencies, under the dependency reading. Every
+-       edge target is a node, so the constructors close the node set and a dangling edge is
+-       unrepresentable. Nothing about a `Digraph` presumes acyclicity: it is what the unchecked
+-       edits of a `Dag` (`+`, `++`, `map`, `flatMap`) answer, what `explore` materialises from a
+-       successor function, and what a graph is before `acyclic` has checked it.
++       Um `Digraph[node]` é um grafo dirigido finito, como um mapa ordenado por inserção de cada
++       nó para o conjunto de nós para os quais ele aponta — suas dependências, na leitura de
++       dependências. Todo destino de aresta é um nó, então os construtores fecham o conjunto de
++       nós e uma aresta pendente é irrepresentável. Nada em um `Digraph` pressupõe
++       aciclicidade: é o que as edições sem verificação de um `Dag` (`+`, `++`, `map`,
++       `flatMap`) respondem, o que `explore` materializa a partir de uma função de sucessores, e
++       o que um grafo é antes que `acyclic` o tenha verificado.
+
+=       successor function, and what a graph is before `acyclic` has checked it.
+=
+-       ```scala
++       ```scala
+
+=       successor function, and what a graph is before `acyclic` has checked it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       successor function, and what a graph is before `acyclic` has checked it.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val graph = Digraph(1 -> 2, 2 -> 3, 3 -> 1)
++       val graph = Digraph(1 -> 2, 2 -> 3, 3 -> 1)
+
+-       graph.cycle              // List(1, 2, 3, 1): a closed walk along edges
++       graph.cycle              // List(1, 2, 3, 1): a closed walk along edges
+
+-       graph.reachable(1)       // Set(1, 2, 3): total on a cyclic graph
++       graph.reachable(1)       // Set(1, 2, 3): total on a cyclic graph
+
+-       Digraph(1 -> 2).acyclic  // a Dag[Int]
++       Digraph(1 -> 2).acyclic  // a Dag[Int]
+
+=       Digraph(1 -> 2).acyclic  // a Dag[Int]
+-       ```
++       ```
+
+-       Because a cycle is possible, a `Digraph` has no `linearized`, `reduction`, `traversal` or
+-       `layered`: `acyclic` checks the graph once, in O(n + e), and answers the `Dag` which has
+-       them, raising `Dag.Error` (`Reason.Cyclic`) otherwise. Everything else a `Dag` offers — the
+-       node and edge queries, the editing methods, reachability and slicing, `closure` and
+-       `invert` — a `Digraph` offers too, with `reachable`, `closure` and the slices total on a
+-       cyclic graph (a visited set, not recursion). As a collection it is its nodes in the order
+-       they were given.
++       Como um ciclo é possível, um `Digraph` não tem `linearized`, `reduction`, `traversal` nem
++       `layered`: `acyclic` verifica o grafo uma vez, em O(n + e), e responde o `Dag` que os
++       tem, lançando `Dag.Error` (`Reason.Cyclic`) caso contrário. Todo o resto que um `Dag`
++       oferece — as consultas de nós e arestas, os métodos de edição, a alcançabilidade e o
++       recorte, `closure` e `invert` — um `Digraph` também oferece, com `reachable`, `closure` e
++       os recortes totais em um grafo cíclico (um conjunto de visitados, não recursão). Como
++       coleção, ele são seus nós na ordem em que foram dados.
+
+-       Only the forward direction is stored, so `-`, `bypass`, `bypassAll`, `ancestors`,
+-       `lineage` and the `Bidirectional` instance take a `Dysasymptotic.LinearScan`
+-       (`import dysasymptotics.linearScan`), and `subgraph` a `Dysasymptotic.LinearSize`. Two
+-       `Digraph`s are equal when their adjacency is.
++       Apenas a direção para a frente é armazenada, então `-`, `bypass`, `bypassAll`,
++       `ancestors`, `lineage` e a instância `Bidirectional` recebem um
++       `Dysasymptotic.LinearScan` (`import dysasymptotics.linearScan`), e `subgraph` um
++       `Dysasymptotic.LinearSize`. Dois `Digraph`s são iguais quando suas adjacências são.
+
+=       `Digraph`s are equal when their adjacency is.
+-   refer acyclicity.Dag
++   refer acyclicity.Dag
+
+-   refer acyclicity.explore
++   refer acyclicity.explore
+
+-   entry .apply   a `Digraph` from edges, from nodes with their successors, from a node set and a function, or from a `Map`
+-       The same four shapes as `Dag.apply`, with no cycle check and no error: `Digraph(a -> b,
+-       …)` from edges (both ends become nodes, in order of first appearance), `Digraph(a ->
+-       Set(b, c), …)` from each node with its successors (a successor with no entry becomes a
+-       node), `Digraph(nodes)(node => successors)` from a node set and a function, and
+-       `Digraph(adjacency)` from a `Map[node, Set[node]]`, closed over every target.
+-   entry .nodal   the `Nodal` instance: a `Digraph`'s nodes and each node's successors
+-       In implicit scope through the companion; `has` is a map lookup.
+-   entry .bidirectional   the `Bidirectional` instance, gated on `Dysasymptotic.LinearScan`
+-       Predecessors come from a transpose computed once per value by scanning every edge, so the
+-       instance needs `import dysasymptotics.linearScan` to resolve.
+-   entry .traversable   a `Digraph` as a collection of its nodes, in the order they were given
+-   entry .inclusive   `graph.has(node)`: whether the node is in the graph
+-   entry .countable   `graph.size` and `graph.nil`
+-   entry .mappable   `graph.map(lambda)`: renames the nodes, uniting the edges of any two which merge
+-   entry #nodes   every node, as a set
+-   entry #successors   the nodes a node points at, or the empty set for an absent node
+-   entry #edges   every edge as a `(from, to)` pair
+-   entry #sources   the nodes with no successors: those depending on nothing
+-   entry #sinks   the nodes with no predecessors: those nothing depends on
+-       One pass over the edges; no acknowledgement is needed, as the question is whole-graph.
+-   entry #invert   the same graph with every edge reversed
+-   entry #digraph   this graph itself
+-       So that code written against the `Dag`/`Digraph` surface can ask either for its `Digraph`.
+-   entry #including   the graph with a node added, with no edges, if it was absent
+-   entry #add   the graph with the edge `from -> to` added, unchecked
+-       A new target becomes a node. `+` takes the edge as a pair.
+-   entry #+   `graph + (from -> to)`: the edge added
+-   entry #++   `graph ++ other`: the union of two graphs' nodes and edges
+-   entry #remove   the graph with the edge `from -> to` removed, both nodes kept
+-   entry #-   `graph - node`: the node and every edge at either end of it dropped
+-       Needs `Dysasymptotic.LinearScan`.
+-   entry #bypass   the node dropped, with each of its predecessors rerouted to each of its successors
+-       Every path through the node survives. Needs `Dysasymptotic.LinearScan`.
+-   entry #bypassAll   several nodes bypassed one after another
+-       A `Set` of nodes, not a predicate; connectivity through a run of dropped nodes is
+-       preserved. Needs `Dysasymptotic.LinearScan`.
+-   entry #subgraph   the subgraph induced by a set of nodes: those nodes and the edges among them
+-       Needs `Dysasymptotic.LinearSize`.
+-   entry #reachable   everything a node reaches, itself included; raises `Dag.Error` for an absent node
+-       Total on a cyclic graph: `Digraph(1 -> 2, 2 -> 1).reachable(1)` is `Set(1, 2)`.
+-   entry #descendants   the subgraph a node reaches, itself included; raises `Dag.Error` for an absent node
+-   entry #ancestors   the subgraph that reaches a node, itself included; raises `Dag.Error` for an absent node
+-       Needs `Dysasymptotic.LinearScan`.
+-   entry #lineage   the subgraph of everything a node reaches and everything that reaches it
+-       Needs `Dysasymptotic.LinearScan`; raises `Dag.Error` for an absent node.
+-   entry #cycle   a cycle, if the graph has one: nodes each pointing at the next, ending where it began
+-       `Unset` for an acyclic graph; otherwise a `List` whose first and last nodes are the same
+-       and whose every consecutive pair is an edge. Found by a depth-first search which also
+-       catches a cycle closed through a node an earlier branch had already finished.
+-   entry #acyclic   the graph as a `Dag`, after the one check; raises `Dag.Error` if there is a cycle
+-       O(n + e), once: the `Dag` it answers never checks again.
++   entry .apply   um `Digraph` a partir de arestas, de nós com seus sucessores, de um conjunto de nós e uma função, ou de um `Map`
++       As mesmas quatro formas de `Dag.apply`, sem verificação de ciclo e sem erro:
++       `Digraph(a -> b, …)` a partir de arestas (as duas pontas se tornam nós, na ordem da
++       primeira aparição), `Digraph(a -> Set(b, c), …)` a partir de cada nó com seus sucessores
++       (um sucessor sem entrada se torna um nó), `Digraph(nodes)(node => successors)` a partir
++       de um conjunto de nós e uma função, e `Digraph(adjacency)` a partir de um
++       `Map[node, Set[node]]`, fechado sobre todo destino.
++   entry .nodal   a instância `Nodal`: os nós de um `Digraph` e os sucessores de cada nó
++       No escopo implícito pelo companheiro; `has` é uma consulta ao mapa.
++   entry .bidirectional   a instância `Bidirectional`, restrita por `Dysasymptotic.LinearScan`
++       Os predecessores vêm de uma transposta calculada uma vez por valor, varrendo todas as
++       arestas, então a instância precisa de `import dysasymptotics.linearScan` para ser resolvida.
++   entry .traversable   um `Digraph` como coleção de seus nós, na ordem em que foram dados
++   entry .inclusive   `graph.has(node)`: se o nó está no grafo
++   entry .countable   `graph.size` e `graph.nil`
++   entry .mappable   `graph.map(lambda)`: renomeia os nós, unindo as arestas de quaisquer dois que se fundam
++   entry #nodes   todos os nós, como um conjunto
++   entry #successors   os nós para os quais um nó aponta, ou o conjunto vazio para um nó ausente
++   entry #edges   todas as arestas como pares `(from, to)`
++   entry #sources   os nós sem sucessores: os que não dependem de nada
++   entry #sinks   os nós sem predecessores: aqueles dos quais nada depende
++       Uma passagem pelas arestas; nenhum reconhecimento é necessário, já que a pergunta é sobre o grafo inteiro.
++   entry #invert   o mesmo grafo com todas as arestas invertidas
++   entry #digraph   este próprio grafo
++       Para que código escrito sobre a superfície de `Dag`/`Digraph` possa pedir a qualquer um deles seu `Digraph`.
++   entry #including   o grafo com um nó acrescentado, sem arestas, se ele estava ausente
++   entry #add   o grafo com a aresta `from -> to` acrescentada, sem verificação
++       Um novo destino se torna um nó. `+` recebe a aresta como um par.
++   entry #+   `graph + (from -> to)`: a aresta acrescentada
++   entry #++   `graph ++ other`: a união dos nós e das arestas de dois grafos
++   entry #remove   o grafo com a aresta `from -> to` removida, mantendo os dois nós
++   entry #-   `graph - node`: o nó e todas as arestas em qualquer de suas pontas descartados
++       Precisa de `Dysasymptotic.LinearScan`.
++   entry #bypass   o nó descartado, com cada um de seus predecessores redirecionado para cada um de seus sucessores
++       Todo caminho que passa pelo nó sobrevive. Precisa de `Dysasymptotic.LinearScan`.
++   entry #bypassAll   vários nós contornados um após o outro
++       Um `Set` de nós, não um predicado; a conectividade através de uma sequência de nós
++       descartados é preservada. Precisa de `Dysasymptotic.LinearScan`.
++   entry #subgraph   o subgrafo induzido por um conjunto de nós: esses nós e as arestas entre eles
++       Precisa de `Dysasymptotic.LinearSize`.
++   entry #reachable   tudo o que um nó alcança, incluindo ele mesmo; lança `Dag.Error` para um nó ausente
++       Total em um grafo cíclico: `Digraph(1 -> 2, 2 -> 1).reachable(1)` é `Set(1, 2)`.
++   entry #descendants   o subgrafo que um nó alcança, incluindo ele mesmo; lança `Dag.Error` para um nó ausente
++   entry #ancestors   o subgrafo que alcança um nó, incluindo ele mesmo; lança `Dag.Error` para um nó ausente
++       Precisa de `Dysasymptotic.LinearScan`.
++   entry #lineage   o subgrafo de tudo o que um nó alcança e de tudo o que o alcança
++       Precisa de `Dysasymptotic.LinearScan`; lança `Dag.Error` para um nó ausente.
++   entry #cycle   um ciclo, se o grafo tiver um: nós que apontam cada um para o seguinte, terminando onde começaram
++       `Unset` para um grafo acíclico; caso contrário, uma `List` cujo primeiro e último nós são
++       o mesmo e cujos pares consecutivos são todos arestas. Encontrado por uma busca em
++       profundidade que também detecta um ciclo fechado através de um nó que um ramo anterior
++       já tinha terminado.
++   entry #acyclic   o grafo como um `Dag`, depois da única verificação; lança `Dag.Error` se houver um ciclo
++       O(n + e), uma vez: o `Dag` que responde nunca verifica de novo.
+
+- entry .Topology   a graph edited in place which keeps its topological order live, and, frozen, the form for querying
++ entry .Topology   um grafo editado no lugar que mantém sua ordem topológica atualizada e que, congelado, é a forma para consultas
+
+= entry .Topology   a graph edited in place which keeps its topological order live, and, frozen, the form for querying
+-   detail
++   detail
+
+-       A `Topology[node]` is a directed acyclic graph edited in place through an exclusively
+-       owned handle. Its name is for what it uniquely maintains: a topological order of the
+-       nodes, kept valid through every `add` by Pearce and Kelly's algorithm, which touches only
+-       the nodes between the two ends of a new edge and **refuses** an edge which would close a
+-       cycle, leaving the graph unchanged. So it is acyclic by invariant, and `linearized` is a
+-       read of the order.
++       Um `Topology[node]` é um grafo dirigido acíclico editado no lugar por meio de um handle de
++       posse exclusiva. Seu nome vem do que só ele mantém: uma ordem topológica dos nós, mantida
++       válida a cada `add` pelo algoritmo de Pearce e Kelly, que toca apenas os nós entre as
++       duas pontas de uma nova aresta e **recusa** uma aresta que fecharia um ciclo, deixando o
++       grafo inalterado. Assim, ele é acíclico por invariante, e `linearized` é uma leitura da
++       ordem.
+
+-       Mutability is the capture set, as for an `Array`: a `Topology[node]^` is editable, and
+-       `Topology.freeze` consumes it to give a `Topology[node]^{}`, on which `add`, `remove` and
+-       `bypass` are not callable and nothing can ever change. The frozen form is the one for
+-       querying — it carries the `Nodal`, `Bidirectional`, `Topological`, `Reachable` and
+-       `Invertible` instances — and keeps both directions of adjacency in dense arrays, with the
+-       sources and sinks maintained, so `predecessors` needs no `LinearScan` acknowledgement. Its
+-       reachability matrix, built on first use in O(e·n/64), answers `reaches` in O(1) and serves
+-       `closure` and `reduction`.
++       A mutabilidade é o conjunto de captura, como para um `Array`: um `Topology[node]^` é
++       editável, e `Topology.freeze` o consome para dar um `Topology[node]^{}`, no qual `add`,
++       `remove` e `bypass` não podem ser chamados e nada pode mudar jamais. A forma congelada é
++       a forma para consultas — ela carrega as instâncias `Nodal`, `Bidirectional`,
++       `Topological`, `Reachable` e `Invertible` — e mantém as duas direções da adjacência em
++       arrays densos, com as origens e os sinks mantidos, então `predecessors` não precisa do
++       reconhecimento `LinearScan`. Sua matriz de alcançabilidade, construída no primeiro uso em
++       O(e·n/64), responde `reaches` em O(1) e serve a `closure` e `reduction`.
+
+=       `closure` and `reduction`.
+=
+-       ```scala fuel
++       ```scala fuel
+
+=       `closure` and `reduction`.
+=
+=       ```scala fuel
+-       frame
++       frame
+
+-         label An empty topology, exclusively owned
++         label Uma topologia vazia, de posse exclusiva
+
+=         label An empty topology, exclusively owned
+-         code
++         code
+
+=         label An empty topology, exclusively owned
+=         code
+-             val topology: Topology[Text]^ = Topology()
++             val topology: Topology[Text]^ = Topology()
+
+-             topology.linearized          // List()
++             topology.linearized          // List()
+
+=             topology.linearized          // List()
+-       frame
++       frame
+
+-         label An edge: both nodes join the order, dependency first
++         label Uma aresta: os dois nós entram na ordem, a dependência primeiro
+
+=         label An edge: both nodes join the order, dependency first
+-         code
++         code
+
+=         label An edge: both nodes join the order, dependency first
+=         code
+-             val topology: Topology[Text]^ = Topology()
++             val topology: Topology[Text]^ = Topology()
+
+=         label An edge: both nodes join the order, dependency first
+=         code
+=             val topology: Topology[Text]^ = Topology()
+-             topology.add(t"app", t"lib")
++             topology.add(t"app", t"lib")
+
+-             topology.linearized          // List(lib, app)
++             topology.linearized          // List(lib, app)
+
+=             topology.linearized          // List(lib, app)
+-       frame
++       frame
+
+-         label A dependency added below an existing node: the order is repaired, not rebuilt
++         label Uma dependência acrescentada abaixo de um nó existente: a ordem é reparada, não reconstruída
+
+=         label A dependency added below an existing node: the order is repaired, not rebuilt
+-         code
++         code
+
+=         label A dependency added below an existing node: the order is repaired, not rebuilt
+=         code
+-             val topology: Topology[Text]^ = Topology()
++             val topology: Topology[Text]^ = Topology()
+
+=         label A dependency added below an existing node: the order is repaired, not rebuilt
+=         code
+=             val topology: Topology[Text]^ = Topology()
+-             topology.add(t"app", t"lib")
++             topology.add(t"app", t"lib")
+
+=         label A dependency added below an existing node: the order is repaired, not rebuilt
+=         code
+=             val topology: Topology[Text]^ = Topology()
+=             topology.add(t"app", t"lib")
+-             topology.add(t"lib", t"core")
++             topology.add(t"lib", t"core")
+
+=             topology.add(t"lib", t"core")
+-             topology.linearized          // List(core, lib, app)
++             topology.linearized          // List(core, lib, app)
+
+=             topology.add(t"lib", t"core")
+=             topology.linearized          // List(core, lib, app)
+-       frame
++       frame
+
+-         label An edge which would close a cycle is refused with Dag.Error, and nothing changes
++         label Uma aresta que fecharia um ciclo é recusada com Dag.Error, e nada muda
+
+=         label An edge which would close a cycle is refused with Dag.Error, and nothing changes
+-         code
++         code
+
+=         label An edge which would close a cycle is refused with Dag.Error, and nothing changes
+=         code
+-             val topology: Topology[Text]^ = Topology()
++             val topology: Topology[Text]^ = Topology()
+
+=         label An edge which would close a cycle is refused with Dag.Error, and nothing changes
+=         code
+=             val topology: Topology[Text]^ = Topology()
+-             topology.add(t"app", t"lib")
++             topology.add(t"app", t"lib")
+
+=         label An edge which would close a cycle is refused with Dag.Error, and nothing changes
+=         code
+=             val topology: Topology[Text]^ = Topology()
+=             topology.add(t"app", t"lib")
+-             topology.add(t"lib", t"core")
++             topology.add(t"lib", t"core")
+
+-             safely(topology.add(t"core", t"app"))
++             safely(topology.add(t"core", t"app"))
+
+=             safely(topology.add(t"core", t"app"))
+-             topology.linearized          // List(core, lib, app)
++             topology.linearized          // List(core, lib, app)
+
+=             safely(topology.add(t"core", t"app"))
+=             topology.linearized          // List(core, lib, app)
+-       frame
++       frame
+
+-         label Freezing consumes the handle: the result can be queried but never edited
++         label Congelar consome o handle: o resultado pode ser consultado, mas nunca editado
+
+=         label Freezing consumes the handle: the result can be queried but never edited
+-         code
++         code
+
+=         label Freezing consumes the handle: the result can be queried but never edited
+=         code
+-             val topology: Topology[Text]^ = Topology()
++             val topology: Topology[Text]^ = Topology()
+
+=         label Freezing consumes the handle: the result can be queried but never edited
+=         code
+=             val topology: Topology[Text]^ = Topology()
+-             topology.add(t"app", t"lib")
++             topology.add(t"app", t"lib")
+
+=         label Freezing consumes the handle: the result can be queried but never edited
+=         code
+=             val topology: Topology[Text]^ = Topology()
+=             topology.add(t"app", t"lib")
+-             topology.add(t"lib", t"core")
++             topology.add(t"lib", t"core")
+
+-             val frozen: Topology[Text]^{} = Topology.freeze(topology)
++             val frozen: Topology[Text]^{} = Topology.freeze(topology)
+
+-             frozen.reaches(t"app", t"core")   // true
++             frozen.reaches(t"app", t"core")   // true
+
+-             frozen.snapshot                   // the same graph as a Dag
++             frozen.snapshot                   // the same graph as a Dag
+
+=             frozen.snapshot                   // the same graph as a Dag
+-       ##
++       ##
+
+=             frozen.snapshot                   // the same graph as a Dag
+=       ##
+-       ```
++       ```
+
+-       An editable `Topology` is for the graph that grows or changes incrementally — a build
+-       system discovering tasks, a scheduler accepting jobs: an edge costs well under a
+-       microsecond where a checked `Dag#add` costs the reach of its target. When the editing is
+-       done the handle is given up, to `Topology.freeze` or to `Dag(topology)`, so that the
+-       result can never be edited behind its back; `snapshot` takes a `Dag` without giving the
+-       handle up, and `Topology(frozen)` or `dag.thaw` makes a fresh editable copy. A bare
+-       `Topology[node]` in a signature means the editable `^` form.
++       Um `Topology` editável é para o grafo que cresce ou muda incrementalmente — um sistema
++       de build descobrindo tarefas, um escalonador aceitando jobs: uma aresta custa bem menos
++       de um microssegundo, enquanto um `Dag#add` verificado custa o alcance do seu destino.
++       Quando a edição termina, o handle é entregue, a `Topology.freeze` ou a `Dag(topology)`,
++       para que o resultado nunca possa ser editado pelas suas costas; `snapshot` obtém um `Dag`
++       sem entregar o handle, e `Topology(frozen)` ou `dag.thaw` cria uma cópia editável nova.
++       Um `Topology[node]` sem anotação em uma assinatura significa a forma editável `^`.
+
+-       The matrix is cached against an edit revision: a frozen handle, which cannot be edited,
+-       keeps it, and an editable one which has been edited since recomputes it for each call —
+-       which is why `closure`, `reduction` and `reaches` are for the frozen form. The node keys
+-       are boxed and hashed through an open-addressing table, so generic keys cost what a
+-       `HashMap` of them would.
++       A matriz fica em cache associada a uma revisão de edição: um handle congelado, que não
++       pode ser editado, a mantém, e um editável que tenha sido editado desde então a recalcula
++       a cada chamada — e é por isso que `closure`, `reduction` e `reaches` são para a forma
++       congelada. As chaves dos nós passam por boxing e são indexadas por hash em uma tabela de
++       endereçamento aberto, então chaves genéricas custam o que um `HashMap` delas custaria.
+
+=       `HashMap` of them would.
+-   refer acyclicity.Dag
++   refer acyclicity.Dag
+
+=   refer acyclicity.Dag
+-   refer acyclicity.Topological
++   refer acyclicity.Topological
+
+=   refer acyclicity.Dag
+=   refer acyclicity.Topological
+-   refer acyclicity.Reachable
++   refer acyclicity.Reachable
+
+-   entry .apply   a new empty topology, an editable copy of a frozen one, or an editable copy of a `Dag`
+-       `Topology[node]()` is an empty, editable `Topology[node]^`. `Topology(frozen)` copies a
+-       `Topology[node]^{}` into a fresh editable one — the way to edit a frozen graph, which
+-       itself cannot change — and `Topology(dag)` thaws a `Dag`, the same as `dag.thaw`. Both
+-       copies add the nodes in topological order, so no edge needs reordering.
+-   entry .freeze   consumes an editable topology and answers it frozen, as a `Topology[node]^{}`
+-       `Topology.freeze(topology)` is the only producer of a frozen topology from an editable
+-       one (`Dag#freeze` builds its own). The handle is **consumed**: every writer is statically
+-       retired, so the surviving reference drops its exclusivity without a copy, and the editing
+-       methods are no longer callable on it.
+-   entry .nodal   the `Nodal` instance of a frozen `Topology[node]^{}`
+-       Its nodes in topological order, each node's successors from its out-list, and `has` by a
+-       hash probe. The instances are for the frozen form only: an editable handle is not `Nodal`.
+-   entry .bidirectional   the `Bidirectional` instance of a frozen topology, with no acknowledgement
+-       Predecessors are read from the in-lists the topology keeps, so no `Dysasymptotic.LinearScan`
+-       is needed, unlike a `Dag`.
+-   entry .topological   the marker which certifies a frozen topology holds no cycle
+-   entry .traversable   a frozen topology as a collection of its nodes, in topological order
++   entry .apply   uma nova topologia vazia, uma cópia editável de uma congelada ou uma cópia editável de um `Dag`
++       `Topology[node]()` é um `Topology[node]^` vazio e editável. `Topology(frozen)` copia um
++       `Topology[node]^{}` para um novo editável — a forma de editar um grafo congelado, que em
++       si não pode mudar — e `Topology(dag)` descongela um `Dag`, o mesmo que `dag.thaw`. As
++       duas cópias acrescentam os nós em ordem topológica, então nenhuma aresta precisa ser
++       reordenada.
++   entry .freeze   consome uma topologia editável e a responde congelada, como um `Topology[node]^{}`
++       `Topology.freeze(topology)` é o único produtor de uma topologia congelada a partir de uma
++       editável (`Dag#freeze` constrói a sua própria). O handle é **consumido**: todo escritor é
++       aposentado estaticamente, então a referência que sobrevive abandona sua exclusividade sem
++       uma cópia, e os métodos de edição não podem mais ser chamados nela.
++   entry .nodal   a instância `Nodal` de um `Topology[node]^{}` congelado
++       Seus nós em ordem topológica, os sucessores de cada nó a partir de sua lista de saída, e
++       `has` por uma sondagem de hash. As instâncias são apenas para a forma congelada: um
++       handle editável não é `Nodal`.
++   entry .bidirectional   a instância `Bidirectional` de uma topologia congelada, sem reconhecimento
++       Os predecessores são lidos das listas de entrada que a topologia mantém, então nenhum
++       `Dysasymptotic.LinearScan` é necessário, ao contrário de um `Dag`.
++   entry .topological   o marcador que certifica que uma topologia congelada não contém ciclos
++   entry .traversable   uma topologia congelada como coleção de seus nós, em ordem topológica
+
+-   entry .inclusive   `frozen.has(node)`
++   entry .inclusive   `frozen.has(node)`
+
+-   entry .countable   `frozen.size` and `frozen.nil`
+-   entry .grown   an `Int` array copied into a larger one; a helper of the implementation
+-       Not for direct use. The growth helpers live on the companion rather than the class so
+-       that the separation checker sees only their arguments.
+-   entry .grownLongs   a `Long` array copied into a larger one; a helper of the implementation
+-   entry .grownRefs   an `AnyRef` array copied into a larger one; a helper of the implementation
+-   entry .grownFlags   a `Boolean` array copied into a larger one; a helper of the implementation
+-   entry .hash   a key's hash with its high bits folded into the low ones; a helper of the implementation
+-   entry #size   how many nodes the topology currently has
+-   entry #edgeCount   how many edges the topology currently has
+-   entry #has   whether a node is in the topology, by a hash probe
+-   entry #add   adds a node, or adds the edge `from -> to`, raising `Dag.Error` if it would close a cycle
+-       On an editable handle only. `add(node)` adds a node at the end of the order, if absent,
+-       and answers its internal id; `add(from, to)` adds the edge (`from` depends on `to`), adding
+-       either node if absent. If `to` ranks below `from` already nothing moves; otherwise the
+-       dependants of `from` and the dependencies of `to` which lie between the two are reordered
+-       — and if that search meets `to` among `from`'s dependants, the edge would close a cycle:
+-       `Dag.Error` (`Reason.Cyclic`) is raised through the `Tactic[Dag.Error]` in scope and the
+-       graph is left exactly as it was. A duplicate edge is ignored.
+-   entry #remove   drops a node and every edge at either end of it
+-       On an editable handle only. Unknown nodes are ignored.
+-   entry #bypass   drops a node, rerouting each of its dependants to each of its dependencies
+-       On an editable handle only. No reordering can be needed, since every dependant already
+-       ranks above every dependency.
+-   entry #reachable   everything a node reaches, itself included; the empty set for an absent node
+-       A depth-first walk of the out-lists; unlike `Dag#reachable`, an absent node answers the
+-       empty set rather than raising.
+-   entry #reaches   whether one node reaches another, in O(1) once the reachability matrix exists
+-       `frozen.reaches(from, to)`: a single bit of the matrix, which is built on first use and
+-       kept on a frozen handle. `false` if either node is absent.
+-   entry #edges   every edge as a `(from, to)` pair
+-   entry #successors   the nodes a node points at, or the empty set for an absent node
+-   entry #predecessors   the nodes pointing at a node, from the in-lists kept for it
+-       No acknowledgement is needed: the topology stores both directions.
+-   entry #sources   the nodes with no successors, maintained as the graph changes
+-   entry #sinks   the nodes with no predecessors, maintained as the graph changes
+-   entry #linearized   the maintained topological order, dependencies first: a read, in O(n)
+-   entry #nodes   every node, as a set
+-   entry #closure   every implied edge made explicit, as a `Dag`, from the reachability matrix
+-       For a frozen handle. Each node's row of the matrix becomes its successor set.
+-   entry #reduction   the minimal graph with the same reachability, as a `Dag`, from the reachability matrix
+-       For a frozen handle. Aho, Garey and Ullman's method: visiting a node's successors by
+-       descending rank with a running union of their rows decides every edge in
+-       O(degree·n/64), so the reduction of a thousand-node graph takes a fraction of a
+-       millisecond.
+-   entry #invert   every edge reversed, as another frozen topology
+-       The reversed order is a valid order for the reversed edges, so the copy needs no
+-       reordering; `frozen.invert.linearized` is `frozen.linearized.reverse`.
+-   entry #snapshot   a persistent `Dag` of the current graph, without giving up the handle
++   entry .countable   `frozen.size` e `frozen.nil`
++   entry .grown   um array de `Int` copiado para um maior; um auxiliar da implementação
++       Não é para uso direto. Os auxiliares de crescimento vivem no companheiro, e não na
++       classe, para que o verificador de separação veja apenas seus argumentos.
++   entry .grownLongs   um array de `Long` copiado para um maior; um auxiliar da implementação
++   entry .grownRefs   um array de `AnyRef` copiado para um maior; um auxiliar da implementação
++   entry .grownFlags   um array de `Boolean` copiado para um maior; um auxiliar da implementação
++   entry .hash   o hash de uma chave com seus bits altos dobrados sobre os baixos; um auxiliar da implementação
++   entry #size   quantos nós a topologia tem no momento
++   entry #edgeCount   quantas arestas a topologia tem no momento
++   entry #has   se um nó está na topologia, por uma sondagem de hash
++   entry #add   acrescenta um nó, ou a aresta `from -> to`, lançando `Dag.Error` se ela fecharia um ciclo
++       Apenas em um handle editável. `add(node)` acrescenta um nó ao final da ordem, se
++       ausente, e responde seu id interno; `add(from, to)` acrescenta a aresta (`from` depende
++       de `to`), acrescentando qualquer dos dois nós que esteja ausente. Se `to` já estiver
++       abaixo de `from` na ordem, nada se move; caso contrário, os dependentes de `from` e as
++       dependências de `to` que estão entre os dois são reordenados — e se essa busca encontrar
++       `to` entre os dependentes de `from`, a aresta fecharia um ciclo: `Dag.Error`
++       (`Reason.Cyclic`) é lançado pelo `Tactic[Dag.Error]` no escopo e o grafo fica exatamente
++       como estava. Uma aresta duplicada é ignorada.
++   entry #remove   descarta um nó e todas as arestas em qualquer de suas pontas
++       Apenas em um handle editável. Nós desconhecidos são ignorados.
++   entry #bypass   descarta um nó, redirecionando cada um de seus dependentes para cada uma de suas dependências
++       Apenas em um handle editável. Nenhuma reordenação pode ser necessária, já que todo
++       dependente já está acima de toda dependência na ordem.
++   entry #reachable   tudo o que um nó alcança, incluindo ele mesmo; o conjunto vazio para um nó ausente
++       Um percurso em profundidade das listas de saída; ao contrário de `Dag#reachable`, um nó
++       ausente responde o conjunto vazio em vez de lançar um erro.
++   entry #reaches   se um nó alcança outro, em O(1) quando a matriz de alcançabilidade existe
++       `frozen.reaches(from, to)`: um único bit da matriz, que é construída no primeiro uso e
++       mantida em um handle congelado. `false` se qualquer dos dois nós estiver ausente.
++   entry #edges   todas as arestas como pares `(from, to)`
++   entry #successors   os nós para os quais um nó aponta, ou o conjunto vazio para um nó ausente
++   entry #predecessors   os nós que apontam para um nó, a partir das listas de entrada mantidas para ele
++       Nenhum reconhecimento é necessário: a topologia armazena as duas direções.
++   entry #sources   os nós sem sucessores, mantidos à medida que o grafo muda
++   entry #sinks   os nós sem predecessores, mantidos à medida que o grafo muda
++   entry #linearized   a ordem topológica mantida, dependências primeiro: uma leitura, em O(n)
++   entry #nodes   todos os nós, como um conjunto
++   entry #closure   toda aresta implícita tornada explícita, como um `Dag`, a partir da matriz de alcançabilidade
++       Para um handle congelado. A linha de cada nó na matriz se torna seu conjunto de sucessores.
++   entry #reduction   o grafo mínimo com a mesma alcançabilidade, como um `Dag`, a partir da matriz de alcançabilidade
++       Para um handle congelado. O método de Aho, Garey e Ullman: visitar os sucessores de um nó
++       em ordem decrescente de posição, com uma união acumulada de suas linhas, decide cada
++       aresta em O(degree·n/64), então a redução de um grafo de mil nós leva uma fração de
++       milissegundo.
++   entry #invert   todas as arestas invertidas, como outra topologia congelada
++       A ordem invertida é uma ordem válida para as arestas invertidas, então a cópia não
++       precisa de reordenação; `frozen.invert.linearized` é `frozen.linearized.reverse`.
++   entry #snapshot   um `Dag` persistente do grafo atual, sem entregar o handle
+
+- entry .Nodal   the typeclass of a finite directed graph: a node set and each node's successors
++ entry .Nodal   a classe de tipos de um grafo dirigido finito: um conjunto de nós e os sucessores de cada nó
+
+= entry .Nodal   the typeclass of a finite directed graph: a node set and each node's successors
+-   detail
++   detail
+
+-       `graph is Nodal by node` says a value of type `graph` is a finite directed graph over
+-       `node`: it can enumerate its `nodes`, answer the `successors` of any node — the nodes it
+-       points at, which under the dependency reading used throughout Soundness (`a -> b` means
+-       `a` requires `b`) are its dependencies — and say whether it `has` a node, as a primitive
+-       rather than a scan, so a missing-node check is never O(n). Edge direction is fixed by
+-       contract, not by instance: a topological order lists a node after its successors.
++       `graph is Nodal by node` diz que um valor do tipo `graph` é um grafo dirigido finito
++       sobre `node`: pode enumerar seus `nodes`, responder os `successors` de qualquer nó — os
++       nós para os quais ele aponta, que na leitura de dependências usada em todo o Soundness
++       (`a -> b` significa que `a` requer `b`) são suas dependências — e dizer se `has` um nó,
++       como primitiva e não como varredura, então uma verificação de nó ausente nunca é O(n). A
++       direção das arestas é fixada por contrato, não por instância: uma ordem topológica lista
++       um nó depois de seus sucessores.
+
+-       Instances are provided for `Dag`, `Digraph`, a frozen `Topology[node]^{}` and `Hasse`
+-       (each in its own companion), and here for any `Map[node, Set[node]]` and `Ledger[node,
+-       Set[node]]`, so a plain map of dependencies answers the package-level extensions —
+-       `nodes`, `edges`, `sources`, `sinks`, `cycle`, `acyclic`, `reachable`, `closure` and
+-       `invert` — with no conversion:
++       Há instâncias para `Dag`, `Digraph`, um `Topology[node]^{}` congelado e `Hasse` (cada
++       uma em seu próprio companheiro), e aqui para qualquer `Map[node, Set[node]]` e
++       `Ledger[node, Set[node]]`, então um mapa simples de dependências responde às extensões de
++       nível de pacote — `nodes`, `edges`, `sources`, `sinks`, `cycle`, `acyclic`, `reachable`,
++       `closure` e `invert` — sem conversão alguma:
+
+=       `invert` — with no conversion:
+=
+-       ```scala
++       ```scala
+
+=       `invert` — with no conversion:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `invert` — with no conversion:
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val deps = Map(1 -> Set(2), 2 -> Set[Int]())
++       val deps = Map(1 -> Set(2), 2 -> Set[Int]())
+
+-       deps.reachable(1)       // Set(1, 2)
++       deps.reachable(1)       // Set(1, 2)
+
+-       deps.invert.edges       // Set((2, 1))
++       deps.invert.edges       // Set((2, 1))
+
+-       deps.acyclic            // a Dag[Int]
++       deps.acyclic            // a Dag[Int]
+
+=       deps.acyclic            // a Dag[Int]
+-       ```
++       ```
+
+-       The methods return `murmuration.Iterator`s, the cheapest thing every representation can
+-       produce; the extensions turn them into `Set`s and `List`s. An instance of one's own which
+-       has a stdlib iterator wraps it with `Iterator.from(…)`. A successor *function*, `node =>
+-       Iterable[node]`, is deliberately not `Nodal` — it has no finite node set and no decidable
+-       `has` — and `explore` materialises one into a `Digraph`. A representation which also
+-       stores predecessors says so through `Bidirectional`, and one whose values can hold no
+-       cycle through `Topological`.
++       Os métodos retornam `murmuration.Iterator`s, a coisa mais barata que toda representação
++       consegue produzir; as extensões os transformam em `Set`s e `List`s. Uma instância
++       própria que tenha um iterador da stdlib o embrulha com `Iterator.from(…)`. Uma *função*
++       de sucessores, `node => Iterable[node]`, deliberadamente não é `Nodal` — não tem um
++       conjunto finito de nós nem um `has` decidível — e `explore` materializa uma em um
++       `Digraph`. Uma representação que também armazena predecessores o declara por meio de
++       `Bidirectional`, e uma cujos valores não podem conter ciclos, por meio de `Topological`.
+
+-   refer acyclicity.Bidirectional
++   refer acyclicity.Bidirectional
+
+=   refer acyclicity.Bidirectional
+-   refer acyclicity.Topological
++   refer acyclicity.Topological
+
+=   refer acyclicity.Bidirectional
+=   refer acyclicity.Topological
+-   refer acyclicity.Reachable
++   refer acyclicity.Reachable
+
+-   refer acyclicity.Invertible
++   refer acyclicity.Invertible
+
+-   entry .map   the `Nodal` instance of any `Map[node, Set[node]]`
+-       In implicit scope through the typeclass's companion, since `Map` belongs to proscenium. A
+-       target absent from the key set is **not** a node: the instance reports the map as it is,
+-       and `Digraph(adjacency)` is the constructor which closes the node set over targets. The
+-       instance is subtype-parametric, so a refined map type matches too.
+-   entry .ledger   the `Nodal` instance of any `Ledger[node, Set[node]]`
+-       As `.map`, for a `Ledger`: its keys are the nodes, in their order, and a missing key has
+-       no successors.
+-   entry #nodes   every node, as an iterator
+-   entry #successors   the nodes a node points at, as an iterator; empty for an absent node
+-   entry #has   whether the graph has a node, without scanning its nodes
++   entry .map   a instância `Nodal` de qualquer `Map[node, Set[node]]`
++       No escopo implícito pelo companheiro da classe de tipos, já que `Map` pertence ao
++       proscenium. Um destino ausente do conjunto de chaves **não** é um nó: a instância relata
++       o mapa como ele é, e `Digraph(adjacency)` é o construtor que fecha o conjunto de nós
++       sobre os destinos. A instância é paramétrica em subtipos, então um tipo de mapa refinado
++       também casa.
++   entry .ledger   a instância `Nodal` de qualquer `Ledger[node, Set[node]]`
++       Como `.map`, para um `Ledger`: suas chaves são os nós, na ordem delas, e uma chave
++       ausente não tem sucessores.
++   entry #nodes   todos os nós, como um iterador
++   entry #successors   os nós para os quais um nó aponta, como um iterador; vazio para um nó ausente
++   entry #has   se o grafo tem um nó, sem varrer seus nós
+
+- entry .Bidirectional   the typeclass of a graph which can answer a node's predecessors directly
++ entry .Bidirectional   a classe de tipos de um grafo que pode responder diretamente os predecessores de um nó
+
+= entry .Bidirectional   the typeclass of a graph which can answer a node's predecessors directly
+-   detail
++   detail
+
+-       `graph is Bidirectional by node` says the graph can answer which nodes point *at* a node —
+-       its dependants, under the dependency reading — without scanning every edge. A frozen
+-       `Topology` and a `Hasse` store both directions and have ungated instances. A `Dag` or
+-       `Digraph` stores only the forward direction, and its instance is gated behind
+-       `Dysasymptotic.LinearScan`: locating one node's predecessors there is a transpose of every
+-       edge, a cost outside the question's scope, which `import dysasymptotics.linearScan` makes
+-       a program acknowledge. The package-level `predecessors` extension needs this instance.
++       `graph is Bidirectional by node` diz que o grafo pode responder quais nós apontam *para*
++       um nó — seus dependentes, na leitura de dependências — sem varrer todas as arestas. Um
++       `Topology` congelado e um `Hasse` armazenam as duas direções e têm instâncias sem
++       restrição. Um `Dag` ou `Digraph` armazena apenas a direção para a frente, e sua instância
++       é restrita por `Dysasymptotic.LinearScan`: localizar ali os predecessores de um nó é uma
++       transposta de todas as arestas, um custo fora do escopo da pergunta, que
++       `import dysasymptotics.linearScan` faz um programa reconhecer. A extensão de nível de
++       pacote `predecessors` precisa dessa instância.
+
+=       a program acknowledge. The package-level `predecessors` extension needs this instance.
+-   refer acyclicity.Nodal
++   refer acyclicity.Nodal
+
+-   entry #predecessors   the nodes pointing at a node, as an iterator
++   entry #predecessors   os nós que apontam para um nó, como um iterador
+
+- entry .Topological   the marker typeclass of a graph type whose values can hold no cycle
+-     `graph is Topological` certifies that a value of the type admits a topological order — that
+-     it contains no directed cycle — **by construction**: `Dag`, a frozen `Topology[node]^{}` and
+-     `Hasse` each have an instance, since each can only be built through a check or an
+-     invariant. The instance is a marker, never the result of a runtime check on a general
+-     type: a `Digraph` becomes `Topological` only by `acyclic`, which answers a `Dag`. The
+-     extensions `linearized`, `reduction`, `traversal` and `layered` require it, as do the
+-     `dendrology` diagrams, so a cyclic graph has no such operations rather than operations
+-     which raise.
++ entry .Topological   a classe de tipos marcadora de um tipo de grafo cujos valores não podem conter ciclos
++     `graph is Topological` certifica que um valor do tipo admite uma ordem topológica — que
++     não contém nenhum ciclo dirigido — **por construção**: `Dag`, um `Topology[node]^{}`
++     congelado e `Hasse` têm cada um uma instância, já que cada um só pode ser construído por
++     meio de uma verificação ou de uma invariante. A instância é um marcador, nunca o resultado
++     de uma verificação em tempo de execução sobre um tipo geral: um `Digraph` só se torna
++     `Topological` por `acyclic`, que responde um `Dag`. As extensões `linearized`,
++     `reduction`, `traversal` e `layered` a exigem, assim como os diagramas de `dendrology`,
++     então um grafo cíclico não tem essas operações, em vez de ter operações que lançam erros.
+
+- entry .Reachable   the typeclass of a graph with its own reachability search
++ entry .Reachable   a classe de tipos de um grafo com a sua própria busca de alcançabilidade
+
+= entry .Reachable   the typeclass of a graph with its own reachability search
+-   detail
++   detail
+
+-       `graph is Reachable by node` answers everything reachable from a node, the node included,
+-       as a set — total on cyclic input, by a visited set rather than recursion, so it never
+-       raises on its own account; the `reachable` extension which calls it raises `Dag.Error`
+-       only for a node the graph does not have. The native instance is a frozen `Topology`'s,
+-       which walks its edge lists; any other `Nodal` graph is searched generically through
+-       `.generic`, which the extensions take as the default of their contextual parameter, so
+-       a `Map` or a `Hasse` needs no instance of its own.
++       `graph is Reachable by node` responde tudo o que é alcançável a partir de um nó, o próprio
++       nó incluído, como um conjunto — total em entradas cíclicas, por meio de um conjunto de
++       visitados em vez de recursão, então nunca lança erro por conta própria; a extensão
++       `reachable` que o chama lança `Dag.Error` apenas para um nó que o grafo não tem. A
++       instância nativa é a de um `Topology` congelado, que percorre as suas listas de arestas;
++       qualquer outro grafo `Nodal` é pesquisado de forma genérica por meio de `.generic`, que as
++       extensões tomam como o valor padrão do seu parâmetro contextual, então um `Map` ou um
++       `Hasse` não precisa de instância própria.
+
+=       a `Map` or a `Hasse` needs no instance of its own.
+-   refer acyclicity.Nodal
++   refer acyclicity.Nodal
+
+-   entry .topology   the `Reachable` instance of a frozen `Topology[node]^{}`
+-   entry .generic   a `Reachable` for any `Nodal` graph, by a depth-first search through its successors
+-       A method rather than a given: the `reachable` and `closure` extensions take it as the
+-       default of their `using` parameter, so that it is reached without a nested given search —
+-       which, for an opaque receiver such as `Map`, would see the alias dealiased and match
+-       nothing. Code summoning a `Reachable` for its own graph type can call it directly.
+-   entry #reachable   everything a node reaches, itself included
++   entry .topology   a instância de `Reachable` de um `Topology[node]^{}` congelado
++   entry .generic   um `Reachable` para qualquer grafo `Nodal`, por uma busca em profundidade pelos seus sucessores
++       Um método em vez de um given: as extensões `reachable` e `closure` o tomam como o valor
++       padrão do seu parâmetro `using`, de modo que ele é alcançado sem uma busca aninhada de
++       given — que, para um receptor opaco como `Map`, veria o alias desfeito e não casaria com
++       nada. Código que convoca um `Reachable` para o seu próprio tipo de grafo pode chamá-lo
++       diretamente.
++   entry #reachable   tudo o que um nó alcança, ele próprio incluído
+
+- entry .Invertible   the typeclass of a graph which can reverse every edge, and the type it reverses into
++ entry .Invertible   a classe de tipos de um grafo que pode inverter todas as arestas, e o tipo para o qual ele se inverte
+
+= entry .Invertible   the typeclass of a graph which can reverse every edge, and the type it reverses into
+-   detail
++   detail
+
+-       `graph is Invertible by node to result` answers the graph with every edge reversed, as a
+-       value of the type best placed to hold it: a `Dag` inverts to a `Dag`, since reversing every
+-       edge preserves acyclicity; a `Hasse` to a `Hasse` in O(1), by swapping the two directions it
+-       stores; a frozen `Topology` to another frozen `Topology`; and anything else `Nodal` to a
+-       `Digraph`, by a fold over its edges through `.generic`, which the `invert` extension takes
+-       as the default of its contextual parameter.
++       `graph is Invertible by node to result` responde o grafo com todas as arestas invertidas,
++       como um valor do tipo mais adequado para contê-lo: um `Dag` se inverte em um `Dag`, já que
++       inverter todas as arestas preserva a aciclicidade; um `Hasse` em um `Hasse` em O(1),
++       trocando as duas direções que armazena; um `Topology` congelado em outro `Topology`
++       congelado; e qualquer outra coisa `Nodal` em um `Digraph`, por um fold sobre as suas
++       arestas por meio de `.generic`, que a extensão `invert` toma como o valor padrão do seu
++       parâmetro contextual.
+
+=       as the default of its contextual parameter.
+-   refer acyclicity.Nodal
++   refer acyclicity.Nodal
+
+-   entry .digraph   `Digraph` inverts to `Digraph`
+-   entry .dag   `Dag` inverts to `Dag`: reversing every edge preserves acyclicity
+-   entry .topology   a frozen `Topology[node]^{}` inverts to another
+-   entry .hasse   `Hasse` inverts to `Hasse`, in O(1), by swapping its two stored directions
+-   entry .generic   an `Invertible` for any `Nodal` graph, answering a `Digraph`
+-       A method, not a given, for the same reason as `Reachable.generic`: the extension takes it
+-       as its default, avoiding a nested given search which an opaque receiver would defeat.
+-   entry #invert   the graph with every edge reversed, as the instance's `Result`
++   entry .digraph   `Digraph` se inverte em `Digraph`
++   entry .dag   `Dag` se inverte em `Dag`: inverter todas as arestas preserva a aciclicidade
++   entry .topology   um `Topology[node]^{}` congelado se inverte em outro
++   entry .hasse   `Hasse` se inverte em `Hasse`, em O(1), trocando as suas duas direções armazenadas
++   entry .generic   um `Invertible` para qualquer grafo `Nodal`, que responde um `Digraph`
++       Um método, e não um given, pelo mesmo motivo de `Reachable.generic`: a extensão o toma
++       como o seu valor padrão, evitando uma busca aninhada de given que um receptor opaco
++       frustraria.
++   entry #invert   o grafo com todas as arestas invertidas, como o `Result` da instância
+
+- entry .Hasse   the Hasse diagram of a partial order: each element's immediate covers, with implied comparisons dropped
++ entry .Hasse   o diagrama de Hasse de uma ordem parcial: as coberturas imediatas de cada elemento, sem as comparações implícitas
+
+= entry .Hasse   the Hasse diagram of a partial order: each element's immediate covers, with implied comparisons dropped
+-   detail
++   detail
+
+-       `Hasse(elements)(lessOrEqual)` takes a set and an ordering relation (`lessOrEqual(a, b)`
+-       meaning `a ≤ b`) and computes the covering relation: for each element, the elements
+-       immediately above it (`parents`) and immediately below it (`children`), with every
+-       comparison a path already implies left out. The divisors of 12, ordered by divisibility:
++       `Hasse(elements)(lessOrEqual)` recebe um conjunto e uma relação de ordem
++       (`lessOrEqual(a, b)` significando `a ≤ b`) e calcula a relação de cobertura: para cada
++       elemento, os elementos imediatamente acima dele (`parents`) e imediatamente abaixo dele
++       (`children`), deixando de fora toda comparação que um caminho já implica. Os divisores de
++       12, ordenados por divisibilidade:
+
+=       comparison a path already implies left out. The divisors of 12, ordered by divisibility:
+=
+-       ```scala
++       ```scala
+
+=       comparison a path already implies left out. The divisors of 12, ordered by divisibility:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       val divisors = Hasse(Set(1, 2, 3, 4, 6, 12))((a, b) => b%a == 0)
++       val divisors = Hasse(Set(1, 2, 3, 4, 6, 12))((a, b) => b%a == 0)
+
+-       divisors.parents(2)      // Set(4, 6): the covers of 2
++       divisors.parents(2)      // Set(4, 6): the covers of 2
+
+-       divisors.children(6)     // Set(2, 3)
++       divisors.children(6)     // Set(2, 3)
+
+-       divisors.children(12)    // Set(4, 6), not 2: a transitive edge is not a cover
++       divisors.children(12)    // Set(4, 6), not 2: a transitive edge is not a cover
+
+-       divisors.maxima          // Set(12)
++       divisors.maxima          // Set(12)
+
+-       divisors.minima          // Set(1)
++       divisors.minima          // Set(1)
+
+=       divisors.minima          // Set(1)
+-       ```
++       ```
+
+-       Elements are inserted one at a time; each insertion finds its immediate parents by
+-       descending from the current maxima and its immediate children by ascending from the
+-       current minima, pruning whole subtrees as soon as a comparison rules them out, and every
+-       comparison is memoised, so far fewer than all ordered pairs are compared. Two elements
+-       equivalent under the relation (each ≤ the other) are merged: the later one becomes an
+-       alias of the first, and queries on either answer for both.
++       Os elementos são inseridos um de cada vez; cada inserção encontra os seus pais imediatos
++       descendo a partir dos máximos atuais e os seus filhos imediatos subindo a partir dos
++       mínimos atuais, podando subárvores inteiras assim que uma comparação as descarta, e toda
++       comparação é memoizada, então são comparados muito menos pares do que todos os pares
++       ordenados. Dois elementos equivalentes sob a relação (cada um ≤ o outro) são fundidos: o
++       posterior se torna um alias do primeiro, e as consultas sobre qualquer um deles respondem
++       pelos dois.
+
+-       A `Hasse` is itself a graph, each element pointing at the elements it covers, so it is
+-       `Nodal`, `Bidirectional` (both directions are stored) and `Topological` (a partial order
+-       has no cycle): `divisors.linearized` runs from the bottom to the top, its `sources` are
+-       its minima and its `sinks` its maxima, and `dendrology`'s diagrams draw it directly.
+-       `dag` is the same relation as a `Dag`, and `Poset#dag` builds one through a
+-       `PartiallyOrdered` instance.
++       Um `Hasse` é ele próprio um grafo, cada elemento apontando para os elementos que cobre,
++       então ele é `Nodal`, `Bidirectional` (as duas direções são armazenadas) e `Topological`
++       (uma ordem parcial não tem ciclo): `divisors.linearized` vai de baixo para cima, as suas
++       `sources` são os seus mínimos e os seus `sinks`, os seus máximos, e os diagramas de
++       `dendrology` o desenham diretamente. `dag` é a mesma relação como um `Dag`, e `Poset#dag`
++       constrói um por meio de uma instância de `PartiallyOrdered`.
+
+=       `PartiallyOrdered` instance.
+-   refer acyclicity.Poset
++   refer acyclicity.Poset
+
+=   refer acyclicity.Poset
+-   refer acyclicity.Dag
++   refer acyclicity.Dag
+
+-   entry .apply   the Hasse diagram of a set under a `lessOrEqual` relation
+-       `Hasse(elements)((a, b) => a ≤ b)`. The relation must be a partial order (reflexive,
+-       antisymmetric up to the merging of equivalents, transitive) for the result to be a
+-       covering relation; it is called at most once per ordered pair.
+-   entry .nodal   the `Nodal` instance: a `Hasse`'s elements, each pointing at the elements it covers
+-   entry .bidirectional   the `Bidirectional` instance: an element's predecessors are its covers, read directly
+-       Both directions are stored, so no `Dysasymptotic.LinearScan` is needed.
+-   entry .topological   the marker which certifies a `Hasse` holds no cycle: a partial order cannot
+-   entry #parents   the elements immediately above an element: its covers
+-   entry #children   the elements immediately below an element: those it covers
+-   entry #elements   every element, as a set
+-   entry #maxima   the elements nothing is above
+-   entry #minima   the elements nothing is below
+-   entry #dag   the covering relation as a `Dag`, each element pointing at those it covers
+-       No check is needed: a partial order's covering relation is acyclic. `hasse.dag.edges` is
+-       `hasse.edges`.
+-   entry #invert   the same relation read upward: each element pointing at those covering it
+-       O(1): the two stored directions are swapped. `invert.children(x)` is `parents(x)`.
+-   entry #bottom   a new element attached below every current minimum, in one comparison-free sweep
+-       For a value known by construction to be less than everything — `Nothing` among types —
+-       so that it need not be compared against each element. It becomes the sole minimum, and
+-       each former minimum now covers it.
+-   entry #top   a new element attached above every current maximum, in one comparison-free sweep
+-       The counterpart of `#bottom`: `Any` among types. It becomes the sole maximum.
++   entry .apply   o diagrama de Hasse de um conjunto sob uma relação `lessOrEqual`
++       `Hasse(elements)((a, b) => a ≤ b)`. A relação deve ser uma ordem parcial (reflexiva,
++       antissimétrica a menos da fusão de equivalentes, transitiva) para que o resultado seja uma
++       relação de cobertura; ela é chamada no máximo uma vez por par ordenado.
++   entry .nodal   a instância de `Nodal`: os elementos de um `Hasse`, cada um apontando para os elementos que cobre
++   entry .bidirectional   a instância de `Bidirectional`: os predecessores de um elemento são as suas coberturas, lidas diretamente
++       As duas direções são armazenadas, então nenhum `Dysasymptotic.LinearScan` é necessário.
++   entry .topological   o marcador que certifica que um `Hasse` não contém ciclo: uma ordem parcial não pode conter
++   entry #parents   os elementos imediatamente acima de um elemento: as suas coberturas
++   entry #children   os elementos imediatamente abaixo de um elemento: os que ele cobre
++   entry #elements   todos os elementos, como um conjunto
++   entry #maxima   os elementos sem nada acima deles
++   entry #minima   os elementos sem nada abaixo deles
++   entry #dag   a relação de cobertura como um `Dag`, cada elemento apontando para os que ele cobre
++       Nenhuma verificação é necessária: a relação de cobertura de uma ordem parcial é acíclica.
++       `hasse.dag.edges` é `hasse.edges`.
++   entry #invert   a mesma relação lida para cima: cada elemento apontando para os que o cobrem
++       O(1): as duas direções armazenadas são trocadas. `invert.children(x)` é `parents(x)`.
++   entry #bottom   um novo elemento ligado abaixo de todo mínimo atual, em uma única passada sem comparações
++       Para um valor que se sabe, por construção, ser menor que tudo — `Nothing` entre os tipos —
++       de modo que não precise ser comparado com cada elemento. Ele se torna o único mínimo, e
++       cada mínimo anterior passa a cobri-lo.
++   entry #top   um novo elemento ligado acima de todo máximo atual, em uma única passada sem comparações
++       A contraparte de `#bottom`: `Any` entre os tipos. Ele se torna o único máximo.
+
+- entry .PartiallyOrdered   the typeclass of a type with a partial order: `compare(left, right)` is `left ≤ right`
++ entry .PartiallyOrdered   a classe de tipos de um tipo com uma ordem parcial: `compare(left, right)` é `left ≤ right`
+
+= entry .PartiallyOrdered   the typeclass of a type with a partial order: `compare(left, right)` is `left ≤ right`
+-   detail
++   detail
+
+-       `element is PartiallyOrdered` supplies `compare(left, right): Boolean`, read as `left ≤
+-       right`, for `Poset`. The relation should be reflexive, antisymmetric and transitive; it
+-       need not relate every pair. A given is written as a lambda:
++       `element is PartiallyOrdered` fornece `compare(left, right): Boolean`, lido como
++       `left ≤ right`, para `Poset`. A relação deve ser reflexiva, antissimétrica e transitiva; ela
++       não precisa relacionar todos os pares. Um given é escrito como uma lambda:
+
+=       need not relate every pair. A given is written as a lambda:
+=
+-       ```scala
++       ```scala
+
+=       need not relate every pair. A given is written as a lambda:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       given Int is PartiallyOrdered = (a, b) => b%a == 0   // divisibility
++       given Int is PartiallyOrdered = (a, b) => b%a == 0   // divisibility
+
+-       Poset(1, 2, 3, 4, 6, 12).dag.successors(2)           // Set(4, 6)
++       Poset(1, 2, 3, 4, 6, 12).dag.successors(2)           // Set(4, 6)
+
+=       Poset(1, 2, 3, 4, 6, 12).dag.successors(2)           // Set(4, 6)
+-       ```
++       ```
+
+=       ```
+-   refer acyclicity.Poset
++   refer acyclicity.Poset
+
+- entry .Poset   a set of elements with a `PartiallyOrdered` instance, and the `Dag` of its covering relation
++ entry .Poset   um conjunto de elementos com uma instância de `PartiallyOrdered`, e o `Dag` da sua relação de cobertura
+
+= entry .Poset   a set of elements with a `PartiallyOrdered` instance, and the `Dag` of its covering relation
+-   detail
++   detail
+
+-       `Poset(elements*)` holds a set of elements whose type is `PartiallyOrdered`, and `dag` is
+-       the Hasse diagram of the order as a `Dag`, each element pointing at the elements
+-       immediately **above** it (its covers), built through `Hasse` with the order's `compare`,
+-       which prunes comparisons and needs no reduction afterwards.
++       `Poset(elements*)` contém um conjunto de elementos cujo tipo é `PartiallyOrdered`, e `dag`
++       é o diagrama de Hasse da ordem como um `Dag`, cada elemento apontando para os elementos
++       imediatamente **acima** dele (as suas coberturas), construído por meio de `Hasse` com o
++       `compare` da ordem, que poda as comparações e não precisa de redução posterior.
+
+=       which prunes comparisons and needs no reduction afterwards.
+=
+-       ```scala
++       ```scala
+
+=       which prunes comparisons and needs no reduction afterwards.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       given Int is PartiallyOrdered = (a, b) => b%a == 0
++       given Int is PartiallyOrdered = (a, b) => b%a == 0
+
+-       Poset(1, 2, 3, 4, 6, 12).dag.successors(2)   // Set(4, 6)
++       Poset(1, 2, 3, 4, 6, 12).dag.successors(2)   // Set(4, 6)
+
+=       Poset(1, 2, 3, 4, 6, 12).dag.successors(2)   // Set(4, 6)
+-       ```
++       ```
+
+-       Note the direction: `Poset#dag` points upward (at covers), where `Hasse#dag` points
+-       downward (at the covered); `Hasse` with the same relation is the richer value, with both
+-       directions, maxima and minima.
++       Observe a direção: `Poset#dag` aponta para cima (para as coberturas), enquanto `Hasse#dag`
++       aponta para baixo (para os cobertos); `Hasse` com a mesma relação é o valor mais rico, com
++       as duas direções, os máximos e os mínimos.
+
+-   refer acyclicity.Hasse
++   refer acyclicity.Hasse
+
+-   refer acyclicity.PartiallyOrdered
++   refer acyclicity.PartiallyOrdered
+
+-   entry .apply   a `Poset` of the given elements
+-   entry #elements   the elements, as a set
+-   entry #dag   the covering relation as a `Dag`, each element pointing at those immediately above it
++   entry .apply   um `Poset` dos elementos fornecidos
++   entry #elements   os elementos, como um conjunto
++   entry #dag   a relação de cobertura como um `Dag`, cada elemento apontando para os imediatamente acima dele
+
+- entry .Layering   a graph arranged in layers for drawing, dependencies above dependents, with crossings reduced
++ entry .Layering   um grafo organizado em camadas para desenho, dependências acima dos dependentes, com cruzamentos reduzidos
+
+= entry .Layering   a graph arranged in layers for drawing, dependencies above dependents, with crossings reduced
+-   detail
++   detail
+
+-       The result of `Dag#layered` (and the `layered` extension on any `Topological` graph).
+-       Every node is assigned to a layer — by `Ranking.LongestPath`, one layer below its
+-       deepest dependency, so the sources share layer 0; or, with `import
+-       rankings.balancedRanking`, pulled down to the layer above its shallowest dependant — and
+-       an edge spanning more than one layer passes through a `Layering.Vertex.Virtual` in each
+-       layer between, so every link in the result joins adjacent layers. The vertices of each
+-       layer are then ordered to reduce the crossings between the links joining it to its
+-       neighbours, by alternating weighted-median sweeps and adjacent transpositions, up to
+-       twenty-four sweeps or until the drawing is planar — Sugiyama's method, as GraphViz's
+-       `dot` draws it.
++       O resultado de `Dag#layered` (e da extensão `layered` em qualquer grafo `Topological`).
++       Todo nó é atribuído a uma camada — por `Ranking.LongestPath`, uma camada abaixo da sua
++       dependência mais profunda, de modo que as origens compartilham a camada 0; ou, com
++       `import rankings.balancedRanking`, puxado para baixo até a camada acima do seu dependente
++       mais raso — e uma aresta que abrange mais de uma camada passa por um
++       `Layering.Vertex.Virtual` em cada camada intermediária, de modo que toda ligação no
++       resultado une camadas adjacentes. Os vértices de cada camada são então ordenados para
++       reduzir os cruzamentos entre as ligações que a unem às suas vizinhas, alternando
++       varreduras de mediana ponderada e transposições adjacentes, até vinte e quatro varreduras
++       ou até que o desenho seja planar — o método de Sugiyama, como o `dot` do GraphViz o
++       desenha.
+
+=       `dot` draws it.
+=
+-       ```scala
++       ```scala
+
+=       `dot` draws it.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `dot` draws it.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val dag = Dag(8 -> Set(4, 6), 6 -> Set(3, 2), 4 -> Set(2), 3 -> Set(), 2 -> Set())
++       val dag = Dag(8 -> Set(4, 6), 6 -> Set(3, 2), 4 -> Set(2), 3 -> Set(), 2 -> Set())
+
+-       val layering = dag.layered
++       val layering = dag.layered
+
+-       layering.rank(2)          // 0: no dependencies, so the first layer
++       layering.rank(2)          // 0: no dependencies, so the first layer
+
+-       layering.rank(8)          // 2: two layers down, by the longest path
++       layering.rank(8)          // 2: two layers down, by the longest path
+
+-       layering.layers(1)        // the vertices of the second layer, in drawn order
++       layering.layers(1)        // the vertices of the second layer, in drawn order
+
+-       layering.links(0)         // the (upper, lower) positions joined between layers 0 and 1
++       layering.links(0)         // the (upper, lower) positions joined between layers 0 and 1
+
+-       layering.crossings        // 0: no link crosses another
++       layering.crossings        // 0: no link crosses another
+
+=       layering.crossings        // 0: no link crosses another
+-       ```
++       ```
+
+-       `dendrology`'s `LayeredDagDiagram` assigns columns to a layering and renders it; a
+-       different drawing takes `layers` and `links` directly.
++       O `LayeredDagDiagram` de `dendrology` atribui colunas a uma organização em camadas e a
++       renderiza; um desenho diferente toma `layers` e `links` diretamente.
+
+-   refer acyclicity.Ranking
++   refer acyclicity.Ranking
+
+=   refer acyclicity.Ranking
+-   refer acyclicity.rankings
++   refer acyclicity.rankings
+
+-   entry .Vertex   a slot in a layer: a node of the graph, or the point where a longer edge passes through
+-       An enum: `Real(value)` is a node of the graph, and `Virtual(source, target)` is where the
+-       edge from `source` to `target`, spanning several layers, passes through this one. A
+-       drawing gives a virtual vertex a column and draws the edge through it.
+-   entry #layers   the layers, top down, each a list of `Layering.Vertex` in drawn order
+-   entry #links   `links(i)` joins layer `i` to layer `i + 1`, as pairs of positions within each
+-       Every link joins adjacent layers: an edge spanning more is broken at its virtual vertices.
+-   entry #rank   each node's layer, as a `Map`
+-   entry #position   each node's position within its layer, as a `Map`
+-   entry #crossings   how many pairs of links cross, over the whole layering
++   entry .Vertex   um slot em uma camada: um nó do grafo, ou o ponto onde uma aresta mais longa passa
++       Um enum: `Real(value)` é um nó do grafo, e `Virtual(source, target)` é onde a aresta de
++       `source` para `target`, que abrange várias camadas, passa por esta. Um desenho dá a um
++       vértice virtual uma coluna e desenha a aresta através dele.
++   entry #layers   as camadas, de cima para baixo, cada uma uma lista de `Layering.Vertex` na ordem desenhada
++   entry #links   `links(i)` une a camada `i` à camada `i + 1`, como pares de posições dentro de cada uma
++       Toda ligação une camadas adjacentes: uma aresta que abrange mais é quebrada nos seus
++       vértices virtuais.
++   entry #rank   a camada de cada nó, como um `Map`
++   entry #position   a posição de cada nó dentro da sua camada, como um `Map`
++   entry #crossings   quantos pares de ligações se cruzam, em toda a organização em camadas
+
+- entry .Ranking   how `layered` assigns each node to a layer: `LongestPath` or `Balanced`
++ entry .Ranking   como `layered` atribui cada nó a uma camada: `LongestPath` ou `Balanced`
+
+= entry .Ranking   how `layered` assigns each node to a layer: `LongestPath` or `Balanced`
+-   detail
++   detail
+
+-       An enum, taken as a contextual value by `Dag#layered`, the `layered` extension and
+-       `dendrology`'s `LayeredDagDiagram`. `LongestPath` places every node one layer below its
+-       deepest dependency, so every node depending on nothing shares layer 0. `Balanced` starts
+-       from that and then pulls every node which has dependants down to the layer above its
+-       shallowest dependant, which shortens the long edge from a source that only feeds
+-       something deep. The companion's `default` is `LongestPath`; `import
+-       rankings.balancedRanking` outranks it.
++       Um enum, tomado como valor contextual por `Dag#layered`, pela extensão `layered` e pelo
++       `LayeredDagDiagram` de `dendrology`. `LongestPath` coloca todo nó uma camada abaixo da sua
++       dependência mais profunda, de modo que todo nó que não depende de nada compartilha a
++       camada 0. `Balanced` parte disso e então puxa todo nó que tem dependentes para baixo, até a
++       camada acima do seu dependente mais raso, o que encurta a aresta longa de uma origem que só
++       alimenta algo profundo. O `default` do objeto companheiro é `LongestPath`;
++       `import rankings.balancedRanking` tem precedência sobre ele.
+
+=       rankings.balancedRanking` outranks it.
+-   refer acyclicity.rankings
++   refer acyclicity.rankings
+
+=   refer acyclicity.rankings
+-   refer acyclicity.Layering
++   refer acyclicity.Layering
+
+-   entry .default   `Ranking.LongestPath`, the given which applies when none is imported
++   entry .default   `Ranking.LongestPath`, o given que se aplica quando nenhum é importado
+
+- entry .rankings   the two layer-assignment policies for `layered`, as givens to import by name
++ entry .rankings   as duas políticas de atribuição de camadas para `layered`, como givens a importar pelo nome
+
+= entry .rankings   the two layer-assignment policies for `layered`, as givens to import by name
+-   detail
++   detail
+
+-       `import soundness.*` resolves `Ranking.LongestPath` from the `Ranking` companion; importing
+-       one of these by name selects a policy explicitly, and `balancedRanking` is the only way to
+-       select `Balanced`.
++       `import soundness.*` resolve `Ranking.LongestPath` a partir do objeto companheiro
++       `Ranking`; importar um destes pelo nome seleciona uma política explicitamente, e
++       `balancedRanking` é a única forma de selecionar `Balanced`.
+
+=       select `Balanced`.
+=
+-       ```scala
++       ```scala
+
+=       select `Balanced`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       select `Balanced`.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       import rankings.balancedRanking
++       import rankings.balancedRanking
+
+-       val deep = Dag(1 -> Set(), 5 -> Set(), 2 -> Set(1), 3 -> Set(2, 5))
++       val deep = Dag(1 -> Set(), 5 -> Set(), 2 -> Set(1), 3 -> Set(2, 5))
+
+-       deep.layered.rank(5)      // 1: 5 feeds only 3, two layers down, so it sinks to the layer above
++       deep.layered.rank(5)      // 1: 5 feeds only 3, two layers down, so it sinks to the layer above
+
+=       deep.layered.rank(5)      // 1: 5 feeds only 3, two layers down, so it sinks to the layer above
+-       ```
++       ```
+
+-       Without the import `deep.layered.rank(5)` is 0.
+-   entry .longestPathRanking   `Ranking.LongestPath`: every node one layer below its deepest dependency
+-   entry .balancedRanking   `Ranking.Balanced`: every node with dependants pulled down to the layer above its shallowest dependant
++       Sem o import, `deep.layered.rank(5)` é 0.
++   entry .longestPathRanking   `Ranking.LongestPath`: todo nó uma camada abaixo da sua dependência mais profunda
++   entry .balancedRanking   `Ranking.Balanced`: todo nó com dependentes puxado para baixo até a camada acima do seu dependente mais raso
+
+- entry .Dot   a GraphViz DOT document as a value, built from identifiers, edges and attributes, and serialized to text
++ entry .Dot   um documento DOT do GraphViz como valor, construído a partir de identificadores, arestas e atributos, e serializado em texto
+
+= entry .Dot   a GraphViz DOT document as a value, built from identifiers, edges and attributes, and serialized to text
+-   detail
++   detail
+
+-       `Dot` is an enum of two cases, `Graph` (undirected) and `Digraph` (directed), each holding
+-       an optional name, whether it is `strict` (no duplicate edges), and its `Dot.Statement`s.
+-       The companion's `digraph`, `strictDigraph`, `graph`, `strictGraph` and `subgraph` build
+-       them, and the statements are built from `Name[Dot.Id]` identifiers with the extension
+-       operators `-->` (a directed edge), `--` (an undirected edge), `:=` (an assignment) and
+-       `id(key -> value, …)` (a node with attributes). `serialize` writes the DOT text.
++       `Dot` é um enum de dois casos, `Graph` (não dirigido) e `Digraph` (dirigido), cada um
++       contendo um nome opcional, se é `strict` (sem arestas duplicadas) e os seus
++       `Dot.Statement`s. Os métodos `digraph`, `strictDigraph`, `graph`, `strictGraph` e
++       `subgraph` do objeto companheiro os constroem, e as declarações são construídas a partir de
++       identificadores `Name[Dot.Id]` com os operadores de extensão `-->` (uma aresta dirigida),
++       `--` (uma aresta não dirigida), `:=` (uma atribuição) e `id(key -> value, …)` (um nó com
++       atributos). `serialize` escreve o texto DOT.
+
+=       `id(key -> value, …)` (a node with attributes). `serialize` writes the DOT text.
+=
+-       ```scala
++       ```scala
+
+=       `id(key -> value, …)` (a node with attributes). `serialize` writes the DOT text.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       `id(key -> value, …)` (a node with attributes). `serialize` writes the DOT text.
+=
+=       ```scala
+=       import soundness.*
+-       import strategies.throwUnsafely
++       import strategies.throwUnsafely
+
+-       val a = Name[Dot.Id](t"a")
++       val a = Name[Dot.Id](t"a")
+
+-       val b = Name[Dot.Id](t"b")
++       val b = Name[Dot.Id](t"b")
+
+-       Dot.digraph(Name[Dot.Id](t"g"), a --> b, a(t"color" -> t"red")).serialize
++       Dot.digraph(Name[Dot.Id](t"g"), a --> b, a(t"color" -> t"red")).serialize
+
+-       // "\ndigraph g {\n  \"a\" -> \"b\"\n  \"a\" [ color=\"red\" ]\n}"
++       // "\ndigraph g {\n  \"a\" -> \"b\"\n  \"a\" [ color=\"red\" ]\n}"
+
+-       Dot.digraph(Dot.subgraph(a --> b)).serialize
++       Dot.digraph(Dot.subgraph(a --> b)).serialize
+
+-       // "\ndigraph {\n  subgraph {\n    \"a\" -> \"b\"\n  }\n}"
++       // "\ndigraph {\n  subgraph {\n    \"a\" -> \"b\"\n  }\n}"
+
+=       // "\ndigraph {\n  subgraph {\n    \"a\" -> \"b\"\n  }\n}"
+-       ```
++       ```
+
+-       Every identifier is emitted double-quoted, so the `Dot.Identifier` rule is permissive:
+-       any non-empty text with no double-quote and no newline. `Name[Dot.Id](text)` raises
+-       `Name.Error` for anything else (needing a `Tactic[Name.Error]`), and the `n"…"` literal
+-       is checked as the code compiles. A `Dag[Text]` renders through `dag.dot`, which makes a
+-       `Dot.Digraph` with an edge per dependency.
++       Todo identificador é emitido entre aspas duplas, então a regra `Dot.Identifier` é
++       permissiva: qualquer texto não vazio sem aspas duplas e sem quebra de linha.
++       `Name[Dot.Id](text)` lança `Name.Error` para qualquer outra coisa (precisando de um
++       `Tactic[Name.Error]`), e o literal `n"…"` é verificado enquanto o código compila. Um
++       `Dag[Text]` é renderizado por meio de `dag.dot`, que produz um `Dot.Digraph` com uma aresta
++       por dependência.
+
+=       `Dot.Digraph` with an edge per dependency.
+-   refer acyclicity.Dag
++   refer acyclicity.Dag
+
+-   entry .digraph   a directed graph, named or anonymous, of the given statements
+-       `Dot.digraph(id, statements*)` or `Dot.digraph(statements*)`; not strict.
+-   entry .strictDigraph   a named directed graph marked `strict`: duplicate edges are merged
+-   entry .graph   a named undirected graph of the given statements
+-   entry .strictGraph   a named undirected graph marked `strict`
+-   entry .subgraph   a `subgraph { … }` statement, named or anonymous, nested in a graph or as an edge target
+-       `Dot.subgraph(id, statements*)` or `Dot.subgraph(statements*)`. An edge may end at a
+-       subgraph: `a --> Dot.subgraph(b, c)`.
+-   entry .--   `a -- b`: an undirected edge statement, from an identifier to an identifier or a subgraph
+-   entry .-->   `a --> b`: a directed edge statement, from an identifier to an identifier or a subgraph
+-   entry .:=   `a := b`: an assignment statement, emitted as `"a" = "b"`
+-   entry .apply   `id(key -> value, …)`: a node statement declaring an identifier with attributes
+-       An extension on `Name[Dot.Id]`: `a(t"color" -> t"red")` is emitted as `"a" [ color="red" ]`.
+-       With no attributes it declares the bare node.
+-   entry .Target   the right-hand side of an edge: directed or not, its destination, and an optional chained target
++   entry .digraph   um grafo dirigido, nomeado ou anônimo, das declarações fornecidas
++       `Dot.digraph(id, statements*)` ou `Dot.digraph(statements*)`; não estrito.
++   entry .strictDigraph   um grafo dirigido nomeado marcado como `strict`: as arestas duplicadas são fundidas
++   entry .graph   um grafo não dirigido nomeado das declarações fornecidas
++   entry .strictGraph   um grafo não dirigido nomeado marcado como `strict`
++   entry .subgraph   uma declaração `subgraph { … }`, nomeada ou anônima, aninhada em um grafo ou como alvo de uma aresta
++       `Dot.subgraph(id, statements*)` ou `Dot.subgraph(statements*)`. Uma aresta pode terminar
++       em um subgrafo: `a --> Dot.subgraph(b, c)`.
++   entry .--   `a -- b`: uma declaração de aresta não dirigida, de um identificador para um identificador ou um subgrafo
++   entry .-->   `a --> b`: uma declaração de aresta dirigida, de um identificador para um identificador ou um subgrafo
++   entry .:=   `a := b`: uma declaração de atribuição, emitida como `"a" = "b"`
++   entry .apply   `id(key -> value, …)`: uma declaração de nó que declara um identificador com atributos
++       Uma extensão em `Name[Dot.Id]`: `a(t"color" -> t"red")` é emitido como
++       `"a" [ color="red" ]`. Sem atributos, ela declara o nó sozinho.
++   entry .Target   o lado direito de uma aresta: se é dirigida, o seu destino e um alvo encadeado opcional
+
+=   entry .Target   the right-hand side of an edge: directed or not, its destination, and an optional chained target
+-     detail
++     detail
+
+-         A case class with `directed`, `dest` (an identifier or a `Statement.Subgraph`) and `link`,
+-         a further `Target` for a chain such as `a -> b -> c`. The `-->` and `--` operators build
+-         one; it is rarely written by hand.
+-     entry #directed   whether the edge is drawn with `->` rather than `--`
+-     entry #dest   the destination: a `Name[Dot.Id]` or a `Statement.Subgraph`
+-     entry #link   a further target chained after this one, if any
+-   entry .Property   one `key="value"` attribute of a node
+-     entry #key   the attribute's name
+-     entry #value   the attribute's value, emitted double-quoted
+-   entry .Statement   one statement of a graph: a node, an edge, an assignment or a subgraph
+-       An enum: `Node(id, attrs*)`, `Edge(id, rhs: Target, attrs*)`, `Assignment(id, id2)` and
+-       `Subgraph(id: Option[Name[Dot.Id]], statements*)`. The companion's constructors and the
+-       operators on `Name[Dot.Id]` make them; a `Subgraph` may also stand as an edge's target.
+-   entry .serialize   `Dot.serialize(tokens)`: lays out a token list as indented DOT text
+-       The low-level writer the instance method uses: braces open and close indented blocks,
+-       `;` ends a line, `[` and `]` bracket attributes, and other tokens are space-separated.
+-   entry .Id   the naming plane of DOT identifiers: `Name[Dot.Id]`
++         Uma case class com `directed`, `dest` (um identificador ou um `Statement.Subgraph`) e
++         `link`, um `Target` adicional para uma cadeia como `a -> b -> c`. Os operadores `-->` e
++         `--` constroem um; ele raramente é escrito à mão.
++     entry #directed   se a aresta é desenhada com `->` em vez de `--`
++     entry #dest   o destino: um `Name[Dot.Id]` ou um `Statement.Subgraph`
++     entry #link   um alvo adicional encadeado depois deste, se houver
++   entry .Property   um atributo `key="value"` de um nó
++     entry #key   o nome do atributo
++     entry #value   o valor do atributo, emitido entre aspas duplas
++   entry .Statement   uma declaração de um grafo: um nó, uma aresta, uma atribuição ou um subgrafo
++       Um enum: `Node(id, attrs*)`, `Edge(id, rhs: Target, attrs*)`, `Assignment(id, id2)` e
++       `Subgraph(id: Option[Name[Dot.Id]], statements*)`. Os construtores do objeto companheiro e
++       os operadores em `Name[Dot.Id]` as produzem; um `Subgraph` também pode servir de alvo de
++       uma aresta.
++   entry .serialize   `Dot.serialize(tokens)`: dispõe uma lista de tokens como texto DOT indentado
++       O escritor de baixo nível que o método de instância usa: as chaves abrem e fecham blocos
++       indentados, `;` termina uma linha, `[` e `]` delimitam os atributos, e os demais tokens são
++       separados por espaços.
++   entry .Id   o plano de nomes dos identificadores DOT: `Name[Dot.Id]`
+
+=   entry .Id   the naming plane of DOT identifiers: `Name[Dot.Id]`
+-     detail
++     detail
+
+-         A sealed marker type. A `Name[Dot.Id]` names a node, an edge endpoint, an assignment
+-         side or a (sub)graph alike, and is held to `Dot.Identifier` by the given `nominative` in
+-         this object: `Name[Dot.Id](text)` checks at runtime (raising `Name.Error`) and `n"…"`
+-         as the code compiles.
+-     entry .nominative   the given which holds a `Name[Dot.Id]` to the `Dot.Identifier` rule
+-   entry .Identifier   the rule a DOT identifier must satisfy: non-empty, with no double-quote and no newline
+-       A `nomenclature` rule. Identifiers are always emitted double-quoted, so nothing else needs
+-       escaping; its failure message reads _must be a valid DOT identifier_.
+-   entry #serialize   the graph as DOT text, indented, beginning with a newline
+-       `Dag(t"a" -> t"b").dot.serialize` is `"\ndigraph {\n  \"a\" -> \"b\"\n}"`.
+-   entry #add   the graph with further statements appended
++         Um tipo marcador selado. Um `Name[Dot.Id]` nomeia igualmente um nó, uma extremidade de
++         aresta, um lado de uma atribuição ou um (sub)grafo, e é submetido a `Dot.Identifier` pelo
++         given `nominative` deste objeto: `Name[Dot.Id](text)` verifica em tempo de execução
++         (lançando `Name.Error`) e `n"…"`, enquanto o código compila.
++     entry .nominative   o given que submete um `Name[Dot.Id]` à regra `Dot.Identifier`
++   entry .Identifier   a regra que um identificador DOT deve satisfazer: não vazio, sem aspas duplas e sem quebra de linha
++       Uma regra de `nomenclature`. Os identificadores são sempre emitidos entre aspas duplas,
++       então nada mais precisa de escape; a sua mensagem de falha diz
++       _must be a valid DOT identifier_.
++   entry #serialize   o grafo como texto DOT, indentado, começando com uma quebra de linha
++       `Dag(t"a" -> t"b").dot.serialize` é `"\ndigraph {\n  \"a\" -> \"b\"\n}"`.
++   entry #add   o grafo com declarações adicionais acrescentadas ao final
+
+- entry .explore   `start.explore(dependencies)`: materialises a successor function into a `Digraph` by exploring from a node
+-     An extension on any value. A function `node => Iterable[node]` has no finite node set of its
+-     own, so it is not `Nodal`; `explore` walks outward from `start`, calling the function once
+-     per node reached, and answers the graph of everything found. The function may lead back on
+-     itself, so the result is a `Digraph`, and `acyclic` checks it.
++ entry .explore   `start.explore(dependencies)`: materializa uma função de sucessores em um `Digraph` explorando a partir de um nó
++     Uma extensão em qualquer valor. Uma função `node => Iterable[node]` não tem um conjunto
++     finito de nós próprio, então não é `Nodal`; `explore` percorre para fora a partir de
++     `start`, chamando a função uma vez por nó alcançado, e responde o grafo de tudo o que
++     encontrou. A função pode levar de volta a si mesma, então o resultado é um `Digraph`, e
++     `acyclic` o verifica.
+
+=     itself, so the result is a `Digraph`, and `acyclic` checks it.
+=
+-     ```scala
++     ```scala
+
+=     itself, so the result is a `Digraph`, and `acyclic` checks it.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     itself, so the result is a `Digraph`, and `acyclic` checks it.
+=
+=     ```scala
+=     import soundness.*
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     12.explore(n => (1 until n).filter(n%_ == 0)).acyclic   // the divisibility graph beneath 12
++     12.explore(n => (1 until n).filter(n%_ == 0)).acyclic   // the divisibility graph beneath 12
+
+=     12.explore(n => (1 until n).filter(n%_ == 0)).acyclic   // the divisibility graph beneath 12
+-     ```
++     ```
+
+- entry .nodes   every node of any `Nodal` graph, as a set
+-     The generic extension, for any `graph is Nodal by node`: a `Map[node, Set[node]]`, a
+-     `Ledger`, a `Hasse`, a frozen `Topology` or either graph type (which offer the same names as
+-     methods, taking precedence).
++ entry .nodes   todos os nós de qualquer grafo `Nodal`, como um conjunto
++     A extensão genérica, para qualquer `graph is Nodal by node`: um `Map[node, Set[node]]`, um
++     `Ledger`, um `Hasse`, um `Topology` congelado ou qualquer um dos dois tipos de grafo (que
++     oferecem os mesmos nomes como métodos, que têm precedência).
+
+- entry .successors   the nodes a node of any `Nodal` graph points at: its dependencies, as a set
++ entry .successors   os nós para os quais um nó de qualquer grafo `Nodal` aponta: as suas dependências, como um conjunto
+
+- entry .edges   every edge of any `Nodal` graph, as `(from, to)` pairs
++ entry .edges   todas as arestas de qualquer grafo `Nodal`, como pares `(from, to)`
+
+- entry .sources   the nodes of any `Nodal` graph with no successors: those depending on nothing
+-     Whole-graph in scope, so no acknowledgement is needed on a forward-only representation.
++ entry .sources   os nós de qualquer grafo `Nodal` sem sucessores: os que não dependem de nada
++     Abrange o grafo inteiro, então nenhum reconhecimento é necessário em uma representação que
++     armazena apenas a direção para a frente.
+
+- entry .sinks   the nodes of any `Nodal` graph with no predecessors: those nothing depends on
+-     One pass over every edge, so no `Bidirectional` instance and no acknowledgement is needed:
+-     the question is about the whole graph, not one node.
++ entry .sinks   os nós de qualquer grafo `Nodal` sem predecessores: aqueles dos quais nada depende
++     Uma passada por todas as arestas, então nenhuma instância de `Bidirectional` e nenhum
++     reconhecimento são necessários: a pergunta é sobre o grafo inteiro, e não sobre um nó.
+
+- entry .predecessors   the nodes pointing at a node, for any `Bidirectional` graph
+-     Needs a `graph is Bidirectional by node`: ungated for a frozen `Topology` or a `Hasse`, and
+-     gated on `Dysasymptotic.LinearScan` (`import dysasymptotics.linearScan`) for a `Dag` or a
+-     `Digraph`, which must transpose every edge to answer.
++ entry .predecessors   os nós que apontam para um nó, para qualquer grafo `Bidirectional`
++     Precisa de um `graph is Bidirectional by node`: sem restrição para um `Topology` congelado
++     ou um `Hasse`, e restrito por `Dysasymptotic.LinearScan` (`import dysasymptotics.linearScan`)
++     para um `Dag` ou um `Digraph`, que precisa transpor todas as arestas para responder.
+
+- entry .cycle   a cycle in any `Nodal` graph, if it has one: nodes each pointing at the next, ending where it began
+-     `Unset` for an acyclic graph. Total on any graph, by a depth-first search.
++ entry .cycle   um ciclo em qualquer grafo `Nodal`, se houver um: nós que apontam cada um para o seguinte, terminando onde começou
++     `Unset` para um grafo acíclico. Total em qualquer grafo, por uma busca em profundidade.
+
+- entry .acyclic   any `Nodal` graph as a `Dag`, after the one check; raises `Dag.Error` if there is a cycle
+-     O(n + e), once; the node set is closed over every edge target.
++ entry .acyclic   qualquer grafo `Nodal` como um `Dag`, após a única verificação; lança `Dag.Error` se houver um ciclo
++     O(n + e), uma vez; o conjunto de nós é fechado sobre todos os alvos de arestas.
+
+=     O(n + e), once; the node set is closed over every edge target.
+=
+-     ```scala
++     ```scala
+
+=     O(n + e), once; the node set is closed over every edge target.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+=     O(n + e), once; the node set is closed over every edge target.
+=
+=     ```scala
+=     import soundness.*
+-     import strategies.throwUnsafely
++     import strategies.throwUnsafely
+
+-     Map(1 -> Set(2), 2 -> Set[Int]()).acyclic.linearized   // List(2, 1)
++     Map(1 -> Set(2), 2 -> Set[Int]()).acyclic.linearized   // List(2, 1)
+
+=     Map(1 -> Set(2), 2 -> Set[Int]()).acyclic.linearized   // List(2, 1)
+-     ```
++     ```
+
+- entry .digraph   any `Nodal` graph copied into a `Digraph`, its node set closed over every edge target
++ entry .digraph   qualquer grafo `Nodal` copiado para um `Digraph`, com o seu conjunto de nós fechado sobre todos os alvos de arestas
+
+- entry .reachable   everything a node of any `Nodal` graph reaches, itself included
+-     Raises `Dag.Error` (`Reason.NodeMissing`) only for a node the graph does not have, by the
+-     instance's `has`; the search itself is total on a cyclic graph. A graph with its own
+-     `Reachable` instance (a frozen `Topology`) is searched natively, any other through
+-     `Reachable.generic`.
++ entry .reachable   tudo o que um nó de qualquer grafo `Nodal` alcança, ele próprio incluído
++     Lança `Dag.Error` (`Reason.NodeMissing`) apenas para um nó que o grafo não tem, segundo o
++     `has` da instância; a busca em si é total em um grafo cíclico. Um grafo com a sua própria
++     instância de `Reachable` (um `Topology` congelado) é pesquisado de forma nativa, e qualquer
++     outro, por meio de `Reachable.generic`.
+
+- entry .closure   every implied edge of any `Nodal` graph made explicit, as a `Digraph`
+-     One reachability search per node, through the graph's `Reachable` instance or the generic
+-     search; a node does not point at itself in the result. `Dag#closure` and a frozen
+-     `Topology`'s are the faster forms, through the bit matrix.
++ entry .closure   todas as arestas implícitas de qualquer grafo `Nodal` tornadas explícitas, como um `Digraph`
++     Uma busca de alcançabilidade por nó, por meio da instância de `Reachable` do grafo ou da
++     busca genérica; no resultado, um nó não aponta para si mesmo. `Dag#closure` e o de um
++     `Topology` congelado são as formas mais rápidas, por meio da matriz de bits.
+
+- entry .invert   any `Nodal` graph with every edge reversed, as the type its `Invertible` instance names
+-     A `Dag` to a `Dag`, a `Hasse` to a `Hasse`, a frozen `Topology` to another, and anything
+-     else — a `Map`, a `Ledger` — to a `Digraph` through `Invertible.generic`.
++ entry .invert   qualquer grafo `Nodal` com todas as arestas invertidas, como o tipo que a sua instância de `Invertible` nomeia
++     Um `Dag` em um `Dag`, um `Hasse` em um `Hasse`, um `Topology` congelado em outro, e
++     qualquer outra coisa — um `Map`, um `Ledger` — em um `Digraph` por meio de
++     `Invertible.generic`.
+
+- entry .linearized   the nodes of any `Topological` graph in topological order: every node after its successors
+-     For a `Dag`, a frozen `Topology` or a `Hasse`; a `Digraph` has no such operation until
+-     `acyclic` has converted it. Between unrelated nodes the order follows the instance's
+-     `nodes`, so an insertion-ordered representation gives a stable one.
++ entry .linearized   os nós de qualquer grafo `Topological` em ordem topológica: todo nó depois dos seus sucessores
++     Para um `Dag`, um `Topology` congelado ou um `Hasse`; um `Digraph` não tem essa operação
++     até que `acyclic` o tenha convertido. Entre nós não relacionados, a ordem segue os `nodes`
++     da instância, então uma representação ordenada pela inserção produz uma ordem estável.
+
+- entry .reduction   the minimal graph with the same reachability as any `Topological` graph, as a `Dag`
+-     Through a frozen `Topology`'s bit matrix, built once for the call.
++ entry .reduction   o grafo mínimo com a mesma alcançabilidade que qualquer grafo `Topological`, como um `Dag`
++     Por meio da matriz de bits de um `Topology` congelado, construída uma vez para a chamada.
+
+- entry .traversal   a value for every node of any `Topological` graph, from the values of its successors
+-     `graph.traversal[result]((successorValues, node) => …)`: the nodes are visited in
+-     topological order, so each call sees the values already computed for the node's
+-     successors, and the result is a `Map` from every node to its value.
++ entry .traversal   um valor para cada nó de qualquer grafo `Topological`, a partir dos valores dos seus sucessores
++     `graph.traversal[result]((successorValues, node) => …)`: os nós são visitados em ordem
++     topológica, então cada chamada vê os valores já calculados para os sucessores do nó, e o
++     resultado é um `Map` de cada nó para o seu valor.
+
+- entry .layered   any `Topological` graph arranged in crossing-minimised layers, as a `Layering`
+-     Takes the `Ranking` in scope (`Ranking.LongestPath` by default; `import
+-     rankings.balancedRanking` to change it). A graph other than a `Dag` is converted once,
+-     unchecked, since `Topological` certifies it has no cycle.
++ entry .layered   qualquer grafo `Topological` organizado em camadas com cruzamentos minimizados, como um `Layering`
++     Toma o `Ranking` no escopo (`Ranking.LongestPath` por padrão;
++     `import rankings.balancedRanking` para mudá-lo). Um grafo que não seja um `Dag` é convertido
++     uma vez, sem verificação, já que `Topological` certifica que ele não tem ciclo.

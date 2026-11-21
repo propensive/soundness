@@ -1,0 +1,43 @@
+orthant 1 language
+
+- # `↯/s.87.3` — No `Encodable in Query` instance
++ # `↯/s.87.3` — Nenhuma instância de `Encodable in Query`
+
+- Raised at compiletime when a value has no instance describing how it becomes a query
+- parameter.
++ Lançado em tempo de compilação quando um valor não tem nenhuma instância que descreva como ele
++ se torna um parâmetro de consulta.
+
+- ## Cause
++ ## Causa
+
+- Values enter a query string through an `Encodable in Query` instance, so a type with none
+- cannot be encoded.
++ Os valores entram em uma string de consulta por meio de uma instância de `Encodable in Query`,
++ então um tipo sem nenhuma não pode ser codificado.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.87.3] there is no contextual Encodable in Query instance for values of type Widget
++ [↯/s.87.3] there is no contextual Encodable in Query instance for values of type Widget
+
+= [↯/s.87.3] there is no contextual Encodable in Query instance for values of type Widget
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Define an instance for the type, or convert the value to one that has one.
++ Defina uma instância para o tipo, ou converta o valor em um que tenha uma.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/legerdemain/src/query/legerdemain.internal.scala`
++ - Código-fonte: `lib/legerdemain/src/query/legerdemain.internal.scala`

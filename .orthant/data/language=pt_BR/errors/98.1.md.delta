@@ -1,0 +1,92 @@
+orthant 1 language
+
+- # `↯/s.98.1` — `Watch.Error`
++ # `↯/s.98.1` — `Watch.Error`
+
+- Raised when Surveillance cannot register a path with the operating
+- system's filesystem watcher.
++ Lançado quando o Surveillance não consegue registrar um caminho no watcher de
++ sistema de arquivos do sistema operacional.
+
+- ## Cause
++ ## Causa
+
+- Surveillance wraps the JDK's `WatchService` API. Several distinct
+- conditions can cause registration to fail; the constructor takes
+- a `reason: Reason`. The rendered message is `the path could not
++ O Surveillance envolve a API `WatchService` do JDK. Várias condições distintas
++ podem fazer o registro falhar; o construtor recebe um `reason: Reason`. A
++ mensagem renderizada é `the path could not
+
+- be watched because $reason`.
++ be watched because $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.98.1.1` — `LimitExceeded`
++ ### `↯/s.98.1.1` — `LimitExceeded`
+
+- The operating system's per-process or per-user limit on the
+- number of inotify (or equivalent) watches has been exceeded.
++ O limite do sistema operacional, por processo ou por usuário, no número de
++ observações do inotify (ou equivalente) foi excedido.
+
+- **Example.** `[↯/s.98.1.1] the path could not be watched because the operating system's limit on watched paths has been exceeded`
++ **Exemplo.** `[↯/s.98.1.1] the path could not be watched because the operating system's limit on watched paths has been exceeded`
+
+- **Resolution.** Reduce the number of watched paths, or raise the
+- OS limit (e.g. `fs.inotify.max_user_watches` on Linux).
++ **Resolução.** Reduza o número de caminhos observados, ou aumente o limite do
++ sistema operacional (por exemplo, `fs.inotify.max_user_watches` no Linux).
+
+- ### `↯/s.98.1.2` — `Nonexistent`
++ ### `↯/s.98.1.2` — `Nonexistent`
+
+- The path passed to `watch` does not exist.
++ O caminho passado a `watch` não existe.
+
+- **Example.** `[↯/s.98.1.2] the path could not be watched because the path does not exist`
++ **Exemplo.** `[↯/s.98.1.2] the path could not be watched because the path does not exist`
+
+- **Resolution.** Confirm the path before watching, or create it
+- first.
++ **Resolução.** Confirme o caminho antes de observá-lo, ou crie-o antes.
+
+- ### `↯/s.98.1.3` — `NotDirectory`
++ ### `↯/s.98.1.3` — `NotDirectory`
+
+- The JDK `WatchService` only registers directories; the supplied
+- path was a regular file or other entry.
++ O `WatchService` do JDK só registra diretórios; o caminho fornecido era um
++ arquivo comum ou outro tipo de entrada.
+
+- **Example.** `[↯/s.98.1.3] the path could not be watched because the path is not a directory`
++ **Exemplo.** `[↯/s.98.1.3] the path could not be watched because the path is not a directory`
+
+- **Resolution.** Watch the parent directory and filter events on
+- the file name (Surveillance's `watch` extension does this when
+- given a file path).
++ **Resolução.** Observe o diretório pai e filtre os eventos pelo nome do arquivo
++ (a extensão `watch` do Surveillance faz isso quando recebe o caminho de um
++ arquivo).
+
+- ### `↯/s.98.1.4` — `PermissionDenied`
++ ### `↯/s.98.1.4` — `PermissionDenied`
+
+- The current user does not have permission to read the path.
++ O usuário atual não tem permissão para ler o caminho.
+
+- **Example.** `[↯/s.98.1.4] the path could not be watched because the user does not have permission to watch the path`
++ **Exemplo.** `[↯/s.98.1.4] the path could not be watched because the user does not have permission to watch the path`
+
+- **Resolution.** Adjust filesystem permissions, or run with a user
+- that can read the directory.
++ **Resolução.** Ajuste as permissões do sistema de arquivos, ou execute com um
++ usuário que consiga ler o diretório.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/surveillance/src/core/surveillance.Watch.scala`
++ - Código-fonte: `lib/surveillance/src/core/surveillance.Watch.scala`

@@ -1,0 +1,47 @@
+orthant 1 language
+
+- # `↯/s.60.1` — `Truncation.Error`
++ # `↯/s.60.1` — `Truncation.Error`
+
+- Raised when Turbulence's stream is cut short before the expected
+- number of bytes have been read.
++ Lançado quando o stream do Turbulence é interrompido antes que o número
++ esperado de bytes tenha sido lido.
+
+- ## Cause
++ ## Causa
+
+- The error is thrown when an upstream source closes mid-stream (or
+- hits EOF earlier than expected). The constructor records the
+- `total` byte count read so far.
++ O erro é lançado quando uma origem a montante fecha no meio do stream (ou
++ atinge o EOF antes do esperado). O construtor registra a contagem
++ `total` de bytes lidos até então.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.60.1] the stream was cut prematurely after 1024
++ [↯/s.60.1] the stream was cut prematurely after 1024
+
+= [↯/s.60.1] the stream was cut prematurely after 1024
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Investigate why the source ended early — typical causes are
+- network errors, truncated files, or cancelled producers.
++ Investigue por que a origem terminou antes da hora — as causas típicas são
++ erros de rede, arquivos truncados ou produtores cancelados.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/turbulence/src/core/turbulence.Truncation.scala`
++ - Código-fonte: `lib/turbulence/src/core/turbulence.Truncation.scala`

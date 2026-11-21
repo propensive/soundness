@@ -1,0 +1,46 @@
+orthant 1 language
+
+- # `↯/s.107.1` — `Courier.Error`
++ # `↯/s.107.1` — `Courier.Error`
+
+- Raised when Caduceus cannot send an email message.
++ Lançado quando o Caduceus não consegue enviar uma mensagem de email.
+
+- ## Cause
++ ## Causa
+
+- Caduceus surfaces this error when the underlying transport (SMTP, or
+- a configured MTA) refuses or fails to deliver a message. The
+- constructor records the `from`, `to`, and `subject` for diagnosis.
++ O Caduceus expõe este erro quando o transporte subjacente (SMTP, ou um MTA configurado) recusa ou
++ não consegue entregar uma mensagem. O construtor registra `from`, `to` e `subject` para diagnóstico.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.107.1] unable to send email from sender@example.com to recipient@example.com with subject Hello
++ [↯/s.107.1] unable to send email from sender@example.com to recipient@example.com with subject Hello
+
+= [↯/s.107.1] unable to send email from sender@example.com to recipient@example.com with subject Hello
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Inspect the cause chain for the transport-level error (authentication,
+- DNS, recipient policy). Confirm the addresses are well-formed and
+- the MTA is reachable. More specific reasons may be added in future.
++ Examine a cadeia de causas em busca do erro no nível do transporte (autenticação, DNS, política do
++ destinatário). Confirme que os endereços estão bem formados e que o MTA está acessível. Motivos mais
++ específicos poderão ser acrescentados no futuro.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/caduceus/src/core/caduceus.Courier.scala`
++ - Código-fonte: `lib/caduceus/src/core/caduceus.Courier.scala`

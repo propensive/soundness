@@ -1,0 +1,47 @@
+orthant 1 language
+
+- # `SN-560` — Multi-line interpolated-string layout (retired)
++ # `SN-560` — Layout de strings interpoladas de várias linhas (aposentado)
+
+- This error no longer exists. The page is kept so that the code is not reused, and so
+- that a reference to it from an older release can still be resolved.
++ Este erro não existe mais. A página é mantida para que o código não seja reutilizado, e para
++ que uma referência a ele vinda de uma versão mais antiga ainda possa ser resolvida.
+
+- ## What became of it
++ ## O que aconteceu
+
+- The Decorum compiler plugin, which raised this error, was extracted from Soundness and
+- is now [Consequent](https://github.com/propensive/consequent), a standalone checker for
+- Consequent Style. The rule survives there under a new identifier, in which the letter
+- names the principle it derives from:
++ O plugin de compilador Decorum, que lançava este erro, foi extraído do Soundness e
++ agora é o [Consequent](https://github.com/propensive/consequent), um verificador autônomo do
++ Consequent Style. A regra sobrevive lá sob um novo identificador, no qual a letra
++ nomeia o princípio do qual ela deriva:
+
+- ```tabular
++ ```tabular
+
+- column  Was
+- column  Now
++ column  Antes
++ column  Agora
+
+- row  `SN-560`  [`A8`](https://github.com/propensive/consequent/blob/main/doc/rules/A8.md)
++ row  `SN-560`  [`A8`](https://github.com/propensive/consequent/blob/main/doc/rules/A8.md)
+
+- row  `SN-560.1`  [`A8.1`](https://github.com/propensive/consequent/blob/main/doc/rules/A8.md)
++ row  `SN-560.1`  [`A8.1`](https://github.com/propensive/consequent/blob/main/doc/rules/A8.md)
+
+- row  `SN-560.2`  [`A8.2`](https://github.com/propensive/consequent/blob/main/doc/rules/A8.md)
++ row  `SN-560.2`  [`A8.2`](https://github.com/propensive/consequent/blob/main/doc/rules/A8.md)
+
+- row  `SN-560.3`  [`A8.3`](https://github.com/propensive/consequent/blob/main/doc/rules/A8.md)
++ row  `SN-560.3`  [`A8.3`](https://github.com/propensive/consequent/blob/main/doc/rules/A8.md)
+
+- row  `SN-560.4`  [`A8.4`](https://github.com/propensive/consequent/blob/main/doc/rules/A8.md)
++ row  `SN-560.4`  [`A8.4`](https://github.com/propensive/consequent/blob/main/doc/rules/A8.md)
+
+- ```
++ ```

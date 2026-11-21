@@ -1,0 +1,265 @@
+orthant 1 language
+
+- # Infix Types
++ # Tipos infixos
+
+- Soundness uses infix types throughout, so that a type reads as a phrase rather than a
+- tangle of brackets. Written as prepositions and verbs — `Path on Linux`, `Html of
+- "br"`, `Text is Decodable in Json`, `Quantity is Multiplicable by Duration`, a method
+- that `raises HttpError` or `logs ExecEvent` — they let a signature say in plain words
+- what a value is and what an operation needs, which is part of making code read like
+- [elegant prose](elegant-prose.md). Their real power is that they
+- [compose](composability.md): each adds one more clause to a type without nesting, so
+- `Html.Element of "ul" over "li" in Whatwg` builds up exactly as an English description
+- would, and the same `of`, `in`, `by`, or `over` carries the same meaning wherever it
+- appears. A reader who has understood one such type can read the next by analogy, and a
+- writer can describe a precise type by naming its parts in turn rather than assembling a
+- deeply parameterised one.
++ O Soundness usa tipos infixos em toda parte, para que um tipo se leia como uma frase, e não como
++ um emaranhado de colchetes. Escritos como preposições e verbos — `Path on Linux`, `Html of
++ "br"`, `Text is Decodable in Json`, `Quantity is Multiplicable by Duration`, um método que
++ `raises HttpError` ou `logs ExecEvent` —, eles permitem que uma assinatura diga em palavras
++ simples o que um valor é e do que uma operação precisa, o que é parte de fazer o código se ler
++ como [prosa elegante](elegant-prose.md). Seu verdadeiro poder está em que eles se
++ [compõem](composability.md): cada um acrescenta mais uma cláusula a um tipo sem aninhamento,
++ então `Html.Element of "ul" over "li" in Whatwg` se constrói exatamente como uma descrição em
++ inglês se construiria, e o mesmo `of`, `in`, `by` ou `over` carrega o mesmo significado onde quer
++ que apareça. Um leitor que entendeu um tipo desses consegue ler o seguinte por analogia, e quem
++ escreve pode descrever um tipo preciso nomeando suas partes uma a uma, em vez de montar um tipo
++ profundamente parametrizado.
+
+- ## How they work
++ ## Como funcionam
+
+- Each preposition is a type alias that refines one type member. `in` sets `Form`, `on`
+- sets `Plane`, `by` sets `Operand`, `to` sets `Result`:
++ Cada preposição é um alias de tipo que refina um membro de tipo. `in` define `Form`, `on` define
++ `Plane`, `by` define `Operand`, `to` define `Result`:
+
+= sets `Plane`, `by` sets `Operand`, `to` sets `Result`:
+=
+- ```scala fuel
++ ```scala fuel
+
+= sets `Plane`, `by` sets `Operand`, `to` sets `Result`:
+=
+= ```scala fuel
+- parse
++ parse
+
+= sets `Plane`, `by` sets `Operand`, `to` sets `Result`:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- infix type in   [refined, form]                             = refined { type Form = form }
++ infix type in   [refined, form]                             = refined { type Form = form }
+
+- infix type on   [refined <: { type Plane }, plane]          = refined { type Plane = plane }
++ infix type on   [refined <: { type Plane }, plane]          = refined { type Plane = plane }
+
+- infix type by   [refined <: { type Operand }, operand]      = refined { type Operand = operand }
++ infix type by   [refined <: { type Operand }, operand]      = refined { type Operand = operand }
+
+- infix type to   [refined <: { type Result }, result]        = refined { type Result = result }
++ infix type to   [refined <: { type Result }, result]        = refined { type Result = result }
+
+= infix type to   [refined <: { type Result }, result]        = refined { type Result = result }
+- ```
++ ```
+
+- That is the whole mechanism. Because each refines a *different* member, they can be
+- applied in succession without nesting, and the order does not matter:
++ Esse é o mecanismo inteiro. Como cada uma refina um membro *diferente*, elas podem ser aplicadas
++ em sequência sem aninhamento, e a ordem não importa:
+
+= applied in succession without nesting, and the order does not matter:
+=
+- ```scala fuel
++ ```scala fuel
+
+= applied in succession without nesting, and the order does not matter:
+=
+= ```scala fuel
+- parse
++ parse
+
+= applied in succession without nesting, and the order does not matter:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- Text is Decodable in Json
++ Text is Decodable in Json
+
+- value is Streamable by Data over Credit
++ value is Streamable by Data over Credit
+
+- Html.Element of "ul" over "li" in Whatwg
++ Html.Element of "ul" over "li" in Whatwg
+
+= Html.Element of "ul" over "li" in Whatwg
+- ```
++ ```
+
+- The set is small and fixed, and each preposition keeps its meaning everywhere: `over` is
+- always the transport, `by` is always the operand, `on` is always the plane.
++ O conjunto é pequeno e fixo, e cada preposição mantém seu significado em toda parte: `over` é
++ sempre o transporte, `by` é sempre o operando, `on` é sempre o plano.
+
+- ```tabular
++ ```tabular
+
+- column  Preposition
+- column  Refines
+- column  Names the
+- column  Example
+- row  `in`  `Form`  form or format  `Text is Decodable in Json`
+- row  `on`  `Plane`  plane  `Path on Linux`
+- row  `of`  `Topic`  topic  `Html of "br"`
+- row  `by`  `Operand`  operand  `Quantity is Multiplicable by Duration`
+- row  `to`  `Result`  result  `Text is Extractable to Int`
+- row  `from`  `Origin`  origin  `Ordinal is Optical from Yaml`
+- row  `over`  `Transport`  transport  `value is Streamable by Data over Credit`
+- row  `across`  `Domain`  domain  `Xml is Instantiable across HttpRequests`
+- row  `onto`  `Target`  target  `Http.Client onto Origin["http"]`
+- row  `against`  `Contrast`  contrast  `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7`
+- row  `under`  `Limit`  limit  `Tar is Nominative under Rules`
+- row  `at`  `Locus`  locus  `value is Decodable in Json at Json.Focus`
++ column  Preposição
++ column  Refina
++ column  Nomeia
++ column  Exemplo
++ row  `in`  `Form`  a forma ou o formato  `Text is Decodable in Json`
++ row  `on`  `Plane`  o plano  `Path on Linux`
++ row  `of`  `Topic`  o tópico  `Html of "br"`
++ row  `by`  `Operand`  o operando  `Quantity is Multiplicable by Duration`
++ row  `to`  `Result`  o resultado  `Text is Extractable to Int`
++ row  `from`  `Origin`  a origem  `Ordinal is Optical from Yaml`
++ row  `over`  `Transport`  o transporte  `value is Streamable by Data over Credit`
++ row  `across`  `Domain`  o domínio  `Xml is Instantiable across HttpRequests`
++ row  `onto`  `Target`  o alvo  `Http.Client onto Origin["http"]`
++ row  `against`  `Contrast`  o contraste  `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7`
++ row  `under`  `Limit`  o limite  `Tar is Nominative under Rules`
++ row  `at`  `Locus`  o locus  `value is Decodable in Json at Json.Focus`
+
+= row  `at`  `Locus`  locus  `value is Decodable in Json at Json.Focus`
+- ```
++ ```
+
+- ## What the alternative costs
++ ## Quanto custa a alternativa
+
+- The same types, written conventionally:
++ Os mesmos tipos, escritos da maneira convencional:
+
+= The same types, written conventionally:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The same types, written conventionally:
+=
+= ```scala fuel
+- parse
++ parse
+
+= The same types, written conventionally:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- Decodable[Text, Json]
++ Decodable[Text, Json]
+
+- Streamable[value, Data, Credit]
++ Streamable[value, Data, Credit]
+
+- Element["ul", "li", Whatwg]
++ Element["ul", "li", Whatwg]
+
+= Element["ul", "li", Whatwg]
+- ```
++ ```
+
+- Three problems, each of which the infix form avoids.
++ Três problemas, e a forma infixa evita cada um deles.
+
+- **Position carries the meaning.** In `Element["ul", "li", Whatwg]` a reader must know
+- that the first parameter is the tag, the second the permitted children and the third the
+- specification. In `Html.Element of "ul" over "li" in Whatwg` the prepositions say so.
++ **A posição carrega o significado.** Em `Element["ul", "li", Whatwg]`, um leitor precisa saber
++ que o primeiro parâmetro é a tag, o segundo os filhos permitidos e o terceiro a especificação.
++ Em `Html.Element of "ul" over "li" in Whatwg`, as preposições dizem isso.
+
+- **Every parameter must be supplied.** A conventional type constructor takes all its
+- arguments or none, so a partially-specified type needs a wildcard for each unmentioned
+- position. The infix form mentions only what it constrains: `Text is Decodable` is a
+- perfectly good type, and `in Json` narrows it.
++ **Todo parâmetro precisa ser fornecido.** Um construtor de tipos convencional recebe todos os
++ seus argumentos ou nenhum, então um tipo parcialmente especificado precisa de um curinga para
++ cada posição não mencionada. A forma infixa menciona apenas o que restringe:
++ `Text is Decodable` é um tipo perfeitamente válido, e `in Json` o estreita.
+
+- **Extending is a breaking change.** Adding a fourth type parameter to `Element[…]`
+- invalidates every use. Adding a fourth refinement adds a preposition that existing code
+- need not mention.
++ **Estender é uma mudança incompatível.** Acrescentar um quarto parâmetro de tipo a `Element[…]`
++ invalida todos os usos. Acrescentar um quarto refinamento acrescenta uma preposição que o código
++ existente não precisa mencionar.
+
+- ## Where they read badly
++ ## Onde se leem mal
+
+- The convention is not free of failure modes, and two are worth knowing.
++ A convenção não está livre de modos de falha, e vale a pena conhecer dois deles.
+
+- A type with many clauses can run long, and a long infix type wraps awkwardly across
+- lines — `(value is Streamable by Data over Credit) { type Transport = Credit }` is not
+- prose by anyone's standard. Where that happens, the answer is usually a named alias
+- rather than a longer phrase.
++ Um tipo com muitas cláusulas pode ficar longo, e um tipo infixo longo quebra de forma
++ desajeitada entre linhas — `(value is Streamable by Data over Credit) { type Transport = Credit }`
++ não é prosa por critério nenhum. Onde isso acontece, a resposta geralmente é um alias com nome,
++ e não uma frase mais longa.
+
+- And a preposition is only as good as the analogy it invites. `over` meaning "transport"
+- reads naturally in `Stream[Data] over Credit` and less naturally in `Instant over Unix`,
+- where the timeline is not transporting anything. The vocabulary is small enough that such
+- strains are visible, and they are accepted rather than hidden — the alternative is a
+- larger vocabulary in which each word is used less often and remembered less well.
++ E uma preposição só é tão boa quanto a analogia que convida. `over` no sentido de “transporte”
++ se lê com naturalidade em `Stream[Data] over Credit` e com menos naturalidade em
++ `Instant over Unix`, em que a linha do tempo não transporta nada. O vocabulário é pequeno o
++ bastante para que essas tensões fiquem visíveis, e elas são aceitas em vez de escondidas — a
++ alternativa é um vocabulário maior, em que cada palavra é usada com menos frequência e lembrada
++ com menos facilidade.
+
+- ## What it costs
++ ## Quanto custa
+
+- Infix types are unfamiliar. A reader arriving from ordinary Scala has met `A => B` and
+- `A & B` and not much else in infix position, so `Text is Decodable in Json` looks like
+- several things before it looks like a type. That cost is front-loaded and paid once.
++ Os tipos infixos não são familiares. Um leitor vindo do Scala comum já viu `A => B` e `A & B` e
++ pouca coisa além disso em posição infixa, então `Text is Decodable in Json` parece várias coisas
++ antes de parecer um tipo. Esse custo é pago no início, e uma única vez.
+
+- Error messages are the more persistent cost: the compiler reports the *desugared*
+- refinement, so a mismatch is described in terms of `{ type Form = Json }` rather than
+- `in Json`, and the reader must perform the translation the syntax was meant to spare
+- them.
++ As mensagens de erro são o custo mais persistente: o compilador relata o refinamento
++ *desaçucarado*, então uma incompatibilidade é descrita em termos de `{ type Form = Json }`, e não
++ de `in Json`, e o leitor precisa fazer a tradução que a sintaxe deveria lhe poupar.
+
+- See [composability](composability.md) for the property this is in service of, and
+- [elegant prose](elegant-prose.md) for the reading experience it aims at.
++ Veja [componibilidade](composability.md) para a propriedade a que isso serve, e
++ [prosa elegante](elegant-prose.md) para a experiência de leitura que se busca.

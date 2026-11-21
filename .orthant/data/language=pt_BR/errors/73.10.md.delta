@@ -1,0 +1,48 @@
+orthant 1 language
+
+- # `↯/s.73.10` — `Timezone.Error`
++ # `↯/s.73.10` — `Timezone.Error`
+
+- Raised when a value does not name a known timezone.
++ Lançado quando um valor não nomeia um fuso horário conhecido.
+
+- ## Cause
++ ## Causa
+
+- Aviation looks timezones up by IANA name (e.g. `Europe/Paris`). When
+- the name is not present in the loaded TZDB, this error is thrown.
++ O Aviation busca fusos horários pelo nome IANA (por exemplo, `Europe/Paris`). Quando
++ o nome não está presente no TZDB carregado, este erro é lançado.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.73.10] the name Mars/Olympus does not refer to a known timezone
++ [↯/s.73.10] the name Mars/Olympus does not refer to a known timezone
+
+= [↯/s.73.10] the name Mars/Olympus does not refer to a known timezone
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Use a name from the TZDB; for legacy abbreviations (`PST`, `EST`)
+- prefer the corresponding IANA zone (`America/Los_Angeles`,
++ Use um nome do TZDB; para abreviações legadas (`PST`, `EST`),
++ prefira a zona IANA correspondente (`America/Los_Angeles`,
+
+- `America/New_York`).
++ `America/New_York`).
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/aviation/src/core/aviation.Timezone.scala`
+- - `↯/s.73.6` — TZDB parsing errors
++ - Código-fonte: `lib/aviation/src/core/aviation.Timezone.scala`
++ - `↯/s.73.6` — erros de parsing do TZDB

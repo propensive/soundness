@@ -1,0 +1,61 @@
+orthant 1 language
+
+- Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and
+- round-trips the RFC 7515/7516 example vectors.
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/en/modules/`,
++ e faz a ida e volta dos vetores de exemplo das RFCs 7515/7516.
+
+- Done: #2530 (2026-11-20). sigillate: `Jws`, `Jwe`, `Jwk` and `Jwt`, with every algorithm of RFC 7518
+- but `zip` compression, and EdDSA and X25519 from RFC 8037; a bearer-token handler for
+- scintillate, and key sets fetched over HTTP. The examples of RFC 7515 appendix A and RFC 7516
+- appendix A are its tests, read from the RFCs' text. enigmatic gained the primitives it lacked:
+- key derivation, AES key wrap, AES-CBC with HMAC, RSA-OAEP and RSA-PSS.
++ Concluído: #2530 (2026-11-20). sigillate: `Jws`, `Jwe`, `Jwk` e `Jwt`, com todos os algoritmos da
++ RFC 7518 exceto a compressão `zip`, e EdDSA e X25519 da RFC 8037; um handler de bearer token para o
++ scintillate, e conjuntos de chaves obtidos por HTTP. Os exemplos do apêndice A da RFC 7515 e do
++ apêndice A da RFC 7516 são seus testes, lidos do texto das RFCs. O enigmatic ganhou as primitivas
++ que lhe faltavam: derivação de chaves, AES key wrap, AES-CBC com HMAC, RSA-OAEP e RSA-PSS.
+
+- Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and
+- passes the standard TOML compliance suite.
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/en/modules/`,
++ e passa na suíte padrão de conformidade TOML.
+
+- Passwordless authentication for the web stack, completing the story OAuth 2 and JOSE begin.
+- The COSE support it depends on — COSE keys and the asymmetric signature algorithms — arrived
+- with `brd-1`, as did the reading and chain validation of the X.509 certificates an attestation
+- carries.
++ Autenticação sem senha para a pilha web, completando a história que OAuth 2 e JOSE começam. O
++ suporte a COSE de que ele depende — chaves COSE e os algoritmos de assinatura assimétrica — chegou
++ com `brd-1`, assim como a leitura e a validação de cadeia dos certificados X.509 que uma atestação
++ carrega.
+
+- Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and a
+- scripted registration-and-assertion ceremony passes against a reference authenticator.
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/en/modules/`,
++ e uma cerimônia roteirizada de registro e asserção passa contra um autenticador de referência.
+
+- Done: #2530 (2026-11-20). chatelaine: The relying party's two ceremonies, with every check of
+- WebAuthn Level 2 §7.1 and §7.2, and the `none` and `packed` attestation formats. The
+- reference authenticator is the specification's own: the registration and authentication
+- outputs of its test vectors, for ES256, ES384, ES512, RS256 and Ed25519 credentials, are
+- accepted, with packed attestations validated to the vectors' trust root. A software
+- authenticator in the test sources scripts whole ceremonies, and the ways they are refused.
+- A browser's virtual authenticator has not been driven.
++ Concluído: #2530 (2026-11-20). chatelaine: As duas cerimônias da relying party, com todas as
++ verificações das §7.1 e §7.2 do WebAuthn Level 2, e os formatos de atestação `none` e `packed`. O
++ autenticador de referência é o da própria especificação: as saídas de registro e de autenticação dos
++ seus vetores de teste, para credenciais ES256, ES384, ES512, RS256 e Ed25519, são aceitas, com as
++ atestações packed validadas até a raiz de confiança dos vetores. Um autenticador em software nas
++ fontes de teste roteiriza cerimônias inteiras, e as maneiras como elas são recusadas. O autenticador
++ virtual de um navegador ainda não foi controlado.
+
+- Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and
+- interoperates with a reference HTTP/3 server and client.
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/en/modules/`,
++ e interopera com um servidor e um cliente HTTP/3 de referência.
+
+- Done when: the module ships with tests, error pages and a `doc/en/modules/` topic, and a
+- scripted session passes against a reference IMAP server.
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/en/modules/`,
++ e uma sessão roteirizada passa contra um servidor IMAP de referência.

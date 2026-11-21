@@ -1,0 +1,47 @@
+orthant 1 language
+
+- # `↯/s.24.14` — Unrecognised `Unapply`
++ # `↯/s.24.14` — `Unapply` não reconhecido
+
+- Raised by Contingency's pattern-type extractor when an `Unapply`
+- pattern's declared type cannot be processed.
++ Lançado pelo extrator de tipos de padrões do Contingency quando o tipo declarado de um padrão
++ `Unapply` não pode ser processado.
+
+- ## Cause
++ ## Causa
+
+- Custom extractors expose their result type via the `unapply`
+- method's signature. When that signature does not match what the
+- macro expects, this halt fires with the symbol's declared type.
++ Extratores personalizados expõem seu tipo de resultado por meio da assinatura do método
++ `unapply`. Quando essa assinatura não corresponde ao que a
++ macro espera, esta parada é disparada com o tipo declarado do símbolo.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.24.14] Unapply <type>
++ [↯/s.24.14] Unapply <type>
+
+= [↯/s.24.14] Unapply <type>
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Use a case-class pattern instead, or adjust the extractor to expose
+- a recognised result type.
++ Use um padrão de case class em vez disso, ou ajuste o extrator para expor
++ um tipo de resultado reconhecido.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/contingency/src/core/contingency.internal.scala`
++ - Código-fonte: `lib/contingency/src/core/contingency.internal.scala`

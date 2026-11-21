@@ -1,0 +1,39 @@
+orthant 1 language
+
+- # `SN-562` — `XPathError` (retired)
++ # `SN-562` — `XPathError` (aposentado)
+
+- **This code is no longer raised.** A malformed XPath *expression* is now a
+- `Parse.Error` (`↯/s.60.2`) over the `XPath` format, like every other parse
+- failure in the codebase: `XPath` implements `zephyrine.Format`, as `Xml`
+- already did, and its former `Reason` cases are now `XPath.Issue`s. The
+- `Position` still carries the character offset, so the `xp"…"` interpolator
+- still places its caret exactly.
++ **Este código não é mais lançado.** Uma *expressão* XPath malformada agora é um
++ `Parse.Error` (`↯/s.60.2`) sobre o formato `XPath`, como qualquer outra falha de parsing
++ na base de código: `XPath` implementa `zephyrine.Format`, como `Xml`
++ já fazia, e seus antigos casos de `Reason` agora são `XPath.Issue`s. A
++ `Position` ainda carrega o deslocamento em caracteres, então o interpolador `xp"…"`
++ ainda posiciona seu cursor com exatidão.
+
+- The name `XPath.Error` now belongs to the distinct failure of *evaluating*
+- an expression that parsed — see `↯/s.128.2`.
++ O nome `XPath.Error` agora pertence à falha distinta de *avaliar*
++ uma expressão que foi analisada com sucesso — veja `↯/s.128.2`.
+
+- Two of the former reasons are gone rather than translated: `ExpectedSlash`
+- and `BadStep` were raised only by the pre-AST positional parser and were
+- retained solely to keep the numbering stable. `Issue`s are not numbered, so
+- nothing needed to hold their place.
++ Dois dos antigos motivos foram removidos em vez de convertidos: `ExpectedSlash`
++ e `BadStep` eram lançados apenas pelo parser posicional anterior à AST e foram
++ mantidos apenas para preservar a numeração. `Issue`s não são numerados, então
++ nada precisava ocupar o lugar deles.
+
+- ## See also
++ ## Veja também
+
+- - Superseded by: `↯/s.60.2` (`Parse.Error`, format `XPath`)
+- - Related: `↯/s.128.2` (`XPath.Error`, evaluation)
++ - Substituído por: `↯/s.60.2` (`Parse.Error`, formato `XPath`)
++ - Relacionados: `↯/s.128.2` (`XPath.Error`, avaliação)

@@ -1,0 +1,284 @@
+orthant 1 language
+
+- ## Internationalization
++ ## Internacionalização
+
+- ### About
++ ### Visão geral
+
+- A program which speaks several languages must supply a translation of every message, in
+- every language which it claims to support. The gaps are the bug: the missing French
+- translation is discovered by a French user.
++ Um programa que fala vários idiomas precisa fornecer uma tradução de cada mensagem, em cada idioma
++ que afirma suportar. As lacunas são o bug: a tradução francesa que falta é descoberta por um
++ usuário francês.
+
+- Here the set of languages is tracked in the type of the multilingual value itself, so a set
+- of translations which lacks a required language is a compile error, not a fallback at
+- [runtime]. A multilingual value is a `Polyglot`, whose type parameter records exactly which
+- languages it has. Selecting a language needs a `Locale`, and a `Locale` for a language which
+- the value does not have does not typecheck.
++ Aqui o conjunto de idiomas é acompanhado no tipo do próprio valor multilíngue, de modo que um
++ conjunto de traduções a que falta um idioma exigido é um erro de compilação, e não um fallback em
++ [tempo de execução]. Um valor multilíngue é um `Polyglot`, cujo parâmetro de tipo registra
++ exatamente quais idiomas ele tem. Selecionar um idioma exige uma `Locale`, e uma `Locale` para um
++ idioma que o valor não tem não passa na verificação de tipos.
+
+- ### On multilingual text
++ ### Sobre texto multilíngue
+
+- The usual approach to translation is a resource bundle: a file of keyed strings for each
+- language, looked up by name at runtime. Nothing connects the keys in the code to the keys in
+- the files. A missing translation, a misspelled key, or a file for one language which lags
+- behind the others, all surface as fallbacks at runtime, usually in front of the one user who
+- chose that language.
++ A abordagem usual da tradução é um resource bundle: um arquivo de strings com chaves para cada
++ idioma, buscadas pelo nome em tempo de execução. Nada liga as chaves do código às chaves dos
++ arquivos. Uma tradução que falta, uma chave digitada errado ou um arquivo de um idioma que fica
++ para trás em relação aos outros, tudo isso aparece como fallback em tempo de execução, geralmente
++ diante do único usuário que escolheu aquele idioma.
+
+- Here the translations are in the code, and the set of languages is in the type:
++ Aqui as traduções estão no código, e o conjunto de idiomas está no tipo:
+
+- - Each language is a value, which lifts a translation into a `Polyglot` of that one language.
+- - Alternatives are combined with `|`, and the combined type records all the languages which
+-   were provided.
+- - Code which requires a particular set of languages states it in a type, and only a complete
+-   translation satisfies it.
++ - Cada idioma é um valor, que eleva uma tradução a um `Polyglot` daquele único idioma.
++ - As alternativas são combinadas com `|`, e o tipo combinado registra todos os idiomas que foram
++   fornecidos.
++ - O código que exige um conjunto específico de idiomas o declara em um tipo, e só uma tradução
++   completa o satisfaz.
+
+- A locale which is a type parameter, not a string at runtime, means that a missing
+- translation is a compile error, which is
+- [safety by construction](../../philosophy/safety-by-construction.md).
++ Uma localidade que é um parâmetro de tipo, e não uma string em tempo de execução, significa que
++ uma tradução que falta é um erro de compilação, o que é
++ [segurança por construção](../../philosophy/safety-by-construction.md).
+
+- Everything comes from the `soundness` package. The second import lets the samples print
+- their results:
++ Tudo vem do pacote `soundness`. O segundo import permite que os exemplos imprimam seus
++ resultados:
+
+= their results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Providing translations
++ ### Fornecendo traduções
+
+- Each supported language is a value which wraps a translation: `en`, `fr`, `de`, `es` and
+- `pl`. Translations are combined with `|`, and the type records what has been provided:
++ Cada idioma suportado é um valor que envolve uma tradução: `en`, `fr`, `de`, `es` e `pl`. As
++ traduções são combinadas com `|`, e o tipo registra o que foi fornecido:
+
+= `pl`. Translations are combined with `|`, and the type records what has been provided:
+=
+- ```scala
++ ```scala
+
+- val greeting: Polyglot[Text, en & fr] = en(t"Hello") | fr(t"Bonjour")
++ val greeting: Polyglot[Text, en & fr] = en(t"Hello") | fr(t"Bonjour")
+
+= val greeting: Polyglot[Text, en & fr] = en(t"Hello") | fr(t"Bonjour")
+- ```
++ ```
+
+- A `Polyglot[Text, en & fr]` is a text which is available in English *and* in French.
+- Supplying only English where both are required does not compile. That is the point: the
+- demand for a French translation is enforced where the value is written, and is not
+- discovered by a French user.
++ Um `Polyglot[Text, en & fr]` é um texto disponível em inglês *e* em francês. Fornecer apenas o
++ inglês onde os dois são exigidos não compila. Esse é o ponto: a exigência de uma tradução francesa
++ é imposta onde o valor é escrito, e não descoberta por um usuário francês.
+
+= discovered by a French user.
+=
+- ```scala fuel
++ ```scala fuel
+
+= discovered by a French user.
+=
+= ```scala fuel
+- compile
++ compile
+
+= discovered by a French user.
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= discovered by a French user.
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- val incomplete: Polyglot[Text, en & fr] = en(t"Hello")
++ val incomplete: Polyglot[Text, en & fr] = en(t"Hello")
+
+= val incomplete: Polyglot[Text, en & fr] = en(t"Hello")
+- ```
++ ```
+
+- ### Selecting a language
++ ### Selecionando um idioma
+
+- A `Locale` names the language to read. Applying the polyglot, with a locale in scope, gives
+- the value for that language:
++ Uma `Locale` nomeia o idioma a ler. Aplicar o polyglot, com uma localidade no escopo, dá o valor
++ para aquele idioma:
+
+= the value for that language:
+=
+- ```scala fuel
++ ```scala fuel
+
+- run
++ run
+
+= run
+- ##
++ ##
+
+= run
+= ##
+- locally:
++ locally:
+
+-   given locale: Locale[en & fr] = Locale(fr)
++   given locale: Locale[en & fr] = Locale(fr)
+
+=   given locale: Locale[en & fr] = Locale(fr)
+-   Out.println(greeting())
++   Out.println(greeting())
+
+=
+- locally:
++ locally:
+
+-   given locale: Locale[en & fr] = Locale(en)
++   given locale: Locale[en & fr] = Locale(en)
+
+=   given locale: Locale[en & fr] = Locale(en)
+-   Out.println(greeting())
++   Out.println(greeting())
+
+=   Out.println(greeting())
+- ```
++ ```
+
+- The type of the locale must cover languages which the polyglot has, so asking a value for a
+- language which it does not have is a compile error:
++ O tipo da localidade precisa cobrir idiomas que o polyglot tem, então pedir a um valor um idioma
++ que ele não tem é um erro de compilação:
+
+= language which it does not have is a compile error:
+=
+- ```scala fuel
++ ```scala fuel
+
+= language which it does not have is a compile error:
+=
+= ```scala fuel
+- compile
++ compile
+
+= language which it does not have is a compile error:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= language which it does not have is a compile error:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+= errors show
+= ##
+- locally:
++ locally:
+
+-   given locale: Locale[en & de] = Locale(de)
++   given locale: Locale[en & de] = Locale(de)
+
+-   greeting()
++   greeting()
+
+=   greeting()
+- ```
++ ```
+
+- ### A locale from runtime data
++ ### Uma localidade a partir de dados de tempo de execução
+
+- The user's language usually arrives at runtime, from an HTTP header, an
+- [environment variable](environment.md) or a setting. A language code is
+- [decoded](decoding.md#decoding-a-value) to a `Locale`, and a code which is not recognized
+- falls back to English:
++ O idioma do usuário costuma chegar em tempo de execução, de um cabeçalho HTTP, de uma
++ [variável de ambiente](environment.md) ou de uma configuração. Um código de idioma é
++ [decodificado](decoding.md#decoding-a-value) para uma `Locale`, e um código não reconhecido recai
++ no inglês:
+
+= falls back to English:
+=
+- ```scala
++ ```scala
+
+- val locale = t"fr".as[Locale[en & pl & fr & de & es]]
++ val locale = t"fr".as[Locale[en & pl & fr & de & es]]
+
+= val locale = t"fr".as[Locale[en & pl & fr & de & es]]
+- ```
++ ```
+
+- With that locale in scope, every polyglot which covers those languages is read in the user's
+- language, and the completeness of every translation was already checked when the code was
+- compiled.
++ Com essa localidade no escopo, todo polyglot que cobre esses idiomas é lido no idioma do usuário,
++ e a completude de cada tradução já foi verificada quando o código foi compilado.
+
+- ### Beyond text
++ ### Além do texto
+
+- A `Polyglot` is generic in what it holds, and is not fixed to text. A date format, a
+- convention for currency, or a whole page of content can vary by language through the same
+- mechanism, with the same guarantee that no supported language is missing.
+- [Time](time.md#describing-recurrences) uses a locale to describe a recurrence in words, and
+- [Catalogs](catalogs.md) keeps translations in files where that is wanted.
++ Um `Polyglot` é genérico naquilo que contém, e não está preso a texto. Um formato de data, uma
++ convenção monetária ou uma página inteira de conteúdo pode variar por idioma pelo mesmo mecanismo,
++ com a mesma garantia de que nenhum idioma suportado está faltando. [Tempo](time.md#describing-recurrences)
++ usa uma localidade para descrever uma recorrência em palavras, e [Catálogos](catalogs.md) mantém
++ as traduções em arquivos onde isso se deseja.
+
+- ### Related
++ ### Relacionados
+
+- - [Display](display.md), [money](money.md) and [web pages](pages.md) render values for a locale.
++ - [Exibição](display.md), [dinheiro](money.md) e [páginas web](pages.md) renderizam valores para uma localidade.

@@ -1,0 +1,45 @@
+orthant 1 language
+
+- # `↯/s.20.3` — Type is not `Optional`
++ # `↯/s.20.3` — O tipo não é `Optional`
+
+- Raised at compile time by Vacuous's `check` macro when the type
+- parameter is not an `Optional`.
++ Lançado em tempo de compilação pela macro `check` do Vacuous quando o parâmetro de tipo não é um
++ `Optional`.
+
+- ## Cause
++ ## Causa
+
+- The macro requires the type to include `Unset.type` as a member of
+- the union. Otherwise the type cannot be treated as `Optional`.
++ A macro exige que o tipo inclua `Unset.type` como membro da união. Caso contrário, o tipo não
++ pode ser tratado como `Optional`.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.20.3] the type Int is not an `Optional`
++ [↯/s.20.3] the type Int is not an `Optional`
+
+= [↯/s.20.3] the type Int is not an `Optional`
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Use `Optional[T]` (which is `T | Unset.type`) at the call site, or
+- introduce the `Unset` case explicitly.
++ Use `Optional[T]` (que é `T | Unset.type`) no ponto de chamada, ou introduza explicitamente o
++ caso `Unset`.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/vacuous/src/core/vacuous.internal.scala`
++ - Código-fonte: `lib/vacuous/src/core/vacuous.internal.scala`

@@ -1,0 +1,452 @@
+orthant 1 language
+
+- ## Databases
++ ## Bancos de dados
+
+- ### About
++ ### Visão geral
+
+- A `Database` is an in-memory store for typed entities and the relations between them. A value is
+- stored once, and identified by a typed reference. The relations which a database supports are
+- declared *in its type*, so relating two entities which the schema does not connect is a compile
+- error.
++ Um `Database` é um repositório em memória para entidades tipadas e para as relações entre elas.
++ Um valor é armazenado uma única vez e identificado por uma referência tipada. As relações que um
++ banco de dados suporta são declaradas *em seu tipo*, de modo que relacionar duas entidades que o
++ schema não conecta é um erro de compilação.
+
+- It has the shape of a relational database, with entities, foreign keys and joins, for the many
+- programs whose working data fits in memory and whose schema should be checked by the compiler.
++ Ele tem a forma de um banco de dados relacional, com entidades, chaves estrangeiras e joins, para
++ os muitos programas cujos dados de trabalho cabem na memória e cujo schema deveria ser verificado
++ pelo compilador.
+
+- ### On typed storage
++ ### Sobre armazenamento tipado
+
+- In-memory data models drift toward maps of maps: entities keyed by id, relations as
+- `Map[Id, Set[Id]]`, and the schema, which says which kinds of thing may relate to which, living
+- only in convention. The compiler knows the types of everything else, and knows nothing about
+- which relationships are meant to exist. So a box assigned to a person, in a domain where boxes
+- belong to shelves, is a surprise at [runtime], or a silent corruption.
++ Os modelos de dados em memória tendem a virar mapas de mapas: entidades indexadas por id,
++ relações como `Map[Id, Set[Id]]`, e o schema, que diz que espécies de coisa podem se relacionar
++ com quais, vivendo apenas como convenção. O compilador conhece os tipos de todo o resto, e não
++ sabe nada sobre quais relações deveriam existir. Assim, uma caixa atribuída a uma pessoa, num
++ domínio em que caixas pertencem a prateleiras, é uma surpresa em [tempo de execução], ou uma
++ corrupção silenciosa.
+
+- Here the relations are a type. A database is created *of* its tuple of relations, and every
+- assignment, removal and lookup is checked against it. An operation which the schema does not
+- allow cannot be written, which is
+- [safety by construction](../../philosophy/safety-by-construction.md) for a data model.
++ Aqui as relações são um tipo. Um banco de dados é criado *de* sua tupla de relações, e toda
++ atribuição, remoção e consulta é verificada contra ela. Uma operação que o schema não permite
++ não pode ser escrita, o que é
++ [segurança por construção](../../philosophy/safety-by-construction.md) para um modelo de dados.
+
+- Everything comes from the `soundness` package. The second import chooses a
+- [strategy](errors.md#choosing-a-strategy) for errors, and the third lets the samples print their
+- results:
++ Tudo vem do pacote `soundness`. O segundo import escolhe uma
++ [estratégia](errors.md#choosing-a-strategy) para os erros, e o terceiro permite que os exemplos
++ imprimam seus resultados:
+
+= results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Declaring a database
++ ### Declarar um banco de dados
+
+- The relations form the type of the database. `A -< B` reads "an `A` may have `B`s":
++ As relações formam o tipo do banco de dados. `A -< B` se lê “um `A` pode ter `B`s”:
+
+= The relations form the type of the database. `A -< B` reads "an `A` may have `B`s":
+=
+- ```scala
++ ```scala
+
+- case class Cabinet(name: Text)
++ case class Cabinet(name: Text)
+
+- case class Shelf(name: Text)
++ case class Shelf(name: Text)
+
+- case class Box(name: Text)
++ case class Box(name: Text)
+
+- given db: Database of (Cabinet -< Shelf, Shelf -< Box) = Database()
++ given db: Database of (Cabinet -< Shelf, Shelf -< Box) = Database()
+
+= given db: Database of (Cabinet -< Shelf, Shelf -< Box) = Database()
+- ```
++ ```
+
+- ### Storing and referencing
++ ### Armazenar e referenciar
+
+- `store` interns a value, and returns its typed reference. The reference is a
+- `Ref of Box in db.type`, so it cannot be confused with a reference from another database, or to
+- another type:
++ `store` faz o interning de um valor e retorna sua referência tipada. A referência é uma
++ `Ref of Box in db.type`, de modo que não pode ser confundida com uma referência de outro banco de
++ dados, ou a outro tipo:
+
+= another type:
+=
+- ```scala
++ ```scala
+
+- val shelf = Shelf(t"top").store()
++ val shelf = Shelf(t"top").store()
+
+- val box = Box(t"alpha").store()
++ val box = Box(t"alpha").store()
+
+= val box = Box(t"alpha").store()
+- ```
++ ```
+
+- A reference is dereferenced by applying it, which gives back the value:
++ Uma referência é desreferenciada ao ser aplicada, o que devolve o valor:
+
+= A reference is dereferenced by applying it, which gives back the value:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A reference is dereferenced by applying it, which gives back the value:
+=
+= ```scala fuel
+- run
++ run
+
+= A reference is dereferenced by applying it, which gives back the value:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(box().inspect)
++ Out.println(box().inspect)
+
+= Out.println(box().inspect)
+- ```
++ ```
+
+- ### References by key
++ ### Referências por chave
+
+- A reference need not come from a store at all. Where an entity carries its own key, such as an
+- email address or a product code, a `Reference` to it is that key, typed by what it refers to. A
+- `Resolvable` instance says how a key finds its entity. This one is built from a set of values,
+- and searches them by the field marked `@primary`:
++ Uma referência nem precisa vir de um `store`. Quando uma entidade traz sua própria chave, como um
++ endereço de e-mail ou um código de produto, uma `Reference` a ela é essa chave, tipada por aquilo
++ a que se refere. Uma instância de `Resolvable` diz como uma chave encontra sua entidade. Esta é
++ construída a partir de um conjunto de valores, e os procura pelo campo marcado com `@primary`:
+
+= and searches them by the field marked `@primary`:
+=
+- ```scala
++ ```scala
+
+- case class Person(@primary email: Text, name: Text)
++ case class Person(@primary email: Text, name: Text)
+
+- val romeo = Person(t"romeo@example.com", t"Romeo")
++ val romeo = Person(t"romeo@example.com", t"Romeo")
+
+- val juliet = Person(t"juliet@example.com", t"Juliet")
++ val juliet = Person(t"juliet@example.com", t"Juliet")
+
+- given personResolvable: (Person is Resolvable by Text) = Resolvable(Set(romeo, juliet))
++ given personResolvable: (Person is Resolvable by Text) = Resolvable(Set(romeo, juliet))
+
+= given personResolvable: (Person is Resolvable by Text) = Resolvable(Set(romeo, juliet))
+- ```
++ ```
+
+- With that in scope, `ref` takes the reference of a value, which holds nothing but its key.
+- Applying the reference resolves it back:
++ Com isso no escopo, `ref` obtém a referência de um valor, que não guarda nada além de sua chave.
++ Aplicar a referência a resolve de volta:
+
+= Applying the reference resolves it back:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Applying the reference resolves it back:
+=
+= ```scala fuel
+- run
++ run
+
+= Applying the reference resolves it back:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- val julietRef = juliet.ref
++ val julietRef = juliet.ref
+
+- Out.println(julietRef.key)
++ Out.println(julietRef.key)
+
+- Out.println(julietRef().inspect)
++ Out.println(julietRef().inspect)
+
+= Out.println(julietRef().inspect)
+- ```
++ ```
+
+- A reference built from a key which matches nothing raises a `Reference.Error` when it is
+- applied, and not when it is built:
++ Uma referência construída a partir de uma chave que não casa com nada lança um
++ `Reference.Error` quando é aplicada, e não quando é construída:
+
+= applied, and not when it is built:
+=
+- ```scala fuel
++ ```scala fuel
+
+= applied, and not when it is built:
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- errors show
++ errors show
+
+= run
+= errors show
+- ##
++ ##
+
+- Reference[Person](t"nobody@example.com")()
++ Reference[Person](t"nobody@example.com")()
+
+= Reference[Person](t"nobody@example.com")()
+- ```
++ ```
+
+- ### Relating
++ ### Relacionar
+
+- References are related with `assign`, unrelated with `unassign`, and traversed with `lookup`.
+- Each is valid only for a relation which the type of the database declares:
++ Referências são relacionadas com `assign`, desrelacionadas com `unassign` e percorridas com
++ `lookup`. Cada uma só é válida para uma relação que o tipo do banco de dados declara:
+
+= Each is valid only for a relation which the type of the database declares:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Each is valid only for a relation which the type of the database declares:
+=
+= ```scala fuel
+- run
++ run
+
+= Each is valid only for a relation which the type of the database declares:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= Each is valid only for a relation which the type of the database declares:
+=
+= ```scala fuel
+= run
+= ##
+- shelf.assign(box)
++ shelf.assign(box)
+
+= shelf.assign(box)
+- Out.println(shelf.lookup[Box].map(_()).inspect)
++ Out.println(shelf.lookup[Box].map(_()).inspect)
+
+- shelf.unassign(box)
++ shelf.unassign(box)
+
+= shelf.unassign(box)
+- Out.println(shelf.lookup[Box].map(_()).inspect)
++ Out.println(shelf.lookup[Box].map(_()).inspect)
+
+= Out.println(shelf.lookup[Box].map(_()).inspect)
+- ```
++ ```
+
+- There is no `Box -< Shelf` relation, so a box cannot be assigned a shelf:
++ Não existe a relação `Box -< Shelf`, então não é possível atribuir uma prateleira a uma caixa:
+
+= There is no `Box -< Shelf` relation, so a box cannot be assigned a shelf:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+= compile
+- errors show
++ errors show
+
+= compile
+= errors show
+- ##
++ ##
+
+- box.assign(shelf)
++ box.assign(shelf)
+
+= box.assign(shelf)
+- ```
++ ```
+
+- That is the point. The schema is not documentation but a type, and an operation outside it never
+- runs, because it never compiles.
++ Esse é o ponto. O schema não é documentação, mas um tipo, e uma operação fora dele nunca roda,
++ porque nunca compila.
+
+- `ref` finds the reference for a value which is already stored, and raises a `Database.Error`
+- where it is not. That is how a value which arrives from elsewhere is matched to what the
+- database already holds, rather than being stored a second time.
++ `ref` encontra a referência de um valor que já está armazenado, e lança um `Database.Error` onde
++ ele não está. É assim que um valor que chega de outro lugar é casado com o que o banco de dados
++ já guarda, em vez de ser armazenado uma segunda vez.
+
+- ### Interning
++ ### Interning
+
+- `store` *interns*. Storing an equal value twice gives the same reference, so identity in the
+- database is by value, and not by allocation:
++ `store` faz *interning*. Armazenar duas vezes um valor igual dá a mesma referência, de modo que
++ a identidade no banco de dados é por valor, e não por alocação:
+
+= database is by value, and not by allocation:
+=
+- ```scala fuel
++ ```scala fuel
+
+= database is by value, and not by allocation:
+=
+= ```scala fuel
+- run
++ run
+
+= database is by value, and not by allocation:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((Box(t"alpha").store() == box).inspect)
++ Out.println((Box(t"alpha").store() == box).inspect)
+
+= Out.println((Box(t"alpha").store() == box).inspect)
+- ```
++ ```
+
+- That is what makes a reference safe to compare, to use as a key, and to hold in place of the
+- value it names.
++ É isso que torna uma referência segura para comparar, para usar como chave e para guardar no
++ lugar do valor que ela nomeia.
+
+- A reference is an opaque handle, not a pointer or an index into a table which the caller can see.
+- A reference from one database cannot be dereferenced against another. The type says which
+- database it belongs to, and there is no way to construct one which lies.
++ Uma referência é um handle opaco, e não um ponteiro ou um índice de uma tabela que quem chama
++ possa ver. Uma referência de um banco de dados não pode ser desreferenciada em outro. O tipo diz
++ a qual banco de dados ela pertence, e não há como construir uma que minta.
+
+- ### Querying
++ ### Consultas
+
+- `lookup` follows one relation, and gives every reference of the type it is asked for. A query
+- which must select rather than traverse is a predicate over the values of those references:
++ `lookup` segue uma relação e dá todas as referências do tipo pedido. Uma consulta que precisa
++ selecionar, em vez de percorrer, é um predicado sobre os valores dessas referências:
+
+= which must select rather than traverse is a predicate over the values of those references:
+=
+- ```scala fuel
++ ```scala fuel
+
+= which must select rather than traverse is a predicate over the values of those references:
+=
+= ```scala fuel
+- run
++ run
+
+= which must select rather than traverse is a predicate over the values of those references:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= which must select rather than traverse is a predicate over the values of those references:
+=
+= ```scala fuel
+= run
+= ##
+- shelf.assign(box)
++ shelf.assign(box)
+
+- shelf.assign(Box(t"beta").store())
++ shelf.assign(Box(t"beta").store())
+
+- Out.println(shelf.lookup[Box].filter(_().name.starts(t"a")).map(_()).inspect)
++ Out.println(shelf.lookup[Box].filter(_().name.starts(t"a")).map(_()).inspect)
+
+= Out.println(shelf.lookup[Box].filter(_().name.starts(t"a")).map(_()).inspect)
+- ```
++ ```
+
+- The predicate is an ordinary function over the stored type, so a query is written in Scala, and
+- not in a query language embedded in strings. The compiler checks it like the rest of the
+- program.
++ O predicado é uma função comum sobre o tipo armazenado, então uma consulta é escrita em Scala, e
++ não em uma linguagem de consulta embutida em strings. O compilador a verifica como o resto do
++ programa.
+
+- ### Related
++ ### Relacionados
+
+- - [Annotations](annotations.md#finding-the-annotated-field) describes `@primary`, which marks
+-   the key a `Resolvable` searches by.
+- - [Collections](collections.md) describes the `Set` operations which a lookup supports.
+- - [Errors](errors.md) describes `safely` and the strategies which meet a `Reference.Error`.
+- - [Records](records.md) types data whose schema comes from a real database.
+- - [HTTP server](http-server.md) serves the data which a database holds.
++ - [Anotações](annotations.md#finding-the-annotated-field) descreve `@primary`, que marca a
++   chave pela qual um `Resolvable` procura.
++ - [Coleções](collections.md) descreve as operações de `Set` que um `lookup` suporta.
++ - [Erros](errors.md) descreve `safely` e as estratégias que lidam com um `Reference.Error`.
++ - [Registros](records.md) tipa dados cujo schema vem de um banco de dados real.
++ - [Servidor HTTP](http-server.md) serve os dados que um banco de dados guarda.

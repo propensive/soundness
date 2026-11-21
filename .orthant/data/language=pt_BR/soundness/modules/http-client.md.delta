@@ -1,0 +1,786 @@
+orthant 1 language
+
+- ## HTTP Client
++ ## Cliente HTTP
+
+- ### About
++ ### Visão geral
+
+- An [HTTP](https://en.wikipedia.org/wiki/HTTP) request is one expression: a
+- [URL](network-addresses.md#urls), a method such as `fetch`, and the type the response should be
+- read as. Each part is typed. The URL is checked at [compiletime], a header's value must suit the
+- header it sets, a request body carries its own media type, and the response body is read as
+- whichever type is asked for.
++ Uma requisição [HTTP](https://en.wikipedia.org/wiki/HTTP) é uma expressão: uma
++ [URL](network-addresses.md#urls), um método como `fetch` e o tipo como o qual a resposta deve ser
++ lida. Cada parte é tipada. A URL é verificada em [tempo de compilação], o valor de um cabeçalho
++ precisa servir ao cabeçalho que ele define, o corpo de uma requisição carrega seu próprio tipo de
++ mídia, e o corpo da resposta é lido como o tipo que for pedido.
+
+- Failure is typed too. A status outside the success range and a connection that cannot be made
+- are two distinct errors, and a method which makes requests declares both. A request also needs
+- the [capability] `Online` in scope, so a method that reaches the network says so in its
+- signature, and one that should not reach it cannot.
++ A falha também é tipada. Um status fora da faixa de sucesso e uma conexão que não pode ser feita
++ são dois erros distintos, e um método que faz requisições declara ambos. Uma requisição também
++ precisa da [capability] `Online` no escopo, de modo que um método que alcança a rede diz isso em
++ sua assinatura, e um que não deveria alcançá-la não consegue.
+
+- ### On HTTP requests
++ ### Sobre requisições HTTP
+
+- A typical HTTP client takes a URL as a string, headers as a map from strings to strings, and a
+- body as bytes. It hands back a response whose status must be checked by hand and whose body must
+- be decoded by hand. The URL may be malformed, a header name may be misspelled, and the body's
+- media type may not match its bytes. None of this is discovered until the request runs, if then.
++ Um cliente HTTP típico recebe uma URL como string, cabeçalhos como um mapa de strings para
++ strings e um corpo como bytes. Ele devolve uma resposta cujo status precisa ser verificado à mão e
++ cujo corpo precisa ser decodificado à mão. A URL pode estar malformada, o nome de um cabeçalho pode
++ estar escrito errado, e o tipo de mídia do corpo pode não corresponder a seus bytes. Nada disso é
++ descoberto até que a requisição seja executada, e talvez nem então.
+
+- Here each of those mistakes is found by the compiler:
++ Aqui cada um desses erros é encontrado pelo compilador:
+
+= Here each of those mistakes is found by the compiler:
+=
+- ```tabular
++ ```tabular
+
+- column  Part of a request
+- column  How it is checked
+- row  the URL  a `url"…"` [interpolator] validates it where it is written
+- row  a header  a named argument, whose value has the type that header takes
+- row  the request body  a typed value which supplies its own `Content-Type`
+- row  the response body  read with `receive`, as the type named
+- row  a failing status  an `Http.Error`, declared by the method that may raise it
+- row  a failed connection  a `Connect.Error`, declared likewise
+- row  access to the network  the `Online` capability, required in scope
++ column  Parte de uma requisição
++ column  Como é verificada
++ row  a URL  um [interpolador] `url"…"` a valida onde ela é escrita
++ row  um cabeçalho  um argumento nomeado, cujo valor tem o tipo que esse cabeçalho recebe
++ row  o corpo da requisição  um valor tipado que fornece seu próprio `Content-Type`
++ row  o corpo da resposta  lido com `receive`, como o tipo nomeado
++ row  um status de falha  um `Http.Error`, declarado pelo método que pode lançá-lo
++ row  uma conexão que falhou  um `Connect.Error`, declarado da mesma forma
++ row  o acesso à rede  a capability `Online`, exigida no escopo
+
+= row  access to the network  the `Online` capability, required in scope
+- ```
++ ```
+
+- Reporting failure through the types, and leaving the caller to decide what a failure does, is
+- [error handling](../../philosophy/error-handling.md) as it works everywhere else.
++ Relatar a falha pelos tipos, e deixar que quem chama decida o que uma falha faz, é o
++ [tratamento de erros](../../philosophy/error-handling.md) tal como funciona em todo o resto.
+
+- ### What a request needs in scope
++ ### O que uma requisição precisa no escopo
+
+- Everything comes from the `soundness` package. A request also depends on several decisions that
+- are made by importing a [given] from a [choice package], so that none is made silently:
++ Tudo vem do pacote `soundness`. Uma requisição também depende de várias decisões que são tomadas
++ importando um [given] de um [pacote de escolhas], para que nenhuma seja tomada em silêncio:
+
+= are made by importing a [given] from a [choice package], so that none is made silently:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import charsets.utf8Charset
++ import charsets.utf8Charset
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import errorDiagnostics.stackTracesDiagnostics
++ import errorDiagnostics.stackTracesDiagnostics
+
+- import httpBackends.javaNetHttp
++ import httpBackends.javaNetHttp
+
+- import internetAccess.online
++ import internetAccess.online
+
+- import logging.silentLogging
++ import logging.silentLogging
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+= import strategies.throwUnsafely
+- ```
++ ```
+
+= import strategies.throwUnsafely
+= ```
+=
+- ```tabular
++ ```tabular
+
+= ```
+=
+= ```tabular
+- column  Import
++ column  Import
+
+- column  Decides
+- row  `charsets.utf8Charset`, `codepages.utf8Codepage`  how bytes become text, and text becomes bytes
+- row  `errorDiagnostics.stackTracesDiagnostics`  that an error records a stack trace
+- row  `httpBackends.javaNetHttp`  which implementation sends the request: here, the JVM's `java.net.http`
+- row  `internetAccess.online`  that this code may use the network
+- row  `logging.silentLogging`  that the requests are not logged; [logging](logging.md) has the alternatives
+- row  `strategies.throwUnsafely`  that an error is thrown as an exception; [errors](errors.md#choosing-a-strategy) has the other strategies
++ column  Decide
++ row  `charsets.utf8Charset`, `codepages.utf8Codepage`  como bytes se tornam texto, e texto se torna bytes
++ row  `errorDiagnostics.stackTracesDiagnostics`  que um erro registra um stack trace
++ row  `httpBackends.javaNetHttp`  qual implementação envia a requisição: aqui, o `java.net.http` da JVM
++ row  `internetAccess.online`  que este código pode usar a rede
++ row  `logging.silentLogging`  que as requisições não são registradas em log; [logging](logging.md) tem as alternativas
++ row  `strategies.throwUnsafely`  que um erro é lançado como exceção; [erros](errors.md#choosing-a-strategy) tem as outras estratégias
+
+= row  `strategies.throwUnsafely`  that an error is thrown as an exception; [errors](errors.md#choosing-a-strategy) has the other strategies
+- ```
++ ```
+
+- ### A GET request
++ ### Uma requisição GET
+
+- `fetch` sends a GET request to a URL. It gives the response, and `receive` reads the response's
+- body as the type named:
++ `fetch` envia uma requisição GET para uma URL. Ele dá a resposta, e `receive` lê o corpo da
++ resposta como o tipo nomeado:
+
+= body as the type named:
+=
+- ```scala fuel
++ ```scala fuel
+
+= body as the type named:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= body as the type named:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val page: Text = url"https://example.com/".fetch().receive[Text]
++ val page: Text = url"https://example.com/".fetch().receive[Text]
+
+= val page: Text = url"https://example.com/".fetch().receive[Text]
+- ```
++ ```
+
+- The type passed to `receive` chooses how the body is read. `Text` decodes it with the charset in
+- scope, `Data` gives its bytes, and a [stream](streams.md) delivers it a part at a time without
+- holding the whole body in memory. A type with a decoder for a format reads the same way, so a
+- [JSON](json.md#json-over-http) response is received as `Json`.
++ O tipo passado a `receive` escolhe como o corpo é lido. `Text` o decodifica com o charset no
++ escopo, `Data` dá seus bytes, e um [stream](streams.md) o entrega uma parte de cada vez, sem
++ guardar o corpo inteiro na memória. Um tipo com um decodificador para um formato é lido da mesma
++ forma, de modo que uma resposta [JSON](json.md#json-over-http) é recebida como `Json`.
+
+- The response reports its status without its body being read:
++ A resposta informa seu status sem que seu corpo seja lido:
+
+= The response reports its status without its body being read:
+=
+- ```scala fuel
++ ```scala fuel
+
+= The response reports its status without its body being read:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= The response reports its status without its body being read:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- val status: Http.Status = url"https://example.com/".fetch().status
++ val status: Http.Status = url"https://example.com/".fetch().status
+
+= val status: Http.Status = url"https://example.com/".fetch().status
+- ```
++ ```
+
+- For a page that exists this is `Http.Ok`.
++ Para uma página que existe, isso é `Http.Ok`.
+
+- The URL is a typed value, not a string, so a malformed one never reaches the network. The
+- interpolator rejects it:
++ A URL é um valor tipado, e não uma string, de modo que uma URL malformada nunca chega à rede. O
++ interpolador a rejeita:
+
+= interpolator rejects it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= interpolator rejects it:
+=
+= ```scala fuel
+- compile
++ compile
+
+= interpolator rejects it:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= interpolator rejects it:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- url"https://example.com:port/"
++ url"https://example.com:port/"
+
+= url"https://example.com:port/"
+- ```
++ ```
+
+- A URL which is not known until the program runs is
+- [parsed at runtime](network-addresses.md#parsing-at-runtime) instead, and the parsing is where a
+- bad one is reported.
++ Uma URL que não é conhecida até que o programa seja executado é, em vez disso,
++ [analisada em tempo de execução](network-addresses.md#parsing-at-runtime), e é na análise que uma
++ URL inválida é relatada.
+
+- ### Headers
++ ### Cabeçalhos
+
+- A request header is a named argument to `fetch`. Its name is the header's name in camel case, and
+- its type is whatever that header carries: `accept` takes a [media type](media-types.md), not any
+- text.
++ Um cabeçalho de requisição é um argumento nomeado de `fetch`. Seu nome é o nome do cabeçalho em
++ camel case, e seu tipo é o que quer que esse cabeçalho carregue: `accept` recebe um
++ [tipo de mídia](media-types.md), e não um texto qualquer.
+
+= text.
+=
+- ```scala fuel
++ ```scala fuel
+
+= text.
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= text.
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- url"https://example.com/".fetch(accept = media"application/json").receive[Text]
++ url"https://example.com/".fetch(accept = media"application/json").receive[Text]
+
+= url"https://example.com/".fetch(accept = media"application/json").receive[Text]
+- ```
++ ```
+
+- A value of the wrong type for its header does not compile:
++ Um valor do tipo errado para seu cabeçalho não compila:
+
+= A value of the wrong type for its header does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A value of the wrong type for its header does not compile:
+=
+= ```scala fuel
+- compile
++ compile
+
+= A value of the wrong type for its header does not compile:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= A value of the wrong type for its header does not compile:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- url"https://example.com/".fetch(accept = t"application/json")
++ url"https://example.com/".fetch(accept = t"application/json")
+
+= url"https://example.com/".fetch(accept = t"application/json")
+- ```
++ ```
+
+- Nor does a header whose name is misspelled, since no header of that name takes any value:
++ Nem um cabeçalho cujo nome está escrito errado, já que nenhum cabeçalho com esse nome recebe valor
++ algum:
+
+= Nor does a header whose name is misspelled, since no header of that name takes any value:
+=
+- ```scala fuel
++ ```scala fuel
+
+= Nor does a header whose name is misspelled, since no header of that name takes any value:
+=
+= ```scala fuel
+- compile
++ compile
+
+= Nor does a header whose name is misspelled, since no header of that name takes any value:
+=
+= ```scala fuel
+= compile
+- errors show
++ errors show
+
+= Nor does a header whose name is misspelled, since no header of that name takes any value:
+=
+= ```scala fuel
+= compile
+= errors show
+- ##
++ ##
+
+- url"https://example.com/".fetch(acept = media"application/json")
++ url"https://example.com/".fetch(acept = media"application/json")
+
+= url"https://example.com/".fetch(acept = media"application/json")
+- ```
++ ```
+
+- ### Posting a body
++ ### Enviando um corpo
+
+- `submit` sends a request that has a body. Its first parameter list takes the method and any
+- headers, and its second takes the body:
++ `submit` envia uma requisição que tem um corpo. Sua primeira lista de parâmetros recebe o método
++ e quaisquer cabeçalhos, e a segunda recebe o corpo:
+
+= headers, and its second takes the body:
+=
+- ```scala fuel
++ ```scala fuel
+
+= headers, and its second takes the body:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= headers, and its second takes the body:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- url"https://example.com/submit".submit(Http.Post, accept = media"application/json")(t"Hello world")
++ url"https://example.com/submit".submit(Http.Post, accept = media"application/json")(t"Hello world")
+
+= url"https://example.com/submit".submit(Http.Post, accept = media"application/json")(t"Hello world")
+- ```
++ ```
+
+- `Http.Put`, `Http.Delete` and the others name the remaining methods.
++ `Http.Put`, `Http.Delete` e os outros nomeiam os métodos restantes.
+
+- The body is a typed value, and its type decides the request's `Content-Type`, so the header can
+- never disagree with the bytes that follow it. Text is sent as `text/plain`, a `Query` is sent as
+- a [form submission](forms.md#submissions), and a `Json` value is sent as `application/json`.
+- [Types that know their media type](media-types.md#types-that-know-their-media-type) describes how
+- a type of one's own takes part.
++ O corpo é um valor tipado, e seu tipo decide o `Content-Type` da requisição, de modo que o
++ cabeçalho nunca pode discordar dos bytes que o seguem. Texto é enviado como `text/plain`, uma
++ `Query` é enviada como uma [submissão de formulário](forms.md#submissions), e um valor `Json` é
++ enviado como `application/json`.
++ [Tipos que conhecem seu tipo de mídia](media-types.md#types-that-know-their-media-type) descreve
++ como um tipo próprio participa.
+
+- ### Reading the response
++ ### Lendo a resposta
+
+- `receive` reads the body as any type that can be read from a response: `Text`, `Data`, a stream,
+- or a value parsed from the body. The status is an ordinary value, to inspect or to return, so a
+- program decides what a given status means.
++ `receive` lê o corpo como qualquer tipo que possa ser lido de uma resposta: `Text`, `Data`, um
++ stream, ou um valor analisado a partir do corpo. O status é um valor comum, para inspecionar ou
++ para retornar, de modo que um programa decide o que um dado status significa.
+
+- By default a response outside the success range is not read at all: `receive` raises an
+- `Http.Error`, described under [Errors](#errors).
++ Por padrão, uma resposta fora da faixa de sucesso não é lida de forma alguma: `receive` lança um
++ `Http.Error`, descrito em [Erros](#errors).
+
+- ### Sessions
++ ### Sessões
+
+- A single `fetch` opens a connection and closes it. Where several requests go to the same origin,
+- a [session] opens one connection and lends it to a block, and every request made in the block
+- shares it:
++ Um único `fetch` abre uma conexão e a fecha. Onde várias requisições vão para a mesma origem, uma
++ [sessão] abre uma conexão e a empresta a um bloco, e toda requisição feita no bloco a
++ compartilha:
+
+= shares it:
+=
+- ```scala fuel
++ ```scala fuel
+
+= shares it:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= shares it:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- import soundness.httpUrlSessional
++ import soundness.httpUrlSessional
+
+- import socketBackends.javaBaseSockets
++ import socketBackends.javaBaseSockets
+
+- val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil,
++ val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil,
+
+-     new Spring[Data]:
++     new Spring[Data]:
+
+-       def apply()(using Tactic[Truncation.Error]): Stream[Data] over Credit =
++       def apply()(using Tactic[Truncation.Error]): Stream[Data] over Credit =
+
+-         Http.emptyBody())
++         Http.emptyBody())
+
+- url"https://example.com".session: session ?=>
++ url"https://example.com".session: session ?=>
+
+= url"https://example.com".session: session ?=>
+-   session.fetch(request).status
++   session.fetch(request).status
+
+=   session.fetch(request).status
+-   session.fetch(request).status
++   session.fetch(request).status
+
+=   session.fetch(request).status
+- ```
++ ```
+
+- The protocol is fixed for as long as the session lasts. For `https`, the server and client agree
+- on it during the TLS handshake, by
++ O protocolo fica fixo enquanto a sessão durar. Para `https`, o servidor e o cliente o combinam
++ durante o handshake TLS, por
+
+- [ALPN](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation):
++ [ALPN](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation):
+
+= [ALPN](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation):
+=
+- ```tabular
++ ```tabular
+
+- column  Scheme
+- column  Negotiated
+- column  Session
+- row  `https`  `h2`  *multiplexed* HTTP/2: fetches interleave over one connection
+- row  `https`  `http/1.1`  *sequential* HTTP/1.1
+- row  `http`  nothing  *sequential* HTTP/1.1, keep-alive pinning one connection
++ column  Esquema
++ column  Negociado
++ column  Sessão
++ row  `https`  `h2`  HTTP/2 *multiplexado*: os fetches se intercalam sobre uma conexão
++ row  `https`  `http/1.1`  HTTP/1.1 *sequencial*
++ row  `http`  nada  HTTP/1.1 *sequencial*, com keep-alive fixando uma conexão
+
+= row  `http`  nothing  *sequential* HTTP/1.1, keep-alive pinning one connection
+- ```
++ ```
+
+- The block's boundary is enforced by the compiler. A response body that is still streaming from
+- the live connection cannot be returned from the block, because the connection it reads from
+- closes when the block ends. A value that has been read into memory can be returned freely.
++ A fronteira do bloco é imposta pelo compilador. Um corpo de resposta que ainda está chegando em
++ stream da conexão ativa não pode ser retornado do bloco, porque a conexão da qual ele lê é fechada
++ quando o bloco termina. Um valor que já foi lido para a memória pode ser retornado livremente.
+
+- A response that is left unread does no harm. The next fetch first discards whatever remains of
+- the previous body, so that it starts at the next response.
++ Uma resposta que fica sem ser lida não causa dano. O fetch seguinte primeiro descarta o que restar
++ do corpo anterior, para começar na resposta seguinte.
+
+- ### Choosing a transport
++ ### Escolhendo um transporte
+
+- The implementation that sends requests is a [given], chosen by import:
++ A implementação que envia as requisições é um [given], escolhido por import:
+
+= The implementation that sends requests is a [given], chosen by import:
+=
+- ```tabular
++ ```tabular
+
+= The implementation that sends requests is a [given], chosen by import:
+=
+= ```tabular
+- column  Import
++ column  Import
+
+- column  Sends requests with
+- row  `httpBackends.javaNetHttp`  the JVM's own `java.net.http` client
+- row  `httpBackends.soundnessHttp`  Soundness's own HTTP codecs, directly over a [socket](sockets.md)
++ column  Envia as requisições com
++ row  `httpBackends.javaNetHttp`  o próprio cliente `java.net.http` da JVM
++ row  `httpBackends.soundnessHttp`  os próprios codecs HTTP do Soundness, diretamente sobre um [socket](sockets.md)
+
+= row  `httpBackends.soundnessHttp`  Soundness's own HTTP codecs, directly over a [socket](sockets.md)
+- ```
++ ```
+
+- A `locally` block confines a different choice to a few lines:
++ Um bloco `locally` confina uma escolha diferente a poucas linhas:
+
+= A `locally` block confines a different choice to a few lines:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A `locally` block confines a different choice to a few lines:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= A `locally` block confines a different choice to a few lines:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- locally:
++ locally:
+
+-   import httpBackends.soundnessHttp
++   import httpBackends.soundnessHttp
+
+-   url"https://example.com/".fetch().status
++   url"https://example.com/".fetch().status
+
+=   url"https://example.com/".fetch().status
+- ```
++ ```
+
+- The `soundnessHttp` backend keeps HTTP/1.1 connections alive and reuses them for later requests
+- to the same origin. Over TLS it negotiates HTTP/2 or HTTP/1.1 by ALPN and speaks whichever the
+- server chose. If a kept connection turns out to have been closed by the server, the request is
+- retried once on a new connection. Other platforms supply backends of their own in the same way.
++ O backend `soundnessHttp` mantém as conexões HTTP/1.1 vivas e as reusa em requisições posteriores
++ à mesma origem. Sobre TLS, ele negocia HTTP/2 ou HTTP/1.1 por ALPN e fala o que o servidor
++ escolheu. Se uma conexão mantida se revelar fechada pelo servidor, a requisição é tentada de novo
++ uma vez em uma conexão nova. Outras plataformas fornecem seus próprios backends da mesma forma.
+
+- ### Redirects
++ ### Redirecionamentos
+
+- A redirect is followed by default, up to a limit. Importing a stricter policy stops that, and a
+- redirect response is then an `Http.Error` carrying the redirect's status:
++ Um redirecionamento é seguido por padrão, até um limite. Importar uma política mais estrita
++ impede isso, e uma resposta de redirecionamento passa a ser um `Http.Error` que carrega o status
++ do redirecionamento:
+
+= redirect response is then an `Http.Error` carrying the redirect's status:
+=
+- ```scala
++ ```scala
+
+- import httpRedirections.doNotFollowRedirects
++ import httpRedirections.doNotFollowRedirects
+
+= import httpRedirections.doNotFollowRedirects
+- ```
++ ```
+
+- ### Errors
++ ### Erros
+
+- A request fails in one of two ways, and each is an error of its own type:
++ Uma requisição falha de uma de duas formas, e cada uma é um erro de tipo próprio:
+
+= A request fails in one of two ways, and each is an error of its own type:
+=
+- ```tabular
++ ```tabular
+
+- column  Error
+- column  Raised when
+- column  Carries
+- row  `Http.Error`  a response is outside the success range  the status and headers
+- row  `Connect.Error`  no connection can be made: an unresolvable host, a refused connection, a TLS failure  the reason
++ column  Erro
++ column  Lançado quando
++ column  Carrega
++ row  `Http.Error`  uma resposta está fora da faixa de sucesso  o status e os cabeçalhos
++ row  `Connect.Error`  nenhuma conexão pode ser feita: um host que não pode ser resolvido, uma conexão recusada, uma falha de TLS  o motivo
+
+= row  `Connect.Error`  no connection can be made: an unresolvable host, a refused connection, a TLS failure  the reason
+- ```
++ ```
+
+- Under the `throwUnsafely` [strategy] imported above, either is thrown as an exception. A method
+- that should not throw declares the errors instead, with [`raises`][raises], and its caller chooses
+- what to do about them; [Errors](errors.md) covers the choices.
++ Sob a [estratégia] `throwUnsafely` importada acima, qualquer um deles é lançado como exceção. Um
++ método que não deve lançar exceções declara os erros, em vez disso, com [`raises`][raises], e quem
++ o chama escolhe o que fazer com eles; [Erros](errors.md) trata das escolhas.
+
+- `capture` runs an expression that is expected to fail, and gives the error. An `Http.Error` has
+- the status, so the caller can react to what went wrong:
++ `capture` executa uma expressão da qual se espera que falhe, e dá o erro. Um `Http.Error` tem o
++ status, de modo que quem chama pode reagir ao que deu errado:
+
+= the status, so the caller can react to what went wrong:
+=
+- ```scala fuel
++ ```scala fuel
+
+= the status, so the caller can react to what went wrong:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= the status, so the caller can react to what went wrong:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- capture[Http.Error](url"https://example.com/missing".fetch().receive[Text]).status
++ capture[Http.Error](url"https://example.com/missing".fetch().receive[Text]).status
+
+= capture[Http.Error](url"https://example.com/missing".fetch().receive[Text]).status
+- ```
++ ```
+
+- For a missing page this is `Http.NotFound`.
++ Para uma página inexistente, isso é `Http.NotFound`.
+
+- A `Connect.Error` has a `reason`, which says why no connection was made:
++ Um `Connect.Error` tem um `reason`, que diz por que nenhuma conexão foi feita:
+
+= A `Connect.Error` has a `reason`, which says why no connection was made:
+=
+- ```scala fuel
++ ```scala fuel
+
+= A `Connect.Error` has a `reason`, which says why no connection was made:
+=
+= ```scala fuel
+- typecheck
++ typecheck
+
+= A `Connect.Error` has a `reason`, which says why no connection was made:
+=
+= ```scala fuel
+= typecheck
+- ##
++ ##
+
+- capture[Connect.Error](url"http://no-such-host.invalid/".fetch()).reason
++ capture[Connect.Error](url"http://no-such-host.invalid/".fetch()).reason
+
+= capture[Connect.Error](url"http://no-such-host.invalid/".fetch()).reason
+- ```
++ ```
+
+= capture[Connect.Error](url"http://no-such-host.invalid/".fetch()).reason
+= ```
+=
+- ```tabular
++ ```tabular
+
+- column  Reason
+- column  Means
+- row  `Dns`  the host's name could not be resolved
+- row  `Refused`  the host refused the connection
+- row  `Ssl(reason)`  the TLS layer could not be established; its own reason is `Handshake`, `Key`, `Peer` or `Protocol`
+- row  `Timeout`  the server did not respond within the time limit
+- row  `Unknown`  the failure was not recognized as one of the others
++ column  Motivo
++ column  Significa
++ row  `Dns`  o nome do host não pôde ser resolvido
++ row  `Refused`  o host recusou a conexão
++ row  `Ssl(reason)`  a camada TLS não pôde ser estabelecida; seu próprio motivo é `Handshake`, `Key`, `Peer` ou `Protocol`
++ row  `Timeout`  o servidor não respondeu dentro do limite de tempo
++ row  `Unknown`  a falha não foi reconhecida como nenhuma das outras
+
+= row  `Unknown`  the failure was not recognized as one of the others
+- ```
++ ```
+
+- A TLS failure is therefore told apart from a network failure, and its reason says at which stage
+- it happened. An expired certificate, a certificate for the wrong host, a revoked certificate, a
+- broken cipher suite and an undersized Diffie–Hellman group are each refused during the
+- handshake. The client is tested against the [badssl.com](https://badssl.com/) collection of
+- deliberately broken endpoints, so each refusal is verified.
++ Uma falha de TLS, portanto, é distinguida de uma falha de rede, e seu motivo diz em que estágio
++ ela aconteceu. Um certificado expirado, um certificado para o host errado, um certificado
++ revogado, uma cipher suite quebrada e um grupo Diffie–Hellman pequeno demais são, cada um,
++ recusados durante o handshake. O cliente é testado contra a coleção [badssl.com](https://badssl.com/)
++ de endpoints quebrados de propósito, de modo que cada recusa é verificada.
+
+- Sometimes a connection must be made to a host whose certificate cannot be validated, such as a
+- development server with a self-signed certificate. A relaxed `TlsAcceptance` in scope permits it.
+- Accepting an unvalidated certificate is then a decision that can be found by searching the code
+- for the import.
++ Às vezes é preciso fazer uma conexão com um host cujo certificado não pode ser validado, como um
++ servidor de desenvolvimento com um certificado autoassinado. Um `TlsAcceptance` relaxado no escopo
++ o permite. Aceitar um certificado não validado passa a ser, então, uma decisão que pode ser
++ encontrada buscando o import no código.
+
+- ### Related
++ ### Relacionados
+
+- - [HTTP Server](http-server.md) answers requests with the same `Http` vocabulary of methods,
+-   statuses and headers.
+- - [JSON over HTTP](json.md#json-over-http) posts a `Json` value and receives one.
+- - [OAuth](oauth.md#credentials-for-a-typed-client) obtains the token an authorized request sends.
+- - [Network addresses](network-addresses.md) covers URLs, hostnames and ports.
++ - [Servidor HTTP](http-server.md) responde a requisições com o mesmo vocabulário `Http` de
++   métodos, status e cabeçalhos.
++ - [JSON sobre HTTP](json.md#json-over-http) envia um valor `Json` e recebe outro.
++ - [OAuth](oauth.md#credentials-for-a-typed-client) obtém o token que uma requisição autorizada
++   envia.
++ - [Endereços de rede](network-addresses.md) trata de URLs, hostnames e portas.

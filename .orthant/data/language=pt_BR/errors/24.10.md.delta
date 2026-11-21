@@ -1,0 +1,47 @@
+orthant 1 language
+
+- # `↯/s.24.10` — Pattern is not a distinct `Error` type
++ # `↯/s.24.10` — O padrão não é um tipo `Error` distinto
+
+- Raised by Contingency's pattern-type extractor when a pattern does
+- not correspond to a distinct `Error` subtype.
++ Lançado pelo extrator de tipos de padrão do Contingency quando um padrão não corresponde a um
++ subtipo distinto de `Error`.
+
+- ## Cause
++ ## Causa
+
+- Recovery patterns must each pick out a specific `Error` subclass,
+- because they are used to drive type-level reasoning about which
+- errors remain after handling. A pattern matching no specific
+- `Error` type cannot be used.
++ Cada padrão de recuperação precisa identificar uma subclasse específica de `Error`, porque os
++ padrões são usados para conduzir o raciocínio no nível de tipos sobre quais erros restam depois
++ do tratamento. Um padrão que não casa com nenhum tipo `Error` específico não pode ser usado.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.24.10] this pattern could not be recognized as a distinct `Error` type
++ [↯/s.24.10] this pattern could not be recognized as a distinct `Error` type
+
+= [↯/s.24.10] this pattern could not be recognized as a distinct `Error` type
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Match against a concrete `Error` subclass, e.g. `error:
+- HostnameError`.
++ Case com uma subclasse concreta de `Error`, por exemplo `error: HostnameError`.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/contingency/src/core/contingency.internal.scala`
++ - Código-fonte: `lib/contingency/src/core/contingency.internal.scala`

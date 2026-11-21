@@ -1,0 +1,991 @@
+orthant 1 language
+
+- ## Tables
++ ## Tabelas
+
+- ### About
++ ### Visão geral
+
+- Tabular data is drawn in a terminal by a layout engine which takes the hard part seriously:
+- fitting columns of uneven content into a fixed width.
++ Os dados tabulares são desenhados em um terminal por um motor de layout que leva a sério a parte
++ difícil: encaixar colunas de conteúdo desigual em uma largura fixa.
+
+- A table is defined in one of two ways. Implicitly, a sequence of case classes becomes a
+- table with a column for each field. Explicitly, each column is named, with its alignment and
+- its *sizing strategy*: wrap as a paragraph, truncate with an ellipsis, or collapse entirely
+- when space runs short. The result is drawn with box characters, in a style chosen in scope.
++ Uma tabela é definida de uma de duas maneiras. Implicitamente, uma sequência de case classes
++ torna-se uma tabela com uma coluna para cada campo. Explicitamente, cada coluna recebe um nome,
++ com seu alinhamento e sua *estratégia de dimensionamento*: quebrar como um parágrafo, truncar com
++ reticências ou recolher por inteiro quando falta espaço. O resultado é desenhado com caracteres de
++ desenho de caixa, em um estilo escolhido no escopo.
+
+- ### On tables
++ ### Sobre tabelas
+
+- Most tables in a terminal are format strings: fixed widths, guessed when the program was
+- written, which truncate or overflow when the data disagrees. Real layout is a negotiation.
+- Some columns matter more than others. A column of prose can wrap where a column of
+- identifiers cannot. Below some width, a column is better dropped than mangled. A layout
+- engine can conduct that negotiation, and a format string cannot.
++ A maioria das tabelas em um terminal são strings de formato: larguras fixas, adivinhadas quando o
++ programa foi escrito, que truncam ou transbordam quando os dados discordam. Um layout de verdade é
++ uma negociação. Algumas colunas importam mais que outras. Uma coluna de prosa pode quebrar onde
++ uma coluna de identificadores não pode. Abaixo de certa largura, é melhor descartar uma coluna do
++ que mutilá-la. Um motor de layout consegue conduzir essa negociação, e uma string de formato não.
+
+- Here the layout is computed each time a table is drawn. Each column declares how it may
+- shrink, and the engine distributes the width which is available, wrapping with
+- [hyphenation](hyphenation.md) where wrapping is allowed. Separating a table's columns from
+- its data, and from its width, is [decoupling](../../philosophy/decoupling.md), and it is what
+- lets one definition be drawn at any width.
++ Aqui o layout é calculado cada vez que uma tabela é desenhada. Cada coluna declara como pode
++ encolher, e o motor distribui a largura disponível, quebrando com
++ [hifenização](hyphenation.md) onde a quebra é permitida. Separar as colunas de uma tabela dos seus
++ dados, e da sua largura, é [desacoplamento](../../philosophy/decoupling.md), e é isso que permite
++ desenhar uma única definição em qualquer largura.
+
+- Everything comes from the `soundness` package. A style, a metric for the width of text, and
+- a policy for a table which does not fit are in scope:
++ Tudo vem do pacote `soundness`. Um estilo, uma métrica para a largura do texto e uma política para
++ uma tabela que não cabe estão no escopo:
+
+= a policy for a table which does not fit are in scope:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import tableStyles.thickTableStyle
++ import tableStyles.thickTableStyle
+
+- import textMetrics.uniformMetric
++ import textMetrics.uniformMetric
+
+- import columnAttenuation.ignoreAttenuation
++ import columnAttenuation.ignoreAttenuation
+
+- import hyphenations.englishHyphenation
++ import hyphenations.englishHyphenation
+
+- import stdios.javaLangSystemStdio
++ import stdios.javaLangSystemStdio
+
+- import termcapDefinitions.basicTermcap
++ import termcapDefinitions.basicTermcap
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+= import strategies.throwUnsafely
+- ```
++ ```
+
+- ### A table from a case class
++ ### Uma tabela a partir de uma case class
+
+- A sequence of case classes is tabulated directly, with a column for each field, titled from
+- the names of the fields:
++ Uma sequência de case classes é tabulada diretamente, com uma coluna para cada campo, com títulos
++ tirados dos nomes dos campos:
+
+= the names of the fields:
+=
+- ```scala
++ ```scala
+
+- case class Codebase(id: Text, name: Text, linesOfCode: Int, year: Int, description: Text)
++ case class Codebase(id: Text, name: Text, linesOfCode: Int, year: Int, description: Text)
+
+- val libraries = List
++ val libraries = List
+
+-   ( Codebase(t"wisteria", t"Wisteria", 581, 2017,
++   ( Codebase(t"wisteria", t"Wisteria", 581, 2017,
+
+-         t"Simple, fast and transparent generic derivation for typeclasses"),
++         t"Simple, fast and transparent generic derivation for typeclasses"),
+
+-     Codebase(t"quantitative", t"Quantitative", 1271, 2023,
++     Codebase(t"quantitative", t"Quantitative", 1271, 2023,
+
+-         t"Statically-checked physical units with seamless syntax"),
++         t"Statically-checked physical units with seamless syntax"),
+
+-     Codebase(t"turbulence", t"Turbulence", 1047, 2022,
++     Codebase(t"turbulence", t"Turbulence", 1047, 2022,
+
+-         t"Simple tools for working with data streams"),
++         t"Simple tools for working with data streams"),
+
+-     Codebase(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables") )
++     Codebase(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables") )
+
+=     Codebase(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables") )
+- ```
++ ```
+
+- `grid` lays the table out at a width, and `render` gives its lines:
++ `grid` faz o layout da tabela em uma largura, e `render` dá as suas linhas:
+
+= `grid` lays the table out at a width, and `render` gives its lines:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `grid` lays the table out at a width, and `render` gives its lines:
+=
+= ```scala fuel
+- run
++ run
+
+= `grid` lays the table out at a width, and `render` gives its lines:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- libraries.tabulation.grid(100).render.each(Out.println(_))
++ libraries.tabulation.grid(100).render.each(Out.println(_))
+
+= libraries.tabulation.grid(100).render.each(Out.println(_))
+- ```
++ ```
+
+- Numeric columns are aligned to the right by default, and text to the left. The whole table
+- is `Printable`, so printing it at the terminal's own width needs nothing more than
++ As colunas numéricas são alinhadas à direita por padrão, e o texto à esquerda. A tabela inteira é
++ `Printable`, então imprimi-la na própria largura do terminal não precisa de nada além de
+
+- `Out.println`.
++ `Out.println`.
+
+- Three types are at work, and knowing which is which explains where each decision is made:
++ Três tipos estão em ação, e saber qual é qual explica onde cada decisão é tomada:
+
+= Three types are at work, and knowing which is which explains where each decision is made:
+=
+- ```tabular
++ ```tabular
+
+- column  Type
+- column  Holds
+- column  Made with
+- row  `Scaffold`  how a type is put into columns — their content, order and parameters — but no data  `Scaffold[Row](columns…)`
+- row  `Tabulation`  data arranged by a scaffold: textual values, one per row and column, no longer referring to the row type  `scaffold.tabulate(rows)`
+- row  `Grid`  a tabulation fitted to a particular width, where a column may shrink or vanish  `tabulation.grid(width)`
++ column  Tipo
++ column  Contém
++ column  Criado com
++ row  `Scaffold`  como um tipo é posto em colunas — seu conteúdo, ordem e parâmetros —, mas nenhum dado  `Scaffold[Row](columns…)`
++ row  `Tabulation`  dados organizados por um scaffold: valores textuais, um por linha e coluna, sem mais referência ao tipo da linha  `scaffold.tabulate(rows)`
++ row  `Grid`  uma tabulação ajustada a uma largura específica, em que uma coluna pode encolher ou sumir  `tabulation.grid(width)`
+
+= row  `Grid`  a tabulation fitted to a particular width, where a column may shrink or vanish  `tabulation.grid(width)`
+- ```
++ ```
+
+- `tabulation`, above, derived a scaffold for `Codebase` and applied it, in one step. The
+- sections below take the stages separately, which is what gives control over both the layout
+- and the width.
++ `tabulation`, acima, derivou um scaffold para `Codebase` e o aplicou, em um único passo. As seções
++ abaixo tratam os estágios separadamente, e é isso que dá controle tanto sobre o layout quanto sobre
++ a largura.
+
+- ### Explicit columns
++ ### Colunas explícitas
+
+- Columns which are defined by hand choose their titles, content, alignment and sizing. The
+- sizings are in the package `columnar`:
++ As colunas definidas à mão escolhem seus títulos, conteúdo, alinhamento e dimensionamento. Os
++ dimensionamentos ficam no pacote `columnar`:
+
+= sizings are in the package `columnar`:
+=
+- ```tabular
++ ```tabular
+
+- column  Sizing
+- column  The column
+- row  `Paragraph`  wraps, with hyphenation, but no narrower than its longest word
+- row  `Collapsible(threshold)`  keeps its natural width, and vanishes when the slack falls below `threshold`
+- row  `Fixed(width)`  is always `width` wide, truncating its content with an ellipsis
+- row  `Shortened(width)`  shrinks from its natural width, truncating its content with an ellipsis
++ column  Dimensionamento
++ column  A coluna
++ row  `Paragraph`  quebra, com hifenização, mas nunca fica mais estreita que sua palavra mais longa
++ row  `Collapsible(threshold)`  mantém sua largura natural, e some quando a folga cai abaixo de `threshold`
++ row  `Fixed(width)`  tem sempre `width` de largura, truncando seu conteúdo com reticências
++ row  `Shortened(width)`  encolhe a partir de sua largura natural, truncando seu conteúdo com reticências
+
+= row  `Shortened(width)`  shrinks from its natural width, truncating its content with an ellipsis
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- val table = Scaffold[Codebase]
++ val table = Scaffold[Codebase]
+
+-   ( Column(t"Name")(_.name),
++   ( Column(t"Name")(_.name),
+
+-     Column(t"Identifier", sizing = columnar.Collapsible(0.9))(_.id),
++     Column(t"Identifier", sizing = columnar.Collapsible(0.9))(_.id),
+
+-     Column(t"LoC", sizing = columnar.Collapsible(0.3))(_.linesOfCode),
++     Column(t"LoC", sizing = columnar.Collapsible(0.3))(_.linesOfCode),
+
+-     Column(t"Year", sizing = columnar.Collapsible(0.5))(_.year),
++     Column(t"Year", sizing = columnar.Collapsible(0.5))(_.year),
+
+-     Column(t"Description", textAlign = TextAlignment.Justify,
++     Column(t"Description", textAlign = TextAlignment.Justify,
+
+-         sizing = columnar.Paragraph)(_.description) )
++         sizing = columnar.Paragraph)(_.description) )
+
+=         sizing = columnar.Paragraph)(_.description) )
+- ```
++ ```
+
+- Each column is a title, and a function from the type of a row to the value of a cell. The
+- functions here return a mixture of `Text` and `Int`, with no type annotation between them.
+- That works because the *title* fixes the textual type. A `Textual` instance is found for the
+- type of the title. That instance names the [typeclass], usually `Showable`, which converts
+- other values into it, and the result of each function is shown through it.
++ Cada coluna é um título e uma função do tipo de uma linha para o valor de uma célula. As funções
++ aqui devolvem uma mistura de `Text` e `Int`, sem nenhuma anotação de tipo entre elas. Isso funciona
++ porque o *título* fixa o tipo textual. Uma instância de `Textual` é encontrada para o tipo do
++ título. Essa instância nomeia a [classe de tipos], geralmente `Showable`, que converte outros
++ valores nele, e o resultado de cada função é exibido por meio dela.
+
+- The table's own type of cell is then the least upper bound of its columns'. So `table`,
+- above, is a `Scaffold[Codebase, Text]`. Writing the titles as `e"Name"` instead of `t"Name"`
+- would have made it a `Scaffold[Codebase, Teletype]`, with color and style available in every
+- cell, as [Terminal](terminal.md#styled-text) describes.
++ O tipo de célula da própria tabela é então o menor limite superior dos das suas colunas. Assim,
++ `table`, acima, é um `Scaffold[Codebase, Text]`. Escrever os títulos como `e"Name"` em vez de
++ `t"Name"` faria dela um `Scaffold[Codebase, Teletype]`, com cor e estilo disponíveis em cada
++ célula, como descreve [Terminal](terminal.md#styled-text).
+
+- The thresholds of the `Collapsible` columns are meaningful only relative to each other. They
+- are compared against the *slack* at which the layout is working, which is the number the
+- [layout algorithm](#the-layout-algorithm) searches for:
++ Os limiares das colunas `Collapsible` só têm significado uns em relação aos outros. Eles são
++ comparados com a *folga* com que o layout está trabalhando, que é o número que o
++ [algoritmo de layout](#the-layout-algorithm) procura:
+
+= [layout algorithm](#the-layout-algorithm) searches for:
+=
+- ```tabular
++ ```tabular
+
+- column  Slack
++ column  Folga
+
+- column  Identifier (`0.9`)
++ column  Identifier (`0.9`)
+
+- column  Year (`0.5`)
++ column  Year (`0.5`)
+
+- column  LoC (`0.3`)
++ column  LoC (`0.3`)
+
+- row  `0.6`  hidden  shown  shown
+- row  `0.4`  hidden  hidden  shown
+- row  `0.2`  hidden  hidden  hidden
++ row  `0.6`  oculta  exibida  exibida
++ row  `0.4`  oculta  oculta  exibida
++ row  `0.2`  oculta  oculta  oculta
+
+= row  `0.2`  hidden  hidden  hidden
+- ```
++ ```
+
+- ### Renderings at different widths
++ ### Renderizações em larguras diferentes
+
+- Here is the same table, with the same data, laid out at four widths. At 100 characters,
+- *Identifier* is already gone. It is the collapsible column whose threshold is closest to
+- `1`, so it is the first to go:
++ Eis a mesma tabela, com os mesmos dados, disposta em quatro larguras. Com 100 caracteres,
++ *Identifier* já sumiu. É a coluna recolhível cujo limiar está mais próximo de `1`, então é a
++ primeira a sair:
+
+= `1`, so it is the first to go:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `1`, so it is the first to go:
+=
+= ```scala fuel
+- run
++ run
+
+= `1`, so it is the first to go:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- table.tabulate(libraries).grid(100).render.each(Out.println(_))
++ table.tabulate(libraries).grid(100).render.each(Out.println(_))
+
+= table.tabulate(libraries).grid(100).render.each(Out.println(_))
+- ```
++ ```
+
+- At 80, no further column need be dropped. The description wraps instead:
++ Com 80, nenhuma outra coluna precisa ser descartada. Em vez disso, a descrição quebra:
+
+= At 80, no further column need be dropped. The description wraps instead:
+=
+- ```scala fuel
++ ```scala fuel
+
+= At 80, no further column need be dropped. The description wraps instead:
+=
+= ```scala fuel
+- run
++ run
+
+= At 80, no further column need be dropped. The description wraps instead:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- table.tabulate(libraries).grid(80).render.each(Out.println(_))
++ table.tabulate(libraries).grid(80).render.each(Out.println(_))
+
+= table.tabulate(libraries).grid(80).render.each(Out.println(_))
+- ```
++ ```
+
+- At 60, *Year* goes, since it has the next-highest threshold, and the justification of the
+- description becomes visible, as the lines stretch to the full width:
++ Com 60, *Year* sai, já que tem o próximo limiar mais alto, e a justificação da descrição fica
++ visível, à medida que as linhas se esticam até a largura total:
+
+= description becomes visible, as the lines stretch to the full width:
+=
+- ```scala fuel
++ ```scala fuel
+
+= description becomes visible, as the lines stretch to the full width:
+=
+= ```scala fuel
+- run
++ run
+
+= description becomes visible, as the lines stretch to the full width:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- table.tabulate(libraries).grid(60).render.each(Out.println(_))
++ table.tabulate(libraries).grid(60).render.each(Out.println(_))
+
+= table.tabulate(libraries).grid(60).render.each(Out.println(_))
+- ```
++ ```
+
+- And at 40, only two columns remain, and a description may run to four lines:
++ E com 40, restam só duas colunas, e uma descrição pode chegar a quatro linhas:
+
+= And at 40, only two columns remain, and a description may run to four lines:
+=
+- ```scala fuel
++ ```scala fuel
+
+= And at 40, only two columns remain, and a description may run to four lines:
+=
+= ```scala fuel
+- run
++ run
+
+= And at 40, only two columns remain, and a description may run to four lines:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- table.tabulate(libraries).grid(40).render.each(Out.println(_))
++ table.tabulate(libraries).grid(40).render.each(Out.println(_))
+
+= table.tabulate(libraries).grid(40).render.each(Out.println(_))
+- ```
++ ```
+
+- ### The layout algorithm
++ ### O algoritmo de layout
+
+- The scaffold does not decide the widths. It delegates to each column, passing a `Double`
+- between `0` and `1`. That number is the *slack* on the column, which is simply the opposite
+- of pressure. Given a slack, a column reports the width which it would take, and a column
+- under enough pressure may report that it will not be drawn at all. A column of prose shrinks
+- smoothly as its text reflows. A column of identifiers cannot shrink past its content, and
+- either holds its width or disappears.
++ O scaffold não decide as larguras. Ele delega a cada coluna, passando um `Double` entre `0` e `1`.
++ Esse número é a *folga* sobre a coluna, que é simplesmente o oposto da pressão. Dada uma folga,
++ uma coluna informa a largura que ocuparia, e uma coluna sob pressão suficiente pode informar que
++ não será desenhada de todo. Uma coluna de prosa encolhe suavemente à medida que seu texto se
++ reorganiza. Uma coluna de identificadores não pode encolher além do seu conteúdo, e ou mantém sua
++ largura ou desaparece.
+
+- Adding up those widths gives the table's width at that slack, and from there it is a search.
+- The slack is raised where the table fits, and lowered where it does not, hunting for the
+- highest slack at which the table still fits the space available.
++ Somar essas larguras dá a largura da tabela naquela folga, e a partir daí é uma busca. A folga é
++ aumentada onde a tabela cabe, e diminuída onde não cabe, à procura da maior folga com que a tabela
++ ainda cabe no espaço disponível.
+
+- That maximum usually sits *just after* a column has been hidden, which tends to leave space
+- unused: the column which vanished freed more room than the survivors needed. A second pass
+- therefore raises the slack on the remaining columns, without bringing back the ones already
+- removed, and lets them spread into what is left. In practice this gives markedly better
+- results than stopping at the first fit.
++ Esse máximo geralmente fica *logo depois* de uma coluna ter sido ocultada, o que tende a deixar
++ espaço sem uso: a coluna que sumiu liberou mais espaço do que as sobreviventes precisavam. Uma
++ segunda passada, portanto, aumenta a folga sobre as colunas restantes, sem trazer de volta as já
++ removidas, e deixa que elas se espalhem pelo que sobrou. Na prática, isso dá resultados bem
++ melhores do que parar no primeiro encaixe.
+
+- The search rests on one requirement, which any custom `Columnar` must honor: a column must
+- respond *monotonically* to slack. Decreasing the slack may leave a column the same width,
+- but must never make it wider. `Paragraph`, `Collapsible`, `Fixed` and `Shortened` are simply
+- the strategies which are provided. The concept is open, and a sizing strategy which responds
+- to slack in some other way is an ordinary implementation of the same interface.
++ A busca se apoia em um único requisito, que qualquer `Columnar` personalizado precisa respeitar:
++ uma coluna precisa responder à folga de forma *monotônica*. Diminuir a folga pode deixar uma coluna
++ com a mesma largura, mas nunca pode deixá-la mais larga. `Paragraph`, `Collapsible`, `Fixed` e
++ `Shortened` são simplesmente as estratégias fornecidas. O conceito é aberto, e uma estratégia de
++ dimensionamento que responda à folga de algum outro modo é uma implementação comum da mesma
++ interface.
+
+- ### Styles
++ ### Estilos
+
+- The box drawing is a `Table.Style` given. The style is a change of import, not of the code
+- which defines the table. `thinRoundedTableStyle` draws light rules throughout, with rounded
+- corners:
++ O desenho de caixa é um given `Table.Style`. O estilo é uma mudança de import, não do código que
++ define a tabela. `thinRoundedTableStyle` desenha linhas divisórias finas em toda parte, com cantos
++ arredondados:
+
+= corners:
+=
+- ```scala
++ ```scala
+
+- val few = libraries.excerpt(0, 2)
++ val few = libraries.excerpt(0, 2)
+
+= val few = libraries.excerpt(0, 2)
+- ```
++ ```
+
+= val few = libraries.excerpt(0, 2)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val few = libraries.excerpt(0, 2)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val few = libraries.excerpt(0, 2)
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= ```
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import tableStyles.thinRoundedTableStyle
++   import tableStyles.thinRoundedTableStyle
+
+=   import tableStyles.thinRoundedTableStyle
+-   table.tabulate(few).grid(50).render.each(Out.println(_))
++   table.tabulate(few).grid(50).render.each(Out.println(_))
+
+=   import tableStyles.thinRoundedTableStyle
+=   table.tabulate(few).grid(50).render.each(Out.println(_))
+- ```
++ ```
+
+- `horizontalTableStyle` keeps the horizontal rules, and drops the vertical ones:
++ `horizontalTableStyle` mantém as linhas divisórias horizontais e descarta as verticais:
+
+= `horizontalTableStyle` keeps the horizontal rules, and drops the vertical ones:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `horizontalTableStyle` keeps the horizontal rules, and drops the vertical ones:
+=
+= ```scala fuel
+- run
++ run
+
+= `horizontalTableStyle` keeps the horizontal rules, and drops the vertical ones:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= `horizontalTableStyle` keeps the horizontal rules, and drops the vertical ones:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import tableStyles.horizontalTableStyle
++   import tableStyles.horizontalTableStyle
+
+=   import tableStyles.horizontalTableStyle
+-   table.tabulate(few).grid(50).render.each(Out.println(_))
++   table.tabulate(few).grid(50).render.each(Out.println(_))
+
+=   import tableStyles.horizontalTableStyle
+=   table.tabulate(few).grid(50).render.each(Out.println(_))
+- ```
++ ```
+
+- `verticalTableStyle` does the opposite:
++ `verticalTableStyle` faz o oposto:
+
+= `verticalTableStyle` does the opposite:
+=
+- ```scala fuel
++ ```scala fuel
+
+= `verticalTableStyle` does the opposite:
+=
+= ```scala fuel
+- run
++ run
+
+= `verticalTableStyle` does the opposite:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= `verticalTableStyle` does the opposite:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import tableStyles.verticalTableStyle
++   import tableStyles.verticalTableStyle
+
+=   import tableStyles.verticalTableStyle
+-   table.tabulate(few).grid(50).render.each(Out.println(_))
++   table.tabulate(few).grid(50).render.each(Out.println(_))
+
+=   import tableStyles.verticalTableStyle
+=   table.tabulate(few).grid(50).render.each(Out.println(_))
+- ```
++ ```
+
+- And `minimalTableStyle` leaves a single rule beneath the titles, and nothing else:
++ E `minimalTableStyle` deixa uma única linha divisória abaixo dos títulos, e nada mais:
+
+= And `minimalTableStyle` leaves a single rule beneath the titles, and nothing else:
+=
+- ```scala fuel
++ ```scala fuel
+
+= And `minimalTableStyle` leaves a single rule beneath the titles, and nothing else:
+=
+= ```scala fuel
+- run
++ run
+
+= And `minimalTableStyle` leaves a single rule beneath the titles, and nothing else:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= And `minimalTableStyle` leaves a single rule beneath the titles, and nothing else:
+=
+= ```scala fuel
+= run
+= ##
+- locally:
++ locally:
+
+-   import tableStyles.minimalTableStyle
++   import tableStyles.minimalTableStyle
+
+=   import tableStyles.minimalTableStyle
+-   table.tabulate(few).grid(50).render.each(Out.println(_))
++   table.tabulate(few).grid(50).render.each(Out.println(_))
+
+=   import tableStyles.minimalTableStyle
+=   table.tabulate(few).grid(50).render.each(Out.println(_))
+- ```
++ ```
+
+- `midOnlyTableStyle` is the same, but reserves blank lines above and below, where the outer
+- rules would be, so the table keeps its vertical spacing without drawing them.
++ `midOnlyTableStyle` é igual, mas reserva linhas em branco acima e abaixo, onde ficariam as linhas
++ divisórias externas, para que a tabela mantenha seu espaçamento vertical sem desenhá-las.
+
+- Styled terminal text works as the content of a cell in every style. A table of highlighted
+- or colored values is laid out by its visible width, not by the length of its escape codes.
++ Texto de terminal com estilo funciona como conteúdo de uma célula em todos os estilos. Uma tabela
++ de valores realçados ou coloridos é disposta pela sua largura visível, não pelo comprimento dos
++ seus códigos de escape.
+
+- ### Alignment
++ ### Alinhamento
+
+- Each column states how its content sits within the width which it is given, as a
++ Cada coluna declara como seu conteúdo fica dentro da largura que lhe é dada, como um
+
+- `TextAlignment`:
++ `TextAlignment`:
+
+= `TextAlignment`:
+=
+- ```tabular
++ ```tabular
+
+- column  Alignment
+- column  Pads
+- row  `Left`  on the right
+- row  `Right`  on the left
+- row  `Center`  on both sides, putting the odd column on the right where it cannot be split evenly
+- row  `Justify`  between words, so that every line but the last reaches the full width
++ column  Alinhamento
++ column  Preenche
++ row  `Left`  à direita
++ row  `Right`  à esquerda
++ row  `Center`  dos dois lados, pondo a coluna ímpar à direita onde não dá para dividir por igual
++ row  `Justify`  entre as palavras, para que toda linha exceto a última alcance a largura total
+
+= row  `Justify`  between words, so that every line but the last reaches the full width
+- ```
++ ```
+
+- `Justify` is the setting of a newspaper, which suits a column of prose and nothing else.
++ `Justify` é a composição de um jornal, que serve a uma coluna de prosa e a nada mais.
+
+- Vertical alignment matters as soon as one cell wraps. A wrapped cell makes its whole row
+- taller, and the other cells in that row sit at the top, the middle or the bottom of the extra
+- height, according to their `VerticalAlignment`: `Top`, `Middle` or `Bottom`.
++ O alinhamento vertical importa assim que uma célula quebra. Uma célula quebrada torna sua linha
++ inteira mais alta, e as outras células dessa linha ficam no topo, no meio ou na base da altura
++ extra, de acordo com seu `VerticalAlignment`: `Top`, `Middle` ou `Bottom`.
+
+- ### Titles
++ ### Títulos
+
+- A derived table titles its columns from the names of the fields, capitalized, so
+- `linesOfCode` becomes `Lines of code`. Where that is not the title which is wanted, a
+- `Table.Relabelling` overrides it by name. The Scala field keeps its name, and the table gets
+- its own:
++ Uma tabela derivada dá títulos às suas colunas a partir dos nomes dos campos, com maiúscula
++ inicial, então `linesOfCode` torna-se `Lines of code`. Onde esse não é o título desejado, um
++ `Table.Relabelling` o substitui pelo nome. O campo Scala mantém seu nome, e a tabela recebe o seu
++ próprio:
+
+= its own:
+=
+- ```scala
++ ```scala
+
+- given relabelling: Table.Relabelling[Codebase]:
++ given relabelling: Table.Relabelling[Codebase]:
+
+-   def relabelling() = Map(t"linesOfCode" -> t"LoC")
++   def relabelling() = Map(t"linesOfCode" -> t"LoC")
+
+=   def relabelling() = Map(t"linesOfCode" -> t"LoC")
+- ```
++ ```
+
+- A column which is defined explicitly names itself. `retitle` renames one after the fact,
+- which is useful where a table's definition is shared, and one caller wants a different
+- heading.
++ Uma coluna definida explicitamente nomeia a si mesma. `retitle` renomeia uma depois do fato, o que
++ é útil onde a definição de uma tabela é compartilhada e quem chama quer um cabeçalho diferente.
+
+- ### Reusing a column definition
++ ### Reutilizando a definição de uma coluna
+
+- A `Column` has a type parameter for the type of row which it reads from, which would make a
+- column defined for one type useless for another. `contramap` adapts it. A column which is
+- defined once, with its alignment, sizing and title, then serves every type which can produce
+- the value it displays:
++ Uma `Column` tem um parâmetro de tipo para o tipo de linha que lê, o que tornaria inútil para
++ outro tipo uma coluna definida para um. `contramap` a adapta. Uma coluna definida uma única vez,
++ com seu alinhamento, dimensionamento e título, serve então a todo tipo que consiga produzir o
++ valor que ela exibe:
+
+= the value it displays:
+=
+- ```scala
++ ```scala
+
+- val nameColumn = Column[Text, Text, Text](t"Name")(identity)
++ val nameColumn = Column[Text, Text, Text](t"Name")(identity)
+
+- val codebaseName = nameColumn.contramap[Codebase](_.name)
++ val codebaseName = nameColumn.contramap[Codebase](_.name)
+
+= val codebaseName = nameColumn.contramap[Codebase](_.name)
+- ```
++ ```
+
+- ### Tabulating something that is not a case class
++ ### Tabulando algo que não é uma case class
+
+- A sequence of anything with a `Tabulable` instance is tabulated, so a list of plain integers,
+- or of text, is drawn as a table of one column, without a wrapper type. That instance is also
+- where a type whose columns are not its fields takes part, such as a
+- [record](records.md) read from a schema, or a value whose columns for display are computed.
++ Uma sequência de qualquer coisa com uma instância de `Tabulable` é tabulada, então uma lista de
++ inteiros simples, ou de texto, é desenhada como uma tabela de uma coluna, sem um tipo invólucro.
++ É também nessa instância que entra um tipo cujas colunas não são seus campos, como um
++ [registro](records.md) lido de um schema, ou um valor cujas colunas de exibição são calculadas.
+
+- ### Lists in columns
++ ### Listas em colunas
+
+- Not every arrangement of text in columns is a table. A list of short items, such as file
+- names or the entries of a legend, reads best when it is laid out as `ls` lays out a
+- directory: in as many columns as the width allows, with no titles and no rules. `columnate`
+- does this for a list of textual values, and gives one line for each row:
++ Nem toda disposição de texto em colunas é uma tabela. Uma lista de itens curtos, como nomes de
++ arquivos ou as entradas de uma legenda, lê-se melhor quando disposta como `ls` dispõe um
++ diretório: em tantas colunas quantas a largura permitir, sem títulos e sem linhas divisórias.
++ `columnate` faz isso para uma lista de valores textuais, e dá uma linha para cada fileira:
+
+= does this for a list of textual values, and gives one line for each row:
+=
+- ```scala fuel
++ ```scala fuel
+
+= does this for a list of textual values, and gives one line for each row:
+=
+= ```scala fuel
+- run
++ run
+
+= does this for a list of textual values, and gives one line for each row:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- List(t"apple", t"fig", t"kiwi", t"lime", t"pear", t"plum").columnate(24).each(Out.println(_))
++ List(t"apple", t"fig", t"kiwi", t"lime", t"pear", t"plum").columnate(24).each(Out.println(_))
+
+= List(t"apple", t"fig", t"kiwi", t"lime", t"pear", t"plum").columnate(24).each(Out.println(_))
+- ```
++ ```
+
+- The number of columns is the greatest at which the content of every column fits, with `gap`
+- cells between neighbors. Columns of equal width, each as wide as the widest item, are
+- preferred. A layout with one more column is admitted when the items which fall into some
+- column happen to be narrower, and that column can shrink. Whatever width is then spare is
+- shared back out among the shrunk columns, toward equality, without any column growing beyond
+- the widest item. The parameters of `columnate` are:
++ O número de colunas é o maior em que o conteúdo de cada coluna cabe, com `gap` células entre
++ vizinhas. Colunas de largura igual, cada uma tão larga quanto o item mais largo, são preferidas.
++ Um layout com uma coluna a mais é admitido quando os itens que caem em alguma coluna acabam sendo
++ mais estreitos, e essa coluna pode encolher. A largura que então sobrar é redistribuída entre as
++ colunas encolhidas, em direção à igualdade, sem que nenhuma coluna cresça além do item mais largo.
++ Os parâmetros de `columnate` são:
+
+= the widest item. The parameters of `columnate` are:
+=
+- ```tabular
++ ```tabular
+
+- column  Parameter
+- column  Default
+- column  Effect
+- row  `width`  none  the width to fill
+- row  `gap`  `2`  the cells between neighbouring columns
+- row  `uniform`  `false`  when `true`, considers only equal-width layouts
+- row  `downward`  `false`  when `true`, reads the items down each column rather than across each row
+- row  `align`  `TextAlignment.Left`  how each cell is padded within its column
++ column  Parâmetro
++ column  Padrão
++ column  Efeito
++ row  `width`  nenhum  a largura a preencher
++ row  `gap`  `2`  as células entre colunas vizinhas
++ row  `uniform`  `false`  quando `true`, considera apenas layouts de largura igual
++ row  `downward`  `false`  quando `true`, lê os itens descendo cada coluna em vez de atravessar cada fileira
++ row  `align`  `TextAlignment.Left`  como cada célula é preenchida dentro da sua coluna
+
+= row  `align`  `TextAlignment.Left`  how each cell is padded within its column
+- ```
++ ```
+
+- A row which is aligned to the left has no trailing padding after its last item.
++ Uma fileira alinhada à esquerda não tem preenchimento final depois do seu último item.
+
+- ### When the table does not fit
++ ### Quando a tabela não cabe
+
+- Below some width, no arrangement of columns is satisfactory, and what should happen then is
+- a policy, not a fixed behavior. The `columnAttenuation` given decides:
++ Abaixo de certa largura, nenhuma disposição de colunas é satisfatória, e o que deve acontecer então
++ é uma política, não um comportamento fixo. O given `columnAttenuation` decide:
+
+= a policy, not a fixed behavior. The `columnAttenuation` given decides:
+=
+- ```tabular
++ ```tabular
+
+- column  Import
++ column  Import
+
+- column  A table which does not fit
+- row  `columnAttenuation.ignoreAttenuation`  is drawn anyway, as well as the width allows
+- row  `columnAttenuation.failAttenuation`  raises a `Table.Error`, instead of producing something misleading
++ column  Uma tabela que não cabe
++ row  `columnAttenuation.ignoreAttenuation`  é desenhada mesmo assim, tão bem quanto a largura permitir
++ row  `columnAttenuation.failAttenuation`  lança um `Table.Error`, em vez de produzir algo enganoso
+
+= row  `columnAttenuation.failAttenuation`  raises a `Table.Error`, instead of producing something misleading
+- ```
++ ```
+
+- The limit is not abstract. In the table above, the *Description* column can never be
+- narrower than the longest single word which it contains, `Statically-checked`. Below 37
+- characters, no slack will make it fit, however much the rest collapses.
++ O limite não é abstrato. Na tabela acima, a coluna *Description* nunca pode ser mais estreita que a
++ palavra mais longa que contém, `Statically-checked`. Abaixo de 37 caracteres, nenhuma folga a fará
++ caber, por mais que o resto se recolha.
+
+- `Table.Error` is a checked [error](errors.md#recovering) like any other. It carries the
+- minimum width which the table needed, and the width which it was given, so a handler can say
+- something useful, and need not merely fail:
++ `Table.Error` é um [erro](errors.md#recovering) verificado como qualquer outro. Ele carrega a
++ largura mínima de que a tabela precisava e a largura que lhe foi dada, para que um handler possa
++ dizer algo útil, e não precise simplesmente falhar:
+
+= something useful, and need not merely fail:
+=
+- ```scala
++ ```scala
+
+- def narrow(): Unit =
++ def narrow(): Unit =
+
+-   import columnAttenuation.failAttenuation
++   import columnAttenuation.failAttenuation
+
+-   recover:
++   recover:
+
+-     case Table.Error(minimum, available) =>
++     case Table.Error(minimum, available) =>
+
+-       Out.println(t"The table needs a width of at least $minimum to be shown.")
++       Out.println(t"The table needs a width of at least $minimum to be shown.")
+
+-   . protect:
++   . protect:
+
+-       Out.println(table.tabulate(libraries).grid(30))
++       Out.println(table.tabulate(libraries).grid(30))
+
+=       Out.println(table.tabulate(libraries).grid(30))
+- ```
++ ```
+
+=       Out.println(table.tabulate(libraries).grid(30))
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=       Out.println(table.tabulate(libraries).grid(30))
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=       Out.println(table.tabulate(libraries).grid(30))
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- narrow()
++ narrow()
+
+= narrow()
+- ```
++ ```
+
+- A report which is written to a file, where nobody will see that the columns were mangled,
+- wants the failure. An interactive display, where the user can widen the window, wants the
+- table drawn. And since `ignoreAttenuation` cannot fail, choosing it requires no error
+- handling at all.
++ Um relatório escrito em um arquivo, onde ninguém verá que as colunas foram mutiladas, quer a falha.
++ Uma exibição interativa, em que o usuário pode alargar a janela, quer a tabela desenhada. E como
++ `ignoreAttenuation` não pode falhar, escolhê-la não exige nenhum tratamento de erros.
+
+- ### Related
++ ### Relacionados
+
+- - [Terminal](terminal.md) styles the text in a cell, and draws live interfaces.
+- - [CSV](csv.md) reads the rows which a table displays.
+- - [Hyphenation](hyphenation.md) breaks the words of a wrapped column.
+- - [Text](text.md#padding-and-fitting) pads and fits single values.
+- - [Charts](charts.md) draws the same data as a picture.
+- - [Catalogs](catalogs.md), [daemons](daemons.md), [display](display.md) and [trees](trees.md) lay out values as text in the same spirit.
++ - [Terminal](terminal.md) aplica estilos ao texto de uma célula e desenha interfaces ao vivo.
++ - [CSV](csv.md) lê as linhas que uma tabela exibe.
++ - [Hifenização](hyphenation.md) quebra as palavras de uma coluna quebrada.
++ - [Texto](text.md#padding-and-fitting) preenche e ajusta valores isolados.
++ - [Gráficos](charts.md) desenha os mesmos dados como uma imagem.
++ - [Catálogos](catalogs.md), [daemons](daemons.md), [exibição](display.md) e [árvores](trees.md) dispõem valores como texto no mesmo espírito.

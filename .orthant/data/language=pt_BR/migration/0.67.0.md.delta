@@ -1,0 +1,489 @@
+orthant 1 language
+
+- # Changes since 0.66.0
++ # Mudanças desde a 0.66.0
+
+- This file is read by an LLM agent to upgrade code that consumes Soundness libraries from
+- 0.66.0 to the next release. Each entry states precisely what changed; see `AGENTS.md` for the
+- format. Entries are grouped by module, most-recently-added last within a module.
++ Este arquivo é lido por um agente LLM para atualizar código que consome bibliotecas Soundness da
++ 0.66.0 para a próxima versão. Cada entrada descreve com precisão o que mudou; veja `AGENTS.md` para
++ o formato. As entradas são agrupadas por módulo, com as adicionadas mais recentemente por último
++ dentro de cada módulo.
+
+- ## rudiments
++ ## rudiments
+
+- - `rudiments.matchable` renamed to `rudiments.unsafeMatchable`. Signature unchanged:
++ - `rudiments.matchable` foi renomeado para `rudiments.unsafeMatchable`. Assinatura inalterada:
+
+-   `extension [value](value: value) transparent inline def unsafeMatchable(using erased
++   `extension [value](value: value) transparent inline def unsafeMatchable(using erased
+
+-   Unsafe): value & Matchable`. Also renamed in the `soundness` umbrella export. (#TBD)
+- - `rudiments.mutable` renamed to `rudiments.unsafeMutable`. Signature unchanged:
++   Unsafe): value & Matchable`. Também renomeado na exportação do guarda-chuva `soundness`. (#TBD)
++ - `rudiments.mutable` foi renomeado para `rudiments.unsafeMutable`. Assinatura inalterada:
+
+-   `extension [element](value: Array[element]^{}) inline def unsafeMutable(using erased
++   `extension [element](value: Array[element]^{}) inline def unsafeMutable(using erased
+
+-   Unsafe): scala.Array[element]`. Also renamed in the `soundness` umbrella export. (#TBD)
+- - `rudiments.immutable` renamed to `rudiments.unsafeImmutable`. Signature unchanged:
++   Unsafe): scala.Array[element]`. Também renomeado na exportação do guarda-chuva `soundness`.
++   (#TBD)
++ - `rudiments.immutable` foi renomeado para `rudiments.unsafeImmutable`. Assinatura inalterada:
+
+-   `extension [element](array: scala.Array[element]) inline def unsafeImmutable(using erased
++   `extension [element](array: scala.Array[element]) inline def unsafeImmutable(using erased
+
+-   Unsafe): Array[element]^{}`. Also renamed in the `soundness` umbrella export. (#TBD)
+- - `rudiments.attested` renamed to `rudiments.unsafeAttested`, in all three overloads: the
+-   interval form `extension (interval: Interval) inline def unsafeAttested[within](within:
+-   within)(using erased Unsafe): Interval in within.type`, the index form `def
+-   unsafeAttested(index: applicable.Operand)(using erased Unsafe)`, and the lambda form
+-   `inline def unsafeAttested[result](index: applicable.Operand)(inline lambda:
+-   (applicable.Operand in value.type) => result)(using erased Unsafe)`. Signatures unchanged.
++   Unsafe): Array[element]^{}`. Também renomeado na exportação do guarda-chuva `soundness`.
+
+=   (applicable.Operand in value.type) => result)(using erased Unsafe)`. Signatures unchanged.
+-   (#TBD)
++   (#TBD)
+
+=   (applicable.Operand in value.type) => result)(using erased Unsafe)`. Signatures unchanged.
+=   (#TBD)
++ - `rudiments.attested` foi renomeado para `rudiments.unsafeAttested`, nas três sobrecargas: a
++   forma de intervalo `extension (interval: Interval) inline def unsafeAttested[within](within:
++   within)(using erased Unsafe): Interval in within.type`, a forma de índice `def
++   unsafeAttested(index: applicable.Operand)(using erased Unsafe)` e a forma com lambda
++   `inline def unsafeAttested[result](index: applicable.Operand)(inline lambda:
++   (applicable.Operand in value.type) => result)(using erased Unsafe)`. Assinaturas
++   inalteradas. (#TBD)
+
+- ## zephyrine
++ ## zephyrine
+
+- - `zephyrine.Stream#storage(using Unsafe)` renamed to `unsafeStorage`. Signature unchanged.
++ - `zephyrine.Stream#storage(using Unsafe)` foi renomeado para `unsafeStorage`. Assinatura
++   inalterada. (#TBD)
++ - `zephyrine.Intake#buffer(using Unsafe)` foi renomeado para `unsafeBuffer`. Assinatura
++   inalterada. (#TBD)
++ - `zephyrine.Region#raw(using Unsafe)` foi renomeado para `unsafeRaw`. Assinatura inalterada.
+
+= - `zephyrine.Stream#storage(using Unsafe)` renamed to `unsafeStorage`. Signature unchanged.
+-   (#TBD)
++   (#TBD)
+
+- - `zephyrine.Intake#buffer(using Unsafe)` renamed to `unsafeBuffer`. Signature unchanged.
++ - `zephyrine.Slate#raw(using Unsafe)` foi renomeado para `unsafeRaw`. Assinatura inalterada.
+
+= - `zephyrine.Intake#buffer(using Unsafe)` renamed to `unsafeBuffer`. Signature unchanged.
+-   (#TBD)
++   (#TBD)
+
+- - `zephyrine.Region#raw(using Unsafe)` renamed to `unsafeRaw`. Signature unchanged. (#TBD)
+- - `zephyrine.Slate#raw(using Unsafe)` renamed to `unsafeRaw`. Signature unchanged. (#TBD)
+- - `zephyrine.Cursor#datum(using erased Unsafe)` renamed to `unsafeDatum`. Signature
+-   unchanged. (#TBD)
+- - The two typed cursor-buffer extensions, previously both named `buffer` and distinguished by
+-   their receiver's element type, are renamed: `extension [cap^](cursor: Cursor[Data, cap])
+-   inline def buffer(using erased Unsafe): scala.Array[Byte]` becomes `unsafeDataBuffer`
+-   (`@targetName("dataBuffer")` unchanged), and `extension [cap^](cursor: Cursor[Text, cap])
+-   inline def buffer(using erased Unsafe): scala.Array[Char]` becomes `unsafeTextBuffer`
+-   (`@targetName("textBuffer")` unchanged). A call site must choose by the cursor's element
+-   type: `Cursor[Data, ?]` takes `unsafeDataBuffer`, `Cursor[Text, ?]` takes
+-   `unsafeTextBuffer`. Signatures otherwise unchanged. (#TBD)
++ - `zephyrine.Cursor#datum(using erased Unsafe)` foi renomeado para `unsafeDatum`. Assinatura
++   inalterada. (#TBD)
++ - As duas extensões tipadas de buffer de cursor, que antes se chamavam ambas `buffer` e se
++   distinguiam pelo tipo de elemento de seu receptor, foram renomeadas: `extension [cap^](cursor: Cursor[Data, cap])
++   inline def buffer(using erased Unsafe): scala.Array[Byte]` passa a ser `unsafeDataBuffer`
++   (`@targetName("dataBuffer")` inalterado), e `extension [cap^](cursor: Cursor[Text, cap])
++   inline def buffer(using erased Unsafe): scala.Array[Char]` passa a ser `unsafeTextBuffer`
++   (`@targetName("textBuffer")` inalterado). Um local de chamada deve escolher pelo tipo de
++   elemento do cursor: `Cursor[Data, ?]` usa `unsafeDataBuffer`, `Cursor[Text, ?]` usa
++   `unsafeTextBuffer`. Assinaturas inalteradas no restante. (#TBD)
+
+- ## serpentine
++ ## serpentine
+
+- - `serpentine.Path#child(value: Text)(using erased Unsafe)` renamed to `unsafeChild`.
+-   Signature unchanged. (#TBD)
++ - `serpentine.Path#child(value: Text)(using erased Unsafe)` foi renomeado para `unsafeChild`.
++   Assinatura inalterada. (#TBD)
+
+- ## kaleidoscope
++ ## kaleidoscope
+
+- - `kaleidoscope.Regex.apply(parts: List[String])(using erased Unsafe): Regex` renamed to
+-   `kaleidoscope.Regex.unsafeFrom(parts: List[String])(using erased Unsafe): Regex`. The other
+-   overload, `Regex.apply(text: Text): Regex in JavaBaseRegex raises Regex.Error`, is
+-   unchanged; a call of the form `Regex(List(…))(using Unsafe)` must become
++ - `kaleidoscope.Regex.apply(parts: List[String])(using erased Unsafe): Regex` foi renomeado para
++   `kaleidoscope.Regex.unsafeFrom(parts: List[String])(using erased Unsafe): Regex`. A outra
++   sobrecarga, `Regex.apply(text: Text): Regex in JavaBaseRegex raises Regex.Error`, está
++   inalterada; uma chamada da forma `Regex(List(…))(using Unsafe)` deve passar a ser
+
+-   `Regex.unsafeFrom(List(…))(using Unsafe)`. (#TBD)
++   `Regex.unsafeFrom(List(…))(using Unsafe)`. (#TBD)
+
+- ## geodesy
++ ## geodesy
+
+- - `geodesy.Location#longitude` now returns an angle in `[-π, π)` (−180° to 180°); it previously
+-   returned `[0, 2π]`, so an eastern longitude of 10° is unchanged but a location built with
+-   longitude 270° now reads back as −90°. `Location#encode` and the `geo:` URI encoding follow,
+-   writing western longitudes as negative numbers. Code that assumed a non-negative longitude
+-   should call `.principal` on the result. (#TBD)
+- - `geodesy.Location(latitude: Angle, longitude: Angle)` no longer loses western longitudes: any
+-   negative longitude previously saturated and read back as 0°. `Location(north: Int, east:
+-   Int)` (microdegrees) previously returned a latitude of roughly 0° for every input; it now
+-   returns the given latitude. Geohashes and `surfaceDistance` of such locations change
+-   accordingly. Stored geohashes computed from western or microdegree locations were wrong and
+-   should be recomputed. (#TBD)
+- - `geodesy.Location#bearing` now distinguishes east from west (it took the absolute longitude
+-   difference, so every westward bearing came out eastward), and returns a bearing normalised
+-   to `[0, 2π)` before it reaches the `Directional` instance. `Compass[n](angle)` accepts any
+-   angle, including negative ones, which previously threw `ArrayIndexOutOfBoundsException`. (#TBD)
+- - `Geolocation`'s `Decodable in Text` instance now parses `;crs=…`, `;u=…` and further
+-   parameters, which previously always raised `Geolocation.Error` with reason `MissingEquals`,
+-   and accepts parameters directly after the longitude (`geo:1,2;u=3`), which previously raised
+-   `UnexpectedSuffix`. `Geolocation`'s `Encodable in Text` instance now writes `crs` and
+-   `parameters`, in the order `;crs=…`, `;u=…`, then each parameter, which it previously
+-   dropped. (#TBD)
++ - `geodesy.Location#longitude` agora retorna um ângulo em `[-π, π)` (−180° a 180°); antes
++   retornava `[0, 2π]`, de modo que uma longitude leste de 10° fica inalterada, mas uma
++   localização construída com longitude 270° agora é lida de volta como −90°.
++   `Location#encode` e a codificação de URI `geo:` acompanham a mudança, escrevendo longitudes
++   oeste como números negativos. O código que presumia uma longitude não negativa deve chamar
++   `.principal` sobre o resultado. (#TBD)
++ - `geodesy.Location(latitude: Angle, longitude: Angle)` não perde mais as longitudes oeste:
++   antes, qualquer longitude negativa saturava e era lida de volta como 0°. `Location(north: Int, east:
++   Int)` (micrograus) antes retornava uma latitude de aproximadamente 0° para qualquer entrada;
++   agora retorna a latitude dada. Os geohashes e a `surfaceDistance` dessas localizações mudam
++   de acordo. Os geohashes armazenados que foram calculados a partir de localizações a oeste ou
++   em micrograus estavam errados e devem ser recalculados. (#TBD)
++ - `geodesy.Location#bearing` agora distingue leste de oeste (ele tomava a diferença absoluta de
++   longitude, de modo que todo rumo para oeste saía para leste) e retorna um rumo normalizado
++   para `[0, 2π)` antes de chegar à instância de `Directional`. `Compass[n](angle)` aceita
++   qualquer ângulo, inclusive negativos, que antes lançavam `ArrayIndexOutOfBoundsException`.
++   (#TBD)
++ - A instância `Decodable in Text` de `Geolocation` agora analisa `;crs=…`, `;u=…` e parâmetros
++   adicionais, que antes sempre lançavam `Geolocation.Error` com o motivo `MissingEquals`, e
++   aceita parâmetros logo após a longitude (`geo:1,2;u=3`), que antes lançavam
++   `UnexpectedSuffix`. A instância `Encodable in Text` de `Geolocation` agora escreve `crs` e
++   `parameters`, na ordem `;crs=…`, `;u=…` e depois cada parâmetro, que antes ela descartava.
++   (#TBD)
+
+- ## gossamer
++ ## gossamer
+
+- - `gossamer.Decimalizer#decimalize` no longer drops a rounding carry out of the leading digit.
+-   When every retained digit is 9 and the next rounds up, the output lost its leading `1`
+-   (`Decimalizer(decimalPlaces = 1).decimalize(9.96)` gave `"0.0"`); it is now the next power
+-   of ten at the same precision (`"10.0"`; `Decimalizer(2).decimalize(9.99)` gives `"10"`).
+-   If the carry reaches `exponentThreshold`, the value is written in exponent form
+-   (`Decimalizer(4).decimalize(999.96)` gives `"1.000×10³"`). Every `Showable` for `Double`
+-   that goes through a `Decimalizer` changes the same way. Code that matched the old truncated
+-   output must expect the corrected text. (#TBD)
++ - `gossamer.Decimalizer#decimalize` não descarta mais um transporte de arredondamento que sai
++   do dígito inicial. Quando todo dígito mantido era 9 e o seguinte arredondava para cima, a
++   saída perdia seu `1` inicial (`Decimalizer(decimalPlaces = 1).decimalize(9.96)` dava
++   `"0.0"`); agora é a próxima potência de dez com a mesma precisão (`"10.0"`;
++   `Decimalizer(2).decimalize(9.99)` dá `"10"`). Se o transporte alcança `exponentThreshold`, o
++   valor é escrito em forma exponencial (`Decimalizer(4).decimalize(999.96)` dá `"1.000×10³"`).
++   Todo `Showable` para `Double` que passa por um `Decimalizer` muda da mesma maneira. O código
++   que casava a antiga saída truncada deve esperar o texto corrigido. (#TBD)
+
+- ## hieroglyph
++ ## hieroglyph
+
+- - `hieroglyph.Chars.superscript` (reached as `char.superscript`) returned the **subscript**
+-   characters for `(`, `)`, `+`, `-` and `=` — U+208D, U+208E, U+208A, U+208B, U+208C. It now
+-   returns the superscript forms U+207D, U+207E, U+207A, U+207B, U+207C. Digits were and remain
+-   correct. Code or test data pinning the old (wrong) characters for those five inputs must be
+-   updated. (#TBD)
+- - `hieroglyph.Chars.subscript` (reached as `char.subscript`) now maps `(`, `)`, `+`, `-` and
+-   `=` to U+208D, U+208E, U+208A, U+208B, U+208C; previously it mapped only digits and returned
+-   `Unset` for those five. Code relying on `Unset` for them must handle a present value. (#TBD)
++ - `hieroglyph.Chars.superscript` (alcançado como `char.superscript`) retornava os caracteres
++   **subscritos** para `(`, `)`, `+`, `-` e `=` — U+208D, U+208E, U+208A, U+208B, U+208C. Agora
++   retorna as formas sobrescritas U+207D, U+207E, U+207A, U+207B, U+207C. Os dígitos estavam e
++   continuam corretos. O código ou os dados de teste que fixavam os caracteres antigos (errados)
++   para essas cinco entradas devem ser atualizados. (#TBD)
++ - `hieroglyph.Chars.subscript` (alcançado como `char.subscript`) agora mapeia `(`, `)`, `+`,
++   `-` e `=` para U+208D, U+208E, U+208A, U+208B, U+208C; antes mapeava apenas dígitos e
++   retornava `Unset` para esses cinco. O código que dependia de `Unset` para eles deve tratar um
++   valor presente. (#TBD)
+
+- ## gesticulate
++ ## gesticulate
+
+- - `Media.Suffix`'s `Showable` instance now renders the suffix as it is written in a media type,
+-   using `Suffix#name`: `JsonSeq` shows as `json-seq` (was `jsonseq`), `CborSeq` as `cbor-seq`
+-   and `FastInfoset` as `fast-infoset`. The other twelve suffixes are unchanged. (#TBD)
+- - `MediaType.parse` (and so `Text#as[MediaType]` and `media"…"`) now accepts the hyphenated
+-   suffixes `+json-seq`, `+cbor-seq` and `+fast-infoset`, which previously always raised
+-   `MediaType.Error` with reason `InvalidSuffix`, because the whole suffix was capitalized
+-   (`Json-seq`) before the enum lookup rather than each hyphenated word. An `InvalidSuffix`
+-   reason now reports the suffix as written, in lower case, rather than capitalized. (#TBD)
+- - `MediaType.parse` now raises `MediaType.Error` with reason `MissingParam` for a parameter
+-   with no `=` (`text/plain; foo`); it previously threw `IndexOutOfBoundsException`, which no
+-   `Tactic` could catch. (#TBD)
++ - A instância `Showable` de `Media.Suffix` agora renderiza o sufixo como ele é escrito em um
++   tipo de mídia, usando `Suffix#name`: `JsonSeq` é exibido como `json-seq` (era `jsonseq`),
++   `CborSeq` como `cbor-seq` e `FastInfoset` como `fast-infoset`. Os outros doze sufixos estão
++   inalterados. (#TBD)
++ - `MediaType.parse` (e, portanto, `Text#as[MediaType]` e `media"…"`) agora aceita os sufixos
++   hifenizados `+json-seq`, `+cbor-seq` e `+fast-infoset`, que antes sempre lançavam
++   `MediaType.Error` com o motivo `InvalidSuffix`, porque o sufixo inteiro era capitalizado
++   (`Json-seq`) antes da busca no enum, em vez de cada palavra hifenizada. Um motivo
++   `InvalidSuffix` agora relata o sufixo como foi escrito, em minúsculas, em vez de
++   capitalizado. (#TBD)
++ - `MediaType.parse` agora lança `MediaType.Error` com o motivo `MissingParam` para um parâmetro
++   sem `=` (`text/plain; foo`); antes lançava `IndexOutOfBoundsException`, que nenhuma `Tactic`
++   podia capturar. (#TBD)
+
+- ## gastronomy
++ ## gastronomy
+
+- - `gastronomy.Feistel.apply(subkeys, round)(input)` no longer corrupts its result when a round
+-   function returns a negative `Int`. The XOR of the high word with the round output was widened
+-   with `Int#toLong`, which sign-extends, filling the high 32 bits of the result — the half just
+-   shifted in — with ones; it is now masked to 32 bits. Any value derived from a `Feistel`
+-   network whose round function could return a negative number changes, so persisted values must
+-   be recomputed. (#TBD)
++ - `gastronomy.Feistel.apply(subkeys, round)(input)` não corrompe mais seu resultado quando uma
++   função de rodada retorna um `Int` negativo. O XOR da palavra alta com a saída da rodada era
++   alargado com `Int#toLong`, que estende o sinal, preenchendo com uns os 32 bits altos do
++   resultado — a metade que acabara de ser deslocada para dentro; agora ele é mascarado para 32
++   bits. Qualquer valor derivado de uma rede `Feistel` cuja função de rodada pudesse retornar um
++   número negativo muda, então os valores persistidos devem ser recalculados. (#TBD)
+
+- ## scintillate
++ ## scintillate
+
+- - `scintillate.SocketServer`'s listening socket is now bound with a backlog of 1024
+-   (`jn.ServerSocket(port, 1024, address)` and, for TLS, `createServerSocket(port, 1024, address)`),
+-   and `scintillate.Reactor`'s with 1024 (was 128); previously `SocketServer` passed `0`, i.e. the
+-   JDK default of 50. The kernel caps the value (`kern.ipc.somaxconn`, `net.core.somaxconn`).
+-   Observable only as the number of simultaneous pending connections accepted before SYNs are
+-   dropped. (#TBD)
++ - O socket de escuta de `scintillate.SocketServer` agora é vinculado com um backlog de 1024
++   (`jn.ServerSocket(port, 1024, address)` e, para TLS, `createServerSocket(port, 1024, address)`),
++   e o de `scintillate.Reactor` com 1024 (era 128); antes, `SocketServer` passava `0`, isto é, o
++   padrão do JDK, 50. O kernel limita o valor (`kern.ipc.somaxconn`, `net.core.somaxconn`).
++   Observável apenas como o número de conexões pendentes simultâneas aceitas antes que SYNs
++   sejam descartados. (#TBD)
+
+- ## sedentary
++ ## sedentary
+
+- - `sedentary.LocalhostDevice#invoke` launches the measurement JVM with its standard error inherited
+-   from the harness (`ProcessBuilder.Redirect.INHERIT`) instead of piped and discarded, so the
+-   child's stderr now appears on the harness's stderr; a non-zero exit of the child raises
+-   `Bench.Error`. (#TBD)
+- - In `sedentary.Stress`, a body that throws any `Throwable` other than `OutOfMemoryError` no longer
+-   terminates its worker thread with an uncaught exception: the window is recorded as failed (`ok =
+-   false`, ending a sweep or capacity search as an SLO failure would) and one line `sedentary: a
+-   worker failed at N=<n>: <throwable>` is printed to stderr. Previously such a window completed with
+-   the dead worker's operations missing and the exception printed per worker by the default
+-   uncaught-exception handler. (#TBD)
++ - `sedentary.LocalhostDevice#invoke` inicia a JVM de medição com sua saída de erro padrão
++   herdada do harness (`ProcessBuilder.Redirect.INHERIT`), em vez de redirecionada por pipe e
++   descartada, de modo que o stderr do filho agora aparece no stderr do harness; um status de
++   saída diferente de zero do filho lança `Bench.Error`. (#TBD)
++ - Em `sedentary.Stress`, um corpo que lança qualquer `Throwable` que não seja
++   `OutOfMemoryError` não encerra mais sua thread de worker com uma exceção não capturada: a
++   janela é registrada como falha (`ok =
++   false`, encerrando uma varredura ou uma busca de capacidade como faria uma falha de SLO) e uma
++   linha `sedentary: a
++   worker failed at N=<n>: <throwable>` é impressa no stderr. Antes, uma janela assim era
++   concluída sem as operações do worker morto, e a exceção era impressa, por worker, pelo
++   handler padrão de exceções não capturadas. (#TBD)
+
+- ## parasite
++ ## parasite
+
+- - `snooze(duration)`, and so `sleep(instant)`, `delay` and `hibernate`, which are built on it,
+-   now always wait out their duration unless the task is cancelled. Under the pooled supervisor
+-   (`threading.pooledThreading`), a task handed to a carrier that was still spinning could find
+-   a park permit left over from the hand-off, and its next `snooze` returned at once. The same
+-   applies to any JVM `Supervisor` whose `sleep` comes from `ThreadSupervisor`: `sleep` now parks
+-   repeatedly until its deadline, stopping early only if the thread is interrupted. Code that
+-   relied on a `snooze` returning early without cancellation must use `park` and an `unpark`
+-   instead. (#2006)
++ - `snooze(duration)`, e portanto `sleep(instant)`, `delay` e `hibernate`, que são construídos
++   sobre ele, agora sempre esperam toda a sua duração, a menos que a tarefa seja cancelada. Sob o
++   supervisor com pool (`threading.pooledThreading`), uma tarefa entregue a uma portadora que
++   ainda estava girando podia encontrar uma permissão de estacionamento que sobrara da entrega, e
++   seu próximo `snooze` retornava imediatamente. O mesmo vale para qualquer `Supervisor` da JVM
++   cujo `sleep` vem de `ThreadSupervisor`: `sleep` agora estaciona repetidamente até seu prazo,
++   parando antes apenas se a thread for interrompida. O código que dependia de um `snooze`
++   retornando antes sem cancelamento deve usar `park` e um `unpark` em vez disso. (#2006)
+
+- ## escritoire
++ ## escritoire
+
+- - `escritoire.Columnar`'s abstract member is now `def flex(metrics: tessellate.Metrics,
+-   maxWidth: Int): Flex`, which derives a column's claim from the aggregate intrinsic widths of
+-   its lines. The former abstract `def flex[text: Textual { type Result = Char }](lines:
+-   Array[text]^{}, maxWidth: Int)(using Text is Measurable): Flex` is now concrete and delegates
+-   to it through `Columnar.metrics(lines)`. An external `Columnar` implementation must implement
+-   `flex(metrics, maxWidth)` instead, computing from its `metrics` parameter where it previously
+-   folded `Flow.metrics` over the lines; it no longer needs to override the `lines` form. (#2007)
+- - `Columnar` gains `accommodates(aggregate: Metrics, cell: Metrics): Boolean`, true when a cell
+-   cannot change the column's claim; it defaults to `cell.min <= aggregate.min &&
+-   cell.natural <= aggregate.natural`. A strategy whose claim ignores its content should override
+-   it to `true`, as `columnar.Fixed` does. `Columnar.metrics(lines): Metrics` is new: the max-fold
+-   of each line's `Flow.metrics`. (#2007)
++ - O membro abstrato de `escritoire.Columnar` agora é `def flex(metrics: tessellate.Metrics,
++   maxWidth: Int): Flex`, que deriva a demanda de uma coluna das larguras intrínsecas agregadas
++   de suas linhas. O antigo abstrato `def flex[text: Textual { type Result = Char }](lines:
++   Array[text]^{}, maxWidth: Int)(using Text is Measurable): Flex` agora é concreto e delega a
++   ele por meio de `Columnar.metrics(lines)`. Uma implementação externa de `Columnar` deve
++   implementar `flex(metrics, maxWidth)` em vez disso, calculando a partir de seu parâmetro
++   `metrics` onde antes fazia o fold de `Flow.metrics` sobre as linhas; ela não precisa mais
++   sobrescrever a forma com `lines`. (#2007)
++ - `Columnar` ganha `accommodates(aggregate: Metrics, cell: Metrics): Boolean`, verdadeiro quando
++   uma célula não pode mudar a demanda da coluna; o padrão é `cell.min <= aggregate.min &&
++   cell.natural <= aggregate.natural`. Uma estratégia cuja demanda ignora seu conteúdo deve
++   sobrescrevê-lo como `true`, como faz `columnar.Fixed`. `Columnar.metrics(lines): Metrics` é
++   novo: o fold de máximo das `Flow.metrics` de cada linha. (#2007)
+
+- ## tessellate
++ ## tessellate
+
+- - `tessellate.Flow.wrap` no longer strips trailing spaces from a line which ends at a hard break
+-   (`\n` or `\r`) or at the end of the content; it drops them only as far as needed to keep the
+-   line within `width`. A line ending at a soft break still loses the spaces the break absorbed.
+-   Wrapped text, and tables rendered through `Flow.wrap` (such as escritoire's `Grid.render`),
+-   therefore keep meaningful trailing spaces: a styled cell such as `e"$Bg(green)( ✓ )"` now
+-   keeps its third, styled cell rather than being re-padded with an unstyled space. Code or test
+-   fixtures which expected the trimmed lines must be updated. (#2000)
++ - `tessellate.Flow.wrap` não remove mais os espaços finais de uma linha que termina em uma
++   quebra forçada (`\n` ou `\r`) ou no fim do conteúdo; só os descarta na medida necessária para
++   manter a linha dentro de `width`. Uma linha que termina em uma quebra flexível ainda perde os
++   espaços que a quebra absorveu. O texto quebrado, e as tabelas renderizadas por meio de
++   `Flow.wrap` (como o `Grid.render` do escritoire), mantêm, portanto, os espaços finais
++   significativos: uma célula com estilo como `e"$Bg(green)( ✓ )"` agora mantém sua terceira
++   célula, com estilo, em vez de ser preenchida de novo com um espaço sem estilo. O código ou as
++   fixtures de teste que esperavam as linhas aparadas devem ser atualizados. (#2000)
+
+- ## cartouche
++ ## cartouche
+
+- - New library `cartouche`, a text-positioning engine: `def arrange[result](body:
+-   (Arranger.Pass^) ?=> result)(using Arranger): result` runs its body twice, recording each
+-   `position(...)` call in the first run and answering it from the solved arrangement in the
+-   second. Also `def position(caption: Caption)(using Arranger.Pass^): Caption.Position`, `def
++ - Nova biblioteca `cartouche`, um motor de posicionamento de texto: `def arrange[result](body:
++   (Arranger.Pass^) ?=> result)(using Arranger): result` executa seu corpo duas vezes,
++   registrando cada chamada `position(...)` na primeira execução e respondendo a ela, na
++   segunda, a partir do arranjo resolvido. Também `def position(caption: Caption)(using Arranger.Pass^): Caption.Position`, `def
+
+-   position(width: Double, height: Double, x: Double, y: Double, attachments:
++   position(width: Double, height: Double, x: Double, y: Double, attachments:
+
+-   List[Caption.Attachment] = Caption.Attachment.compass, standoff: Double = 0.0, reach: Double
++   List[Caption.Attachment] = Caption.Attachment.compass, standoff: Double = 0.0, reach: Double
+
+-   = 0.0, padding: Double = 0.0, priority: Int = 0, fallback: Caption.Fallback =
++   = 0.0, padding: Double = 0.0, priority: Int = 0, fallback: Caption.Fallback =
+
+-   Caption.Fallback.Overlap)(using Arranger.Pass^): Caption.Position`, `def avoid(obstacles:
++   Caption.Fallback.Overlap)(using Arranger.Pass^): Caption.Position`, `def avoid(obstacles:
+
+-   Obstacle*)(using Arranger.Pass^): Unit`, `def canvas(box: Obstacle.Box)(using
++   Obstacle*)(using Arranger.Pass^): Unit`, `def canvas(box: Obstacle.Box)(using
+
+-   Arranger.Pass^): Unit`, the types `Caption` (with `Caption.Attachment`, `Caption.Fallback`,
+-   `Caption.Leader`, `Caption.Position`), `Obstacle` (with `Obstacle.Box`, `Obstacle.Line`,
+-   `Obstacle.Disc`) and `Arranger` (with `Arranger.Greedy`, `Arranger.Annealing` and
+-   `Arranger.Pass`), and the importable givens `arrangers.greedyArranger` and
+-   `arrangers.annealingArranger`. All exported from the `soundness` umbrella. Additive: no
+-   existing code changes. (#2012)
++   Arranger.Pass^): Unit`, os tipos `Caption` (com `Caption.Attachment`, `Caption.Fallback`,
++   `Caption.Leader`, `Caption.Position`), `Obstacle` (com `Obstacle.Box`, `Obstacle.Line`,
++   `Obstacle.Disc`) e `Arranger` (com `Arranger.Greedy`, `Arranger.Annealing` e
++   `Arranger.Pass`), e os givens importáveis `arrangers.greedyArranger` e
++   `arrangers.annealingArranger`. Tudo exportado pelo guarda-chuva `soundness`. Aditivo: nenhum
++   código existente muda. (#2012)
+
+- ## tasseomancy
++ ## tasseomancy
+
+- - `tasseomancy.Plottable#draw` gains a required given: `def draw(form: Form, data: Self, fit:
+-   Result)(using Operand, ChartPalette, FontMetric, Arranger): Chart.Drawing`, where `Arranger`
+-   is `cartouche.Arranger`. `Chart#drawing`, `Chart#svg` and `Chart#revise` gain the same
+-   `Arranger` given. `Arranger`'s companion supplies a default, so call sites that summon these
+-   implicitly need no change; an implementation of `Plottable` must add the parameter. (#2012)
++ - `tasseomancy.Plottable#draw` ganha um given obrigatório: `def draw(form: Form, data: Self, fit:
++   Result)(using Operand, ChartPalette, FontMetric, Arranger): Chart.Drawing`, em que `Arranger`
++   é `cartouche.Arranger`. `Chart#drawing`, `Chart#svg` e `Chart#revise` ganham o mesmo given
++   `Arranger`. O objeto companheiro de `Arranger` fornece um padrão, de modo que os locais de
++   chamada que os convocam implicitamente não precisam de mudança; uma implementação de
++   `Plottable` deve acrescentar o parâmetro. (#2012)
+
+- - `tasseomancy.Chart.Cartesian#tickLabel(at: Point, text: Text, axis: Axis, color: Color in
++ - `tasseomancy.Chart.Cartesian#tickLabel(at: Point, text: Text, axis: Axis, color: Color in
+
+-   Srgb): List[Figure]` becomes `tickLabel(at: Chart.Anchoring, text: Text, axis: Axis, color:
+-   Color in Srgb): List[Figure]`. `at` was the tick's position, from which the method offset the
+-   label by `tickLength + gap`; it is now the label's own anchor point with its alignment,
+-   already offset. An override that set the text at `at` with its own anchor and baseline should
+-   set it at `at.point` with `at.anchor` and `at.baseline`; one that rotated or otherwise moved
+-   the label applies the same transforms to `at.point`. (#2012)
++   Srgb): List[Figure]` passa a ser `tickLabel(at: Chart.Anchoring, text: Text, axis: Axis, color:
++   Color in Srgb): List[Figure]`. `at` era a posição da marca de escala, a partir da qual o
++   método deslocava o rótulo em `tickLength + gap`; agora é o próprio ponto de âncora do rótulo,
++   com seu alinhamento, já deslocado. Uma sobrescrita que colocava o texto em `at` com sua
++   própria âncora e linha de base deve colocá-lo em `at.point` com `at.anchor` e `at.baseline`;
++   uma que girava ou de outra forma movia o rótulo aplica as mesmas transformações a `at.point`.
++   (#2012)
+
+- - `tasseomancy.Chart.Cartesian#pointLabel(at: Point, text: Text, color: Color in Srgb):
++ - `tasseomancy.Chart.Cartesian#pointLabel(at: Point, text: Text, color: Color in Srgb):
+
+-   List[Figure]` becomes `pointLabel(at: Chart.Anchoring, text: Text, color: Color in Srgb):
+-   List[Figure]`. `at` was the marker's position, from which the method offset the label to the
+-   right; it is now the label's own anchor point with its alignment, on whichever side the
+-   arrangement chose. Overrides adapt as for `tickLabel`. (#2012)
++   List[Figure]` passa a ser `pointLabel(at: Chart.Anchoring, text: Text, color: Color in Srgb):
++   List[Figure]`. `at` era a posição do marcador, a partir da qual o método deslocava o rótulo
++   para a direita; agora é o próprio ponto de âncora do rótulo, com seu alinhamento, do lado que
++   o arranjo escolheu. As sobrescritas se adaptam como para `tickLabel`. (#2012)
+
+- - `tasseomancy.Pie.Style#wedgeLabel(at: Point, text: Text, color: Color in Srgb): List[Figure]`
++ - `tasseomancy.Pie.Style#wedgeLabel(at: Point, text: Text, color: Color in Srgb): List[Figure]`
+
+-   becomes `wedgeLabel(at: Chart.Anchoring, text: Text, color: Color in Srgb): List[Figure]`,
+-   with `at` the label's anchor point and alignment as above; it was the wedge's centre, with the
+-   text centred on it. (#2012)
+- - New `case class Chart.Anchoring(point: Point, anchor: Lettering.Anchor, baseline:
+-   Lettering.Baseline)` with `Chart.Anchoring.of(position: cartouche.Caption.Position):
+-   Chart.Anchoring`, and a new hook `Chart.Style#leader(from: Point, to: Point, color: Color in
+-   Srgb): List[Figure]`, drawn by default as a one-pixel stroked polyline; override it to style
+-   or suppress leader lines. (#2012)
+- - Behaviour: chart labels are now arranged by cartouche. A point's note may be set on a side
+-   other than the right, or moved off with a leader line, where it would otherwise overlap
+-   another note, a marker, a line or the legend; a pie's percentage may be moved outward with a
+-   leader; a tick label that would overlap its neighbour is omitted. A chart whose labels did not
+-   overlap renders as before. The rendered SVG of a chart with overlapping labels therefore
+-   changes, and may contain additional `polyline` elements for leaders. (#2012)
++   passa a ser `wedgeLabel(at: Chart.Anchoring, text: Text, color: Color in Srgb): List[Figure]`,
++   com `at` o ponto de âncora e o alinhamento do rótulo, como acima; antes era o centro da
++   fatia, com o texto centralizado nele. (#2012)
++ - Nova `case class Chart.Anchoring(point: Point, anchor: Lettering.Anchor, baseline:
++   Lettering.Baseline)` com `Chart.Anchoring.of(position: cartouche.Caption.Position):
++   Chart.Anchoring`, e um novo gancho `Chart.Style#leader(from: Point, to: Point, color: Color in
++   Srgb): List[Figure]`, desenhado por padrão como uma polilinha com traço de um pixel;
++   sobrescreva-o para estilizar ou suprimir as linhas de chamada. (#2012)
++ - Comportamento: os rótulos dos gráficos agora são arranjados pelo cartouche. A nota de um ponto
++   pode ser colocada em um lado que não o direito, ou afastada com uma linha de chamada, onde de
++   outra forma se sobreporia a outra nota, a um marcador, a uma linha ou ao quadro de legenda; a
++   porcentagem de uma pizza pode ser movida para fora com uma linha de chamada; um rótulo de
++   marca de escala que se sobreporia a seu vizinho é omitido. Um gráfico cujos rótulos não se
++   sobrepunham é renderizado como antes. O SVG renderizado de um gráfico com rótulos sobrepostos
++   muda, portanto, e pode conter elementos `polyline` adicionais para as linhas de chamada.
++   (#2012)

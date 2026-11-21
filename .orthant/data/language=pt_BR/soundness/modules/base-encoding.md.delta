@@ -1,0 +1,528 @@
+orthant 1 language
+
+- ## Base Encoding
++ ## Codificação em base
+
+- ### About
++ ### Visão geral
+
+- Binary data often has to travel through a channel which carries only text: a URL, a JSON
+- string, an email header. A
+- [base encoding](https://en.wikipedia.org/wiki/Binary-to-text_encoding) maps bytes onto a safe
+- set of characters, so that they survive the trip.
++ Dados binários muitas vezes precisam passar por um canal que só transporta texto: uma URL, uma
++ string JSON, um cabeçalho de email. Uma
++ [codificação em base](https://en.wikipedia.org/wiki/Binary-to-text_encoding) mapeia bytes para um
++ conjunto seguro de caracteres, para que sobrevivam à viagem.
+
+- Bytes are serialized to text, and back, in Base64, Base32, hexadecimal and the smaller bases.
+- The encoding is named as a type, and its set of characters, called its *alphabet*, is chosen
+- in scope.
++ Bytes são serializados para texto, e de volta, em Base64, Base32, hexadecimal e nas bases
++ menores. A codificação é nomeada como um tipo, e seu conjunto de caracteres, chamado de seu
++ *alfabeto*, é escolhido em escopo.
+
+- ### On base encoding
++ ### Sobre a codificação em base
+
+- "Base64" is not one thing. The standard alphabet, the URL-safe alphabet, and the variants used
+- by MIME, by bcrypt and by IMAP all encode the same bytes into different characters, and mixing
+- them corrupts the result. Decoding raises a further question: what to do with a character
+- which is not in the alphabet at all. Most APIs bury these choices in flags, or fix them
+- silently.
++ “Base64” não é uma coisa só. O alfabeto padrão, o alfabeto seguro para URLs e as variantes usadas
++ pelo MIME, pelo bcrypt e pelo IMAP codificam os mesmos bytes em caracteres diferentes, e
++ misturá-los corrompe o resultado. A decodificação levanta mais uma questão: o que fazer com um
++ caractere que nem está no alfabeto. A maioria das APIs enterra essas escolhas em flags, ou as fixa
++ silenciosamente.
+
+- Here the encoding is a type, and the alphabet is an explicit value:
++ Aqui, a codificação é um tipo, e o alfabeto é um valor explícito:
+
+- - The base, which is how many bits each character carries, is a type parameter.
+- - The alphabet is a [given], brought into scope by import, so the standard and the URL-safe
+-   forms of Base64 differ by one line.
+- - Decoding validates each character, and reports one which is outside the alphabet as a typed
+-   error.
++ - A base, que é quantos bits cada caractere carrega, é um parâmetro de tipo.
++ - O alfabeto é um [given], trazido ao escopo por import, de modo que as formas padrão e segura
++   para URLs do Base64 diferem por uma linha.
++ - A decodificação valida cada caractere e informa um que esteja fora do alfabeto como um erro
++   tipado.
+
+- Naming the alphabet by import, instead of passing a flag, is the
+- [declarative context](../../philosophy/declarative-context.md) style used throughout.
++ Nomear o alfabeto por import, em vez de passar uma flag, é o estilo de
++ [contexto declarativo](../../philosophy/declarative-context.md) usado em toda parte.
+
+- The word "encoding" is used for two different jobs, and it is worth being precise about which
+- this is. What happens here is *serialization*. Bytes become text, and nothing about the
+- meaning of the bytes is consulted or preserved: the same bytes serialize identically, whether
+- they were an image or a signature. Turning a *value* into JSON or XML is the other job. It is
+- [encoding](json.md), and it needs to know what the value is. The operations here are named
+- accordingly: `serialize` and `deserialize`.
++ A palavra “codificação” é usada para dois trabalhos diferentes, e vale a pena ser preciso sobre
++ qual é este. O que acontece aqui é *serialização*. Bytes se tornam texto, e nada sobre o
++ significado dos bytes é consultado ou preservado: os mesmos bytes são serializados de forma
++ idêntica, quer fossem uma imagem, quer uma assinatura. Transformar um *valor* em JSON ou XML é o
++ outro trabalho. Isso é [codificação](json.md), e precisa saber o que o valor é. As operações aqui
++ são nomeadas de acordo: `serialize` e `deserialize`.
+
+- Everything comes from the `soundness` package. The last import lets the samples print their
+- results:
++ Tudo vem do pacote `soundness`. O último import permite que os exemplos imprimam seus
++ resultados:
+
+= results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import codepages.utf8Codepage
++ import codepages.utf8Codepage
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- ### Serializing bytes
++ ### Serialização de bytes
+
+- `serialize` writes bytes as text in a named encoding. The characters come from the alphabet in
+- scope:
++ `serialize` escreve bytes como texto em uma codificação nomeada. Os caracteres vêm do alfabeto em
++ escopo:
+
+= scope:
+=
+- ```scala
++ ```scala
+
+- import alphabets.base64Standard
++ import alphabets.base64Standard
+
+- val bytes = t"Hello".in[Data]
++ val bytes = t"Hello".in[Data]
+
+= val bytes = t"Hello".in[Data]
+- ```
++ ```
+
+= val bytes = t"Hello".in[Data]
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val bytes = t"Hello".in[Data]
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val bytes = t"Hello".in[Data]
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(bytes.serialize[Base64])
++ Out.println(bytes.serialize[Base64])
+
+= Out.println(bytes.serialize[Base64])
+- ```
++ ```
+
+- `serialize` works on any value which encodes to bytes, not only on raw bytes. A value with an
+- `Encodable in Data` instance, such as a [digest](hashing.md), is serialized directly.
++ `serialize` funciona sobre qualquer valor que se codifica em bytes, não só sobre bytes brutos. Um
++ valor com uma instância `Encodable in Data`, como um [digest](hashing.md), é serializado
++ diretamente.
+
+- With no alphabet for the base in scope, there is nothing to serialize with:
++ Sem um alfabeto para a base em escopo, não há com que serializar:
+
+= With no alphabet for the base in scope, there is nothing to serialize with:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+= compile
+- errors show
++ errors show
+
+= compile
+= errors show
+- ##
++ ##
+
+- bytes.serialize[Base32]
++ bytes.serialize[Base32]
+
+= bytes.serialize[Base32]
+- ```
++ ```
+
+- ### Deserializing
++ ### Desserialização
+
+- `deserialize` reads text back to bytes, in the same encoding. A character outside the alphabet
+- raises a `Serialization.Error`, so deserializing needs a [strategy] in scope:
++ `deserialize` lê texto de volta para bytes, na mesma codificação. Um caractere fora do alfabeto
++ lança um `Serialization.Error`, então a desserialização precisa de uma [estratégia] em escopo:
+
+= raises a `Serialization.Error`, so deserializing needs a [strategy] in scope:
+=
+- ```scala
++ ```scala
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+= import strategies.throwUnsafely
+- ```
++ ```
+
+= import strategies.throwUnsafely
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import strategies.throwUnsafely
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import strategies.throwUnsafely
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(t"SGVsbG8=".deserialize[Base64].utf8)
++ Out.println(t"SGVsbG8=".deserialize[Base64].utf8)
+
+= Out.println(t"SGVsbG8=".deserialize[Base64].utf8)
+- ```
++ ```
+
+= Out.println(t"SGVsbG8=".deserialize[Base64].utf8)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= Out.println(t"SGVsbG8=".deserialize[Base64].utf8)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- errors show
++ errors show
+
+= run
+= errors show
+- ##
++ ##
+
+- t"SGVsbG8!".deserialize[Base64]
++ t"SGVsbG8!".deserialize[Base64]
+
+= t"SGVsbG8!".deserialize[Base64]
+- ```
++ ```
+
+- ### Choosing an alphabet
++ ### Escolha de um alfabeto
+
+- The alphabet in scope decides the exact characters. `base64Standard` and `base64Url` are the
+- common choices. The URL-safe form is unpadded, and avoids `+` and `/`, which have a meaning in
+- a URL:
++ O alfabeto em escopo decide os caracteres exatos. `base64Standard` e `base64Url` são as escolhas
++ comuns. A forma segura para URLs não tem preenchimento e evita `+` e `/`, que têm um significado
++ em uma URL:
+
+= a URL:
+=
+- ```scala fuel
++ ```scala fuel
+
+= a URL:
+=
+= ```scala fuel
+- run
++ run
+
+= a URL:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+= ##
+- locally:
++ locally:
+
+-   import alphabets.base64Url
++   import alphabets.base64Url
+
+-   Out.println(bytes.serialize[Base64])
++   Out.println(bytes.serialize[Base64])
+
+=
+- locally:
++ locally:
+
+-   import alphabets.hexLowerCase
++   import alphabets.hexLowerCase
+
+-   Out.println(bytes.serialize[Hex])
++   Out.println(bytes.serialize[Hex])
+
+=   Out.println(bytes.serialize[Hex])
+- ```
++ ```
+
+- A *strict* alphabet accepts only its own characters when decoding. A tolerant one also accepts
+- recognized equivalents, such as hexadecimal in either case. The strictness of a decode is
+- therefore a choice between imports: `hexLowerCase` reads either case, and `hexStrictLowerCase`
+- only its own.
++ Um alfabeto *estrito* aceita apenas seus próprios caracteres ao decodificar. Um flexível também
++ aceita equivalentes reconhecidos, como hexadecimal em maiúsculas ou minúsculas. O rigor de uma
++ decodificação é, portanto, uma escolha entre imports: `hexLowerCase` lê as duas caixas, e
++ `hexStrictLowerCase` só a sua.
+
+- The full set is in the package `alphabets`:
++ O conjunto completo está no pacote `alphabets`:
+
+= The full set is in the package `alphabets`:
+=
+- ```tabular
++ ```tabular
+
+- column  Base
++ column  Base
+
+- column  Given
++ column  Given
+
+- column  Variant
+- column  Padded
+- column  Also accepts
+- row  `Base64`  `base64Standard`  standard  yes
+- row  `Base64`  `base64Unpadded`  standard, unpadded  no
+- row  `Base64`  `base64Url`  URL-safe, with `-` and `_`  no
+- row  `Base64`  `base64Xml`  XML, with `+` and `-`, padded with `.`  yes
+- row  `Base64`  `base64Imap`  IMAP, with `+` and `,`  no
+- row  `Base64`  `base64Yui`  YUI, with `.` and `_`  no
+- row  `Base64`  `base64Radix64`  Radix-64  yes
+- row  `Base64`  `base64Bcrypt`  bcrypt, with `.` and `/` first  no
+- row  `Base64`  `base64Sasl`  SASL, with `+` and `,`  no
+- row  `Base64`  `base64Uuencoding`  uuencoding  no
+- row  `Base32`  `base32StrictUpperCase`  standard, upper-case  yes
+- row  `Base32`  `base32StrictLowerCase`  standard, lower-case  yes
+- row  `Base32`  `base32UpperCase`  standard, upper-case  yes  lower case
+- row  `Base32`  `base32LowerCase`  standard, lower-case  yes  upper case
+- row  `Base32`  `base32ExtendedHexUpperCase`  extended hex, upper-case  yes  lower case
+- row  `Base32`  `base32ExtendedHexLowerCase`  extended hex, lower-case  yes  upper case
+- row  `Base32`  `base32ZBase32`  z-base-32  yes
+- row  `Base32`  `base32ZBase32Unpadded`  z-base-32, unpadded  no
+- row  `Base32`  `base32Geohash`  Geohash  no
+- row  `Base32`  `base32WordSafe`  word-safe  no
+- row  `Base32`  `base32Crockford`  Crockford  no  lower case; `o` and `O` as `0`; `i`, `I`, `l` and `L` as `1`
+- row  `Hex`  `hexStrictUpperCase`  upper-case  no
+- row  `Hex`  `hexStrictLowerCase`  lower-case  no
+- row  `Hex`  `hexUpperCase`  upper-case  no  lower case
+- row  `Hex`  `hexLowerCase`  lower-case  no  upper case
+- row  `Hex`  `hexBioctal`  bioctal  no
+- row  `Octal`  `octalStandard`  standard  no
+- row  `Quaternary`  `quaternaryStandard`  `0123`  no
+- row  `Quaternary`  `quaternaryDnaNucleotide`  DNA nucleotides, `ATCG`  no
+- row  `Binary`  `binaryStandard`  `01`  no
++ column  Variante
++ column  Com preenchimento
++ column  Também aceita
++ row  `Base64`  `base64Standard`  padrão  sim
++ row  `Base64`  `base64Unpadded`  padrão, sem preenchimento  não
++ row  `Base64`  `base64Url`  segura para URLs, com `-` e `_`  não
++ row  `Base64`  `base64Xml`  XML, com `+` e `-`, preenchida com `.`  sim
++ row  `Base64`  `base64Imap`  IMAP, com `+` e `,`  não
++ row  `Base64`  `base64Yui`  YUI, com `.` e `_`  não
++ row  `Base64`  `base64Radix64`  Radix-64  sim
++ row  `Base64`  `base64Bcrypt`  bcrypt, com `.` e `/` primeiro  não
++ row  `Base64`  `base64Sasl`  SASL, com `+` e `,`  não
++ row  `Base64`  `base64Uuencoding`  uuencoding  não
++ row  `Base32`  `base32StrictUpperCase`  padrão, maiúsculas  sim
++ row  `Base32`  `base32StrictLowerCase`  padrão, minúsculas  sim
++ row  `Base32`  `base32UpperCase`  padrão, maiúsculas  sim  minúsculas
++ row  `Base32`  `base32LowerCase`  padrão, minúsculas  sim  maiúsculas
++ row  `Base32`  `base32ExtendedHexUpperCase`  hex estendido, maiúsculas  sim  minúsculas
++ row  `Base32`  `base32ExtendedHexLowerCase`  hex estendido, minúsculas  sim  maiúsculas
++ row  `Base32`  `base32ZBase32`  z-base-32  sim
++ row  `Base32`  `base32ZBase32Unpadded`  z-base-32, sem preenchimento  não
++ row  `Base32`  `base32Geohash`  Geohash  não
++ row  `Base32`  `base32WordSafe`  word-safe  não
++ row  `Base32`  `base32Crockford`  Crockford  não  minúsculas; `o` e `O` como `0`; `i`, `I`, `l` e `L` como `1`
++ row  `Hex`  `hexStrictUpperCase`  maiúsculas  não
++ row  `Hex`  `hexStrictLowerCase`  minúsculas  não
++ row  `Hex`  `hexUpperCase`  maiúsculas  não  minúsculas
++ row  `Hex`  `hexLowerCase`  minúsculas  não  maiúsculas
++ row  `Hex`  `hexBioctal`  bioctal  não
++ row  `Octal`  `octalStandard`  padrão  não
++ row  `Quaternary`  `quaternaryStandard`  `0123`  não
++ row  `Quaternary`  `quaternaryDnaNucleotide`  nucleotídeos de DNA, `ATCG`  não
++ row  `Binary`  `binaryStandard`  `01`  não
+
+= row  `Binary`  `binaryStandard`  `01`  no
+- ```
++ ```
+
+- ### Other bases
++ ### Outras bases
+
+- The same `serialize` and `deserialize` handle every base, each with alphabets of its own. The
+- base is the number of bits which each character carries:
++ Os mesmos `serialize` e `deserialize` tratam todas as bases, cada uma com alfabetos próprios. A
++ base é o número de bits que cada caractere carrega:
+
+= base is the number of bits which each character carries:
+=
+- ```tabular
++ ```tabular
+
+- column  Encoding
+- column  Bits per character
++ column  Codificação
++ column  Bits por caractere
+
+- row  `Base64`  6
++ row  `Base64`  6
+
+- row  `Base32`  5
++ row  `Base32`  5
+
+- row  `Hex`  4
++ row  `Hex`  4
+
+- row  `Octal`  3
++ row  `Octal`  3
+
+- row  `Quaternary`  2
++ row  `Quaternary`  2
+
+- row  `Binary`  1
++ row  `Binary`  1
+
+= row  `Binary`  1
+- ```
++ ```
+
+= ```
+=
+- ```scala
++ ```scala
+
+- import alphabets.{hexLowerCase, binaryStandard, quaternaryDnaNucleotide}
++ import alphabets.{hexLowerCase, binaryStandard, quaternaryDnaNucleotide}
+
+= import alphabets.{hexLowerCase, binaryStandard, quaternaryDnaNucleotide}
+- ```
++ ```
+
+= import alphabets.{hexLowerCase, binaryStandard, quaternaryDnaNucleotide}
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import alphabets.{hexLowerCase, binaryStandard, quaternaryDnaNucleotide}
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import alphabets.{hexLowerCase, binaryStandard, quaternaryDnaNucleotide}
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(bytes.serialize[Hex])
++ Out.println(bytes.serialize[Hex])
+
+- Out.println(bytes.serialize[Binary])
++ Out.println(bytes.serialize[Binary])
+
+- Out.println(bytes.serialize[Quaternary])
++ Out.println(bytes.serialize[Quaternary])
+
+= Out.println(bytes.serialize[Quaternary])
+- ```
++ ```
+
+- A hexadecimal literal for bytes is written with the `hex"…"` interpolator, as
+- [binary data](binary-data.md#reading) shows.
++ Um literal hexadecimal para bytes é escrito com o interpolador `hex"…"`, como mostra
++ [dados binários](binary-data.md#reading).
+
+- ### Encoding a stream
++ ### Codificação de um stream
+
+- An alphabet is also a stage of a [stream](streams.md#composing-a-pipeline). Bytes are encoded
+- as they flow, without being gathered first, which is what a base-encoded body written to a
+- socket requires, or a large file prepared for transport as text:
++ Um alfabeto também é um estágio de um [stream](streams.md#composing-a-pipeline). Os bytes são
++ codificados à medida que fluem, sem serem reunidos antes, que é o que exige um corpo codificado
++ em base escrito em um socket, ou um arquivo grande preparado para transporte como texto:
+
+= socket requires, or a large file prepared for transport as text:
+=
+- ```scala
++ ```scala
+
+- val encoded = bytes.stream.via(summon[Alphabet[Hex]])
++ val encoded = bytes.stream.via(summon[Alphabet[Hex]])
+
+= val encoded = bytes.stream.via(summon[Alphabet[Hex]])
+- ```
++ ```
+
+- The streaming form and the whole-value form agree byte for byte. That includes the boundaries
+- where a Base64 group of three bytes, or a Base32 group of five, straddles two chunks. Decoding
+- runs in the same way, so a stream may be encoded on one side and decoded on the other, with
+- neither side holding the whole of it.
++ A forma em streaming e a forma de valor inteiro concordam byte a byte. Isso inclui as fronteiras
++ em que um grupo Base64 de três bytes, ou um grupo Base32 de cinco, fica dividido entre dois
++ chunks. A decodificação funciona da mesma maneira, de modo que um stream pode ser codificado de um
++ lado e decodificado do outro, sem que nenhum dos lados guarde o todo.
+
+- ### Related
++ ### Relacionados
+
+- - [CBOR](cbor.md), [cryptography](cryptography.md), [SSH](ssh.md), [geography](geography.md) and [text](text.md) encode bytes and coordinates in these alphabets.
++ - [CBOR](cbor.md), [criptografia](cryptography.md), [SSH](ssh.md), [geografia](geography.md) e
++   [texto](text.md) codificam bytes e coordenadas nesses alfabetos.

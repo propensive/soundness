@@ -1,0 +1,395 @@
+orthant 1 language
+
+- ## UUIDs
++ ## UUIDs
+
+- ### About
++ ### Visão geral
+
+- A [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) is a 128-bit identifier,
+- unique enough to assign without coordination. It is represented as a `Uuid` value. A fresh one
+- is generated, a known one is written as a literal which the compiler checks, and one is parsed
+- from text with a typed error on failure. Its bytes and bits are available when they are needed.
++ Um [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) é um identificador de 128
++ bits, único o bastante para ser atribuído sem coordenação. Ele é representado como um valor
++ `Uuid`. Um novo é gerado, um conhecido é escrito como um literal que o compilador verifica, e um
++ é analisado a partir de texto com um erro tipado em caso de falha. Seus bytes e bits ficam
++ disponíveis quando são necessários.
+
+- ### On UUIDs
++ ### Sobre UUIDs
+
+- A UUID is almost always carried as a string, and a string is an unreliable home for it. A
+- literal with a wrong digit, or a value which is not a UUID at all, cannot be told from a valid
+- one until something parses it and fails. Nothing in the type marks a particular string as a
+- well-formed identifier.
++ Um UUID quase sempre é carregado como uma string, e uma string é um lar pouco confiável para
++ ele. Um literal com um dígito errado, ou um valor que nem é um UUID, não pode ser distinguido de
++ um válido até que algo o analise e falhe. Nada no tipo marca uma string específica como um
++ identificador bem formado.
+
+- A `Uuid` is a value which is known to be well-formed. A literal is validated at [compiletime].
+- Parsing at [runtime] reports a typed `Uuid.Error`, and never returns a broken value. A UUID
+- which cannot be constructed malformed is
+- [safety by construction](../../philosophy/safety-by-construction.md) in its simplest form.
++ Um `Uuid` é um valor que se sabe ser bem formado. Um literal é validado em
++ [tempo de compilação]. A análise em [tempo de execução] relata um `Uuid.Error` tipado, e nunca
++ retorna um valor quebrado. Um UUID que não pode ser construído malformado é
++ [segurança por construção](../../philosophy/safety-by-construction.md) em sua forma mais
++ simples.
+
+- Everything comes from the `soundness` package. The second import lets the samples print their
+- results:
++ Tudo vem do pacote `soundness`. O segundo import permite que os exemplos imprimam seus
++ resultados:
+
+= results:
+=
+- ```scala
++ ```scala
+
+- import soundness.*
++ import soundness.*
+
+- import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
++ import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+
+= import stdios.javaLangSystemStdio, termcapDefinitions.xterm256Termcap
+- ```
++ ```
+
+- The operations, each covered below:
++ As operações, cada uma abordada abaixo:
+
+- ```tabular
++ ```tabular
+
+- column  Operation
+- column  Gives
+- row  `Uuid()`  a fresh random identifier
+- row  `uuid"…"`  a literal identifier, checked as the code compiles
+- row  `Uuid.parse(text)`  the identifier, or a raised `Uuid.Error`
+- row  `Uuid.extract(text)`  an `Optional` identifier; `Uuid(id)` is the same as a pattern
+- row  `id.text`  the canonical text
+- row  `id.in[Data]`  the sixteen bytes, the most significant half first
+- row  `id.msb`, `id.lsb`  the most and least significant 64 bits
+- row  `a ^ b`, `~a`  the exclusive-or of two identifiers, and the inverse of one
++ column  Operação
++ column  Dá
++ row  `Uuid()`  um novo identificador aleatório
++ row  `uuid"…"`  um identificador literal, verificado enquanto o código compila
++ row  `Uuid.parse(text)`  o identificador, ou um `Uuid.Error` lançado
++ row  `Uuid.extract(text)`  um identificador `Optional`; `Uuid(id)` é o mesmo como padrão
++ row  `id.text`  o texto canônico
++ row  `id.in[Data]`  os dezesseis bytes, com a metade mais significativa primeiro
++ row  `id.msb`, `id.lsb`  os 64 bits mais e menos significativos
++ row  `a ^ b`, `~a`  o ou exclusivo de dois identificadores, e o inverso de um
+
+= row  `a ^ b`, `~a`  the exclusive-or of two identifiers, and the inverse of one
+- ```
++ ```
+
+- ### Generating
++ ### Geração
+
+- `Uuid()` produces a fresh random identifier, different each time:
++ `Uuid()` produz um novo identificador aleatório, diferente a cada vez:
+
+= `Uuid()` produces a fresh random identifier, different each time:
+=
+- ```scala
++ ```scala
+
+- val fresh = Uuid()
++ val fresh = Uuid()
+
+= val fresh = Uuid()
+- ```
++ ```
+
+- ### Literals
++ ### Literais
+
+- The `uuid"…"` [interpolator] writes a known identifier, and checks it at compiletime:
++ O [interpolador] `uuid"…"` escreve um identificador conhecido e o verifica em tempo de
++ compilação:
+
+= The `uuid"…"` [interpolator] writes a known identifier, and checks it at compiletime:
+=
+- ```scala
++ ```scala
+
+- val id = uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c"
++ val id = uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c"
+
+= val id = uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c"
+- ```
++ ```
+
+- A malformed literal does not compile:
++ Um literal malformado não compila:
+
+= A malformed literal does not compile:
+=
+- ```scala fuel
++ ```scala fuel
+
+- compile
++ compile
+
+= compile
+- errors show
++ errors show
+
+= compile
+= errors show
+- ##
++ ##
+
+- uuid"a0cb16f0-d41e-4c28-862f-bd6164bbccXY"
++ uuid"a0cb16f0-d41e-4c28-862f-bd6164bbccXY"
+
+= uuid"a0cb16f0-d41e-4c28-862f-bd6164bbccXY"
+- ```
++ ```
+
+- ### Parsing
++ ### Análise
+
+- Text which arrives at runtime may not be a UUID, so `Uuid.parse` raises a `Uuid.Error` on
+- failure, which the [strategy] in scope handles:
++ Um texto que chega em tempo de execução pode não ser um UUID, então `Uuid.parse` lança um
++ `Uuid.Error` em caso de falha, que a [estratégia] no escopo trata:
+
+= failure, which the [strategy] in scope handles:
+=
+- ```scala
++ ```scala
+
+- import strategies.throwUnsafely
++ import strategies.throwUnsafely
+
+= import strategies.throwUnsafely
+- ```
++ ```
+
+= import strategies.throwUnsafely
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= import strategies.throwUnsafely
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= import strategies.throwUnsafely
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Uuid.parse(t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c").text)
++ Out.println(Uuid.parse(t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c").text)
+
+= Out.println(Uuid.parse(t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c").text)
+- ```
++ ```
+
+= Out.println(Uuid.parse(t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c").text)
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= Out.println(Uuid.parse(t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c").text)
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= run
+- errors show
++ errors show
+
+= run
+= errors show
+- ##
++ ##
+
+- Uuid.parse(t"not-a-uuid")
++ Uuid.parse(t"not-a-uuid")
+
+= Uuid.parse(t"not-a-uuid")
+- ```
++ ```
+
+- `Uuid.extract` gives an [optional](optional-values.md) value instead, and the same extractor
+- serves in a pattern:
++ `Uuid.extract` dá, em vez disso, um valor [opcional](optional-values.md), e o mesmo extrator
++ serve em um padrão:
+
+= serves in a pattern:
+=
+- ```scala
++ ```scala
+
+- def identify(text: Text): Uuid = text match
++ def identify(text: Text): Uuid = text match
+
+-   case Uuid(id) => id
++   case Uuid(id) => id
+
+-   case _        => uuid"00000000-0000-0000-0000-000000000000"
++   case _        => uuid"00000000-0000-0000-0000-000000000000"
+
+=   case _        => uuid"00000000-0000-0000-0000-000000000000"
+- ```
++ ```
+
+=   case _        => uuid"00000000-0000-0000-0000-000000000000"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+=   case _        => uuid"00000000-0000-0000-0000-000000000000"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+=   case _        => uuid"00000000-0000-0000-0000-000000000000"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(Uuid.extract(t"not-a-uuid").inspect)
++ Out.println(Uuid.extract(t"not-a-uuid").inspect)
+
+- Out.println(identify(t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c").text)
++ Out.println(identify(t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c").text)
+
+- Out.println(identify(t"not-a-uuid").text)
++ Out.println(identify(t"not-a-uuid").text)
+
+= Out.println(identify(t"not-a-uuid").text)
+- ```
++ ```
+
+- `as[Uuid]` [decodes](decoding.md#decoding-a-value) text in the same way, so a `Uuid` field in
+- a case class is read from [JSON](json.md) or a
+- [command-line parameter](cli.md) with no further code.
++ `as[Uuid]` [decodifica](decoding.md#decoding-a-value) texto da mesma forma, então um campo
++ `Uuid` em uma case class é lido de [JSON](json.md) ou de um
++ [parâmetro de linha de comando](cli.md) sem mais código.
+
+- ### Rendering and bytes
++ ### Renderização e bytes
+
+- `text` gives a UUID's canonical text. Its sixteen bytes and its two 64-bit halves are also
+- available:
++ `text` dá o texto canônico de um UUID. Seus dezesseis bytes e suas duas metades de 64 bits
++ também estão disponíveis:
+
+= available:
+=
+- ```scala fuel
++ ```scala fuel
+
+= available:
+=
+= ```scala fuel
+- run
++ run
+
+= available:
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println(id.text)
++ Out.println(id.text)
+
+- Out.println(id.in[Data].length.show)
++ Out.println(id.in[Data].length.show)
+
+- Out.println(id.msb.show)
++ Out.println(id.msb.show)
+
+- Out.println(id.lsb.show)
++ Out.println(id.lsb.show)
+
+= Out.println(id.lsb.show)
+- ```
++ ```
+
+- ### Combining
++ ### Combinação
+
+- Two identifiers combine with exclusive-or, and one is inverted with `~`. These are for the
+- occasions when a UUID is treated as the bit pattern it is, such as deriving a stable identifier
+- from two others:
++ Dois identificadores se combinam com ou exclusivo, e um é invertido com `~`. Isso serve para as
++ ocasiões em que um UUID é tratado como o padrão de bits que ele é, como ao derivar um
++ identificador estável a partir de outros dois:
+
+= from two others:
+=
+- ```scala
++ ```scala
+
+- val other = uuid"11111111-2222-3333-4444-555555555555"
++ val other = uuid"11111111-2222-3333-4444-555555555555"
+
+= val other = uuid"11111111-2222-3333-4444-555555555555"
+- ```
++ ```
+
+= val other = uuid"11111111-2222-3333-4444-555555555555"
+= ```
+=
+- ```scala fuel
++ ```scala fuel
+
+= val other = uuid"11111111-2222-3333-4444-555555555555"
+= ```
+=
+= ```scala fuel
+- run
++ run
+
+= val other = uuid"11111111-2222-3333-4444-555555555555"
+= ```
+=
+= ```scala fuel
+= run
+- ##
++ ##
+
+- Out.println((id ^ other).text)
++ Out.println((id ^ other).text)
+
+- Out.println((~id).text)
++ Out.println((~id).text)
+
+= Out.println((~id).text)
+- ```
++ ```
+
+- [Hashing](hashing.md) derives an identifier from content, and [Randomness](randomness.md)
+- controls the source which `Uuid()` draws from.
++ [Hashing](hashing.md) deriva um identificador a partir do conteúdo, e
++ [Aleatoriedade](randomness.md) controla a origem de que `Uuid()` sorteia.

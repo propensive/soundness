@@ -1,0 +1,308 @@
+orthant 1 language
+
+-     - `coaxial.core` — the whole platform-neutral API: `Socket` (its `Backend`, `Option`s,
+-       `Event`s, `Service` and `Error`), `Bind`, the typeclasses `Bindable`, `Connectable`,
+-       `Routable`, `Serviceable`, `Duplexable` and `Subscribable`, `Duplex`, `Uds`,
+-       `Multicast`, `Packet`, `UdpResponse`, `Control`, `Transmitter`, `Transmissible`,
+-       `Ingressive`, the loans `listen`, `listenOn`, `subscribe`, `transmit`, `react`,
+-       `exchange` and `duplex`, the `connectableSessional` given and the `socketOptions`
+-       package. It compiles wherever a backend exists.
+-     - `coaxial.jvm` — `socketBackends.javaBaseSockets` over `java.net` and
+-       `java.nio.channels` (TCP, UDP, multicast and Unix-domain sockets), the TLS layer
+-       (`Tls`, `TlsAcceptance`, `Trust`, `SecureEndpoint` for clients and `SecurePort` for
+-       servers, with ALPN and mutual authentication), the raw-stream `Connection` with its
+-       `listenConnections` loan, and `streamsDuplex`.
+-     - `coaxial.native` (Scala Native) — `socketBackends.scalaNativeSockets` (TCP, UDP and
+-       multicast; Unix-domain sockets raise `Unsupported`), and `Tls` and `SecureEndpoint` over
+-       OpenSSL through its C API: a TLS client with verification but no ALPN, no server-side
+-       TLS, and no `TlsAcceptance`/`Trust`.
+-     - `coaxial.wasi` (a Wasm component) — `socketBackends.wasiSockets` over `wasi:sockets`:
+-       TCP only, to IPv4 literals, with no UDP, multicast, Unix-domain or TLS; plus the
+-       `wasiApis.wasiSocketsApi` WIT interface and the `WasiSocketsApi` type.
+-     - `coaxial.dns` — `ask` on an `Endpoint[Udp.Port]`: one DNS message to a nameserver and
+-       its answer, over the backend's one-shot datagram exchange.
++     - `coaxial.core` — toda a API neutra quanto à plataforma: `Socket` (seu `Backend`, suas
++       `Option`s, seus `Event`s, seu `Service` e seu `Error`), `Bind`, as classes de tipos
++       `Bindable`, `Connectable`, `Routable`, `Serviceable`, `Duplexable` e `Subscribable`,
++       `Duplex`, `Uds`, `Multicast`, `Packet`, `UdpResponse`, `Control`, `Transmitter`,
++       `Transmissible`, `Ingressive`, os empréstimos `listen`, `listenOn`, `subscribe`,
++       `transmit`, `react`, `exchange` e `duplex`, o given `connectableSessional` e o pacote
++       `socketOptions`. Compila onde quer que exista um backend.
++     - `coaxial.jvm` — `socketBackends.javaBaseSockets` sobre `java.net` e
++       `java.nio.channels` (sockets TCP, UDP, multicast e de domínio Unix), a camada TLS
++       (`Tls`, `TlsAcceptance`, `Trust`, `SecureEndpoint` para clientes e `SecurePort` para
++       servidores, com ALPN e autenticação mútua), a `Connection` de stream bruto com seu
++       empréstimo `listenConnections`, e `streamsDuplex`.
++     - `coaxial.native` (Scala Native) — `socketBackends.scalaNativeSockets` (TCP, UDP e
++       multicast; sockets de domínio Unix lançam `Unsupported`), e `Tls` e `SecureEndpoint`
++       sobre o OpenSSL por meio de sua API em C: um cliente TLS com verificação, mas sem ALPN,
++       sem TLS no lado do servidor e sem `TlsAcceptance`/`Trust`.
++     - `coaxial.wasi` (um componente Wasm) — `socketBackends.wasiSockets` sobre
++       `wasi:sockets`: apenas TCP, para literais IPv4, sem UDP, multicast, domínio Unix ou TLS;
++       além da interface WIT `wasiApis.wasiSocketsApi` e do tipo `WasiSocketsApi`.
++     - `coaxial.dns` — `ask` em um `Endpoint[Udp.Port]`: uma mensagem DNS para um servidor de
++       nomes e sua resposta, sobre a troca de datagrama de uso único do backend.
+
+- refer coaxial.ask
++ refer coaxial.ask
+
+-     entry #ServerSocket   the handle of a bound, listening stream socket (TCP or Unix-domain)
+-     entry #DatagramSocket   the handle of a bound datagram socket
+-     entry #MulticastSocket   the handle of a socket joined to a multicast group on each of its interfaces
+-     entry #Exchange   the handle of a request/response client connection
+-     entry #Courier   the handle of a fire-and-forget datagram destination
+-     entry #listenTcp   binds a TCP port, on one interface or all, with the given options
+-         `listenTcp(port, interface, options)` raises `Bind.Error` — `PortInUse`,
+-         `PermissionDenied` or `AddressUnavailable`, classified from the platform's failure —
+-         and returns the `#ServerSocket` which `#accept` takes. The JVM and Native backends bind
+-         a `java.net.ServerSocket` (which honours a `Timeout` option); WASI binds a
+-         `wasi:sockets` TCP socket on the IPv4 wildcard address.
+-     entry #listenDomain   binds a Unix-domain socket at a path, with the given options
+-         Raises `Bind.Error(Unsupported)` on Scala Native and WASI, which have no Unix-domain
+-         sockets. On the JVM the socket file is created at the `Uds`'s path and must
+-         not already exist.
+-     entry #accept   blocks for the next incoming connection, as a `Duplex`
+-         The handler reads the request from the duplex's `source`, and the accept loop writes
+-         the response with `send`. Raises `Socket.Error(Accept)` when the accept fails, which
+-         is what an interrupted accept reports when the server is stopped.
+-     entry #shutdown   closes a listening stream socket, unblocking a pending `#accept`
+-     entry #listenUdp   binds a UDP port, with the given options, for receiving datagrams
+-         Options are applied before the bind, so `ReuseAddress` and `ReusePort` take effect.
+-         The interface, when given, becomes the socket's outgoing multicast interface. The
+-         `DatagramSize` option fixes the buffer each datagram is received into (1472 bytes
+-         unless set). Returns a unit handle on WASI, where every datagram operation raises.
+-     entry #receive   blocks for the next datagram on a bound UDP socket, as a `Packet`
+-         Raises `Socket.Error(Timeout)` when a `Timeout` option elapses and `Accept` for any
+-         other failure. A datagram longer than the `DatagramSize` is truncated to it.
+-     entry #reply   sends a datagram back to a received packet's sender and port
+-         Raises `Socket.Error(Transmit)` if the send fails.
+-     entry #unbind   closes a bound UDP socket, unblocking a pending `#receive`
+-     entry #exchangeUdp   sends one datagram from an ephemeral port and blocks for one reply
+-         `exchangeUdp(endpoint, interface, options, data)` is the shape of a DNS, NTP or STUN
+-         query: a fresh socket, one datagram out, one `Packet` in, the socket closed. A
+-         `Socket.Option.Timeout` in `options` bounds the wait, surfacing as
+-         `Socket.Error(Timeout)`; the reply carries its sender, so a caller can check it came
+-         from the right place. `ask` in `coaxial.dns` is built on it. Raises `Transmit` on
+-         WASI, which has no UDP.
+-     entry #joinMulticast   binds a group's port with address and port reuse, and joins the group on each interface
+-         `joinMulticast(multicast, interfaces, options)` binds the port with `SO_REUSEADDR` and
+-         `SO_REUSEPORT` (the design, not an option: several subscribers on one host share the
+-         port), then joins the group on each of the interfaces which has an address of the
+-         group's family — one the operating system refuses is left out — and holds the
+-         memberships until `#leaveMulticast`. The wildcard join is avoided because it picks one
+-         interface arbitrarily, and unreliably on macOS.
+-     entry #receiveMulticast   blocks for the next datagram the group delivers, as a `Packet`
+-     entry #sendGroup   sends a datagram to the group itself
+-         On the JVM, once through each joined interface (an IPv6 link-local group needs the
+-         interface as its scope); on Scala Native, once by the kernel's default multicast
+-         route. Raises `Socket.Error(Transmit)` on failure.
+-     entry #sendTo   sends a datagram from the group's socket to one unicast destination and port
+-         The response to a sender which asked for one. Raises `Socket.Error(Transmit)` on
+-         failure.
+-     entry #leaveMulticast   closes the group's socket, dropping its memberships and unblocking a pending receive
+-     entry #dialTcp   connects to a remote TCP endpoint for one request/response exchange
+-         Raises `Socket.Error` with `Dns` for an unresolvable host, `Refused`, `Timeout` or
+-         `Connect`. On WASI the host must be an IPv4 literal (there is no resolver), else `Dns`.
+-     entry #dialTcpPort   connects to a TCP port on the local host for one request/response exchange
+-     entry #dialDomain   connects to a Unix-domain socket for one request/response exchange
+-         Raises `Socket.Error(Unsupported)` on Scala Native and WASI.
+-     entry #request   streams the request out and half-closes the output side
+-         Takes the request stream as a `consume` parameter: it is drained and closed here, and
+-         may not be used afterwards.
+-     entry #response   the response, as a fresh single-use pull stream which ends at the peer's half-close
+-         `response(exchange)` needs a `Buffering` (the refill window) and a
+-         `Tactic[Truncation.Error]`, raised with the count of bytes read so far when the read
+-         fails midway. The stream captures the tactic, so it is read where it was made.
+-     entry #hangUp   closes a request/response connection
+-     entry #duplexTcp   connects to a remote TCP endpoint as a persistent `Duplex`
+-         The channel is blocking, so a read loop parks in `read` rather than busy-polling, and
+-         options (and, when an interface is given, a local bind) are applied before connecting.
+-         Raises `Socket.Error` as `#dialTcp` does.
+-     entry #duplexDomain   connects to a Unix-domain socket as a persistent `Duplex`
+-         Raises `Socket.Error(Unsupported)` on Scala Native and WASI.
+-     entry #routeUdp   a courier to a remote UDP endpoint, from an ephemeral port
+-         Resolves the endpoint's host when the courier is made; the interface, when given,
+-         becomes the socket's outgoing multicast interface.
+-     entry #routeUdpPort   a courier to a UDP port on the local host
+-     entry #dispatch   sends a whole stream as a single datagram to the courier's destination
+-         The stream is memoized into one datagram, so it must fit in one.
+-   entry .Event   what a socket logs: listening, connected and closed, each tagged `Log.Network`
++     entry #ServerSocket   o handle de um socket de stream vinculado e escutando (TCP ou de domínio Unix)
++     entry #DatagramSocket   o handle de um socket de datagramas vinculado
++     entry #MulticastSocket   o handle de um socket que entrou em um grupo multicast em cada uma de suas interfaces
++     entry #Exchange   o handle de uma conexão de cliente de requisição/resposta
++     entry #Courier   o handle de um destino de datagramas fire-and-forget
++     entry #listenTcp   vincula uma porta TCP, em uma interface ou em todas, com as opções dadas
++         `listenTcp(port, interface, options)` lança `Bind.Error` — `PortInUse`,
++         `PermissionDenied` ou `AddressUnavailable`, classificado a partir da falha da
++         plataforma — e retorna o `#ServerSocket` que `#accept` recebe. Os backends da JVM e do
++         Native vinculam um `java.net.ServerSocket` (que respeita uma opção `Timeout`); o WASI
++         vincula um socket TCP `wasi:sockets` no endereço curinga IPv4.
++     entry #listenDomain   vincula um socket de domínio Unix em um caminho, com as opções dadas
++         Lança `Bind.Error(Unsupported)` no Scala Native e no WASI, que não têm sockets de
++         domínio Unix. Na JVM, o arquivo do socket é criado no caminho do `Uds` e não pode
++         existir previamente.
++     entry #accept   bloqueia até a próxima conexão recebida, como um `Duplex`
++         O handler lê a requisição do `source` do duplex, e o laço de aceitação escreve a
++         resposta com `send`. Lança `Socket.Error(Accept)` quando a aceitação falha, que é o que
++         uma aceitação interrompida relata quando o servidor é encerrado.
++     entry #shutdown   fecha um socket de stream que está escutando, desbloqueando um `#accept` pendente
++     entry #listenUdp   vincula uma porta UDP, com as opções dadas, para receber datagramas
++         As opções são aplicadas antes da vinculação, para que `ReuseAddress` e `ReusePort`
++         tenham efeito. A interface, quando dada, se torna a interface multicast de saída do
++         socket. A opção `DatagramSize` fixa o buffer em que cada datagrama é recebido (1472
++         bytes, se não for definida). Retorna um handle unitário no WASI, onde toda operação de
++         datagrama lança um erro.
++     entry #receive   bloqueia até o próximo datagrama em um socket UDP vinculado, como um `Packet`
++         Lança `Socket.Error(Timeout)` quando uma opção `Timeout` expira e `Accept` para
++         qualquer outra falha. Um datagrama maior que o `DatagramSize` é truncado para esse
++         tamanho.
++     entry #reply   envia um datagrama de volta ao remetente e à porta de um pacote recebido
++         Lança `Socket.Error(Transmit)` se o envio falhar.
++     entry #unbind   fecha um socket UDP vinculado, desbloqueando um `#receive` pendente
++     entry #exchangeUdp   envia um datagrama a partir de uma porta efêmera e bloqueia até uma resposta
++         `exchangeUdp(endpoint, interface, options, data)` é a forma de uma consulta DNS, NTP ou
++         STUN: um socket novo, um datagrama que sai, um `Packet` que chega, o socket fechado. Uma
++         `Socket.Option.Timeout` em `options` limita a espera, que aparece como
++         `Socket.Error(Timeout)`; a resposta traz seu remetente, para que quem chama possa
++         verificar que ela veio do lugar certo. `ask` em `coaxial.dns` é construído sobre ela.
++         Lança `Transmit` no WASI, que não tem UDP.
++     entry #joinMulticast   vincula a porta de um grupo com reutilização de endereço e de porta, e entra no grupo em cada interface
++         `joinMulticast(multicast, interfaces, options)` vincula a porta com `SO_REUSEADDR` e
++         `SO_REUSEPORT` (por design, não como opção: vários assinantes em um mesmo host
++         compartilham a porta), depois entra no grupo em cada uma das interfaces que tem um
++         endereço da família do grupo — uma que o sistema operacional recusa fica de fora — e
++         mantém as participações até `#leaveMulticast`. A entrada curinga é evitada porque
++         escolhe uma interface arbitrariamente, e de forma pouco confiável no macOS.
++     entry #receiveMulticast   bloqueia até o próximo datagrama que o grupo entrega, como um `Packet`
++     entry #sendGroup   envia um datagrama ao próprio grupo
++         Na JVM, uma vez por cada interface em que entrou (um grupo IPv6 link-local precisa da
++         interface como seu escopo); no Scala Native, uma vez pela rota multicast padrão do
++         kernel. Lança `Socket.Error(Transmit)` em caso de falha.
++     entry #sendTo   envia um datagrama do socket do grupo a um destino unicast e uma porta
++         A resposta a um remetente que pediu uma. Lança `Socket.Error(Transmit)` em caso de
++         falha.
++     entry #leaveMulticast   fecha o socket do grupo, abandonando suas participações e desbloqueando um recebimento pendente
++     entry #dialTcp   conecta a um endpoint TCP remoto para uma troca de requisição/resposta
++         Lança `Socket.Error` com `Dns` para um host que não pode ser resolvido, `Refused`,
++         `Timeout` ou `Connect`. No WASI, o host precisa ser um literal IPv4 (não há resolvedor);
++         caso contrário, `Dns`.
++     entry #dialTcpPort   conecta a uma porta TCP no host local para uma troca de requisição/resposta
++     entry #dialDomain   conecta a um socket de domínio Unix para uma troca de requisição/resposta
++         Lança `Socket.Error(Unsupported)` no Scala Native e no WASI.
++     entry #request   envia a requisição em stream e faz o half-close do lado de saída
++         Recebe o stream da requisição como um parâmetro `consume`: ele é esgotado e fechado
++         aqui, e não pode ser usado depois.
++     entry #response   a resposta, como um stream pull novo, de uso único, que termina no half-close do par
++         `response(exchange)` precisa de um `Buffering` (a janela de reabastecimento) e de uma
++         `Tactic[Truncation.Error]`; o erro é lançado com a contagem de bytes lidos até então quando a
++         leitura falha no meio. O stream captura a tática, então é lido onde foi criado.
++     entry #hangUp   fecha uma conexão de requisição/resposta
++     entry #duplexTcp   conecta a um endpoint TCP remoto como um `Duplex` persistente
++         O canal é bloqueante, então um laço de leitura estaciona em `read` em vez de consultar
++         repetidamente em espera ativa, e as opções (e, quando uma interface é dada, uma
++         vinculação local) são aplicadas antes de conectar. Lança `Socket.Error` como `#dialTcp`.
++     entry #duplexDomain   conecta a um socket de domínio Unix como um `Duplex` persistente
++         Lança `Socket.Error(Unsupported)` no Scala Native e no WASI.
++     entry #routeUdp   um mensageiro para um endpoint UDP remoto, a partir de uma porta efêmera
++         Resolve o host do endpoint quando o mensageiro é criado; a interface, quando dada, se
++         torna a interface multicast de saída do socket.
++     entry #routeUdpPort   um mensageiro para uma porta UDP no host local
++     entry #dispatch   envia um stream inteiro como um único datagrama ao destino do mensageiro
++         O stream é memoizado em um único datagrama, então precisa caber em um.
++   entry .Event   o que um socket registra no log: escuta, conexão e fechamento, cada um com a tag `Log.Network`
+
+-           A receive on a datagram socket which elapses raises `Socket.Error(Timeout)`; `ask`
+-           in `coaxial.dns` adds a five-second one when none is in scope. Not meaningful for a
+-           selectable channel, where it is skipped. Made with `socketOptions.timeout(ms)`.
+-       entry #milliseconds   the wait
+-     entry .NoDelay   `TCP_NODELAY`: send small writes at once rather than waiting on Nagle's algorithm; TCP
+-         `socketOptions.noDelaySocketOption` is its given.
+-     entry .KeepAlive   `SO_KEEPALIVE`: probe an idle connection so a dead peer is noticed; TCP
+-         `socketOptions.keepAliveSocketOption` is its given.
+-     entry .Linger   `SO_LINGER`: how long `close` blocks to flush unsent data, in seconds, or `Unset` to disable; TCP and domain
++           Um recebimento em um socket de datagramas que expira lança `Socket.Error(Timeout)`;
++           `ask` em `coaxial.dns` acrescenta uma de cinco segundos quando nenhuma está em
++           escopo. Não tem sentido para um canal selecionável, onde é ignorada. Criada com
++           `socketOptions.timeout(ms)`.
++       entry #milliseconds   a espera
++     entry .NoDelay   `TCP_NODELAY`: enviar escritas pequenas imediatamente, em vez de esperar pelo algoritmo de Nagle; TCP
++         `socketOptions.noDelaySocketOption` é seu given.
++     entry .KeepAlive   `SO_KEEPALIVE`: sondar uma conexão ociosa para que um par morto seja percebido; TCP
++         `socketOptions.keepAliveSocketOption` é seu given.
++     entry .Linger   `SO_LINGER`: quanto tempo `close` bloqueia para enviar os dados pendentes, em segundos, ou `Unset` para desabilitar; TCP e domínio
+
+-         What `subscribe` lends to its block as a context value, and what a handler can reach
+-         to send outside the request/response shape: an announcement on joining, a goodbye on
+-         leaving, a response to something seen rather than received.
+-     entry #send   `send(data)` to the whole group; `send(data, destination, port)` to one member
+-         Both raise `Socket.Error(Transmit)` on failure.
+-   entry .subscribable   any `Multicast` (or a type refined by its literal port) `is Subscribable`, over the `Socket.Backend` and `Every[Socket.Option.Udp]` in scope
+-       Joins through `Socket.Backend#joinMulticast` on the interfaces `.interfaces` chooses.
+-   entry .bindable   `Multicast is Bindable`, derived from the `Subscribable`: `listen` on a group
+-       For a member which only responds: the handler is `Packet => Multicast.Reply`, and
+-       `listen`'s loan is a `Socket.Service` with no sends. `subscribe` is the loan with them.
+-   entry .interfaces   the interfaces a subscription joins on: the one with a MAC address, or every suitable one
+-       With `Unset`, every interface which is up and multicast-capable other than loopback,
+-       which cannot carry multicast on Linux (a program's own datagrams come back through
+-       `Socket.Option.MulticastLoop` instead); with a `MacAddress`, the interface which has it.
+-   entry #group   the group's IPv4 or IPv6 address
+-   entry #port   the group's UDP port
++         O que `subscribe` empresta ao seu bloco como valor de contexto, e o que um handler
++         pode alcançar para enviar fora do formato de requisição/resposta: um anúncio ao
++         entrar, uma despedida ao sair, uma resposta a algo visto em vez de recebido.
++     entry #send   `send(data)` para o grupo inteiro; `send(data, destination, port)` para um membro
++         Ambos lançam `Socket.Error(Transmit)` em caso de falha.
++   entry .subscribable   qualquer `Multicast` (ou um tipo refinado pela sua porta literal) `is Subscribable`, sobre o `Socket.Backend` e o `Every[Socket.Option.Udp]` no escopo
++       Entra no grupo por meio de `Socket.Backend#joinMulticast` nas interfaces que
++       `.interfaces` escolhe.
++   entry .bindable   `Multicast is Bindable`, derivado do `Subscribable`: `listen` sobre um grupo
++       Para um membro que apenas responde: o handler é `Packet => Multicast.Reply`, e o
++       empréstimo de `listen` é um `Socket.Service` sem envios. `subscribe` é o empréstimo com
++       eles.
++   entry .interfaces   as interfaces em que uma assinatura entra no grupo: a que tem um endereço MAC, ou todas as adequadas
++       Com `Unset`, todas as interfaces ativas e capazes de multicast, exceto a de loopback,
++       que não transporta multicast no Linux (os próprios datagramas de um programa voltam,
++       em vez disso, por meio de `Socket.Option.MulticastLoop`); com um `MacAddress`, a
++       interface que o possui.
++   entry #group   o endereço IPv4 ou IPv6 do grupo
++   entry #port   a porta UDP do grupo
+
+- entry .ask   a DNS query to a nameserver over UDP: one message out, its answer back; in `coaxial.dns`
++ entry .ask   uma consulta DNS a um servidor de nomes sobre UDP: uma mensagem de ida, sua resposta de volta; em `coaxial.dns`
+
+-       Two overloads, both extensions on an `Endpoint[Udp.Port]` naming the nameserver.
+-       `endpoint.ask(message: Dns.Message)` sends the message as one datagram from an
+-       ephemeral port (`Socket.Backend#exchangeUdp`) and returns the reply, which must carry
+-       the query's ID and its first question or it is some other exchange's and a
+-       `Dns.Error(Mismatch(id))` is raised. `endpoint.ask(name, rtype = Dns.Type.A)` asks
+-       the common question — the records of `rtype` for `name`, with recursion requested,
+-       under a fresh random ID — and returns the answering `Dns.Record`s.
++       Duas sobrecargas, ambas extensões sobre um `Endpoint[Udp.Port]` que nomeia o servidor
++       de nomes. `endpoint.ask(message: Dns.Message)` envia a mensagem como um datagrama a
++       partir de uma porta efêmera (`Socket.Backend#exchangeUdp`) e devolve a resposta, que
++       precisa carregar o ID da consulta e sua primeira pergunta, caso contrário pertence a
++       outra troca e um `Dns.Error(Mismatch(id))` é lançado.
++       `endpoint.ask(name, rtype = Dns.Type.A)` faz a pergunta comum — os registros de
++       `rtype` para `name`, com recursão solicitada, sob um ID aleatório novo — e devolve os
++       `Dns.Record`s da resposta.
+
+-       val addresses = resolver.ask(dns"example.com").map(_.rdata)
+-       val mail = resolver.ask(dns"example.com", Dns.Type.MX)
++       val addresses = resolver.ask(dns"example.com").map(_.rdata)
++       val mail = resolver.ask(dns"example.com", Dns.Type.MX)
+
+-       The wait is bounded by a `Socket.Option.Timeout` in scope, or five seconds; a lost
+-       datagram is a `Dns.Error(Timeout)`, and the caller decides whether to ask again — there
+-       is no retransmission. Any other socket failure passes through as a `Socket.Error`. The
+-       method needs a `Socket.Backend` and the `Every[Socket.Option.Udp]` in scope, and raises
+-       `Dns.Error` and `Socket.Error`. The message and record types are urticose's `Dns`.
+-       It is `ask` rather than `lookup`, `resolve` or `query`, names `soundness` reserves for
+-       anamnesis, syndesis and telekinesis.
++       A espera é limitada por um `Socket.Option.Timeout` no escopo, ou por cinco segundos; um
++       datagrama perdido é um `Dns.Error(Timeout)`, e quem chama decide se pergunta de novo —
++       não há retransmissão. Qualquer outra falha de socket passa adiante como um
++       `Socket.Error`. O método precisa de um `Socket.Backend` e do `Every[Socket.Option.Udp]`
++       no escopo, e lança `Dns.Error` e `Socket.Error`. Os tipos de mensagem e de registro são
++       o `Dns` do urticose. Chama-se `ask` em vez de `lookup`, `resolve` ou `query`, nomes que
++       o `soundness` reserva para o anamnesis, o syndesis e o telekinesis.

@@ -1,0 +1,51 @@
+orthant 1 language
+
+- # `↯/s.112.7` — `JsonRpc.Error`
++ # `↯/s.112.7` — `JsonRpc.Error`
+
+- Raised when a JSON-RPC operation fails.
++ Lançado quando uma operação JSON-RPC falha.
+
+- ## Cause
++ ## Causa
+
+- Obligatory's JSON-RPC dispatcher raises this error when a request
+- cannot be processed. The constructor takes a `reason: Reason`; the
+- rendered message is `the JSON-RPC operation failed because
++ O dispatcher JSON-RPC do Obligatory lança este erro quando uma requisição
++ não pode ser processada. O construtor recebe um `reason: Reason`; a
++ mensagem renderizada é `the JSON-RPC operation failed because
+
+- $reason`.
++ $reason`.
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.112.7.1` — `UnknownMethod`
++ ### `↯/s.112.7.1` — `UnknownMethod`
+
+- The `method` field of the incoming JSON-RPC request did not match
+- any of the methods declared on the dispatcher's interface — the
+- wildcard fallback in the generated dispatcher.
++ O campo `method` da requisição JSON-RPC recebida não correspondia a
++ nenhum dos métodos declarados na interface do dispatcher — o
++ fallback curinga no dispatcher gerado.
+
+- **Example.** `[↯/s.112.7.1] the JSON-RPC operation failed because the method name was not recognised by the dispatcher`
++ **Exemplo.** `[↯/s.112.7.1] the JSON-RPC operation failed because the method name was not recognised by the dispatcher`
+
+- **Resolution.** Confirm the method name matches a method on the
+- RPC interface; check for typos.
++ **Resolução.** Confirme que o nome do método corresponde a um método da
++ interface RPC; procure erros de digitação.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/obligatory/src/json/obligatory.JsonRpc.scala`
+- - `↯/s.112.8` — generic RPC failure
+- - `SN-728` — missing `Tactic[JsonRpcError]` at compile time
++ - Código-fonte: `lib/obligatory/src/json/obligatory.JsonRpc.scala`
++ - `↯/s.112.8` — falha genérica de RPC
++ - `SN-728` — `Tactic[JsonRpcError]` ausente em tempo de compilação

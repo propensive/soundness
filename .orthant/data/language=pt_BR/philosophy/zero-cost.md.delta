@@ -1,0 +1,259 @@
+orthant 1 language
+
+- # Zero Cost
++ # Custo zero
+
+- Soundness pays for its safety at compiletime, not at runtime. Opaque types, inlining,
+- and type-level computation mean that the guarantees a type carries — the units on a
+- quantity, a validated name, a checked path — usually compile down to the bare value they
+- wrap, with no wrapper object allocated and no check left to run. Safety is therefore not
+- a tax on performance: the very code that is provably correct is also as fast as the
+- unchecked version a careless programmer would have written by hand.
++ O Soundness paga por sua segurança em tempo de compilação, e não em tempo de execução. Tipos
++ opacos, expansão inline e computação em nível de tipo fazem com que as garantias que um tipo
++ traz — as unidades de uma grandeza, um nome validado, um caminho verificado — geralmente sejam
++ compiladas no valor puro que envolvem, sem nenhum objeto invólucro alocado e sem nenhuma
++ verificação a executar. A segurança, portanto, não é um imposto sobre o desempenho: o mesmo
++ código cuja correção é demonstrável é também tão rápido quanto a versão sem verificações que um
++ programador descuidado teria escrito à mão.
+
+- ## What the types cost at runtime
++ ## Quanto os tipos custam em tempo de execução
+
+- Nothing, in the common case, because they are not there. An opaque type is its underlying
+- representation with a different name for the compiler's purposes only:
++ Nada, no caso comum, porque eles não estão lá. Um tipo opaco é sua representação subjacente com
++ um nome diferente, apenas para os fins do compilador:
+
+= representation with a different name for the compiler's purposes only:
+=
+- ```scala fuel
++ ```scala fuel
+
+= representation with a different name for the compiler's purposes only:
+=
+= ```scala fuel
+- parse
++ parse
+
+= representation with a different name for the compiler's purposes only:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- into opaque type Text <: Matchable & caps.Pure = String & caps.Pure
++ into opaque type Text <: Matchable & caps.Pure = String & caps.Pure
+
+- opaque type Quantity[units <: Measure] = Double
++ opaque type Quantity[units <: Measure] = Double
+
+- opaque type Unset <: Matchable & caps.Pure = Null & caps.Pure
++ opaque type Unset <: Matchable & caps.Pure = Null & caps.Pure
+
+- opaque type Location = Long          // latitude and longitude, packed
++ opaque type Location = Long          // latitude and longitude, packed
+
+- opaque type Isin = Long              // a validated security identifier
++ opaque type Isin = Long              // a validated security identifier
+
+= opaque type Isin = Long              // a validated security identifier
+- ```
++ ```
+
+- `Optional[value]` is then simply `Unset | value` — a union with a null-backed sentinel,
+- so an absent value costs one null reference and a present one costs exactly the value.
++ `Optional[value]` é então simplesmente `Unset | value` — uma união com uma sentinela apoiada em
++ null, de modo que um valor ausente custa uma referência nula e um valor presente custa
++ exatamente o valor.
+
+- A `Quantity[Metres[1]]` is a `Double`. A million of them in an array is a million
+- doubles, not a million objects. The units exist while the code is being typechecked and
+- are gone by the time it runs.
++ Um `Quantity[Metres[1]]` é um `Double`. Um milhão deles em um array são um milhão de doubles, e
++ não um milhão de objetos. As unidades existem enquanto o código passa pela verificação de tipos
++ e já sumiram quando ele roda.
+
+- The same reasoning covers the operations. They are `inline`, so a dimensional calculation
+- becomes the arithmetic instructions the equivalent bare-`Double` code would have produced
+- — no wrapper to allocate, no typeclass method to dispatch to:
++ O mesmo raciocínio vale para as operações. Elas são `inline`, então um cálculo dimensional se
++ torna as instruções aritméticas que o código equivalente com `Double` puro teria produzido —
++ nenhum invólucro a alocar, nenhum método de classe de tipos para o qual despachar:
+
+= — no wrapper to allocate, no typeclass method to dispatch to:
+=
+- ```scala fuel
++ ```scala fuel
+
+= — no wrapper to allocate, no typeclass method to dispatch to:
+=
+= ```scala fuel
+- parse
++ parse
+
+= — no wrapper to allocate, no typeclass method to dispatch to:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- def displacement
++ def displacement
+
+-     ( initial: Quantity[Metres[1] & Seconds[-1]],
++     ( initial: Quantity[Metres[1] & Seconds[-1]],
+
+-       time:    Quantity[Seconds[1]],
++       time:    Quantity[Seconds[1]],
+
+-       accel:   Quantity[Metres[1] & Seconds[-2]] )
++       accel:   Quantity[Metres[1] & Seconds[-2]] )
+
+- :   Quantity[Metres[1]] =
++ :   Quantity[Metres[1]] =
+
+-   initial*time + 0.5*accel*time*time
++   initial*time + 0.5*accel*time*time
+
+=   initial*time + 0.5*accel*time*time
+- ```
++ ```
+
+- Every dimension in that signature is checked as the code compiles. None of it survives
+- into the bytecode.
++ Cada dimensão nessa assinatura é verificada enquanto o código compila. Nada disso sobrevive no
++ bytecode.
+
+- ## The claim is tested, not asserted
++ ## A afirmação é testada, não apenas declarada
+
+- A performance claim that is only stated tends to stop being true — an inline annotation
+- removed, a typeclass method that no longer specialises, and the guarantee is quietly
+- gone while the documentation still promises it.
++ Uma afirmação de desempenho que só é declarada tende a deixar de ser verdadeira — uma anotação
++ inline removida, um método de classe de tipos que deixa de ser especializado, e a garantia some
++ em silêncio enquanto a documentação ainda a promete.
+
+- So the test suite reads the compiled bytecode and fails if the guarantee has lapsed. It
+- parses the classfile, walks the instructions of representative calculations, and asserts
+- that no virtual or interface dispatch to a typeclass operation survives and that no
+- boxing appears:
++ Por isso a suíte de testes lê o bytecode compilado e falha se a garantia tiver caducado. Ela
++ analisa o classfile, percorre as instruções de cálculos representativos e verifica que nenhum
++ despacho virtual ou de interface para uma operação de classe de tipos sobrevive e que nenhum
++ boxing aparece:
+
+= boxing appears:
+=
+- ```scala fuel
++ ```scala fuel
+
+= boxing appears:
+=
+= ```scala fuel
+- parse
++ parse
+
+= boxing appears:
+=
+= ```scala fuel
+= parse
+- ##
++ ##
+
+- def callsTypeclassOp(bytecode: Bytecode): Boolean =
++ def callsTypeclassOp(bytecode: Bytecode): Boolean =
+
+-   val ops = Set(t"negate", t"add", t"subtract", t"multiply", t"divide", t"root", t"op")
++   val ops = Set(t"negate", t"add", t"subtract", t"multiply", t"divide", t"root", t"op")
+
+-   bytecode.instructions.exists: instruction =>
++   bytecode.instructions.exists: instruction =>
+
+-     instruction.opcode match
++     instruction.opcode match
+
+-       case Bytecode.Opcode.Invokevirtual(_, name, _)      => ops.has(name)
++       case Bytecode.Opcode.Invokevirtual(_, name, _)      => ops.has(name)
+
+-       case Bytecode.Opcode.Invokeinterface(_, name, _, _) => ops.has(name)
++       case Bytecode.Opcode.Invokeinterface(_, name, _, _) => ops.has(name)
+
+-       case _                                              => false
++       case _                                              => false
+
+=       case _                                              => false
+- ```
++ ```
+
+- The [metaprogramming](../en/modules/metaprogramming.md) module exists partly to make this
+- possible: if a claim about what the compiler emitted is worth making, it is worth
+- checking on every build.
++ O módulo de [metaprogramação](../en/modules/metaprogramming.md) existe em parte para tornar isso
++ possível: se vale a pena fazer uma afirmação sobre o que o compilador emitiu, vale a pena
++ verificá-la em todo build.
+
+- ## Where the cost is not zero
++ ## Onde o custo não é zero
+
+- Being honest about this matters more than the claim itself.
++ Ser honesto sobre isso importa mais que a própria afirmação.
+
+- **Checked arithmetic costs what it checks.** Importing `arithmeticOptions.checkedOverflow`
+- adds a real test to every addition. The default is unchecked, so the cost is paid only
+- where it is asked for — but where it is asked for, it is paid.
++ **Aritmética verificada custa o que verifica.** Importar `arithmeticOptions.checkedOverflow`
++ acrescenta um teste real a cada soma. O padrão é sem verificação, então o custo só é pago onde é
++ pedido — mas, onde é pedido, ele é pago.
+
+- **Validation costs once, at construction.** Turning text into a `Port` parses and range-checks
+- it. The saving is that nothing downstream checks again, not that the first check is free.
++ **A validação custa uma vez, na construção.** Transformar texto em uma `Port` o analisa e
++ verifica seu intervalo. A economia é que nada a jusante verifica de novo, e não que a primeira
++ verificação seja de graça.
+
+- **Some safety is genuinely structural.** A `Stream`'s single-ownership discipline is
+- enforced by the type system at no runtime cost, but the buffering and windowing that make
+- it zero-copy are real machinery. Capture checking proves the machinery is safe; it does
+- not make it disappear.
++ **Parte da segurança é genuinamente estrutural.** A disciplina de posse única de um `Stream` é
++ garantida pelo sistema de tipos sem custo em tempo de execução, mas o buffering e as janelas que
++ o tornam livre de cópias são maquinaria real. A verificação de capturas prova que a maquinaria é
++ segura; ela não a faz desaparecer.
+
+- **Compiletime is the bill.** Type-level computation, inlining and macro expansion are work
+- done on every build to avoid work on every run. A Soundness project compiles more slowly
+- than a loosely-typed equivalent, and `-Xmax-inlines` is a setting that occasionally has to
+- be raised. That is the trade, stated in the direction it actually runs.
++ **O tempo de compilação é a conta.** Computação em nível de tipo, expansão inline e expansão de
++ macros são trabalho feito em todo build para evitar trabalho em toda execução. Um projeto
++ Soundness compila mais devagar que um equivalente com tipagem frouxa, e `-Xmax-inlines` é uma
++ configuração que de vez em quando precisa ser aumentada. Essa é a troca, declarada na direção em
++ que de fato acontece.
+
+- ## Why this principle is load-bearing
++ ## Por que este princípio é estrutural
+
+- Without it, every other principle in this collection becomes a negotiation. A team that
+- believes safety costs performance will reach for the unchecked type in the inner loop —
+- and the inner loop is exactly where a mistake is most expensive.
++ Sem ele, todos os outros princípios desta coleção viram uma negociação. Uma equipe que acredita
++ que a segurança custa desempenho vai recorrer ao tipo sem verificação no laço mais interno — e o
++ laço mais interno é exatamente onde um erro sai mais caro.
+
+- If the safe version is also the fast version, the question never arises. That is why
+- "zero cost" is treated as a design constraint on new abstractions rather than as a happy
+- observation about existing ones: an abstraction that cannot be made to disappear is
+- reconsidered before it is added.
++ Se a versão segura é também a versão rápida, a questão nunca surge. É por isso que “custo zero”
++ é tratado como uma restrição de design sobre novas abstrações, e não como uma feliz constatação
++ sobre as existentes: uma abstração que não pode ser feita desaparecer é reconsiderada antes de
++ ser acrescentada.
+
+- See [correctness](correctness.md) for what the compiletime bill buys, and
+- [optionality](optionality.md) for the most pervasive instance of a wrapper removed.
++ Veja [corretude](correctness.md) para o que a conta do tempo de compilação compra, e
++ [opcionalidade](optionality.md) para o caso mais disseminado de um invólucro removido.

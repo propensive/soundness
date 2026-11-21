@@ -1,0 +1,92 @@
+orthant 1 language
+
+- # `↯/s.70.1` — `Path.Error`
++ # `↯/s.70.1` — `Path.Error`
+
+- Raised when a path operation cannot proceed because the path is in
+- some way invalid.
++ Lançado quando uma operação de caminho não pode prosseguir porque o caminho é de alguma forma
++ inválido.
+
+- ## Cause
++ ## Causa
+
+- Serpentine reports `Path.Error` for structural problems with paths —
+- operating on the root, mismatched roots between paths, malformed
+- roots, or invalid name components. The message is `the path $path
+- was invalid because $reason` (the `path` prefix is omitted when not
+- known).
++ O Serpentine relata `Path.Error` para problemas estruturais com caminhos: operar sobre a raiz,
++ raízes incompatíveis entre caminhos, raízes malformadas ou componentes de nome inválidos. A
++ mensagem é `the path $path was invalid because $reason` (o prefixo `path` é omitido quando
++ não é conhecido).
+
+- ## Variants
++ ## Variantes
+
+- ### `↯/s.70.1.1` — `RootParent`
++ ### `↯/s.70.1.1` — `RootParent`
+
+- `parent` was called on a root path, which has no parent.
++ `parent` foi chamado sobre um caminho raiz, que não tem pai.
+
+- **Example.** `[↯/s.70.1.1] the path /  was invalid because the root has no parent`
++ **Exemplo.** `[↯/s.70.1.1] the path /  was invalid because the root has no parent`
+
+- **Resolution.** Check whether the path is a root before requesting
+- its parent, or use an `Optional`-returning accessor.
++ **Resolução.** Verifique se o caminho é uma raiz antes de pedir o seu pai, ou use um acessor
++ que retorne `Optional`.
+
+- ### `↯/s.70.1.2` — `InvalidRoot`
++ ### `↯/s.70.1.2` — `InvalidRoot`
+
+- The root component itself is malformed (for example a Windows path
+- that does not start with a drive letter or UNC root).
++ O próprio componente raiz é malformado (por exemplo, um caminho Windows que não começa com uma
++ letra de unidade ou uma raiz UNC).
+
+- **Example.** `[↯/s.70.1.2] the path was invalid because the root is not valid`
++ **Exemplo.** `[↯/s.70.1.2] the path was invalid because the root is not valid`
+
+- **Resolution.** Construct paths via the typed `Path` API rather than
+- parsing arbitrary text, or pass a syntactically valid root.
++ **Resolução.** Construa caminhos pela API tipada de `Path`, em vez de analisar texto
++ arbitrário, ou passe uma raiz sintaticamente válida.
+
+- ### `↯/s.70.1.3` — `DifferentRoots`
++ ### `↯/s.70.1.3` — `DifferentRoots`
+
+- A relativisation or join was attempted between two paths that have
+- incompatible roots.
++ Tentou-se relativizar ou juntar dois caminhos cujas raízes são incompatíveis.
+
+- **Example.** `[↯/s.70.1.3] the path was invalid because it does not have the same root as the source`
++ **Exemplo.** `[↯/s.70.1.3] the path was invalid because it does not have the same root as the source`
+
+- **Resolution.** Ensure both paths share the same root before
+- relativising; otherwise, work in absolute paths throughout.
++ **Resolução.** Garanta que os dois caminhos compartilhem a mesma raiz antes de relativizar; caso
++ contrário, trabalhe com caminhos absolutos do começo ao fim.
+
+- ### `↯/s.70.1.4` — `InvalidName`
++ ### `↯/s.70.1.4` — `InvalidName`
+
+- A path component (name) is invalid for the target filesystem — for
+- example contains illegal characters or is reserved.
++ Um componente (nome) do caminho é inválido para o sistema de arquivos de destino: por exemplo,
++ contém caracteres ilegais ou é reservado.
+
+- **Example.** `[↯/s.70.1.4] the path was invalid because the name is not valid`
++ **Exemplo.** `[↯/s.70.1.4] the path was invalid because the name is not valid`
+
+- **Resolution.** Sanitise component names against the target
+- platform's rules before composing them into a path.
++ **Resolução.** Sanitize os nomes dos componentes segundo as regras da plataforma de destino antes
++ de compô-los em um caminho.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/serpentine/src/core/serpentine.Path.scala`
++ - Código-fonte: `lib/serpentine/src/core/serpentine.Path.scala`

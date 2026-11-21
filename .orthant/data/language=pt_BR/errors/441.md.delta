@@ -1,0 +1,35 @@
+orthant 1 language
+
+- # `SN-441` — Blank line after imports (retired)
++ # `SN-441` — Linha em branco após os imports (aposentado)
+
+- This error no longer exists. The page is kept so that the code is not reused, and so
+- that a reference to it from an older release can still be resolved.
++ Este erro não existe mais. A página é mantida para que o código não seja reutilizado, e para que
++ uma referência a ele vinda de uma versão mais antiga ainda possa ser resolvida.
+
+- ## What became of it
++ ## O que aconteceu
+
+- The Decorum compiler plugin, which raised this error, was extracted from Soundness and
+- is now [Consequent](https://github.com/propensive/consequent), a standalone checker for
+- Consequent Style. The rule survives there under a new identifier, in which the letter
+- names the principle it derives from:
++ O plugin do compilador Decorum, que lançava este erro, foi extraído de Soundness e agora é o
++ [Consequent](https://github.com/propensive/consequent), um verificador independente do Consequent
++ Style. A regra sobrevive lá sob um novo identificador, em que a letra nomeia o princípio do qual
++ ela deriva:
+
+- ```tabular
++ ```tabular
+
+- column  Was
+- column  Now
++ column  Antes
++ column  Agora
+
+- row  `SN-441`  [`P5`](https://github.com/propensive/consequent/blob/main/doc/rules/P5.md)
++ row  `SN-441`  [`P5`](https://github.com/propensive/consequent/blob/main/doc/rules/P5.md)
+
+- ```
++ ```

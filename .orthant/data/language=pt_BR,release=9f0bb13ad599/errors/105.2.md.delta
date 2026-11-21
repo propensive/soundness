@@ -1,0 +1,34 @@
+orthant 1 language
+
+- ### `↯/s.105.2.6` — `BadTag`
++ ### `↯/s.105.2.6` — `BadTag`
+
+- An authenticated cipher's tag did not verify: the ciphertext, the associated data or the
+- nonce is not what was sealed, or the key is not the one it was sealed with.
++ A tag de uma cifra autenticada não foi verificada: o texto cifrado, os dados associados ou o nonce
++ não são os que foram selados, ou a chave não é aquela com que foram selados.
+
+- **Example.** `[↯/s.105.2.6] could not decrypt the data because the authentication tag did not verify`
++ **Exemplo.** `[↯/s.105.2.6] could not decrypt the data because the authentication tag did not verify`
+
+- **Resolution.** Treat the data as forged or corrupt, and do not use any part of it. Confirm
+- that the nonce and the associated data are exactly those given to `seal`.
++ **Resolução.** Trate os dados como forjados ou corrompidos, e não use nenhuma parte deles. Confirme
++ que o nonce e os dados associados são exatamente os que foram dados a `seal`.
+
+- ### `↯/s.105.2.7` — `BadWrap`
++ ### `↯/s.105.2.7` — `BadWrap`
+
+- Wrapped key material did not pass the integrity check that key wrapping builds in: it was
+- wrapped under a different key, or has been altered, or is not a whole number of 64-bit blocks.
++ O material de chave encapsulado não passou na verificação de integridade que o encapsulamento de
++ chaves embute: foi encapsulado sob uma chave diferente, ou foi alterado, ou não é um número inteiro
++ de blocos de 64 bits.
+
+- **Example.** `[↯/s.105.2.7] could not decrypt the data because the wrapped key did not pass its integrity check`
++ **Exemplo.** `[↯/s.105.2.7] could not decrypt the data because the wrapped key did not pass its integrity check`
+
+- **Resolution.** Confirm that the key-encryption key is the one the material was wrapped
+- under, and that the wrapped material arrived complete.
++ **Resolução.** Confirme que a chave de cifragem de chaves é aquela sob a qual o material foi
++ encapsulado, e que o material encapsulado chegou completo.

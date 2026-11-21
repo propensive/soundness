@@ -1,0 +1,1849 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base symbolism
++ base symbolism
+
+- import soundness
++ import soundness
+
+- info   arithmetic operators as typeclasses, each naming its operand and result types, and total comparison
++ info   operadores aritméticos como classes de tipos, cada uma nomeando os tipos dos operandos e do resultado, e comparação total
+
+- detail
++ detail
+
+-     _Symbolism_ defines the arithmetic operators `+`, `-`, `*`, `/` and prefix `-`, the roots
+-     `sqrt` and `cbrt`, and the identities `zero` and `one`, not as methods of any type but as
+-     extensions resolved through typeclasses. Each binary typeclass names its left operand
+-     (`Self`), its right operand (`Operand`) and its result (`Result`), so arithmetic can mean
+-     something for types whose operands and results differ: a length times a length is an area,
+-     an instant plus a duration is an instant, and a quantity divided by another has a type
+-     neither operand could have anticipated.
++     _Symbolism_ define os operadores aritméticos `+`, `-`, `*`, `/` e o `-` prefixo, as raízes
++     `sqrt` e `cbrt` e as identidades `zero` e `one`, não como métodos de algum tipo, mas como
++     extensões resolvidas por meio de classes de tipos. Cada classe de tipos binária nomeia o
++     seu operando esquerdo (`Self`), o seu operando direito (`Operand`) e o seu resultado
++     (`Result`), de modo que a aritmética pode significar algo para tipos cujos operandos e
++     resultados diferem: um comprimento vezes um comprimento é uma área, um instante mais uma
++     duração é um instante, e uma grandeza dividida por outra tem um tipo que nenhum dos
++     operandos poderia ter previsto.
+
+=     neither operand could have anticipated.
+=
+-     ```scala
++     ```scala
+
+=     neither operand could have anticipated.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     case class Money(pence: Long)
++     case class Money(pence: Long)
+
+-     object Money:
++     object Money:
+
+-       given addable: Money is Addable by Money to Money =
++       given addable: Money is Addable by Money to Money =
+
+-         Addable((left, right) => Money(left.pence + right.pence))
++         Addable((left, right) => Money(left.pence + right.pence))
+
+-       given multiplicable: Money is Multiplicable by Int to Money =
++       given multiplicable: Money is Multiplicable by Int to Money =
+
+-         Multiplicable((money, count) => Money(money.pence*count))
++         Multiplicable((money, count) => Money(money.pence*count))
+
+-     Money(250) + Money(199)   // Money(449)
++     Money(250) + Money(199)   // Money(449)
+
+-     Money(250)*3              // Money(750)
++     Money(250)*3              // Money(750)
+
+=     Money(250)*3              // Money(750)
+-     ```
++     ```
+
+-     Reading an instance's type aloud gives the whole of it: `Money is Addable by Money to Money`
+-     — a `Money` _is addable by_ a `Money` _to_ a `Money`. The typeclasses are `Addable`,
+-     `Subtractable`, `Multiplicable`, `Divisible`, `Negatable` and `Rootable` for the operations;
+-     `Zeroic` and `Unital` for the additive and multiplicative identities; `Concatenable`, which
+-     makes every concatenable type `Addable`, so collections and text join with `+`; `Quotient`
+-     for taking a fraction apart with the `/:` extractor; and `Comparable`, a total three-way
+-     comparison returning a `Comparison`, through which collections sort and find extrema.
++     Ler em voz alta o tipo de uma instância diz tudo: `Money is Addable by Money to Money` — um
++     `Money` _é somável por_ um `Money` _resultando em_ um `Money`. As classes de tipos são
++     `Addable`, `Subtractable`, `Multiplicable`, `Divisible`, `Negatable` e `Rootable` para as
++     operações; `Zeroic` e `Unital` para as identidades aditiva e multiplicativa;
++     `Concatenable`, que torna todo tipo concatenável `Addable`, de modo que coleções e texto se
++     juntam com `+`; `Quotient`, para decompor uma fração com o extrator `/:`; e `Comparable`,
++     uma comparação total de três vias que retorna uma `Comparison`, por meio da qual as coleções
++     ordenam e encontram extremos.
+
+-     The instances for the primitive numeric types are singleton objects with `inline` methods,
+-     so `a + b` on two `Double`s compiles to the single machine instruction, with no instance
+-     allocated and nothing boxed. The `AddOp`, `SubOp`, `MulOp` and `DivOp` typeclasses are an
+-     older opt-in route to the same inlining, which the operators still consult first.
++     As instâncias para os tipos numéricos primitivos são objetos singleton com métodos
++     `inline`, de modo que `a + b` sobre dois `Double`s compila para a única instrução de
++     máquina, sem instância alocada e sem boxing. As classes de tipos `AddOp`, `SubOp`, `MulOp`
++     e `DivOp` são uma rota de adesão mais antiga para a mesma expansão inline, que os
++     operadores ainda consultam primeiro.
+
+-     Symbolism is the machinery beneath quantitative's dimensional arithmetic, mosquito's vectors
+-     and matrices, hypotenuse's fixed-width numbers and aviation's instants and durations. It has
+-     one source set, `symbolism.core`, which compiles for every platform, and everything is
+-     exported to the `soundness` umbrella. Every instance lives in the companion of its subject
+-     type or of its typeclass, so none needs an import.
++     Symbolism é a maquinaria por baixo da aritmética dimensional do quantitative, dos vetores e
++     matrizes do mosquito, dos números de largura fixa do hypotenuse e dos instantes e durações
++     do aviation. Tem um único source set, `symbolism.core`, que compila para todas as
++     plataformas, e tudo é exportado para o guarda-chuva `soundness`. Toda instância fica no
++     objeto companheiro do seu tipo sujeito ou da sua classe de tipos, de modo que nenhuma
++     precisa de import.
+
+- refer symbolism.Addable
++ refer symbolism.Addable
+
+- refer symbolism.Multiplicable
++ refer symbolism.Multiplicable
+
+- refer symbolism.Comparable
++ refer symbolism.Comparable
+
+- refer symbolism.+
++ refer symbolism.+
+
+- entry .+   adds two values through the `Addable` instance for their types
+-     `left + right` is an extension on any type, needing a `left is Addable by right` in scope;
+-     its type is the instance's `Result`. It first looks, while the call is inlined, for an
+-     `AddOp` for the two types, and otherwise calls the `Addable` instance's `add`. Because the
+-     right operand is a type parameter, a bare literal on the right does not take the left
+-     operand's type: an integer literal added to a `U64` is written `count + (1: U64)`.
++ entry .+   soma dois valores por meio da instância de `Addable` para os seus tipos
++     `left + right` é uma extensão sobre qualquer tipo, que precisa de um `left is Addable by
++     right` em escopo; o seu tipo é o `Result` da instância. Primeiro ela procura, enquanto a
++     chamada é expandida inline, um `AddOp` para os dois tipos e, caso contrário, chama o `add`
++     da instância de `Addable`. Como o operando direito é um parâmetro de tipo, um literal
++     simples à direita não assume o tipo do operando esquerdo: um literal inteiro somado a um
++     `U64` é escrito `count + (1: U64)`.
+
+=     operand's type: an integer literal added to a `U64` is written `count + (1: U64)`.
+=
+-     ```scala
++     ```scala
+
+=     operand's type: an integer literal added to a `U64` is written `count + (1: U64)`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     1 + 2          // 3
++     1 + 2          // 3
+
+-     1 + 2.5        // 3.5, through `Addable.int2`
++     1 + 2.5        // 3.5, through `Addable.int2`
+
+-     List(1, 2) + List(3)
++     List(1, 2) + List(3)
+
+=     List(1, 2) + List(3)
+-     ```
++     ```
+
+-     Adding values for which there is no instance is a compile error, not a fallback to
+-     `toString` concatenation.
++     Somar valores para os quais não há instância é um erro de compilação, e não um recurso à
++     concatenação por `toString`.
+
+- entry .-   subtracts one value from another through the `Subtractable` instance for their types
+-     `left - right` is an extension on any type, needing a `left is Subtractable by right` in
+-     scope, and returns the instance's `Result`. As for `+`, a `SubOp` is preferred when one
+-     exists.
++ entry .-   subtrai um valor de outro por meio da instância de `Subtractable` para os seus tipos
++     `left - right` é uma extensão sobre qualquer tipo, que precisa de um `left is
++     Subtractable by right` em escopo, e retorna o `Result` da instância. Como para `+`, um
++     `SubOp` é preferido quando existe.
+
+=     scope, and returns the instance's `Result`. As for `+`, a `SubOp` is preferred when one
+=     exists.
+=
+-     ```scala
++     ```scala
+
+=     scope, and returns the instance's `Result`. As for `+`, a `SubOp` is preferred when one
+=     exists.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     10L - 3L   // 7L
++     10L - 3L   // 7L
+
+=     10L - 3L   // 7L
+-     ```
++     ```
+
+- entry .*   multiplies two values through the `Multiplicable` instance for their types
+-     `left*right` is an extension on any type, needing a `left is Multiplicable by right` in
+-     scope, and returns the instance's `Result`, which is how a length times a length can be an
+-     area while a length times a number is a length. A `MulOp` is preferred when one exists.
+-     Any type which is `Concatenable` with itself and `Zeroic` multiplies by an `Int` as
+-     repetition, so `t"ab"*3` is `t"ababab"`.
++ entry .*   multiplica dois valores por meio da instância de `Multiplicable` para os seus tipos
++     `left*right` é uma extensão sobre qualquer tipo, que precisa de um `left is Multiplicable
++     by right` em escopo, e retorna o `Result` da instância, e é assim que um comprimento vezes
++     um comprimento pode ser uma área, enquanto um comprimento vezes um número é um comprimento.
++     Um `MulOp` é preferido quando existe. Qualquer tipo que seja `Concatenable` consigo mesmo e
++     `Zeroic` se multiplica por um `Int` como repetição, de modo que `t"ab"*3` é `t"ababab"`.
+
+=     repetition, so `t"ab"*3` is `t"ababab"`.
+=
+-     ```scala
++     ```scala
+
+=     repetition, so `t"ab"*3` is `t"ababab"`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     6*7          // 42
++     6*7          // 42
+
+-     t"ab"*3      // t"ababab"
++     t"ab"*3      // t"ababab"
+
+=     t"ab"*3      // t"ababab"
+-     ```
++     ```
+
+- entry ./   divides one value by another through the `Divisible` instance for their types
+-     `left/right` is an extension on any type, needing a `left is Divisible by right` in scope,
+-     and returns the instance's `Result`. Integer division truncates, as the primitive operator
+-     does, and an `Int` divided by a `Double` is a `Double`. A `DivOp` is preferred when one
+-     exists.
++ entry ./   divide um valor por outro por meio da instância de `Divisible` para os seus tipos
++     `left/right` é uma extensão sobre qualquer tipo, que precisa de um `left is Divisible by
++     right` em escopo, e retorna o `Result` da instância. A divisão inteira trunca, como faz o
++     operador primitivo, e um `Int` dividido por um `Double` é um `Double`. Um `DivOp` é
++     preferido quando existe.
+
+=     does, and an `Int` divided by a `Double` is a `Double`. A `DivOp` is preferred when one
+=     exists.
+=
+-     ```scala
++     ```scala
+
+=     does, and an `Int` divided by a `Double` is a `Double`. A `DivOp` is preferred when one
+=     exists.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     7/2      // 3
++     7/2      // 3
+
+-     7/2.0    // 3.5
++     7/2.0    // 3.5
+
+=     7/2.0    // 3.5
+-     ```
++     ```
+
+- entry .unary_-   negates a value through the `Negatable` instance for its type, as prefix `-`
+-     `-value` is an extension on any type, needing a `value is Negatable` in scope, and returns
+-     the instance's `Result`. A `Byte` or `Short` negates back to its own type, wrapping as the
+-     primitive types do.
++ entry .unary_-   nega um valor por meio da instância de `Negatable` para o seu tipo, como `-` prefixo
++     `-value` é uma extensão sobre qualquer tipo, que precisa de um `value is Negatable` em
++     escopo, e retorna o `Result` da instância. Um `Byte` ou um `Short` é negado de volta ao seu
++     próprio tipo, dando a volta como fazem os tipos primitivos.
+
+=     primitive types do.
+=
+-     ```scala
++     ```scala
+
+=     primitive types do.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     case class Offset(x: Int)
++     case class Offset(x: Int)
+
+-     object Offset:
++     object Offset:
+
+-       given negatable: Offset is Negatable to Offset = Negatable(offset => Offset(-offset.x))
++       given negatable: Offset is Negatable to Offset = Negatable(offset => Offset(-offset.x))
+
+-     -Offset(3)   // Offset(-3)
++     -Offset(3)   // Offset(-3)
+
+=     -Offset(3)   // Offset(-3)
+-     ```
++     ```
+
+- entry .sqrt   the square root of a value, through its `Rootable[2]` instance
+-     An extension on any type with a `Rootable[2]`, returning the instance's `Result`. On a
+-     `Double` or `Float` it inlines to `Math.sqrt`, with nothing allocated. There is no instance
+-     for `Int`, since its square root is not generally an `Int`: `16.sqrt` is a compile error.
++ entry .sqrt   a raiz quadrada de um valor, por meio da sua instância de `Rootable[2]`
++     Uma extensão sobre qualquer tipo com um `Rootable[2]`, que retorna o `Result` da instância.
++     Num `Double` ou `Float`, ela é expandida inline para `Math.sqrt`, sem nada alocado. Não há
++     instância para `Int`, já que a sua raiz quadrada em geral não é um `Int`: `16.sqrt` é um
++     erro de compilação.
+
+=     for `Int`, since its square root is not generally an `Int`: `16.sqrt` is a compile error.
+=
+-     ```scala
++     ```scala
+
+=     for `Int`, since its square root is not generally an `Int`: `16.sqrt` is a compile error.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     16.0.sqrt    // 4.0
++     16.0.sqrt    // 4.0
+
+-     16.0f.sqrt   // 4.0f
++     16.0f.sqrt   // 4.0f
+
+-     16.sqrt      // does not compile
++     16.sqrt      // does not compile
+
+=     16.sqrt      // does not compile
+-     ```
++     ```
+
+- entry .cbrt   the cube root of a value, through its `Rootable[3]` instance
+-     An extension on any type with a `Rootable[3]`, returning the instance's `Result`; on a
+-     `Double` or `Float` it inlines to `Math.cbrt`.
++ entry .cbrt   a raiz cúbica de um valor, por meio da sua instância de `Rootable[3]`
++     Uma extensão sobre qualquer tipo com um `Rootable[3]`, que retorna o `Result` da instância;
++     num `Double` ou `Float`, ela é expandida inline para `Math.cbrt`.
+
+=     `Double` or `Float` it inlines to `Math.cbrt`.
+=
+-     ```scala
++     ```scala
+
+=     `Double` or `Float` it inlines to `Math.cbrt`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     27.0.cbrt   // 3.0
++     27.0.cbrt   // 3.0
+
+=     27.0.cbrt   // 3.0
+-     ```
++     ```
+
+- entry .zero   the additive identity of a type, as `zero[Int]`
+-     `zero[T]` needs a `T is Zeroic` in scope. It is where a sum or a repeated concatenation
+-     starts, and where a generic algorithm needs a starting value.
++ entry .zero   a identidade aditiva de um tipo, como `zero[Int]`
++     `zero[T]` precisa de um `T is Zeroic` em escopo. É onde começa uma soma ou uma concatenação
++     repetida, e onde um algoritmo genérico precisa de um valor inicial.
+
+=     starts, and where a generic algorithm needs a starting value.
+=
+-     ```scala
++     ```scala
+
+=     starts, and where a generic algorithm needs a starting value.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     zero[Int]      // 0
++     zero[Int]      // 0
+
+-     zero[Double]   // 0.0
++     zero[Double]   // 0.0
+
+-     zero[String]   // ""
++     zero[String]   // ""
+
+=     zero[String]   // ""
+-     ```
++     ```
+
+- entry ./:   the extractor which takes a fraction apart, `numerator /: denominator`, through `Quotient`
++ entry ./:   o extrator que decompõe uma fração, `numerator /: denominator`, por meio de `Quotient`
+
+= entry ./:   the extractor which takes a fraction apart, `numerator /: denominator`, through `Quotient`
+-   detail
++   detail
+
+-       A pattern which matches any value with a `Quotient` instance, binding its numerator and
+-       its denominator; a value the instance cannot decompose does not match.
++       Um padrão que casa com qualquer valor que tenha uma instância de `Quotient`, vinculando o
++       seu numerador e o seu denominador; um valor que a instância não consegue decompor não
++       casa.
+
+=       its denominator; a value the instance cannot decompose does not match.
+=
+-       ```scala
++       ```scala
+
+=       its denominator; a value the instance cannot decompose does not match.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Fraction(numerator: Int, denominator: Int)
++       case class Fraction(numerator: Int, denominator: Int)
+
+-       object Fraction:
++       object Fraction:
+
+-         given quotient: Fraction is Quotient:
++         given quotient: Fraction is Quotient:
+
+-           type Topic = Int
++           type Topic = Int
+
+-           type Transport = Int
++           type Transport = Int
+
+-           def decompose(fraction: Fraction): Option[(Int, Int)] =
++           def decompose(fraction: Fraction): Option[(Int, Int)] =
+
+-             if fraction.denominator == 0 then None
++             if fraction.denominator == 0 then None
+
+-             else Some((fraction.numerator, fraction.denominator))
++             else Some((fraction.numerator, fraction.denominator))
+
+-       Fraction(3, 4) match
++       Fraction(3, 4) match
+
+-         case numerator /: denominator => numerator + denominator
++         case numerator /: denominator => numerator + denominator
+
+-         case _                        => 0
++         case _                        => 0
+
+=         case _                        => 0
+-       ```
++       ```
+
+-   entry .unapply   decomposes a value into its numerator and denominator, if its `Quotient` can
++   entry .unapply   decompõe um valor no seu numerador e denominador, se o seu `Quotient` conseguir
+
+- entry .Addable   a typeclass for `+`: a `Self` is addable by an `Operand` to a `Result`
++ entry .Addable   uma classe de tipos para `+`: um `Self` é somável por um `Operand` resultando num `Result`
+
+= entry .Addable   a typeclass for `+`: a `Self` is addable by an `Operand` to a `Result`
+-   detail
++   detail
+
+-       The typeclass behind the `+` extension. Its three type members say everything: the
+-       instance `Money is Addable by Money to Money` adds two `Money`s to make a `Money`, while
+-       `Instant is Addable by Duration to Instant` adds a duration to an instant. The result is a
+-       member of the instance rather than a parameter of the operator, so one `+` serves every
+-       combination.
++       A classe de tipos por trás da extensão `+`. Os seus três membros de tipo dizem tudo: a
++       instância `Money is Addable by Money to Money` soma dois `Money`s para fazer um `Money`,
++       enquanto `Instant is Addable by Duration to Instant` soma uma duração a um instante. O
++       resultado é um membro da instância, e não um parâmetro do operador, de modo que um único
++       `+` serve a toda combinação.
+
+=       combination.
+=
+-       ```scala
++       ```scala
+
+=       combination.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       combination.
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Vector2(x: Int, y: Int)
++       case class Vector2(x: Int, y: Int)
+
+=       combination.
+=
+=       ```scala
+=       import soundness.*
+=
+=       case class Vector2(x: Int, y: Int)
+=
+-       object Vector2:
++       object Vector2:
+
+-         given addable: Vector2 is Addable by Vector2 to Vector2 =
++         given addable: Vector2 is Addable by Vector2 to Vector2 =
+
+-           Addable((left, right) => Vector2(left.x + right.x, left.y + right.y))
++           Addable((left, right) => Vector2(left.x + right.x, left.y + right.y))
+
+-       Vector2(1, 2) + Vector2(3, 4)   // Vector2(4, 6)
++       Vector2(1, 2) + Vector2(3, 4)   // Vector2(4, 6)
+
+=       Vector2(1, 2) + Vector2(3, 4)   // Vector2(4, 6)
+-       ```
++       ```
+
+-       A type acquires its arithmetic one instance at a time, and each operator is available as
+-       soon as its instance is:
++       Um tipo adquire a sua aritmética uma instância de cada vez, e cada operador fica
++       disponível assim que a sua instância existe:
+
+-       ```scala fuel
++       ```scala fuel
+
+=       ```scala fuel
+-       frame
++       frame
+
+-         label A plain case class has no arithmetic
++         label Uma case class simples não tem aritmética
+
+=         label A plain case class has no arithmetic
+-         code
++         code
+
+=         label A plain case class has no arithmetic
+=         code
+-             case class Vector2(x: Int, y: Int)
++             case class Vector2(x: Int, y: Int)
+
+-             Vector2(1, 2) + Vector2(3, 4)   // does not compile
++             Vector2(1, 2) + Vector2(3, 4)   // does not compile
+
+=             Vector2(1, 2) + Vector2(3, 4)   // does not compile
+-       frame
++       frame
+
+-         label An `Addable` instance gives it `+`
++         label Uma instância de `Addable` lhe dá `+`
+
+=         label An `Addable` instance gives it `+`
+-         code
++         code
+
+=         label An `Addable` instance gives it `+`
+=         code
+-             case class Vector2(x: Int, y: Int)
++             case class Vector2(x: Int, y: Int)
+
+=         label An `Addable` instance gives it `+`
+=         code
+=             case class Vector2(x: Int, y: Int)
+=
+-             object Vector2:
++             object Vector2:
+
+=         label An `Addable` instance gives it `+`
+=         code
+=             case class Vector2(x: Int, y: Int)
+=
+=             object Vector2:
+-               given addable: Vector2 is Addable by Vector2 to Vector2 =
++               given addable: Vector2 is Addable by Vector2 to Vector2 =
+
+=         label An `Addable` instance gives it `+`
+=         code
+=             case class Vector2(x: Int, y: Int)
+=
+=             object Vector2:
+=               given addable: Vector2 is Addable by Vector2 to Vector2 =
+-                 Addable((left, right) => Vector2(left.x + right.x, left.y + right.y))
++                 Addable((left, right) => Vector2(left.x + right.x, left.y + right.y))
+
+-             Vector2(1, 2) + Vector2(3, 4)   // Vector2(4, 6)
++             Vector2(1, 2) + Vector2(3, 4)   // Vector2(4, 6)
+
+=             Vector2(1, 2) + Vector2(3, 4)   // Vector2(4, 6)
+-       frame
++       frame
+
+-         label A `Multiplicable` instance, with a different operand type, gives it `*`
++         label Uma instância de `Multiplicable`, com um tipo de operando diferente, lhe dá `*`
+
+=         label A `Multiplicable` instance, with a different operand type, gives it `*`
+-         code
++         code
+
+=         label A `Multiplicable` instance, with a different operand type, gives it `*`
+=         code
+-             case class Vector2(x: Int, y: Int)
++             case class Vector2(x: Int, y: Int)
+
+=         label A `Multiplicable` instance, with a different operand type, gives it `*`
+=         code
+=             case class Vector2(x: Int, y: Int)
+=
+-             object Vector2:
++             object Vector2:
+
+=         label A `Multiplicable` instance, with a different operand type, gives it `*`
+=         code
+=             case class Vector2(x: Int, y: Int)
+=
+=             object Vector2:
+-               given addable: Vector2 is Addable by Vector2 to Vector2 =
++               given addable: Vector2 is Addable by Vector2 to Vector2 =
+
+=         label A `Multiplicable` instance, with a different operand type, gives it `*`
+=         code
+=             case class Vector2(x: Int, y: Int)
+=
+=             object Vector2:
+=               given addable: Vector2 is Addable by Vector2 to Vector2 =
+-                 Addable((left, right) => Vector2(left.x + right.x, left.y + right.y))
++                 Addable((left, right) => Vector2(left.x + right.x, left.y + right.y))
+
+-               given multiplicable: Vector2 is Multiplicable by Int to Vector2 =
++               given multiplicable: Vector2 is Multiplicable by Int to Vector2 =
+
+-                 Multiplicable((vector, scale) => Vector2(vector.x*scale, vector.y*scale))
++                 Multiplicable((vector, scale) => Vector2(vector.x*scale, vector.y*scale))
+
+-             (Vector2(1, 2) + Vector2(3, 4))*2   // Vector2(8, 12)
++             (Vector2(1, 2) + Vector2(3, 4))*2   // Vector2(8, 12)
+
+-       ##
++       ##
+
+=       ##
+-       ```
++       ```
+
+-       Instances belong in the companion of the subject type, where they are found with no
+-       import. The primitive instances (`Int`, `Long`, `Double`, `Float`, `Short`, `Byte`, and
+-       `Int` with `Double` either way round) are the singleton objects in the companion, whose
+-       `inline def add` makes `a + b` one instruction. A `Short` or a `Byte` adds back to its own
+-       type, wrapping on overflow. Every `Concatenable` type is `Addable` through
+-       `.concatenable`.
++       As instâncias pertencem ao objeto companheiro do tipo sujeito, onde são encontradas sem
++       import. As instâncias primitivas (`Int`, `Long`, `Double`, `Float`, `Short`, `Byte`, e
++       `Int` com `Double` em qualquer ordem) são os objetos singleton do companheiro, cujo
++       `inline def add` faz de `a + b` uma única instrução. Um `Short` ou um `Byte` soma de volta
++       ao seu próprio tipo, dando a volta em caso de overflow. Todo tipo `Concatenable` é
++       `Addable` por meio de `.concatenable`.
+
+-   refer symbolism.+
++   refer symbolism.+
+
+-   refer symbolism.Concatenable
++   refer symbolism.Concatenable
+
+-   refer symbolism.AddOp
++   refer symbolism.AddOp
+
+-   entry .apply   an `Addable` instance from a function of the two operands
+-       `Addable((left, right) => …)` makes an `augend is Addable by addend to result`, with the
+-       three types inferred from the expected type, as a given's declared type provides them.
+-   entry .DoubleAddition   the `Double + Double` instance, inlined to one instruction
+-   entry .FloatAddition   the `Float + Float` instance, inlined to one instruction
+-   entry .LongAddition   the `Long + Long` instance, inlined to one instruction
+-   entry .IntAddition   the `Int + Int` instance, inlined to one instruction
+-   entry .IntDoubleAddition   the `Int + Double` instance, whose result is a `Double`
+-   entry .DoubleIntAddition   the `Double + Int` instance, whose result is a `Double`
+-   entry .ShortAddition   the `Short + Short` instance, wrapping back to a `Short`
+-   entry .ByteAddition   the `Byte + Byte` instance, wrapping back to a `Byte`
+-   entry .double   the given for `Double + Double`, typed as `DoubleAddition` so it inlines
+-       Declared at the object's singleton type, which is what lets the inliner resolve `add` to
+-       the object's `inline def`; a given typed as the trait would dispatch through it instead.
+-   entry .float   the given for `Float + Float`, typed as `FloatAddition` so it inlines
+-   entry .long   the given for `Long + Long`, typed as `LongAddition` so it inlines
+-   entry .int   the given for `Int + Int`, typed as `IntAddition` so it inlines
+-   entry .int2   the given for `Int + Double`, typed as `IntDoubleAddition` so it inlines
+-   entry .int3   the given for `Double + Int`, typed as `DoubleIntAddition` so it inlines
+-   entry .short   the given for `Short + Short`, typed as `ShortAddition` so it inlines
+-   entry .byte   the given for `Byte + Byte`, typed as `ByteAddition` so it inlines
+-   entry .concatenable   makes every `Concatenable` type `Addable`, so `+` joins lists, sets, maps and text
+-       For any `left is Concatenable by right`, an `Addable` with the same operand and result,
+-       which calls `concat`. This is how `List(1) + List(2)`, `set + other` and `text + more`
+-       work through the one `+`.
+-   entry #Augend   the left operand's type: an alias of `Self`
+-   entry #Addend   the right operand's type: an alias of `Operand`
+-   entry #add   adds an addend to an augend, giving the instance's `Result`
++   entry .apply   uma instância de `Addable` a partir de uma função dos dois operandos
++       `Addable((left, right) => …)` cria um `augend is Addable by addend to result`, com os
++       três tipos inferidos a partir do tipo esperado, tal como o tipo declarado de um given os
++       fornece.
++   entry .DoubleAddition   a instância de `Double + Double`, expandida inline numa única instrução
++   entry .FloatAddition   a instância de `Float + Float`, expandida inline numa única instrução
++   entry .LongAddition   a instância de `Long + Long`, expandida inline numa única instrução
++   entry .IntAddition   a instância de `Int + Int`, expandida inline numa única instrução
++   entry .IntDoubleAddition   a instância de `Int + Double`, cujo resultado é um `Double`
++   entry .DoubleIntAddition   a instância de `Double + Int`, cujo resultado é um `Double`
++   entry .ShortAddition   a instância de `Short + Short`, dando a volta, de volta a um `Short`
++   entry .ByteAddition   a instância de `Byte + Byte`, dando a volta, de volta a um `Byte`
++   entry .double   o given para `Double + Double`, tipado como `DoubleAddition` para ser expandido inline
++       Declarado no tipo singleton do objeto, que é o que permite ao inliner resolver `add` para
++       o `inline def` do objeto; um given tipado como o trait despacharia por meio dele.
++   entry .float   o given para `Float + Float`, tipado como `FloatAddition` para ser expandido inline
++   entry .long   o given para `Long + Long`, tipado como `LongAddition` para ser expandido inline
++   entry .int   o given para `Int + Int`, tipado como `IntAddition` para ser expandido inline
++   entry .int2   o given para `Int + Double`, tipado como `IntDoubleAddition` para ser expandido inline
++   entry .int3   o given para `Double + Int`, tipado como `DoubleIntAddition` para ser expandido inline
++   entry .short   o given para `Short + Short`, tipado como `ShortAddition` para ser expandido inline
++   entry .byte   o given para `Byte + Byte`, tipado como `ByteAddition` para ser expandido inline
++   entry .concatenable   torna todo tipo `Concatenable` `Addable`, de modo que `+` junta listas, conjuntos, mapas e texto
++       Para qualquer `left is Concatenable by right`, um `Addable` com o mesmo operando e
++       resultado, que chama `concat`. É assim que `List(1) + List(2)`, `set + other` e
++       `text + more` funcionam por meio do único `+`.
++   entry #Augend   o tipo do operando esquerdo: um alias de `Self`
++   entry #Addend   o tipo do operando direito: um alias de `Operand`
++   entry #add   soma uma parcela a outra, dando o `Result` da instância
+
+- entry .Subtractable   a typeclass for `-`: a `Self` is subtractable by an `Operand` to a `Result`
++ entry .Subtractable   uma classe de tipos para `-`: um `Self` é subtraível por um `Operand` resultando num `Result`
+
+= entry .Subtractable   a typeclass for `-`: a `Self` is subtractable by an `Operand` to a `Result`
+-   detail
++   detail
+
+-       The typeclass behind the binary `-` extension, whose result type is a member of the
+-       instance: `Instant is Subtractable by Instant to Duration`, for example, while an instant
+-       minus a duration is an instant.
++       A classe de tipos por trás da extensão binária `-`, cujo tipo de resultado é um membro da
++       instância: `Instant is Subtractable by Instant to Duration`, por exemplo, enquanto um
++       instante menos uma duração é um instante.
+
+=       minus a duration is an instant.
+=
+-       ```scala
++       ```scala
+
+=       minus a duration is an instant.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       minus a duration is an instant.
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Vector2(x: Int, y: Int)
++       case class Vector2(x: Int, y: Int)
+
+=       minus a duration is an instant.
+=
+=       ```scala
+=       import soundness.*
+=
+=       case class Vector2(x: Int, y: Int)
+=
+-       object Vector2:
++       object Vector2:
+
+-         given subtractable: Vector2 is Subtractable by Vector2 to Vector2 =
++         given subtractable: Vector2 is Subtractable by Vector2 to Vector2 =
+
+-           Subtractable((left, right) => Vector2(left.x - right.x, left.y - right.y))
++           Subtractable((left, right) => Vector2(left.x - right.x, left.y - right.y))
+
+-       Vector2(5, 5) - Vector2(1, 2)   // Vector2(4, 3)
++       Vector2(5, 5) - Vector2(1, 2)   // Vector2(4, 3)
+
+=       Vector2(5, 5) - Vector2(1, 2)   // Vector2(4, 3)
+-       ```
++       ```
+
+-       The primitive instances are singleton objects with `inline def subtract`; a `Short` or a
+-       `Byte` subtracts back to its own type.
++       As instâncias primitivas são objetos singleton com `inline def subtract`; um `Short` ou um
++       `Byte` subtrai de volta ao seu próprio tipo.
+
+-   refer symbolism.-
++   refer symbolism.-
+
+-   entry .apply   a `Subtractable` instance from a function of the two operands
+-   entry .DoubleSubtraction   the `Double - Double` instance, inlined to one instruction
+-   entry .FloatSubtraction   the `Float - Float` instance, inlined to one instruction
+-   entry .LongSubtraction   the `Long - Long` instance, inlined to one instruction
+-   entry .IntSubtraction   the `Int - Int` instance, inlined to one instruction
+-   entry .ShortSubtraction   the `Short - Short` instance, wrapping back to a `Short`
+-   entry .ByteSubtraction   the `Byte - Byte` instance, wrapping back to a `Byte`
+-   entry .double   the given for `Double - Double`, typed as `DoubleSubtraction` so it inlines
+-   entry .float   the given for `Float - Float`, typed as `FloatSubtraction` so it inlines
+-   entry .long   the given for `Long - Long`, typed as `LongSubtraction` so it inlines
+-   entry .int   the given for `Int - Int`, typed as `IntSubtraction` so it inlines
+-   entry .short   the given for `Short - Short`, typed as `ShortSubtraction` so it inlines
+-   entry .byte   the given for `Byte - Byte`, typed as `ByteSubtraction` so it inlines
+-   entry #Minuend   the left operand's type: an alias of `Self`
+-   entry #Subtrahend   the right operand's type: an alias of `Operand`
+-   entry #subtract   subtracts a subtrahend from a minuend, giving the instance's `Result`
++   entry .apply   uma instância de `Subtractable` a partir de uma função dos dois operandos
++   entry .DoubleSubtraction   a instância de `Double - Double`, expandida inline numa única instrução
++   entry .FloatSubtraction   a instância de `Float - Float`, expandida inline numa única instrução
++   entry .LongSubtraction   a instância de `Long - Long`, expandida inline numa única instrução
++   entry .IntSubtraction   a instância de `Int - Int`, expandida inline numa única instrução
++   entry .ShortSubtraction   a instância de `Short - Short`, dando a volta, de volta a um `Short`
++   entry .ByteSubtraction   a instância de `Byte - Byte`, dando a volta, de volta a um `Byte`
++   entry .double   o given para `Double - Double`, tipado como `DoubleSubtraction` para ser expandido inline
++   entry .float   o given para `Float - Float`, tipado como `FloatSubtraction` para ser expandido inline
++   entry .long   o given para `Long - Long`, tipado como `LongSubtraction` para ser expandido inline
++   entry .int   o given para `Int - Int`, tipado como `IntSubtraction` para ser expandido inline
++   entry .short   o given para `Short - Short`, tipado como `ShortSubtraction` para ser expandido inline
++   entry .byte   o given para `Byte - Byte`, tipado como `ByteSubtraction` para ser expandido inline
++   entry #Minuend   o tipo do operando esquerdo: um alias de `Self`
++   entry #Subtrahend   o tipo do operando direito: um alias de `Operand`
++   entry #subtract   subtrai um subtraendo de um minuendo, dando o `Result` da instância
+
+- entry .Multiplicable   a typeclass for `*`: a `Self` is multiplicable by an `Operand` to a `Result`
++ entry .Multiplicable   uma classe de tipos para `*`: um `Self` é multiplicável por um `Operand` resultando num `Result`
+
+= entry .Multiplicable   a typeclass for `*`: a `Self` is multiplicable by an `Operand` to a `Result`
+-   detail
++   detail
+
+-       The typeclass behind the `*` extension. The operand and result may differ from the left
+-       operand: a vector multiplied by an `Int` is a vector, and in quantitative a length
+-       multiplied by a length is an area.
++       A classe de tipos por trás da extensão `*`. O operando e o resultado podem diferir do
++       operando esquerdo: um vetor multiplicado por um `Int` é um vetor, e no quantitative um
++       comprimento multiplicado por um comprimento é uma área.
+
+=       multiplied by a length is an area.
+=
+-       ```scala
++       ```scala
+
+=       multiplied by a length is an area.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       multiplied by a length is an area.
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Vector2(x: Int, y: Int)
++       case class Vector2(x: Int, y: Int)
+
+=       multiplied by a length is an area.
+=
+=       ```scala
+=       import soundness.*
+=
+=       case class Vector2(x: Int, y: Int)
+=
+-       object Vector2:
++       object Vector2:
+
+-         given multiplicable: Vector2 is Multiplicable by Int to Vector2 =
++         given multiplicable: Vector2 is Multiplicable by Int to Vector2 =
+
+-           Multiplicable((vector, scale) => Vector2(vector.x*scale, vector.y*scale))
++           Multiplicable((vector, scale) => Vector2(vector.x*scale, vector.y*scale))
+
+-       Vector2(1, 2)*3   // Vector2(3, 6)
++       Vector2(1, 2)*3   // Vector2(3, 6)
+
+=       Vector2(1, 2)*3   // Vector2(3, 6)
+-       ```
++       ```
+
+-       The primitive instances are singleton objects with `inline def multiply`. Any type which
+-       is `Concatenable` with itself and `Zeroic` multiplies by an `Int` as repetition, through
+-       `.concatenable`.
++       As instâncias primitivas são objetos singleton com `inline def multiply`. Qualquer tipo
++       que seja `Concatenable` consigo mesmo e `Zeroic` se multiplica por um `Int` como
++       repetição, por meio de `.concatenable`.
+
+-   refer symbolism.*
++   refer symbolism.*
+
+-   entry .apply   a `Multiplicable` instance from a function of the two operands
+-   entry .DoubleMultiplication   the `Double*Double` instance, inlined to one instruction
+-   entry .LongMultiplication   the `Long*Long` instance, inlined to one instruction
+-   entry .IntMultiplication   the `Int*Int` instance, inlined to one instruction
+-   entry .FloatMultiplication   the `Float*Float` instance, inlined to one instruction
+-   entry .ShortMultiplication   the `Short*Short` instance, wrapping back to a `Short`
+-   entry .ByteMultiplication   the `Byte*Byte` instance, wrapping back to a `Byte`
+-   entry .double   the given for `Double*Double`, typed as `DoubleMultiplication` so it inlines
+-   entry .long   the given for `Long*Long`, typed as `LongMultiplication` so it inlines
+-   entry .int   the given for `Int*Int`, typed as `IntMultiplication` so it inlines
+-   entry .float   the given for `Float*Float`, typed as `FloatMultiplication` so it inlines
+-   entry .short   the given for `Short*Short`, typed as `ShortMultiplication` so it inlines
+-   entry .byte   the given for `Byte*Byte`, typed as `ByteMultiplication` so it inlines
+-   entry .concatenable   repetition: a self-concatenable, `Zeroic` value times an `Int`
+-       For any type which is `Concatenable` by itself to itself and `Zeroic`, `value*n` is `n`
+-       copies of the value concatenated, starting from `zero`, so a count of zero (or less)
+-       gives the zero value.
++   entry .apply   uma instância de `Multiplicable` a partir de uma função dos dois operandos
++   entry .DoubleMultiplication   a instância de `Double*Double`, expandida inline numa única instrução
++   entry .LongMultiplication   a instância de `Long*Long`, expandida inline numa única instrução
++   entry .IntMultiplication   a instância de `Int*Int`, expandida inline numa única instrução
++   entry .FloatMultiplication   a instância de `Float*Float`, expandida inline numa única instrução
++   entry .ShortMultiplication   a instância de `Short*Short`, dando a volta, de volta a um `Short`
++   entry .ByteMultiplication   a instância de `Byte*Byte`, dando a volta, de volta a um `Byte`
++   entry .double   o given para `Double*Double`, tipado como `DoubleMultiplication` para ser expandido inline
++   entry .long   o given para `Long*Long`, tipado como `LongMultiplication` para ser expandido inline
++   entry .int   o given para `Int*Int`, tipado como `IntMultiplication` para ser expandido inline
++   entry .float   o given para `Float*Float`, tipado como `FloatMultiplication` para ser expandido inline
++   entry .short   o given para `Short*Short`, tipado como `ShortMultiplication` para ser expandido inline
++   entry .byte   o given para `Byte*Byte`, tipado como `ByteMultiplication` para ser expandido inline
++   entry .concatenable   repetição: um valor concatenável consigo mesmo e `Zeroic` vezes um `Int`
++       Para qualquer tipo que seja `Concatenable` por si mesmo resultando em si mesmo e `Zeroic`,
++       `value*n` são `n` cópias do valor concatenadas, começando de `zero`, de modo que uma
++       contagem de zero (ou menos) dá o valor zero.
+
+=       gives the zero value.
+=
+-       ```scala
++       ```scala
+
+=       gives the zero value.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       t"ab"*3   // t"ababab"
++       t"ab"*3   // t"ababab"
+
+-       t"ab"*0   // t""
++       t"ab"*0   // t""
+
+=       t"ab"*0   // t""
+-       ```
++       ```
+
+-   entry #Multiplicand   the left operand's type: an alias of `Self`
+-   entry #Multiplier   the right operand's type: an alias of `Operand`
+-   entry #multiply   multiplies a multiplicand by a multiplier, giving the instance's `Result`
++   entry #Multiplicand   o tipo do operando esquerdo: um alias de `Self`
++   entry #Multiplier   o tipo do operando direito: um alias de `Operand`
++   entry #multiply   multiplica um multiplicando por um multiplicador, dando o `Result` da instância
+
+- entry .Divisible   a typeclass for `/`: a `Self` is divisible by an `Operand` to a `Result`
++ entry .Divisible   uma classe de tipos para `/`: um `Self` é divisível por um `Operand` resultando num `Result`
+
+= entry .Divisible   a typeclass for `/`: a `Self` is divisible by an `Operand` to a `Result`
+-   detail
++   detail
+
+-       The typeclass behind the `/` extension, whose result type is a member of the instance:
+-       in quantitative, a distance divided by a time is a velocity.
++       A classe de tipos por trás da extensão `/`, cujo tipo de resultado é um membro da
++       instância: no quantitative, uma distância dividida por um tempo é uma velocidade.
+
+=       in quantitative, a distance divided by a time is a velocity.
+=
+-       ```scala
++       ```scala
+
+=       in quantitative, a distance divided by a time is a velocity.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       in quantitative, a distance divided by a time is a velocity.
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Vector2(x: Int, y: Int)
++       case class Vector2(x: Int, y: Int)
+
+=       in quantitative, a distance divided by a time is a velocity.
+=
+=       ```scala
+=       import soundness.*
+=
+=       case class Vector2(x: Int, y: Int)
+=
+-       object Vector2:
++       object Vector2:
+
+-         given divisible: Vector2 is Divisible by Int to Vector2 =
++         given divisible: Vector2 is Divisible by Int to Vector2 =
+
+-           Divisible((vector, divisor) => Vector2(vector.x/divisor, vector.y/divisor))
++           Divisible((vector, divisor) => Vector2(vector.x/divisor, vector.y/divisor))
+
+-       Vector2(6, 9)/3   // Vector2(2, 3)
++       Vector2(6, 9)/3   // Vector2(2, 3)
+
+=       Vector2(6, 9)/3   // Vector2(2, 3)
+-       ```
++       ```
+
+-       The primitive instances are singleton objects with `inline def divide`. Each integral
+-       type divides by itself to itself, truncating, and by a `Double` to a `Double`; a `Double`
+-       or `Float` divides by an `Int`, and a `Float` by a `Double` to a `Double`.
++       As instâncias primitivas são objetos singleton com `inline def divide`. Cada tipo
++       integral se divide por si mesmo resultando em si mesmo, truncando, e por um `Double`
++       resultando num `Double`; um `Double` ou `Float` se divide por um `Int`, e um `Float` por
++       um `Double` resultando num `Double`.
+
+-   refer symbolism./
++   refer symbolism./
+
+-   entry .apply   a `Divisible` instance from a function of the two operands
+-   entry .DoubleDivision   the `Double/Double` instance, inlined to one instruction
+-   entry .DoubleIntDivision   the `Double/Int` instance, whose result is a `Double`
+-   entry .FloatDivision   the `Float/Float` instance, inlined to one instruction
+-   entry .FloatIntDivision   the `Float/Int` instance, whose result is a `Float`
+-   entry .FloatDoubleDivision   the `Float/Double` instance, whose result is a `Double`
+-   entry .LongDivision   the `Long/Long` instance, truncating
+-   entry .LongDoubleDivision   the `Long/Double` instance, whose result is a `Double`
+-   entry .IntDivision   the `Int/Int` instance, truncating
+-   entry .IntDoubleDivision   the `Int/Double` instance, whose result is a `Double`
+-   entry .ShortDivision   the `Short/Short` instance, truncating back to a `Short`
+-   entry .ShortDoubleDivision   the `Short/Double` instance, whose result is a `Double`
+-   entry .ByteDivision   the `Byte/Byte` instance, truncating back to a `Byte`
+-   entry .ByteDoubleDivision   the `Byte/Double` instance, whose result is a `Double`
+-   entry .double   the given for `Double/Double`, typed as `DoubleDivision` so it inlines
+-   entry .double2   the given for `Double/Int`, typed as `DoubleIntDivision` so it inlines
+-   entry .float   the given for `Float/Float`, typed as `FloatDivision` so it inlines
+-   entry .float2   the given for `Float/Int`, typed as `FloatIntDivision` so it inlines
+-   entry .float3   the given for `Float/Double`, typed as `FloatDoubleDivision` so it inlines
+-   entry .long   the given for `Long/Long`, typed as `LongDivision` so it inlines
+-   entry .long2   the given for `Long/Double`, typed as `LongDoubleDivision` so it inlines
+-   entry .int   the given for `Int/Int`, typed as `IntDivision` so it inlines
+-   entry .int2   the given for `Int/Double`, typed as `IntDoubleDivision` so it inlines
+-   entry .short   the given for `Short/Short`, typed as `ShortDivision` so it inlines
+-   entry .short2   the given for `Short/Double`, typed as `ShortDoubleDivision` so it inlines
+-   entry .byte   the given for `Byte/Byte`, typed as `ByteDivision` so it inlines
+-   entry .byte2   the given for `Byte/Double`, typed as `ByteDoubleDivision` so it inlines
+-   entry #Dividend   the left operand's type: an alias of `Self`
+-   entry #Divisor   the right operand's type: an alias of `Operand`
+-   entry #divide   divides a dividend by a divisor, giving the instance's `Result`
++   entry .apply   uma instância de `Divisible` a partir de uma função dos dois operandos
++   entry .DoubleDivision   a instância de `Double/Double`, expandida inline numa única instrução
++   entry .DoubleIntDivision   a instância de `Double/Int`, cujo resultado é um `Double`
++   entry .FloatDivision   a instância de `Float/Float`, expandida inline numa única instrução
++   entry .FloatIntDivision   a instância de `Float/Int`, cujo resultado é um `Float`
++   entry .FloatDoubleDivision   a instância de `Float/Double`, cujo resultado é um `Double`
++   entry .LongDivision   a instância de `Long/Long`, truncando
++   entry .LongDoubleDivision   a instância de `Long/Double`, cujo resultado é um `Double`
++   entry .IntDivision   a instância de `Int/Int`, truncando
++   entry .IntDoubleDivision   a instância de `Int/Double`, cujo resultado é um `Double`
++   entry .ShortDivision   a instância de `Short/Short`, truncando de volta a um `Short`
++   entry .ShortDoubleDivision   a instância de `Short/Double`, cujo resultado é um `Double`
++   entry .ByteDivision   a instância de `Byte/Byte`, truncando de volta a um `Byte`
++   entry .ByteDoubleDivision   a instância de `Byte/Double`, cujo resultado é um `Double`
++   entry .double   o given para `Double/Double`, tipado como `DoubleDivision` para ser expandido inline
++   entry .double2   o given para `Double/Int`, tipado como `DoubleIntDivision` para ser expandido inline
++   entry .float   o given para `Float/Float`, tipado como `FloatDivision` para ser expandido inline
++   entry .float2   o given para `Float/Int`, tipado como `FloatIntDivision` para ser expandido inline
++   entry .float3   o given para `Float/Double`, tipado como `FloatDoubleDivision` para ser expandido inline
++   entry .long   o given para `Long/Long`, tipado como `LongDivision` para ser expandido inline
++   entry .long2   o given para `Long/Double`, tipado como `LongDoubleDivision` para ser expandido inline
++   entry .int   o given para `Int/Int`, tipado como `IntDivision` para ser expandido inline
++   entry .int2   o given para `Int/Double`, tipado como `IntDoubleDivision` para ser expandido inline
++   entry .short   o given para `Short/Short`, tipado como `ShortDivision` para ser expandido inline
++   entry .short2   o given para `Short/Double`, tipado como `ShortDoubleDivision` para ser expandido inline
++   entry .byte   o given para `Byte/Byte`, tipado como `ByteDivision` para ser expandido inline
++   entry .byte2   o given para `Byte/Double`, tipado como `ByteDoubleDivision` para ser expandido inline
++   entry #Dividend   o tipo do operando esquerdo: um alias de `Self`
++   entry #Divisor   o tipo do operando direito: um alias de `Operand`
++   entry #divide   divide um dividendo por um divisor, dando o `Result` da instância
+
+- entry .Negatable   a typeclass for prefix `-`: a `Self` negates to a `Result`
++ entry .Negatable   uma classe de tipos para o `-` prefixo: um `Self` é negado resultando num `Result`
+
+= entry .Negatable   a typeclass for prefix `-`: a `Self` negates to a `Result`
+-   detail
++   detail
+
+-       The typeclass behind the `unary_-` extension. The result is a member of the instance,
+-       so a type may negate to another, as an unsigned number might to a signed one.
++       A classe de tipos por trás da extensão `unary_-`. O resultado é um membro da instância,
++       de modo que um tipo pode ser negado resultando em outro, como um número sem sinal poderia
++       resultar num com sinal.
+
+=       so a type may negate to another, as an unsigned number might to a signed one.
+=
+-       ```scala
++       ```scala
+
+=       so a type may negate to another, as an unsigned number might to a signed one.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       so a type may negate to another, as an unsigned number might to a signed one.
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Vector2(x: Int, y: Int)
++       case class Vector2(x: Int, y: Int)
+
+=       so a type may negate to another, as an unsigned number might to a signed one.
+=
+=       ```scala
+=       import soundness.*
+=
+=       case class Vector2(x: Int, y: Int)
+=
+-       object Vector2:
++       object Vector2:
+
+-         given negatable: Vector2 is Negatable to Vector2 =
++         given negatable: Vector2 is Negatable to Vector2 =
+
+-           Negatable(vector => Vector2(-vector.x, -vector.y))
++           Negatable(vector => Vector2(-vector.x, -vector.y))
+
+-       -Vector2(1, -2)   // Vector2(-1, 2)
++       -Vector2(1, -2)   // Vector2(-1, 2)
+
+=       -Vector2(1, -2)   // Vector2(-1, 2)
+-       ```
++       ```
+
+-       The primitive instances are singleton objects with `inline def negate`, so `-a` on a
+-       `Double` is one instruction; a `Short` or a `Byte` negates back to its own type. Generic
+-       code which negates through an instance should bind it in a `summonFrom` pattern rather
+-       than call `summonInline[…].negate`, which types the instance as the trait and boxes
+-       through the erased method even for a primitive.
++       As instâncias primitivas são objetos singleton com `inline def negate`, de modo que `-a`
++       num `Double` é uma única instrução; um `Short` ou um `Byte` é negado de volta ao seu
++       próprio tipo. Código genérico que nega por meio de uma instância deve vinculá-la num
++       padrão de `summonFrom`, em vez de chamar `summonInline[…].negate`, que tipa a instância
++       como o trait e faz boxing por meio do método apagado mesmo para um primitivo.
+
+-   refer symbolism.unary_-
++   refer symbolism.unary_-
+
+-   entry .apply   a `Negatable` instance from a function of the operand
+-   entry .DoubleNegation   the `-Double` instance, inlined to one instruction
+-   entry .FloatNegation   the `-Float` instance, inlined to one instruction
+-   entry .LongNegation   the `-Long` instance, inlined to one instruction
+-   entry .IntNegation   the `-Int` instance, inlined to one instruction
+-   entry .ShortNegation   the `-Short` instance, wrapping back to a `Short`
+-   entry .ByteNegation   the `-Byte` instance, wrapping back to a `Byte`
+-   entry .double   the given for `-Double`, typed as `DoubleNegation` so it inlines
+-   entry .float   the given for `-Float`, typed as `FloatNegation` so it inlines
+-   entry .long   the given for `-Long`, typed as `LongNegation` so it inlines
+-   entry .int   the given for `-Int`, typed as `IntNegation` so it inlines
+-   entry .short   the given for `-Short`, typed as `ShortNegation` so it inlines
+-   entry .byte   the given for `-Byte`, typed as `ByteNegation` so it inlines
+-   entry #negate   negates a value, giving the instance's `Result`
++   entry .apply   uma instância de `Negatable` a partir de uma função do operando
++   entry .DoubleNegation   a instância de `-Double`, expandida inline numa única instrução
++   entry .FloatNegation   a instância de `-Float`, expandida inline numa única instrução
++   entry .LongNegation   a instância de `-Long`, expandida inline numa única instrução
++   entry .IntNegation   a instância de `-Int`, expandida inline numa única instrução
++   entry .ShortNegation   a instância de `-Short`, dando a volta, de volta a um `Short`
++   entry .ByteNegation   a instância de `-Byte`, dando a volta, de volta a um `Byte`
++   entry .double   o given para `-Double`, tipado como `DoubleNegation` para ser expandido inline
++   entry .float   o given para `-Float`, tipado como `FloatNegation` para ser expandido inline
++   entry .long   o given para `-Long`, tipado como `LongNegation` para ser expandido inline
++   entry .int   o given para `-Int`, tipado como `IntNegation` para ser expandido inline
++   entry .short   o given para `-Short`, tipado como `ShortNegation` para ser expandido inline
++   entry .byte   o given para `-Byte`, tipado como `ByteNegation` para ser expandido inline
++   entry #negate   nega um valor, dando o `Result` da instância
+
+- entry .Rootable   a typeclass for the root of a literal degree: `Rootable[2]` is behind `sqrt`, `Rootable[3]` behind `cbrt`
++ entry .Rootable   uma classe de tipos para a raiz de um grau literal: `Rootable[2]` está por trás de `sqrt`, `Rootable[3]` por trás de `cbrt`
+
+= entry .Rootable   a typeclass for the root of a literal degree: `Rootable[2]` is behind `sqrt`, `Rootable[3]` behind `cbrt`
+-   detail
++   detail
+
+-       `Rootable[degree]` takes the root of the degree its type parameter names, a literal
+-       `Int`: `Rootable[2]` is behind `sqrt` and `Rootable[3]` behind `cbrt`. A root of any other
+-       degree may be given, and summoned or used directly.
++       `Rootable[degree]` extrai a raiz do grau que o seu parâmetro de tipo nomeia, um `Int`
++       literal: `Rootable[2]` está por trás de `sqrt` e `Rootable[3]` por trás de `cbrt`. Uma
++       raiz de qualquer outro grau pode ser dada, e convocada ou usada diretamente.
+
+=       degree may be given, and summoned or used directly.
+=
+-       ```scala
++       ```scala
+
+=       degree may be given, and summoned or used directly.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       given fourth: Double is Rootable[4] to Double = Rootable(_.sqrt.sqrt)
++       given fourth: Double is Rootable[4] to Double = Rootable(_.sqrt.sqrt)
+
+-       summon[Double is Rootable[4]].root(16.0)   // 2.0
++       summon[Double is Rootable[4]].root(16.0)   // 2.0
+
+=       summon[Double is Rootable[4]].root(16.0)   // 2.0
+-       ```
++       ```
+
+-       The instances for `Double` and `Float` are singleton objects whose `inline def root`
+-       calls `Math.sqrt` or `Math.cbrt` directly. There are none for the integral types.
++       As instâncias para `Double` e `Float` são objetos singleton cujo `inline def root` chama
++       `Math.sqrt` ou `Math.cbrt` diretamente. Não há nenhuma para os tipos integrais.
+
+-   refer symbolism.sqrt
++   refer symbolism.sqrt
+
+-   refer symbolism.cbrt
++   refer symbolism.cbrt
+
+-   entry .apply   a `Rootable` instance of a literal degree from a function of the operand
+-   entry .DoubleSquareRoot   the square root of a `Double`, inlined to `Math.sqrt`
+-   entry .DoubleCubeRoot   the cube root of a `Double`, inlined to `Math.cbrt`
+-   entry .FloatSquareRoot   the square root of a `Float`, through `Math.sqrt`
+-   entry .FloatCubeRoot   the cube root of a `Float`, through `Math.cbrt`
+-   entry .sqrt   the given for a `Double`'s square root, typed as `DoubleSquareRoot` so it inlines
+-   entry .cbrt   the given for a `Double`'s cube root, typed as `DoubleCubeRoot` so it inlines
+-   entry .sqrtFloat   the given for a `Float`'s square root, typed as `FloatSquareRoot` so it inlines
+-   entry .cbrtFloat   the given for a `Float`'s cube root, typed as `FloatCubeRoot` so it inlines
+-   entry #root   the root of a value, giving the instance's `Result`
++   entry .apply   uma instância de `Rootable` de um grau literal a partir de uma função do operando
++   entry .DoubleSquareRoot   a raiz quadrada de um `Double`, expandida inline para `Math.sqrt`
++   entry .DoubleCubeRoot   a raiz cúbica de um `Double`, expandida inline para `Math.cbrt`
++   entry .FloatSquareRoot   a raiz quadrada de um `Float`, por meio de `Math.sqrt`
++   entry .FloatCubeRoot   a raiz cúbica de um `Float`, por meio de `Math.cbrt`
++   entry .sqrt   o given para a raiz quadrada de um `Double`, tipado como `DoubleSquareRoot` para ser expandido inline
++   entry .cbrt   o given para a raiz cúbica de um `Double`, tipado como `DoubleCubeRoot` para ser expandido inline
++   entry .sqrtFloat   o given para a raiz quadrada de um `Float`, tipado como `FloatSquareRoot` para ser expandido inline
++   entry .cbrtFloat   o given para a raiz cúbica de um `Float`, tipado como `FloatCubeRoot` para ser expandido inline
++   entry #root   a raiz de um valor, dando o `Result` da instância
+
+- entry .Zeroic   a typeclass for a type's additive identity, as `zero[T]`
++ entry .Zeroic   uma classe de tipos para a identidade aditiva de um tipo, como `zero[T]`
+
+= entry .Zeroic   a typeclass for a type's additive identity, as `zero[T]`
+-   detail
++   detail
+
+-       A `Zeroic` instance supplies the value which adding changes nothing: `0` for the numeric
+-       types, the empty `String`, and whatever a user-defined type calls zero. Generic sums and
+-       repetitions start from it, and `Multiplicable.concatenable` needs it to repeat a
+-       concatenable value.
++       Uma instância de `Zeroic` fornece o valor cuja soma não muda nada: `0` para os tipos
++       numéricos, a `String` vazia, e o que quer que um tipo definido pelo usuário chame de
++       zero. Somas e repetições genéricas começam dele, e `Multiplicable.concatenable` precisa
++       dele para repetir um valor concatenável.
+
+=       concatenable value.
+=
+-       ```scala
++       ```scala
+
+=       concatenable value.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=       concatenable value.
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Vector2(x: Int, y: Int)
++       case class Vector2(x: Int, y: Int)
+
+=       concatenable value.
+=
+=       ```scala
+=       import soundness.*
+=
+=       case class Vector2(x: Int, y: Int)
+=
+-       object Vector2:
++       object Vector2:
+
+-         given zeroic: Vector2 is Zeroic:
++         given zeroic: Vector2 is Zeroic:
+
+-           def zero: Vector2 = Vector2(0, 0)
++           def zero: Vector2 = Vector2(0, 0)
+
+-       zero[Vector2]   // Vector2(0, 0)
++       zero[Vector2]   // Vector2(0, 0)
+
+=       zero[Vector2]   // Vector2(0, 0)
+-       ```
++       ```
+
+-   refer symbolism.zero
++   refer symbolism.zero
+
+-   refer symbolism.Unital
++   refer symbolism.Unital
+
+-   entry .long   zero as a `Long`, inlined
+-   entry .int   zero as an `Int`, inlined
+-   entry .short   zero as a `Short`, inlined
+-   entry .byte   zero as a `Byte`, inlined
+-   entry .double   zero as a `Double`, inlined
+-   entry .float   zero as a `Float`, inlined
+-   entry .string   the empty `String`, inlined
+-   entry #zero   the type's additive identity
++   entry .long   zero como um `Long`, expandido inline
++   entry .int   zero como um `Int`, expandido inline
++   entry .short   zero como um `Short`, expandido inline
++   entry .byte   zero como um `Byte`, expandido inline
++   entry .double   zero como um `Double`, expandido inline
++   entry .float   zero como um `Float`, expandido inline
++   entry .string   a `String` vazia, expandida inline
++   entry #zero   a identidade aditiva do tipo
+
+- entry .Unital   a typeclass for a type's multiplicative identity, its `one`
++ entry .Unital   uma classe de tipos para a identidade multiplicativa de um tipo, o seu `one`
+
+= entry .Unital   a typeclass for a type's multiplicative identity, its `one`
+-   detail
++   detail
+
+-       A `Unital` instance supplies the value which multiplying by changes nothing, `1` for the
+-       numeric types. An instance implements the protected `makeOne`, and callers read `#one`.
++       Uma instância de `Unital` fornece o valor pelo qual multiplicar não muda nada, `1` para os
++       tipos numéricos. Uma instância implementa o `makeOne` protegido, e quem chama lê `#one`.
+
+=       numeric types. An instance implements the protected `makeOne`, and callers read `#one`.
+=
+-       ```scala
++       ```scala
+
+=       numeric types. An instance implements the protected `makeOne`, and callers read `#one`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Scale(factor: Double)
++       case class Scale(factor: Double)
+
+-       object Scale:
++       object Scale:
+
+-         given unital: Scale is Unital:
++         given unital: Scale is Unital:
+
+-           protected def makeOne(): Scale = Scale(1.0)
++           protected def makeOne(): Scale = Scale(1.0)
+
+-       summon[Scale is Unital].one   // Scale(1.0)
++       summon[Scale is Unital].one   // Scale(1.0)
+
+-       summon[Int is Unital].one     // 1
++       summon[Int is Unital].one     // 1
+
+=       summon[Int is Unital].one     // 1
+-       ```
++       ```
+
+-   refer symbolism.Zeroic
++   refer symbolism.Zeroic
+
+-   entry .long   one as a `Long`
+-   entry .int   one as an `Int`
+-   entry .short   one as a `Short`
+-   entry .byte   one as a `Byte`
+-   entry .double   one as a `Double`
+-   entry .float   one as a `Float`
+-   entry #one   the type's multiplicative identity
++   entry .long   um como um `Long`
++   entry .int   um como um `Int`
++   entry .short   um como um `Short`
++   entry .byte   um como um `Byte`
++   entry .double   um como um `Double`
++   entry .float   um como um `Float`
++   entry #one   a identidade multiplicativa do tipo
+
+- entry .Concatenable   a typeclass for joining two values, which also gives them `+`
++ entry .Concatenable   uma classe de tipos para juntar dois valores, que também lhes dá `+`
+
+= entry .Concatenable   a typeclass for joining two values, which also gives them `+`
+-   detail
++   detail
+
+-       A `Self is Concatenable by Operand to Result` joins two values end to end. Every
+-       concatenable type is `Addable` through `Addable.concatenable`, so the instances are what
+-       make `+` join collections, and what retire the standard library's `++` and `:::`
+-       spellings; a type concatenable with itself which is also `Zeroic` multiplies by an `Int`
+-       as repetition.
++       Um `Self is Concatenable by Operand to Result` junta dois valores, um após o outro. Todo
++       tipo concatenável é `Addable` por meio de `Addable.concatenable`, de modo que as
++       instâncias são o que faz `+` juntar coleções, e o que aposenta as grafias `++` e `:::` da
++       biblioteca padrão; um tipo concatenável consigo mesmo que também é `Zeroic` se multiplica
++       por um `Int` como repetição.
+
+=       as repetition.
+=
+-       ```scala
++       ```scala
+
+=       as repetition.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       List(1, 2) + List(3)              // List(1, 2, 3)
++       List(1, 2) + List(3)              // List(1, 2, 3)
+
+-       Set(1, 2) + Set(2, 3)             // Set(1, 2, 3)
++       Set(1, 2) + Set(2, 3)             // Set(1, 2, 3)
+
+-       Map(1 -> t"a") + Map(1 -> t"b")   // Map(1 -> t"b"): the right operand wins
++       Map(1 -> t"a") + Map(1 -> t"b")   // Map(1 -> t"b"): the right operand wins
+
+=       Map(1 -> t"a") + Map(1 -> t"b")   // Map(1 -> t"b"): the right operand wins
+-       ```
++       ```
+
+-       The collections' instances live in this companion, since the collections are defined
+-       below symbolism and their own companions cannot host them.
++       As instâncias das coleções ficam neste objeto companheiro, já que as coleções são
++       definidas abaixo do symbolism e os seus próprios companheiros não podem abrigá-las.
+
+=       below symbolism and their own companions cannot host them.
+-   refer symbolism.Addable
++   refer symbolism.Addable
+
+-   entry .list   joins two `List`s, branded non-empty or not, to a plain `List`
+-       Both operands may be any subtype of `List[element]`, so a branded non-empty list matches
+-       on either side; the result is a plain `List[element]`, so no brand leaks into it.
+-   entry .sequence   joins two `Sequence`s to a plain `Sequence`
+-   entry .chain   joins two `Chain`s lazily, forcing neither
+-   entry .set   the union of two `Set`s
+-   entry .map   joins two `Map`s, the right operand's values winning for a shared key
+-       Right-biased, as the standard library's `concat` is, and as for `Set`, where union is
+-       concatenation.
+-   entry .ledger   joins two `Ledger`s, the right operand winning for a shared key
+-   entry .frozenArray   joins two frozen arrays into a new frozen array
+-       Needs a `ClassTag` for the element type. The result is a fresh allocation of the combined
+-       length, frozen once both operands are copied into it.
+-   entry #concat   joins the operand onto the end of the value, giving the instance's `Result`
++   entry .list   junta duas `List`s, com marca de não vazia ou não, numa `List` simples
++       Ambos os operandos podem ser qualquer subtipo de `List[element]`, de modo que uma lista
++       não vazia com marca casa de qualquer dos lados; o resultado é uma `List[element]` simples,
++       de modo que nenhuma marca vaza para ele.
++   entry .sequence   junta duas `Sequence`s numa `Sequence` simples
++   entry .chain   junta duas `Chain`s de forma preguiçosa, sem forçar nenhuma delas
++   entry .set   a união de dois `Set`s
++   entry .map   junta dois `Map`s, vencendo os valores do operando direito para uma chave compartilhada
++       Com viés à direita, como o `concat` da biblioteca padrão, e como para `Set`, em que a
++       união é a concatenação.
++   entry .ledger   junta dois `Ledger`s, vencendo o operando direito para uma chave compartilhada
++   entry .frozenArray   junta dois arrays congelados num novo array congelado
++       Precisa de uma `ClassTag` para o tipo do elemento. O resultado é uma nova alocação do
++       comprimento combinado, congelada assim que ambos os operandos são copiados para ela.
++   entry #concat   junta o operando ao final do valor, dando o `Result` da instância
+
+- entry .Quotient   a typeclass for values which are fractions: a numerator over a denominator
++ entry .Quotient   uma classe de tipos para valores que são frações: um numerador sobre um denominador
+
+= entry .Quotient   a typeclass for values which are fractions: a numerator over a denominator
+-   detail
++   detail
+
+-       A `Quotient` instance decomposes a value into its `Topic` (the numerator) and its
+-       `Transport` (the denominator), which is what the `/:` extractor matches on. The
+-       decomposition is optional, so a value which is not a proper fraction, such as one with a
+-       zero denominator, need not match.
++       Uma instância de `Quotient` decompõe um valor no seu `Topic` (o numerador) e no seu
++       `Transport` (o denominador), que é aquilo com que o extrator `/:` casa. A decomposição é
++       opcional, de modo que um valor que não é uma fração própria, como um com denominador
++       zero, não precisa casar.
+
+=       zero denominator, need not match.
+=
+-       ```scala
++       ```scala
+
+=       zero denominator, need not match.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Ratio(over: Long, under: Long)
++       case class Ratio(over: Long, under: Long)
+
+-       object Ratio:
++       object Ratio:
+
+-         given quotient: Ratio is Quotient:
++         given quotient: Ratio is Quotient:
+
+-           type Topic = Long
++           type Topic = Long
+
+-           type Transport = Long
++           type Transport = Long
+
+-           def decompose(ratio: Ratio): Option[(Long, Long)] = Some((ratio.over, ratio.under))
++           def decompose(ratio: Ratio): Option[(Long, Long)] = Some((ratio.over, ratio.under))
+
+-       Ratio(16, 9) match
++       Ratio(16, 9) match
+
+-         case width /: height => width*height
++         case width /: height => width*height
+
+=         case width /: height => width*height
+-       ```
++       ```
+
+-   refer symbolism./:
++   refer symbolism./:
+
+-   entry #Numerator   the numerator's type: an alias of `Topic`
+-   entry #Denominator   the denominator's type: an alias of `Transport`
+-   entry #decompose   the value's numerator and denominator, if it has them
++   entry #Numerator   o tipo do numerador: um alias de `Topic`
++   entry #Denominator   o tipo do denominador: um alias de `Transport`
++   entry #decompose   o numerador e o denominador do valor, se ele os tiver
+
+- entry .Comparable   a total three-way comparison of two values of a type, giving a `Comparison`
++ entry .Comparable   uma comparação total de três vias de dois valores de um tipo, dando uma `Comparison`
+
+= entry .Comparable   a total three-way comparison of two values of a type, giving a `Comparison`
+-   detail
++   detail
+
+-       A `Comparable` instance compares two values of its type, returning `Comparison.Less`,
+-       `Same` or `More`. It is how collections sort (`sorted`, `order`), find extrema and bound
+-       ranges, through an element type which is abstract to them, and it dispatches at runtime,
+-       unlike hypotenuse's `Commensurable`, which is resolved statically at each `<` or `>`.
++       Uma instância de `Comparable` compara dois valores do seu tipo, retornando
++       `Comparison.Less`, `Same` ou `More`. É assim que as coleções ordenam (`sorted`,
++       `order`), encontram extremos e delimitam intervalos, por meio de um tipo de elemento que
++       para elas é abstrato, e ela despacha em tempo de execução, ao contrário do
++       `Commensurable` do hypotenuse, que é resolvido estaticamente em cada `<` ou `>`.
+
+=       unlike hypotenuse's `Commensurable`, which is resolved statically at each `<` or `>`.
+=
+-       ```scala
++       ```scala
+
+=       unlike hypotenuse's `Commensurable`, which is resolved statically at each `<` or `>`.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Version(major: Int, minor: Int)
++       case class Version(major: Int, minor: Int)
+
+-       object Version:
++       object Version:
+
+-         given comparable: Version is Comparable =
++         given comparable: Version is Comparable =
+
+-           summon[(Int, Int) is Comparable].on[Version](version => (version.major, version.minor))
++           summon[(Int, Int) is Comparable].on[Version](version => (version.major, version.minor))
+
+-       Version.comparable.max(Version(1, 9), Version(1, 10))   // Version(1, 10)
++       Version.comparable.max(Version(1, 9), Version(1, 10))   // Version(1, 10)
+
+-       Comparable.int.compare(2, 3)                            // Comparison.Less
++       Comparable.int.compare(2, 3)                            // Comparison.Less
+
+=       Comparable.int.compare(2, 3)                            // Comparison.Less
+-       ```
++       ```
+
+-       The primitive instances compare through `java.lang`'s box methods, so `Double` and
+-       `Float` have the JDK's *total* order — `NaN` after every other value, and `-0.0` before
+-       `0.0` — rather than the partial order of the `<` operator. Lists compare
+-       lexicographically, a proper prefix first, and pairs on their first element, then their
+-       second.
++       As instâncias primitivas comparam por meio dos métodos das classes box de `java.lang`, de
++       modo que `Double` e `Float` têm a ordem *total* do JDK — `NaN` depois de todo outro valor,
++       e `-0.0` antes de `0.0` — em vez da ordem parcial do operador `<`. Listas são comparadas
++       lexicograficamente, com um prefixo próprio primeiro, e pares pelo primeiro elemento,
++       depois pelo segundo.
+
+-       Any type with a standard library `Ordering` in scope is `Comparable` through a
+-       low-priority bridge (`Comparable2#ordering`), so third-party types sort without
+-       ceremony; a native instance always outranks it. The other way, `#ordering` makes an
+-       `Ordering` for the few standard library APIs which insist on one.
++       Qualquer tipo com um `Ordering` da biblioteca padrão em escopo é `Comparable` por meio de
++       uma ponte de baixa prioridade (`Comparable2#ordering`), de modo que tipos de terceiros
++       ordenam sem cerimônia; uma instância nativa sempre tem precedência sobre ela. No sentido
++       inverso, `#ordering` cria um `Ordering` para as poucas APIs da biblioteca padrão que
++       insistem em um.
+
+-   refer symbolism.Comparable2
++   refer symbolism.Comparable2
+
+-   entry .apply   a `Comparable` instance from a function returning a `Comparison`
++   entry .apply   uma instância de `Comparable` a partir de uma função que retorna uma `Comparison`
+
+=   entry .apply   a `Comparable` instance from a function returning a `Comparison`
+-       ```scala
++       ```scala
+
+=   entry .apply   a `Comparable` instance from a function returning a `Comparison`
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=   entry .apply   a `Comparable` instance from a function returning a `Comparison`
+=       ```scala
+=       import soundness.*
+=
+-       case class Card(rank: Int)
++       case class Card(rank: Int)
+
+-       given Card is Comparable =
++       given Card is Comparable =
+
+-         Comparable((left, right) => Comparison(java.lang.Integer.compare(left.rank, right.rank)))
++         Comparable((left, right) => Comparison(java.lang.Integer.compare(left.rank, right.rank)))
+
+=         Comparable((left, right) => Comparison(java.lang.Integer.compare(left.rank, right.rank)))
+-       ```
++       ```
+
+-   entry .less   a `Comparable` instance from a strict less-than predicate, as `Ordering.fromLessThan`
+-       For comparisons naturally written as `<`. The predicate is applied a second time, with
+-       the operands swapped, for values which are not less in the first order: the price of
+-       recovering a three-way result from a `Boolean` one.
++   entry .less   uma instância de `Comparable` a partir de um predicado estrito de menor que, como `Ordering.fromLessThan`
++       Para comparações escritas naturalmente como `<`. O predicado é aplicado uma segunda vez,
++       com os operandos trocados, para valores que não são menores na primeira ordem: o preço de
++       recuperar um resultado de três vias a partir de um `Boolean`.
+
+=       recovering a three-way result from a `Boolean` one.
+=
+-       ```scala
++       ```scala
+
+=       recovering a three-way result from a `Boolean` one.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=
+=       ```scala
+=       import soundness.*
+=
+-       case class Card(rank: Int)
++       case class Card(rank: Int)
+
+-       given Card is Comparable = Comparable.less(_.rank < _.rank)
++       given Card is Comparable = Comparable.less(_.rank < _.rank)
+
+=       given Card is Comparable = Comparable.less(_.rank < _.rank)
+-       ```
++       ```
+
+-   entry .int   compares `Int`s numerically
+-   entry .long   compares `Long`s numerically
+-   entry .double   compares `Double`s in the JDK's total order: `NaN` last, and `-0.0` before `0.0`
+-   entry .float   compares `Float`s in the JDK's total order: `NaN` last, and `-0.0` before `0.0`
+-   entry .char   compares `Char`s by their UTF-16 code units
+-   entry .byte   compares `Byte`s numerically, as signed values
+-   entry .short   compares `Short`s numerically
+-   entry .boolean   compares `Boolean`s, with `false` before `true`
+-   entry .list   compares `List`s lexicographically, a proper prefix first
+-       Needs a `Comparable` for the element type. The first position at which the elements
+-       differ decides; if one list runs out first, it precedes the other.
+-   entry .pair   compares pairs on their first element, then on their second
+-       Needs a `Comparable` for each element type.
+-   entry #compare   compares two values, giving `Comparison.Less`, `Same` or `More`
+-   entry #less   whether the left value precedes the right
+-   entry #atMost   whether the left value precedes or equals the right
+-   entry #greater   whether the left value follows the right
+-   entry #atLeast   whether the left value follows or equals the right
+-   entry #same   whether the two values compare as equal
+-   entry #min   the lesser of two values, or the left one if they compare the same
+-   entry #max   the greater of two values, or the left one if they compare the same
+-   entry #ordering   a standard library `Ordering` which agrees with this comparison
+-       For the seams where a standard library API insists on an `Ordering`, such as the key
+-       order of a `TreeMap`. It is a method rather than a given, since a given would form a
+-       cycle with the `Ordering` bridge, `Comparable2#ordering`.
+-   entry #on   compares another type by projecting it onto this one, as `Ordering.by`
++   entry .int   compara `Int`s numericamente
++   entry .long   compara `Long`s numericamente
++   entry .double   compara `Double`s na ordem total do JDK: `NaN` por último, e `-0.0` antes de `0.0`
++   entry .float   compara `Float`s na ordem total do JDK: `NaN` por último, e `-0.0` antes de `0.0`
++   entry .char   compara `Char`s pelas suas unidades de código UTF-16
++   entry .byte   compara `Byte`s numericamente, como valores com sinal
++   entry .short   compara `Short`s numericamente
++   entry .boolean   compara `Boolean`s, com `false` antes de `true`
++   entry .list   compara `List`s lexicograficamente, com um prefixo próprio primeiro
++       Precisa de um `Comparable` para o tipo do elemento. A primeira posição em que os elementos
++       diferem decide; se uma lista se esgota primeiro, ela precede a outra.
++   entry .pair   compara pares pelo primeiro elemento, depois pelo segundo
++       Precisa de um `Comparable` para cada tipo de elemento.
++   entry #compare   compara dois valores, dando `Comparison.Less`, `Same` ou `More`
++   entry #less   se o valor da esquerda precede o da direita
++   entry #atMost   se o valor da esquerda precede o da direita ou é igual a ele
++   entry #greater   se o valor da esquerda segue o da direita
++   entry #atLeast   se o valor da esquerda segue o da direita ou é igual a ele
++   entry #same   se os dois valores são iguais na comparação
++   entry #min   o menor de dois valores, ou o da esquerda se forem iguais na comparação
++   entry #max   o maior de dois valores, ou o da esquerda se forem iguais na comparação
++   entry #ordering   um `Ordering` da biblioteca padrão que concorda com esta comparação
++       Para as costuras em que uma API da biblioteca padrão insiste num `Ordering`, como a ordem
++       das chaves de um `TreeMap`. É um método e não um given, já que um given formaria um ciclo
++       com a ponte de `Ordering`, `Comparable2#ordering`.
++   entry #on   compara outro tipo projetando-o neste, como `Ordering.by`
+
+=   entry #on   compares another type by projecting it onto this one, as `Ordering.by`
+-       ```scala
++       ```scala
+
+=   entry #on   compares another type by projecting it onto this one, as `Ordering.by`
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       case class Person(name: Text, age: Int)
++       case class Person(name: Text, age: Int)
+
+-       given Person is Comparable = Comparable.int.on[Person](_.age)
++       given Person is Comparable = Comparable.int.on[Person](_.age)
+
+=       given Person is Comparable = Comparable.int.on[Person](_.age)
+-       ```
++       ```
+
+- entry .Comparable2   the low-priority half of `Comparable`'s companion: the bridge from `Ordering`
++ entry .Comparable2   a metade de baixa prioridade do objeto companheiro de `Comparable`: a ponte a partir de `Ordering`
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: `object Comparable` extends it, so that its given is found in
+-       `Comparable`'s implicit scope but is always outranked by a native instance.
+-   entry #ordering   makes any type with a standard library `Ordering` in scope `Comparable`
++       Não é para uso direto: `object Comparable` o estende, para que o seu given seja
++       encontrado no escopo implícito de `Comparable`, mas sempre com uma instância nativa tendo
++       precedência sobre ele.
++   entry #ordering   torna `Comparable` qualquer tipo com um `Ordering` da biblioteca padrão em escopo
+
+=   entry #ordering   makes any type with a standard library `Ordering` in scope `Comparable`
+-       ```scala
++       ```scala
+
+=   entry #ordering   makes any type with a standard library `Ordering` in scope `Comparable`
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+=   entry #ordering   makes any type with a standard library `Ordering` in scope `Comparable`
+=       ```scala
+=       import soundness.*
+=
+-       case class Card(rank: Int)
++       case class Card(rank: Int)
+
+-       given scala.math.Ordering[Card] = scala.math.Ordering.by(_.rank)
++       given scala.math.Ordering[Card] = scala.math.Ordering.by(_.rank)
+
+-       summon[Card is Comparable].compare(Card(2), Card(9))   // Comparison.Less
++       summon[Card is Comparable].compare(Card(2), Card(9))   // Comparison.Less
+
+=       summon[Card is Comparable].compare(Card(2), Card(9))   // Comparison.Less
+-       ```
++       ```
+
+- entry .AddOp   an inline-friendly counterpart of `Addable`, which `+` consults first
++ entry .AddOp   uma contraparte de `Addable` amigável à expansão inline, que `+` consulta primeiro
+
+= entry .AddOp   an inline-friendly counterpart of `Addable`, which `+` consults first
+-   detail
++   detail
+
+-       A typeclass whose `op` is an `inline def`, so that an instance given at its concrete type
+-       (by a `transparent inline given`) has its body inlined into `+` with no dispatch. The
+-       `+` extension looks for one, while it is being inlined, before falling back to the
+-       `Addable` instance; quantitative uses this route.
++       Uma classe de tipos cujo `op` é um `inline def`, de modo que uma instância dada no seu
++       tipo concreto (por um `transparent inline given`) tem o seu corpo expandido inline em `+`
++       sem despacho. A extensão `+` procura uma, enquanto está sendo expandida inline, antes de
++       recorrer à instância de `Addable`; o quantitative usa esta rota.
+
+-       An `Addable` instance which is a singleton object with an `inline def add`, given at the
+-       object's own singleton type, inlines just as well, which is how the primitive instances
+-       work and the simpler pattern for new ones.
++       Uma instância de `Addable` que é um objeto singleton com um `inline def add`, dada no
++       próprio tipo singleton do objeto, é expandida inline igualmente bem, e é assim que as
++       instâncias primitivas funcionam e o padrão mais simples para as novas.
+
+=       work and the simpler pattern for new ones.
+-   refer symbolism.Addable
++   refer symbolism.Addable
+
+-   entry #op   adds the right operand to the left, inlined at the call site
++   entry #op   soma o operando direito ao esquerdo, expandido inline no local da chamada
+
+- entry .SubOp   an inline-friendly counterpart of `Subtractable`, which `-` consults first
++ entry .SubOp   uma contraparte de `Subtractable` amigável à expansão inline, que `-` consulta primeiro
+
+= entry .SubOp   an inline-friendly counterpart of `Subtractable`, which `-` consults first
+-   detail
++   detail
+
+-       As `AddOp`, for subtraction: an instance given at its concrete type has its `inline def
+-       op` inlined into `-`, ahead of the `Subtractable` instance.
+-   entry #op   subtracts the right operand from the left, inlined at the call site
++       Como `AddOp`, para subtração: uma instância dada no seu tipo concreto tem o seu `inline
++       def op` expandido inline em `-`, antes da instância de `Subtractable`.
++   entry #op   subtrai o operando direito do esquerdo, expandido inline no local da chamada
+
+- entry .MulOp   an inline-friendly counterpart of `Multiplicable`, which `*` consults first
++ entry .MulOp   uma contraparte de `Multiplicable` amigável à expansão inline, que `*` consulta primeiro
+
+= entry .MulOp   an inline-friendly counterpart of `Multiplicable`, which `*` consults first
+-   detail
++   detail
+
+-       As `AddOp`, for multiplication: an instance given at its concrete type has its `inline def
+-       op` inlined into `*`, ahead of the `Multiplicable` instance.
+-   entry #op   multiplies the left operand by the right, inlined at the call site
++       Como `AddOp`, para multiplicação: uma instância dada no seu tipo concreto tem o seu
++       `inline def op` expandido inline em `*`, antes da instância de `Multiplicable`.
++   entry #op   multiplica o operando esquerdo pelo direito, expandido inline no local da chamada
+
+- entry .DivOp   an inline-friendly counterpart of `Divisible`, which `/` consults first
++ entry .DivOp   uma contraparte de `Divisible` amigável à expansão inline, que `/` consulta primeiro
+
+= entry .DivOp   an inline-friendly counterpart of `Divisible`, which `/` consults first
+-   detail
++   detail
+
+-       As `AddOp`, for division: an instance given at its concrete type has its `inline def op`
+-       inlined into `/`, ahead of the `Divisible` instance.
+-   entry #op   divides the left operand by the right, inlined at the call site
++       Como `AddOp`, para divisão: uma instância dada no seu tipo concreto tem o seu `inline def
++       op` expandido inline em `/`, antes da instância de `Divisible`.
++   entry #op   divide o operando esquerdo pelo direito, expandido inline no local da chamada

@@ -1,0 +1,32 @@
+orthant 1 language
+
+- # `↯/s.137.2` — `Toolchain.Error`
++ # `↯/s.137.2` — `Toolchain.Error`
+
+- Raised when a native tool the linker needs is not on the `PATH`.
++ Lançado quando uma ferramenta nativa de que o linker precisa não está no `PATH`.
+
+- ## Cause
++ ## Causa
+
+- Linking a native binary or an Android package shells out to tools the JVM does not
+- provide — `clang` for native linking, and R8 and the signing tools for an APK. This error
+- names the tool that could not be found.
++ Linkar um binário nativo ou um pacote Android invoca, pelo shell, ferramentas que a JVM não
++ fornece — `clang` para a linkagem nativa, e o R8 e as ferramentas de assinatura para um APK. Este
++ erro nomeia a ferramenta que não pôde ser encontrada.
+
+- ## Resolution
++ ## Resolução
+
+- Install the named tool, or add it to the `PATH` of the process running the build.
++ Instale a ferramenta nomeada, ou acrescente-a ao `PATH` do processo que executa o build.
+
+- > This error previously used the code `↯/s.137.3`, which collided with `CompilerError`.
++ > Este erro usava antes o código `↯/s.137.3`, que colidia com `CompilerError`.
+
+- ## See also
++ ## Veja também
+
+- - Source: `lib/anthology/src/core/anthology.Toolchain.scala`
++ - Código-fonte: `lib/anthology/src/core/anthology.Toolchain.scala`

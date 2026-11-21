@@ -1,0 +1,46 @@
+orthant 1 language
+
+- # `↯/s.73.8` — Time literal must be a `Double`
++ # `↯/s.73.8` — O literal de tempo precisa ser um `Double`
+
+- Raised by Aviation's `validTime` macro when the argument is not a
+- literal `Double`.
++ Lançado pela macro `validTime` do Aviation quando o argumento não é um `Double` literal.
+
+- ## Cause
++ ## Causa
+
+- The macro pattern-matches on `Literal(DoubleConstant(_))`; anything
+- else (a variable, a method call, an integer literal) cannot be
+- inspected at compile time.
++ A macro faz casamento de padrões sobre `Literal(DoubleConstant(_))`; qualquer outra coisa (uma
++ variável, uma chamada de método, um literal inteiro) não pode ser inspecionada em tempo de
++ compilação.
+
+- ## Example message
++ ## Mensagem de exemplo
+
+=
+- ```
++ ```
+
+- [↯/s.73.8] expected a literal double value
++ [↯/s.73.8] expected a literal double value
+
+= [↯/s.73.8] expected a literal double value
+- ```
++ ```
+
+- ## Resolution
++ ## Resolução
+
+- Pass a `Double` literal directly to the macro.
++ Passe um literal `Double` diretamente para a macro.
+
+- ## See also
++ ## Veja também
+
+- - The other time literal errors: [Families](README.md#families)
+- - Source: `lib/aviation/src/core/aviation.internal.scala`
++ - Os outros erros de literais de tempo: [Famílias](README.md#families)
++ - Código-fonte: `lib/aviation/src/core/aviation.internal.scala`

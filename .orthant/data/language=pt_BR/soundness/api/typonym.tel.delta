@@ -1,0 +1,442 @@
+orthant 1 language
+
+- tel 1.0
++ tel 1.0
+
+- base typonym
++ base typonym
+
+- import soundness
++ import soundness
+
+- info   type-level lists, sets and maps of literal types, reified to runtime values at compile time
++ info   listas, conjuntos e mapas de tipos literais em nível de tipo, materializados em valores de tempo de execução em tempo de compilação
+
+- detail
++ detail
+
+-     _Typonym_ carries static data in types and turns it back into values. A macro parameterized by
+-     a list of names, a set of options or a mapping cannot take them as ordinary parameters, since
+-     it must see them while the code compiles; a type can carry them, as literal singleton types
+-     arranged in a `TypeList`, `TypeSet` or `TypeMap`, and `reify` converts that type into the
+-     runtime value it describes.
++     _Typonym_ carrega dados estáticos em tipos e os transforma de volta em valores. Uma macro
++     parametrizada por uma lista de nomes, um conjunto de opções ou um mapeamento não pode recebê-los
++     como parâmetros comuns, já que precisa vê-los enquanto o código compila; um tipo pode
++     carregá-los, como tipos singleton literais organizados em um `TypeList`, `TypeSet` ou
++     `TypeMap`, e `reify` converte esse tipo no valor de tempo de execução que ele descreve.
+
+=     runtime value it describes.
+=
+-     ```scala
++     ```scala
+
+=     runtime value it describes.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     reify[TypeList[("one", "two", "three")]]          // List("one", "two", "three")
++     reify[TypeList[("one", "two", "three")]]          // List("one", "two", "three")
+
+-     reify[TypeSet["yes" | "no" | "maybe"]]            // List("yes", "no", "maybe")
++     reify[TypeSet["yes" | "no" | "maybe"]]            // List("yes", "no", "maybe")
+
+-     reify[TypeMap[((1, "one"), (2, "two"))]]          // Map(1 -> "one", 2 -> "two")
++     reify[TypeMap[((1, "one"), (2, "two"))]]          // Map(1 -> "one", 2 -> "two")
+
+-     reify[42]                                         // 42
++     reify[42]                                         // 42
+
+=     reify[42]                                         // 42
+-     ```
++     ```
+
+-     The literal kinds are `Int`, `Double`, `String` and `Boolean`; a `TypeList` is a tuple of
+-     them, a `TypeSet` a union, and a `TypeMap` a tuple of pairs, and the three nest, so a map's
+-     values may themselves be `TypeList`s. A type which is not one of these — `Int` rather than
+-     `42`, say — is a compile error, because there is no value to reify.
++     As categorias de literais são `Int`, `Double`, `String` e `Boolean`; um `TypeList` é uma tupla
++     delas, um `TypeSet` uma união e um `TypeMap` uma tupla de pares, e os três se aninham, de modo
++     que os valores de um mapa podem ser eles próprios `TypeList`s. Um tipo que não é um desses —
++     `Int` em vez de `42`, por exemplo — é um erro de compilação, porque não há valor a materializar.
+
+-     `reify` is transparent, so its result has the precise type the macro builds; `reifyAs` fixes
+-     the result type where inference needs the help, and the `Reifiable` typeclass lets a method
+-     demand a reifiable type parameter as a contextual value. From inside a macro implementation,
+-     where the type is held only as a `Type[T]`, the `reify(Type)` overload gives the reification
+-     as an `Expr`.
++     `reify` é transparente, então seu resultado tem o tipo preciso que a macro constrói; `reifyAs`
++     fixa o tipo do resultado onde a inferência precisa de ajuda, e a classe de tipos `Reifiable`
++     permite que um método exija um parâmetro de tipo materializável como valor contextual. De
++     dentro da implementação de uma macro, onde o tipo é mantido apenas como um `Type[T]`, a
++     sobrecarga `reify(Type)` dá a materialização como um `Expr`.
+
+-     The library has a single source set, `typonym.core`, which compiles for every platform, since
+-     all of its work happens at compile time. Everything is exported to the `soundness` umbrella.
++     A biblioteca tem um único source set, `typonym.core`, que compila para todas as plataformas, já
++     que todo o seu trabalho acontece em tempo de compilação. Tudo é exportado para o guarda-chuva
++     `soundness`.
+
+- refer typonym.reify
++ refer typonym.reify
+
+- refer typonym.TypeList
++ refer typonym.TypeList
+
+- refer typonym.TypeSet
++ refer typonym.TypeSet
+
+- refer typonym.TypeMap
++ refer typonym.TypeMap
+
+- refer typonym.Reifiable
++ refer typonym.Reifiable
+
+- entry .TypeList   a phantom type carrying an ordered list of literal types as a tuple
+-     `TypeList[("one", "two", "three")]` describes the list `List("one", "two", "three")`. The
+-     type parameter is a tuple whose elements are literal types (`Int`, `Double`, `String` or
+-     `Boolean` singletons) or nested `TypeList`, `TypeSet` or `TypeMap` types. The trait is sealed
+-     and has no instances: it exists only to be written in a type and passed to `reify`.
++ entry .TypeList   um tipo fantasma que carrega uma lista ordenada de tipos literais como uma tupla
++     `TypeList[("one", "two", "three")]` descreve a lista `List("one", "two", "three")`. O
++     parâmetro de tipo é uma tupla cujos elementos são tipos literais (singletons `Int`, `Double`,
++     `String` ou `Boolean`) ou tipos `TypeList`, `TypeSet` ou `TypeMap` aninhados. O trait é selado
++     e não tem instâncias: existe apenas para ser escrito em um tipo e passado a `reify`.
+
+=     and has no instances: it exists only to be written in a type and passed to `reify`.
+=
+-     ```scala
++     ```scala
+
+=     and has no instances: it exists only to be written in a type and passed to `reify`.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     reify[TypeList[(true, false, true)]]   // List(true, false, true)
++     reify[TypeList[(true, false, true)]]   // List(true, false, true)
+
+-     reify[TypeList[(1.5, 2.5)]]            // List(1.5, 2.5)
++     reify[TypeList[(1.5, 2.5)]]            // List(1.5, 2.5)
+
+=     reify[TypeList[(1.5, 2.5)]]            // List(1.5, 2.5)
+-     ```
++     ```
+
+-     Each element is reified on its own, so the list's element type is not inferred from the
+-     tuple: `reify` gives a `List` whose static element type is `Any`, and `reifyAs` at a narrower
+-     element type such as `List[String]` fails its check. A `TypeSet` reifies at its element type,
+-     which is why `Reifiable.listUnion` goes through one.
++     Cada elemento é materializado por si só, então o tipo de elemento da lista não é inferido a
++     partir da tupla: `reify` dá um `List` cujo tipo de elemento estático é `Any`, e `reifyAs` em um
++     tipo de elemento mais estreito, como `List[String]`, falha em sua verificação. Um `TypeSet` é
++     materializado em seu tipo de elemento, e é por isso que `Reifiable.listUnion` passa por um.
+
+- entry .TypeSet   a phantom type carrying a set of literal types as a union
+-     `TypeSet["one" | "two" | "three"]` describes the members of the union. It reifies to a `List`
+-     of the members, in the order the union was written (as the compiler holds it), typed at the
+-     union's element type, so `reifyAs[TypeSet["a" | "b"], List[String]]` checks.
++ entry .TypeSet   um tipo fantasma que carrega um conjunto de tipos literais como uma união
++     `TypeSet["one" | "two" | "three"]` descreve os membros da união. Ele é materializado em um
++     `List` dos membros, na ordem em que a união foi escrita (tal como o compilador a mantém),
++     tipado no tipo de elemento da união, de modo que `reifyAs[TypeSet["a" | "b"], List[String]]`
++     passa na verificação.
+
+=     union's element type, so `reifyAs[TypeSet["a" | "b"], List[String]]` checks.
+=
+-     ```scala
++     ```scala
+
+=     union's element type, so `reifyAs[TypeSet["a" | "b"], List[String]]` checks.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     reify[TypeSet["one" | "two" | "three" | "four"]]   // List("one", "two", "three", "four")
++     reify[TypeSet["one" | "two" | "three" | "four"]]   // List("one", "two", "three", "four")
+
+=     reify[TypeSet["one" | "two" | "three" | "four"]]   // List("one", "two", "three", "four")
+-     ```
++     ```
+
+-     Each member of the union must be a literal type; `TypeSet["one" | Int]` is a compile error.
+-     The result is a `List` rather than a `Set`, so the order of the union is kept for code which
+-     wants it.
++     Cada membro da união precisa ser um tipo literal; `TypeSet["one" | Int]` é um erro de
++     compilação. O resultado é um `List` e não um `Set`, de modo que a ordem da união é preservada
++     para o código que a quiser.
+
+- entry .TypeMap   a phantom type carrying a map of literal types as a tuple of pairs
+-     `TypeMap[((1, "one"), (2, "two"))]` describes the map `Map(1 -> "one", 2 -> "two")`. Each
+-     element of the tuple is a pair type whose key and value are each a literal type or a nested
+-     `TypeList`, `TypeSet` or `TypeMap`, so a multimap is a `TypeMap` of `TypeList`s.
++ entry .TypeMap   um tipo fantasma que carrega um mapa de tipos literais como uma tupla de pares
++     `TypeMap[((1, "one"), (2, "two"))]` descreve o mapa `Map(1 -> "one", 2 -> "two")`. Cada
++     elemento da tupla é um tipo de par cuja chave e cujo valor são, cada um, um tipo literal ou um
++     `TypeList`, `TypeSet` ou `TypeMap` aninhado, de modo que um multimapa é um `TypeMap` de
++     `TypeList`s.
+
+=     `TypeList`, `TypeSet` or `TypeMap`, so a multimap is a `TypeMap` of `TypeList`s.
+=
+-     ```scala
++     ```scala
+
+=     `TypeList`, `TypeSet` or `TypeMap`, so a multimap is a `TypeMap` of `TypeList`s.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     reify[TypeMap[((1, TypeList[("one", "un")]), (2, TypeList[("two", "deux")]))]]
++     reify[TypeMap[((1, TypeList[("one", "un")]), (2, TypeList[("two", "deux")]))]]
+
+-     // Map(1 -> List("one", "un"), 2 -> List("two", "deux"))
++     // Map(1 -> List("one", "un"), 2 -> List("two", "deux"))
+
+=     // Map(1 -> List("one", "un"), 2 -> List("two", "deux"))
+-     ```
++     ```
+
+- entry .TypeElement   a sealed phantom type wrapping a single type, for type-level structures
+-     `TypeElement[T]` is a marker with no instances and no reification of its own: `reify` handles
+-     `TypeList`, `TypeSet`, `TypeMap` and bare literal types, not `TypeElement`. It is available
+-     for libraries which build their own type-level encodings on Typonym's vocabulary.
++ entry .TypeElement   um tipo fantasma selado que envolve um único tipo, para estruturas em nível de tipo
++     `TypeElement[T]` é um marcador sem instâncias e sem materialização própria: `reify` trata
++     `TypeList`, `TypeSet`, `TypeMap` e tipos literais simples, não `TypeElement`. Ele está
++     disponível para bibliotecas que constroem suas próprias codificações em nível de tipo sobre o
++     vocabulário do Typonym.
+
+- entry .reify   turns a literal type, or a `TypeList`, `TypeSet` or `TypeMap` of them, into its value
+-     `reify[T]` is a transparent inline macro: it reads `T` while the code compiles and splices the
+-     value it describes, so the result's static type is the precise one the macro builds. A literal
+-     type reifies to its value, a `TypeList` to a `List`, a `TypeSet` to a `List` of the union's
+-     members, and a `TypeMap` to a `Map`, nesting as the type nests.
++ entry .reify   transforma um tipo literal, ou um `TypeList`, `TypeSet` ou `TypeMap` deles, em seu valor
++     `reify[T]` é uma macro transparent inline: ela lê `T` enquanto o código compila e insere por
++     splice o valor que ele descreve, de modo que o tipo estático do resultado é o tipo preciso que
++     a macro constrói. Um tipo literal é materializado em seu valor, um `TypeList` em um `List`, um
++     `TypeSet` em um `List` dos membros da união e um `TypeMap` em um `Map`, aninhando-se como o
++     tipo se aninha.
+
+=     members, and a `TypeMap` to a `Map`, nesting as the type nests.
+=
+-     ```scala
++     ```scala
+
+=     members, and a `TypeMap` to a `Map`, nesting as the type nests.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     reify["solo"]                                  // "solo"
++     reify["solo"]                                  // "solo"
+
+-     reify[3.5]                                     // 3.5
++     reify[3.5]                                     // 3.5
+
+-     reify[TypeList[("one", "two", "three")]]       // List("one", "two", "three")
++     reify[TypeList[("one", "two", "three")]]       // List("one", "two", "three")
+
+-     reify[TypeMap[((1, "one"), (2, "two"))]]       // Map(1 -> "one", 2 -> "two")
++     reify[TypeMap[((1, "one"), (2, "two"))]]       // Map(1 -> "one", 2 -> "two")
+
+-     reify[Int]                                     // does not compile
++     reify[Int]                                     // does not compile
+
+=     reify[Int]                                     // does not compile
+-     ```
++     ```
+
+-     Only `Int`, `Double`, `String` and `Boolean` singletons are literal types to the macro; any
+-     other type, at the top level or inside a collection, fails to expand.
++     Apenas singletons `Int`, `Double`, `String` e `Boolean` são tipos literais para a macro;
++     qualquer outro tipo, no nível superior ou dentro de uma coleção, falha ao expandir.
+
+-     The second overload, `reify(phantomType)`, takes a `Type[T]` and returns a `Macro[Any]` — an
+-     `Expr` in a `Quotes` context — for use inside another macro's implementation, where the type
+-     is known only abstractly:
++     A segunda sobrecarga, `reify(phantomType)`, recebe um `Type[T]` e retorna um `Macro[Any]` — um
++     `Expr` em um contexto `Quotes` — para uso dentro da implementação de outra macro, onde o tipo é
++     conhecido apenas de forma abstrata:
+
+=     is known only abstractly:
+=
+-     ```scala
++     ```scala
+
+-     import scala.quoted.*
++     import scala.quoted.*
+
+=     import scala.quoted.*
+-     import soundness.*
++     import soundness.*
+
+-     def names[T: Type](using Quotes): Expr[Any] = reify(Type.of[T])
++     def names[T: Type](using Quotes): Expr[Any] = reify(Type.of[T])
+
+=     def names[T: Type](using Quotes): Expr[Any] = reify(Type.of[T])
+-     ```
++     ```
+
+- entry .reifyAs   reifies a type-level value, checking it against an explicitly stated result type
+-     `reifyAs[T, R]` is `reify[T]` with its result typed as `R`: where `reify`'s transparent result
+-     is too precise, or not precise enough, for the code around it, the caller names the type it
+-     wants, and the macro's expansion is checked against it.
++ entry .reifyAs   materializa um valor em nível de tipo, verificando-o contra um tipo de resultado declarado explicitamente
++     `reifyAs[T, R]` é `reify[T]` com seu resultado tipado como `R`: onde o resultado transparente
++     de `reify` é preciso demais, ou não preciso o bastante, para o código ao redor, quem chama
++     nomeia o tipo que quer, e a expansão da macro é verificada contra ele.
+
+=     wants, and the macro's expansion is checked against it.
+=
+-     ```scala
++     ```scala
+
+=     wants, and the macro's expansion is checked against it.
+=
+=     ```scala
+-     import soundness.*
++     import soundness.*
+
+-     val options: List[String] = reifyAs[TypeSet["a" | "b"], List[String]]
++     val options: List[String] = reifyAs[TypeSet["a" | "b"], List[String]]
+
+-     reifyAs[TypeSet["a" | "b"], List[Int]]   // does not compile
++     reifyAs[TypeSet["a" | "b"], List[Int]]   // does not compile
+
+=     reifyAs[TypeSet["a" | "b"], List[Int]]   // does not compile
+-     ```
++     ```
+
+-     A `TypeList` reifies its elements independently, at `Any`, so `reifyAs` at a narrower list
+-     type fails for one; state the elements as a `TypeSet` where the element type matters.
++     Um `TypeList` materializa seus elementos independentemente, em `Any`, então `reifyAs` em um
++     tipo de lista mais estreito falha para ele; declare os elementos como um `TypeSet` onde o tipo
++     de elemento importa.
+
+- entry .Reifiable   a typeclass for a type whose value can be recovered at compile time
++ entry .Reifiable   uma classe de tipos para um tipo cujo valor pode ser recuperado em tempo de compilação
+
+= entry .Reifiable   a typeclass for a type whose value can be recovered at compile time
+-   detail
++   detail
+
+-       `T is Reifiable to R` is evidence that the type `T` describes a value of type `R`, which
+-       `#reify` returns. It lets a method demand, as a contextual value, that its type parameter
+-       carry static data:
++       `T is Reifiable to R` é evidência de que o tipo `T` descreve um valor do tipo `R`, que
++       `#reify` retorna. Ela permite que um método exija, como valor contextual, que seu parâmetro
++       de tipo carregue dados estáticos:
+
+=       carry static data:
+=
+-       ```scala
++       ```scala
+
+=       carry static data:
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       def choices[T](using reifiable: T is Reifiable to List[String]): List[String] =
++       def choices[T](using reifiable: T is Reifiable to List[String]): List[String] =
+
+-         reifiable.reify
++         reifiable.reify
+
+-       choices["yes" | "no" | "maybe"]   // List("yes", "no", "maybe")
++       choices["yes" | "no" | "maybe"]   // List("yes", "no", "maybe")
+
+=       choices["yes" | "no" | "maybe"]   // List("yes", "no", "maybe")
+-       ```
++       ```
+
+-       The companion's `.listUnion` provides the instance for a union of literal types, reified as
+-       a list; other instances are made with `Reifiable(value)`.
++       O `.listUnion` do objeto companheiro fornece a instância para uma união de tipos literais,
++       materializada como uma lista; outras instâncias são criadas com `Reifiable(value)`.
+
+-   refer typonym.reify
++   refer typonym.reify
+
+-   refer typonym.TypeSet
++   refer typonym.TypeSet
+
+-   entry .listUnion   reifies a union of literal types as a `List` of its members
+-       A transparent inline given, in implicit scope, providing `phantom is Reifiable to
+-       List[value]` for any `phantom`: it expands `reifyAs[TypeSet[phantom], List[value]]`, so a
+-       union `"yes" | "no"` becomes `List("yes", "no")`, and a type which is not a union of
+-       literals fails to expand where the instance is demanded.
+-   entry .apply   makes a `Reifiable` instance which returns a value already in hand
+-       `Reifiable[T, R](value)` is the instance `T is Reifiable to R` whose `#reification` is
+-       `value`. It is how a library supplies its own reifications, for types the macro does not
+-       handle.
++   entry .listUnion   materializa uma união de tipos literais como um `List` de seus membros
++       Um given transparent inline, no escopo implícito, que fornece `phantom is Reifiable to
++       List[value]` para qualquer `phantom`: ele expande `reifyAs[TypeSet[phantom], List[value]]`,
++       de modo que uma união `"yes" | "no"` se torna `List("yes", "no")`, e um tipo que não é uma
++       união de literais falha ao expandir onde a instância é exigida.
++   entry .apply   cria uma instância de `Reifiable` que retorna um valor já em mãos
++       `Reifiable[T, R](value)` é a instância `T is Reifiable to R` cujo `#reification` é
++       `value`. É assim que uma biblioteca fornece suas próprias materializações, para tipos que a
++       macro não trata.
+
+=       handle.
+=
+-       ```scala
++       ```scala
+
+=       handle.
+=
+=       ```scala
+-       import soundness.*
++       import soundness.*
+
+-       Reifiable[Any, List[String]](List("x", "y")).reify   // List("x", "y")
++       Reifiable[Any, List[String]](List("x", "y")).reify   // List("x", "y")
+
+=       Reifiable[Any, List[String]](List("x", "y")).reify   // List("x", "y")
+-       ```
++       ```
+
+-   entry #reification   computes the value the type describes
+-       The abstract method an instance implements; `#reify` calls it.
+-   entry #reify   the value the type describes, as `Result`
+-       An alias for `#reification()`, for reading at a use site.
++   entry #reification   calcula o valor que o tipo descreve
++       O método abstrato que uma instância implementa; `#reify` o chama.
++   entry #reify   o valor que o tipo descreve, como `Result`
++       Um alias para `#reification()`, para leitura no ponto de uso.
+
+- entry .internal   the macro implementations behind `reify` and `reifyAs`
++ entry .internal   as implementações de macro por trás de `reify` e `reifyAs`
+
+-   hidden
++   hidden
+
+=   hidden
+-   detail
++   detail
+
+-       Not for direct use: the object holds the macro bodies which `reify` and `reifyAs` splice.
+-   entry .reify   the macro behind `reify`: a type to the expression of its value
+-   entry .reifyAs   the macro behind `reifyAs`: `reify`, cast to the stated result type
+-   entry .reflect   the inverse of `reify`: a value to the type which describes it
+-       Turns a `String`, `Int`, `Double` or `Boolean` into its singleton `ConstantType`, and a
+-       `List` of them into a `TypeList` of a tuple, for a macro which must hand a value back to
+-       the type system.
++       Não é para uso direto: o objeto contém os corpos de macro que `reify` e `reifyAs` inserem
++       por splice.
++   entry .reify   a macro por trás de `reify`: de um tipo à expressão de seu valor
++   entry .reifyAs   a macro por trás de `reifyAs`: `reify`, convertido para o tipo de resultado declarado
++   entry .reflect   o inverso de `reify`: de um valor ao tipo que o descreve
++       Transforma um `String`, `Int`, `Double` ou `Boolean` em seu `ConstantType` singleton, e um
++       `List` deles em um `TypeList` de uma tupla, para uma macro que precisa devolver um valor ao
++       sistema de tipos.
