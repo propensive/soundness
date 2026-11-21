@@ -19,13 +19,13 @@ orthant 1 language
 -     `-Zsemantic-diagnostics` (anthology's `scalacOptions.semanticDiagnostics`): compiler
 -     messages in which each type, symbol, name and code sample is marked up with
 -     private-use-character markers, and each type additionally carries its TASTy pickled
--     form. A plain compiler message is text in which `List[Int]` is five characters; a
+-     form. A plain compiler message is text in which `List[Int]` is nine characters; a
 -     semantic one knows that `List[Int]` is a type, which type, and that `List` is
 +     _Delicious_ lê os **diagnósticos semânticos** que o compilador proscala emite com
 +     `-Zsemantic-diagnostics` (o `scalacOptions.semanticDiagnostics` de anthology): mensagens do
 +     compilador em que cada tipo, símbolo, nome e trecho de código é marcado com marcadores de
 +     caracteres de uso privado, e cada tipo traz ainda sua forma serializada em TASTy. Uma mensagem
-+     comum do compilador é texto, em que `List[Int]` são cinco caracteres; uma mensagem semântica
++     comum do compilador é texto, em que `List[Int]` são nove caracteres; uma mensagem semântica
 +     sabe que `List[Int]` é um tipo, qual tipo, e que `List` é
 
 -     `scala.collection.immutable.List`.

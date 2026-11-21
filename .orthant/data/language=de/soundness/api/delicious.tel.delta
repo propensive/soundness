@@ -19,7 +19,7 @@ orthant 1 language
 -     `-Zsemantic-diagnostics` (anthology's `scalacOptions.semanticDiagnostics`): compiler
 -     messages in which each type, symbol, name and code sample is marked up with
 -     private-use-character markers, and each type additionally carries its TASTy pickled
--     form. A plain compiler message is text in which `List[Int]` is five characters; a
+-     form. A plain compiler message is text in which `List[Int]` is nine characters; a
 -     semantic one knows that `List[Int]` is a type, which type, and that `List` is
 -     `scala.collection.immutable.List`.
 +     _Delicious_ liest die **semantischen Diagnosen**, die der Compiler proscala unter
@@ -27,7 +27,7 @@ orthant 1 language
 +     Compilermeldungen, in denen jeder Typ, jedes Symbol, jeder Name und jedes Codebeispiel mit
 +     Markern aus Zeichen des privaten Nutzungsbereichs ausgezeichnet ist und jeder Typ zusätzlich
 +     seine gepickelte TASTy-Form trägt. Eine einfache Compilermeldung ist Text, in dem `List[Int]`
-+     fünf Zeichen sind; eine semantische weiß, dass `List[Int]` ein Typ ist, welcher Typ, und dass
++     neun Zeichen sind; eine semantische weiß, dass `List[Int]` ein Typ ist, welcher Typ, und dass
 +     `List` `scala.collection.immutable.List` ist.
 
 -     `Markup.parse` turns the marked-up text into a tree of `Markup` nodes — `Textual`,

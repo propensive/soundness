@@ -9,7 +9,7 @@ detail
     `-Zsemantic-diagnostics` (anthology's `scalacOptions.semanticDiagnostics`): compiler
     messages in which each type, symbol, name and code sample is marked up with
     private-use-character markers, and each type additionally carries its TASTy pickled
-    form. A plain compiler message is text in which `List[Int]` is five characters; a
+    form. A plain compiler message is text in which `List[Int]` is nine characters; a
     semantic one knows that `List[Int]` is a type, which type, and that `List` is
     `scala.collection.immutable.List`.
 
